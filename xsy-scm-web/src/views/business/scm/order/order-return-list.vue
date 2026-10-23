@@ -36,12 +36,16 @@
       :scroll="{x: scmColumnsWidth(columns)}"
     >
       <template #bodyCell="{record, column, text}">
-        <template v-if="column.dataIndex === 'status'">{{ SCM_ORDER_RETURN_STATUS_ENUM[text]?.desc }}</template>
+        <template v-if="column.dataIndex === 'status'">
+          <ScmStatusTag :tone="returnStatusTone(record.status)" :label="SCM_ORDER_RETURN_STATUS_ENUM[text]?.desc" />
+        </template>
         <template v-else-if="column.dataIndex === 'customerName'">{{ record.customerName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'orderNo'">
           <span class="scm-mono">{{ record.orderNo || '—' }}</span>
         </template>
-        <template v-else-if="['approvedAmount', 'refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
+        <template v-else-if="['approvedAmount', 'refundAmount'].includes(column.dataIndex)">
+          <span class="scm-money">{{ amount(text) }}</span>
+        </template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 常驻详情和当前状态的推进动作；驳回、取消收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -103,7 +107,9 @@
         <a-space class="exchange-actions">
           <a-button v-if="replacementOrderId" @click="router.push(`/order/detail/${replacementOrderId}`)">查看关联换货单</a-button>
           <a-button v-else-if="exchangeReady" v-privilege="'scm:order:add'" type="primary" @click="openExchange">创建关联换货单</a-button>
-          <span v-else-if="detail.status === 'APPROVED'" class="scm-cell-hint">全部批准数量完成实物接收后可创建换货单</span>
+          <span v-else-if="detail.status === 'APPROVED'" class="scm-cell-hint">{{
+            replacementLoadFailed ? '关联换货单加载失败，请重新打开详情重试' : '全部批准数量完成实物接收后可创建换货单'
+          }}</span>
         </a-space>
       </template>
     </a-spin>
@@ -205,23 +211,33 @@ import {SCM_ORDER_RETURN_STATUS_ENUM} from '/@/constants/business/scm/order-cons
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ReturnRow, Query, ReturnItem, Id} from './order-types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 type ReturnItemWithDisposition = ReturnItem & {disposition: 'RETURN_TO_STOCK' | 'DAMAGE'; receiptQuantity: string};
+const RETURN_STATUS_TONE: Record<string, ScmStatusTone> = {
+  PENDING: 'warning',
+  APPROVED: 'success',
+  REJECTED: 'error',
+  CANCELLED: 'neutral',
+};
+const returnStatusTone = (status: string): ScmStatusTone => RETURN_STATUS_TONE[status] ?? 'neutral';
+
 const detailItemColumns: TableColumnsType<ReturnItem> = [
   {title: '商品', dataIndex: 'productName', width: 200},
   {title: '单位', dataIndex: 'unit', width: 72},
-  {title: '申请数量', dataIndex: 'requestedQuantity', width: 112},
-  {title: '批准数量', dataIndex: 'approvedQuantity', width: 112},
-  {title: '已接收数量', dataIndex: 'receivedQuantity', width: 112},
+  {title: '申请数量', dataIndex: 'requestedQuantity', width: 112, align: 'right'},
+  {title: '批准数量', dataIndex: 'approvedQuantity', width: 112, align: 'right'},
+  {title: '已接收数量', dataIndex: 'receivedQuantity', width: 112, align: 'right'},
 ];
 const receiveItemColumns: TableColumnsType<ReturnItemWithDisposition> = [
   {title: '商品', dataIndex: 'productName', width: 200},
   {title: '单位', dataIndex: 'unit', width: 72},
-  {title: '批准数量', dataIndex: 'approvedQuantity', width: 112},
-  {title: '已接收', dataIndex: 'receivedQuantity', width: 112},
-  {title: '本次接收', dataIndex: 'receiptQuantity', width: 132},
+  {title: '批准数量', dataIndex: 'approvedQuantity', width: 112, align: 'right'},
+  {title: '已接收', dataIndex: 'receivedQuantity', width: 112, align: 'right'},
+  {title: '本次接收', dataIndex: 'receiptQuantity', width: 132, align: 'right'},
   {title: '处置', dataIndex: 'disposition', width: 160},
 ];
 import {amount, fixed} from './order-form-model';
@@ -255,7 +271,7 @@ const columns = ref<TableColumnsType<ReturnRow>>([
     width: 120,
     align: 'center',
   },
-  {title: '批准金额', dataIndex: 'approvedAmount', width: 140},
+  {title: '批准金额', dataIndex: 'approvedAmount', width: 140, align: 'right'},
   {
     title: '操作',
     dataIndex: 'action',
@@ -437,7 +453,8 @@ const detailOpen = ref(false),
 const detail = ref<ReturnRow>(),
   detailId = ref<Id>();
 const replacementOrderId = ref<Id | null>(null),
-  replacementLoaded = ref(false);
+  replacementLoaded = ref(false),
+  replacementLoadFailed = ref(false);
 const exchangeDrawer = ref<InstanceType<typeof OrderFormDrawer>>();
 const router = useRouter();
 const exchangeReady = computed(
@@ -459,17 +476,26 @@ async function showDetail(id?: Id) {
   detail.value = undefined;
   replacementOrderId.value = null;
   replacementLoaded.value = false;
+  replacementLoadFailed.value = false;
+  // 换货单查询失败不应拖累退货详情，两个请求分别结算
+  const [response, linked] = await Promise.allSettled([
+    api.detail(id, {suppressGlobalErrorMessage: true}),
+    orderApi.exchangeReplacement(id, {suppressGlobalErrorMessage: true}),
+  ]);
+  if (generation !== detailRequestId) return;
   try {
-    const [response, linked] = await Promise.all([api.detail(id, {suppressGlobalErrorMessage: true}), orderApi.exchangeReplacement(id)]);
-    if (generation === detailRequestId) {
-      detail.value = response.data;
-      replacementOrderId.value = linked.data;
-      replacementLoaded.value = true;
+    if (response.status === 'rejected') {
+      detailError.value = orderError(response.reason);
+    } else {
+      detail.value = response.value.data;
+      replacementLoadFailed.value = linked.status === 'rejected';
+      if (linked.status === 'fulfilled') {
+        replacementOrderId.value = linked.value.data;
+        replacementLoaded.value = true;
+      }
     }
-  } catch (e) {
-    if (generation === detailRequestId) detailError.value = orderError(e);
   } finally {
-    if (generation === detailRequestId) detailLoading.value = false;
+    detailLoading.value = false;
   }
 }
 function openExchange(): void {

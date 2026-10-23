@@ -208,27 +208,33 @@ const allocationColumns: TableColumnsType<Allocation> = [
   {title: '需求状态', dataIndex: 'demandStatus', align: 'center', width: 96},
 ];
 
+let requestId = 0;
+
 async function open(id: Id) {
+  const current = ++requestId;
   visible.value = true;
   logs.value = [];
   logsLoaded.value = false;
   order.value = {id} as Order;
-  await load();
+  await load(current);
 }
 
-async function load() {
+async function load(request = ++requestId) {
   if (!order.value?.id) {
     return;
   }
+  const current = request;
   loading.value = true;
   error.value = '';
   try {
     // 加载失败由抽屉内的 Alert 提示并可重试
-    order.value = (await purchaseOrderApi.detail(order.value.id, {suppressGlobalErrorMessage: true})).data;
+    const detail = (await purchaseOrderApi.detail(order.value.id, {suppressGlobalErrorMessage: true})).data;
+    if (current !== requestId) return;
+    order.value = detail;
   } catch (e) {
-    error.value = purchaseError(e);
+    if (current === requestId) error.value = purchaseError(e);
   } finally {
-    loading.value = false;
+    if (current === requestId) loading.value = false;
   }
 }
 

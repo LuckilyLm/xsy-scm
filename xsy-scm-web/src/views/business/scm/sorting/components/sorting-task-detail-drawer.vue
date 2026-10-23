@@ -1,6 +1,6 @@
 <template>
   <!-- workspace：分拣工作台。明细表很宽，录入时要同时看到任务头、进度和明细行。 -->
-  <a-drawer :open="open" title="分拣任务详情" :width="scmDrawerWidth('workspace')" :destroy-on-close="true" @close="emit('update:open', false)">
+  <a-drawer :open="open" title="分拣任务详情" :width="scmDrawerWidth('workspace')" :destroy-on-close="true" @close="close">
     <a-alert v-if="detailError" :message="detailError" type="error" show-icon>
       <template #action>
         <a-button @click="emit('reload')">刷新任务</a-button>
@@ -197,7 +197,7 @@ import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import SortingPartModal from './sorting-part-modal.vue';
 import SortingStandardModal from './sorting-standard-modal.vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import {Modal, type TableColumnsType} from 'ant-design-vue';
 import {datetime} from '../../common/scm-display';
 import {
   SCM_SORTING_OCCUPATION_COLOR,
@@ -216,7 +216,7 @@ type ActionMode = 'assign' | 'cancel' | 'reopen';
 type DraftField = 'sortedQuantity' | 'result' | 'reason';
 type EntryDraft = {sortedQuantity: string; result: string; reason: string};
 
-defineProps<{
+const props = defineProps<{
   open: boolean;
   detail?: SortingTaskDetail;
   detailLoading: boolean;
@@ -247,6 +247,22 @@ const emit = defineEmits<{
   submitEntry: [];
   standardSaved: [];
 }>();
+
+/** 关闭前拦截未提交的手工录入，避免整批草稿被静默丢弃。 */
+function close() {
+  if (props.dirtyCount > 0) {
+    Modal.confirm({
+      title: '有未提交的分拣录入',
+      content: `${props.dirtyCount} 行录入尚未提交，关闭后这些内容会丢失。`,
+      okText: '仍然关闭',
+      okType: 'danger',
+      cancelText: '继续录入',
+      onOk: () => emit('update:open', false),
+    });
+    return;
+  }
+  emit('update:open', false);
+}
 
 const resultOptions = Object.values(SCM_SORTING_RESULT_ENUM).map((item) => ({value: item.value, label: item.desc}));
 

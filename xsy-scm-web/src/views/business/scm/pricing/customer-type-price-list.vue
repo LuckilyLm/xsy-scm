@@ -113,7 +113,7 @@ const columns = ref<CustomerTypePriceColumn[]>([
   {title: '客户类型编码', dataIndex: 'customerTypeCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'specName', width: 200},
-  {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '单价', dataIndex: 'unitPrice', width: 120},
   {title: '有效期', dataIndex: 'effectiveRange', width: 340},
   {title: '状态', dataIndex: 'effectiveness', align: 'center', width: 100},

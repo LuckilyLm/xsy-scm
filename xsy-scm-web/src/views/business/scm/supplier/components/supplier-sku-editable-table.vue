@@ -20,27 +20,29 @@
             <td>
               <SkuSelect
                 :value="draft.skuId"
+                :disabled="readonly"
                 :aria-label="`第 ${index + 1} 行商品规格`"
                 @update:value="(value) => (draft.skuId = Array.isArray(value) ? value[0] : value)"
               />
             </td>
             <td>
-              <a-input v-model:value="draft.supplierItemCode" :maxlength="100" :aria-label="`第 ${index + 1} 行供应商货号`" />
+              <a-input v-model:value="draft.supplierItemCode" :maxlength="100" :disabled="readonly" :aria-label="`第 ${index + 1} 行供应商货号`" />
             </td>
             <td>
-              <a-input v-model:value="draft.purchaseUnit" :maxlength="32" :aria-label="`第 ${index + 1} 行采购单位`" />
+              <a-input v-model:value="draft.purchaseUnit" :maxlength="32" :disabled="readonly" :aria-label="`第 ${index + 1} 行采购单位`" />
             </td>
             <td>
-              <a-input v-model:value="draft.referencePrice" placeholder="例如 3.5000" :aria-label="`第 ${index + 1} 行参考价`" />
+              <a-input v-model:value="draft.referencePrice" placeholder="例如 3.5000" :disabled="readonly" :aria-label="`第 ${index + 1} 行参考价`" />
             </td>
             <td class="center">
-              <a-checkbox v-model:checked="draft.defaultFlag" :aria-label="`第 ${index + 1} 行设为优先采购`" />
+              <a-checkbox v-model:checked="draft.defaultFlag" :disabled="readonly" :aria-label="`第 ${index + 1} 行设为优先采购`" />
             </td>
             <td>
               <EmployeeSelect
                 :value="draft.purchaserId ?? undefined"
                 width="100%"
                 placeholder="请选择"
+                :disabled="readonly"
                 :aria-label="`第 ${index + 1} 行采购员`"
                 @update:value="(value: number | undefined) => (draft.purchaserId = value ?? null)"
               />
@@ -50,12 +52,13 @@
                 :value="draft.status ?? 'ENABLED'"
                 enum-name="SUPPLIER_SKU_STATUS_ENUM"
                 width="100%"
+                :disabled="readonly"
                 :aria-label="`第 ${index + 1} 行状态`"
                 @update:value="(value: string) => (draft.status = value as EnableStatus)"
               />
             </td>
             <td class="center">
-              <a-popconfirm title="确认移除该关联？" @confirm="emit('update:modelValue', removeSkuDraft(modelValue, index))">
+              <a-popconfirm v-if="!readonly" title="确认移除该关联？" @confirm="emit('update:modelValue', removeSkuDraft(modelValue, index))">
                 <a-button type="link" danger size="small" :aria-label="`移除第 ${index + 1} 行`">移除</a-button>
               </a-popconfirm>
             </td>
@@ -66,7 +69,7 @@
         </tbody>
       </table>
     </div>
-    <a-button class="add-sku" @click="emit('update:modelValue', [...modelValue, emptySkuDraft()])">添加商品</a-button>
+    <a-button v-if="!readonly" class="add-sku" @click="emit('update:modelValue', [...modelValue, emptySkuDraft()])">添加商品</a-button>
   </div>
 </template>
 
@@ -78,7 +81,7 @@ import type {EnableStatus} from '/@/types/business/scm/supplier';
 import {emptySkuDraft, removeSkuDraft} from '../supplier-form-model';
 import type {SkuDraft} from '../supplier-form-model';
 
-const props = defineProps<{modelValue: SkuDraft[]}>();
+const props = defineProps<{modelValue: SkuDraft[]; readonly?: boolean}>();
 const emit = defineEmits<{'update:modelValue': [rows: SkuDraft[]]}>();
 
 // 显式引用 props，避免 noUnusedLocals 报警。
@@ -92,7 +95,6 @@ void props;
 
 table {
   width: 100%;
-  min-width: 1240px;
   border-collapse: collapse;
 }
 

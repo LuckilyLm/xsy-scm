@@ -1,4 +1,9 @@
 <template>
+  <a-alert v-if="customerOptionsError" type="warning" show-icon :message="customerOptionsError" class="smart-margin-bottom10">
+    <template #action>
+      <a-button size="small" @click="loadCustomerOptions">重试</a-button>
+    </template>
+  </a-alert>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="收款日期">
@@ -249,6 +254,7 @@ const query = reactive<ReceiptQuery>({pageNum: 1, pageSize: 20, ...initialFinanc
 const route = useRoute();
 const page = useFinancePage<FinanceReceipt, ReceiptQuery>(financeApi.receiptQuery, financeApi.receiptExport);
 const customerOptions = ref<Array<{label: string; value: string | number}>>([]);
+const customerOptionsError = ref('');
 const {
   open: detailOpen,
   loading: detailLoading,
@@ -314,8 +320,8 @@ const columns = ref<TableColumnsType<FinanceReceipt>>([
   {title: '客户', dataIndex: 'customerName', width: 190},
   {title: '方向', dataIndex: 'entryType', width: 80, align: 'center'},
   {title: '来源订单', dataIndex: 'codOrderNo', width: 170, ellipsis: true},
-  {title: '金额', dataIndex: 'amount', width: 136},
-  {title: '有效金额', dataIndex: 'effectiveAmount', width: 148},
+  {title: '金额', dataIndex: 'amount', width: 136, align: 'right'},
+  {title: '有效金额', dataIndex: 'effectiveAmount', width: 148, align: 'right'},
   {title: '已核销', dataIndex: 'usedAmount', width: 148},
   {title: '方式', dataIndex: 'method', width: 110, align: 'center'},
   {title: '凭据号', dataIndex: 'externalReference', width: 160},
@@ -498,14 +504,19 @@ async function submitReverse() {
   }
 }
 
-onMounted(async () => {
+/** 客户选项失败使用独立错误态，避免被列表查询清空。 */
+async function loadCustomerOptions() {
+  customerOptionsError.value = '';
   try {
-    // 客户选项加载失败时显示在页头 Alert
     const response = await customerApi.optionList({suppressGlobalErrorMessage: true});
     customerOptions.value = response.data.map((item: CustomerOption) => ({label: `${item.customerCode} · ${item.name}`, value: item.customerId}));
   } catch {
-    page.error.value = '客户选项暂不可用，请稍后重试。';
+    customerOptionsError.value = '客户选项暂不可用，请稍后重试。';
   }
+}
+
+onMounted(async () => {
+  await loadCustomerOptions();
   queryData();
   if (typeof route.query.codOrderId === 'string' && /^[1-9]\d*$/.test(route.query.codOrderId)) {
     openCod();

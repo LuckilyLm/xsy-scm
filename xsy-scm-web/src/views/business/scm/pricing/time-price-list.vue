@@ -2,7 +2,7 @@
   <a-form class="smart-query-form" layout="inline">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input v-model:value="query.keyword" placeholder="商品名称或规格编码" allow-clear />
+        <a-input v-model:value="query.keyword" placeholder="商品名称或商品规格编码" allow-clear />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-space>
@@ -45,7 +45,7 @@
         <template v-else-if="column.dataIndex === 'startAt'">{{ formatDateTime(record.startAt) }}</template>
         <template v-else-if="column.dataIndex === 'endAt'">{{ formatDateTime(record.endAt) }}</template>
         <template v-else-if="column.dataIndex === 'effectiveState'">
-          <ScmStatusTag :tone="record.effectiveNow ? 'success' : 'neutral'" :text="record.effectiveNow ? '生效中' : '未生效'" />
+          <ScmStatusTag :tone="effectiveState(record).tone" :label="effectiveState(record).label" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate scm-table-actions">
@@ -100,6 +100,7 @@ import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 
 const columns = ref<TableColumnsType>([
   {title: '商品', dataIndex: 'productName', width: 180, ellipsis: true},
@@ -110,6 +111,18 @@ const columns = ref<TableColumnsType>([
   {title: '状态', dataIndex: 'effectiveState', width: 90, align: 'center'},
   {title: '操作', dataIndex: 'action', width: 110, align: 'center'},
 ]);
+
+/** 时段价左闭右开：结束时间已过即过期，开始时间未到是未生效。 */
+function effectiveState(record: TimePrice): {tone: ScmStatusTone; label: string} {
+  const now = Date.now();
+  if (record.endAt && dayjs(record.endAt).valueOf() <= now) {
+    return {tone: 'neutral', label: '已过期'};
+  }
+  if (record.startAt && dayjs(record.startAt).valueOf() > now) {
+    return {tone: 'warning', label: '未生效'};
+  }
+  return {tone: 'success', label: '生效中'};
+}
 
 const query = reactive({pageNum: 1, pageSize: 20, keyword: ''});
 const rows = ref<TimePrice[]>([]);

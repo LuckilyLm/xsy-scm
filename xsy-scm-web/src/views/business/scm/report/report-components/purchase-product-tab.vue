@@ -23,7 +23,7 @@
       size="small"
       :data-source="rows"
       :columns="visibleColumns"
-      row-key="skuId"
+      :row-key="(row: PurchaseProductRow) => `${row.skuId}-${row.purchaseUnit ?? ''}`"
       bordered
       :loading="loading"
       :pagination="false"
@@ -63,6 +63,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        :disabled="exporting"
         show-size-changer
         show-quick-jumper
         :current="pageNum"

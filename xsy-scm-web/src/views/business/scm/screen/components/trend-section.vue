@@ -24,7 +24,7 @@
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-else ref="salesEl" class="scm-chart" />
+        <div v-show="!empty" ref="salesEl" class="scm-chart" />
       </screen-panel>
 
       <screen-panel title="采购趋势" flex flush>
@@ -33,7 +33,7 @@
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-else ref="purchaseEl" class="scm-chart" />
+        <div v-show="!empty" ref="purchaseEl" class="scm-chart" />
       </screen-panel>
 
       <screen-panel title="库存趋势" flex flush>
@@ -42,7 +42,7 @@
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-else ref="inventoryEl" class="scm-chart" />
+        <div v-show="!empty" ref="inventoryEl" class="scm-chart" />
       </screen-panel>
     </div>
   </div>

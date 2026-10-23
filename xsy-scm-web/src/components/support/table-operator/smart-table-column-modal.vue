@@ -37,7 +37,13 @@
             'is-fixed': item.fixed,
             'is-off': !isColumnShown(item) && !item.fixed,
           }"
+          role="checkbox"
+          :aria-checked="isColumnShown(item)"
+          :aria-disabled="item.fixed ? true : undefined"
+          :tabindex="item.fixed ? -1 : 0"
           @click="toggleColumn(item)"
+          @keydown.space.prevent="toggleColumn(item)"
+          @keydown.enter.prevent="toggleColumn(item)"
         >
           <span class="scm-column-grid__handle" :class="{'is-locked': item.fixed}">
             <pushpin-outlined v-if="item.fixed" />
@@ -50,8 +56,7 @@
               'is-off': !isColumnShown(item) && !item.fixed,
               'is-locked': item.fixed,
             }"
-            :aria-pressed="isColumnShown(item)"
-            role="checkbox"
+            aria-hidden="true"
           >
             <check-outlined v-if="isColumnShown(item) && !item.fixed" />
           </span>

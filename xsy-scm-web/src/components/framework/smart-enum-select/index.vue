@@ -9,6 +9,7 @@
     :style="`width: ${width}`"
     :placeholder="props.placeholder"
     :showSearch="true"
+    option-filter-prop="children"
     :allowClear="true"
     :size="size"
     @change="handleChange"

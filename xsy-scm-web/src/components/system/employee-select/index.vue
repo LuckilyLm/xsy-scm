@@ -13,6 +13,7 @@
     :showSearch="true"
     option-filter-prop="label"
     :allowClear="true"
+    :disabled="disabled"
     :size="size"
     @change="onChange"
   >
@@ -44,6 +45,10 @@ const props = defineProps({
   size: {
     type: String,
     default: 'default',
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
   },
   // 角色ID，可为空
   roleId: {

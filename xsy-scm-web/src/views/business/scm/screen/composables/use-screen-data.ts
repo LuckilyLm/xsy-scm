@@ -65,9 +65,16 @@ export function useScreenData() {
 
     const failed = results.filter((r) => r.status === 'rejected').length;
     if (failed === results.length) {
-      // 全部失败：进入错误态
       const first = results[0] as PromiseRejectedResult;
-      error.value = String(first.reason?.msg ?? first.reason?.message ?? '数据加载失败');
+      const message = String(first.reason?.msg ?? first.reason?.message ?? '数据加载失败');
+      // 已有数据时保留旧数据，只在页头提示刷新失败；首屏失败才进入错误态
+      if (business.value || inventory.value || purchase.value) {
+        error.value = '';
+        staleError.value = '数据刷新失败，当前显示上次加载的数据';
+      } else {
+        error.value = message;
+        staleError.value = '';
+      }
       return false;
     }
     error.value = '';

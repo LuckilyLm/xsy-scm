@@ -39,7 +39,7 @@ function render() {
   setOption({
     animation: false,
     color: [...REPORT_CHART_SERIES],
-    grid: {top: 40, right: 20, bottom: 30, left: 10, containLabel: true},
+    grid: {top: 40, right: 40, bottom: 30, left: 10, containLabel: true},
     legend: {top: 4, left: 'center', textStyle: {color: REPORT_CHART_COLORS.axisText}},
     tooltip: {
       trigger: 'axis',

@@ -255,7 +255,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute} from 'vue-router';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -341,8 +341,6 @@ const movementColumns = ref<TableColumnsType<InventoryMovementRow>>([
   {title: '方向', dataIndex: 'direction', align: 'center', width: 80},
   {title: '来源单据类型', dataIndex: 'sourceDocumentType', width: 150, align: 'center'},
   {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 190},
-  {title: '来源单据 ID', dataIndex: 'sourceDocumentId', width: 150},
-  {title: '来源行 ID', dataIndex: 'sourceDocumentItemId', width: 150},
   {title: '数量', dataIndex: 'quantity', width: 120},
   {title: '单位', dataIndex: 'unitSnapshot', width: 90},
   {title: '单位成本', dataIndex: 'unitCost', width: 130},
@@ -484,14 +482,7 @@ function queryActiveTab() {
   }
 }
 
-function onTabChange() {
-  // 没有成本权限时价值页不渲染；权限被收回就回落到流水
-  if (activeTab.value === 'value' && !canViewCost.value) {
-    activeTab.value = 'movement';
-    enterTab(movement);
-    queryActiveTab();
-    return;
-  }
+function enterActiveTab() {
   switch (activeTab.value) {
     case 'movement':
       enterTab(movement);
@@ -508,10 +499,23 @@ function onTabChange() {
     default:
       break;
   }
+}
+
+function onTabChange() {
+  // 没有成本权限时价值页不渲染；权限被收回就回落到流水
+  if (activeTab.value === 'value' && !canViewCost.value) {
+    activeTab.value = 'movement';
+    enterTab(movement);
+    queryActiveTab();
+    return;
+  }
+  enterActiveTab();
   queryActiveTab();
 }
 
 function onSearch() {
+  // 筛选条件变化后从第一页开始，避免停留在旧页码得到空表。
+  enterActiveTab();
   queryActiveTab();
 }
 
@@ -529,15 +533,25 @@ function resetQuery() {
   onSearch();
 }
 
+/** 导出与查询共用同一区间上限，避免用超限区间导出大文件。 */
+function guardExport(): boolean {
+  const overLimit = rangeOverLimitError(dateRange.value);
+  if (overLimit) void message.warning(overLimit);
+  return !overLimit;
+}
+
 function exportMovement() {
+  if (!guardExport()) return;
   void movementExport.run(() => reportInventoryApi.movementExport(exportQuery()));
 }
 
 function exportLoss() {
+  if (!guardExport()) return;
   void lossExport.run(() => reportInventoryApi.lossExport(exportQuery()));
 }
 
 function exportValue() {
+  if (!guardExport()) return;
   void valueExport.run(() => reportInventoryApi.valueExport(exportQuery()));
 }
 

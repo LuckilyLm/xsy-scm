@@ -157,10 +157,12 @@
         <template v-else-if="column.dataIndex === 'action'"><a-button type="link" danger @click="removeTarget(record.id)">移除</a-button></template>
       </template>
     </a-table>
-    <div class="drawer-footer">
-      <a-button @click="addOpen = false">取消</a-button>
-      <a-button type="primary" :loading="addSaving" :disabled="!source || !targets.length" @click="submitAdd">提交核销</a-button>
-    </div>
+    <template #footer>
+      <a-space>
+        <a-button @click="addOpen = false">取消</a-button>
+        <a-button type="primary" :loading="addSaving" :disabled="!source || !targets.length" @click="submitAdd">提交核销</a-button>
+      </a-space>
+    </template>
   </a-drawer>
 
   <a-modal v-model:open="reverseOpen" title="撤销核销" :confirm-loading="reverseSaving" @ok="submitReverse">
@@ -262,7 +264,7 @@ const columns = ref<TableColumnsType<FinanceWriteOff>>([
   {title: '核销目标', dataIndex: 'targetName', width: 190},
   {title: '目标类型', dataIndex: 'targetType', align: 'center', width: 90},
   {title: '目标单号', dataIndex: 'targetNo', width: 175},
-  {title: '核销金额', dataIndex: 'amount', width: 136},
+  {title: '核销金额', dataIndex: 'amount', width: 136, align: 'right'},
   {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
   {title: '原因', dataIndex: 'reason', width: 180},
   {title: '核销时点', dataIndex: 'writtenOffAt', width: 180},
@@ -273,8 +275,8 @@ const targetColumns: TableColumnsType<AllocationDraft> = [
   {title: '目标单号', dataIndex: 'documentNo', width: 210},
   {title: '往来方', dataIndex: 'partyName', width: 170},
   {title: '关联单号', dataIndex: 'linkedDocumentNo', width: 180},
-  {title: '可核销金额', dataIndex: 'availableAmount', width: 150},
-  {title: '本次金额', dataIndex: 'amount', width: 180},
+  {title: '可核销金额', dataIndex: 'availableAmount', width: 150, align: 'right'},
+  {title: '本次金额', dataIndex: 'amount', width: 180, align: 'right'},
   {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ];
 useFinanceMobileActionColumn(
@@ -435,11 +437,5 @@ onMounted(queryData);
 .target-toolbar h3 {
   margin: 0;
   font-weight: 600;
-}
-.drawer-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 20px;
 }
 </style>

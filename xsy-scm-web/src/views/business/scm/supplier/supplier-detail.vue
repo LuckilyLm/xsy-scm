@@ -91,7 +91,12 @@
               </a-tag>
             </template>
           </a-table>
-          <a-empty v-if="!loading && relations.length === 0" description="尚未关联任何商品" />
+          <a-alert v-if="relationsError" type="error" show-icon :message="relationsError" class="smart-margin-bottom10">
+            <template #action>
+              <a-button size="small" @click="loadRelations(supplier.supplierId)">重试</a-button>
+            </template>
+          </a-alert>
+          <a-empty v-else-if="!loading && relations.length === 0" description="尚未关联任何商品" />
         </section>
 
         <!-- 系统信息 -->
@@ -129,7 +134,7 @@ import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {supplierApi} from '/@/api/business/scm/supplier-api';
 import {supplierSkuApi} from '/@/api/business/scm/supplier-sku-api';
-import type {EnableStatus, SupplierDetail, SupplierSkuRow} from '/@/types/business/scm/supplier';
+import type {EnableStatus, ScmId, SupplierDetail, SupplierSkuRow} from '/@/types/business/scm/supplier';
 import {SUPPLIER_SKU_STATUS_ENUM, SUPPLIER_STATUS_ENUM} from '/@/constants/business/scm/supplier-const';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {supplierError} from './supplier-errors';
@@ -142,6 +147,7 @@ const supplier = ref<SupplierDetail>();
 const relations = ref<SupplierSkuRow[]>([]);
 const loading = ref(false);
 const error = ref('');
+const relationsError = ref('');
 
 const statusText = (value: EnableStatus): string => SUPPLIER_STATUS_ENUM[value]?.desc || value;
 const skuStatusText = (value: EnableStatus): string => SUPPLIER_SKU_STATUS_ENUM[value]?.desc || value;
@@ -153,7 +159,7 @@ const specText = (spec: Record<string, string> | undefined): string => {
 const relationColumns: TableColumnsType<SupplierSkuRow> = [
   {title: '商品名称', dataIndex: 'skuNameSnapshot', width: 220},
   {title: '商品规格', dataIndex: 'spec', width: 160},
-  {title: '规格编码', dataIndex: 'skuCodeSnapshot', width: 170},
+  {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 170},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
   {title: '参考价', dataIndex: 'referencePrice', width: 120},
   {title: '采购员', dataIndex: 'purchaserName', width: 110},
@@ -184,16 +190,25 @@ async function load() {
     }
     supplier.value = response.data;
     // 关联商品单独加载，失败不影响主体信息。
-    try {
-      const relationResponse = await supplierSkuApi.listBySupplierId(id, {suppressGlobalErrorMessage: true});
-      if (request === requestId) relations.value = relationResponse.data ?? [];
-    } catch {
-      relations.value = [];
-    }
+    await loadRelations(id, request);
   } catch (e) {
     if (request === requestId) error.value = supplierError(e);
   } finally {
     if (request === requestId) loading.value = false;
+  }
+}
+
+/** 关联商品失败时给出独立错误态，不能伪装成「尚未关联」。 */
+async function loadRelations(id: ScmId, request = requestId) {
+  relationsError.value = '';
+  try {
+    const relationResponse = await supplierSkuApi.listBySupplierId(id, {suppressGlobalErrorMessage: true});
+    if (request === requestId) relations.value = relationResponse.data ?? [];
+  } catch (e) {
+    if (request === requestId) {
+      relations.value = [];
+      relationsError.value = supplierError(e);
+    }
   }
 }
 

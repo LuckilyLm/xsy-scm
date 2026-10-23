@@ -97,7 +97,7 @@ let generation = 0;
 const canUpdate = computed(() => hasPermission('scm:order:update') && hasPermission('scm:pricing:resolve:query'));
 const columns: TableColumnsType<PriceCheckLine> = [
   {title: '商品', dataIndex: 'productName', width: 180},
-  {title: '规格编码', dataIndex: 'skuCode', width: 130},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 130},
   {title: '下单量', dataIndex: 'quantity', width: 100},
   {title: '原草稿价', dataIndex: 'oldPrice', width: 120},
   {title: '当前解析价', dataIndex: 'currentPrice', width: 120},

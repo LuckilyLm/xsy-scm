@@ -392,9 +392,7 @@ function queryActiveTab() {
   }
 }
 
-/** 切标签页：共享筛选不变，目标页页码归 1 后重查。 */
-function onTabChange() {
-  if (advanced.value && activeTab.value === 'order') void loadDynamicFilterFields();
+function enterActiveTab() {
   switch (activeTab.value) {
     case 'product':
       enterTab(product);
@@ -417,10 +415,18 @@ function onTabChange() {
     default:
       break;
   }
+}
+
+/** 切标签页：共享筛选不变，目标页页码归 1 后重查。 */
+function onTabChange() {
+  if (advanced.value && activeTab.value === 'order') void loadDynamicFilterFields();
+  enterActiveTab();
   queryActiveTab();
 }
 
 function onSearch() {
+  // 筛选条件变化后从第一页开始，避免停留在旧页码得到空表。
+  enterActiveTab();
   queryActiveTab();
 }
 
@@ -443,29 +449,43 @@ function resetAllTabsPage() {
   enterTab(customer);
   enterTab(seller);
   enterTab(item);
+  enterTab(order);
+}
+
+/** 导出与查询共用同一区间上限，避免用超限区间导出大文件。 */
+function guardExport(): boolean {
+  const overLimit = rangeOverLimitError(dateRange.value);
+  if (overLimit) void message.warning(overLimit);
+  return !overLimit;
 }
 
 function exportProduct() {
+  if (!guardExport()) return;
   void productExport.run(() => reportSalesApi.productExport(exportQuery()));
 }
 
 function exportCategory() {
+  if (!guardExport()) return;
   void categoryExport.run(() => reportSalesApi.categoryExport(exportQuery()));
 }
 
 function exportCustomer() {
+  if (!guardExport()) return;
   void customerExport.run(() => reportSalesApi.customerExport(exportQuery()));
 }
 
 function exportSeller() {
+  if (!guardExport()) return;
   void sellerExport.run(() => reportSalesApi.sellerExport(exportQuery()));
 }
 
 function exportItem() {
+  if (!guardExport()) return;
   void itemExport.run(() => reportSalesApi.itemExport(exportQuery()));
 }
 
 function exportOrder() {
+  if (!guardExport()) return;
   void orderExport.run(() =>
     reportSalesApi.orderExport({
       ...exportQuery(),

@@ -153,7 +153,7 @@ const columns = ref<TableColumnsType<FinanceReceivable>>([
   {title: '客户', dataIndex: 'customerName', width: 190},
   {title: '订单号', dataIndex: 'orderNo', width: 170},
   {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
-  {title: '金额', dataIndex: 'amount', width: 136},
+  {title: '金额', dataIndex: 'amount', width: 136, align: 'right'},
   {title: '已核销', dataIndex: 'writtenOffAmount', width: 148},
   {title: '超额核销', dataIndex: 'overAppliedAmount', width: 148},
   {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110},

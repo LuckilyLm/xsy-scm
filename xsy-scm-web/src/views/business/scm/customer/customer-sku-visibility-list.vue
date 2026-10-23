@@ -91,7 +91,7 @@
           :row-key="visibilityRowKey"
           :loading="loading"
           :pagination="false"
-          :locale="{emptyText: '这家客户还没有指定可售的商品规格'}"
+          :locale="{emptyText: error ? ' ' : '这家客户还没有指定可售的商品规格'}"
           :scroll="{x: scmColumnsWidth(detailColumns)}"
           size="small"
           bordered
@@ -218,7 +218,7 @@ const columns = ref<VisibilityListColumn[]>([
   {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
   {title: '商品名称', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'specName', width: 150},
-  {title: '规格编码', dataIndex: 'skuCode', width: 135, showFlag: false},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 135, showFlag: false},
   {title: '可见策略', dataIndex: 'visibilityPolicy', width: 125, align: 'center'},
   {title: '商品状态', dataIndex: 'status', width: 190, align: 'center'},
   {title: '加入时间', dataIndex: 'createdAt', width: 170},

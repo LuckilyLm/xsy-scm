@@ -12,7 +12,7 @@
       size="small"
       :data-source="rows"
       :columns="columns"
-      row-key="skuId"
+      :row-key="(row: PurchaseProductRow) => `${row.skuId}-${row.purchaseUnit ?? ''}`"
       bordered
       :loading="loading"
       :pagination="false"
@@ -34,7 +34,13 @@
         :current="pageNum"
         :page-size="pageSize"
         :total="total"
-        @change="(page: number) => emit('update:pageNum', page)"
+        @change="
+          (page: number, size: number) => {
+            emit('update:pageNum', page);
+            emit('update:pageSize', size);
+            emit('change');
+          }
+        "
         @showSizeChange="(_: unknown, size: number) => emit('update:pageSize', size)"
         :show-total="(n: number) => `共${n}条`"
       />

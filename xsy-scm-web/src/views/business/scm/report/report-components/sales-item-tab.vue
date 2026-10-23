@@ -65,6 +65,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        :disabled="exporting"
         show-size-changer
         show-quick-jumper
         :current="pageNum"
@@ -120,11 +121,11 @@ const columns = ref<TableColumnsType<SalesItemRow>>([
   {title: '商品规格', dataIndex: 'specName', width: 130},
   {title: '商品类型', dataIndex: 'productType', width: 100, align: 'center'},
   {title: '销售单位', dataIndex: 'saleUnit', width: 76},
-  {title: '订购数量', dataIndex: 'orderedQuantity', width: 120},
-  {title: '实际数量', dataIndex: 'actualQuantity', width: 120},
-  {title: '锁定成交单价', dataIndex: 'lockedUnitPrice', width: 140},
+  {title: '订购数量', dataIndex: 'orderedQuantity', width: 120, align: 'right'},
+  {title: '实际数量', dataIndex: 'actualQuantity', width: 120, align: 'right'},
+  {title: '锁定成交单价', dataIndex: 'lockedUnitPrice', width: 140, align: 'right'},
   {title: '价格来源', dataIndex: 'lockedPriceSource', width: 130},
-  {title: '结算金额', dataIndex: 'settlementLineAmount', width: 140},
+  {title: '结算金额', dataIndex: 'settlementLineAmount', width: 140, align: 'right'},
   {title: '是否手工改价', dataIndex: 'manualPriceOverride', width: 120},
   {title: '手工改价原因', dataIndex: 'manualPriceReason', width: 200},
 ]);

@@ -12,6 +12,7 @@
     :options="areaOptionData"
     :placeholder="placeholder"
     :size="size"
+    :disabled="disabled"
     @change="handleChange"
   />
 </template>
@@ -19,7 +20,7 @@
 <script setup lang="ts">
 import {PROVINCE_CITY_DISTRICT} from './province-city-district';
 import {PROVINCE_CITY} from './province-city';
-import {ref, toRaw, watch} from 'vue';
+import {computed, ref, toRaw, watch} from 'vue';
 
 // ============ 组件属性 ============
 
@@ -49,7 +50,7 @@ const props = defineProps({
 const emit = defineEmits(['update:value', 'change']);
 
 // ============ 组件业务 ============
-const areaOptionData = props.type === TYPE_PROVINCE_CITY_DISTRICT ? PROVINCE_CITY_DISTRICT : PROVINCE_CITY;
+const areaOptionData = computed(() => (props.type === TYPE_PROVINCE_CITY_DISTRICT ? PROVINCE_CITY_DISTRICT : PROVINCE_CITY));
 
 type AreaValue = string | number;
 interface AreaOption {

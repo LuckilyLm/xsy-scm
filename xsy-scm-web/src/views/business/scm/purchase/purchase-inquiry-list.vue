@@ -184,7 +184,7 @@ const quoteRemark = ref('');
 const columns: TableColumnsType<PurchaseInquiry> = [
   {title: '询价编号', dataIndex: 'id', width: 115},
   {title: '商品', dataIndex: 'productNameSnapshot', width: 210},
-  {title: '规格编码', dataIndex: 'skuCodeSnapshot', width: 165},
+  {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 165},
   {title: '需求量', dataIndex: 'requiredQuantity', width: 150},
   {title: '截止时间', dataIndex: 'deadlineAt', width: 180},
   {title: '状态', dataIndex: 'status', align: 'center', width: 96},
@@ -193,7 +193,7 @@ const columns: TableColumnsType<PurchaseInquiry> = [
 const quoteColumns: TableColumnsType<PurchaseInquiryQuote> = [
   {title: '供应商', dataIndex: 'supplierNameSnapshot', width: 185},
   {title: '版本', dataIndex: 'revision', width: 85},
-  {title: '单价', dataIndex: 'unitPrice', width: 148},
+  {title: '单价', dataIndex: 'unitPrice', width: 148, align: 'right'},
   {title: '有效期', dataIndex: 'validUntil', width: 180},
   {title: '登记人', dataIndex: 'recordedBy', width: 130},
   {title: '备注', dataIndex: 'remark', width: 155},
@@ -203,7 +203,7 @@ const quoteColumns: TableColumnsType<PurchaseInquiryQuote> = [
 const historyColumns: TableColumnsType<PurchaseInquiryQuote> = [
   {title: '供应商', dataIndex: 'supplierNameSnapshot', width: 180},
   {title: '版本', dataIndex: 'revision', width: 80},
-  {title: '单价', dataIndex: 'unitPrice', width: 130},
+  {title: '单价', dataIndex: 'unitPrice', width: 130, align: 'right'},
   {title: '单位', dataIndex: 'purchaseUnit', width: 76},
   {title: '有效期', dataIndex: 'validUntil', width: 180},
   {title: '登记人', dataIndex: 'recordedBy', width: 120},
@@ -230,7 +230,11 @@ async function loadBatch(page = 1): Promise<void> {
   loading.value = true;
   error.value = '';
   try {
-    const [rows, options] = await Promise.all([purchaseInquiryApi.byBatch(id, page), purchaseInquiryApi.candidates(id)]);
+    const requestOptions = {suppressGlobalErrorMessage: true};
+    const [rows, options] = await Promise.all([
+      purchaseInquiryApi.byBatch(id, page, requestOptions),
+      purchaseInquiryApi.candidates(id, requestOptions),
+    ]);
     loadedBatch.value = id;
     inquiries.value = rows.data.records;
     total.value = rows.data.total;
@@ -263,7 +267,7 @@ async function loadMoreHistory(): Promise<void> {
   const id = detail.value.inquiry.id;
   historyLoading.value = true;
   try {
-    const page = (await purchaseInquiryApi.history(id, quoteHistoryBefore.value)).data;
+    const page = (await purchaseInquiryApi.history(id, quoteHistoryBefore.value, {suppressGlobalErrorMessage: true})).data;
     if (String(detail.value?.inquiry.id) !== String(id)) return;
     quoteHistory.value = [...quoteHistory.value, ...page.records];
     quoteHistoryMore.value = page.hasMore;
@@ -282,12 +286,15 @@ async function createInquiry(): Promise<void> {
   }
   busy.value = true;
   try {
-    const created = await purchaseInquiryApi.create({
-      batchId: loadedBatch.value,
-      skuId: candidate.skuId,
-      demandUnit: candidate.demandUnit,
-      deadlineAt: deadlineAt.value,
-    });
+    const created = await purchaseInquiryApi.create(
+      {
+        batchId: loadedBatch.value,
+        skuId: candidate.skuId,
+        demandUnit: candidate.demandUnit,
+        deadlineAt: deadlineAt.value,
+      },
+      {suppressGlobalErrorMessage: true}
+    );
     void message.success('询价已建立');
     await loadBatch();
     await openDetail(created.data.inquiry.id);
@@ -301,7 +308,7 @@ async function openDetail(id: ScmId): Promise<void> {
   detailOpen.value = true;
   detailLoading.value = true;
   try {
-    applyDetail((await purchaseInquiryApi.detail(id)).data);
+    applyDetail((await purchaseInquiryApi.detail(id, {suppressGlobalErrorMessage: true})).data);
   } catch (cause) {
     void message.error(String((cause as Error)?.message || '读取报价失败'));
   } finally {
@@ -324,14 +331,17 @@ async function submitQuote(): Promise<void> {
   try {
     applyDetail(
       (
-        await purchaseInquiryApi.quote({
-          inquiryId: detail.value.inquiry.id,
-          version: detail.value.inquiry.version,
-          supplierId: quoteSupplierId.value,
-          unitPrice: quotePrice.value,
-          validUntil: quoteValidUntil.value,
-          remark: quoteRemark.value.trim() || undefined,
-        })
+        await purchaseInquiryApi.quote(
+          {
+            inquiryId: detail.value.inquiry.id,
+            version: detail.value.inquiry.version,
+            supplierId: quoteSupplierId.value,
+            unitPrice: quotePrice.value,
+            validUntil: quoteValidUntil.value,
+            remark: quoteRemark.value.trim() || undefined,
+          },
+          {suppressGlobalErrorMessage: true}
+        )
       ).data
     );
     quoteOpen.value = false;
@@ -357,11 +367,14 @@ function confirmQuote(quote: PurchaseInquiryQuote): void {
       try {
         applyDetail(
           (
-            await purchaseInquiryApi.accept({
-              inquiryId: current.id,
-              quoteId: quote.id,
-              version: current.version,
-            })
+            await purchaseInquiryApi.accept(
+              {
+                inquiryId: current.id,
+                quoteId: quote.id,
+                version: current.version,
+              },
+              {suppressGlobalErrorMessage: true}
+            )
           ).data
         );
         void message.success('报价已确认');

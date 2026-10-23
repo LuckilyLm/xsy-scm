@@ -1,5 +1,5 @@
 <template>
-  <a-modal :open="open" title="采购单二维码分享" :footer="null" width="520px" @cancel="close">
+  <a-modal :open="open" title="采购单二维码分享" :footer="null" width="640px" @cancel="close">
     <div class="share">
       <div class="share__head">
         <span class="share__order">{{ orderNo || '—' }}</span>
@@ -19,13 +19,21 @@
         </div>
       </div>
 
-      <a-table v-if="rows.length" :data-source="rows" :columns="columns" :pagination="false" row-key="id" size="small">
+      <a-table v-if="rows.length" :data-source="rows" :columns="columns" :pagination="false" row-key="id" size="small" bordered :scroll="{x: 560}">
         <template #bodyCell="{column, record}">
           <template v-if="column.dataIndex === 'status'">
             <a-tag :color="record.revokedAt ? 'default' : 'green'">{{ record.revokedAt ? '已撤销' : '有效' }}</a-tag>
           </template>
           <template v-else-if="column.dataIndex === 'action'">
-            <a-button v-if="!record.revokedAt" type="link" size="small" danger v-privilege="'scm:purchase:share:revoke'" @click="revoke(record)"
+            <a-button
+              v-if="!record.revokedAt"
+              type="link"
+              size="small"
+              danger
+              v-privilege="'scm:purchase:share:revoke'"
+              :loading="revokingId === record.id"
+              :disabled="revokingId != null"
+              @click="revoke(record)"
               >撤销</a-button
             >
           </template>
@@ -39,7 +47,7 @@
 import {reactive, ref} from 'vue';
 import QRCode from 'qrcode';
 import {purchaseShareApi, type PurchaseShare} from '/@/api/business/scm/purchase-share-api';
-import {message} from 'ant-design-vue';
+import {message, Modal} from 'ant-design-vue';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';
 
 const VALID_DAY_OPTIONS = [
@@ -58,6 +66,7 @@ const columns = [
 
 const open = ref(false);
 const creating = ref(false);
+const revokingId = ref<Id>();
 const error = ref('');
 const validDays = ref(7);
 const orderId = ref<Id>();
@@ -123,13 +132,31 @@ async function create() {
 }
 
 async function revoke(record: PurchaseShare) {
-  await purchaseShareApi.revoke(record.id);
-  message.success('已撤销');
-  if (currentUrl.value) {
-    currentUrl.value = '';
-    qrDataUrl.value = '';
+  try {
+    await Modal.confirm({
+      title: '撤销分享链接',
+      content: '撤销后该二维码立即失效，已打印或转发出去的二维码将无法打开采购单。',
+      okText: '确认撤销',
+      okType: 'danger',
+      cancelText: '取消',
+    });
+  } catch {
+    return;
   }
-  await load();
+  revokingId.value = record.id;
+  try {
+    await purchaseShareApi.revoke(record.id);
+    message.success('已撤销');
+    if (currentUrl.value) {
+      currentUrl.value = '';
+      qrDataUrl.value = '';
+    }
+    await load();
+  } catch {
+    // 失败由全局提示；保留列表原状态
+  } finally {
+    revokingId.value = undefined;
+  }
 }
 
 /** 分享页是哈希路由，必须带上前端自身的 origin 与部署路径。 */

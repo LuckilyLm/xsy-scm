@@ -228,15 +228,18 @@ const pool = ref<UnboundImage[]>([]),
   poolError = ref(''),
   poolDragKey = ref('');
 
+let poolRequestId = 0;
 async function loadPool() {
+  const current = ++poolRequestId;
   poolLoading.value = true;
   poolError.value = '';
   try {
-    pool.value = (await productImageApi.unboundImages(300)).data;
+    const response = await productImageApi.unboundImages(300);
+    if (current === poolRequestId) pool.value = response.data;
   } catch (e) {
-    poolError.value = productError(e);
+    if (current === poolRequestId) poolError.value = productError(e);
   } finally {
-    poolLoading.value = false;
+    if (current === poolRequestId) poolLoading.value = false;
   }
 }
 
@@ -269,7 +272,9 @@ onMounted(() => {
   loadPool();
 });
 
+let searchRequestId = 0;
 async function search() {
+  const current = ++searchRequestId;
   pickLoading.value = true;
   pickError.value = '';
   try {
@@ -279,11 +284,11 @@ async function search() {
       keyword: keyword.value || undefined,
       hasPrimaryImage: onlyNoPrimary.value ? false : undefined,
     });
-    products.value = response.data.list;
+    if (current === searchRequestId) products.value = response.data.list;
   } catch (e) {
-    pickError.value = productError(e);
+    if (current === searchRequestId) pickError.value = productError(e);
   } finally {
-    pickLoading.value = false;
+    if (current === searchRequestId) pickLoading.value = false;
   }
 }
 
@@ -295,16 +300,21 @@ function resetPick() {
   search();
 }
 
+let selectRequestId = 0;
 async function select(spuId: ProductId) {
+  const current = ++selectRequestId;
   imageLoading.value = true;
   imageError.value = '';
   try {
-    view.value = (await productImageApi.query(spuId)).data;
+    const response = await productImageApi.query(spuId);
+    if (current === selectRequestId) view.value = response.data;
   } catch (e) {
-    imageError.value = productError(e);
-    view.value = null;
+    if (current === selectRequestId) {
+      imageError.value = productError(e);
+      view.value = null;
+    }
   } finally {
-    imageLoading.value = false;
+    if (current === selectRequestId) imageLoading.value = false;
   }
 }
 
@@ -338,11 +348,12 @@ const uploadIntoSelected: UploadProps['beforeUpload'] = async (selected) => {
   if (!view.value || !canWrite.value) return false;
   uploading.value = true;
   const isFirst = view.value.images.length === 0;
+  const sortOrder = view.value.images.length;
   const targetSpuId = view.value.spuId;
   try {
     const uploaded = await uploadFile(selected as File);
     await productImageApi.batchBind({
-      items: [{spuId: targetSpuId, fileKey: uploaded.fileKey, primaryFlag: isFirst, sortOrder: view.value!.images.length}],
+      items: [{spuId: targetSpuId, fileKey: uploaded.fileKey, primaryFlag: isFirst, sortOrder}],
     });
     await select(targetSpuId);
     message.success('图片已上传并添加到商品');

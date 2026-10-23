@@ -334,7 +334,7 @@ const columns = ref<TraceUnitColumn[]>([
   {title: '批次号', dataIndex: 'lotNo', width: 190, ellipsis: true},
   {title: '来源生产批号', dataIndex: 'sourceLotNo', width: 160, ellipsis: true},
   {title: '包装类型', dataIndex: 'packageType', width: 100, align: 'center'},
-  {title: '数量', dataIndex: 'quantity', width: 110},
+  {title: '数量', dataIndex: 'quantity', width: 110, align: 'right'},
   {title: '单位', dataIndex: 'unit', width: 80},
   {title: '状态', dataIndex: 'status', width: 90, align: 'center'},
   {title: '创建时间', dataIndex: 'createdAt', width: 170},
@@ -383,7 +383,7 @@ const replay = ref<TraceUnitReplay>();
 const outboundColumns: TableColumnsType = [
   {title: '出库单号', dataIndex: 'outboundNo', width: 190},
   {title: '发生时间', dataIndex: 'occurredAt', width: 170},
-  {title: '数量', dataIndex: 'quantity', width: 110},
+  {title: '数量', dataIndex: 'quantity', width: 110, align: 'right'},
 ];
 
 async function queryData() {

@@ -237,7 +237,7 @@ const columns = ref<TableColumnsType<InventoryTransfer>>([
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
-  {title: '调拨数量', dataIndex: 'quantity', width: 160},
+  {title: '调拨数量', dataIndex: 'quantity', width: 160, align: 'right'},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
@@ -566,7 +566,7 @@ const inTransitColumns: TableColumnsType = [
   {title: '调拨方向', dataIndex: 'direction', width: 240, align: 'center'},
   {title: '商品规格', dataIndex: 'sku', width: 200},
   {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
-  {title: '在途数量', dataIndex: 'quantity', width: 120},
+  {title: '在途数量', dataIndex: 'quantity', width: 120, align: 'right'},
   {title: '单位', dataIndex: 'unit', width: 76},
 ];
 

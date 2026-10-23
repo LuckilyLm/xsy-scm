@@ -36,11 +36,15 @@
       :scroll="{x: scmColumnsWidth(columns)}"
     >
       <template #bodyCell="{record, column, text}">
-        <template v-if="column.dataIndex === 'status'">{{ SCM_ORDER_REFUND_STATUS_ENUM[text]?.desc }}</template>
-        <template v-else-if="['approvedAmount', 'refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
+        <template v-if="column.dataIndex === 'status'">
+          <ScmStatusTag :tone="record.status === 'COMPLETED' ? 'success' : 'warning'" :label="SCM_ORDER_REFUND_STATUS_ENUM[text]?.desc" />
+        </template>
+        <template v-else-if="['approvedAmount', 'refundAmount'].includes(column.dataIndex)">
+          <span class="scm-money">{{ amount(text) }}</span>
+        </template>
         <template v-else-if="column.dataIndex === 'balanceReturnedAmount'">
           <template v-if="record.balanceMovementId">
-            {{ amount(record.balanceReturnedAmount) }}
+            <span class="scm-money">{{ amount(record.balanceReturnedAmount) }}</span>
             <a-button type="link" v-privilege="'scm:balance:movement:query'" @click="movementDetail?.open({movementId: record.balanceMovementId})"
               >流水</a-button
             >
@@ -114,6 +118,7 @@ import {orderRefundApi as api} from '/@/api/business/scm/order-refund-api';
 import {SCM_ORDER_REFUND_STATUS_ENUM} from '/@/constants/business/scm/order-const';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import type {RefundRow, Query} from './order-types';
 import {amount} from './order-form-model';
 import {orderError} from './order-errors';
@@ -155,8 +160,9 @@ const columns = ref<TableColumnsType<RefundRow>>([
     title: '退款金额',
     dataIndex: 'refundAmount',
     width: 140,
+    align: 'right',
   },
-  {title: '已返还钱包', dataIndex: 'balanceReturnedAmount', width: 200},
+  {title: '已返还钱包', dataIndex: 'balanceReturnedAmount', width: 200, align: 'right'},
   {
     title: '外部凭证',
     dataIndex: 'externalReference',

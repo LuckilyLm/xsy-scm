@@ -93,7 +93,7 @@ const columns = computed<TableColumnsType<FinanceCandidate>>(() => [
   {title: '单据编号', dataIndex: 'documentNo', width: 220},
   {title: props.kind === 'RECEIPT' || props.kind === 'RECEIVABLE' ? '客户' : '往来方', dataIndex: 'partyName', width: 180},
   {title: props.kind === 'RECEIVABLE' || props.kind === 'PAYABLE' ? '关联单号' : '方向', dataIndex: 'linkedDocumentNo', width: 180},
-  {title: '可核销金额', dataIndex: 'availableAmount', width: 160},
+  {title: '可核销金额', dataIndex: 'availableAmount', width: 160, align: 'right'},
   {title: '选择', dataIndex: 'select', width: 90},
 ]);
 

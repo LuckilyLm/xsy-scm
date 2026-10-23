@@ -85,13 +85,13 @@ export interface ReceivedCorrectionCandidate {
 
 export const orderApi = {
   unassignedPool: (data: OrderPoolQuery, options?: RequestOptions) => postRequest<ScmPage<OrderPoolRow>>('/scm/order/pool/query', data, options),
-  poolAssignees: () => getRequest<OrderPoolAssignee[]>('/scm/order/pool/assignees', {}),
+  poolAssignees: (options?: RequestOptions) => getRequest<OrderPoolAssignee[]>('/scm/order/pool/assignees', {}, options),
   claimPoolOrder: (data: {orderId: Id; version: number}) => orderCommand<OrderPoolRow>('/scm/order/pool/claim', data),
   assignPoolOrder: (data: {orderId: Id; version: number; sellerId: number}) => orderCommand<OrderPoolRow>('/scm/order/pool/assign', data),
   query: (data: Query, options?: RequestOptions) => postRequest<ScmPage<Order>>('/scm/order/query', data, options),
   detail: (id: Id, options?: RequestOptions) => getRequest<Order>('/scm/order/detail/' + id, {}, options),
   create: (data: Order) => orderCommand<Order>('/scm/order/create', data),
-  exchangeReplacement: (returnId: Id) => getRequest<Id | null>('/scm/order/exchange/replacement/' + returnId, {}),
+  exchangeReplacement: (returnId: Id, options?: RequestOptions) => getRequest<Id | null>('/scm/order/exchange/replacement/' + returnId, {}, options),
   createExchange: (returnId: Id, order: Order) => orderCommand<Order>('/scm/order/exchange/create', {returnId, order}),
   receivedCorrections: (orderId: Id, options?: RequestOptions) =>
     getRequest<ReceivedCorrection[]>('/scm/order/received-correction/list/' + orderId, {}, options),

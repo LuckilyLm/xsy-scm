@@ -212,8 +212,8 @@ const relationText = computed(() => {
 const receivableColumns: TableColumnsType<FinanceReceivableItem> = [
   {title: '出库来源', dataIndex: 'sourceId', width: 120},
   {title: '商品', dataIndex: 'skuName', width: 200},
-  {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text)},
-  {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text)},
+  {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text), align: 'right'},
+  {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text), align: 'right'},
   // 毛额 − 优惠 = 净额
   {title: '毛额', dataIndex: 'grossAmount', width: 148, customRender: ({text}) => moneyText(text)},
   {title: '订单优惠', dataIndex: 'discountAmount', width: 148, customRender: ({text}) => moneyText(text)},
@@ -222,9 +222,9 @@ const receivableColumns: TableColumnsType<FinanceReceivableItem> = [
 const payableColumns: TableColumnsType<FinancePayableItem> = [
   {title: '收货来源', dataIndex: 'sourceId', width: 120},
   {title: '商品', dataIndex: 'skuName', width: 200},
-  {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text)},
-  {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text)},
-  {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
+  {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text), align: 'right'},
+  {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text), align: 'right'},
+  {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text), align: 'right'},
 ];
 const redColumns: TableColumnsType<FinanceReceivable | FinancePayable> = [
   {
@@ -232,7 +232,7 @@ const redColumns: TableColumnsType<FinanceReceivable | FinancePayable> = [
     dataIndex: 'receivableNo',
     customRender: ({record}) => ('receivableNo' in record ? record.receivableNo : record.payableNo),
   },
-  {title: '金额', dataIndex: 'amount', customRender: ({text}) => moneyText(text)},
+  {title: '金额', dataIndex: 'amount', customRender: ({text}) => moneyText(text), align: 'right'},
   {title: '原因', dataIndex: 'reason'},
   {title: '业务时点', dataIndex: 'eventAt', customRender: ({text}) => dateTimeText(text)},
 ];
@@ -245,7 +245,7 @@ const writeOffColumns: TableColumnsType<FinanceWriteOff> = [
   {title: '资金单', dataIndex: 'sourceNo', width: 180},
   {title: '目标单', dataIndex: 'targetNo', width: 180},
   {title: '方向', dataIndex: 'entryType', width: 90, customRender: ({text}) => entryTypeText(text), align: 'center'},
-  {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
+  {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text), align: 'right'},
   {title: '原因', dataIndex: 'reason', width: 240},
 ];
 const logColumns: TableColumnsType<FinanceOperationLog> = [

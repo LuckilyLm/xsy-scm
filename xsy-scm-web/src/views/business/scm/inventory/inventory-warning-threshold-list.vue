@@ -147,7 +147,7 @@ const columns = ref<TableColumnsType<InventoryWarningThreshold>>([
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 120},
   {title: '商品', dataIndex: 'productName', width: 160, ellipsis: true},
   {title: '商品规格', dataIndex: 'skuName', width: 170, ellipsis: true},
-  {title: '规格编码', dataIndex: 'skuCode', width: 135},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 135},
   {title: '预警下限', dataIndex: 'warnMin', width: 120},
   {title: '预警上限', dataIndex: 'warnMax', width: 120},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},

@@ -25,7 +25,7 @@
       size="small"
       :data-source="rows"
       :columns="columns"
-      row-key="skuId"
+      :row-key="(row: SalesProductRow) => `${row.skuId}-${row.saleUnit ?? ''}`"
       bordered
       :loading="loading"
       :pagination="false"
@@ -59,6 +59,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        :disabled="exporting"
         show-size-changer
         show-quick-jumper
         :current="pageNum"
@@ -108,12 +109,12 @@ const columns = ref<TableColumnsType<SalesProductRow>>([
   {title: '销售单位', dataIndex: 'saleUnit', width: 76},
   {title: '订单笔数', dataIndex: 'orderCount', width: 92},
   {title: '客户数', dataIndex: 'customerCount', width: 92},
-  {title: '确认数量', dataIndex: 'confirmedQuantity', width: 130},
+  {title: '确认数量', dataIndex: 'confirmedQuantity', width: 130, align: 'right'},
   {title: '成交均价', dataIndex: 'avgTransactionPrice', width: 130},
-  {title: '确认订单金额', dataIndex: 'settlementAmount', width: 148},
-  {title: '金额占比', dataIndex: 'salesAmountSharePercent', width: 108},
-  {title: '累计金额占比', dataIndex: 'cumulativeSalesAmountSharePercent', width: 108},
-  {title: '金额排名', dataIndex: 'amountRank', width: 110},
+  {title: '确认订单金额', dataIndex: 'settlementAmount', width: 148, align: 'right'},
+  {title: '金额占比', dataIndex: 'salesAmountSharePercent', width: 108, align: 'right'},
+  {title: '累计金额占比', dataIndex: 'cumulativeSalesAmountSharePercent', width: 108, align: 'right'},
+  {title: '金额排名', dataIndex: 'amountRank', width: 110, align: 'right'},
 ]);
 
 function percentText(value: string | null | undefined): string {

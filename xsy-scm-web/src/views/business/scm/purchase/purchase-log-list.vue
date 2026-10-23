@@ -43,9 +43,6 @@
         <template v-if="column.dataIndex === 'operationType'">
           {{ SCM_PURCHASE_OPERATION_ENUM[record.operationType]?.desc || record.operationType }}
         </template>
-        <template v-else-if="column.dataIndex === 'purchaseReceiptId'">
-          {{ record.purchaseReceiptId ?? '—' }}
-        </template>
         <template v-else-if="column.dataIndex === 'reason'">{{ record.reason || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate scm-table-actions">
@@ -93,12 +90,11 @@ const visible = ref(false);
 const active = ref<LogRow>();
 let requestId = 0;
 
-/** 日志已按采购单筛选，不再显示采购单 ID；保留关联收货单。 */
+/** 日志已按采购单筛选；内部收货单 ID 对用户无意义，不展示。 */
 const columns = ref<TableColumnsType<LogRow>>([
   {title: '时间', dataIndex: 'createdAt', width: 200, customRender: ({text}) => datetime(text)},
   {title: '操作', dataIndex: 'operationType', align: 'center', width: 150},
   {title: '操作人', dataIndex: 'operator', width: 130},
-  {title: '关联收货单（内部编号）', dataIndex: 'purchaseReceiptId', width: 200},
   {title: '原因', dataIndex: 'reason', width: 200},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 120},
 ]);

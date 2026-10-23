@@ -1,4 +1,4 @@
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {Id} from '/@/views/business/scm/order/order-types';
 export type OrderTagColor = 'BLUE' | 'GREEN' | 'ORANGE' | 'RED' | 'PURPLE' | 'GRAY';
 export interface OrderTag {
@@ -9,9 +9,10 @@ export interface OrderTag {
 }
 export type OrderTagAction = 'ADD' | 'REMOVE';
 export const orderTagApi = {
-  list: () => getRequest<OrderTag[]>('/scm/order/tags', {}),
-  create: (name: string, color: OrderTagColor) => postRequest<Id>('/scm/order/tags/create', {name, color}),
-  apply: (tagId: Id, orderIds: Id[], action: OrderTagAction) => postRequest<string>('/scm/order/tags/apply', {tagId, orderIds, action}),
+  list: (options?: RequestOptions) => getRequest<OrderTag[]>('/scm/order/tags', {}, options),
+  create: (name: string, color: OrderTagColor, options?: RequestOptions) => postRequest<Id>('/scm/order/tags/create', {name, color}, options),
+  apply: (tagId: Id, orderIds: Id[], action: OrderTagAction, options?: RequestOptions) =>
+    postRequest<string>('/scm/order/tags/apply', {tagId, orderIds, action}, options),
 };
 export const tagColor = (color: OrderTagColor): string =>
   ({

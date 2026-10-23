@@ -174,10 +174,12 @@
         </template>
       </a-table>
     </a-spin>
-    <div class="drawer-footer">
-      <a-button :disabled="redSaving" @click="redOpen = false">取消</a-button>
-      <a-button type="primary" :loading="redSaving" :disabled="redLoading || !redDrafts.length" @click="submitRed">提交红字</a-button>
-    </div>
+    <template #footer>
+      <a-space>
+        <a-button :disabled="redSaving" @click="redOpen = false">取消</a-button>
+        <a-button type="primary" :loading="redSaving" :disabled="redLoading || !redDrafts.length" @click="submitRed">提交红字</a-button>
+      </a-space>
+    </template>
   </a-drawer>
 </template>
 
@@ -266,7 +268,7 @@ const columns = ref<TableColumnsType<FinancePayable>>([
   {title: '供应商', dataIndex: 'supplierName', width: 190},
   {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 170},
   {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
-  {title: '金额', dataIndex: 'amount', width: 136},
+  {title: '金额', dataIndex: 'amount', width: 136, align: 'right'},
   {title: '已核销', dataIndex: 'writtenOffAmount', width: 148},
   {title: '超额核销', dataIndex: 'overAppliedAmount', width: 148},
   {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110},
@@ -276,10 +278,10 @@ const columns = ref<TableColumnsType<FinancePayable>>([
 const redDraftColumns: TableColumnsType<RedDraft> = [
   {title: '商品', dataIndex: 'skuName', width: 190},
   {title: '单位', dataIndex: 'unit', width: 76},
-  {title: '原数量', dataIndex: 'quantity', width: 130, customRender: ({text}) => text},
-  {title: '红字数量', dataIndex: 'redQuantity', width: 120},
-  {title: '红字单价', dataIndex: 'redUnitPrice', width: 136},
-  {title: '红字金额', dataIndex: 'redAmount', width: 148},
+  {title: '原数量', dataIndex: 'quantity', width: 130, customRender: ({text}) => text, align: 'right'},
+  {title: '红字数量', dataIndex: 'redQuantity', width: 120, align: 'right'},
+  {title: '红字单价', dataIndex: 'redUnitPrice', width: 136, align: 'right'},
+  {title: '红字金额', dataIndex: 'redAmount', width: 148, align: 'right'},
 ];
 useFinanceMobileActionColumn(
   (compact) => {
@@ -394,12 +396,6 @@ onMounted(queryData);
 }
 .red-source {
   margin: 16px 0;
-}
-.drawer-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 20px;
 }
 .red-amount-value {
   font-variant-numeric: tabular-nums;

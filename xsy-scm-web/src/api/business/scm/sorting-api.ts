@@ -60,7 +60,7 @@ async function command<T>(path: string, data: unknown): Promise<ScmResponse<T>> 
 export const sortingApi = {
   standardPreview: (id: Id) => call<SortingStandardPreview>('get', `/tasks/${id}/standard-preview`),
   confirmStandard: (id: Id, payload: SortingStandardPayload) => command<SortingStandardResult>(`/tasks/${id}/standard-confirm`, payload),
-  tasks: (query: SortingTaskQuery) => call<ScmPage<SortingTask>>('get', '/tasks', query),
+  tasks: (query: SortingTaskQuery, options?: RequestOptions) => call<ScmPage<SortingTask>>('get', '/tasks', query, options),
   detail: (id: Id) => call<SortingTaskDetail>('get', `/tasks/${id}`),
   partRecords: (taskId: Id, itemId: Id, beforeId?: Id) =>
     call<SortingPartHistory>('get', `/tasks/${taskId}/items/${itemId}/parts`, {limit: 50, ...(beforeId == null ? {} : {beforeId})}),

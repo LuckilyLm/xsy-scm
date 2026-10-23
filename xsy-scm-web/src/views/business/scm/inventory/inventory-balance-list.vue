@@ -117,14 +117,14 @@ const columns = ref<InventoryBalanceColumn[]>([
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 200, ellipsis: true},
   {title: '商品规格', dataIndex: 'skuName', width: 180, ellipsis: true},
-  {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '单位', dataIndex: 'unit', width: 80},
   {title: '库存', dataIndex: 'quantity', width: 110},
   {title: '预留', dataIndex: 'reservedQuantity', width: 100},
   {title: '可用', dataIndex: 'availableQuantity', width: 100},
   // 均价由后端计算，金额 = 库存 × 均价。
-  {title: '平均成本', dataIndex: 'avgCost', width: 130},
-  {title: '库存金额', dataIndex: 'amount', width: 140},
+  {title: '平均成本', dataIndex: 'avgCost', width: 130, align: 'right'},
+  {title: '库存金额', dataIndex: 'amount', width: 140, align: 'right'},
 ]);
 // 宽屏剩余宽度补给文本列；用户改过列宽则原样渲染。
 const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);

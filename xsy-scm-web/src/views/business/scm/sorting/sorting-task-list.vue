@@ -371,13 +371,16 @@ async function queryData() {
   loading.value = true;
   listError.value = '';
   try {
-    const result = await sortingApi.tasks({
-      ...queryForm,
-      assigneeEmployeeId: assigneeFilter.value,
-      // 送货时间按任务保存的时间过滤，半开区间 [from, to)
-      deliveryTimeFrom: deliveryRange.value?.[0],
-      deliveryTimeTo: deliveryRange.value?.[1],
-    });
+    const result = await sortingApi.tasks(
+      {
+        ...queryForm,
+        assigneeEmployeeId: assigneeFilter.value,
+        // 送货时间按任务保存的时间过滤，半开区间 [from, to)
+        deliveryTimeFrom: deliveryRange.value?.[0],
+        deliveryTimeTo: deliveryRange.value?.[1],
+      },
+      {suppressGlobalErrorMessage: true}
+    );
     if (current === listGeneration) {
       rows.value = result.data.list;
       total.value = result.data.total;
@@ -530,6 +533,8 @@ function loadCandidatesPage(pageNum: number, pageSize: number) {
 
 function searchCandidates() {
   candidateQuery.pageNum = 1;
+  // 筛选条件变化后，已隐藏的旧行不能继续计入创建数量。
+  candidateSelected.value = [];
   loadCandidates();
 }
 

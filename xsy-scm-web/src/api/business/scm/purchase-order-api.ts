@@ -17,7 +17,7 @@ import type {
 /** 幂等命令：失败保留原 UUID 供重试，成功或载荷变化后换新键。需求 / 收货 API 从这里复用。 */
 const keys = new Map<string, string>();
 
-export async function purchaseCommand<T>(path: string, data: unknown): Promise<ScmResponse<T>> {
+export async function purchaseCommand<T>(path: string, data: unknown, options?: RequestOptions): Promise<ScmResponse<T>> {
   const signature = path + JSON.stringify(data);
   let key = keys.get(signature);
   if (!key) {
@@ -29,6 +29,7 @@ export async function purchaseCommand<T>(path: string, data: unknown): Promise<S
     method: 'post',
     data,
     headers: {'Idempotency-Key': key},
+    ...options,
   });
   keys.delete(signature);
   return result;

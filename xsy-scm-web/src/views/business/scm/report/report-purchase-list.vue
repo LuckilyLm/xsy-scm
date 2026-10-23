@@ -537,6 +537,8 @@ function enterTabByActiveTab() {
 }
 
 function onSearch() {
+  // 筛选条件变化后从第一页开始，避免停留在旧页码得到空表。
+  enterTabByActiveTab();
   queryActiveTab();
 }
 
@@ -577,7 +579,15 @@ function openPurchaserDrilldown(row: PurchasePurchaserRow) {
   void loadDrilldown();
 }
 
+/** 导出与查询共用同一区间上限，避免用超限区间导出大文件。 */
+function guardExport(): boolean {
+  const overLimit = rangeOverLimitError(dateRange.value);
+  if (overLimit) void message.warning(overLimit);
+  return !overLimit;
+}
+
 function exportProduct() {
+  if (!guardExport()) return;
   void productExport.run(() =>
     reportPurchaseApi.productExport({
       ...exportQuery(),
@@ -587,22 +597,27 @@ function exportProduct() {
 }
 
 function exportSupplier() {
+  if (!guardExport()) return;
   void supplierExport.run(() => reportPurchaseApi.supplierExport(exportQuery()));
 }
 
 function exportItem() {
+  if (!guardExport()) return;
   void itemExport.run(() => reportPurchaseApi.itemExport(exportQuery()));
 }
 
 function exportOverview() {
+  if (!guardExport()) return;
   void overviewExport.run(() => reportPurchaseApi.overviewExport(exportQuery()));
 }
 
 function exportPurchaser() {
+  if (!guardExport()) return;
   void purchaserExport.run(() => reportPurchaseApi.purchaserExport(exportQuery()));
 }
 
 function exportPriceTrend() {
+  if (!guardExport()) return;
   void priceTrendExport.run(() => reportPurchaseApi.priceTrendExport(exportQuery()));
 }
 

@@ -1,4 +1,4 @@
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmId} from '/@/types/business/scm/customer';
 import {purchaseCommand} from '/@/api/business/scm/purchase-order-api';
 export interface InquiryCandidate {
@@ -59,13 +59,17 @@ export interface PurchaseInquiryDetail {
 }
 const prefix = '/scm/purchase/inquiry';
 export const purchaseInquiryApi = {
-  byBatch: (batchId: ScmId, page = 1) => postRequest<InquiryBatchPage>(prefix + '/batch', {batchId, page}),
-  candidates: (batchId: ScmId) => postRequest<InquiryCandidate[]>(prefix + '/batch/candidates', {batchId}),
-  detail: (id: ScmId) => getRequest<PurchaseInquiryDetail>(prefix + '/' + id, {}),
-  history: (inquiryId: ScmId, beforeId: ScmId) => postRequest<InquiryHistoryPage>(prefix + '/history', {inquiryId, beforeId}),
-  create: (data: {batchId: ScmId; skuId: ScmId; demandUnit: string; deadlineAt: string}) =>
-    purchaseCommand<PurchaseInquiryDetail>(prefix + '/create', data),
-  quote: (data: {inquiryId: ScmId; supplierId: ScmId; version: number; unitPrice: string; validUntil: string; remark?: string}) =>
-    purchaseCommand<PurchaseInquiryDetail>(prefix + '/quote', data),
-  accept: (data: {inquiryId: ScmId; quoteId: ScmId; version: number}) => purchaseCommand<PurchaseInquiryDetail>(prefix + '/accept', data),
+  byBatch: (batchId: ScmId, page = 1, options?: RequestOptions) => postRequest<InquiryBatchPage>(prefix + '/batch', {batchId, page}, options),
+  candidates: (batchId: ScmId, options?: RequestOptions) => postRequest<InquiryCandidate[]>(prefix + '/batch/candidates', {batchId}, options),
+  detail: (id: ScmId, options?: RequestOptions) => getRequest<PurchaseInquiryDetail>(prefix + '/' + id, {}, options),
+  history: (inquiryId: ScmId, beforeId: ScmId, options?: RequestOptions) =>
+    postRequest<InquiryHistoryPage>(prefix + '/history', {inquiryId, beforeId}, options),
+  create: (data: {batchId: ScmId; skuId: ScmId; demandUnit: string; deadlineAt: string}, options?: RequestOptions) =>
+    purchaseCommand<PurchaseInquiryDetail>(prefix + '/create', data, options),
+  quote: (
+    data: {inquiryId: ScmId; supplierId: ScmId; version: number; unitPrice: string; validUntil: string; remark?: string},
+    options?: RequestOptions
+  ) => purchaseCommand<PurchaseInquiryDetail>(prefix + '/quote', data, options),
+  accept: (data: {inquiryId: ScmId; quoteId: ScmId; version: number}, options?: RequestOptions) =>
+    purchaseCommand<PurchaseInquiryDetail>(prefix + '/accept', data, options),
 };

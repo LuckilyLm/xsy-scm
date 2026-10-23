@@ -144,7 +144,7 @@ const columns = ref<InventoryWarningColumn[]>([
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'skuName', width: 150},
-  {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '单位', dataIndex: 'unit', width: 80},
   {title: '现有量', dataIndex: 'quantity', width: 100},
   {title: '已预留', dataIndex: 'reservedQuantity', width: 100},

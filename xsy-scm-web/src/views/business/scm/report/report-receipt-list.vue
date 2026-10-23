@@ -298,7 +298,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
@@ -543,11 +543,20 @@ function resetQuery() {
   onSearch();
 }
 
+/** 导出与查询共用同一区间上限，避免用超限区间导出大文件。 */
+function guardExport(): boolean {
+  const overLimit = rangeOverLimitError(dateRange.value);
+  if (overLimit) void message.warning(overLimit);
+  return !overLimit;
+}
+
 function exportReceipt() {
+  if (!guardExport()) return;
   void receiptExport.run(() => reportReceiptApi.receiptExport(exportQuery()));
 }
 
 function exportInbound() {
+  if (!guardExport()) return;
   void inboundExport.run(() => reportReceiptApi.inboundExport(exportQuery()));
 }
 

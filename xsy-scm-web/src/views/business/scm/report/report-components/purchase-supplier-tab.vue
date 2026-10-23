@@ -63,6 +63,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        :disabled="exporting"
         show-size-changer
         show-quick-jumper
         :current="pageNum"
@@ -113,11 +114,11 @@ const columns = ref<TableColumnsType<PurchaseSupplierRow>>([
   {title: '供应商名称', dataIndex: 'supplierName', width: 200},
   {title: '采购单数', dataIndex: 'orderCount', width: 92},
   {title: '商品规格数', dataIndex: 'skuKindCount', width: 92},
-  {title: '采购订单金额', dataIndex: 'orderAmount', width: 148},
-  {title: '已收参考金额', dataIndex: 'receiptReferenceAmount', width: 150},
-  {title: '采购入库成本金额', dataIndex: 'inboundCostAmount', width: 148},
+  {title: '采购订单金额', dataIndex: 'orderAmount', width: 148, align: 'right'},
+  {title: '已收参考金额', dataIndex: 'receiptReferenceAmount', width: 150, align: 'right'},
+  {title: '采购入库成本金额', dataIndex: 'inboundCostAmount', width: 148, align: 'right'},
   {title: '最近采购时间', dataIndex: 'lastSubmittedAt', width: 180},
-  {title: '金额排名', dataIndex: 'amountRank', width: 110},
+  {title: '金额排名', dataIndex: 'amountRank', width: 110, align: 'right'},
 ]);
 
 const visibleColumns = computed(() => filterCostColumns(columns.value, COST_INDEXES, props.canViewCost));

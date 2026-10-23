@@ -1,6 +1,10 @@
 <template>
   <a-drawer :open="visible" :title="order?.orderNo || '订单详情'" :width="scmDrawerWidth('xl')" @close="visible = false">
-    <a-alert v-if="error" :message="error" type="error" show-icon />
+    <a-alert v-if="error" :message="error" type="error" show-icon>
+      <template #action>
+        <a-button size="small" :loading="loading" @click="load">重试</a-button>
+      </template>
+    </a-alert>
     <a-spin :spinning="loading">
       <template v-if="order">
         <a-space class="actions scm-detail-actions">
@@ -325,26 +329,45 @@ const columns: TableColumnsType<Item> = [
   },
 ];
 
+let requestId = 0;
+const detailId = ref<Id>();
+
 async function open(id: Id) {
+  detailId.value = id;
   visible.value = true;
   logs.value = [];
-  order.value = {orderId: id} as Order;
+  order.value = undefined;
   await load();
 }
 
 async function load() {
-  if (!order.value?.orderId) return;
+  const id = detailId.value;
+  if (id === undefined || id === null) return;
+  const current = ++requestId;
   loading.value = true;
   error.value = '';
   try {
     // 加载失败由抽屉内的 Alert 提示
-    order.value = (await orderApi.detail(order.value.orderId, {suppressGlobalErrorMessage: true})).data;
+    const response = await orderApi.detail(id, {suppressGlobalErrorMessage: true});
+    if (current !== requestId) return;
+    order.value = response.data;
   } catch (e) {
-    error.value = orderError(e);
+    if (current === requestId) {
+      // 加载失败不保留半成品详情，避免误以为订单没有商品
+      order.value = undefined;
+      error.value = orderError(e);
+    }
   } finally {
-    loading.value = false;
+    if (current === requestId) loading.value = false;
   }
 }
+
+watch(visible, (value) => {
+  if (!value) {
+    requestId += 1;
+    loading.value = false;
+  }
+});
 
 async function loadLogs() {
   try {

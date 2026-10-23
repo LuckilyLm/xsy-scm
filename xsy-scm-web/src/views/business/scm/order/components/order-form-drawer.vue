@@ -163,6 +163,7 @@ const formRules = {
 };
 const userStore = useUserStore();
 let requestId = 0;
+let previewRequestId = 0;
 
 /* 草稿只存本地、按登录用户隔离，不存解析价和版本。 */
 function draftStorageKey() {
@@ -187,7 +188,7 @@ function clearDraft() {
 }
 
 async function open(id?: Id) {
-  requestId++;
+  const current = ++requestId;
   exchangeReturnId.value = undefined;
   error.value = '';
   form.value = newOrder();
@@ -195,15 +196,17 @@ async function open(id?: Id) {
   if (id) {
     loading.value = true;
     try {
-      form.value = (await orderApi.detail(id, {suppressGlobalErrorMessage: true})).data;
+      const detail = (await orderApi.detail(id, {suppressGlobalErrorMessage: true})).data;
+      if (current !== requestId) return;
+      form.value = detail;
       form.value.items.forEach((i) => {
         i.unitPrice = i.manualPriceOverride ? i.draftUnitPrice : null;
         i.overrideReason = i.manualPriceReason;
       });
     } catch (e) {
-      error.value = orderError(e);
+      if (current === requestId) error.value = orderError(e);
     } finally {
-      loading.value = false;
+      if (current === requestId) loading.value = false;
     }
   } else {
     await promptRestoreDraft();
@@ -286,19 +289,20 @@ onBeforeUnmount(() => {
 
 /** 复用历史订单：只复制基本信息，价格和可用性重新解析。 */
 async function openFromHistory(id: Id) {
-  requestId++;
+  const current = ++requestId;
   exchangeReturnId.value = undefined;
   error.value = '';
   visible.value = true;
   loading.value = true;
   try {
     const detail = (await orderApi.detail(id, {suppressGlobalErrorMessage: true})).data;
+    if (current !== requestId) return;
     form.value = fromHistory(detail);
     await preview();
   } catch (e) {
-    error.value = orderError(e);
+    if (current === requestId) error.value = orderError(e);
   } finally {
-    loading.value = false;
+    if (current === requestId) loading.value = false;
   }
 }
 
@@ -358,18 +362,20 @@ async function preview() {
   const customerId = form.value.customerId;
   const skuIds = form.value.items.flatMap((i) => (i.skuId ? [i.skuId] : []));
   if (!customerId || !skuIds.length) return;
+  const current = ++previewRequestId;
   pricing.value = true;
   try {
     const r = await orderApi.preview({customerId, skuIds, warehouseId: form.value.deliveryWarehouseId ?? null}, {suppressGlobalErrorMessage: true});
+    if (current !== previewRequestId) return;
     for (const i of form.value.items) {
       const p = r.data.items.find((p) => String(p.skuId) === String(i.skuId));
       i.draftUnitPrice = p?.unitPrice ?? null;
       i.draftPriceSource = p?.priceSource ?? null;
     }
   } catch (e) {
-    error.value = orderError(e);
+    if (current === previewRequestId) error.value = orderError(e);
   } finally {
-    pricing.value = false;
+    if (current === previewRequestId) pricing.value = false;
   }
 }
 

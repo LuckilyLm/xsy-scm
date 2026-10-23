@@ -9,6 +9,7 @@
     allow-clear
     :filter-option="false"
     :loading="loading"
+    :disabled="disabled"
     :options="options"
     @search="search"
     @change="changed"
@@ -40,6 +41,7 @@ const props = withDefaults(
     status?: string | null;
     spuId?: ScmId;
     limit?: number;
+    disabled?: boolean;
     disabledStatuses?: string[];
   }>(),
   {

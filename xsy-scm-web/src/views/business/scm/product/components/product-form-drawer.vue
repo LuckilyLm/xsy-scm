@@ -1,11 +1,12 @@
 <template>
   <a-drawer
-    v-model:open="visible"
+    :open="visible"
     :title="form.spuId ? '编辑商品' : '新增商品'"
     :width="scmDrawerWidth('m')"
     :mask-closable="!saving"
     :closable="!saving"
     :destroy-on-close="true"
+    @close="requestClose"
   >
     <a-spin :spinning="loading">
       <div class="drawer-body">
@@ -172,7 +173,7 @@
     </a-spin>
     <template #footer>
       <a-space style="float: right">
-        <a-button :disabled="saving" @click="visible = false">取消</a-button>
+        <a-button :disabled="saving" @click="requestClose">取消</a-button>
         <a-button type="primary" :loading="saving" :disabled="loading || loadFailed || uploading" @click="submit"> 保存商品 </a-button>
       </a-space>
     </template>
@@ -180,7 +181,7 @@
 </template>
 <script setup lang="ts">
 import {computed, nextTick, ref} from 'vue';
-import {message} from 'ant-design-vue';
+import {message, Modal} from 'ant-design-vue';
 import type {FormInstance} from 'ant-design-vue';
 import {PlusOutlined} from '@ant-design/icons-vue';
 import {productApi} from '/@/api/business/scm/product-api';
@@ -210,6 +211,8 @@ const visible = ref(false),
   uploading = ref(false),
   error = ref(''),
   loadFailed = ref(false);
+/** 加载完成时的表单快照；用于关闭前判断是否有未保存修改。 */
+const baseline = ref('');
 const tagPickerOpen = ref(false),
   tagKeyword = ref('');
 // 停用标签也要列出，否则已绑定的历史标签摘不掉。
@@ -273,6 +276,7 @@ async function load(id?: ProductId) {
     tagChoices.value = tagOptionsResponse.data;
     boundTags.value = detail ? detail.data.tags : [];
     form.value = detail ? productFormOf(detail.data) : emptyProduct();
+    baseline.value = JSON.stringify(form.value);
     await nextTick();
     formRef.value?.clearValidate();
   } catch (e) {
@@ -287,8 +291,30 @@ async function load(id?: ProductId) {
 
 function open(id?: ProductId) {
   form.value = {...emptyProduct(), spuId: id};
+  baseline.value = '';
   visible.value = true;
   void load(id);
+}
+
+/** 关闭前拦截未保存修改；加载未完成或加载失败时不提示。 */
+async function requestClose() {
+  if (saving.value) return;
+  if (!baseline.value || loadFailed.value || JSON.stringify(form.value) === baseline.value) {
+    visible.value = false;
+    return;
+  }
+  try {
+    await Modal.confirm({
+      title: '放弃未保存的修改？',
+      content: '关闭后本次修改将丢失。',
+      okText: '放弃修改',
+      okType: 'danger',
+      cancelText: '继续编辑',
+    });
+  } catch {
+    return;
+  }
+  visible.value = false;
 }
 
 async function save() {

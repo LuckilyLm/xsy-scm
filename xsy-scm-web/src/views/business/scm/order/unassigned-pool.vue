@@ -150,7 +150,7 @@ async function load() {
 async function loadAssignees() {
   assigneeError.value = '';
   try {
-    const response = await orderApi.poolAssignees();
+    const response = await orderApi.poolAssignees({suppressGlobalErrorMessage: true});
     assignees.value = response.data;
   } catch (failure) {
     assigneeError.value = orderError(failure);

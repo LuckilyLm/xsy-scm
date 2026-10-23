@@ -71,7 +71,7 @@ const tagOptions = computed(() =>
 async function fetchTags(): Promise<void> {
   loading.value = true;
   try {
-    tags.value = (await orderTagApi.list()).data;
+    tags.value = (await orderTagApi.list({suppressGlobalErrorMessage: true})).data;
   } catch {
     error.value = '加载标签失败，请稍后再试';
   } finally {
@@ -102,7 +102,7 @@ async function create(): Promise<void> {
   creating.value = true;
   error.value = '';
   try {
-    const created = await orderTagApi.create(trimmed, color.value);
+    const created = await orderTagApi.create(trimmed, color.value, {suppressGlobalErrorMessage: true});
     await fetchTags();
     tagId.value = created.data;
     name.value = '';
@@ -118,7 +118,7 @@ async function apply(): Promise<void> {
   saving.value = true;
   error.value = '';
   try {
-    await orderTagApi.apply(tagId.value, ids.value, action.value);
+    await orderTagApi.apply(tagId.value, ids.value, action.value, {suppressGlobalErrorMessage: true});
     void message.success(action.value === 'ADD' ? '标签已应用' : '标签已移除');
     visible.value = false;
     emit('saved');

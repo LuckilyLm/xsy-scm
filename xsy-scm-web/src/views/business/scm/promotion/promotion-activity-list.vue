@@ -287,6 +287,7 @@ const queryForm = reactive<PromotionActivityQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<PromotionActivity[]>([]);
 const total = ref(0);
 const loading = ref(false);
+let requestId = 0;
 const error = ref('');
 const editOpen = ref(false);
 const saving = ref(false);
@@ -388,9 +389,9 @@ const RULE_FIELDS = Object.keys(emptyRule());
 function ruleText(source?: PromotionRule): string {
   if (!source) return '—';
   if (source.discountRate) return `折扣率 ${rateToPercent(source.discountRate) ?? source.discountRate}%`;
-  if (source.specialPrice) return `商品规格 ${source.skuId ?? '—'} 限时特价 ¥ ${source.specialPrice}`;
+  if (source.specialPrice) return `指定商品规格限时特价 ¥ ${source.specialPrice}`;
   if (source.reduceAmount) return `满 ¥ ${source.thresholdAmount ?? '—'} 减 ¥ ${source.reduceAmount}`;
-  if (source.giftSkuId) return `满 ¥ ${source.thresholdAmount ?? '—'} 赠送商品规格 ${source.giftSkuId} × ${source.giftQuantity ?? '—'}`;
+  if (source.giftSkuId) return `满 ¥ ${source.thresholdAmount ?? '—'} 赠送指定商品规格 × ${source.giftQuantity ?? '—'}`;
   return '—';
 }
 
@@ -433,17 +434,19 @@ function onGiftSkuChange(value: ScmId | ScmId[] | undefined) {
 }
 
 async function queryData() {
+  const current = ++requestId;
   loading.value = true;
   error.value = '';
   try {
     // 加载失败由页头 Alert 提示，不再弹全局 toast
     const r = await promotionApi.activityQuery({...queryForm}, {suppressGlobalErrorMessage: true});
+    if (current !== requestId) return;
     tableData.value = r.data.list ?? [];
     total.value = r.data.total ?? 0;
   } catch (e) {
-    error.value = promotionError(e);
+    if (current === requestId) error.value = promotionError(e);
   } finally {
-    loading.value = false;
+    if (current === requestId) loading.value = false;
   }
 }
 

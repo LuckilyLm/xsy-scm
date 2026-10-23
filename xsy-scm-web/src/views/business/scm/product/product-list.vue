@@ -278,7 +278,7 @@ const columns = ref<TableColumnsType<ProductRow>>([
   {title: '损耗率', dataIndex: 'lossRate', width: 90},
   {title: '采购预警天数', dataIndex: 'purchaseWarningDays', width: 120},
   {title: '单位', dataIndex: 'saleUnit', width: SCM_COLUMN_WIDTH.unit},
-  {title: '市场价', dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange},
+  {title: '市场价', dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange, align: 'right'},
   {title: '规格数', dataIndex: 'skuCount', width: SCM_COLUMN_WIDTH.count},
   {title: '在售状态', dataIndex: 'status', width: SCM_COLUMN_WIDTH.status, align: 'center', sorter: true},
   {title: '主档状态', dataIndex: 'masterStatus', width: SCM_COLUMN_WIDTH.status, align: 'center'},

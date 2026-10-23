@@ -113,8 +113,8 @@ const columns: TableColumnsType<PurchaseDailyProduct> = [
   {title: '商品规格', dataIndex: 'skuName', width: 160},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
   {title: '采购单数', dataIndex: 'orderCount', width: 92},
-  {title: '采购数量', dataIndex: 'plannedQuantity', width: 130},
-  {title: '采购金额（元）', dataIndex: 'orderAmount', width: 140},
+  {title: '采购数量', dataIndex: 'plannedQuantity', width: 130, align: 'right'},
+  {title: '采购金额（元）', dataIndex: 'orderAmount', width: 140, align: 'right'},
 ];
 const emptyText = computed(() => {
   if (loading.value) return '正在读取清单';

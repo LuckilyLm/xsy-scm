@@ -100,7 +100,7 @@
         <AreaCascader type="province_city_district" v-model:value="area" style="width: 100%" placeholder="省 / 市 / 区" @change="onAreaChange" />
       </a-form-item>
       <a-form-item label="地址" name="address">
-        <a-input v-model:value="form.address" maxlength="255" @change="Object.assign(form, emptyLocation())" />
+        <a-input v-model:value="form.address" maxlength="255" @change="onAddressChange" />
       </a-form-item>
       <a-form-item label="地图定位">
         <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)" />
@@ -153,6 +153,15 @@ const visible = ref(false);
 const saving = ref(false);
 const formError = ref('');
 const form = ref<WarehouseFormModel>({warehouseCode: '', name: ''});
+
+/** 手改地址后旧坐标不再可信；清掉并明确提示，避免静默变成未定位。 */
+function onAddressChange() {
+  if (!isLocated(form.value)) {
+    return;
+  }
+  Object.assign(form.value, emptyLocation());
+  message.warning('地址已修改，原地图定位已清除，请重新在地图上定位');
+}
 const formRef = ref<FormInstance>();
 
 /** 逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */

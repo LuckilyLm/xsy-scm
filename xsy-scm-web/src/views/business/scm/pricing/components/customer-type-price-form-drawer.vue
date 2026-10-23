@@ -1,12 +1,11 @@
 <template>
-  <a-drawer
-    :title="form.customerTypePriceId ? '编辑客户类型价' : '新增客户类型价'"
-    :open="visible"
-    :width="scmDrawerWidth('s')"
-    @close="visible = false"
-  >
+  <a-drawer :title="editingId ? '编辑客户类型价' : '新增客户类型价'" :open="visible" :width="scmDrawerWidth('s')" @close="visible = false">
     <a-spin :spinning="loading">
-      <a-alert v-if="error" :message="error" type="error" show-icon />
+      <a-alert v-if="error" :message="error" type="error" show-icon>
+        <template #action>
+          <a-button size="small" :loading="loading" @click="open(editingId)">重试</a-button>
+        </template>
+      </a-alert>
       <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
         <a-form-item label="客户类型" name="customerTypeId">
           <CustomerTypeSelect v-model:value="form.customerTypeId" />
@@ -48,7 +47,7 @@
     <template #footer>
       <a-space>
         <a-button @click="visible = false">取消</a-button>
-        <a-button type="primary" :loading="saving" :disabled="loading" @click="submit">保存</a-button>
+        <a-button type="primary" :loading="saving" :disabled="loading || (!!editingId && !!error)" @click="submit">保存</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -90,9 +89,12 @@ const formRules = {
 };
 const api = pricingApi.typePrice;
 let requestId = 0;
+/** 当前编辑对象；加载失败时仍保留，避免提交退化成新增。 */
+const editingId = ref<ScmId>();
 
 async function open(id?: ScmId) {
   const request = ++requestId;
+  editingId.value = id;
   visible.value = true;
   error.value = '';
   for (const key of Object.keys(form)) delete (form as unknown as Record<string, unknown>)[key];
@@ -114,6 +116,10 @@ async function open(id?: ScmId) {
 }
 
 async function submit() {
+  // 编辑对象未加载成功时禁止提交，避免空表单走新增
+  if (editingId.value && error.value) {
+    return;
+  }
   // 必填项由表单校验
   try {
     await formRef.value?.validate();
@@ -131,7 +137,7 @@ async function submit() {
   saving.value = true;
   error.value = '';
   try {
-    if (form.customerTypePriceId) await api.update({...form});
+    if (editingId.value) await api.update({...form});
     else await api.add({...form});
     message.success('价格已保存');
     visible.value = false;

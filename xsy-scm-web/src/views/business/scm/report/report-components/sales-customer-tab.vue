@@ -50,6 +50,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        :disabled="exporting"
         show-size-changer
         show-quick-jumper
         :current="pageNum"
@@ -97,10 +98,10 @@ const columns = ref<TableColumnsType<SalesCustomerRow>>([
   {title: '销售员', dataIndex: 'sellerName', width: 120},
   {title: '订单笔数', dataIndex: 'orderCount', width: 92},
   {title: '商品规格数', dataIndex: 'skuKindCount', width: 92},
-  {title: '确认订单金额', dataIndex: 'settlementAmount', width: 148},
-  {title: '已完成退款金额', dataIndex: 'completedRefundAmount', width: 148},
+  {title: '确认订单金额', dataIndex: 'settlementAmount', width: 148, align: 'right'},
+  {title: '已完成退款金额', dataIndex: 'completedRefundAmount', width: 148, align: 'right'},
   {title: '最近确认时间', dataIndex: 'lastConfirmedAt', width: 180},
-  {title: '金额排名', dataIndex: 'amountRank', width: 110},
+  {title: '金额排名', dataIndex: 'amountRank', width: 110, align: 'right'},
 ]);
 
 function refresh() {

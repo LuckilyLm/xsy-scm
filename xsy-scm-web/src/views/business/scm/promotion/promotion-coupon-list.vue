@@ -291,6 +291,7 @@ const queryForm = reactive<PromotionCouponQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<PromotionCoupon[]>([]);
 const total = ref(0);
 const loading = ref(false);
+let requestId = 0;
 const error = ref('');
 const editOpen = ref(false);
 const issueOpen = ref(false);
@@ -397,17 +398,19 @@ function onDiscountTypeChange() {
 }
 
 async function queryData() {
+  const current = ++requestId;
   loading.value = true;
   error.value = '';
   try {
     // 加载失败由页头 Alert 提示，不再弹全局 toast
     const r = await promotionApi.couponQuery({...queryForm}, {suppressGlobalErrorMessage: true});
+    if (current !== requestId) return;
     tableData.value = r.data.list ?? [];
     total.value = r.data.total ?? 0;
   } catch (e) {
-    error.value = promotionError(e);
+    if (current === requestId) error.value = promotionError(e);
   } finally {
-    loading.value = false;
+    if (current === requestId) loading.value = false;
   }
 }
 

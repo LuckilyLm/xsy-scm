@@ -112,7 +112,7 @@ const columns = ref<AgreementPriceColumn[]>([
   {title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'specName', width: 200},
-  {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '协议价', dataIndex: 'unitPrice', width: 130},
   {title: '计算方式', dataIndex: 'formulaType', align: 'center', width: 190},
   {title: '有效期', dataIndex: 'effectiveRange', width: 340},

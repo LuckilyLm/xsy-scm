@@ -3,12 +3,12 @@
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('xl')" @close="close">
     <a-spin :spinning="loading">
       <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
-      <SupplierSkuEditableTable v-model="drafts" />
+      <SupplierSkuEditableTable v-model="drafts" :readonly="!canEdit" />
     </a-spin>
     <template #footer>
       <a-space>
-        <a-button @click="visible = false">取消</a-button>
-        <a-button type="primary" :loading="saving" @click="submit">保存</a-button>
+        <a-button @click="visible = false">{{ canEdit ? '取消' : '关闭' }}</a-button>
+        <a-button v-if="canEdit" type="primary" :loading="saving" @click="submit">保存</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -24,6 +24,7 @@ import {fromRows, toReplaceItems, validateSkuDrafts} from '../supplier-form-mode
 import type {SkuDraft} from '../supplier-form-model';
 import {supplierError} from '../supplier-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {hasPermission} from '../../common/scm-permission';
 
 const emit = defineEmits<{saved: []}>();
 
@@ -38,6 +39,8 @@ const supplierId = ref<ScmId>();
 const supplierName = ref('');
 
 const title = computed(() => (supplierName.value ? `关联商品 · ${supplierName.value}` : '关联商品'));
+/** 只有查询权限时以只读方式查看关联商品。 */
+const canEdit = computed(() => hasPermission('scm:supplier:sku:update'));
 
 /** 打开抽屉并加载已有关联。 */
 async function open(row: SupplierRow) {
@@ -64,7 +67,7 @@ function close() {
 }
 
 async function submit() {
-  if (supplierId.value == null) {
+  if (!canEdit.value || supplierId.value == null) {
     return;
   }
   const problem = validateSkuDrafts(drafts.value);
