@@ -1,9 +1,4 @@
-<!--
-  包装码（一物一码）。
-
-  一个包装码只属于一个批次，码由系统发号、不透明、永不复用；页面只提供发码与回放，不提供改码或删码。
-  发码总量受批次余额约束：包装码描述已经存在的实物，不能在库存之外凭空造出实物身份。
--->
+<!-- 包装码：一个码对应一个批次，由系统发号且不复用。页面提供发码、绑定和回放。 -->
 <template>
   <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
     <div class="scm-filter-fields">
@@ -278,7 +273,7 @@ import {message} from 'ant-design-vue';
 
 const canManageInspection = hasPermission('scm:trace:inspection:manage');
 
-/** 净重只在称过之后才有值；没称过的码要显式说「待称重」，不能显示成 0。 */
+/** 未称重显示“待称重”，不要显示成 0。 */
 function weightText(unit: TraceUnit): string {
   if (!unit.netWeight) {
     return '待称重';
@@ -298,7 +293,7 @@ function weightSourceLabel(source?: string | null): string {
   return WEIGHT_SOURCE_ENUM[source] || source;
 }
 
-/** 公开扫码链接与标签二维码同一口径：哈希路由，路径里的 # 不能省。 */
+/** 公开扫码链接使用哈希路由，路径里的 # 不能省。 */
 function publicLink(publicToken?: string): string {
   if (!publicToken) {
     return '';
@@ -399,7 +394,7 @@ async function queryData() {
     tableData.value = res.data?.list ?? [];
     total.value = Number(res.data?.total ?? 0);
   } catch (e) {
-    // 加载失败会渲染空表：页面上必须说清楚并给重试
+    // 失败时显示空表，同时在页面上提示并允许重试
     error.value = inventoryError(e);
     tableData.value = [];
     total.value = 0;
@@ -471,14 +466,14 @@ async function submitIssue() {
     issueOpen.value = false;
     await queryData();
   } catch (e) {
-    // 发码失败只走全局 toast；本地只保留「批次无效」这类前置校验
+    // 发码失败由全局提示
     void e;
   } finally {
     issuing.value = false;
   }
 }
 
-/** 打印与作废属低频/危险动作，收进「更多」，把常驻宽度留给回放与绑定。 */
+/** 打印和作废收进“更多”，常驻位置留给回放与绑定。 */
 function moreActions(record: TraceUnit): ScmActionItem[] {
   return [
     {key: 'print', label: '打印标签', hidden: !hasPermission('scm:inventory:unit:query')},
@@ -523,7 +518,7 @@ async function submitCorrect() {
     correctOpen.value = false;
     await queryData();
   } catch {
-    // 申请失败只走全局 toast；本地只保留原因必填这类前置校验
+    // 申请失败由全局提示
   } finally {
     correcting.value = false;
   }
@@ -548,7 +543,7 @@ async function submitVoid() {
     voidOpen.value = false;
     await queryData();
   } catch {
-    // 作废失败只走全局 toast；本地只保留原因必填这类前置校验
+    // 作废失败由全局提示
   } finally {
     voidSaving.value = false;
   }
@@ -568,7 +563,7 @@ function openBind(record: TraceUnit) {
   taskItemOptions.value = [];
 }
 
-/** 按任务号取任务明细，把「订单号 · 客户 · 商品」摊成可选项。 */
+/** 按任务号加载任务行，显示订单号、客户和商品。 */
 async function loadTaskItems() {
   bindError.value = '';
   taskItemOptions.value = [];
@@ -611,7 +606,7 @@ async function submitBind() {
     bindOpen.value = false;
     await queryData();
   } catch {
-    // 绑定失败只走全局 toast；本地只保留前置校验提示
+    // 绑定失败由全局提示
   } finally {
     binding.value = false;
   }

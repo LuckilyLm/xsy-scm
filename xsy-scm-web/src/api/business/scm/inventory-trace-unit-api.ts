@@ -1,8 +1,4 @@
-/**
- * 包装码（一物一码）：发码与只读回放。
- *
- * 码由系统生成、不透明、永不复用；页面不提供「改码 / 删码」，作废只能追加事件（后续版本）。
- */
+/** 包装码（一物一码）：发码与只读回放。码由系统生成、永不复用。 */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';

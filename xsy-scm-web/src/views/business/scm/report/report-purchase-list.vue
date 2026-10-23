@@ -1,4 +1,4 @@
-<!-- 采购分析按提交日查询有效采购事实。采购承诺金额和实际收货金额都不等同应付金额，报表不得提前标为应付。 -->
+<!-- 采购分析按提交日统计，只读。承诺金额和收货金额都不等于应付金额。 -->
 <template>
   <a-form v-if="activeTab !== 'daily'" class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -67,7 +67,6 @@
     <a-tab-pane key="daily" tab="每日清单">
       <PurchaseDailyReport />
     </a-tab-pane>
-    <!-- ==================== 采购概览 ==================== -->
     <a-tab-pane key="overview" tab="采购概览">
       <a-row class="smart-table-btn-block">
         <div class="smart-table-operate-block">
@@ -82,7 +81,6 @@
       <ReportBarChart class="smart-margin-top10" title="供应商采购入库成本 TOP10" :items="topItems(supplierTopRows)" series-name="采购入库成本金额" />
     </a-tab-pane>
 
-    <!-- ==================== 按商品 ==================== -->
     <a-tab-pane key="product" tab="按商品">
       <PurchaseProductTab
         v-model:columns="productColumns"
@@ -100,7 +98,6 @@
       />
     </a-tab-pane>
 
-    <!-- ==================== 按供应商 ==================== -->
     <a-tab-pane key="supplier" tab="按供应商">
       <PurchaseSupplierTab
         :items="topItems(supplierTopRows)"
@@ -119,7 +116,6 @@
       />
     </a-tab-pane>
 
-    <!-- ==================== 按采购员 ==================== -->
     <a-tab-pane key="purchaser" tab="按采购员">
       <PurchasePurchaserTab
         :rows="purchaser.rows"
@@ -137,7 +133,6 @@
       />
     </a-tab-pane>
 
-    <!-- ==================== 采购明细 ==================== -->
     <a-tab-pane key="item" tab="采购明细">
       <PurchaseItemTab
         :rows="item.rows"
@@ -154,7 +149,6 @@
       />
     </a-tab-pane>
 
-    <!-- ==================== 价格波动（-B） ==================== -->
     <a-tab-pane key="trend" tab="价格波动">
       <PurchasePriceTrendTab
         :rows="trend.rows"
@@ -275,7 +269,7 @@ type PurchaseTab = 'overview' | 'product' | 'supplier' | 'purchaser' | 'item' | 
 
 const activeTab = ref<PurchaseTab>('overview');
 const dateRange = ref<DateRange | undefined>();
-/** 共享筛选：六个维度共用同一张后端表单。 */
+/** 共享筛选，六个维度共用。 */
 const filters = reactive<Omit<PurchaseQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
 const chartError = ref('');
@@ -337,18 +331,12 @@ const productExport = useScmExport(product);
 const purchaserExport = useScmExport(purchaser);
 const supplierExport = useScmExport(supplier);
 
-/** 下钻抽屉的商品明细：带一个实体筛选（供应商或采购员），与主表分页彼此独立。 */
+/** 下钻抽屉：带供应商或采购员筛选，分页与主表独立。 */
 const drilldown = reactive({...createTabView<PurchaseProductRow>(), open: false, title: ''});
-/**
- * 下钻实体筛选。
- *
- * 类型比 `PurchaseQuery` 的 `supplierId / purchaserId` 宽一档：这里的值直接来自行数据
- * （后端 `Long` 可能是字符串形状），而装配进 `buildReportQuery` 时不逐字段比对。
- * 用 `Number()` 归一反而会藏掉「id 超出安全整数」这类真实问题。
- */
+/** 下钻筛选值直接来自行数据，主键可能是字符串，不做 Number 转换。 */
 const drilldownTarget = reactive<{supplierId?: ReportId; purchaserId?: ReportId}>({});
 
-/** 成本列集中在 `inboundCostAmount`；无成本权限时整列不出现。 */
+/** 没有成本权限时成本列不显示。 */
 const COST_INDEXES = ['inboundCostAmount'];
 
 const productColumns = ref<TableColumnsType<PurchaseProductRow>>([
@@ -417,7 +405,7 @@ function purchaseQuery(tab: {pageNum: number; pageSize: number}): PurchaseQuery 
   );
 }
 
-/** 非分页端点（采购概览 / 供应商 TOP 榜 / 价格波动）的查询体：不带分页字段。 */
+/** 非分页接口的查询体，不带分页字段。 */
 function purchaseFilterQuery(): ReportFilterQuery<PurchaseQuery> {
   return buildReportQuery<ReportFilterQuery<PurchaseQuery>>(dateRange.value, {...filters});
 }
@@ -468,7 +456,7 @@ const loadSupplierTop = createGuardedLoader(
   (rows) => (supplierTopRows.value = rows ?? []),
   chartError
 );
-/** 价格波动不分页（一次给完整个区间的按日点），表格只渲染返回的行。 */
+/** 价格波动不分页，一次返回区间内全部点。 */
 const loadTrend = createGuardedLoader(
   (options) => reportPurchaseApi.priceTrend(purchaseFilterQuery(), options),
   (rows) => {
@@ -569,7 +557,7 @@ function resetQuery() {
   onSearch();
 }
 
-/** ：点供应商 → 右侧抽屉看该供应商的商品维度明细（带当前日期区间）。 */
+/** 点供应商，右侧抽屉看它的商品明细。 */
 function openSupplierDrilldown(row: PurchaseSupplierRow) {
   drilldownTarget.supplierId = row.supplierId;
   drilldownTarget.purchaserId = undefined;
@@ -579,7 +567,7 @@ function openSupplierDrilldown(row: PurchaseSupplierRow) {
   void loadDrilldown();
 }
 
-/** ：点采购员 → 同一张抽屉、同一套列。 */
+/** 点采购员，用同一个抽屉。 */
 function openPurchaserDrilldown(row: PurchasePurchaserRow) {
   drilldownTarget.supplierId = undefined;
   drilldownTarget.purchaserId = row.purchaserId;

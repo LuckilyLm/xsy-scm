@@ -1,6 +1,6 @@
 <template>
   <h2>订单异常工作台</h2>
-  <p class="scm-note">汇总已有异常事实；请进入来源单据处理。</p>
+  <p class="scm-note">汇总已有异常记录；请进入来源单据处理。</p>
   <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
     <a-form-item label="发生日期" required>
       <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD" />
@@ -54,7 +54,7 @@
       bordered
       :loading="loading"
       :scroll="{x: scmColumnsWidth(displayColumns)}"
-      :locale="{emptyText: '当前筛选与授权范围内没有异常事实'}"
+      :locale="{emptyText: '当前筛选与授权范围内没有异常记录'}"
     >
       <template #bodyCell="{record, column, text}">
         <template v-if="column.dataIndex === 'exceptionType'">{{ labels[record.exceptionType as OrderExceptionType] }}</template>
@@ -207,7 +207,7 @@ function suggestion(row: OrderExceptionRow): string {
     case 'RETURN_PENDING':
       return '进入退货单审核';
     case 'REFUND_PENDING':
-      return '核对退款单与资金事实，按正式流程完成';
+      return '核对退款单与资金记录，按正式流程完成';
     case 'RETURN_REJECTED':
       return '查看退货拒绝原因';
   }
@@ -220,7 +220,7 @@ async function load(payload: OrderExceptionQuery) {
   summary.value = [];
   total.value = 0;
   try {
-    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页内 Alert 提示，不再弹全局 toast
     const quiet = {suppressGlobalErrorMessage: true};
     const [page, counts] = await Promise.all([orderExceptionApi.query(payload, quiet), orderExceptionApi.summary(payload, quiet)]);
     if (id !== requestId) return;

@@ -2,7 +2,7 @@
   <a-card size="small" class="report-chart">
     <template #title>{{ title }}</template>
     <a-empty v-if="!hasPoint" :image-style="{height: '40px'}" :description="emptyText" class="report-chart-empty" />
-    <!-- 同 `report-bar-chart`：容器必须一直存在，否则 `useEcharts` 观察不到后来才创建的元素 -->
+    <!-- 容器必须一直存在，否则 useEcharts 观察不到这个元素 -->
     <div v-show="hasPoint" ref="chartEl" :style="{height}" />
   </a-card>
 </template>
@@ -13,16 +13,11 @@ import {useEcharts} from '/@/views/business/scm/screen/composables/use-echarts';
 import {REPORT_CHART_COLORS, REPORT_CHART_HEIGHT, REPORT_CHART_SERIES} from './chart-theme';
 import type {ReportChartLine} from '../report-types';
 
-/**
- * 多折线趋势图（概览每日趋势、采购价格波动、损耗金额按日趋势）。
- *
- * 每条线的 `data` 与 `texts` 等长：`data` 只用于定位（`null` 保留为断点），
- * `texts` 是后端 4 位定点原文，tooltip 只用它（见 `report-types.ReportChartLine`）。
- */
+/** 多折线趋势图。data 只用于定位，null 保留为断点；texts 是后端原文，提示框只用它。 */
 const props = withDefaults(
   defineProps<{
     title: string;
-    /** x 轴类目：按日的 `yyyy-MM-dd`（日期轴由后端补齐，不跳天）。 */
+    /** x 轴日期，后端已补齐没有数据的日子。 */
     xAxis: string[];
     series: ReportChartLine[];
     emptyText?: string;
@@ -34,7 +29,7 @@ const props = withDefaults(
 const chartEl = ref<HTMLElement>();
 const {setOption} = useEcharts(chartEl);
 
-/** 「全空」与「有零」不是一回事：某天金额为 0 也要把点画出来，只有整段无值才显示空态。 */
+/** 有 0 也算有数据；整段为空才显示空态。 */
 const hasPoint = computed(() => props.xAxis.length > 0 && props.series.some((item) => item.data.some((value) => value !== null)));
 
 function render() {
@@ -76,8 +71,7 @@ function render() {
       name: item.name,
       type: 'line',
       smooth: false,
-      // null 处断开而不是连成一条直线：连起来等于宣称「这两天之间平滑过渡」，
-      // 而事实是这两天没有成本数据
+      // null 处断开，不连成直线
       connectNulls: false,
       symbol: 'circle',
       symbolSize: 5,

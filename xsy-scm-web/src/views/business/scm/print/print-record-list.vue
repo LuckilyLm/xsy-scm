@@ -1,4 +1,4 @@
-<!-- 历史打印记录只读。重新打印使用保存的内容，但金额仍须按当前操作人的权限隐藏。 -->
+<!-- 打印记录只读；重印使用当时保存的内容，金额按当前权限隐藏。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -102,7 +102,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const r = await printApi.recordQuery({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list ?? [];
@@ -121,7 +121,7 @@ async function queryData() {
 
 async function loadDocumentTypes() {
   try {
-    // 单据类型下拉是可选增强：拉不到就静默降级，不弹全局提示
+    // 类型下拉拉不到就留空，不提示
     const r = await printApi.documentTypes({suppressGlobalErrorMessage: true});
     documentTypes.value = r.data ?? [];
   } catch {
@@ -140,7 +140,7 @@ function resetQuery() {
   onSearch();
 }
 
-/** 重印：只读冻结快照；金额按当前操作者的权限重新剔除。 */
+/** 重印使用当时保存的内容；金额按当前权限重新过滤。 */
 async function reprint(record: PrintRecord) {
   reprinting.value = record.id;
   error.value = '';
@@ -151,7 +151,7 @@ async function reprint(record: PrintRecord) {
       message.warning(`已重印，但 ${r.data.hiddenFields?.length} 个金额字段因权限未打印`);
     }
   } catch {
-    // 重印失败只走全局 toast
+    // 重印失败由全局 toast 提示
   } finally {
     reprinting.value = undefined;
   }

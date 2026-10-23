@@ -1,13 +1,4 @@
-/*
- * 抽屉表单控件宽度契约：所在列是默认尺寸边界。
- *
- * 默认（无修饰类）：控件填满所在列，同一行的输入框、下拉框、数字框长度一致；
- * 仅在超宽单列表单里用 --drawer-field-max 限制阅读宽度。
- * full    `.app-drawer-field--wide`    突破阅读上限填满整列（商品简介等长文本）。
- * compact `.app-drawer-field--compact` 短数字 / 日期类短字段，在字段组级别按需使用。
- * fixed   `.app-drawer-field--fixed`   按控件类型的固定上限（--drawer-*-width），
- *                                      单列简单表单需要短控件时显式选用。
- */
+/* 抽屉表单控件宽度：默认填满所在列，用 --wide / --compact / --fixed 修饰类限制宽度。 */
 .app-drawer-form {
   --drawer-field-max: 560px;
   /* 200：三列栅格里一列约 230，短枚举/短数字留一截空隙，看得出「这是短字段」 */

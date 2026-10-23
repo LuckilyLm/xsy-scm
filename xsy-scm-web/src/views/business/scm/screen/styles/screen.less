@@ -1,20 +1,9 @@
-// =============================================================================
-// 大屏全局样式（在 index.vue 里不带 scoped 引入一次）
-// =============================================================================
-// 只放两类东西：
-//   1) 大屏自己的根容器样式（.scm-screen 及其后代）；
-//   2) 需要跨组件复用的原子类（空态、滚动条）。
-// 类名一律带 scm- 前缀，避免泄漏到系统其它页面。
-//
-// 不用 scoped 的原因：本文件要作用在 screen-panel / metric-card 等子组件上，
-// 而 scoped 会给选择器加 data-v 属性，父组件的 scoped 样式作用不到子组件内部。
+// 大屏全局样式：根容器样式和跨组件复用的空态、滚动条。类名统一 scm- 前缀。
 
 @import './variables.less';
 
 .scm-screen {
-  // position / 居中 / transform-origin 由 index.vue 的 scoped 样式负责
-  // （必须是 absolute 才能脱离 wrapper 的 flex 布局、保持 1920×1080 布局尺寸）。
-  // 这里只放尺寸与盒模型。
+  // 定位和缩放在 index.vue 里，这里只管尺寸和盒模型。
   width: @screen-w;
   height: @screen-h;
   padding: @screen-pad;
@@ -57,8 +46,7 @@
     min-height: 0;
   }
 
-  // 趋势带：三张图等宽（内部布局由 trend-section.vue 自己的 scoped 样式负责，
-  // 这里只留一个空档，避免两处都定义 .scm-trend 造成 flex-direction 打架）
+  // 趋势带布局在 trend-section.vue 里。
 
   // 空态 / 错误态 / 加载态：三态都用同一种视觉，避免大屏上出现「一块白」
   .scm-state {
@@ -105,9 +93,7 @@
   }
 }
 
-// 全屏作用在外层 wrapper（100vw×100vh），不是这个 1920×1080 的设计稿容器 ——
-// 缩放由 wrapper 上的 transform 负责，设计稿容器始终保持 1920×1080。
-// 否则全屏会把设计稿拉成视口尺寸，图表的 clientWidth/Height 基准随之漂移。
+// 全屏作用在外层 wrapper，设计稿容器始终保持 1920×1080。
 .scm-screen-wrapper:fullscreen {
   width: 100vw;
   height: 100vh;

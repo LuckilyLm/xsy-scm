@@ -1,8 +1,4 @@
-/**
- * 采购表单的数据处理与校验。
- * 提交前把数量、金额统一转成四位小数字符串。
- * 分配明细按 demandId 更新；需求单位与采购单位不一致时禁止分配。
- */
+/** 采购表单的数据处理和校验；提交前统一转成四位小数字符串。 */
 import Decimal from 'decimal.js';
 import type {
   Allocation,
@@ -47,12 +43,7 @@ export function quantity(value: string | null | undefined): string {
   return fixed(value);
 }
 
-/**
- * 收货进度渲染。
- *
- * `received_progress` 是比例（`已收合计 / 计划合计`，scale 4），不是金额；
- * 没有活动行时后端给 `null`（「无值 ≠ 0.0000」），这里同样渲染 `—`。
- */
+/** 收货进度转百分比；无数据时显示“—”。 */
 export function progress(value: string | null | undefined): string {
   if (value === null || value === undefined || value === '') {
     return '—';
@@ -60,12 +51,7 @@ export function progress(value: string | null | undefined): string {
   return new Decimal(value).times(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2) + '%';
 }
 
-/*
- * 本模块会被 `node --experimental-strip-types --test` 直接加载，因此不得有相对路径的值导入：
- * node 的 ESM 解析不给相对路径补扩展名，打包器与 `vue-tsc` 都会补，所以构建与类型检查发现不了；
- * 而补上 `.ts` 又会触发 TS5097（本项目 `tsconfig` 未开启 `allowImportingTsExtensions`）。
- * 时间渲染由 `common/scm-display.ts` 的调用方直接引入，不从本模块转出。
- */
+/* 本模块会被 node 直接加载，不能使用相对路径的值导入。 */
 
 // ------------------------------------------------------------------
 // 采购单表单
@@ -93,35 +79,20 @@ export function newAllocation(demand: Demand): Allocation {
   };
 }
 
-/**
- * 该采购行上的分配合计。
- *
- * 注意这是本行合计，不是该需求的全库已分配合计 —— 后者由服务端裁定（40082）。
- */
+/** 本行的分配合计，不是该需求的全部分配。 */
 export function allocatedOnItem(item: OrderItem): string {
   const sum = (item.allocations ?? []).reduce((acc, row) => acc.plus(new Decimal(row.quantity || '0')), new Decimal(0));
   return sum.toFixed(4);
 }
 
-/**
- * 本条分配在该需求上的可分配上限（客户端预检）。
- *
- * `demand.unallocatedQuantity` 是「全库剩余」，其中已扣掉本行上一次提交的量；
- * 因此加上「本行该需求的旧分配量」才是本行本次可填的上限 —— 与后端
- * `validateAllocations` 的 `otherAllocated = allocated − oldTotals[demand]` 同一口径。
- */
+/** 本条分配可填的上限：全库剩余 + 本行旧分配量。 */
 export function allocationCapacity(demand: Demand, previousOnItem: string | null | undefined): Decimal {
   const remaining = new Decimal(demand.unallocatedQuantity ?? '0');
   const own = new Decimal(previousOnItem && previousOnItem !== '' ? previousOnItem : '0');
   return remaining.plus(own);
 }
 
-/**
- * 需求单位与采购单位是否不一致。
- *
- * 不一致时前端直接拒绝加入分配，并给出 40971 的同一句话 —— 不允许「只换单位字符串」
- * 或猜换算系数（那会把 100 kg 静默变成 100 箱）。
- */
+/** 单位和采购单位是否不一致；不一致时不允许分配，也不猜换算率。 */
 export function unitMismatch(item: OrderItem, demand: Demand): boolean {
   if (!item.purchaseUnit || !demand.demandUnit) {
     return false;
@@ -134,11 +105,7 @@ export function hasAllocation(item: OrderItem, demandId: Order['id']): boolean {
   return (item.allocations ?? []).some((row) => String(row.demandId) === String(demandId));
 }
 
-/**
- * 把输入中的数量转成四位小数字符串。
- * 输入过程中允许 "2"、"2.5" 等写法；空值保留为空，非法输入返回空字符串。
- * 超出金额精度限制的值仍会被拒绝。
- */
+/** 输入值转四位小数；空值或非法输入返回空串。 */
 function typedFixed(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === '') {
     return '';
@@ -150,12 +117,7 @@ function typedFixed(value: string | number | null | undefined): string {
   return fixed(text);
 }
 
-/**
- * 输入框失焦用的归一：完整数字 → 4 位定点；未定型的输入原样保留。
- *
- * 刻意不在这里把 `"2."` 清掉 —— 用户在「2.」上误触失焦后再点回来，留着比抹掉更少惊吓；
- * 该值提交时会被 validateOrder 拦下并给出文案。
- */
+/** 失焦时归一为四位小数；未定型的输入原样保留，提交时再校验。 */
 export function normalizeTyped(value: string | number | null | undefined): string {
   if (value === null || value === undefined) {
     return '';
@@ -164,13 +126,7 @@ export function normalizeTyped(value: string | number | null | undefined): strin
   return normalized !== '' ? normalized : String(value);
 }
 
-/**
- * 单价是否已填写（形状合法 + 非负）。
- *
- * 未填写时由服务端按「未定价」处理（允许价格待定）；一旦填了就必须是合法价。
- * 与 validateOrder 同口径：先 typedFixed 归一（吸收输入框键入中的裸数），
- * 再套 FIXED 的严格形状 —— 不放宽形状，只对齐「校验时机」。
- */
+/** 单价是否已填写且合法；未填写表示价格待定。 */
 export function priceFilled(value: string | null | undefined): boolean {
   const normalized = typedFixed(value);
   return normalized !== '' && FIXED.test(normalized) && new Decimal(normalized).gte(0);
@@ -279,12 +235,7 @@ export function isNonStandard(item: ReceiptItem | undefined): boolean {
   return item?.productType === 'NON_STANDARD';
 }
 
-/**
- * 确认收货的客户端预检。
- *
- * 必须覆盖全部收货行（40998）；非标品必须有实重（40083）；
- * 声明数量与实重都必须是 4 位定点字符串。
- */
+/** 确认收货的客户端预检；最终以服务端校验为准。 */
 export function validateConfirm(receipt: Receipt, lines: ReceiptConfirmItemPayload[]): string | undefined {
   const items = receipt.items ?? [];
   if (!items.length) {
@@ -356,13 +307,7 @@ export function confirmPayload(receipt: Receipt, lines: ReceiptConfirmItemPayloa
   };
 }
 
-/**
- * 容差提示文案。
- *
- * 超收容差是服务端配置（`scm.purchase.over_receipt_tolerance_percent`），
- *  没有把它暴露给前端的读取端点，因此这里不假装能算出「上限」，
- * 只给出确定的事实：剩余可收量 + 超收会被服务端按配置拒绝（40989）。
- */
+/** 超收容差由服务端配置，前端只提示剩余可收量。 */
 export function toleranceHint(item: ReceiptItem): string {
   const remaining = quantity(item.remainingQuantity);
   return `剩余可收 ${remaining}（可超出剩余量的比例由服务端「采购超收容差」配置决定，超出将被拒绝）`;

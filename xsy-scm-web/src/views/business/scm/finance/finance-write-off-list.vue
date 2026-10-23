@@ -85,7 +85,7 @@
         <template v-else-if="column.dataIndex === 'writtenOffAt'">{{ dateTimeText(text) }}</template>
         <template v-else-if="column.dataIndex === 'operator'">{{ record.operator || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 撤销核销是追加反向事实，不是编辑：保持 danger 视觉 + 独立的二次确认弹窗 -->
+          <!-- 撤销核销是追加反向记录，不是编辑，所以用危险样式并单独确认 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button
               v-if="record.entryType === 'NORMAL'"
@@ -223,7 +223,7 @@ const reverseOpen = ref(false),
   reverseRow = ref<FinanceWriteOff | null>(null);
 const addFormRef = ref();
 const reverseFormRef = ref();
-/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+/** 必填项逐项校验，错误显示在输入框下方。 */
 const addRules = {
   sourceType: [{required: true, message: '请选择资金类型', trigger: 'change'}],
   source: [
@@ -238,12 +238,7 @@ const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({
 const sourceOptions = Object.values(SCM_FINANCE_SOURCE_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
-/**
- * 资金来源的中文。
- *
- * `SCM_FINANCE_SOURCE_TYPE_ENUM` 只覆盖收款 / 付款（那是「可核销资金单」的两个来源），
- * 而核销行还能来自余额消费（流水表），因此这里补上第三种，缺项回落原值。
- */
+/** 资金来源中文。枚举只有收款和付款，核销记录还可能来自余额消费，这里补上。 */
 const SOURCE_TYPE_TEXT: Record<string, string> = {
   RECEIPT: '收款',
   PAYMENT: '付款',
@@ -254,14 +249,11 @@ function sourceTypeText(value?: string | null): string {
   return value ? SOURCE_TYPE_TEXT[value] ?? value : '—';
 }
 
-/** 核销目标的类型只有应收 / 应付两值，直接复用财务业务类型枚举。 */
+/** 目标类型：应收或应付。 */
 function targetTypeText(value?: string | null): string {
   return value ? SCM_FINANCE_BUSINESS_TYPE_ENUM[value]?.desc ?? value : '—';
 }
 
-// 列按「哪张核销单 / 钱从哪来 / 核到哪去 / 多少钱 / 什么方向 / 为什么 / 谁在什么时候做的」排列。
-// 资金与目标各带一组「类型 + 单号 + 往来方」，合并成来源 / 对象两格（13 列 → 8 列）；
-// 核销时点与操作人合成一格。
 const columns = ref<TableColumnsType<FinanceWriteOff>>([
   {title: '核销单号', dataIndex: 'writeOffNo', width: 175},
   {title: '资金方', dataIndex: 'sourceName', width: 190},
@@ -357,7 +349,7 @@ function removeTarget(id: FinanceCandidate['id']) {
 }
 
 async function submitAdd() {
-  // 资金类型 / 资金单走字段校验；「至少一条目标有正数金额」是跨行的业务规则，用 toast
+  // 资金类型和资金单走字段校验；至少一条目标有正数金额用 toast 提示
   try {
     await addFormRef.value?.validate();
   } catch {
@@ -380,7 +372,7 @@ async function submitAdd() {
     addOpen.value = false;
     await queryData();
   } catch {
-    // 登记失败只走全局 toast；弹窗里的 addError 留给本地校验
+    // 登记失败由全局 toast 提示；addError 只用于本地校验
   } finally {
     addSaving.value = false;
   }
@@ -393,7 +385,7 @@ function openReverse(row: FinanceWriteOff) {
 }
 async function submitReverse() {
   if (!reverseRow.value) return;
-  // 必填项走表单校验：错误显示在输入框下方
+  // 必填项由表单校验
   try {
     await reverseFormRef.value?.validate();
   } catch {
@@ -407,7 +399,7 @@ async function submitReverse() {
     reverseOpen.value = false;
     await queryData();
   } catch {
-    // 反向失败只走全局 toast；弹窗里的 reverseError 留给表单校验
+    // 反向失败由全局 toast 提示；reverseError 只用于表单校验
   } finally {
     reverseSaving.value = false;
   }

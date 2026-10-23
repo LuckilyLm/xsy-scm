@@ -120,7 +120,7 @@ const weightText = computed(() => {
   return `${item.netWeight}${item.weightUnit || ''}`;
 });
 
-/** 时间只展示到分钟：扫码的人看的是「哪天到的货」，秒级精度没有意义还会挤满一行。 */
+/** 时间只展示到分钟，够扫码的人看。 */
 function formatTime(value?: string): string {
   if (!value) return '—';
   return dayjs(value).utcOffset(8).format('YYYY-MM-DD HH:mm');
@@ -132,7 +132,7 @@ function fileUrl(fileKey: string): string {
   return tracePublicApi.fileUrl(token.value, fileKey);
 }
 
-/** axios 以响应对象拒绝业务错误，不是 Error；优先保留后端可读提示。 */
+/** 取后端可读的错误提示。 */
 function errorText(e: unknown): string {
   const response = e as {
     data?: {msg?: string};

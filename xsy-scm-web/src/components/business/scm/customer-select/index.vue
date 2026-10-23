@@ -28,15 +28,9 @@ const props = withDefaults(
     placeholder?: string;
     width?: string;
     size?: string;
-    /**
-     * 只列出指定类型编码的客户。
-     * 「上级集团客户」传 `GROUP` —— 后端只接受集团作为上级，前端收窄可避免必然失败的提交。
-     */
+    /** 只列出指定类型编码的客户；上级客户只接受集团。 */
     typeCode?: string | null;
-    /**
-     * 需要排除的客户 ID。
-     * 编辑客户时传自己的 `customerId`，否则「上级客户」下拉会包含自己（后端 `validateParent` 会以 40032 拒绝）。
-     */
+    /** 要排除的客户 ID；编辑时传自己，避免把自己选为上级。 */
     excludeId?: ScmId | null;
   }>(),
   {placeholder: '请选择客户', width: '100%', size: 'default', typeCode: null, excludeId: null}

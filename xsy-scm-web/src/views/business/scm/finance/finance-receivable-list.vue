@@ -200,11 +200,11 @@ function showDetail(row: FinanceReceivable) {
 
 onMounted(async () => {
   try {
-    // 客户筛选是可选增强：拉不到就静默降级，不弹全局提示
+    // 客户筛选是可选增强：拉不到就静默降级，不弹提示
     const response = await customerApi.optionList({suppressGlobalErrorMessage: true});
     customerOptions.value = response.data.map((item) => ({label: `${item.customerCode} · ${item.name}`, value: item.customerId}));
   } catch {
-    // Customer filter is optional; the scoped AR list remains available without it.
+    // 客户筛选失败不影响应收列表
   }
   queryData();
 });

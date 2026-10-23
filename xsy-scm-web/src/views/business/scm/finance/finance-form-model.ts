@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {SCM_FINANCE_OPERATION_TYPE_ENUM} from '/@/constants/business/scm/finance-const';
 
-// 两个最多 18 位有效数字的输入相乘，先保留完整乘积再按金额精度舍入。
+// 先保留完整乘积，再按金额精度舍入。
 const LineAmountDecimal = Decimal.clone({precision: 40});
 
 export function initialFinanceDateRange() {
@@ -51,9 +51,7 @@ export function settleStateText(value: string | null | undefined): string {
   return value === 'OPEN' ? '未结清' : value === 'PARTIAL' ? '部分结清' : value === 'SETTLED' ? '已结清' : value || '—';
 }
 
-/**
- * 把操作类型转为中文；不认识的类型保留原值，便于发现新增动作。
- */
+/** 操作类型转中文；不认识的保留原值。 */
 export function operationTypeText(value: string | null | undefined): string {
   if (!value) return '—';
   return SCM_FINANCE_OPERATION_TYPE_ENUM[value]?.desc || value;
@@ -63,9 +61,7 @@ export function settleStateTone(value: string | null | undefined): ScmStatusTone
   return value === 'SETTLED' ? 'success' : value === 'PARTIAL' ? 'processing' : value === 'OPEN' ? 'warning' : 'neutral';
 }
 
-/**
- * 金额样式：普通金额正常显示，零余额弱化，非零异常金额高亮。
- */
+/** 金额样式：零余额变灰，异常金额标红。 */
 export function moneyClass(value: string | null | undefined, mode: 'fact' | 'balance' | 'anomaly' = 'fact'): string {
   if (value == null || value === '') return 'scm-money scm-money--muted';
   try {
@@ -79,7 +75,7 @@ export function moneyClass(value: string | null | undefined, mode: 'fact' | 'bal
   return 'scm-money';
 }
 
-/** 收款差额 = 金额 − 有效金额，即已被反向冲减的部分；红字/反向行本身没有差额语义 */
+/** 收款差额 = 金额 − 有效金额，即被反向冲减的部分；红字和反向行没有差额。 */
 export function receiptDifference(record: {entryType: string; amount: string; effectiveAmount: string}): string | null {
   if (record.entryType !== 'NORMAL') return null;
   try {
@@ -110,10 +106,7 @@ export function isValidPositiveAmount(value: string | null | undefined): boolean
   }
 }
 
-/**
- * 按数量和单价计算四位小数金额，不用浮点数。
- * 金额超出允许范围或输入无效时返回空字符串，避免提交错误金额。
- */
+/** 数量和单价算四位小数金额，不用浮点数；输入无效或超出范围返回空字符串。 */
 export function lineAmount(quantity: string | null | undefined, unitPrice: string | null | undefined): string {
   if (quantity == null || unitPrice == null || !isValidPositiveAmount(quantity) || !isValidPositiveAmount(unitPrice)) return '';
   try {

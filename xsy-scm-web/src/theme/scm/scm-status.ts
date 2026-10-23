@@ -1,13 +1,8 @@
-/**
- * SCM 统一状态视觉语义。
- *
- * 各业务域的枚举值仍由 `constants/business/scm/*-const.ts` 维护，这里只负责
- * 把语义档位收敛成同一套 antd 标签色，避免同一状态在不同模块呈现不同颜色。
- */
+/** SCM 状态色：各业务枚举共用同一套档位，避免同状态不同颜色。 */
 
 export type ScmStatusTone = 'success' | 'processing' | 'warning' | 'error' | 'neutral';
 
-/** 语义档位 → antd 预设标签色 */
+/** 档位 → antd 标签色 */
 export const SCM_STATUS_TONE_COLOR: Record<ScmStatusTone, string> = {
   // 上架 / 启用 / 已完成 / 已结清 / 已收货
   success: 'green',
@@ -21,12 +16,7 @@ export const SCM_STATUS_TONE_COLOR: Record<ScmStatusTone, string> = {
   neutral: 'default',
 };
 
-/**
- * 归一化历史遗留的颜色写法。
- *
- * 部分业务常量表沿用了 `gray`，但 antd 会把它当作自定义色值渲染成实心灰底白字，
- * 与"失效/停用"应有的弱化观感不符，统一收敛到 `default`。
- */
+/** gray / grey 统一收敛到 default，避免渲染成实心灰底。 */
 export function scmStatusColor(color?: string | null): string {
   if (!color) {
     return SCM_STATUS_TONE_COLOR.neutral;

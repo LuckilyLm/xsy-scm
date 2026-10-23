@@ -173,7 +173,7 @@ async function save() {
       version: form.version,
       skuId: form.skuId,
       unitPrice: form.unitPrice,
-      // 后端收 OffsetDateTime：必须带偏移，不能只给 yyyy-MM-dd HH:mm:ss
+      // 后端要带时区偏移的时间，不能只传日期时间
       startAt: dayjs(range.value[0]).format('YYYY-MM-DDTHH:mm:ssZ'),
       endAt: dayjs(range.value[1]).format('YYYY-MM-DDTHH:mm:ssZ'),
       remark: form.remark || null,

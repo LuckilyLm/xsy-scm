@@ -1,9 +1,4 @@
-<!--
-  溯源附件面板：商品资质与批次检测报告共用一套列表 + 上传。
-
-  查看沿用被挂对象自身的权限，管理按钮由调用方按 `scm:trace:file:manage` 控制显隐。
-  上传只把 fileKey 交给后端，后端按对象重新绑定，前端不维护关系。
--->
+<!-- 溯源附件面板：商品资质与批次检测报告共用，上传只提交 fileKey，由后端绑定。 -->
 <template>
   <div class="trace-attach">
     <div class="trace-attach__head">

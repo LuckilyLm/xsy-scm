@@ -98,14 +98,7 @@ const warehouseOptions = computed(() =>
   }))
 );
 
-/**
- * 采购员下拉的桥接。
- *
- * 原生 `EmployeeSelect` 的 `value` prop 声明是 `[Number, Array]`，
- * 直接绑 `Id | null | undefined` 会因为 `string` / `null` 报 TS2322。
- * 员工 id 在后端是自增数字，这里显式收敛成 `number | undefined`；
- * 清空时写回 `null`（后端 `purchaserId` 可空，不用 `undefined` 表达「未选」）。
- */
+/** 员工选择器的 value 只接受数字，这里转成 number；清空时回写 null。 */
 const purchaserValue = computed<number | undefined>({
   get: () => (form.value.purchaserId == null ? undefined : Number(form.value.purchaserId)),
   set: (value) => {
@@ -113,7 +106,7 @@ const purchaserValue = computed<number | undefined>({
   },
 });
 
-/** 分配/改派权：与服务端 PurchaseOwnerResolver 同一口径 —— 无此权者新建一律落自己名下。 */
+/** 有分配权才能选采购员；没有的话，新建的采购单直接归自己。 */
 const canAssign = computed(() => hasPermission('scm:purchase:assign'));
 
 async function loadWarehouses() {
@@ -147,8 +140,7 @@ async function open(id?: Id) {
       return;
     }
     const detail = r.data;
-    // 表单里的 `plannedQuantity` / `purchasePrice` 就是 VO 的同名字段；
-    // 分配集合原样带过来，`demandVersion` 用详情里的当前值（写错会 40972）。
+    // 原样带回明细和分配；demandVersion 必须用详情里的当前值
     form.value = {
       ...detail,
       items: (detail.items ?? []).map((item) => ({

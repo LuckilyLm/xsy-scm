@@ -35,16 +35,7 @@ export interface WarehouseNode {
   todayOutboundQuantity: string;
 }
 
-/**
- * 库存健康度。
- *
- * 四档互斥，且 outOfStockCount + lowCount + highCount
- * + normalCount + unconfiguredCount === totalSkuCount，
- * 所以占比可以直接拿总数当分母。
- *
- * 判定顺序是「缺货 → 未配置 → 三档」：缺货只要求可用量 ≤ 0，不要求配了阈值；
- * 未配置的塞进「正常」会让健康度虚高，所以单独成档。
- */
+/** 库存健康度：五档互斥，合计等于总规格数；未配置阈值单独成档。 */
 export interface InventoryHealth {
   totalSkuCount: number;
   normalCount: number;
@@ -73,12 +64,7 @@ export interface PurchaseData {
   todayReceiptCount: number;
 }
 
-/**
- * 地理分布（地图 M1）。
- *
- * 省级由市级在 Java 侧上卷，所以只拿市级求和就能校验省级，两者不会各自演算。
- * 坐标是 `scm_region` 的区划质心（GCJ-02），不是任何单位的实际地址坐标。
- */
+/** 地理分布：坐标用区划质心（GCJ-02），不是单位实际地址。 */
 export interface GeoCityNode {
   cityCode: number;
   cityName: string;
@@ -101,11 +87,7 @@ export interface GeoProvinceNode {
   warehouseCount: number;
 }
 
-/**
- * 归属覆盖度：`*Total` 是全部主档，`*Located` 是其中解析出市级归属的。
- *
- * 差额必须显示在大屏上 —— 否则用户会以为图上的分布就是全部业务量。
- */
+/** 归属覆盖度：*Total 是全部，*Located 是能定位到市的；差额要显示在大屏上。 */
 export interface GeoCoverage {
   customerTotal: number;
   customerLocated: number;

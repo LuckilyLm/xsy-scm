@@ -21,7 +21,7 @@ export interface FinanceProfitRow {
   bizDate?: string | null;
   revenueAmount: string | null;
   salesCostAmount: string | null;
-  /** 促销赠品成本（满赠赠品出库成本）；与商品销售成本分开，见后端 `ScmFinanceProfitRowVO`。 */
+  /** 促销赠品出库成本，与商品销售成本分开。 */
   giftCostAmount?: string | null;
   grossProfit: string | null;
   grossMarginRate: string | null;
@@ -31,7 +31,7 @@ export interface FinanceProfitRow {
 export interface FinanceProfitSummary {
   revenueAmount: string | null;
   salesCostAmount: string | null;
-  /** 促销赠品成本（满赠赠品出库成本）。 */
+  /** 促销赠品出库成本。 */
   giftCostAmount?: string | null;
   grossProfit: string | null;
   grossMarginRate: string | null;

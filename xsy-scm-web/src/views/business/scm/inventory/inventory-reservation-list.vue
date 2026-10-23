@@ -1,14 +1,4 @@
-<!--
-  库存预留。
-
-  预留是业务动作的副产物（销售订单确认时产生），不是人手工录的单据 ——
-  因此本页只有查询与释放，没有「新建」。
-  释放把占用归还可用量；重复释放会被拒绝（41016），不会把可用量虚增。
-
-  列按「哪张单 / 哪个仓 / 什么货 / 占了多少 / 还在不在占」排列：仓库与商品规格的编码
-  作为名称下方的 secondary text。来源单号取不到时显示破折号，不回落成裸 ID ——
-  `sourceDocumentId` 是技术主键，对使用者没有信息量。
--->
+<!-- 库存预留由销售订单确认产生，本页只查询和释放。释放后占用量归还可用量，重复释放会被拒绝。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -74,7 +64,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'occurredAt'">{{ datetime(record.occurredAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 只有生效中的预留可以释放；其余状态留一个破折号占位，避免操作列时有时无 -->
+          <!-- 只有生效中的预留可以释放 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button
               v-if="record.status === 'ACTIVE'"
@@ -154,7 +144,7 @@ const columns = ref<InventoryReservationColumn[]>([
 ]);
 const scrollX = computed(() => scmColumnsWidth(columns.value));
 
-/** 生效中 = 还占着可用量（橙）；已消耗 = 正常走到出库（绿）；已释放 = 占用已归还（灰）。 */
+/** 生效中占着可用量（橙），已消耗（绿），已释放（灰）。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {
   ACTIVE: 'warning',
   RELEASED: 'neutral',

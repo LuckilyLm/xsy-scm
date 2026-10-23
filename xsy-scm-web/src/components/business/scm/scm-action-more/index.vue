@@ -20,15 +20,7 @@ import {DownOutlined} from '@ant-design/icons-vue';
 import type {MenuProps} from 'ant-design-vue';
 import type {ScmActionItem} from './action-item';
 
-/**
- * 列表操作列的「更多」菜单。
- *
- * 操作列超过 3 个动作时，低频与危险动作收进这里，把常驻宽度留给业务字段。
- * 危险动作的二次确认由调用方处理，本组件只负责收纳与派发。
- *
- * `label` 默认「更多」；当一组动作完全平级、收纳不是按频率而是按「同类归组」时，
- * 可以换成更准确的说法（例如报表下钻的「下钻」），避免「更多」暗示存在主次。
- */
+/** 操作列的「更多」菜单：收纳低频与危险动作，二次确认由调用方处理。 */
 const props = withDefaults(defineProps<{actions: ScmActionItem[]; label?: string}>(), {
   label: '更多',
 });

@@ -1,4 +1,4 @@
-/** 预警阈值的维护不直接修改库存数量。创建、修改及删除阈值后，实际预警状态仍由可用量重新判定。 */
+/** 维护阈值不改库存；预警状态仍由可用量判定。 */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

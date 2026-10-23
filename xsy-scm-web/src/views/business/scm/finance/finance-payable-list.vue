@@ -168,11 +168,7 @@
             />
           </template>
           <template v-else-if="column.dataIndex === 'redAmount'">
-            <!--
-              红字金额是派生的，不给手输：它必须等于「红字数量 × 红字单价」。
-              让用户填一个本该算出来的值，等于把「两者可以不一致」写进界面 ——
-              后端只校验格式与正数，不一致的金额会被照单收下。
-            -->
+            <!-- 红字金额由数量 × 单价算出，不给手输，避免和后端金额不一致 -->
             <span class="red-amount-value">{{ redLineAmount(record) }}</span>
           </template>
         </template>
@@ -345,12 +341,7 @@ function retryRed() {
   if (redSource.value) void openRed(redSource.value);
 }
 
-/**
- * 一行的红字金额，由数量 × 单价算出。
- *
- * <p>金额不再是可编辑字段：让用户填一个本该算出来的值，等于把「两者可以不一致」写进界面，
- * 而后端只校验格式与正数，不一致的金额会被照单收下。算不出来时显示占位符并把该行排除在提交之外。
- */
+/** 红字金额 = 数量 × 单价；算不出来显示占位符，该行也不提交。 */
 function redLineAmount(record: RedDraft): string {
   const amount = lineAmount(record.redQuantity, record.redUnitPrice);
   return amount ? moneyText(amount) : '—';
@@ -358,7 +349,7 @@ function redLineAmount(record: RedDraft): string {
 
 async function submitRed() {
   if (redSaving.value || redLoading.value || !redOpen.value) return;
-  // 只提交能算出金额的行：数量缺失、单价缺失或金额非正的行都不构成一条有效红字。
+  // 只提交算得出金额的行。
   const lines = redDrafts.value
     .map((item) => ({
       purchaseOrderItemId: item.purchaseOrderItemId,
@@ -380,7 +371,7 @@ async function submitRed() {
     redOpen.value = false;
     await queryData();
   } catch {
-    // 登记失败只走全局 toast；弹窗里的 redError 留给明细加载失败
+    // 登记失败由全局 toast 提示；redError 只用于明细加载失败
   } finally {
     redSaving.value = false;
   }

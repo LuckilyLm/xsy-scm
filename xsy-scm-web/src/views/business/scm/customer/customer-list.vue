@@ -1,8 +1,4 @@
-<!--
-  客户档案列表。
-  - 不做批量删除：后端没有 `batchDelete` 端点，只有单条删除；
-  - `requestId` 请求序号用于丢弃过期响应，否则快速翻页时旧响应会覆盖新响应。
--->
+<!-- 客户档案列表：只有单条删除；翻页时用请求序号丢弃过期响应。 -->
 <template>
   <section aria-label="客户档案">
     <a-form class="smart-query-form" layout="inline">
@@ -167,17 +163,17 @@ const loading = ref(false);
 const error = ref('');
 const advanced = ref(false);
 const drawer = ref<InstanceType<typeof CustomerDrawer>>();
-// 查询条件按「登录用户 + 本页」本地记忆；仅存浏览器，不落业务表。
+// 查询条件记在浏览器本地，不写业务表。
 const queryMemory = useQueryFilterMemory<CustomerQuery>('scm:customer:list');
 
-/** 改派归属：独立动作、独立权限（scm:customer:assign），带乐观锁 version。 */
+/** 改派业务员：独立权限，带乐观锁版本。 */
 const reassignVisible = ref(false);
 const reassignSaving = ref(false);
 const reassignTarget = ref<CustomerRow>();
-/** EmployeeSelect 的 value prop 不接受 null（声明 [Number, Array]），用 undefined 桥接「收回为未分配」。 */
+/** 收回负责关系时用 undefined；EmployeeSelect 不接受 null。 */
 const reassignSeller = ref<number | undefined>(undefined);
 
-/** 无全量客户范围权限时，空表可能是「授权范围内确实没有」而非「系统没有数据」，文案要能区分。 */
+/** 没有全量权限时空表要说明，可能只是授权范围内没有数据。 */
 const canSeeAllCustomers = computed(() => hasPermission('scm:customer:scope:all:query'));
 const emptyText = computed(() =>
   canSeeAllCustomers.value ? '暂无数据' : '当前仅显示您授权范围内的客户；若无数据，可能是尚未分配业务员或授权范围未配置，请联系管理员确认。'
@@ -205,13 +201,13 @@ async function submitReassign() {
     reassignVisible.value = false;
     await load();
   } catch {
-    // 改派失败只走全局 toast（版本冲突 40921 的文案由拦截器给出）
+    // 改派失败由全局 toast 提示
   } finally {
     reassignSaving.value = false;
   }
 }
 
-/** 状态下拉的可选项：直接展开 SmartEnum，避免手写一份会和后端漂移的文案表。 */
+/** 状态选项直接来自枚举，不另写文案表。 */
 const statusOptions = Object.values(CUSTOMER_STATUS_ENUM);
 
 const statusText = (value: CustomerStatus): string => CUSTOMER_STATUS_ENUM[value]?.desc || value;
@@ -223,7 +219,7 @@ const statusColor = (value: CustomerStatus): string => {
   return 'default';
 };
 
-// 名称、编码、联系人与电话可独立查看；客户编码默认收起，仍可通过列设置打开。
+// 客户编码默认收起，可通过列设置打开。
 type CustomerListColumn = TableColumnsType<CustomerRow>[number] & {showFlag?: boolean};
 const columns = ref<CustomerListColumn[]>([
   {title: '客户名称', dataIndex: 'name', width: 200, sorter: true, ellipsis: true},
@@ -237,7 +233,7 @@ const columns = ref<CustomerListColumn[]>([
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
   {title: '操作', dataIndex: 'action', width: 150, align: 'center', fixed: 'right'},
 ]);
-// 客户名称是唯一可伸缩的文本列：宽屏剩余空间补给它；用户改过宽度则按原值渲染。
+// 客户名称撑满剩余宽度；用户改过的列宽不动。
 const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 let requestId = 0;
@@ -247,7 +243,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const response = await customerApi.query({...filters}, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       rows.value = response.data.list;
@@ -281,7 +277,7 @@ function reset() {
   void load();
 }
 
-// 排序白名单：只映射后端 CustomerQueryService.SORTABLE 允许的四列。
+// 排序只映射后端允许的四列。
 const sortChanged: TableProps<CustomerRow>['onChange'] = (_page, _filters, sort) => {
   const item = Array.isArray(sort) ? sort[0] : sort;
   const names: Record<string, string> = {
@@ -299,7 +295,7 @@ function detail(id: ScmId) {
   void router.push({path: '/customer/customer-detail', query: {customerId: String(id)}});
 }
 
-/** `item.value` 来自 SmartEnum 展开，运行时必然是后端枚举码之一。 */
+/** 值来自枚举，必然是后端枚举码。 */
 async function changeStatus(row: CustomerRow, status: string) {
   try {
     await customerApi.updateStatus({
@@ -310,7 +306,7 @@ async function changeStatus(row: CustomerRow, status: string) {
     message.success('客户状态已更新');
     await load();
   } catch {
-    // 状态流转失败只走全局 toast
+    // 状态更新失败由全局 toast 提示
   }
 }
 
@@ -320,17 +316,17 @@ async function remove(row: CustomerRow) {
     message.success('客户已删除');
     await load();
   } catch {
-    // 删除失败只走全局 toast
+    // 删除失败由全局 toast 提示
   }
 }
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 菜单项不能挂 v-privilege，用 hasPermission 判断。 */
 const canAssign = computed(() => hasPermission('scm:customer:assign'));
 const canPromotion = computed(() => hasPermission('scm:customer:promotion:manage'));
 const promotionModal = ref<InstanceType<typeof CustomerPromotionModal>>();
 const canDelete = computed(() => hasPermission('scm:customer:delete'));
 
-/** 操作列常驻「编辑 + 状态」，其余低频与危险动作收进「更多」，把宽度留给业务字段。 */
+/** 低频和危险动作收进「更多」。 */
 function rowActions(): ScmActionItem[] {
   return [
     {key: 'detail', label: '详情'},
@@ -348,7 +344,7 @@ function onRowAction(key: string, row: CustomerRow) {
   } else if (key === 'reassign') {
     openReassign(row);
   } else if (key === 'delete') {
-    // 菜单项挂不上 a-popconfirm，二次确认改由 Modal 承担，语义与原 popconfirm 一致。
+    // 菜单项不能挂 a-popconfirm，改用 Modal 确认。
     Modal.confirm({
       title: '删除客户',
       content: `确认删除「${row.name}」（${row.customerCode}）？`,
@@ -361,14 +357,14 @@ function onRowAction(key: string, row: CustomerRow) {
 }
 
 onMounted(() => {
-  // 恢复上次筛选条件与分页大小，但强制回到第 1 页：记忆是便利，不该把用户带回深处的旧页码。
+  // 恢复筛选条件，但回到第 1 页。
   Object.assign(filters, queryMemory.load(), {pageNum: 1});
   void load();
 });
 </script>
 
 <style scoped>
-/* 名称入口复用 .scm-cell-link；表格单元格稍微收紧内边距，保持桌面单行阅读密度。 */
+/* 单元格内边距稍紧，保持单行密度 */
 .customer-table :deep(.ant-table-tbody > tr > td) {
   padding: 6px 12px;
 }

@@ -159,7 +159,7 @@ function remove(index: number) {
   gap: 16px;
 }
 
-/* 标题 + 说明（由抽屉通过 #head 传入）与上传按钮排在同一行 */
+/* 标题和上传按钮同一行 */
 .image-upload__head {
   display: flex;
   flex-wrap: wrap;
@@ -215,7 +215,7 @@ function remove(index: number) {
   border-radius: 4px;
 }
 
-/* 操作横向排列，尺寸克制，不与图片本身抢视觉 */
+/* 操作按钮横向排开，尺寸小于图片 */
 .image-item__actions {
   display: flex;
   flex-wrap: wrap;

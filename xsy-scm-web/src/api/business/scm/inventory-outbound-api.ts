@@ -1,4 +1,4 @@
-/** 库存出库单支持草稿、确认、取消和查询。确认后形成实际出库流水，前端不可直接编辑已确认的库存事实。 */
+/** 库存出库单：草稿、确认、取消、查询。确认后形成出库流水，已确认的不能直接编辑。 */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {Id, InventoryOutbound, InventoryOutboundAdd, InventoryOutboundQuery} from '/@/views/business/scm/inventory/inventory-types';

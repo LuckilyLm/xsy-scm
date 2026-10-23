@@ -784,16 +784,12 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   test('order operation enum matches backend ScmOrderOperationTypeEnum', () => {
     const ts = readFileSync(new URL('../src/constants/business/scm/order-const.ts', import.meta.url), 'utf8');
     const block = ts.match(/SCM_ORDER_OPERATION_ENUM[^{]*\{([\s\S]*?)\n\};/)[1];
-    const front = [...block.matchAll(/^ {4}([A-Z_]+):/gm)].map((m) => m[1]);
+    const front = [...block.matchAll(/^\s+([A-Z_]+):/gm)].map((m) => m[1]);
     const java = readFileSync(
       new URL('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java', import.meta.url),
       'utf8'
     );
-    const back = java
-      .match(/enum ScmOrderOperationTypeEnum \{([^}]*)\}/)[1]
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const back = [...java.match(/enum ScmOrderOperationTypeEnum \{([^}]*)\}/)[1].matchAll(/([A-Z_]+)\("/g)].map((m) => m[1]);
     assert.ok(back.length > 0, '后端枚举解析失败');
     assert.deepEqual(front.slice().sort(), back.slice().sort(), '前端 SCM_ORDER_OPERATION_ENUM 与后端 ScmOrderOperationTypeEnum 取值集合不一致');
     assert.ok(

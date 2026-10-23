@@ -11,7 +11,7 @@ import type {
   OrderPoolAssignee,
 } from '/@/views/business/scm/order/order-types';
 import type {ResolveResult} from '/@/types/business/scm/pricing';
-// A failed retry retains its UUID; a changed payload or successful request starts a new command.
+// 失败重试复用同一 UUID；载荷变化或成功后换新键。
 const keys = new Map<string, string>();
 const importKeys = new WeakMap<File, string>();
 
@@ -135,18 +135,9 @@ export const orderApi = {
     },
     options?: RequestOptions
   ) => postRequest('/scm/order/price/preview', data, options) as unknown as Promise<ScmResponse<ResolveResult>>,
-  /**
-   * 为已确认订单预留库存。
-   *
-   * 显式操作而非确认时自动预留：本业务的库存在订单确认之后才产生，
-   * 挂在确认上会让「先接单 → 再采购」链路无法运转。货到后由业务人员执行。
-   * 严格语义：任一行可用量不足则整体失败（41011），不会只占一半。
-   */
+  /** 为已确认订单预留库存：货到后由业务人员执行；任一行可用量不足则整体失败。 */
   reserveStock: (orderId: Id) => postRequest('/scm/order/reserve-stock/' + orderId, {}) as unknown as Promise<ScmResponse<string>>,
-  /**
-   * 某客户某 SKU 的最近成交参考价（只读）：仅录单旁证，不回算当前价格、不参与定价。
-   * limit 由后端裁剪到 [1,10]，默认 5。
-   */
+  /** 最近成交参考价：只作录单参考，不参与定价；limit 取 1~10，默认 5。 */
   recentPrices: (customerId: Id, skuId: Id, limit = 5) =>
     getRequest('/scm/order/reference/recent-prices', {customerId, skuId, limit}) as unknown as Promise<ScmResponse<RecentPrice[]>>,
 };

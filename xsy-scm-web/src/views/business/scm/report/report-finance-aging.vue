@@ -187,7 +187,7 @@ async function load() {
   summary.value = [];
   total.value = 0;
   try {
-    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页内 Alert 提示，不再弹全局 toast
     const quiet = {suppressGlobalErrorMessage: true};
     const [page, totals] = await Promise.all([financeAgingApi.query(payload, quiet), financeAgingApi.summary(payload, quiet)]);
     if (id !== requestId) return;

@@ -1,13 +1,4 @@
-<!--
-  库存盘点单。
-
-  状态机：DRAFT → CONFIRMED，草稿可 CANCELLED。已确认不可回退（流水 append-only）。
-  「确认盘点」会真实调整库存并写不可逆流水，因此单独一个按钮 + 二次确认，不与「编辑」混在一起。
-
-  页面上要讲清楚的一件事：差异施加到「确认瞬间的账面量」，不是把账面直接改写成实盘数。
-  保存草稿到确认之间若发生了收货 / 出库，确认后的账面就不等于实盘数 ——
-  这是正确行为（那笔收货没有被抹掉），但看起来像 bug，所以在确认弹窗与详情页都写明。
--->
+<!-- 库存盘点单：确认时把“实盘量 − 账面量”的差异计入库存。确认时的账面量可能与保存草稿时不同。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -73,8 +64,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'confirmedAt'">{{ datetime(record.confirmedAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 行内常驻「详情」与草稿态的「确认盘点」（会真实调整库存，故单独留在行内），
-               复制 / 编辑 / 取消 / 删除收进「更多」 -->
+          <!-- 详情和确认盘点常驻，其他操作收进“更多” -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
@@ -153,7 +143,7 @@
 
   <InventoryStocktakeDetailDrawer v-model:open="detailOpen" :detail="detail" />
 
-  <!-- 导入结果：整批校验，任一错误行都不落库（后端返回 code=0 且 totalErrors>0，故按数据判定，不看信封码） -->
+  <!-- 导入结果：整批校验，任一错误行都不会创建盘点单 -->
   <a-modal :open="importResultOpen" title="盘点导入结果" :closable="false" width="720" @cancel="importResultOpen = false">
     <a-alert
       v-if="importResult && importResult.stocktakeId"
@@ -224,8 +214,7 @@ const statusOptions = Object.values(SCM_INVENTORY_STOCKTAKE_STATUS_ENUM).map((i)
   label: i.desc,
 }));
 
-// 列表按「哪张单 / 哪个仓 / 什么状态 / 谁在什么时候盘的」排列。创建时间是技术字段，
-// 盘点单的业务时刻是确认时间，不上列。
+// 创建时间不上列，业务时间用确认时间。
 type InventoryStocktakeColumn = ScmListColumn;
 const columns = ref<InventoryStocktakeColumn[]>([
   {title: '盘点单号', dataIndex: 'stocktakeNo', width: 200},
@@ -255,12 +244,12 @@ const STATUS_TONE: Record<string, ScmStatusTone> = {
 };
 const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status ?? ''] ?? 'neutral';
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 更多菜单无法使用 `v-privilege`，改用 `hasPermission` 判断。 */
 const canAdd = computed(() => hasPermission('scm:inventory:stocktake:add'));
 const canUpdate = computed(() => hasPermission('scm:inventory:stocktake:update'));
 const canDelete = computed(() => hasPermission('scm:inventory:stocktake:delete'));
 
-/** 复制到新建对所有状态可用（它是「照这张单再盘一次」）；其余动作只在草稿态。 */
+/** 复制到新建对所有状态可用，其余动作只在草稿态。 */
 function rowActions(row: InventoryStocktake): ScmActionItem[] {
   const draft = row.status === 'DRAFT';
   return [
@@ -337,12 +326,9 @@ function resetQuery() {
 interface EditableItem {
   _key: number;
   skuId?: string | number;
-  // 记账单位：仅「复制到新建」时带入，供核对当前余额单位；普通新建为空。
+  /** 记账单位，仅复制到新建时带入。 */
   unit?: string;
-  /**
-   * 实盘量在表单里是 `number`（InputNumber 只接受数字），提交时才转成后端要求的
-   * 4 位定点字符串。`null` = 还没清点；`0` = 确实一件不剩，两者是不同的结论。
-   */
+  /** 表单里用 number，提交时转成 4 位定点字符串；null 表示未清点，0 表示确实没有。 */
   actualQuantity?: number | null;
   remark?: string;
 }
@@ -406,15 +392,11 @@ function closeDrawer() {
   drawerOpen.value = false;
 }
 
-// ------------------------------------------------------------------ 复制历史盘点（纯前端，不落库）
+// 复制历史盘点：只填表单，不写库
 
 /**
- * 把历史盘点的「仓库 + SKU 集合 + 当前余额记账单位」复制进未保存的新建表单。
- *
- * 刻意不复制历史账面量 / 历史实盘量 / 历史差异 / version：那些是另一时点的事实，
- * 冒充实盘会让确认阶段把陈旧数字当成本次清点结果。实盘量一律留空，由用户重新填写。
- * 本动作不创建任何 DRAFT —— 只有用户填完实盘量点「保存草稿」才走既有 create。
- * 任一 SKU 在当前仓库已无余额时显性报错、整单不复制，绝不悄悄丢弃行。
+ * 复制历史盘点的仓库、商品规格和当前单位到未保存的新建表单。
+ * 实盘量一律留空；任一规格已无余额时整单不复制。
  */
 async function openCopy(record: InventoryStocktake) {
   try {
@@ -426,9 +408,7 @@ async function openCopy(record: InventoryStocktake) {
       return;
     }
     const whId = d.warehouseId as string | number;
-    // 读当前余额：只为取「当前记账单位」并校验 SKU 仍存在；账面量绝不作为实盘量填入。
-    // 分页口径在 inventory-model 的 resolveStocktakeCopyUnits 里（后端 @Max(100) 会拒掉更大的
-    // pageSize），因此这里不放宽通用查询上限来喂本页面。
+    // 读取当前余额只为获取记账单位并确认规格仍有库存
     const {unitBySku} = await resolveStocktakeCopyUnits(
       sourceItems.map((i) => i.skuId),
       async (pageNum, pageSize) => {
@@ -463,7 +443,7 @@ async function openCopy(record: InventoryStocktake) {
   }
 }
 
-// ------------------------------------------------------------------ Excel 快照导入
+// ------------------------------------------------------------------ Excel 导入
 
 const templateLoading = ref(false);
 const importing = ref(false);
@@ -477,10 +457,10 @@ const importErrorColumns: TableColumnsType = [
   {title: '原因', dataIndex: 'message'},
 ];
 
-/** 导出快照模板绑定查询条件里的仓库；未选仓库时不导出，避免导错范围。 */
+/** 导出模板使用查询条件里的仓库；未选仓库时不导出。 */
 async function onDownloadTemplate() {
   if (queryForm.warehouseId === undefined || queryForm.warehouseId === null || queryForm.warehouseId === '') {
-    message.warning('请先在上方查询条件选择仓库，再导出快照模板');
+    message.warning('请先在上方查询条件选择仓库，再导出盘点模板');
     return;
   }
   templateLoading.value = true;
@@ -493,10 +473,7 @@ async function onDownloadTemplate() {
   }
 }
 
-/**
- * customRequest 接管上传：走带 Idempotency-Key 的导入命令，而不是组件默认上传。
- * 后端整批校验：信封 code=0 但 totalErrors>0 表示「一行都没落库」，据此决定成功还是展示错误表。
- */
+/** 接管上传，走带 Idempotency-Key 的导入接口；整批校验失败时不创建盘点单。 */
 const onUploadImport: UploadProps['customRequest'] = async (options) => {
   const file = options.file as File;
   importing.value = true;
@@ -520,12 +497,7 @@ const onUploadImport: UploadProps['customRequest'] = async (options) => {
   }
 };
 
-/**
- * 明细校验在提交前做：逐行给出「第几行缺什么」，比一条笼统的「参数不合法」有用得多。
- *
- * 非负与最多 4 位小数已由 InputNumber（`:min="0"` + `:precision="4"`）结构性保证，
- * 这里只需拦住「整行没清点」。实盘量填 0 是合法结论（确实一件不剩），不能与「没填」合并。
- */
+/** 提交前逐行校验；实盘量 0 是有效值，未填才报错。 */
 function buildPayload(): InventoryStocktakeAdd | null {
   const items = form.items.filter((i) => i.skuId !== undefined && i.skuId !== null);
   if (items.length === 0) {
@@ -548,7 +520,7 @@ function buildPayload(): InventoryStocktakeAdd | null {
   return {
     warehouseId: form.warehouseId as string | number,
     remark: form.remark,
-    // 数量以定点字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
+    // 数量以定点字符串提交，后端不接受 JSON 数字
     items: items.map((i) => ({
       skuId: i.skuId as string | number,
       actualQuantity: fixed4(i.actualQuantity) as string,
@@ -565,7 +537,7 @@ async function onSubmit() {
   try {
     if (form.id) {
       await inventoryStocktakeApi.update(form.id, payload);
-      message.success('已保存草稿（账面量已重新快照）');
+      message.success('已保存草稿（账面量已更新）');
     } else {
       await inventoryStocktakeApi.create(payload);
       message.success('已创建草稿');
@@ -582,7 +554,7 @@ async function onSubmit() {
 // ------------------------------------------------------------------ 详情与动作
 
 const detailOpen = ref(false);
-// Partial：初始为空对象（还没选中任何单据），打开详情时整体替换为后端返回的 VO
+// 初始为空对象，打开详情时替换为后端数据
 const detail = ref<Partial<InventoryStocktake>>({});
 
 async function openDetail(record: InventoryStocktake) {
@@ -609,7 +581,7 @@ function onConfirm(record: InventoryStocktake) {
         message.success('盘点完成，库存已按差异调整');
         queryData();
       } catch (e) {
-        // 负库存（41024）/ 低于预留（41025）等业务失败会走到这里，整单已回滚
+        // 负库存、低于预留等业务失败会走到这里，整单已回滚
         message.error(inventoryError(e));
       }
     },

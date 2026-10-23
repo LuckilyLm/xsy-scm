@@ -74,9 +74,7 @@
               </a-tag>
             </template>
             <template v-else-if="column.dataIndex === 'action'">
-              <!-- 行内只留当前状态唯一的推进动作（草稿=确认收货、待入库=确认入库）；
-               编辑备注与删除是低频/危险动作，收进「更多」，
-               否则 250px 的操作列里最显眼的永远是那排「编辑备注 删除」 -->
+              <!-- 只保留当前状态的推进动作，编辑备注和删除收进“更多” -->
               <a-space :size="0" class="smart-table-operate scm-table-actions">
                 <a-button
                   v-if="record.status === 'DRAFT'"
@@ -182,11 +180,11 @@ const columns = ref<TableColumnsType<Receipt>>([
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 更多菜单无法使用 `v-privilege`，改用 `hasPermission` 判断。 */
 const canUpdate = computed(() => hasPermission('scm:purchase:receipt:update'));
 const canDelete = computed(() => hasPermission('scm:purchase:receipt:delete'));
 
-/** 只有草稿可写；动作集合与原行内按钮一一对应，只按频率重新分组。 */
+/** 只有草稿可写。 */
 function rowActions(row: Receipt): ScmActionItem[] {
   const draft = row.status === 'DRAFT';
   return [
@@ -262,7 +260,7 @@ function remove(row: Receipt) {
     title: '删除这张草稿收货单？',
     okType: 'danger',
     onOk: async () => {
-      // 失败由全局 toast 给出原因；拒绝以保持确认框打开
+      // 失败原因由全局提示给出
       await purchaseReceiptApi.delete({id: row.id!});
       await queryData();
     },
@@ -295,11 +293,7 @@ async function putaway(row: Receipt) {
   });
 }
 
-// 入参来源：支持从库存流水页「来源单号」跳进来；待办卡片则带 status/receiptMode/putawayStatus。
-// 两者都只读 URL、填进已有筛选框，不新增任何后端能力——待办数字与列表结果必须同源，
-// 否则「待办 5 条」点进来看到的不是那 5 条。
-// 用 `route.query` 而不是 props：菜单路由不会传 props，而 `query` 是 hash 路由下唯一稳定的传参方式。
-// 取值必须过状态字典白名单：URL 可被手改/收藏转发，不能把任意串透传给查询接口。
+// 支持从库存流水和待办卡片进入；URL 只填入已有筛选，状态值必须在字典内。
 const RECEIPT_DEEP_LINK = {
   receiptNo: null,
   status: Object.values(SCM_RECEIPT_STATUS_ENUM).map((i) => i.value),
@@ -312,15 +306,14 @@ const receiptRouteName = route.name;
 watch(
   [() => route.name, () => route.query],
   ([name, incomingQuery]) => {
-    // SmartAdmin caches by route.name. Reapply the source link on reuse, but
-    // ignore navigation to other pages while this component stays cached.
+    // 组件被缓存时，只在回到本页时重新应用来源链接
     if (name !== receiptRouteName) return;
     const filters = deepLinkFilters(incomingQuery, RECEIPT_DEEP_LINK);
     queryForm.receiptNo = filters.receiptNo;
     queryForm.status = filters.status;
     queryForm.receiptMode = filters.receiptMode;
     queryForm.putawayStatus = filters.putawayStatus;
-    // 采购单号需要异步解析成 id，且不属于任何 deep-link 语义：进入页面即回落到未筛选。
+    // 采购单号不在链接参数中，进入页面时清空
     queryForm.purchaseOrderId = undefined;
     orderNoInput.value = undefined;
     onSearch();

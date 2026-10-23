@@ -1,4 +1,4 @@
-<!-- 销售分析各维度统一使用已确认订单、确认时间和结算金额。订购数量与实际数量分开；不同标签页独立保存分页和加载状态。 -->
+<!-- 销售分析：按已确认订单和结算金额统计；每个标签页独立保存分页和状态。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -56,7 +56,6 @@
     />
   </a-space>
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
-    <!-- ==================== 按商品 ==================== -->
     <a-tab-pane key="product" tab="按商品">
       <SalesProductTab
         :items="topItems(productTop)"
@@ -73,7 +72,6 @@
       />
     </a-tab-pane>
 
-    <!-- ==================== 按分类 ==================== -->
     <a-tab-pane key="category" tab="按分类">
       <SalesCategoryTab
         :items="topItems(categoryTop)"
@@ -90,7 +88,6 @@
       />
     </a-tab-pane>
 
-    <!-- ==================== 按客户 ==================== -->
     <a-tab-pane key="customer" tab="按客户">
       <SalesCustomerTab
         :items="topItems(customerTop)"
@@ -107,7 +104,6 @@
       />
     </a-tab-pane>
 
-    <!-- ==================== 按销售员 ==================== -->
     <a-tab-pane key="seller" tab="按销售员">
       <SalesSellerTab
         :rows="seller.rows"
@@ -123,7 +119,6 @@
       />
     </a-tab-pane>
 
-    <!-- ==================== 订单明细 ==================== -->
     <a-tab-pane key="item" tab="订单明细">
       <SalesItemTab
         :rows="item.rows"
@@ -139,7 +134,6 @@
         @open-order="openOrder"
       />
     </a-tab-pane>
-    <!-- ==================== 客户订单明细（订单表头级） ==================== -->
     <a-tab-pane key="order" tab="客户订单明细">
       <SalesOrderTab
         :rows="order.rows"
@@ -208,7 +202,7 @@ type SalesTab = 'product' | 'category' | 'customer' | 'seller' | 'item' | 'order
 
 const activeTab = ref<SalesTab>('product');
 const dateRange = ref<DateRange | undefined>();
-/** 共享筛选：五个维度共用同一个后端表单，切 Tab 不重置它，只各自归页码。 */
+/** 共享筛选，切标签页不重置，只把页码归 1。 */
 const filters = reactive<Omit<SalesQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
 const chartError = ref('');
@@ -257,7 +251,7 @@ async function loadOrderExportColumns(): Promise<void> {
 }
 const categories = ref<ProductCategory[]>([]);
 
-/** TOP5 图的原始行（后端已按金额降序 LIMIT）。 */
+/** TOP5 图的原始行，后端已按金额降序截取。 */
 const productTop = ref<SalesTopItem[]>([]);
 const categoryTop = ref<SalesTopItem[]>([]);
 const customerTop = ref<SalesTopItem[]>([]);
@@ -275,9 +269,7 @@ const orderExport = useScmExport(order);
 const productExport = useScmExport(product);
 const sellerExport = useScmExport(seller);
 
-/** 六个 Tab 都有对应导出端点（后端逐个 AND 上 `scm:report:export`），按钮按 `PERM.EXPORT` 显示。 */
-
-/** 请求体：日期区间 + 共享筛选 + 该 Tab 的分页。 */
+/** 请求体：日期区间 + 共享筛选 + 该标签页的分页。 */
 function salesQuery(tab: {pageNum: number; pageSize: number}): SalesQuery {
   return buildReportQuery<SalesQuery>(
     dateRange.value,
@@ -289,7 +281,7 @@ function salesQuery(tab: {pageNum: number; pageSize: number}): SalesQuery {
   );
 }
 
-/** 导出口径 = 列表口径，且不带分页（后端强制第 1 页与行数上限）。 */
+/** 导出与列表同一筛选，不带分页。 */
 function exportQuery(): Partial<SalesQuery> {
   return buildReportQuery<Partial<SalesQuery>>(dateRange.value, {
     ...filters,
@@ -356,7 +348,7 @@ const loadCustomerTop = createGuardedLoader(
   chartError
 );
 
-/** TOP 行 → 图数据：`value` 只决定条长，标签与 tooltip 用后端原文。 */
+/** TOP 行转图数据：value 只画条，标签用后端原文。 */
 function topItems(rows: SalesTopItem[]): ReportChartBar[] {
   return (rows ?? []).map((row) => ({
     name: row.name || '未命名',
@@ -365,7 +357,7 @@ function topItems(rows: SalesTopItem[]): ReportChartBar[] {
   }));
 }
 
-/** 只查当前 Tab：五个维度各查一遍会把同一个页面打成五次聚合扫描。 */
+/** 只查当前标签页，避免一次查询跑五次聚合。 */
 function queryActiveTab() {
   const overLimit = rangeOverLimitError(dateRange.value);
   if (overLimit) {
@@ -400,12 +392,7 @@ function queryActiveTab() {
   }
 }
 
-/**
- * 切 Tab：共享筛选保持不变，只把目标 Tab 的页码归 1 再重查。
- *
- * 不接 `a-tabs` 传出的 key（它的类型是 `Key`，且 `v-model:activeKey` 已经先更新过
- * `activeTab`），否则等于把同一个状态存两处。
- */
+/** 切标签页：共享筛选不变，目标页页码归 1 后重查。 */
 function onTabChange() {
   if (advanced.value && activeTab.value === 'order') void loadDynamicFilterFields();
   switch (activeTab.value) {
@@ -444,7 +431,7 @@ function resetQuery() {
   filters.categoryId = undefined;
   filters.keyword = undefined;
   advancedFilters.value = [];
-  // 重置回到「本月」（的统一默认值），并把每个 Tab 的页码归零位
+  // 重置为默认的本月和第一页
   dateRange.value = defaultDateRange();
   resetAllTabsPage();
   onSearch();
@@ -499,7 +486,7 @@ onMounted(async () => {
     const tree = await productCategoryApi.tree();
     categories.value = tree.data ?? [];
   } catch {
-    // 分类字典拉不到只影响高级筛选的一个下拉，不该挡住销售分析本身
+    // 分类拉不到只影响高级筛选，不影响列表
     categories.value = [];
   }
   queryActiveTab();

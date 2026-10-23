@@ -43,9 +43,7 @@
         </template>
         <template v-else-if="['approvedAmount', 'refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 常驻「详情」与当前状态唯一的推进动作（待审核=批准、已批准=实物接收）；
-               驳回 / 取消是低频且不可逆的动作，收进「更多」——
-               它们此前与主推进动作同排常驻，240px 里最显眼的却是那排红字 -->
+          <!-- 常驻详情和当前状态的推进动作；驳回、取消收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:order:return:query'" @click="showDetail(record.returnId)">详情</a-button>
             <a-button
@@ -241,10 +239,7 @@ const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}),
   saving = ref(false),
   active = ref<ReturnRow>();
 let requestId = 0;
-/**
- * 退货原因可能很长（业务人员会写整句），列表里给它固定宽度 + ellipsis，
- * 完整原因在详情抽屉里看；不设 ellipsis 会让长原因把行撑成两行、破坏表格节奏。
- */
+/** 退货原因较长，列表里截断显示，完整内容在详情抽屉查看。 */
 const columns = ref<TableColumnsType<ReturnRow>>([
   {
     title: '退货单号',
@@ -270,11 +265,11 @@ const columns = ref<TableColumnsType<ReturnRow>>([
   },
 ]);
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 「更多」菜单挂不上 v-privilege，改用 hasPermission 判断。 */
 const canReject = computed(() => hasPermission('scm:order:return:reject'));
 const canCancel = computed(() => hasPermission('scm:order:return:cancel'));
 
-/** 驳回与取消都只对「待审核」开放；两者都会写入处理原因，故都走 `edit` 的同一入口。 */
+/** 驳回和取消只对待审核的单开放，都要填写处理原因。 */
 function rowActions(row: ReturnRow): ScmActionItem[] {
   const pending = row.status === 'PENDING';
   return [
@@ -294,7 +289,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示并可重试
     const r = await api.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
@@ -380,7 +375,7 @@ async function save() {
     return;
   }
   const r = active.value;
-  // 行级前置校验先跑完：弹窗正开着，这类提示留在弹窗里；提交失败则只走全局 toast
+  // 逐行校验的提示留在弹窗内；提交失败由全局提示
   editError.value = '';
   let receiveItems: ReturnItemWithDisposition[] = [];
   if (action.value === 'receive') {

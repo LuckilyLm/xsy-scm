@@ -1,6 +1,6 @@
 import type {ScmLocation} from '/@/components/business/scm/map/types';
 /**
- *  客户域前端契约（与后端 `module/scm/customer` 的 Form / VO 一一对应）。
+ *  客户域前端类型（与后端 `module/scm/customer` 的 Form / VO 一一对应）。
  *
  * 约定（与 `product.d.ts` 一致）：
  * - 金额字段是4 位定点字符串（`"0.0000"`），不是 number；`null` 表示「未设置」，与 `"0.0000"` 语义不同。
@@ -95,7 +95,7 @@ export interface CustomerFormModel extends Partial<AreaColumns>, ScmLocation {
    *
    * 刻意不用 `ScmId` 而是 `number | null`：原生 `employee-select` 的 `value` prop 声明为
    * `[Number, Array]`，传 `string | number | null` 会在 vue-tsc 下报 TS2322。
-   * 后端是 Java `Long`，JSON 里本来就是 number，所以收窄成 number 也更贴近事实。
+   * 后端是 Java `Long`，JSON 里本来就是 number，所以收窄成 number 也更贴近实际。
    */
   sellerId?: number | null;
   supplierId?: ScmId | null;

@@ -1,4 +1,4 @@
-<!-- 分拣汇总按商品规格和销售单位展示，只供查询。不同销售单位不能直接合计；要修改分拣数量，请进入分拣任务。 -->
+<!-- 分拣汇总，只读。不同销售单位不能直接合计；修改分拣数量请进入分拣任务。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
     <a-form-item label="关键词" class="smart-query-form-item">
@@ -15,7 +15,7 @@
       <WarehouseSelect v-model:value="queryForm.warehouseId" placeholder="全部仓库" width="200px" />
     </a-form-item>
     <a-form-item label="送货日期" class="smart-query-form-item">
-      <a-date-picker v-model:value="queryForm.deliveryDate" value-format="YYYY-MM-DD" placeholder="按冻结送货日筛选" style="width: 190px" />
+      <a-date-picker v-model:value="queryForm.deliveryDate" value-format="YYYY-MM-DD" placeholder="按送货日期筛选" style="width: 190px" />
     </a-form-item>
     <a-form-item label="任务状态" class="smart-query-form-item">
       <a-select v-model:value="queryForm.taskStatus" :options="statusOptions" placeholder="全部" allow-clear style="width: 140px" />
@@ -184,19 +184,14 @@ const statusOptions = Object.values(SCM_SORTING_TASK_STATUS_ENUM).map((item) => 
 const statusLabel = (value: string) => SCM_SORTING_TASK_STATUS_ENUM[value]?.desc ?? value;
 const resultLabel = (value?: string | null) => (value ? SCM_SORTING_RESULT_ENUM[value]?.desc ?? value : '待处理');
 
-// 汇总行按「授权仓 ∩ 可见指派人」收窄，与任务页同一套口径；空表要能区分是没授权还是真没数据。
+// 汇总范围按授权仓库和指派人限制；空表要能区分是没权限还是真没数据
 const emptyText = computed(() =>
   hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN)
     ? '暂无分拣汇总数据'
     : '当前仅统计授权仓库内派给您本人的任务；若无数据，可能是尚未生成分拣任务，请联系分拣主管确认。'
 );
 
-/**
- * 列即口径：数量列只有本行同单位内的合计，绝不出现跨行的「合计」列。
- *
- * 两个编码（商品编码 / 商品规格编码）不再各占一列，改为名称下方的 secondary text ——
- * 本页每行是「商品 + 规格 + 单位」的聚合，两列编码会把 11 列挤成 11 列纯技术字段。
- */
+/** 数量只在同一销售单位内合计，不出现跨单位的合计列。 */
 const columns = ref<TableColumnsType<SortingSkuSummary>>([
   {title: '商品', dataIndex: 'product', width: 170},
   {title: '商品编码', dataIndex: 'spuCodeSnapshot', width: 140},
@@ -246,7 +241,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示并可重试
     if (viewMode.value === 'sku') {
       const result = await sortingApi.summary({...queryForm}, {suppressGlobalErrorMessage: true});
       if (current === generation) {

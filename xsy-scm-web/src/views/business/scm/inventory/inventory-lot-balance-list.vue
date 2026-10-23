@@ -1,9 +1,4 @@
-<!--
-  批次库存。
-
-  批次是库存的子账：总账仍按仓库 + 商品规格记一行，这里按仓库 + 商品规格 + 批次展开，
-  两者之和必须一致。页面只读 —— 批次的写入只发生在采购收货确认与销售出库命令里，与总账同事务。
--->
+<!-- 批次库存：按仓库 + 商品规格 + 批次展开；页面只读，批次写入发生在收货和出库命令中。 -->
 <template>
   <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
     <div class="scm-filter-fields">
@@ -148,7 +143,7 @@ async function queryData() {
     tableData.value = res.data?.list ?? [];
     total.value = Number(res.data?.total ?? 0);
   } catch (e) {
-    // 加载失败会渲染空表：必须在页面上说清楚并给重试，不能只弹一次 toast
+    // 失败时显示空表，同时在页面上提示并允许重试
     error.value = inventoryError(e);
     tableData.value = [];
     total.value = 0;
@@ -174,7 +169,7 @@ async function loadWarehouses() {
     const res = await warehouseApi.query({pageNum: 1, pageSize: 100}, {suppressGlobalErrorMessage: true});
     warehouses.value = (res.data?.list ?? []) as unknown as Warehouse[];
   } catch {
-    // 仓库下拉失败不影响列表本身；列表会按授权范围给出结果
+    // 仓库下拉失败不影响列表，列表仍按权限返回
     warehouses.value = [];
   }
 }

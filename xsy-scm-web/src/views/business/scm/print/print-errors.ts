@@ -1,4 +1,4 @@
-/** 打印错误提示应告诉用户如何处理，例如不能删除默认模板时提示先更换默认模板。未知错误保留后端提示。 */
+/** 打印错误码转提示；未登记的码保留后端提示。 */
 type BusinessError = {code?: number; msg?: string; message?: string};
 
 const MESSAGES: Record<number, string> = {

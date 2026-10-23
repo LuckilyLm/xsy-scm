@@ -1,8 +1,4 @@
-<!--
-  客户类型 新建 / 编辑 弹窗。
-  提交前 `typeCode` 去空白并大写，与后端 `CustomerTypeValidator.normalizeCode` 保持一致 ——
-  否则用户先输 `group` 再输 `GROUP` 会撞唯一索引却看不出原因。
--->
+<!-- 客户类型新建/编辑弹窗：编码提交前去空白并转大写，与后端一致。 -->
 <template>
   <a-modal
     v-model:open="visible"
@@ -46,7 +42,7 @@ function defaults(): CustomerTypeForm {
 
 const form = reactive<CustomerTypeForm>(defaults());
 
-/** 打开弹窗；传 `row` 即编辑模式，不传为新增。 */
+/** 传 row 进入编辑，不传为新增。 */
 async function open(row?: CustomerType) {
   Object.assign(form, defaults(), row ?? {});
   visible.value = true;
@@ -56,7 +52,7 @@ async function open(row?: CustomerType) {
 
 async function save() {
   saving.value = true;
-  // 归一化后再提交：与后端 CustomerTypeValidator.normalizeCode / normalizeName 同构。
+  // 编码去空白转大写、名称去空白，与后端一致。
   const payload: CustomerTypeForm = {
     ...form,
     typeCode: (form.typeCode ?? '').trim().toUpperCase(),
@@ -68,7 +64,7 @@ async function save() {
     visible.value = false;
     emit('saved');
   } catch {
-    // 保存失败只走全局 toast
+    // 保存失败由全局 toast 提示
   } finally {
     saving.value = false;
   }

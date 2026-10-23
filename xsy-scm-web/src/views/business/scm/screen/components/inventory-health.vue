@@ -40,17 +40,7 @@ import ScreenPanel from './screen-panel.vue';
 import {formatInt, toNumber} from '../format';
 import type {InventoryHealth} from '../types';
 
-/**
- * 库存健康度。五档互斥（后端保证之和 = `totalSkuCount`），每行一根独立条形，
- * 宽度 = 该档占参与评估总数的比例（不是堆叠条）。
- *
- * 判定规则完全复用预警枚举，大屏不自己编算法：缺货 = 可用量 ≤ 0，优先判定、
- * 不要求配了阈值；未配置阈值单独成档（塞进「正常」会让健康度虚高），做脚注不占占比；
- * 预警 / 积压 / 正常按可用量与 [下限, 上限] 比较，取等号算正常。
- *
- * 有未配置时四行占比之和小于 100% 是刻意的 ——「未配置」无法判定健康度。
- * 口径是 (仓库, SKU) 组合而不是 SKU：同一 SKU 在两个仓库可以一个正常一个缺货。
- */
+/** 库存健康度：五档互斥，条形长度是各档占比；未配置阈值单独做脚注。 */
 const props = defineProps<{health: InventoryHealth | null}>();
 
 const health = computed(() => props.health);
@@ -71,7 +61,7 @@ function percent(count: number): string {
   return `${((toNumber(count) / total) * 100).toFixed(1)}%`;
 }
 
-/** 条形长度用占比；为 0 时不留宽度（四档里 0 是常见且正常的状态）。 */
+/** 条形长度用占比，为 0 时不显示。 */
 function barWidth(count: number): string {
   return percent(count);
 }

@@ -9,12 +9,9 @@ export interface Driver {
   driverCode: string;
   driverName: string;
   phone: string;
-  /**
-   * 绑定的系统员工 id：把登录人映射回司机档案，是线路数据范围的唯一依据。
-   * 启用状态必须绑定（后端 requireBindableEmployee）；历史停用行可为空。
-   */
+  /** 绑定的系统员工 id，决定司机能看到哪些线路。启用状态必须绑定，停用行可为空。 */
   employeeId?: Id | null;
-  /** 绑定员工姓名快照，仅展示；范围判定仍用 employeeId 本身。 */
+  /** 绑定员工姓名，仅用于展示。 */
   employeeName?: string | null;
   status: string;
   remark?: string | null;
@@ -33,13 +30,13 @@ export interface Vehicle {
 
 export type RouteStatus = 'DRAFT' | 'PLANNED' | 'DISPATCHED' | 'COMPLETED' | 'CANCELLED';
 
-/** 配送履约状态表示是否已送达；线路分配状态表示订单是否仍在线路中。两者独立，不能把移出线路理解成拒收。 */
+/** 履约状态表示是否送达，与是否还在线路上无关；移出线路不等于拒收。 */
 export type FulfillmentStatus = 'PENDING' | 'IN_TRANSIT' | 'SIGNED' | 'EXCEPTION';
 
-/** 签收结果：终态只有这两个，没有「部分签收」（P2 裁决第 12 条）。 */
+/** 签收只有正常和异常两种，没有部分签收。 */
 export type SignResult = 'SIGNED' | 'EXCEPTION';
 
-/** 签收命令载荷；`version` 锁的是 `delivery_route_order` 行，不是线路。 */
+/** 签收参数；version 锁的是线路订单行，不是线路。 */
 export interface SignPayload {
   version: number;
   result: SignResult;
@@ -75,13 +72,10 @@ export interface DeliveryRoute extends RouteForm {
   locatedCount: number;
   totalAmount?: string | null;
   cancelReason?: string | null;
-  /**
-   * 发车产生的出库单：整条线路零实发（每行都 OUT_OF_STOCK）时没有出库单，
-   * 两列同时为 null。这是合法成功，不是失败，UI 只能显示「—」不能显示 0。
-   */
+  /** 发车生成的出库单；整条线路都没有实发时为空，界面显示「—」不能显示 0。 */
   outboundId?: Id | null;
   outboundNo?: string | null;
-  /** 发车与完成时点由服务端与状态同事务写入；状态到了但时点为空只可能是绕过服务端的写入。 */
+  /** 发车、完成时间由服务端随状态一起写入。 */
   dispatchedAt?: string | null;
   dispatchedBy?: string | null;
   completedAt?: string | null;
@@ -105,7 +99,7 @@ export interface DeliveryStop extends ScmLocation, Partial<AreaColumns> {
 /** 线路订单关系行（服务端返回 `DeliveryRouteOrderEntity`，取消线路时也会随详情返回）。 */
 export interface RouteOrder {
   id: Id;
-  /** 行级乐观锁版本：签收命令锁的就是这一行，不能用线路版本代替。 */
+  /** 行级版本，签收时提交，不能用线路版本代替。 */
   version: number;
   stopId: Id;
   orderId: Id;
@@ -113,9 +107,9 @@ export interface RouteOrder {
   orderNoSnapshot: string;
   orderAmountSnapshot?: string | null;
   expectDeliveryTimeSnapshot?: string | null;
-  /** 在不在线路上；CANCELLED 线路的详情会把 RELEASED 行一并带回，按 ACTIVE 筛显示行。 */
+  /** 是否仍在线路上；已取消线路的详情也会带回 RELEASED 行，展示时按 ACTIVE 筛选。 */
   assignmentStatus: 'ACTIVE' | 'RELEASED';
-  /** 货到没到手；发车前恒为 PENDING，发车后进入 IN_TRANSIT，签收后停在终态不再变。 */
+  /** 发车前为 PENDING，发车后在途，签收后不再变化。 */
   fulfillmentStatus: FulfillmentStatus;
   signedAt?: string | null;
   signedBy?: string | null;
@@ -123,12 +117,12 @@ export interface RouteOrder {
   signReason?: string | null;
 }
 
-/** 发车命令返回：出库事实与进入在途的订单规模，全部由服务端算好，UI 只渲染。 */
+/** 发车结果，全部由服务端算好。 */
 export interface DispatchResult {
   routeId: Id;
   status: RouteStatus;
   dispatchedAt: string;
-  /** 整条线路零实发时为 null —— 没有实物离开仓库就不该存在一张出库单。 */
+  /** 整条线路没有实发时为空，此时不生成出库单。 */
   outboundId?: Id | null;
   outboundNo?: string | null;
   orderCount: number;
@@ -243,12 +237,7 @@ export const printStatuses: Record<PrintStatus, {label: string; color: string}> 
   PARTIAL: {label: '部分打印', color: 'orange'},
 };
 
-/**
- * 履约状态标签：取值必须与 V63 `ck_delivery_order_fulfillment` 同集合。
- *
- * 「已签收」与「异常签收」都是终态（含拒收），列表上要给两者不同颜色，
- * 因为财务与售后看的是「这单到底送到了没有」，把异常混成灰色会和「还没发车」同色。
- */
+/** 履约状态标签。取值与数据库约束一致；已签收和异常签收要区分颜色，异常不能用灰色。 */
 export const fulfillmentStatuses: Record<FulfillmentStatus, {label: string; color: string}> = {
   PENDING: {label: '未发车', color: 'default'},
   IN_TRANSIT: {label: '在途', color: 'blue'},
@@ -256,10 +245,10 @@ export const fulfillmentStatuses: Record<FulfillmentStatus, {label: string; colo
   EXCEPTION: {label: '异常签收', color: 'red'},
 };
 
-/** 可签收的履约状态：只有已在途能签；终态行只读，PENDING 说明线路还没发车。 */
+/** 只有在途的订单能签收。 */
 export const SIGNABLE_FULFILLMENT: FulfillmentStatus[] = ['IN_TRANSIT'];
 
-/** 签收结果的按钮 / 标签文案；EXCEPTION 的原因在后端与库里都是必填。 */
+/** 签收结果文案；异常签收必须填写原因。 */
 export const signResults: Record<SignResult, {label: string; color: string}> = {
   SIGNED: {label: '正常签收', color: 'green'},
   EXCEPTION: {label: '异常签收', color: 'red'},
@@ -270,14 +259,12 @@ export function deliveryError(error: unknown): string {
   return response?.data?.msg ?? response?.response?.data?.msg ?? response?.message ?? '操作失败，请刷新后重试';
 }
 
-// ------------------------------------------------------------------
-// 辅助排线建议（ADM-10）
-// ------------------------------------------------------------------
+// 辅助排线建议
 
-/** 建议里的一段：本段距离 + 累计距离。只有总距离时无法解释「为什么这单排在前面」。 */
+/** 一段行程的距离和累计距离，用来解释为什么这样排序。 */
 export interface DeliveryPlanLeg {
   seq: number;
-  /** 建议生成时的站点原顺序；旧建议可能不存在。 */
+  /** 生成建议时的站点顺序；旧数据可能没有。 */
   originalSeq?: number | null;
   stopId: Id;
   customerNameSnapshot?: string;
@@ -295,7 +282,7 @@ export interface DeliveryPlanProposal {
   status: 'PROPOSED' | 'APPLIED' | 'DISCARDED' | string;
   providerCode: string;
   providerVersion: string;
-  /** true = 估算（非真实路网 / 非实时交通）；界面必须显性提示。 */
+  /** true 表示估算，不是真实路网或实时路况，界面要明确提示。 */
   estimated: boolean;
   ruleCode: string;
   stopCount: number;

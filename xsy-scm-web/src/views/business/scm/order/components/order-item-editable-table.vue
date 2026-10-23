@@ -114,19 +114,13 @@ const columns: TableColumnsType<Item> = [
   },
 ];
 
-/*
- * 最近已确认订单价：只读旁证，点开时按「当前客户 + 当前行 SKU」现查现显（后端只取 CONFIRMED）。
- * 不回写解析单价、不参与定价、不换算单位（历史单位不同仅提示不可比较），因此缓存到本次抽屉生命周期。
- * 缓存键与加载态转移在 `order-form-model` 里实现并单测钉死：按行序号缓存会在换商品 / 删行上移 /
- * 换客户时把上一份历史价串到当前行。
- */
+/* 历史价只读，点开时按当前客户和规格查询；不回写单价、不参与定价，只在本次抽屉内缓存。 */
 const recentCache = reactive(createRecentPriceCache());
 
-/** 同一时刻只允许一行开着价签。这里按行序号记：「哪个浮层开着」是位置问题，与历史价按客户 + SKU 归属无关。 */
+/** 同一时刻只允许一行打开历史价浮层。 */
 const recentOpenIndex = ref<number | null>(null);
 
-// The open history belongs to the current (customer, SKU) pair. Close it as
-// soon as either key changes so an old price is never shown beside a new item.
+// 客户或商品变化后关掉浮层，避免旧价格留在新行旁
 watch(
   () => props.customerId,
   () => (recentOpenIndex.value = null)
@@ -136,7 +130,7 @@ watch(
   () => (recentOpenIndex.value = null)
 );
 
-/** 浮层挂到宿主抽屉内：抽屉关闭（含 Esc 键盘关闭）时它必须随宿主一起消失，不能留在列表页上。 */
+/** 浮层挂在抽屉内，抽屉关闭时一起消失。 */
 function recentPopupContainer(trigger: HTMLElement): HTMLElement {
   return (trigger.closest('.ant-drawer-body') ?? document.body) as HTMLElement;
 }
@@ -145,7 +139,7 @@ function recentReady(record: Item): boolean {
   return hasRecentPrices(recentCache, props.customerId, record.skuId);
 }
 
-/** 已缓存但为空：确实是「该客户该商品无历史价」，不是还没查。 */
+/** 已查过但没有历史价。 */
 function recentEmpty(record: Item): boolean {
   return recentReady(record) && recentRows(record).length === 0;
 }
@@ -173,7 +167,7 @@ async function loadRecent(record: Item) {
   }
 }
 
-/** 抽屉关闭时由父组件调用：浮层已随宿主隐藏，但组件实例不销毁，不收起的话下次打开会直接冒出上次的价签。 */
+/** 抽屉关闭时由父组件调用，避免下次打开还显示上次的价签。 */
 defineExpose({closeRecentPopover: () => (recentOpenIndex.value = null)});
 </script>
 <style scoped>

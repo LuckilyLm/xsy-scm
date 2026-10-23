@@ -22,7 +22,7 @@ import type {
   UnboundImage,
 } from '/@/types/business/scm/product';
 
-// SmartAdmin interceptor resolves ResponseDTO directly, despite Axios's declared return type.
+// 拦截器已解包 ResponseDTO，与 Axios 返回类型不符。
 export const productApi = {
   bundleComponents: (bundleSkuId: ProductId) =>
     getRequest(`/scm/product/bundle/${bundleSkuId}/components`, {}) as unknown as Promise<
@@ -53,7 +53,7 @@ export const productApi = {
       status,
     }),
   delete: (spuId: ProductId, version: number) => postRequest('/scm/product/delete', {spuId, version}),
-  // 批量命令整批一个事务：预校验不过时 updatedCount 为 0 且没有任何写入，失败行逐条回给页面。
+  // 批量命令整批一个事务：预校验不过时 updatedCount 为 0，失败行逐条返回。
   batchStatus: (items: ProductBatchItem[], target: {status?: ShelfStatus; masterStatus?: MasterStatus}) =>
     postRequest('/scm/product/batch/updateStatus', {items, ...target}) as unknown as Promise<ScmResponse<ProductBatchResult>>,
   batchCategory: (items: ProductBatchItem[], categoryId: ProductId) =>
@@ -67,8 +67,7 @@ export const productApi = {
       tagIds,
       mode,
     }) as unknown as Promise<ScmResponse<ProductBatchResult>>,
-  // 导入是「0 错误才写、写失败整批回滚」，所以返回的错误列表永远意味着本次没有商品落库。
-  // UPDATE 会改写既存商品，后端要求 scm:product:update；这里隐藏入口不等于有权限。
+  // 导入 0 错误才写入，失败整批回滚；UPDATE 需要 scm:product:update，隐藏入口不等于有权限。
   downloadImportTemplate: (mode: ProductImportMode) => getDownload('/scm/product/import/template', {mode}),
   importProducts: (file: File, mode: ProductImportMode) => {
     const data = new FormData();

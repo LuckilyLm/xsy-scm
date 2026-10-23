@@ -1,5 +1,5 @@
 <template>
-  <!-- 1~3 行用轻量列表：一两条数据铺一张宽表格，下面会空出一大片 -->
+  <!-- 订单少时用卡片列表，避免宽表格下面留白 -->
   <div v-if="orders.length && orders.length <= 3" class="fulfillment-cards">
     <div v-for="record in orders" :key="record.id" class="fulfillment-card">
       <div class="fulfillment-card__head">

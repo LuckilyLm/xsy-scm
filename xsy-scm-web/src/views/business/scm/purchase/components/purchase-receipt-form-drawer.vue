@@ -1,9 +1,5 @@
-<!--
- * 采购收货单表单。
- * - 收货数量只在 `confirm` 一次性确认：草稿态不允许改数量，否则会出现
- *   「草稿数量」与「实际收货」两套真相；
- * - 表单里没有 `status`，状态由命令驱动；采购单选择器只列可收货状态。
--->
+<!-- 采购收货单表单。草稿只能改备注，数量在确认收货时一次填写。
+     表单里没有状态字段；采购单下拉只列可收货的单。 -->
 <template>
   <a-drawer :title="form.id ? '编辑收货单备注' : '新建收货单'" :open="visible" :width="scmDrawerWidth('s')" @close="visible = false">
     <a-alert v-if="error" :message="error" type="error" show-icon />
@@ -83,7 +79,7 @@ import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
 const emit = defineEmits<{saved: []}>();
 
-/** 只有这两种状态的采购单可以收货（其余一律 40991）。 */
+/** 只有已提交和部分收货的采购单可以收货。 */
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 
 const form = ref<Receipt>({});

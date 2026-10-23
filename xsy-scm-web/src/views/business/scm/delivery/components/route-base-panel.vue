@@ -49,7 +49,7 @@
         </div>
       </dl>
     </div>
-    <!-- 发车在库存域生成出库事实；配送侧只读单号，不重复展示数量或金额。 -->
+    <!-- 出库单由库存生成，这里只显示单号 -->
     <div v-if="showOutbound" class="scm-detail-card">
       <h3 class="scm-detail-card__title">关联出库单</h3>
       <p class="scm-field__value">

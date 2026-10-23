@@ -1,4 +1,4 @@
-/** 报损报溢支持创建、修改、审批和驳回。录单与审批权限分开；审批必须携带版本号，防止批准过期数据。 */
+/** 报损报溢：创建、修改、审批、驳回。审批必须带版本号，防止批准过期数据。 */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

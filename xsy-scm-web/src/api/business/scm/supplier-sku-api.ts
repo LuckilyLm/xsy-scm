@@ -1,7 +1,4 @@
-/*
- * 写路径只有一个入口：`replace`（整表替换）。
- * 空数组表示清空全部关联，不是「无操作」。
- */
+/* 写入口只有 replace（整表替换）；空数组表示清空。 */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {
   ScmId,

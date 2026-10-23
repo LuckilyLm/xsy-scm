@@ -35,16 +35,11 @@ function toPixelWidth(width?: number | string): number {
 }
 
 /**
- * 把容器剩余宽度分给各列，保证表格永远铺满内容区。
+ * 把剩余宽度分给各列，让表格铺满内容区。
+ * 优先补默认宽度的列；都已改过时按比例放大。
  *
- * 分配顺序：
- * 1. 优先补给「仍在使用页面默认宽度」的列 —— 用户没动过的列吸收剩余，动过的列保持原值；
- * 2. 若可伸缩列都被用户改过，则按各列宽度等比放大 —— 与 antd 默认行为一致，宁可像素值等比变化，
- *    也不留出右侧空白（用户明确要求「怎么调都要铺满」）。
- *
- * @param columns       当前列（已合并用户保存的宽度）
- * @param extra         容器宽度减去各列宽度之和后的剩余像素，≤0 时不处理
- * @param defaultWidths 可伸缩列的页面默认宽度，键为 dataIndex
+ * @param extra 容器宽度减去列宽之和，≤0 时不处理
+ * @param defaultWidths 可拉伸列的默认宽度，键为 dataIndex
  */
 export function fillDefaultColumnWidths<T extends {dataIndex?: unknown; width?: number | string}>(
   columns: readonly T[],

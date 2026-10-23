@@ -4,7 +4,7 @@
     <p class="scm-note">
       同规格、同采购单位的采购价格走势。<a-tooltip
         title="涨跌仅比较当前筛选范围内相邻有效业务日；首日无对比数据，基期价格为 0 时涨跌幅未知。采购价采用已提交采购单的数量加权均价，并非实际入库成本。"
-        ><a class="scm-cell-link">口径说明</a></a-tooltip
+        ><a class="scm-cell-link">说明</a></a-tooltip
       >
     </p>
     <a-row class="smart-table-btn-block">

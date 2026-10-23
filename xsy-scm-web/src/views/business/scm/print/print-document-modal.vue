@@ -1,4 +1,4 @@
-<!-- 打印对话框提供模板选择、只读预览和正式打印。正式打印先保存冻结记录，再按记录打印，不修改原业务单据。 -->
+<!-- 打印对话框：选择模板、预览、正式打印。打印前先保存打印记录，不改动原单据。 -->
 <template>
   <a-modal
     :open="open"
@@ -59,7 +59,7 @@ import {printError} from './print-errors';
 const props = defineProps<{
   open: boolean;
   documentType: PrintDocumentType;
-  /** 批量打印时多张单据共用一个模板，逐张冻结、逐张成页。 */
+  /** 批量打印共用一个模板，一张单据一页。 */
   businessIds: Id[];
 }>();
 
@@ -96,11 +96,7 @@ const hiddenFields = computed(() => {
   return Array.from(keys);
 });
 
-/**
- * 冻结快照的一句话说明：模板中文名 + 版本 + 打印时间 + 重印口径。
- *
- * 用 `templateName` 而不是 `templateCode`：编码是给程序看的标识，用户认的是模板名。
- */
+/** 打印完成的说明：模板名、版本、打印时间。用模板名而不是编码，用户认的是名字。 */
 function snapshotHint(render: PrintRender): string {
   const template = render.templateName || render.templateCode;
   return `模板 ${template ?? '—'} v${render.templateVersion ?? '—'}，打印时间 ${
@@ -108,12 +104,7 @@ function snapshotHint(render: PrintRender): string {
   }。再次打印使用这次保存的内容，不会随单据后续修改而变化。`;
 }
 
-/**
- * 预览 HTML。
- *
- * 不用 computed：包装码标签的二维码要先异步编码再渲染，computed 里拿不到。
- * 由 `refreshPreview()` 在版面变化后统一刷新。
- */
+/** 预览 HTML；二维码要先异步生成，由 refreshPreview 统一刷新。 */
 const previewHtml = ref('');
 
 async function refreshPreview() {
@@ -124,7 +115,7 @@ async function refreshPreview() {
 async function loadTemplates(id: number) {
   const firstId = props.businessIds[0];
   if (firstId === undefined) return;
-  // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
+  // 加载失败由弹窗内 Alert 提示，不再弹全局 toast
   const r = await printApi.templateOptions(props.documentType, firstId, {suppressGlobalErrorMessage: true});
   if (id !== requestId) return;
   templates.value = r.data ?? [];
@@ -170,12 +161,7 @@ async function reloadPreview() {
   }
 }
 
-/**
- * 正式打印：逐张冻结后合并成一份文档打印。
- *
- * 中途失败时保留已成功冻结的结果；同一对话框直接重试只提交尚未完成的单据。
- * 刷新预览、切换模板或重新打开表示新的一次打印，清空本次结果。
- */
+/** 正式打印：逐张保存打印记录后合并打印。失败重试只补未完成的单据。 */
 async function print() {
   if (!canPrint.value) {
     return;
@@ -199,21 +185,20 @@ async function print() {
     emit('printed');
     await printRenders(frozen);
     frozenByBusiness.clear();
-    // 「已生成打印快照」是动作完成的一次性确认，走右上角通知而不是对话框内的常驻横幅：
-    // 横幅会一直占着预览区上方，而这条信息只在动作发生的那一刻有用。
+    // 完成提示用右上角通知，不占预览区
     const firstFrozen = frozen[0];
     notification.success({
-      message: `已生成 ${frozen.length} 张打印快照`,
+      message: `已生成 ${frozen.length} 张打印记录`,
       description: firstFrozen ? snapshotHint(firstFrozen) : undefined,
     });
   } catch {
-    // 打印失败只走全局 toast
+    // 打印失败由全局 toast 提示
   } finally {
     printing.value = false;
   }
 }
 
-// 打开时重载模板与预览；关闭时清空，避免下次打开看到上一次的内容
+// 打开时重载，关闭时清空，避免看到上次的内容
 watch(
   () => JSON.stringify([props.open, props.documentType, ...props.businessIds.map(String)]),
   () => {
@@ -276,7 +261,7 @@ function close() {
   overflow: auto;
 }
 
-/* 预览区沿用打印文档的排版口径：所见即所打 */
+/* 预览与打印文档排版一致：所见即所打 */
 .preview :deep(h2) {
   font-size: 16px;
   margin: 0 0 8px;

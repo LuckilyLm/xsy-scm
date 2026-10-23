@@ -1,10 +1,4 @@
-/**
- * 仓库接口。
- *
- * 与后端 `WarehouseController` 逐端点对应：查询与基础信息写入沿用既有契约，
- * 状态通过独立的 `enable` / `disable` 命令管理。`status` 不进入新增或编辑表单，
- * 新建仓库仍一律为 `ENABLED`。
- */
+/** 仓库接口：查询与编辑沿用既有接口，状态通过启用 / 停用命令管理。 */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

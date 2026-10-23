@@ -1,8 +1,4 @@
-/**
- * 时价：商品规格级、按时间段生效的临时价格。
- *
- * 区间半开 [startAt, endAt)，同一规格不允许重叠；优先级在客户类型价之下、市场价之上。
- */
+/** 时价：按时间段生效的临时价格。区间左闭右开，同一规格不允许重叠。 */
 import {postRequest} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';

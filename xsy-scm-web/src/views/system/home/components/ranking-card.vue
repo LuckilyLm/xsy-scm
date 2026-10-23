@@ -1,9 +1,4 @@
-<!--
-  * 销售排行（客户 / 商品共用）
-  *
-  * 两个维度的数据形状与展示方式完全一致，只有标题与空态文案不同，所以做成一个带维度的组件，
-  * 而不是两份只差一个字符串的文件。条形长度按本列表最大值取相对比例，不表达绝对量级。
--->
+<!-- 销售排行：客户 / 商品共用；条形按本列表最大值取相对比例。 -->
 <template>
   <default-home-card :icon-name="dimension === 'customer' ? 'section-customer-ranking' : 'section-product-ranking'" :title="meta.title">
     <region-error v-if="error" :message="error" :min-height="200" @retry="load" />

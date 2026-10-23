@@ -48,8 +48,7 @@
         <a-button danger v-privilege="'scm:order:delete'" :disabled="!selected.length || !selectedAllDraft" @click="batchDelete">
           批量删除草稿
         </a-button>
-        <!-- 批量操作按钮只按选中数置灰，看不出「选了几单」；这里补一句上下文，与商品档案同一位置同一口径。
-             混选到非草稿单时说明哪几个按钮为什么不可用，避免用户反复点灰按钮猜原因。 -->
+        <!-- 显示已选数量；混选到非草稿单时说明按钮为什么不可用 -->
         <span v-if="selected.length" class="scm-query-table-context">
           已选 {{ selected.length }} 单<template v-if="!selectedAllDraft"> · 含非草稿单，核价与删除不可用</template>
         </span>
@@ -100,7 +99,7 @@
           <span class="scm-money">{{ amount(record.settlementTotalAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 行内只留当前状态最高频的动作，其余收进「更多」；动作集合与原行内按钮一一对应 -->
+          <!-- 行内只留当前状态最常用的动作，其余收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <template v-if="record.status === 'DRAFT'">
               <a-button type="link" size="small" v-privilege="'scm:order:update'" @click="drawer?.open(record.orderId)">编辑 </a-button>
@@ -182,7 +181,7 @@ async function loadTags(): Promise<void> {
   try {
     availableTags.value = (await orderTagApi.list()).data;
   } catch {
-    // 订单查询错误仍由主列表处理；这里只隐藏不可用的标签筛选项。
+    // 标签加载失败时隐藏筛选项，不额外提示
     availableTags.value = [];
   }
 }
@@ -236,7 +235,7 @@ const columns = ref<OrderListColumn[]>([
 // 宽屏剩余宽度补给文本列；用户改过列宽则原样渲染。
 const {tableRef, displayColumns, scrollX} = useScmTableFill(columns, () => SCM_COLUMN_WIDTH.selection);
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 「更多」菜单挂不上 v-privilege，改用 hasPermission 判断。 */
 const canAdd = computed(() => hasPermission('scm:order:add'));
 const canDelete = computed(() => hasPermission('scm:order:delete'));
 const canManageTags = computed(() => hasPermission('scm:order:query') && hasPermission('scm:order:update'));
@@ -268,10 +267,7 @@ function openBatchPriceCheck(): void {
   priceCheckModal.value?.open(rows);
 }
 
-/**
- * 行内常驻当前状态最高频的动作（草稿：编辑/提交；已确认：详情/预留库存），其余收进「更多」。
- * 动作集合与原行内按钮一一对应，只按频率重新分组，不新增也不隐藏业务动作。
- */
+/** 当前状态的常用动作常驻行内，其余收进「更多」。 */
 function rowActions(row: Order): ScmActionItem[] {
   const draft = row.status === 'DRAFT';
   const confirmed = row.status === 'CONFIRMED';
@@ -285,7 +281,7 @@ function rowActions(row: Order): ScmActionItem[] {
 }
 
 function onRowAction(key: string, row: Order) {
-  // `Order.orderId` 在 VO 里可选，打开详情 / 复用为新单都要求确定的 Id，这里先判空。
+  // orderId 在响应里是可选的，用之前先判空
   if (row.orderId != null && key === 'detail') {
     openDetail(row.orderId);
   } else if (row.orderId != null && key === 'reuse') {
@@ -304,7 +300,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示并可重试
     const r = await orderApi.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
@@ -335,7 +331,7 @@ function submit(r: Order) {
   Modal.confirm({
     title: '提交订单并锁定价格？',
     onOk: async () => {
-      // 失败由全局 toast 给出原因；拒绝以保持确认框打开
+      // 失败原因由全局提示给出；异常继续抛出，确认框保持打开
       await orderApi.submit({orderId: r.orderId, version: r.version});
       await queryData();
     },
@@ -353,13 +349,7 @@ function remove(r: Order) {
   });
 }
 
-/**
- * 预留库存。
- *
- * 显式操作而非确认时自动预留：本业务的库存在订单确认之后才产生，
- * 挂在确认上会让「先接单 → 再采购」链路无法运转（见 docs/decisions.md）。
- * 货到之后由业务人员对本单执行；任一行可用量不足则整体失败（41011）。
- */
+/** 预留库存是单独操作，不在确认时自动执行；任一行可用量不足则整单失败。 */
 function reserveStock(r: Order) {
   Modal.confirm({
     title: '为该订单预留库存？',

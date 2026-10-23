@@ -1,4 +1,4 @@
-/** 每个报表页签独立保存加载与错误状态；只接受最后一次查询结果，避免旧响应覆盖新筛选结果。 */
+/** 每个页签独立保存加载和错误状态，只采用最后一次查询结果。 */
 import {type Ref} from 'vue';
 import type {RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
@@ -6,13 +6,8 @@ import type {TabView} from './report-model';
 import {reportError} from './report-errors';
 
 /**
- * 生成一个 Tab 的分页查询函数。
- *
- * `view` 必须是 `reactive(createTabView(...))` 的结果：装载器就地写 `rows` / `total` /
- * `loading` / `error`，因此这四个字段只属于这一个 Tab（切 Tab 不会串状态）。
- *
- * @param buildQuery 由调用方装配请求体（共享筛选 + 该 Tab 的分页）
- * @param fetch      对应的分页接口
+ * 生成一个标签页的分页查询函数。
+ * view 必须是 reactive(createTabView(...))；buildQuery 负责组装请求体。
  */
 export function createTabLoader<T, Q extends object>(
   view: TabView<T>,
@@ -25,7 +20,7 @@ export function createTabLoader<T, Q extends object>(
     view.loading = true;
     view.error = '';
     try {
-      // 失败原因写在本 Tab 内联 Alert 上，不再让全局 toast 重复说一遍
+      // 失败原因写在本页签的 Alert 上，不再弹全局 toast
       const response = await fetch(buildQuery(), {suppressGlobalErrorMessage: true});
       if (id !== request) {
         return;
@@ -44,12 +39,7 @@ export function createTabLoader<T, Q extends object>(
   };
 }
 
-/**
- * 生成一个非分页请求（KPI 卡 / TOP 图 / 趋势）的装载器。
- *
- * 失败写进调用方给的 `error` ref：图表拉不到数时必须看得见原因，
- * 静默留白会被读成「这个区间没有数据」。
- */
+/** 生成非分页请求（KPI、图表）的装载器；失败写进 error ref，免得空白被当成没数据。 */
 export function createGuardedLoader<T>(
   task: (options?: RequestOptions) => Promise<ScmResponse<T>>,
   apply: (data: T) => void,
@@ -59,7 +49,7 @@ export function createGuardedLoader<T>(
   return async function load(): Promise<void> {
     const id = ++request;
     try {
-      // 同上：图表拉不到数的原因写在内联 Alert 上，不重复弹全局提示
+      // 失败原因写在内联 Alert 上，不弹全局提示
       const response = await task({suppressGlobalErrorMessage: true});
       if (id === request) {
         apply(response.data);

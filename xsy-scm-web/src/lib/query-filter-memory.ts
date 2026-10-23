@@ -1,10 +1,4 @@
-/*
- * 列表页查询条件的「按用户 + 页面」本地记忆。
- *
- * 复用仓库既有偏好模式（订单草稿、导出列偏好）：只存浏览器本地、以 employeeId 隔离，
- * 不建 user_preference 表、不把筛选值写进业务表。owner 缺失（未登录 / 未水合）时全部空操作，
- * 既不会误存到匿名键，也不会跨用户串味。深链详情类页面不应调用本组合式。
- */
+/* 列表页查询条件按用户和页面存在浏览器本地；未登录时不做任何存取。 */
 import {localRead, localRemove, localSave} from '/@/utils/local-util';
 import {useUserStore} from '/@/store/modules/system/user';
 import {queryFilterStorageKey} from './query-filter-key';
@@ -12,7 +6,7 @@ import {queryFilterStorageKey} from './query-filter-key';
 export function useQueryFilterMemory<T extends object>(pageKey: string) {
   const userStore = useUserStore();
 
-  // 每次调用现取 employeeId（main.ts 在挂载前已 await 登录信息），避免快照过期。
+  // 每次现取 employeeId，避免拿到过期的值。
   function owner(): string {
     const id = userStore.employeeId;
     return id === '' || id === null || id === undefined ? '' : String(id);
@@ -31,7 +25,7 @@ export function useQueryFilterMemory<T extends object>(pageKey: string) {
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === 'object' ? (parsed as Partial<T>) : {};
     } catch {
-      // 偏好损坏静默回落默认条件——记忆只是便利，不能挡住查询。
+      // 偏好损坏时回落默认条件
       return {};
     }
   }

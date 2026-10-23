@@ -97,12 +97,7 @@ export interface PrintRenderColumn {
   numeric: boolean;
 }
 
-/**
- * `ScmPrintRenderVO` —— 一份已经算好的版面。
- *
- * `frozen=true` 表示来自冻结快照（正式打印或历史重印），此时 `recordId` / `printedAt` /
- * `printedBy` 非空，且内容不再随业务数据变化。
- */
+/** 一份已算好的打印版面；frozen=true 表示来自冻结打印记录，内容不再变化。 */
 export interface PrintRender {
   documentType: PrintDocumentType;
   businessId?: Id;

@@ -64,11 +64,7 @@ function percentOf(bucket: HealthBucket): string {
 const chartEl = ref<HTMLElement>();
 const {setOption} = useEcharts(chartEl);
 
-/**
- * 只画有数据的档位：环形图里出现 0 值扇区会让图例和空白扇区对不上号。
- * 全为 0 时（后端返回了对象但没有参与评估的记录）退化成一条灰色空环 ——
- * 否则环里什么都不画，看着像渲染失败。
- */
+/** 只画有数据的档位；全为 0 时退化成一条灰色空环。 */
 function render() {
   const current = health.value;
   if (!current) {

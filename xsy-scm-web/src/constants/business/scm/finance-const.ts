@@ -32,7 +32,7 @@ export const SCM_FINANCE_SETTLE_STATE_ENUM: SmartEnum<string> = {
 /**
  * 财务流水记录的动作类型（与后端 `ScmFinanceOperationTypeEnum` 逐字对应）。
  *
- * 后端用数据库 CHECK 白名单钉住取值，新增动作必须两边同时改；
+ * 数据库用 CHECK 约束固定取值，新增动作要两边同时改；
  * 展示层不许再直接把 `operationType` 原样印到表格里（曾出现 GENERATE / RED_GENERATE 直出）。
  */
 export const SCM_FINANCE_OPERATION_TYPE_ENUM: SmartEnum<string> = {
@@ -56,9 +56,9 @@ export const SCM_FINANCE_PAYMENT_METHOD_ENUM: SmartEnum<string> = {
 /**
  * 收款方式（与后端 `ScmFinanceReceiptMethodEnum` 逐字对应）。
  *
- * 与付款方式刻意分开：在线支付是收款侧才有的资金渠道（ADM-12）。
- * 没有 COD —— 它是「什么时候收钱」的结算时机，不是实际收款渠道。
- * 也没有 BALANCE —— 余额消费不是实际资金进入，不产生收款事实（ADM-12）。
+ * 与付款方式分开：在线支付只在收款侧出现。
+ * 没有 COD —— 它是结算时机，不是收款渠道。
+ * 也没有 BALANCE —— 余额消费没有资金进入，不算收款。
  */
 export const SCM_FINANCE_RECEIPT_METHOD_ENUM: SmartEnum<string> = {
   CASH: {value: 'CASH', desc: '现金'},

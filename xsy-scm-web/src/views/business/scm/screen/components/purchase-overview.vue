@@ -15,12 +15,7 @@ import MetricCard from './metric-card.vue';
 import {formatAmount, formatInt} from '../format';
 import type {BusinessData, PurchaseData} from '../types';
 
-/**
- * 采购概览 2×2。
- *
- * 「活跃供应商」取的是今日有采购单的供应商数（来自经营聚合的
- * todaySupplierCount），而不是供应商总数 —— 大屏关心「今天和谁在做生意」。
- */
+/** 采购概览 2×2；活跃供应商指今日有采购单的供应商。 */
 defineProps<{
   purchase: PurchaseData | null;
   business: BusinessData | null;

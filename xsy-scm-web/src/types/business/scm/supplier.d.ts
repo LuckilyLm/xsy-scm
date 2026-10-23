@@ -1,5 +1,5 @@
 /**
- *  供应商域前端契约（与后端 `module/scm/supplier` 的 Form / VO 一一对应）。
+ *  供应商域前端类型（与后端 `module/scm/supplier` 的 Form / VO 一一对应）。
  *
  * 约定（与 `customer.d.ts` 一致）：
  * - 金额字段是4 位定点字符串（`"0.0000"`），`null` 表示「未设置」。
@@ -107,7 +107,6 @@ export interface SupplierDeletePayload {
 // 商品-供应商关系（supplier_sku，SKU 级）
 // ---------------------------------------------------------------------------
 
-/** 关系行（对应 SupplierSkuVO），含冻结快照列。 */
 /** 一家供应商的可供货汇总，列表页的公司卡片使用。 */
 export interface SupplierSkuSupplierSummary {
   supplierId: ScmId;

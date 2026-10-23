@@ -16,21 +16,10 @@ import MetricCard from './metric-card.vue';
 import {formatAmount, formatInt, toNumber} from '../format';
 import type {BusinessData} from '../types';
 
-/**
- * 今日经营 2×2。
- *
- * 这里刻意不显示「累计订单 / 累计销售额」：设计稿指出累计数适合后台报表，
- * 大屏要表达的是「现在正在发生什么」。累计数仍然在接口里（totalOrderCount），
- * 需要时可作为副标题补上。
- */
+/** 今日经营 2×2；累计数放在后台报表，不上大屏。 */
 const props = defineProps<{business: BusinessData | null}>();
 
-/**
- * 客单价 = 今日销售额 / 今日订单数。
- *
- * 订单数为 0 时显示「—」而不是「¥0.00」：没有订单时客单价不存在，
- * 而不是「客单价是零元」。
- */
+/** 客单价 = 今日销售额 / 今日订单数；没有订单时显示 —。 */
 const avgOrderText = computed(() => {
   const count = toNumber(props.business?.todayOrderCount);
   if (count <= 0) {
@@ -49,7 +38,7 @@ const avgOrderText = computed(() => {
   grid-template-rows: 1fr 1fr;
   gap: 10px 14px;
 
-  // 四个格子各自加一条细分割线，让 2×2 的结构在大屏上一眼可辨
+  // 细分割线分隔四格
   > * {
     padding-left: 12px;
     border-left: 1px solid rgba(27, 77, 122, 0.55);

@@ -1,12 +1,4 @@
-<!--
-  报表口径说明：把「这个数字是什么意思」收进按需展开的 Popover / Drawer，
-  避免每次打开报表都用常驻 Alert 占满首屏。
-
-  硬规则（口径说明回答「数字是什么意思」，不回答「程序怎么算」）：
-  - Popover 最多 3 条，每条 ≤ 40 字；
-  - 超过 3 条或需要分组时改用 sections（Drawer），分组为 指标定义 / 统计时点 / 统计范围 / 特殊情况；
-  - 禁止出现数据库字段、枚举名、SQL/API、前后端实现、设计历史、阶段代号。
--->
+<!-- 报表说明：按需展开 Popover 或 Drawer，不占首屏。Popover 最多 3 条，每条不超过 40 字。 -->
 <template>
   <a-popover v-if="mode === 'popover'" trigger="click" placement="bottomRight" :title="title">
     <template #content>
@@ -45,16 +37,16 @@ export interface ReportNoteSection {
 
 const props = withDefaults(
   defineProps<{
-    /** 触发文案，默认「口径说明」。 */
+    /** 触发文案，默认「统计说明」。 */
     title?: string;
     /** Popover 要点，最多 3 条、每条 ≤ 40 字。 */
     points?: string[];
-    /** 需要分组的长口径；提供时自动改用 Drawer。 */
+    /** 分组说明；提供时自动改用 Drawer。 */
     sections?: ReportNoteSection[];
     /** text 渲染为文字按钮，icon 渲染为 ⓘ。 */
     variant?: 'text' | 'icon';
   }>(),
-  {title: '口径说明', variant: 'text'}
+  {title: '统计说明', variant: 'text'}
 );
 
 const mode = computed(() => (props.sections?.length ? 'drawer' : 'popover'));

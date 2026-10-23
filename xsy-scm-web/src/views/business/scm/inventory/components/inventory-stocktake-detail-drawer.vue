@@ -70,7 +70,7 @@ const itemColumns: TableColumnsType = [
   {title: '单位', dataIndex: 'unitSnapshot', width: 110},
 ];
 
-/** 差异带符号展示：盘盈 `+`、盘亏 `−`。后端已给 4 位定点字符串，这里只补符号。 */
+/** 差异带符号显示：盘盈“+”，盘亏“−”。 */
 function deltaText(value?: string | null) {
   if (value === undefined || value === null || value === '') return '—';
   const n = Number(value);

@@ -1,8 +1,4 @@
-<!--
-  操作日志用业务字段显示新增记录或“修改前 → 修改后”。
-  数组按行对比，技术字段不展示；原始值通过悬浮提示保留以便核查。
-  这里只读历史记录，不提供编辑。
--->
+<!-- 操作日志用业务字段显示新增内容或“修改前 → 修改后”；只读。 -->
 <template>
   <div class="scm-diff">
     <template v-if="mode === 'empty'">
@@ -72,7 +68,7 @@
         :scroll="{x: arrayScroll(entry.rows)}"
       >
         <template #bodyCell="{column, record}">
-          <!-- 单元格默认 nowrap + 省略号；快照值要能整段读，加 scm-cell-wrap 退出裁剪 -->
+          <!-- 允许换行，不被省略 -->
           <span v-if="column.dataIndex !== '__row'" class="scm-cell-wrap">{{ record[String(column.dataIndex)] }}</span>
         </template>
       </a-table>
@@ -111,13 +107,13 @@ import {auditFieldLabel} from '/@/views/business/scm/common/scm-audit-field-labe
 import {auditValueLabel} from '/@/views/business/scm/common/scm-audit-enum-values';
 import {isHiddenAuditKey, isHiddenChildAuditKey} from '/@/views/business/scm/common/scm-audit-hidden-keys';
 
-// `a-empty` 的 `image` 需要一个 URL；用 antd 内置的简洁插图，避免依赖外部图片资源。
+// a-empty 需要图片 URL，用 antd 内置插图
 const simpleImage = Empty.PRESENTED_IMAGE_SIMPLE;
 
 const props = defineProps<{
-  /** 变更前快照；`null` / `undefined` / 空对象表示无前态。 */
+  /** 变更前的数据；空对象表示无前态。 */
   before?: unknown;
-  /** 变更后快照。 */
+  /** 变更后的数据。 */
   after?: unknown;
   /** 覆盖或补充字段中文名；不传就用公共映射表。 */
   labels?: Record<string, string>;
@@ -137,10 +133,7 @@ const labelOf = (key: string) => props.labels?.[key] ?? auditFieldLabel(key);
 /** 严格 ISO-8601（含 `Z` 或偏移、秒与小数秒可省）才重排，避免误伤普通字符串。 */
 const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/;
 
-/**
- * 值的展示：枚举码先翻成中文，布尔值转「是 / 否」，ISO 时间戳再按全站口径重排为本地
- * `YYYY-MM-DD HH:mm:ss`，其余一律原样。原始串始终留在 `title` 里，审计可逐字回查。
- */
+/** 枚举值转中文，布尔值转“是/否”，ISO 时间重排；原始值保留在 title 中。 */
 const BOOLEAN_TEXT: Record<string, string> = {true: '是', false: '否'};
 
 function display(key: string, text: string): string {
@@ -166,7 +159,7 @@ function toRow(field: DiffField): FieldRow {
 
 const result = computed(() => diffSnapshot(props.before, props.after, labelOf));
 
-/** 有前态 = before 是个非空对象。空对象与 null 一样视为「没有变更前记录」。 */
+/** before 是非空对象才有前态；空对象和 null 一样视为无前态。 */
 const hasBefore = computed(() => !!props.before && typeof props.before === 'object' && Object.keys(props.before as object).length > 0);
 
 const mode = computed(() => {
@@ -174,7 +167,7 @@ const mode = computed(() => {
   return hasBefore.value ? 'diff' : 'created';
 });
 
-/** 系统审计列排在业务字段之后：先看「这条单是什么」，再看「谁在什么时候改的」。 */
+/** 系统审计列排在业务字段之后。 */
 const SYSTEM_KEYS = new Set(['id', 'version', 'deleted', 'sortOrder', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy']);
 
 const allFields = computed<FieldRow[]>(() => {
@@ -188,12 +181,7 @@ const createdFields = computed(() => allFields.value.filter((f) => f.after !== '
 const changedFields = computed(() => allFields.value.filter((f) => f.changed));
 const quietFields = computed(() => allFields.value.filter((f) => !f.changed && (f.before !== '—' || f.after !== '—')));
 
-/**
- * 明细行里显示出来的变化条数。
- *
- * `changedCount` 只看顶层标量字段，会漏掉「只改了明细行」的操作（如实重录入：顶层一个字段都没变，
- * 变的全在 `items` 里）—— 那样表头会写着「已变更 0 项」，下面却列着几行变化。
- */
+/** 明细行中的变化数，避免只改明细时表头显示 0 项。 */
 function changedInArrays(): number {
   return result.value.arrays.reduce((total, group) => total + group.rows.reduce((n, row) => n + visibleRowFields(row).length, 0), 0);
 }
@@ -205,12 +193,7 @@ const diffFields = computed(() => (showQuiet.value ? [...changedFields.value, ..
 
 // ---- 数组：无前态时的明细表 ----
 
-/**
- * 明细表的列：只保留「至少一行有实际内容」的键。
- *
- * 全空的列是审计噪音；整列都是 `false` 的布尔列（如每行「人工改价 = 否」）同样是 ——
- * 没有任何一行偏离默认值，说明这列没有信息，不该占一个表头。
- */
+/** 明细表只保留至少一行有内容的列。 */
 function groupKeys(rows: DiffChild[]): string[] {
   const keys: string[] = [];
   for (const row of rows) {
@@ -243,21 +226,17 @@ function arrayScroll(rows: DiffChild[]): number {
   return 56 + groupKeys(rows).length * 160;
 }
 
-/** 有前后态时只保留真正有变化的行：没变化的行只剩一个标题，比不显示更费解。 */
+/** 有前后态时只保留有变化的行。 */
 function shownRows(group: DiffArray): DiffChild[] {
   return group.rows.filter((row) => visibleRowFields(row).length > 0);
 }
 
-/** 整个数组都没变化就整组不显示，否则会留下一排只有标题的空分组。 */
+/** 整组没有变化就不显示。 */
 const shownGroups = computed(() => result.value.arrays.map((group) => ({group, rows: shownRows(group)})).filter((entry) => entry.rows.length > 0));
 
 // ---- 数组：有前后态时的逐行变化 ----
 
-/**
- * 行标题：优先用行内的人类可读快照（商品名称 / 商品规格编码…），
- * 只在拿不到可读名时才退回行标识本身 —— `商品规格 ID：2034` 对用户没有意义。
- * 原始标识串留在 `title` 里可追溯。
- */
+/** 行标题优先用商品名、规格编码等可读值，取不到再用行标识。 */
 const ROW_TITLE_KEYS = [
   'productNameSnapshot',
   'skuCodeSnapshot',
@@ -279,10 +258,7 @@ function rowTitle(row: DiffChild): string {
   return at > 0 ? `${labelOf(row.identity.slice(0, at))}：${row.identity.slice(at + 1)}` : row.identity;
 }
 
-/**
- * 单行对比里只看变化项；新增 / 移除行没有可比较的一侧，列出有值的那一侧
- * （处于默认值的布尔字段不列 —— 「人工改价 否」对读的人没有信息）。
- */
+/** 已有行只显示变化字段；新增或移除行显示有值的一侧。 */
 function visibleRowFields(row: DiffChild): FieldRow[] {
   const rows = row.fields.filter((f) => !isHiddenChildAuditKey(f.key)).map(toRow);
   if (!row.beforeExists || !row.afterExists) {
@@ -318,11 +294,7 @@ function visibleRowFields(row: DiffChild): FieldRow[] {
   margin-bottom: 4px;
 }
 
-/*
-  变化行：四列网格（字段 / 旧值 / 箭头 / 新值）。
-  用 `max-content` 而不是固定宽度，列宽跟着内容走 —— 短值不会撑出一片空白，
-  长值也不会被压到换行；各行的旧值、新值仍然纵向对齐。
-*/
+/* 四列网格：字段、旧值、箭头、新值；列宽随内容变化。 */
 .scm-diff-lines {
   display: grid;
   grid-template-columns: max-content max-content max-content minmax(0, 1fr);
@@ -340,7 +312,7 @@ function visibleRowFields(row: DiffChild): FieldRow[] {
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
 }
 
-/* 未变更项（点开「显示未变更的 N 项」后出现）整体弱化，让变化项先被看到。 */
+/* 未变更项弱化显示 */
 .scm-diff-label.is-quiet,
 .scm-diff-value.is-quiet,
 .scm-diff-arrow.is-quiet {
@@ -352,7 +324,7 @@ function visibleRowFields(row: DiffChild): FieldRow[] {
   overflow-wrap: anywhere;
 }
 
-/* 空值（—）弱化，避免把「没有值」读成「值是破折号」。 */
+/* 空值弱化，避免误读成破折号 */
 .scm-diff-value.is-empty {
   color: rgba(0, 0, 0, 0.25);
 }
@@ -361,17 +333,14 @@ function visibleRowFields(row: DiffChild): FieldRow[] {
   margin-bottom: 12px;
 }
 
-/* 无前态的明细表随内容收窄，不被容器撑到满宽留出空白。 */
+/* 无前态的明细表按内容收窄 */
 .scm-diff-table :deep(.ant-table-container),
 .scm-diff-table :deep(.ant-table-content) {
   width: fit-content;
   max-width: 100%;
 }
 
-/*
-  数组分组：给一个左边框 + 缩进，让逐行明细在视觉上从属于这个数组字段，
-  否则会和上层的标量字段连成一片，分不清层级。
-*/
+/* 分组左边框 + 缩进，区分层级。 */
 .scm-diff-group {
   margin: 16px 0;
   padding-left: 12px;

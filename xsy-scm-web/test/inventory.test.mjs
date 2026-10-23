@@ -542,7 +542,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     assert.match(inventoryError({code: 40486}), /库存余额不存在/);
     assert.match(inventoryError({code: 41001}), /不做自动换算/);
     assert.match(inventoryError({code: 41002}), /不能重复入库/);
-    assert.match(inventoryError({code: 41003}), /入库事实不合法/);
+    assert.match(inventoryError({code: 41003}), /入库数据不完整/);
 
     // 跨域复用的既有码也要登记：让用户看到一个裸错误码是更糟的选择
     assert.match(inventoryError({code: 40485}), /仓库不存在/);

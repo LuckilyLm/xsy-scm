@@ -1,12 +1,6 @@
-<!-- 冻结批次明细（只读回看）。
-ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个数量」的解释链是断的。
-本抽屉把冻结快照的三块内容摊开——批次头（冻结输入与计数）、SKU 级解释行、逐行建议——
-所有数字原样取自快照、不在前端重算（与缺口预览同一取向）。
-接口按 `scm:purchase:demand:batch:query` AND `scm:inventory:balance:query` 鉴权（返回体含库存量），
-调用方的 `v-privilege` 只是体验，不是权限边界。 -->
+<!-- workspace：冻结批次明细的两张宽表要横向铺开才看得清。
+     只读，数字都由后端下发，前端不重算；接口同时校验批次和库存余额权限。 -->
 <template>
-  <!-- workspace：超宽业务数据阅读 —— 冻结快照的两张宽表（scroll.x 1800 / 1400）
-       是回看「当时为什么建议这个数量」的全部依据，横向空间即内容。 -->
   <a-drawer :open="open" title="冻结批次明细" :width="scmDrawerWidth('workspace')" @close="close">
     <a-alert v-if="error" :message="error" type="error" show-icon>
       <template #action>
@@ -107,7 +101,7 @@ function openInquiry(): void {
 }
 const emit = defineEmits<{close: []}>();
 
-/** 解释行里所有数量都是后端下发的四位定点字符串，统一走 `quantity` 渲染（null → —）。 */
+/** 解释行里的数量统一按四位小数显示，空值显示“—”。 */
 const numericColumns = [
   'orderDemandQuantity',
   'onHandQuantity',
@@ -169,14 +163,14 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由抽屉内的 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由抽屉内的 Alert 提示
     const r = await purchaseDemandApi.batchDetail({batchId}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       detail.value = r.data;
     }
   } catch (e) {
     if (id === requestId) {
-      // 失败时清空旧批次，避免把上一个批次的数字留在屏幕上（和供应商对账同一取向）
+      // 清空旧批次，避免屏幕上留着上一个批次的数据
       detail.value = undefined;
       error.value = purchaseError(e);
     }
@@ -187,8 +181,7 @@ async function load() {
   }
 }
 
-// 监听「打开时的批次号」：关闭会把 key 收回 undefined，因此「关掉再打开同一批次」
-// 也会重新拉一次（冻结快照虽不可变，但接口可能刚被授权，缓存旧结果没有意义）。
+// 每次打开都重新加载，重新打开同一批次也会刷新
 watch(
   () => (props.open ? props.batchId : undefined),
   (batchId) => {

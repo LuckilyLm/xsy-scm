@@ -58,10 +58,7 @@ const canInventoryMovement = computed(() => hasPermission('scm:inventory:movemen
 const canInventoryWarning = computed(() => hasPermission('scm:inventory:warning:query'));
 const canTodo = computed(() => hasPermission('scm:todo:query'));
 
-/**
- * 趋势里能切到哪些指标，由当前人持有的领域权限决定；默认选中第一个。
- * 三种都没有时整块趋势不显示 —— 单指标端点没有「省略」的形态，缺权会直接被拒绝。
- */
+/** 趋势可切换的指标由领域权限决定，全都没有时整块不显示。 */
 const trendMetrics = computed<ScmTrendMetric[]>(() => {
   const metrics: ScmTrendMetric[] = [];
   if (canOrder.value) {
@@ -78,11 +75,7 @@ const trendMetrics = computed<ScmTrendMetric[]>(() => {
 
 const showTrend = computed(() => canDashboard.value && trendMetrics.value.length > 0);
 
-/**
- * 排行与库存健康都挂在工作台入口权限之下：后端这四个端点都要求 scm:dashboard:query，
- * 没有它就会直接拒绝。领域权限只决定「入口之内还能看哪一块」，不能单独放行请求 ——
- * 否则无权的人打开首页会看到一排「没有权限」的失败提示。
- */
+/** 排行与健康度还要工作台入口权限；领域权限只决定入口内显示哪一块。 */
 const canRanking = computed(() => canDashboard.value && canOrder.value);
 const canHealth = computed(() => canDashboard.value && canInventoryWarning.value);
 </script>

@@ -1,12 +1,4 @@
-/*
- * 供应商表单模型（纯函数，可被 `node --test` 直接单测）。
- *
- * 关键业务规则（与后端一致）：
- * - 新建时状态强制 `ENABLED`，表单里没有状态字段；
- * - `supplier_sku` 是整表替换：已存在的行带 `id` + `version`，新增行不带 `id`；
- *   空数组表示清空全部关联；
- * - 同一供应商允许多条 `defaultFlag = true` —— 校验里绝不加「只允许一条默认」。
- */
+/** 供应商表单模型：纯函数，可直接单测。新建状态固定启用；关联商品整表替换。 */
 import type {EnableStatus, ScmId, SupplierFormModel, SupplierPayload, SupplierSkuItem, SupplierSkuRow} from '/@/types/business/scm/supplier';
 
 /** 非负定点数：最多 14 位整数 + 最多 4 位小数。 */
@@ -14,12 +6,7 @@ const DECIMAL = /^\d{1,14}(\.\d{1,4})?$/;
 
 const PHONE = /^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$/;
 
-/**
- * 可编辑表格的行。
- *
- * 与 `SupplierSkuItem` 的唯一区别是 `skuId` 允许为空 —— 新建行在用户选完商品规格之前就是空的。
- * 提交时由 toReplaceItems 负责把空行挡掉。
- */
+/** 可编辑表格的行：skuId 可空，新建行选完规格前就是空的。 */
 export interface SkuDraft {
   id?: ScmId;
   version?: number;
@@ -27,18 +14,16 @@ export interface SkuDraft {
   purchaseUnit: string;
   supplierItemCode?: string | null;
   referencePrice?: string | null;
-  /** 采购员 ID 使用数字或 null，和人员选择组件及后端 Long 字段保持一致。 */
+  /** 采购员 ID：数字或 null。 */
   purchaserId?: number | null;
-  /** 多行可以同时为 true，这不是缺陷而是 legacy 事实。 */
+  /** 允许多行同时为 true。 */
   defaultFlag: boolean;
   status?: EnableStatus;
 }
 
 export function emptySupplier(): SupplierFormModel {
   return {
-    // 区划六列（`AreaColumns`）只能显式列出：本模块要能被 `node --test` 直接加载，
-    // 不能有相对值导入。少一个键就会让上一条记录的区划串进新建的供应商。
-    // 点位三列同理：留着上一条的坐标会把新供应商静默标到旧地点上。
+    // 区划和点位字段要显式列全，避免上一条记录的值串进新建供应商。
     longitude: null,
     latitude: null,
     geomCrs: null,
@@ -62,12 +47,12 @@ export function emptySkuDraft(): SkuDraft {
   return {purchaseUnit: '', supplierItemCode: null, referencePrice: null, purchaserId: null, defaultFlag: false, status: 'ENABLED'};
 }
 
-/** 移除某一行（纯函数，便于 `node --test` 直接单测）。 */
+/** 移除指定行。 */
 export function removeSkuDraft(drafts: SkuDraft[], index: number): SkuDraft[] {
   return drafts.filter((_, position) => position !== index);
 }
 
-/** 服务端返回的行 → 可编辑草稿（保留 id / version，提交时才能走「保留」分支）。 */
+/** 接口行转草稿；保留 id 和 version。 */
 export function fromRows(rows: SupplierSkuRow[]): SkuDraft[] {
   return rows.map((row) => ({
     id: row.id,
@@ -121,7 +106,7 @@ export function validateSkuDrafts(drafts: SkuDraft[]): string | undefined {
   return undefined;
 }
 
-/** 草稿 → 替换请求体。不校验 `defaultFlag` 的基数（R12）。 */
+/** 草稿转替换请求体；不限制默认行数量。 */
 export function toReplaceItems(drafts: SkuDraft[]): SupplierSkuItem[] {
   const blankToNull = (value?: string | null): string | null => {
     const text = value == null ? '' : String(value).trim();
@@ -145,12 +130,7 @@ export function toReplaceItems(drafts: SkuDraft[]): SupplierSkuItem[] {
   });
 }
 
-/**
- * 提交前归一化 → 写请求体。
- *
- * 编码在这里被摘掉：它是服务端生成的只读回显，返回类型 `SupplierPayload` 上根本没有这个键，
- * 所以「客户端 × 编码」是类型层面的事实，不是靠后端忽略。
- */
+/** 提交前归一化；供应商编码由服务端生成，不提交。 */
 export function toSupplierPayload(form: SupplierFormModel): SupplierPayload {
   const blankToNull = (value?: string | null): string | null => {
     const text = value == null ? '' : String(value).trim();

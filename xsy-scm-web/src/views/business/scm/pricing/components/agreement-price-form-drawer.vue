@@ -105,7 +105,7 @@ import {pricingError} from '../pricing-errors';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {fixed4} from '../../common/scm-fixed';
 
-/** 表单模型：单价输入与有效期是本地字段，提交时才折进 PriceForm（后端要定点数字符串）。 */
+/** 表单模型：单价输入和有效期是本地字段，提交时再写进 PriceForm（后端要定点数字符串）。 */
 type AgreementPriceModel = PriceForm & {
   unitPriceInput: number | null;
   effectiveRange?: [string, string];
@@ -116,13 +116,7 @@ const visible = ref(false),
   loading = ref(false),
   saving = ref(false),
   error = ref('');
-/**
- * 表单模型必须是一个稳定对象。
- *
- * 原来写 `:model="{...form, unitPrice, range}"`：每次渲染都会生成新对象，而 change 触发的校验
- * 发生在重渲染之前，读到的是上一份快照——于是「选了客户仍提示请选择客户」「填了单价仍提示请填写单价」。
- * 把单价与有效期并入 form 后，校验读到的就是当前值。
- */
+/** 表单模型必须是同一个对象；每次渲染新建对象会让校验读到旧值。单价和有效期也放在这个模型里。 */
 const form = reactive<AgreementPriceModel>({...emptyPrice(), unitPriceInput: null, effectiveRange: undefined});
 const formulaOptions: {value: AgreementFormulaType; label: string}[] = [
   {value: 'FIXED', label: '固定协议价'},
@@ -131,7 +125,7 @@ const formulaOptions: {value: AgreementFormulaType; label: string}[] = [
   {value: 'MARKET_MARKUP_RATE', label: '市场价加价率'},
 ];
 const formRef = ref();
-/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+/** 必填项逐项校验，错误显示在输入框下方。 */
 const formRules = {
   customerId: [{required: true, message: '请选择客户', trigger: 'change'}],
   skuId: [{required: true, message: '请选择商品规格', trigger: 'change'}],
@@ -191,7 +185,7 @@ async function open(id?: ScmId) {
 }
 
 async function submit() {
-  // 必填项走表单校验：错误显示在对应输入框下方
+  // 必填项由表单校验
   try {
     await formRef.value?.validate();
   } catch {
@@ -201,7 +195,7 @@ async function submit() {
   form.formulaParameter = form.formulaType === 'FIXED' ? null : form.formulaParameter?.trim();
   form.effectiveFrom = form.effectiveRange?.[0] || '';
   form.effectiveTo = form.effectiveRange?.[1] || null;
-  // 剩下的跨字段业务规则（结束时间必须晚于开始时间）不是字段必填，用 toast
+  // 结束时间必须晚于开始时间这类跨字段规则，用 toast 提示
   const problems = validatePrice(form, 'customerId');
   if (problems.length) {
     message.warning(problems.join('；'));
@@ -216,7 +210,7 @@ async function submit() {
     visible.value = false;
     emit('saved');
   } catch {
-    // 保存失败只走全局 toast；抽屉里的 error 留给加载失败
+    // 保存失败由全局 toast 提示；error 只用于加载失败
   } finally {
     saving.value = false;
   }

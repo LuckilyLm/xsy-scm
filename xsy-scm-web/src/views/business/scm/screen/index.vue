@@ -3,7 +3,7 @@
     <div ref="containerRef" class="scm-screen">
       <screen-header :stale-error="staleError" :refreshing="refreshing" :fullscreen="fullscreen" @refresh="refresh" @fullscreen="toggleFullscreen" />
 
-      <!-- 首屏加载：只有第一次才显示，后续静默刷新不闪屏 -->
+      <!-- 首屏加载，后续静默刷新不显示 -->
       <div v-if="loading" class="scm-screen-state">
         <div class="scm-screen-state-inner">
           <span class="scm-spinner" />
@@ -11,7 +11,7 @@
         </div>
       </div>
 
-      <!-- 首屏失败：此时页面上没有任何可用数据，显示错误态才是诚实的 -->
+      <!-- 首屏失败，没有任何可用数据 -->
       <div v-else-if="error && !business && !inventory" class="scm-screen-state">
         <div class="scm-screen-state-inner is-error">
           <span class="scm-state-icon">!</span>
@@ -67,7 +67,7 @@ import TrendSection from './components/trend-section.vue';
 import {useScreenData} from './composables/use-screen-data';
 import {useScreenScale} from './composables/use-screen-scale';
 
-/** 大屏页面只负责三列布局和面板组合。数据请求、缩放与图表各由独立组件处理，页面卸载时要清除全局监听。 */
+/** 大屏页面只负责三列布局和面板组合。 */
 const wrapperRef = ref<HTMLElement>();
 const containerRef = ref<HTMLElement>();
 
@@ -94,8 +94,7 @@ async function toggleFullscreen() {
       await wrapper.requestFullscreen();
     }
   } catch {
-    // 浏览器拒绝全屏（非用户手势、iframe 未授权）时静默降级：
-    // 大屏数据不受影响，没必要弹错误打断演示
+    // 全屏被拒绝时静默降级，不打断演示。
   }
 }
 
@@ -109,8 +108,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="less">
-// 不带 scoped：本文件要作用在 screen-panel / metric-card 等子组件内部，
-// scoped 会给选择器加 data-v 属性，父组件的 scoped 样式作用不到子组件内部。
+// 不带 scoped，样式要作用到子组件内部。
 @import './styles/screen.less';
 @import './styles/panel.less';
 </style>
@@ -130,13 +128,7 @@ onBeforeUnmount(() => {
   background: @screen-bg;
 }
 
-// 设计稿容器必须绝对定位，不能是 wrapper 的普通 flex 子项。
-// 原因（2026-10-08 实测定位）：flex 子项的 width 只是 flex-basis，
-// 默认 flex-shrink 为 1，会在视口窄于 1920 时把它压缩到 wrapper 宽度，
-// 于是三列（420 + 1000 + 420）被挤进 1680px，右列内容需要 1224px 却只分到 720px，
-// 面板内行列表格向外溢出、压到底部趋势带上（截图里的「排版错乱」）。
-// 绝对定位让它脱离 flex 布局，布局尺寸恒为 1920 × 1080；
-// 适配交给 useScreenScale 的 transform scale，缩放在 wrapper 里居中。
+// 绝对定位避开 flex 压缩，布局恒为 1920×1080；缩放由 useScreenScale 负责。
 .scm-screen {
   position: absolute;
   top: 50%;
@@ -152,7 +144,7 @@ onBeforeUnmount(() => {
   min-height: 0;
 }
 
-// ---------- 首屏三态（加载 / 失败）----------
+// 首屏加载 / 失败
 .scm-screen-state {
   flex: 1;
   display: flex;

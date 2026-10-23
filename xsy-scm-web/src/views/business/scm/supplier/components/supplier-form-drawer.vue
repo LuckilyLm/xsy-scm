@@ -1,10 +1,4 @@
-<!--
-  供应商 新建 / 编辑 抽屉。
-  - 表单不含 status：新建强制 `ENABLED`，变更走独立的 `updateStatus` 端点；
-  - 编辑时先拉详情（列表 VO 不含 `address` / `remark`）；
-  - 「所在地区」省市区级联与 `address` 自由文本并存：编码供地图按市聚合，
-    地址仍是收货与展示口径。
--->
+<!-- 供应商新建/编辑抽屉：状态固定启用，变更在列表里操作。 -->
 <template>
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('s')" @close="close">
     <a-spin :spinning="loading">
@@ -110,17 +104,17 @@ const formRef = ref<FormInstance>();
 
 const form = reactive<SupplierFormModel>(emptySupplier());
 
-/** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
+/** 省市区选择路径，与表单的地区列互转。 */
 const area = ref<AreaNode[]>([]);
 
 function onAreaChange(_value: unknown, nodes: AreaNode[]) {
-  // 区划变了就作废已选点位：留着旧坐标会让「改了区划但没重新选点」静默指向另一个地方。
+  // 区划变了就清掉旧点位。
   Object.assign(form, areaColumnsOf(nodes), emptyLocation());
 }
 
 const title = computed(() => (form.supplierId ? '编辑供应商' : '新增供应商'));
 
-/** 打开抽屉。传 `supplierId` 即编辑模式（先拉详情再填表）。 */
+/** 传 supplierId 进入编辑，否则新建。 */
 async function open(supplierId?: ScmId) {
   visible.value = true;
   error.value = '';
@@ -135,7 +129,7 @@ async function open(supplierId?: ScmId) {
   try {
     const response = await supplierApi.detail(supplierId, {suppressGlobalErrorMessage: true});
     const detail = response.data;
-    // 列表 VO 不含 address / remark，编辑必须走详情接口。
+    // 列表数据不含地址和备注，编辑要先取详情。
     Object.assign(form, {
       supplierId: detail.supplierId,
       version: detail.version,
@@ -160,8 +154,7 @@ async function open(supplierId?: ScmId) {
     error.value = supplierError(e);
   } finally {
     loading.value = false;
-    // 抽屉内容首次打开才挂载，而 AreaCascader 只用非 immediate 的 watch 同步 value，
-    // 因此回填必须排在 nextTick 之后，否则第一次编辑时选择器是空的。
+    // 区划选择器挂载后才生效，回填要等 nextTick。
     await nextTick();
     area.value = areaNodesOf(form);
     formRef.value?.clearValidate();
@@ -178,7 +171,7 @@ async function submit() {
   } catch {
     return;
   }
-  // 点位成组校验先于业务校验：半组坐标在地图上无法解释，后端也会以 VALIDATION_ERROR 拒绝
+  // 点位要成组校验，半组坐标无法使用。
   const problem = locationError(form) || validateSupplier(form);
   if (problem) {
     error.value = problem;
@@ -198,7 +191,7 @@ async function submit() {
     visible.value = false;
     emit('saved');
   } catch {
-    // 保存失败只走全局 toast；抽屉里的 error 留给本地校验与加载失败
+    // 保存失败由全局 toast 提示；error 只用于本地校验和加载失败
   } finally {
     saving.value = false;
   }

@@ -1,14 +1,4 @@
-<!--
-  库存调拨单。
-
-  状态机（两步式）：DRAFT → SHIPPED（在途）→ RECEIVED，草稿可 CANCELLED。
-  「发出」与「收货」分开，因为它们通常由不同的人执行（源仓发货、目标仓点收）——
-  由同一个人两头都确认会让在途数量失去复核，而在途数量正是最容易出错的地方。
-
-  页面上必须讲清楚的一件事：在途期间这批货不在任何余额行里（没有虚拟在途仓），
-  所以源仓已经减了、目标仓还没加，全仓总库存会暂时减少。这是两步式的必然结果，
-  不是缺陷 —— 不说清楚用户会以为货丢了。
--->
+<!-- 库存调拨单：草稿 → 在途 → 已收货。在途货物不在任何仓库余额中，全仓总库存会暂时减少。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -78,7 +68,7 @@
         <template v-else-if="column.dataIndex === 'receivedAt'">{{ datetime(record.receivedAt) }}</template>
         <template v-else-if="column.dataIndex === 'receivedBy'">{{ record.receivedBy || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 行内常驻「详情」与本状态唯一的推进动作（草稿→发出，在途→收货），其余收进「更多」 -->
+          <!-- 详情和当前可执行的推进动作常驻，其他操作收进“更多” -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button v-if="record.status === 'DRAFT'" type="link" size="small" @click="onShip(record)" v-privilege="'scm:inventory:transfer:ship'">
@@ -159,7 +149,7 @@
   </a-drawer>
 
   <InventoryTransferDetailDrawer v-model:open="detailOpen" :detail="detail" />
-  <!-- 在途库存报表（只读聚合，不进 inventory_balance） -->
+  <!-- 在途库存报表（只读） -->
   <a-modal :open="inTransitOpen" title="在途库存" width="1000" :footer="null" @cancel="inTransitOpen = false">
     <p class="scm-note scm-note--block">在途量不在任何仓库的余额里，对账时需单独计入。</p>
     <a-table
@@ -233,8 +223,7 @@ const statusOptions = Object.values(SCM_INVENTORY_TRANSFER_STATUS_ENUM).map((i) 
   label: i.desc,
 }));
 
-// 调拨的语义是「从哪到哪」：方向合成一格（源仓 → 目标仓），发出/收货的「谁」作为时间的次要行。
-// 创建时间是技术字段，不上列 —— 调拨的业务时刻是发出与收货。
+// 方向合成一格（源仓 → 目标仓）；创建时间不上列。
 const columns = ref<TableColumnsType<InventoryTransfer>>([
   {title: '调拨单号', dataIndex: 'transferNo', width: 190},
   {title: '调拨方向', dataIndex: 'direction', width: 260, align: 'center'},
@@ -253,7 +242,7 @@ const itemColumns: TableColumnsType = [
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
 
-/** 在途用醒目的橙色：它代表货不在任何仓库里，最容易被误读成丢失。 */
+/** 在途用橙色，避免被误认为货物丢失。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {
   DRAFT: 'processing',
   SHIPPED: 'warning',
@@ -262,11 +251,11 @@ const STATUS_TONE: Record<string, ScmStatusTone> = {
 };
 const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status ?? ''] ?? 'neutral';
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 更多菜单无法使用 `v-privilege`，改用 `hasPermission` 判断。 */
 const canUpdate = computed(() => hasPermission('scm:inventory:transfer:update'));
 const canDelete = computed(() => hasPermission('scm:inventory:transfer:delete'));
 
-/** 只有草稿可写；动作集合与原行内按钮一一对应，只按频率重新分组。 */
+/** 只有草稿可写。 */
 function rowActions(row: InventoryTransfer): ScmActionItem[] {
   const draft = row.status === 'DRAFT';
   return [
@@ -341,10 +330,7 @@ function resetQuery() {
 interface EditableItem {
   _key: number;
   skuId?: string | number;
-  /**
-   * 明细数量在表单里是 `number`（InputNumber 只接受数字），提交时才转成后端要求的
-   * 4 位定点字符串。`null` = 还没填。
-   */
+  /** 表单里用 number，提交时转成 4 位定点字符串；null 表示未填。 */
   quantity?: number | null;
   remark?: string;
 }
@@ -398,7 +384,7 @@ async function openEdit(record: InventoryTransfer) {
   form.items = (d.items ?? []).map((i) => ({
     _key: ++keySeq,
     skuId: i.skuId,
-    // 后端以 4 位定点字符串返回明细数量，InputNumber 要 number；空值保持 null
+    // 后端返回定点字符串，InputNumber 需要 number；空值保持 null
     quantity: i.quantity == null ? null : Number(i.quantity),
     remark: i.remark,
   }));
@@ -412,12 +398,7 @@ function closeDrawer() {
   drawerOpen.value = false;
 }
 
-/**
- * 明细校验在提交前做：逐行给出「第几行缺什么」，比一条笼统的「参数不合法」有用得多。
- *
- * 数量大于 0 与最多 4 位小数已由 InputNumber（`:min="0.0001"` + `:precision="4"`）
- * 结构性保证，这里只需拦住「整行没填数量」。
- */
+/** 提交前逐行校验，并指出第几行缺什么。 */
 function buildPayload(): InventoryTransferAdd | null {
   if (String(form.fromWarehouseId) === String(form.toWarehouseId)) {
     message.warning('源仓库与目标仓库不能相同');
@@ -436,7 +417,7 @@ function buildPayload(): InventoryTransferAdd | null {
       return null;
     }
     seen.add(skuKey);
-    // 数量恒为正：方向由「发出 / 收货」动作表达，不接受 0 或负数
+    // 数量必须大于 0，方向由发出/收货动作决定
     if (fixed4(items[i].quantity) === undefined) {
       message.warning(`第 ${i + 1} 行：请填写调拨数量`);
       return null;
@@ -446,7 +427,7 @@ function buildPayload(): InventoryTransferAdd | null {
     fromWarehouseId: form.fromWarehouseId as string | number,
     toWarehouseId: form.toWarehouseId as string | number,
     remark: form.remark,
-    // 数量以定点字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
+    // 数量以定点字符串提交，后端不接受 JSON 数字
     items: items.map((i) => ({
       skuId: i.skuId as string | number,
       quantity: fixed4(i.quantity) as string,
@@ -480,7 +461,7 @@ async function onSubmit() {
 // ------------------------------------------------------------------ 详情与动作
 
 const detailOpen = ref(false);
-// Partial：初始为空对象（还没选中任何单据），打开详情时整体替换为后端返回的 VO
+// 初始为空对象，打开详情时替换为后端数据
 const detail = ref<Partial<InventoryTransfer>>({});
 
 async function openDetail(record: InventoryTransfer) {
@@ -508,7 +489,7 @@ function onShip(record: InventoryTransfer) {
         message.success('已发出，单据进入在途');
         queryData();
       } catch (e) {
-        // 源仓可用量不足（41043）等业务失败会走到这里，整单已回滚
+        // 源仓可用量不足等业务失败会走到这里，整单已回滚
         message.error(inventoryError(e));
       }
     },
@@ -529,7 +510,7 @@ function onReceive(record: InventoryTransfer) {
         message.success('已收货，调拨完成');
         queryData();
       } catch (e) {
-        // 单位不一致（41044）等失败会走到这里；单据停在在途，需人工处理后重试
+        // 单位不一致等失败会走到这里；单据停在在途，处理后重试
         message.error(inventoryError(e));
       }
     },
@@ -577,7 +558,7 @@ function onDelete(record: InventoryTransfer) {
 
 const inTransitOpen = ref(false);
 const inTransitLoading = ref(false);
-/** 加一个稳定的 rowKey：同一调拨单的同一 SKU 可能出现在多行（多张单），单靠单号+SKU 会撞。 */
+/** 同一单号和 SKU 可能重复，加序号保证 rowKey 唯一。 */
 const inTransitRows = ref<Array<InventoryInTransit & {rowKey: string}>>([]);
 
 const inTransitColumns: TableColumnsType = [
@@ -589,11 +570,7 @@ const inTransitColumns: TableColumnsType = [
   {title: '单位', dataIndex: 'unit', width: 76},
 ];
 
-/**
- * 打开在途库存报表。
- *
- * 每次打开都重新拉取（这是活状态：调拨收货后该行就消失了），不做缓存。
- */
+/** 打开在途库存报表，每次重新拉取，不缓存。 */
 async function openInTransit() {
   inTransitOpen.value = true;
   inTransitLoading.value = true;
@@ -617,7 +594,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 「源仓 → 目标仓」：箭头弱化，两个仓名不换行，避免撑高行 */
+/* 箭头弱化，仓名不换行 */
 .transfer-direction {
   display: flex;
   align-items: center;

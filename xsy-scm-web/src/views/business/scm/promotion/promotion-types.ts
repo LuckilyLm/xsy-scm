@@ -1,8 +1,4 @@
-/**
- * 营销中心前端类型（与后端 promotion 域 VO 逐字对齐）。
- *
- * 金额一律是四位定点字符串，前端只渲染、不重算；优惠试算的金额与分摊都由服务端算好。
- */
+/** 营销中心类型。金额用 4 位定点字符串，前端只展示；优惠金额和分摊都由服务端算好。 */
 
 export type Id = string | number;
 
@@ -19,12 +15,7 @@ export type PromotionStatus = 'DRAFT' | 'ACTIVE' | 'STOPPED';
 
 export type PromotionCouponInstanceStatus = 'AVAILABLE' | 'RESERVED' | 'USED' | 'RELEASED';
 
-/**
- * 活动规则：受控键值，不是表达式。
- *
- * 每种活动类型只接受自己的键，未知键会被服务端拒收（41324）——
- * 因此这里的字段按类型分开声明，不合并成一个「任意键」的字典。
- */
+/** 活动规则用固定键值；每种类型只接受自己的键，未知键会被后端拒收。 */
 export interface PromotionRule {
   /** FULL_REDUCE / FULL_GIFT：门槛金额。 */
   thresholdAmount?: string;
@@ -156,7 +147,7 @@ export interface PromotionDiscountAllocation {
   discountAmount?: string | null;
 }
 
-/** 试算 / 冻结结果：三个金额分开返回，便于回答「券到底减了多少」。 */
+/** 试算 / 冻结结果：三个金额分开返回。 */
 export interface PromotionDiscount {
   salesOrderId?: Id | null;
   customerId: Id;
@@ -182,16 +173,16 @@ export interface PromotionDiscount {
   activityRule?: PromotionRule | null;
 }
 
-/** 订单已冻结优惠的读模型（`OrderDiscountVO`，只读；冻结后不可变）。 */
+/** 订单已冻结的优惠，只读。 */
 export interface OrderDiscount {
   salesOrderId?: Id | null;
-  /** 主活动（第一条产生优惠的活动）；叠加生效的其余活动在 `activitySnapshot.applied` 里。 */
+  /** 主活动；叠加生效的其余活动见 activitySnapshot.applied。 */
   activityId?: Id | null;
   activityVersion?: number | null;
   activitySnapshot?: OrderDiscountActivitySnapshot | null;
   couponInstanceId?: Id | null;
   couponSnapshot?: OrderDiscountCouponSnapshot | null;
-  /** 优惠基数（下单金额口径）。 */
+  /** 优惠基数：下单金额。 */
   baseAmount?: string | null;
   discountAmount?: string | null;
   /** 其中的限时特价让利额（不得大于 discountAmount）。 */
@@ -233,7 +224,7 @@ export interface OrderDiscountAllocation {
   discountAmount?: string | null;
 }
 
-/** 满赠赠品权益（`PromotionDiscountVO.GiftEntitlementVO`，冻结后不可改）。 */
+/** 满赠赠品权益，冻结后不可改。 */
 export interface OrderGiftEntitlement {
   activityId?: Id;
   activityCode?: string | null;
@@ -273,14 +264,14 @@ export function promotionError(error: unknown): string {
   return response?.data?.msg ?? response?.response?.data?.msg ?? response?.message ?? '操作失败，请刷新后重试';
 }
 
-/** 后端折扣率用 0 到 1 的小数表示，页面按百分比显示。换算只发生在展示与录入层，不改变保存精度。 */
+/** 折扣率后端用 0 到 1，页面按百分比显示。 */
 export function rateToPercent(rate?: string | null): number | null {
   if (rate === null || rate === undefined || rate === '') return null;
   const value = Number(rate);
   return Number.isFinite(value) ? Number((value * 100).toFixed(2)) : null;
 }
 
-/** rateToPercent 的逆运算；不填时返回 `undefined`（不收进规则载荷）。 */
+/** rateToPercent 的逆运算；不填时返回 undefined。 */
 export function percentToRate(percent?: number | null): string | undefined {
   return percent === null || percent === undefined ? undefined : (percent / 100).toFixed(4);
 }

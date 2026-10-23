@@ -1,7 +1,4 @@
-/*
- * 帮助文档
- *
- */
+/* 帮助文档路由 */
 import HelpDocLayout from '/@/layout/help-doc-layout.vue';
 
 export const helpDocRouters = [

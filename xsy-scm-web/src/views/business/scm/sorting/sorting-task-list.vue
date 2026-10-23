@@ -70,9 +70,7 @@
           {{ record.supplierNameSnapshot || '—' }}
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 操作工作台优先暴露「当前下一步」，而不是机械地把所有状态动作塞进「更多」：
-               未指派 → 指派，已指派 → 完成；改派属低频调整，留在「更多」。
-               行内恒为「详情 + 一个当前最重要的下一步 + 更多」，宽度上限 150。 -->
+          <!-- 行内只放详情和一个当前下一步（未指派→指派，已指派→完成），其余收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record.id)">详情</a-button>
             <a-button
@@ -112,7 +110,7 @@
     </div>
   </a-card>
 
-  <!-- 新建任务：仓库必须显式选择（不从订单 / 客户 / 线路猜），候选订单行由服务端按建单权开放 -->
+  <!-- 新建任务：仓库必须显式选择，候选订单行由服务端按权限返回 -->
   <SortingTaskCreateModal
     v-model:open="createOpen"
     v-model:warehouse-id="createForm.warehouseId"
@@ -177,7 +175,7 @@
     @submit="submitAction"
   />
 
-  <!-- 打印：预览走只读 GET，「登记打印」才是计次的 POST 命令；两者绝不混用同一个入口 -->
+  <!-- 预览用 GET，登记打印才用 POST 计次，两个入口分开 -->
   <PrintDocumentModal
     :open="ticketOpen"
     document-type="SORTING_TICKET"
@@ -238,10 +236,7 @@ import {sortingError} from './sorting-types';
 
 type ActionMode = 'assign' | 'cancel' | 'reopen';
 
-// ------------------------------------------------------------------
-// 电子秤读数（ADM-11）
-// ------------------------------------------------------------------
-
+// 电子秤读数
 const deliveryRange = ref<[string, string] | undefined>(undefined);
 const scaleOpen = ref(false);
 const scaleTaskId = ref<Id | undefined>(undefined);
@@ -251,8 +246,7 @@ function openScale(record: SortingTask) {
   scaleOpen.value = true;
 }
 
-// ------------------------------------------------------------------ 列表
-
+// 列表
 const queryForm = reactive<SortingTaskQuery>({pageNum: 1, pageSize: 20, unassignedOnly: false});
 const assigneeFilter = ref<number | undefined>(undefined);
 const rows = ref<SortingTask[]>([]);
@@ -261,7 +255,7 @@ const loading = ref(false);
 const listError = ref('');
 let listGeneration = 0;
 
-/** 持指派权即队列管理者（后端 `SortingAccess.crossAssignee()` 同一口径）。 */
+/** 有指派权就是队列管理者，能看到所有人的任务。 */
 const isQueueManager = computed(() => hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN));
 
 // 范围收窄后空表有两种成因（没授权 vs 真没数据），文案必须能区分，否则配置缺口被当成业务空档。
@@ -269,15 +263,14 @@ const emptyText = computed(() =>
   isQueueManager.value ? '暂无分拣任务' : '当前仅显示派给您本人的任务；若无数据，可能是任务尚未指派或本仓未授权给您，请联系分拣主管确认。'
 );
 
-// 分拣是操作型工作台，列只留「哪张任务 / 谁在做 / 做到哪了 / 什么时候要送到」。
-// 打印次数与创建时间下沉详情；「明细行数 + 已处理」合成一格进度（两列分开要来回对照）。
+// 列表只留任务、执行人、进度和送货时间；打印次数和创建时间放在详情里。
 const columns = ref<TableColumnsType<SortingTask>>([
   {title: '任务号', dataIndex: 'taskNo', width: 180},
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 150},
   {title: '受指派人', dataIndex: 'assigneeName', width: 120},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '分拣进度', dataIndex: 'processedCount', width: 92},
-  // 三个冻结维度：任务建出来之后它们不再变化，所以直接展示，不做「当前值 vs 快照」的对比
+  // 这三个字段建单后不再变化，直接显示
   {title: '送货时间', dataIndex: 'deliveryTimeSnapshot', width: 170},
   {title: '波次', dataIndex: 'deliveryWave', width: 110},
   {title: '供应商来源', dataIndex: 'supplierNameSnapshot', width: 150},
@@ -293,29 +286,24 @@ const SORTING_STATUS_TONE: Record<string, ScmStatusTone> = {
 };
 const statusTone = (status?: string | null): ScmStatusTone => SORTING_STATUS_TONE[status ?? ''] ?? 'neutral';
 
-/**
- * 当前行的「下一步」：未指派先指派，已指派则完成 —— 行内同一时刻只出现其中一个。
- *
- * 状态与权限同判（`hasPermission` 与 `v-privilege` 读同一份数据、同样放行超管），
- * 缺一即不占行内位置，避免出现「按钮在那儿、点了却没反应」。
- */
+/** 未指派显示「指派」，已指派显示「完成」，同一时刻只出现一个。 */
 const canAssignNext = (row: SortingTask) =>
   isWorking(row.status) && row.assigneeEmployeeId == null && hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN);
 
 const canCompleteNext = (row: SortingTask) =>
   isWorking(row.status) && row.assigneeEmployeeId != null && hasPermission(SCM_SORTING_PERMISSION.TASK_COMPLETE);
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 「更多」菜单挂不上 v-privilege，改用 hasPermission 判断。 */
 function rowActions(row: SortingTask): ScmActionItem[] {
   const working = isWorking(row.status);
   const printable = SCM_SORTING_PRINTABLE_STATUS.includes(row.status);
   return [
-    // 「指派」已提到行内（未指派任务的关键下一步）；「更多」里只留低频的改派
+    // 未指派时的「指派」已在行内，这里只留低频的改派
     {key: 'assign', label: '改派', hidden: !(working && row.assigneeEmployeeId != null && hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN))},
     {key: 'scale', label: '称重工作台', hidden: !hasPermission(SCM_SORTING_PERMISSION.SCALE_QUERY)},
     {key: 'ticket', label: '小票', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_QUERY))},
     {key: 'print', label: '打印', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_PRINT))},
-    // 取消限 WORKING、重开限 COMPLETED：两者条件不同不是漏写
+    // 取消只对进行中的任务，重开只对已完成的任务
     {key: 'cancel', label: '取消单据', danger: true, hidden: !(working && hasPermission(SCM_SORTING_PERMISSION.TASK_CANCEL))},
     {key: 'reopen', label: '重开', hidden: !(row.status === 'COMPLETED' && hasPermission(SCM_SORTING_PERMISSION.TASK_REOPEN))},
   ];
@@ -386,7 +374,7 @@ async function queryData() {
     const result = await sortingApi.tasks({
       ...queryForm,
       assigneeEmployeeId: assigneeFilter.value,
-      // 送货时间按冻结快照过滤，半开区间 [from, to)
+      // 送货时间按任务保存的时间过滤，半开区间 [from, to)
       deliveryTimeFrom: deliveryRange.value?.[0],
       deliveryTimeTo: deliveryRange.value?.[1],
     });
@@ -418,8 +406,7 @@ function resetQuery() {
   onSearch();
 }
 
-// ------------------------------------------------------------------ 任务级动作
-
+// 任务级动作
 const actionOpen = ref(false);
 const actionMode = ref<ActionMode>('assign');
 const actionAssignee = ref<number | undefined>(undefined);
@@ -430,8 +417,7 @@ const actionRecord = ref<SortingTask>();
 function openAction(mode: ActionMode, record: SortingTask) {
   actionMode.value = mode;
   actionRecord.value = record;
-  // `EmployeeSelect` 的 value 声明为 Number，这里只做类型层面的收窄（后端对 Long 主键回的是 JSON 数字）。
-  // 不用 Number() 转：id 一旦走数值转换，超长 id 会静默丢精度而页面看起来完全正常。
+  // 员工选择器只接受 number；不用 Number() 转换，避免超长 id 丢精度
   const employeeId = record.assigneeEmployeeId;
   actionAssignee.value = employeeId === null || employeeId === undefined ? undefined : (employeeId as number);
   actionReason.value = '';
@@ -469,7 +455,7 @@ async function submitAction() {
     actionOpen.value = false;
     await afterTaskChanged(record.id);
   } catch (e) {
-    // 后端消息原样显示：30005（无权 / 看不到）与 41121（状态不允许）是两种处置
+    // 后端消息原样显示：无权限和状态不允许的处理方式不同
     actionError.value = sortingError(e);
   } finally {
     busy.value = false;
@@ -480,8 +466,8 @@ function confirmComplete(record: SortingTask) {
   Modal.confirm({
     title: `完成分拣任务 ${record.taskNo}？`,
     content:
-      `硬前置是任务内每条活动明细都已有结果（当前已处理 ${record.processedCount} / ${record.itemCount}）。` +
-      '完成只锁定任务与实发事实，不扣减库存、不生成出库单，也不回写订单。',
+      `任务内每条活动明细都要有结果才能完成（当前已处理 ${record.processedCount} / ${record.itemCount}）。` +
+      '完成只锁定任务和实发数量，不扣库存、不生成出库单，也不回写订单。',
     okText: '确认完成',
     cancelText: '返回',
     onOk: async () => {
@@ -491,8 +477,7 @@ function confirmComplete(record: SortingTask) {
         message.success('任务已完成');
         await afterTaskChanged(record.id);
       } catch (e) {
-        // 41125（仍有未处理明细）由服务端给出，前端不预先算一遍：
-        // 行是否活动、是否算已处理都由服务端按占用位判定，前端再判一次就是第二份真相
+        // 是否还有未处理明细由服务端判断，前端不重复计算
         message.error(sortingError(e));
         await afterTaskChanged(record.id);
       } finally {
@@ -508,14 +493,12 @@ async function afterTaskChanged(id: Id) {
   if (detailOpen.value && String(detailId.value) === String(id)) await reloadDetail();
 }
 
-// ------------------------------------------------------------------ 新建任务
-
+// 新建任务
 const createOpen = ref(false);
 const creating = ref(false);
 const createLoading = ref(false);
 const createError = ref('');
-// `EmployeeSelect` 的 value prop 声明为 `[Number, Array]`，所以这里不收 `null`：
-// 「不指派」用 undefined 表达，提交时再落成后端要的 `null`（载荷类型见 sorting-types）。
+// 员工选择器不收 null，「不指派」用 undefined，提交时再转成 null
 const createForm = reactive<{warehouseId?: Id; assigneeEmployeeId?: number; remark?: string}>({});
 const candidateQuery = reactive<{pageNum: number; pageSize: number; keyword?: string}>({pageNum: 1, pageSize: 20});
 const candidateRows = ref<SortingCandidateLine[]>([]);
@@ -600,8 +583,7 @@ async function submitCreate() {
   }
 }
 
-// ------------------------------------------------------------------ 打印
-
+// 打印
 const printOpen = ref(false);
 const ticketOpen = ref(false);
 const ticketTaskId = ref<Id>();
@@ -609,10 +591,7 @@ const printLoading = ref(false);
 const printing = ref(false);
 const printError = ref('');
 const print = ref<SortingPrint>();
-/**
- * 登记命令要的 `version` 不在预览载荷里（预览 VO 刻意不带任务版本，防止被误当成可提交版本），
- * 因此打开打印时把当时读到的任务版本记下来 —— 与录入同理，登记的应当是自己看到的那一版。
- */
+/** 预览数据里没有版本号，打开打印时记下任务版本，登记时使用。 */
 const printVersion = ref<number>();
 const printTaskId = ref<Id>();
 

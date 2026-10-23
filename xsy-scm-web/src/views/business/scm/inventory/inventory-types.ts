@@ -1,12 +1,12 @@
 /**
- * 库存模块的前端类型，与后端请求和响应字段保持一致。
- * 数量、金额等定点数使用字符串；null 表示无值，"0.0000" 表示零。
- * 时间按后端返回的北京时间字符串显示，不再转换时区。
+ * 库存模块的前端类型，与后端接口保持一致。
+ * 数量和金额用定点字符串：null 表示无值，"0.0000" 表示零。
+ * 时间按后端返回的北京时间显示，不再转换时区。
  */
 
 export type Id = string | number;
 
-/** 分页入参。`pageNum` / `pageSize` 必填：后端 `PageParam` 为 null 时 `convert2PageQuery` 会 NPE。 */
+/** 分页入参。`pageNum` / `pageSize` 必填，否则后端会报空指针。 */
 export interface Page {
   pageNum: number;
   pageSize: number;
@@ -29,30 +29,22 @@ export interface InventoryBalance {
   /** 商品名称（来自 `product_spu.name`）。 */
   productName?: string;
   specValues?: Record<string, unknown> | null;
-  /** 记账单位：一个仓库 + SKU 只可能有一个（异单位入库会被 41001 拒绝）。 */
+  /** 记账单位；同一仓库和 SKU 只有一个，单位不同会被 41001 拒绝。 */
   unit?: string;
   quantity?: string | null;
   /** 已预留量。 */
   reservedQuantity?: string | null;
-  /** 可用量 = quantity − reservedQuantity。后端计算属性，不落库。 */
+  /** 可用量 = 数量 − 预留量，由后端计算。 */
   availableQuantity?: string | null;
-  /**
-   * 移动加权平均成本，不能为空。
-   * 没有采购入库历史时初始为 0；首次上线的历史均价可能是估算值。
-   */
+  /** 移动加权平均成本。没有采购入库记录时初始为 0，首次上线可能是估算值。 */
   avgCost?: string;
-  /** 库存金额 = quantity × avgCost。后端计算属性，不落库。 */
+  /** 库存金额 = 数量 × 成本，由后端计算。 */
   amount?: string | null;
   version?: number;
   updatedAt?: string;
 }
 
-/**
- * `InventoryBalanceQueryForm`。
- *
- * 没有 `sortItemList`：后端显式拒绝客户端排序（join 查询的裸列名在四张表里都存在，
- * 交给框架拼 ORDER BY 会产生歧义列）。排序固定为 `updated_at DESC`。
- */
+/** 不支持客户端排序，固定按更新时间倒序（联表排序会出现重名列）。 */
 export interface InventoryBalanceQuery extends Page {
   warehouseId?: Id;
   skuId?: Id;
@@ -66,7 +58,7 @@ export interface InventoryBalanceQuery extends Page {
 // 库存流水
 // ------------------------------------------------------------------
 
-/** `InventoryMovementVO`（append-only 账本的一行）。 */
+/** `InventoryMovementVO`（只增不改的库存流水）。 */
 export interface InventoryMovement {
   id: Id;
   warehouseId?: Id;
@@ -79,35 +71,30 @@ export interface InventoryMovement {
   specValues?: Record<string, unknown> | null;
   movementType?: string;
   sourceDocumentType?: string;
-  /** 收货单 id（头级溯源）。 */
+  /** 收货单 ID。 */
   sourceDocumentId?: Id;
-  /** 收货行 id（防重锚点）。 */
+  /** 收货行 ID，用于防重。 */
   sourceDocumentItemId?: Id;
-  /** 收货单号（人类可读来源，不设 movement_no）。仅 `PURCHASE_IN` 有值。 */
+  /** 收货单号，仅 `PURCHASE_IN` 有值。 */
   receiptNo?: string;
-  /** 来源单号：`SALES_OUT` 取出库单号、`STOCKTAKE_*` 取盘点单号。后端 COALESCE 成一个展示列。 */
+  /** 来源单号：销售出库取出库单号，盘点取盘点单号。 */
   sourceDocumentNo?: string;
   quantity?: string | null;
   unitSnapshot?: string;
   unitCost?: string | null;
   beforeQuantity?: string | null;
   afterQuantity?: string | null;
-  /** 业务发生时刻 = 收货确认时刻（不是写入时刻）。 */
+  /** 业务发生时间（收货确认时间），不是写入时间。 */
   occurredAt?: string;
   operator?: string;
   createdAt?: string;
 }
 
-/**
- * `InventoryMovementQueryForm`。
- *
- * 时间范围过滤的是 `occurred_at`（业务发生时刻），左闭右开：
- * `occurredFrom <= occurred_at < occurredTo`。
- */
+/** 按业务发生时间筛选，左闭右开：`occurredFrom <= 时间 < occurredTo`。 */
 export interface InventoryMovementQuery extends Page {
   warehouseId?: Id;
   skuId?: Id;
-  /** SKU 编码模糊匹配（联 `product_sku`）。 */
+  /** SKU 编码，模糊匹配。 */
   skuCode?: string;
   /** 流水类型：`PURCHASE_IN` / `SALES_OUT` / `STOCKTAKE_GAIN` / `STOCKTAKE_LOSS` / `LOSS_REPORT` / `GAIN_REPORT`。 */
   movementType?: string;
@@ -130,7 +117,7 @@ export interface InventoryOutbound {
   warehouseCode?: string;
   warehouseName?: string;
   status?: string;
-  /** 状态中文描述（后端按枚举填充，前端不硬编码字典）。 */
+  /** 状态名称，由后端返回。 */
   statusDesc?: string;
   remark?: string;
   confirmedAt?: string;
@@ -138,7 +125,7 @@ export interface InventoryOutbound {
   version?: number;
   createdAt?: string;
   updatedAt?: string;
-  /** 明细；仅详情接口返回，列表为 undefined。 */
+  /** 明细，仅详情接口返回。 */
   items?: InventoryOutboundItem[];
 }
 
@@ -151,28 +138,19 @@ export interface InventoryOutboundItem {
   productName?: string;
   specValues?: Record<string, unknown> | null;
   quantity?: string | null;
-  /** 确认出库时写入的记账单位快照；草稿态为空。 */
+  /** 确认出库时的记账单位，草稿为空。 */
   unitSnapshot?: string | null;
   remark?: string;
 }
 
-/**
- * `InventoryOutboundQueryForm`。
- *
- * 与余额 / 流水一致：没有 `sortItemList`，排序固定为 `created_at DESC, id DESC`。
- */
+/** 不支持客户端排序，固定按创建时间和 ID 倒序。 */
 export interface InventoryOutboundQuery extends Page {
   outboundNo?: string;
   warehouseId?: Id;
   status?: string;
 }
 
-/**
- * `InventoryOutboundAddForm`（新建与改草稿共用）。
- *
- * 数量是定点字符串：后端用 `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字，
- * 前端必须传 `"1.0000"` 这样的字符串，不能传 number。
- */
+/** 新建和修改草稿共用。数量必须传定点字符串（如 `"1.0000"`），后端不接受 JSON 数字。 */
 export interface InventoryOutboundAdd {
   warehouseId: Id;
   remark?: string;
@@ -225,9 +203,9 @@ export interface InventoryReservationQuery extends Page {
 // ------------------------------------------------------------------
 
 /**
- * 盘点差异 = 实盘量 - 保存草稿时的账面量。
- * 确认时把差异加到最新账面量上，因此确认后库存不一定等于当时实盘量。
- * 这里只展示结果，不在前端重新计算。
+ * 盘点差异 = 实盘量 − 保存草稿时的账面量。
+ * 确认时把差异加到最新账面量上，所以确认后的库存不一定等于实盘量。
+ * 前端只展示后端结果，不重新计算。
  */
 export interface InventoryStocktake {
   id: Id;
@@ -236,7 +214,7 @@ export interface InventoryStocktake {
   warehouseCode?: string;
   warehouseName?: string;
   status?: string;
-  /** 状态中文描述（后端按枚举填充，前端不硬编码字典）。 */
+  /** 状态名称，由后端返回。 */
   statusDesc?: string;
   remark?: string;
   confirmedAt?: string;
@@ -244,7 +222,7 @@ export interface InventoryStocktake {
   version?: number;
   createdAt?: string;
   updatedAt?: string;
-  /** 明细；仅详情接口返回，列表为 undefined。 */
+  /** 明细，仅详情接口返回。 */
   items?: InventoryStocktakeItem[];
 }
 
@@ -256,32 +234,25 @@ export interface InventoryStocktakeItem {
   skuName?: string;
   productName?: string;
   specValues?: Record<string, unknown> | null;
-  /** 账面量快照（保存草稿那一刻）。 */
+  /** 保存草稿时的账面量。 */
   bookQuantity?: string | null;
   /** 实盘量。 */
   actualQuantity?: string | null;
-  /** 差异 = 实盘量 − 账面量。后端派生字段，不落库。 */
+  /** 差异 = 实盘量 − 账面量，由后端计算。 */
   deltaQuantity?: string | null;
-  /** 确认盘点时写入的记账单位快照；草稿态为空。 */
+  /** 确认盘点时的记账单位，草稿为空。 */
   unitSnapshot?: string | null;
   remark?: string;
 }
 
-/**
- * `InventoryStocktakeQueryForm`。
- *
- * 与余额 / 流水 / 出库一致：没有 `sortItemList`，排序固定为 `created_at DESC, id DESC`。
- */
+/** 不支持客户端排序，固定按创建时间和 ID 倒序。 */
 export interface InventoryStocktakeQuery extends Page {
   stocktakeNo?: string;
   warehouseId?: Id;
   status?: string;
 }
 
-/**
- * 新建或修改盘点草稿时，只提交实盘量，不提交账面量。
- * 账面量由服务端读取；实盘量须为非负的定点数字符串。
- */
+/** 新建或修改盘点草稿只提交实盘量，账面量由后端读取；实盘量必须是非负定点字符串。 */
 export interface InventoryStocktakeAdd {
   warehouseId: Id;
   remark?: string;
@@ -292,10 +263,7 @@ export interface InventoryStocktakeAdd {
   }>;
 }
 
-/**
- * 盘点导入的单行拒绝原因（后端 `InventoryStocktakeImportErrorVO`）。
- * 整批校验：任一非空 errors 都不落库，`stocktakeId` 为 null。
- */
+/** 盘点导入的单行错误。整批校验失败时不会创建盘点单，`stocktakeId` 为空。 */
 export interface StocktakeImportError {
   row?: number;
   skuCode?: string;
@@ -321,12 +289,9 @@ export interface StocktakeImportResult {
 /**
  * `InventoryLossGainVO`。
  *
- * 方向在单据头上：`adjustType` 为 `LOSS` 时审批通过会减少库存、`OVERFLOW` 时增加库存。
- * 明细行的 `quantity` 恒为正，前端不得按正负号猜方向。
- *
- * `version` 是审批的必填入参：审批人必须批准自己读到的内容。若在「打开单据 → 点审批」
- * 之间单据被改过，后端会以 40921 拒绝并要求刷新 —— 因此详情/列表拿到的 `version`
- * 必须原样回传，不能在本地自增。
+ * `adjustType` 为 `LOSS` 时审批后减库存，`OVERFLOW` 时加库存；
+ * 明细数量恒为正，方向不要看正负号。
+ * `version` 必须原样回传；单据被改过时后端会以 40921 拒绝。
  */
 export interface InventoryLossGain {
   id: Id;
@@ -334,23 +299,23 @@ export interface InventoryLossGain {
   warehouseId?: Id;
   warehouseCode?: string;
   warehouseName?: string;
-  /** `LOSS` 报损 / `OVERFLOW` 报溢。 */
+  /** `LOSS` 报损，`OVERFLOW` 报溢。 */
   adjustType?: string;
   adjustTypeDesc?: string;
   /** `PENDING` / `COMPLETED` / `REJECTED`。 */
   status?: string;
   statusDesc?: string;
-  /** 报损报溢原因（必填）。 */
+  /** 报损报溢原因，必填。 */
   reason?: string;
   remark?: string;
   auditedAt?: string;
   auditor?: string;
   auditOpinion?: string;
-  /** 乐观锁版本号；审批时必须原样回传。 */
+  /** 乐观锁版本号，审批时必须原样回传。 */
   version?: number;
   createdAt?: string;
   updatedAt?: string;
-  /** 明细；仅详情接口返回，列表为 undefined。 */
+  /** 明细，仅详情接口返回。 */
   items?: InventoryLossGainItem[];
 }
 
@@ -362,18 +327,14 @@ export interface InventoryLossGainItem {
   skuName?: string;
   productName?: string;
   specValues?: Record<string, unknown> | null;
-  /** 申报数量，恒为正；方向看单据的 `adjustType`。 */
+  /** 申报数量，恒为正；方向看单头的 `adjustType`。 */
   quantity?: string | null;
-  /** 审批通过时写入的记账单位快照；待审核态为空。 */
+  /** 审批通过时的记账单位，待审核为空。 */
   unitSnapshot?: string | null;
   remark?: string;
 }
 
-/**
- * `InventoryLossGainQueryForm`。
- *
- * 与余额 / 流水 / 出库 / 盘点一致：没有 `sortItemList`，排序固定为 `created_at DESC, id DESC`。
- */
+/** 不支持客户端排序，固定按创建时间和 ID 倒序。 */
 export interface InventoryLossGainQuery extends Page {
   lossGainNo?: string;
   warehouseId?: Id;
@@ -381,12 +342,7 @@ export interface InventoryLossGainQuery extends Page {
   status?: string;
 }
 
-/**
- * `InventoryLossGainAddForm`（新建与改待审核共用）。
- *
- * `reason` 必填：报损是「把货从账上抹掉」，没有原因的单据审批人无从判断。
- * 数量是定点字符串：后端用 `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字。
- */
+/** 新建和修改待审核单据共用。原因必填；数量必须是定点字符串。 */
 export interface InventoryLossGainAdd {
   adjustType: string;
   warehouseId: Id;
@@ -399,12 +355,7 @@ export interface InventoryLossGainAdd {
   }>;
 }
 
-/**
- * `InventoryLossGainAuditForm`（审批通过 / 驳回共用）。
- *
- * `version` 必填并参与乐观锁校验；`auditOpinion` 在驳回时必填
- * （驳回是唯一会把「为什么不行」传达给录单人的渠道）。
- */
+/** 审批通过和驳回共用。`version` 必填；驳回时必须填写意见。 */
 export interface InventoryLossGainAudit {
   version: number;
   auditOpinion?: string;
@@ -417,13 +368,9 @@ export interface InventoryLossGainAudit {
 /**
  * `InventoryTransferVO`。
  *
- * 两步式：`DRAFT → SHIPPED（在途）→ RECEIVED`。`SHIPPED` 期间这批货
- * 不在任何余额行里（没有虚拟在途仓），因此全仓总库存会暂时减少 ——
- * 这是两步式的必然结果，不是缺陷。列表页必须把「在途」显示得足够醒目，
- * 否则用户会以为货丢了。
- *
- * 源仓与目标仓各带一套编码 / 名称：调拨的语义天然是「从哪到哪」，
- * 只显示一个仓名会让用户必须点进详情才能确认方向。
+ * 流程为 DRAFT → SHIPPED（在途）→ RECEIVED。在途货物不在任何仓库余额中，
+ * 全仓总库存会暂时减少，列表要醒目显示“在途”。
+ * 源仓和目标仓各带编码、名称，方便直接看清方向。
  */
 export interface InventoryTransfer {
   id: Id;
@@ -438,16 +385,16 @@ export interface InventoryTransfer {
   status?: string;
   statusDesc?: string;
   remark?: string;
-  /** 发出时刻；草稿与已取消为空。 */
+  /** 发出时间；草稿和已取消为空。 */
   shippedAt?: string;
   shippedBy?: string;
-  /** 收货时刻；仅已完成非空。 */
+  /** 收货时间；仅已完成有值。 */
   receivedAt?: string;
   receivedBy?: string;
   version?: number;
   createdAt?: string;
   updatedAt?: string;
-  /** 明细；仅详情接口返回，列表为 undefined。 */
+  /** 明细，仅详情接口返回。 */
   items?: InventoryTransferItem[];
 }
 
@@ -459,19 +406,14 @@ export interface InventoryTransferItem {
   skuName?: string;
   productName?: string;
   specValues?: Record<string, unknown> | null;
-  /** 调拨数量，恒为正；方向由「发出 / 收货」动作决定。 */
+  /** 调拨数量，恒为正；方向由“发出 / 收货”动作决定。 */
   quantity?: string | null;
-  /** 发出时写入的源仓记账单位快照；草稿态为空。收货时用它断言目标仓单位一致。 */
+  /** 发出时的源仓记账单位，收货时用于校验目标仓单位一致。 */
   unitSnapshot?: string | null;
   remark?: string;
 }
 
-/**
- * `InventoryTransferQueryForm`。
- *
- * 同时给出「源仓」与「目标仓」两个筛选维度：只看源仓回答「这个仓发出去了多少」，
- * 只看目标仓回答「这个仓要收多少」，两者都有查询价值。
- */
+/** 可按源仓或目标仓筛选，分别查看发出量和待收货量。 */
 export interface InventoryTransferQuery extends Page {
   transferNo?: string;
   fromWarehouseId?: Id;
@@ -479,12 +421,7 @@ export interface InventoryTransferQuery extends Page {
   status?: string;
 }
 
-/**
- * `InventoryTransferAddForm`（新建与改草稿共用）。
- *
- * 数量是定点字符串：后端用 `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字。
- * 源仓与目标仓必须不同（后端 41042）。
- */
+/** 新建和修改草稿共用。数量必须是定点字符串；源仓和目标仓不能相同。 */
 export interface InventoryTransferAdd {
   fromWarehouseId: Id;
   toWarehouseId: Id;
@@ -496,13 +433,7 @@ export interface InventoryTransferAdd {
   }>;
 }
 
-/**
- * `InventoryInTransitVO` —— 在途库存报表的一行（按调拨单明细展开）。
- *
- * 不进 `inventory_balance`：在途货不属于任何仓库的余额，这里以报表形式暴露，
- * 因此在途量不会出现在库存余额页。对账时必须把这份报表算进去，
- * 否则「全仓总库存」在在途期间会对不上。
- */
+/** 在途库存报表的一行（按调拨单明细展开）。在途货不在库存余额中，对账时要一起计算。 */
 export interface InventoryInTransit {
   transferNo?: string;
   fromWarehouseId?: Id;
@@ -520,28 +451,20 @@ export interface InventoryInTransit {
 // 阈值预警
 // ------------------------------------------------------------------
 
-/**
- * `InventoryWarningScanVO` —— 一次预警检查的结果。
- *
- * 两个计数都要看：只有「投递条数」时 `0` 既可能是「检查了 30 条、都没有跃迁」，
- * 也可能是「一条阈值都没配」—— 这两种情况的下一步操作完全不同。
- */
+/** 一次预警检查的结果。检查数和发送数都要显示：发送 0 条可能是没有异常，也可能是没有配置阈值。 */
 export interface InventoryWarningScanResult {
-  /** 本轮实际检查的阈值配置条数。 */
+  /** 本轮检查的阈值配置条数。 */
   scannedCount: number;
-  /** 本轮投递的站内信条数；同一跃迁发给多名接收人会各计一条。 */
+  /** 本轮发送的站内信条数；同一预警发给多人会各计一条。 */
   sentCount: number;
 }
 
 /**
- * `InventoryWarningVO` —— 预警列表的一行（一条阈值配置 + 它对应的余额）。
+ * 预警列表的一行（一条阈值配置和对应余额）。
  *
- * 三个数量都返回：判定基准是可用量（现有量 − 预留量），只给一个数字会让用户
- * 看不懂预警为什么触发 ——「明明有 20 kg 在库，为什么说低于下限 10 kg？」
- * 的答案是那 20 kg 里有 18 kg 已预留。
- *
- * `status` 是派生值（`NORMAL` / `LOW` / `HIGH`），后端读时算出，不落库。
- * 配置了阈值但没有余额行时三个数量都是 `"0.0000"` —— 那正是「设了下限却一件没有」，应当预警。
+ * 用可用量（现有量 − 预留量）判断，所以同时返回三个数量，便于解释为什么触发。
+ * `status` 为 `NORMAL` / `LOW` / `HIGH`，由后端计算。
+ * 配置了阈值但没有余额时三个数量都是 `"0.0000"`，此时也应预警。
  */
 export interface InventoryWarning {
   /** 阈值配置 id（可跳转到配置页）。 */
@@ -566,32 +489,17 @@ export interface InventoryWarning {
   statusDesc?: string;
 }
 
-/**
- * `InventoryWarningQueryForm`。
- *
- * `status` 为空时的语义是「只看异常」，不是「全部」：这是预警列表，
- * 一个全是正常项的列表对使用者没有意义。要看正常项就显式传 `NORMAL`。
- * 因此页面下拉的第一项标成「仅异常」而不是「全部」。
- */
+/** `status` 为空时只查异常项；要看正常项需显式传 `NORMAL`。 */
 export interface InventoryWarningQuery extends Page {
   warehouseId?: Id;
   skuId?: Id;
   skuCode?: string;
-  /**
-   * 阈值配置 id（精确）。
-   *
-   * 供站内信跳转使用：库存预警消息的 `dataId` 就是配置 id，点进来直接落到那一条。
-   */
+  /** 阈值配置 ID，用于站内信跳转到对应预警。 */
   thresholdId?: Id;
   status?: string;
 }
 
-/**
- * `InventoryWarningThresholdVO` —— 阈值配置的一行。
- *
- * 上下限各自可空：`warnMin` 为空表示不设下限，`warnMax` 为空表示不设上限。
- * 但不能同时为空（后端 41051）—— 都没有的配置没有任何判断依据。
- */
+/** 阈值配置的一行。上下限可以只设一个，但不能都为空（41051）。 */
 export interface InventoryWarningThreshold {
   id: Id;
   warehouseId?: Id;
@@ -618,10 +526,8 @@ export interface InventoryWarningThresholdQuery extends Page {
 }
 
 /**
- * `InventoryWarningThresholdAddForm`（新建与编辑共用）。
- *
- * 上下限是定点字符串（后端拒绝 JSON 数字）；传 `undefined`/`null` 表示不设该边界。
- * 后端会校验「至少填一个、都非负、下限不高于上限」（41051）。
+ * 新建和编辑共用。上下限是定点字符串，null 表示不设该边界；
+ * 后端要求至少填一个、不能为负、下限不高于上限（41051）。
  */
 export interface InventoryWarningThresholdAdd {
   warehouseId: Id;
@@ -638,12 +544,9 @@ export interface InventoryWarningThresholdAdd {
 /**
  * `InventoryConversionVO` —— 规格转换单。
  *
- * 跨 SKU、同仓库：源规格 → 目标规格（如整件 → 散装）。跨仓搬运是调拨，不是转换。
- * 明细行上源与目标各带一套 SKU 编码 / 名称 / 商品名：转换的语义天然是「从哪到哪」，
- * 只显示一套会让用户必须点进详情才能确认方向。
- *
- * `version` 是审批的必填入参（审批人必须批准自己读到的内容）；
- * 若期间单据被改过，后端以 40921 拒绝并要求刷新。
+ * 同一仓库内源规格转换成目标规格（如整件拆零），跨仓搬运属于调拨。
+ * 明细行带源和目标两套 SKU 信息，方便直接看清方向。
+ * `version` 审批时必须原样回传；单据被改过会以 40921 拒绝。
  */
 export interface InventoryConversion {
   id: Id;
@@ -662,11 +565,11 @@ export interface InventoryConversion {
   auditedAt?: string;
   auditor?: string;
   auditOpinion?: string;
-  /** 乐观锁版本号；审批时必须原样回传。 */
+  /** 乐观锁版本号，审批时必须原样回传。 */
   version?: number;
   createdAt?: string;
   updatedAt?: string;
-  /** 明细；仅详情接口返回。 */
+  /** 明细，仅详情接口返回。 */
   items?: InventoryConversionItem[];
 }
 
@@ -679,15 +582,15 @@ export interface InventoryConversionItem {
   sourceProductName?: string;
   /** 源数量，恒为正。 */
   sourceQuantity?: string | null;
-  /** 源单位（单据声明，折算关系的一部分）。 */
+  /** 源单位。 */
   sourceUnit?: string | null;
   targetSkuId?: Id;
   targetSkuCode?: string;
   targetSkuName?: string;
   targetProductName?: string;
-  /** 目标数量，恒为正；与源数量构成折算关系。 */
+  /** 目标数量，恒为正，与源数量构成折算关系。 */
   targetQuantity?: string | null;
-  /** 目标单位（单据声明）。 */
+  /** 目标单位。 */
   targetUnit?: string | null;
   remark?: string;
 }
@@ -701,11 +604,8 @@ export interface InventoryConversionQuery extends Page {
 }
 
 /**
- * `InventoryConversionAddForm`（新建与改待审核共用）。
- *
- * 折算关系由两个数量 + 两个单位显式声明：后端会用两个单位分别与各自 SKU 的
- * 余额记账单位比对，不一致直接失败（41059 / 41060），不做隐式换算。
- * 数量是定点字符串（后端拒绝 JSON 数字）。
+ * 新建和修改待审核单据共用。
+ * 源/目标数量与单位必须与各自 SKU 的记账单位一致，后端不做自动换算（41059 / 41060）。
  */
 export interface InventoryConversionAdd {
   warehouseId: Id;
@@ -733,11 +633,7 @@ export interface InventoryConversionAudit {
 // 批次库存（一期：L1 批次，不含包装码）
 // ------------------------------------------------------------------
 
-/**
- * `InventoryLotBalanceQueryForm`。
- *
- * 与余额查询同口径：不传仓库即返回当前调用者被授权的那些仓库的批次行，服务端不会因为没筛仓库而放宽范围。
- */
+/** 与余额查询一致：不传仓库时只返回有权限的仓库，不会因此扩大范围。 */
 export interface InventoryLotBalanceQuery extends Page {
   warehouseId?: Id;
   skuId?: Id;
@@ -757,9 +653,9 @@ export interface InventoryLotBalance {
   skuName: string;
   productName: string;
   lotId: Id;
-  /** 内部批次号：系统发号，只读。 */
+  /** 内部批次号，系统生成，只读。 */
   lotNo: string;
-  /** 来源生产批号：供应商或现场提供，可能为空。 */
+  /** 供应商或现场提供的生产批号，可能为空。 */
   sourceLotNo?: string | null;
   unit: string;
   quantity: string;
@@ -808,11 +704,11 @@ export interface TraceUnitQuery extends Page {
   status?: string;
 }
 
-/** `TraceUnitVO.Unit`：一码一批，码不透明。 */
+/** `TraceUnitVO.Unit`：一个包装码对应一个批次，码本身不含业务信息。 */
 export interface TraceUnit {
   id: Id;
   unitCode: string;
-  /** 标签二维码里的公开凭据；后台据此拼出扫码链接。 */
+  /** 二维码中的公开凭据，用于拼扫码链接。 */
   publicToken?: string;
   lotId: Id;
   lotNo: string;
@@ -820,7 +716,7 @@ export interface TraceUnit {
   packageType: string;
   quantity: string;
   unit: string;
-  /** 净重；未称重时为 null。 */
+  /** 净重；未称重时为空。 */
   netWeight?: string | null;
   weightUnit?: string | null;
   /** SCALE 电子秤 / MANUAL 后台补录。 */
@@ -841,7 +737,7 @@ export interface TraceUnitIssue {
   remark?: string | null;
 }
 
-/** `TraceUnitVO.Binding`：分拣现场把码绑到了哪张任务行的哪个客户。 */
+/** `TraceUnitVO.Binding`：分拣时包装码绑定到哪条任务行和客户。 */
 export interface TraceUnitBinding {
   sortingTaskId: Id;
   sortingTaskItemId: Id;
@@ -851,7 +747,7 @@ export interface TraceUnitBinding {
   boundBy?: string | null;
 }
 
-/** `TraceUnitVO.Replay`：一个包装码的完整回放。 */
+/** `TraceUnitVO.Replay`：一个包装码的完整流转记录。 */
 export interface TraceUnitReplay {
   unit: TraceUnit;
   lot: {lotId: Id; lotNo: string; sourceLotNo?: string | null; skuCode?: string; skuName?: string};

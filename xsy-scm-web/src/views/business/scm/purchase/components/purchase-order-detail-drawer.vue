@@ -1,8 +1,4 @@
-<!--
- * 采购单详情抽屉。
- * - 分配是单级平铺（`PurchaseOrderVO.allocations` 已由后端铺平），前端不必自己拍平；
- * - 日志按 `created_at DESC` 返回，最新在前。
--->
+<!-- 采购单详情抽屉。分配明细由后端展开好；操作记录最新在前。 -->
 <template>
   <a-drawer :open="visible" :title="order?.orderNo || '采购单详情'" :width="scmDrawerWidth('xl')" @close="visible = false">
     <a-alert v-if="error" :message="error" type="error" show-icon>
@@ -112,10 +108,7 @@
               <span class="log-operator">{{ log.operator || '—' }}</span>
             </div>
             <div v-if="log.reason" class="log-reason">原因：{{ log.reason }}</div>
-            <!--
-              差异表替代原先的裸 JSON：全量快照里绝大多数字段没变，
-              直接铺 JSON 会把真正的变更淹没在几百行里。
-            -->
+            <!-- 只列出变化的字段，不直接展示完整 JSON -->
             <a-collapse class="log-audit" ghost>
               <a-collapse-panel key="audit" header="变更前后">
                 <ScmDiffTable :before="log.beforeData" :after="log.afterData" :scope="log.operationType" />
@@ -156,12 +149,7 @@ import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{saved: []}>();
 
-/**
- * 状态标签配色（仅展示层关注）。
- *
- * 不用 `SCM_PURCHASE_STATUS_ENUM` 承载颜色：那个枚举是 `SmartEnum<{value,desc}>`，
- * 是平台级契约，为某个页面的配色去扩展它会污染共享类型。
- */
+/** 状态标签配色。共享枚举只放 value/desc，颜色留在页面里。 */
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: 'default',
   SUBMITTED: 'blue',
@@ -182,10 +170,10 @@ const OPERATION_COLOR: Record<string, string> = {
 
 const visible = ref(false);
 const loading = ref(false);
-/** 提交是异步命令，需要独立的 loading，避免与刷新共用而互相干扰。 */
+/** 提交单独用 loading，避免和刷新互相影响。 */
 const submitting = ref(false);
 const logsLoading = ref(false);
-/** 区分「还没查过」与「查过了但没有记录」，否则空态会在未查询时误报。 */
+/** 区分“还没查”和“查过但没记录”。 */
 const logsLoaded = ref(false);
 const saving = ref(false);
 const error = ref('');
@@ -235,7 +223,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 详情 / 日志加载失败由抽屉内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由抽屉内的 Alert 提示并可重试
     order.value = (await purchaseOrderApi.detail(order.value.id, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = purchaseError(e);
@@ -267,7 +255,7 @@ function submit() {
         await load();
         emit('saved');
       } finally {
-        // 失败时 finally 仍会跑，异常向上抛出以保持确认框打开；原因由全局 toast 给出
+        // 异常继续抛出，让确认框保持打开；失败原因由全局提示给出
         submitting.value = false;
       }
     },

@@ -4,7 +4,7 @@
     <p class="scm-note">
       按已确认订单金额分析商品销售贡献。<a-tooltip
         title="金额占比和累计占比基于当前筛选范围内全部匹配商品行计算，不受分页影响；金额总计为 0 时显示未知。"
-        ><a class="scm-cell-link">口径说明</a></a-tooltip
+        ><a class="scm-cell-link">说明</a></a-tooltip
       >
     </p>
     <a-row class="smart-table-btn-block">

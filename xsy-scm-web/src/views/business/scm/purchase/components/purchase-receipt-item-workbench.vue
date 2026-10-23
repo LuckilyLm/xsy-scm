@@ -1,9 +1,4 @@
-<!--
- * 按商品收货工作台（只读辅助视图）。
- * - 「可收货」范围由后端固定为 `SUBMITTED` / `PARTIALLY_RECEIVED`，不开放状态入参；
- * - 数量（计划 / 已收 / 欠收 / 超收）由后端逐行裁剪后以四位定点字符串聚合下发，
- *   本页只渲染、绝不重算。
--->
+<!-- 按商品汇总的收货工作台，只读。数量都由后端算好，前端不再重算。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -84,7 +79,7 @@ import type {Id, ReceiptItemWorkbenchRow} from '../purchase-types';
 import {quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 
-/** 后端下发的四位定点字符串列，统一走 `quantity` 渲染（null → —）。 */
+/** 数量列统一按四位小数显示，空值显示“—”。 */
 const numericColumns = ['plannedQuantity', 'receivedQuantity', 'pendingQuantity', 'overReceiptQuantity'];
 
 const supplierId = ref<Id | undefined>(undefined);
@@ -99,7 +94,7 @@ const loading = ref(false);
 const error = ref('');
 let requestId = 0;
 
-/** 聚合行按 `skuId + 采购单位` 归并，故 row-key 是二者复合，单靠 skuId 不唯一。 */
+/** 同一规格可能按不同采购单位汇总，所以行 key 要带上单位。 */
 function rowKey(row: ReceiptItemWorkbenchRow) {
   return `${row.skuId}::${row.purchaseUnit ?? ''}`;
 }
@@ -123,7 +118,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头的 Alert 提示并可重试
     const r = await purchaseReceiptApi.itemWorkbench(
       {
         supplierId: supplierId.value,

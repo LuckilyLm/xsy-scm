@@ -1,4 +1,4 @@
-<!-- 收货确认和库存入账是两步。收货明细按确认时间、入库明细按实际流水时间查询；已确认收货不一定已入库，报表页不提供入库操作。 -->
+<!-- 收货确认和库存入账是两步，报表只读：收货明细按确认时间，入库明细按流水时间。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -35,7 +35,6 @@
   </a-form>
 
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
-    <!-- ==================== 收货明细 ==================== -->
     <a-tab-pane key="receipt" tab="收货明细">
       <a-card size="small" :bordered="false">
         <a-alert v-if="receiptSummaryError" :message="receiptSummaryError" type="error" show-icon class="smart-margin-bottom10">
@@ -138,7 +137,6 @@
       </a-card>
     </a-tab-pane>
 
-    <!-- ==================== 入库明细 ==================== -->
     <a-tab-pane key="inbound" tab="入库明细">
       <a-card size="small" :bordered="false">
         <a-alert v-if="inboundSummaryError" :message="inboundSummaryError" type="error" show-icon class="smart-margin-bottom10">
@@ -221,7 +219,6 @@
       </a-card>
     </a-tab-pane>
 
-    <!-- ==================== 待入库 ==================== -->
     <a-tab-pane key="pending" tab="待入库">
       <a-card size="small" :bordered="false">
         <a-alert v-if="pendingSummaryError" :message="pendingSummaryError" type="error" show-icon class="smart-margin-bottom10">
@@ -274,7 +271,7 @@
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <div class="smart-table-operate scm-table-actions">
-                <!-- 只有一个跳转：报表不提供「确认入库」写入口 -->
+                <!-- 报表只提供跳转，不提供确认入库 -->
                 <a-button type="link" @click="openReceipt(record.receiptNo)">查看原收货单</a-button>
               </div>
             </template>
@@ -411,7 +408,7 @@ const pendingColumns = ref<TableColumnsType<PendingPutawayRow>>([
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 140},
 ]);
 
-/** 入库成本两列受成本权限控制。 */
+/** 成本列受权限控制。 */
 const COST_INDEXES = ['unitCost', 'costAmount'];
 const visibleInboundColumns = computed(() => filterCostColumns(inboundColumns.value, COST_INDEXES, canViewCost.value));
 
@@ -476,12 +473,7 @@ function unitQuantitiesText(quantities: ReceiptUnitQuantity[] | null | undefined
   return quantities.map(({quantity, unit}) => `${quantityText(quantity)} ${unit || '未标明单位'}`).join(' / ');
 }
 
-/**
- * 成本单元格文案：`costMissing` 为真或无成本权限时都是 `—`。
- *
- * 后端用显式布尔而不是留空表达「这一行没有成本事实」，所以这里必须优先看它 ——
- * 把缺成本读成 0 会直接把成本核对带偏。
- */
+/** 成本单元格：costMissing 为真或没有权限时都显示 —，不能当 0。 */
 function costAmountText(value: string | null | undefined, costMissing: boolean | null | undefined): string {
   if (costMissing || !canViewCost.value) {
     return '—';
@@ -559,7 +551,7 @@ function exportInbound() {
   void inboundExport.run(() => reportReceiptApi.inboundExport(exportQuery()));
 }
 
-/** 复用采购收货页作为「原收货单」视图：不在报表里再造一张收货单详情页。 */
+/** 复用采购收货页作为原收货单视图。 */
 function openReceipt(receiptNo: string | null | undefined) {
   if (!receiptNo) {
     return;

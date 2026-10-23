@@ -1,8 +1,4 @@
-/**
- * 采购单二维码分享：生成一次性展示的分享链接、撤销、查询历史。
- *
- * 令牌明文只在 create 的响应里出现一次，之后列表只回显前缀；前端不缓存令牌。
- */
+/** 采购单二维码分享：生成、撤销、查询。令牌明文只在创建时返回一次，前端不缓存。 */
 import {getRequest, postRequest} from '/@/lib/axios';
 import type {ScmResponse} from '/@/types/business/scm/customer';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';

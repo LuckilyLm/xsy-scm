@@ -1,4 +1,4 @@
-<!-- 打印模板只能选择系统提供的字段和样式选项，不支持自定义脚本。字段清单由后端提供，金额列遵守当前用户的权限。 -->
+<!-- 打印模板：字段和版式由系统提供，不支持自定义脚本。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -52,8 +52,7 @@
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:print:template:update'" @click="openEdit(record)">编辑</a-button>
-            <!-- 操作列超过 3 个动作就要收敛。「设为默认」与「删除」是低频且后者危险，
-                 进「更多」；v-privilege 对菜单项不生效，权限在 `rowActions` 里用 hasPermission 裁剪。 -->
+            <!-- 低频动作收进「更多」；v-privilege 对菜单项不生效，权限在 rowActions 里裁剪 -->
             <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
@@ -208,7 +207,7 @@ const orientationOptions = [
   {value: 'LANDSCAPE', label: '横向'},
 ];
 
-/** 字段选项：金额字段在标签上标出来，避免用户以为「勾了就能打」。 */
+/** 金额字段在标签上标出，避免以为勾选就能打印。 */
 const headerOptions = computed(() => toOptions(catalog.value?.headerFields));
 const columnOptions = computed(() => toOptions(catalog.value?.columns));
 
@@ -248,9 +247,9 @@ const form = reactive<PrintTemplateSave & {id?: Id}>({
   },
 });
 const formRef = ref();
-/** 标题在 `form.model.title` 里，展平一份只给表单校验用，避免用数组路径配 rules。 */
+/** 展平一份只给表单校验用，避免用数组路径配 rules。 */
 const flatModel = computed(() => ({...form, title: form.model.title}));
-/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+/** 必填项逐项校验，错误显示在对应输入框下方。 */
 const formRules = {
   documentType: [{required: true, message: '请选择单据类型', trigger: 'change'}],
   templateCode: [{required: true, message: '请填写模板编码', trigger: 'blur'}],
@@ -263,7 +262,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const r = await printApi.templateQuery({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list ?? [];
@@ -359,7 +358,7 @@ function openEdit(record: PrintTemplate) {
   void loadCatalog();
 }
 
-/** 80mm 小票没有横向：切到小票时把方向拉回纵向，避免提交时才报 41308。 */
+/** 80mm 小票没有横向，切到小票时把方向拉回纵向。 */
 function onPaperChange(paper: PrintPaper) {
   if (paper === 'TICKET_80') {
     form.model.orientation = 'PORTRAIT';
@@ -368,13 +367,13 @@ function onPaperChange(paper: PrintPaper) {
 
 async function submit() {
   editError.value = '';
-  // 必填项走表单校验：错误显示在对应输入框下方
+  // 必填项走表单校验，错误显示在输入框下方
   try {
     await formRef.value?.validate();
   } catch {
     return;
   }
-  // 明细字段是列表选择，不是表单字段，用 toast
+  // 明细列不是表单字段，用 toast 提示
   if (!form.model.columns?.length) {
     message.warning('至少要选择一列明细字段');
     return;
@@ -391,13 +390,13 @@ async function submit() {
     editOpen.value = false;
     await queryData();
   } catch {
-    // 保存失败只走全局 toast；弹窗里的 editError 留给字段目录加载失败
+    // 保存失败由全局 toast 提示；editError 只用于加载失败
   } finally {
     saving.value = false;
   }
 }
 
-/** 更多菜单：只有「设为默认」与「删除」，两者都只对非默认模板出现。 */
+/** 更多菜单：默认模板不显示「设为默认」和「删除」。 */
 function rowActions(record: PrintTemplate): ScmActionItem[] {
   const isDefault = !!record.defaultFlag;
   return [
@@ -420,14 +419,14 @@ async function setDefault(record: PrintTemplate) {
     message.success('已设为默认模板');
     await queryData();
   } catch {
-    // 设为默认失败只走全局 toast
+    // 设为默认失败由全局 toast 提示
   }
 }
 
 function remove(record: PrintTemplate) {
   Modal.confirm({
     title: '删除打印模板',
-    content: `确定删除「${record.templateName}」吗？历史打印记录保留原快照，不受影响。`,
+    content: `确定删除「${record.templateName}」吗？历史打印记录保留当时的内容，不受影响。`,
     okType: 'danger',
     onOk: async () => {
       await printApi.templateDelete(record.id, record.version ?? 0);

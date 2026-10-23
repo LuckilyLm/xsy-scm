@@ -105,8 +105,7 @@ const rows = ref<PriceRow[]>([]),
   error = ref('');
 const drawer = ref<InstanceType<typeof PriceDrawer>>();
 let requestId = 0;
-// 编码独立成列并默认收起；更新时间由「价格变更历史」的变更时间承担，不默认摊在列表上。
-// 客户编码与商品规格编码仍可用「关键字」筛出来（后端 keyword 同时匹配名称与两类编码）。
+// 编码列默认收起，关键字可以搜名称和编码；更新时间看价格变更历史。
 type AgreementPriceColumn = TableColumnsType<PriceRow>[number] & {showFlag?: boolean};
 const columns = ref<AgreementPriceColumn[]>([
   {title: '客户', dataIndex: 'customerName', width: 180},
@@ -135,7 +134,7 @@ function formulaText(row: PriceRow): string {
   }
 }
 
-/** 生效状态由前端按有效区间推导（VO 不带状态字段），只用于展示。 */
+/** 生效状态按有效区间推导，只用于展示。 */
 function effectiveness(row: PriceRow) {
   return PRICE_EFFECTIVENESS[priceEffectiveness(row.effectiveFrom, row.effectiveTo)];
 }
@@ -145,7 +144,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const r = await api.query(
       {
         ...query,

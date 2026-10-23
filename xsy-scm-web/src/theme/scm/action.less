@@ -1,9 +1,4 @@
-/*
- * SCM 按钮层级：Primary 由 antd 承担，这里补齐 Secondary / Tertiary / Danger 三档。
- *
- * 选择器写成 .ant-btn.scm-btn-* 而非单类名：antd v4 的组件样式由 CSS-in-JS 在运行时注入，
- * 顺序晚于静态样式表，同等特异性会覆盖我们的定义。
- */
+/* SCM 按钮层级：补齐二级、三级、危险三档。选择器带 .ant-btn 以压过 antd 运行时注入的样式。 */
 
 /* 二级操作：浅主题色底 + 主题色文字 + 浅主题色描边，不抢主按钮视觉重心 */
 .ant-btn.scm-btn-secondary {

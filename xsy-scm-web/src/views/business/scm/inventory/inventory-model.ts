@@ -4,18 +4,16 @@
  */
 import type {Id} from './inventory-types.ts';
 
-/** 仓库的最小形状（只用到 id，避免把整个 `Warehouse` 类型拖进来）。 */
+/** 只用到仓库 id。 */
 export interface WarehouseLike {
   id: Id;
 }
 
 /**
- * 系统恰好只有 1 个启用仓库时，返回它的 id 作为余额页的默认筛选；否则返回 `undefined`。
+ * 只有一个启用仓库时返回它的 id，否则返回 undefined。
+ * 多仓或零仓时不自动选中，避免用户误以为看到的是全部库存。
  *
- * 多仓时不自动选中任何一个：用户看到的余额只是那一个仓的，但他会以为在看全部，
- * 这种误解比多一次点击昂贵得多。0 个仓库同样不选（本身是异常状态，页面应以空态呈现）。
- *
- * @param warehouses `GET /scm/warehouse/list` 的返回（只含启用仓库）
+ * @param warehouses 启用仓库列表
  */
 export function singleWarehouseDefault(warehouses: WarehouseLike[] | null | undefined): Id | undefined {
   if (!warehouses || warehouses.length !== 1) {
@@ -24,12 +22,7 @@ export function singleWarehouseDefault(warehouses: WarehouseLike[] | null | unde
   return warehouses[0].id;
 }
 
-/**
- * 三态数量 / 金额的展示文本。
- *
- * `null` / `undefined` / 空串 → `—`；其余原样返回（后端已保证是 4 位定点字符串，
- * 前端不做二次格式化，否则会与后端口径分叉）。
- */
+/** 空值显示为“—”，其余原样显示（后端已是 4 位定点数，前端不再格式化）。 */
 export function quantityText(value: string | null | undefined): string {
   if (value === null || value === undefined || value === '') {
     return '—';
@@ -37,10 +30,7 @@ export function quantityText(value: string | null | undefined): string {
   return value;
 }
 
-/**
- * 金额和均价直接显示后端提供的值，不重复四舍五入。
- * null 显示为“—”，数字 0 仍显示为 0。
- */
+/** 金额为空显示“—”，0 仍显示 0。 */
 export function moneyText(value: string | null | undefined): string {
   if (value === null || value === undefined || value === '') {
     return '—';
@@ -48,11 +38,7 @@ export function moneyText(value: string | null | undefined): string {
   return value;
 }
 
-/**
- * `specValues`（JSONB，形状 `{"规格":"散装"}`）→ 可读文本。
- *
- * 无值或空对象 → `—`。刻意不抛错：规格是展示字段，坏形状不该让整页崩掉。
- */
+/** 规格值转成可读文本；无值或空对象显示“—”。规格损坏时不报错，避免整页崩溃。 */
 export function specText(specValues: Record<string, unknown> | null | undefined): string {
   if (!specValues) {
     return '—';
@@ -62,12 +48,8 @@ export function specText(specValues: Record<string, unknown> | null | undefined)
 }
 
 /**
- * 商品规格的「名称」文本：优先规格值组合（`规格：散装`），无规格值时回落到规格名称。
- *
- * 只产出名称 —— 商品规格编码是独立一列，不并进这个字符串。
- *
- * 不要写成 `specText(specValues) || skuName`：specText 无值时返回的是 `'—'`，
- * 那是 truthy，回落分支永远不会执行，结果是无规格的商品在列表里只显示一个破折号。
+ * 规格名称：优先显示规格值组合，没有时显示规格名称。
+ * 注意 `specText` 无值返回“—”，不能用 `||` 回落。
  */
 export function skuMainText(specValues: Record<string, unknown> | null | undefined, skuName?: string | null): string {
   const spec = specText(specValues);
@@ -77,16 +59,9 @@ export function skuMainText(specValues: Record<string, unknown> | null | undefin
   return skuName || '—';
 }
 
-/** 枚举文案表的最小结构（`SmartEnum` 的每一项都满足它；刻意不 import 常量，见文件头注释）。 */
+/** 枚举文案表的最小结构。 */
 export type EnumLabels = Record<string, {desc?: string} | undefined>;
-/**
- * 流水类型的中文描述。
- *
- * 枚举里没有该值时回落到原值（而不是 `—`）：一个未知的类型字符串本身就是有用的信息
- * （说明后端加了新类型而前端还没跟上），把它显示成「—」会把这个信号藏起来。
- *
- * @param labels 枚举文案表（调用方传 `SCM_INVENTORY_MOVEMENT_TYPE_ENUM`）
- */
+/** 流水类型名称；未知类型显示原值，便于发现后端新增的类型。 */
 export function movementTypeText(value: string | null | undefined, labels: EnumLabels): string {
   if (!value) {
     return '—';
@@ -94,22 +69,19 @@ export function movementTypeText(value: string | null | undefined, labels: EnumL
   return labels[value]?.desc || value;
 }
 
-/**
- * 复制历史盘点时分页查询商品规格的当前记账单位。
- * 每页最多 100 条，找齐后提前结束；缺失项交给调用方报错。
- */
+/** 复制盘点时每页查询的商品规格数量。 */
 export const BALANCE_QUERY_PAGE_SIZE = 100;
 
-/** 余额行里本函数关心的字段：只要编码与单位，账面量刻意不读（历史账面量不是本次实盘量）。 */
+/** 余额行里只取编码和单位，不读账面量。 */
 export interface BalanceUnitRow {
   skuId?: string | number | null;
   unit?: string | null;
 }
 
 export interface StocktakeCopyUnits {
-  /** 来源 SKU → 当前记账单位；未解析到的 SKU 不出现在这里。 */
+  /** 来源 SKU → 当前记账单位；未找到的不在这里。 */
   unitBySku: Map<string, string>;
-  /** 翻完所有页仍找不到余额行的来源 SKU（按来源顺序去重）。 */
+  /** 翻完所有页仍找不到余额行的来源 SKU（已去重）。 */
   missingSkuIds: string[];
 }
 
@@ -119,7 +91,7 @@ export async function resolveStocktakeCopyUnits(
 ): Promise<StocktakeCopyUnits> {
   const pending = new Set<string>();
   for (const skuId of sourceSkuIds) {
-    // 空 skuId 不是「待解析」对象：它进不了 unitBySku，调用方逐行检查时会整单拒绝
+    // 空 skuId 不参与解析，由调用方逐行校验
     if (skuId !== null && skuId !== undefined && skuId !== '') {
       pending.add(String(skuId));
     }
@@ -137,7 +109,7 @@ export async function resolveStocktakeCopyUnits(
         unitBySku.set(key, row.unit ?? '');
       }
     }
-    // 来源 SKU 全部命中，或已读到最后一页（不足一页）：都不必再翻页
+    // 全部找到，或已到最后一页
     if (pending.size === 0 || rows.length < BALANCE_QUERY_PAGE_SIZE) {
       break;
     }

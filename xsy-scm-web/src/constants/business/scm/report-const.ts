@@ -1,13 +1,7 @@
 /** 报表常量只维护权限和展示配置；订单、库存、采购类型复用原模块的枚举，避免复制出不一致的状态表。 */
 import type {SmartEnum} from '/@/types/smart-enum';
 
-/**
- * 损耗分析口径下的流水类型子集。
- *
- * 报表侧的分类，不是库存侧的枚举：只承认「盘亏」与「手工报损」两类
- * 可证明的损耗事实，`STOCKTAKE_GAIN` / `GAIN_REPORT` 是增益、`SALES_OUT` 是履约，
- * 都不进损耗成本。因此这个子集属于报表中心，放在这里而不是去改库存枚举。
- */
+/** 损耗分析只算盘亏和报损；盘盈、增益、销售出库都不计损耗成本。 */
 export const SCM_REPORT_LOSS_TYPE_ENUM: SmartEnum<string> = {
   STOCKTAKE_LOSS: {value: 'STOCKTAKE_LOSS', desc: '盘亏'},
   LOSS_REPORT: {value: 'LOSS_REPORT', desc: '报损'},

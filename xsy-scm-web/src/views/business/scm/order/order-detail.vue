@@ -28,7 +28,6 @@
           <a-button v-privilege="'scm:payment:transaction:query'" @click="paymentDrawer?.open(order)">支付记录</a-button>
         </a-space>
 
-        <!-- 1. 状态与核心摘要 -->
         <section class="detail-section">
           <h3>状态与核心摘要</h3>
           <a-space :size="4" wrap class="smart-margin-bottom10">
@@ -41,7 +40,6 @@
             <a-descriptions-item label="期望配送时间">{{ order.expectDeliveryTime || '—' }}</a-descriptions-item>
           </a-descriptions>
 
-          <!-- 2. 客户与配送 -->
           <h3 class="detail-section--nested">客户与配送</h3>
           <a-descriptions bordered size="small" :column="2">
             <a-descriptions-item label="客户">{{ order.customerNameSnapshot }}（{{ order.customerCodeSnapshot }}） </a-descriptions-item>
@@ -55,7 +53,6 @@
             <a-descriptions-item label="收货地址">{{ order.address?.address }}</a-descriptions-item>
           </a-descriptions>
 
-          <!-- 4. 金额结算：优惠是独立事实，回答「减了多少、按什么规则减的」 -->
           <h3 class="detail-section--nested">金额结算</h3>
           <a-descriptions v-if="order.discount" bordered size="small" :column="2">
             <a-descriptions-item label="优惠合计">{{ amount(order.discount.discountAmount) }}</a-descriptions-item>
@@ -80,7 +77,6 @@
               </div>
             </a-descriptions-item>
           </a-descriptions>
-          <!-- 满赠赠品：非金额权益，不减订单金额，但必须发货 -->
           <a-descriptions v-if="(order.gifts?.length ?? 0) > 0" bordered size="small" :column="1">
             <a-descriptions-item label="赠品">
               <div v-for="gift in order.gifts ?? []" :key="`${gift.activityId}-${gift.skuId}`">
@@ -91,7 +87,6 @@
             </a-descriptions-item>
           </a-descriptions>
 
-          <!-- 3. 商品明细 -->
           <h3 class="detail-section--nested">商品明细</h3>
           <a-table
             class="items"
@@ -119,7 +114,6 @@
             </template>
           </a-table>
 
-          <!-- 7. 操作记录 -->
           <h3 class="detail-section--nested">操作记录</h3>
           <a-button v-privilege="'scm:order:log:query'" @click="loadLogs">查看操作记录</a-button>
           <a-timeline class="smart-margin-top10">
@@ -139,7 +133,6 @@
             </a-timeline-item>
           </a-timeline>
 
-          <!-- 8. 系统信息：备注等内部字段不占核心区域 -->
           <h3 class="detail-section--nested">系统信息</h3>
           <a-descriptions bordered size="small" :column="2">
             <a-descriptions-item label="备注" :span="2">{{ order.remark || '—' }}</a-descriptions-item>
@@ -202,7 +195,7 @@
         </a-form-item>
         <a-alert v-if="previewError" :message="previewError" type="warning" show-icon class="coupon-hint" />
         <a-descriptions v-if="discountPreview" :column="1" size="small" bordered>
-          <a-descriptions-item label="行基础金额（下单量口径）">{{ amount(discountPreview.baseAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="行基础金额（按下单量）">{{ amount(discountPreview.baseAmount) }}</a-descriptions-item>
           <a-descriptions-item label="限时特价让利">{{ amount(discountPreview.specialDiscount) }}</a-descriptions-item>
           <a-descriptions-item label="活动优惠">{{ amount(discountPreview.activityDiscount) }}</a-descriptions-item>
           <a-descriptions-item label="券优惠">{{ amount(discountPreview.couponDiscount) }}</a-descriptions-item>
@@ -223,7 +216,7 @@
       </a-form-item>
     </a-modal>
     <a-modal :open="repriceOpen" title="手动重算订单价格" :confirm-loading="saving" @ok="reprice" @cancel="repriceOpen = false">
-      <a-alert type="warning" show-icon message="仅草稿和待确认订单可重算；已有资金或履约事实时会被拒绝。" />
+      <a-alert type="warning" show-icon message="仅草稿和待确认订单可重算；已有资金或履约记录时会被拒绝。" />
       <a-form-item label="重算原因" required style="margin-top: 16px">
         <a-textarea v-model:value="repriceReason" :maxlength="500" :rows="3" />
       </a-form-item>
@@ -344,7 +337,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由抽屉内的 Alert 提示
     order.value = (await orderApi.detail(order.value.orderId, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = orderError(e);
@@ -367,10 +360,7 @@ const creditOpen = ref(false),
   creditOverrideReason = ref('');
 const usesMallSettlement = computed(() => order.value?.orderSource === 'MALL' && !!order.value?.settlementMethod);
 
-/**
- * 券选择与试算：券是客户自己的权益，必须显式指定券实例 id，服务端不自动挑券；
- * 活动优惠由服务端按当前生效规则算出，前端不拼优惠组合。
- */
+/** 优惠券要显式选择，服务端不自动挑券；优惠金额由服务端计算。 */
 const couponInstanceId = ref<Id | undefined>();
 const clearMallCoupon = ref(false);
 const couponOptions = ref<{value: Id; label: string}[]>([]);
@@ -378,10 +368,7 @@ const couponLoading = ref(false);
 const discountPreview = ref<PromotionDiscount>();
 const previewError = ref('');
 
-/**
- * 已冻结优惠里实际生效的活动。只渲染、不重算：每条活动的优惠额是后端冻结时写下的字符串，
- * 前端不做求和（求和会引入第二个真相，与「优惠合计」对不上时无法判断哪个对）。
- */
+/** 实际生效的活动；金额直接显示后端结果，前端不重新求和。 */
 const appliedActivities = computed<OrderDiscountAppliedActivity[]>(() => order.value?.discount?.activitySnapshot?.applied ?? []);
 
 async function loadCoupons() {
@@ -406,17 +393,14 @@ async function loadCoupons() {
       couponOptions.value.unshift({value: couponInstanceId.value, label: '商城预选券（当前不可用）'});
     }
   } catch (e) {
-    // 券列表拉不到只影响「用哪张券」，不该挡住确认本身
+    // 券列表加载失败只提示，不影响确认
     previewError.value = orderError(e);
   } finally {
     couponLoading.value = false;
   }
 }
 
-/**
- * 试算只用于给操作人看清「减多少」，不占用券；行基础金额取订单行的下单金额
- * （`ordered_line_amount`，与确认时的冻结口径一致），未锁定价格的行不参与。
- */
+/** 试算只展示优惠金额，不占用券；基础金额取订单行的下单金额，未定价的行不参与。 */
 async function loadPreview() {
   discountPreview.value = undefined;
   previewError.value = '';
@@ -467,7 +451,7 @@ async function confirm() {
   saving.value = true;
   error.value = '';
   try {
-    // 商城结算复核由正式确认命令处理，旧授信接口的毛额检查不能作为钱包、货到付款或净额账期的门槛。
+    // 商城订单和钱包、货到付款不走旧授信额度检查，确认时由服务端复核
     creditCheck.value = undefined;
     if (!usesMallSettlement.value) {
       creditCheck.value = (await orderApi.orderCreditCheck(order.value.orderId, {suppressGlobalErrorMessage: true})).data;
@@ -475,7 +459,7 @@ async function confirm() {
     creditOverride.value = false;
     creditOverrideReason.value = '';
     creditOpen.value = true;
-    // 打开确认弹窗才拉券与试算：确认是低频动作，不值得在详情加载时预取
+    // 打开弹窗时才加载券和试算，详情页不预取
     await loadCoupons();
     await loadPreview();
   } catch (e) {
@@ -568,7 +552,7 @@ defineExpose({open});
   margin: 16px 0;
 }
 
-/* §14.3 分区：详情按业务 Section 分区，而不是一长串描述列表 */
+/* 详情按业务分区，不堆成一长串描述列表 */
 .detail-section h3 {
   margin: 0 0 12px;
   font-weight: 600;
@@ -579,13 +563,7 @@ defineExpose({open});
   margin-top: 20px;
 }
 
-/*
- * 操作日志行：时间 / 操作人 / 动作 三段用统一间距隔开。
- *
- * 原来是行内拼 `·`，前后各一个西文空格；中英混排下那点空隙只有约 4px，
- * 三段挤成一串「14:39:29 ·系统管理员 ·取消」，读起来分不出边界。
- * 改成 flex + gap 后间距均匀可控，分隔点弱化，不跟内容抢注意力。
- */
+/* 操作日志行：时间 / 操作人 / 动作用统一间距隔开 */
 .scm-log-line {
   display: inline-flex;
   flex-wrap: wrap;

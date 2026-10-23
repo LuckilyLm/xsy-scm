@@ -89,7 +89,7 @@ export const SCM_PURCHASE_OPERATION_ENUM: SmartEnum<string> = {
 /**
  * 采购单导出列目录——key 必须与后端 `PurchaseOrderExportSupport` 的列目录逐字一致。
  *
- * 这里只是「导出设置」勾选框的可读标题来源；落哪几列、以何顺序最终由后端目录裁决，
+ * 这里只是「导出设置」勾选框的标题来源；导出哪几列、按什么顺序由后端目录决定，
  * 前端传未知 key 会被忽略、不勾选即导出整目录。此处数组顺序只影响勾选框的展示顺序。
  */
 export const SCM_PURCHASE_EXPORT_COLUMNS: {key: string; title: string}[] = [

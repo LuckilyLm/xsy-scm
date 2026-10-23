@@ -12,7 +12,7 @@ import RankBarList, {type RankRow} from './rank-bar-list.vue';
 import {formatAmount, toNumber} from '../format';
 import type {BusinessData} from '../types';
 
-/** 商品排行按订单结算金额比较。不同商品的销售单位可能不同，不能简单把 kg、箱、件相加成销量。 */
+/** 按订单结算金额排行；销售单位不同，不能把数量相加。 */
 const props = defineProps<{business: BusinessData | null}>();
 
 const rows = computed<RankRow[]>(() =>

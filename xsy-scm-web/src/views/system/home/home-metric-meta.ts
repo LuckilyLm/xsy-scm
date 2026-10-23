@@ -1,9 +1,4 @@
-/**
- * 首页工作台的展示元数据：后端只给业务标识，中文名、图标与语义色在这里映射。
- *
- * 放在前端是刻意的 —— 接口只回答「该不该给 / 多少 / 跳哪里」，
- * 把 label / icon / color 写进接口等于把界面设计固化进服务端。
- */
+/** 首页展示元数据：后端只给标识与数值，中文名、图标、颜色在前端映射。 */
 import type {ScmRankDimension, ScmTrendMetric, ScmTrendRange} from '/@/api/business/scm/dashboard-api';
 
 /** 语义色：只表达业务含义，不表达装饰。 */
@@ -31,12 +26,7 @@ export function kpiMetaOf(key: string): KpiMeta {
   return KPI_META[key] ?? {label: key, iconName: 'kpi-order-count', accent: '#0f9e63', accentSoft: '#e4f7ee'};
 }
 
-/**
- * KPI 语义色。
- *
- * 库存预警按「有没有事」分色：有预警是待处理（橙），一条都没有是正常（绿）。
- * 0 也染成警示色会让人以为天天出事。
- */
+/** 库存预警按有没有事分色：有预警为橙，0 为绿。 */
 export function kpiTone(key: string, value: number): MetricTone {
   if (key === 'inventory-warning') {
     return value > 0 ? 'warn' : 'ok';
@@ -80,10 +70,7 @@ export interface HealthBucket {
   tone: MetricTone;
 }
 
-/**
- * 五档互斥且之和等于参与评估总数，与顶部「库存预警」卡不是同一个指标，
- * 所以这里只表达各自占参与评估总数的比例，不做跨指标的加减。
- */
+/** 五档互斥，合计为参与评估总数；与「库存预警」卡不是同一指标。 */
 export const INVENTORY_HEALTH_BUCKETS: HealthBucket[] = [
   {key: 'normal', label: '正常', field: 'normal', tone: 'ok'},
   {key: 'low', label: '偏低', field: 'low', tone: 'warn'},

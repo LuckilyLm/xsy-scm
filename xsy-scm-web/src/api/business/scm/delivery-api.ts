@@ -28,8 +28,8 @@ function call<T>(method: string, path: string, data?: unknown, options?: Request
   }) as unknown as Promise<ScmResponse<T>>;
 }
 
-// 带 Idempotency-Key 的命令通道：失败保留同一 UUID 供重试回放原结果，成功即释放、内容变化后换用新键。
-// 打印计次与发车共用一条通道，因为两者重复提交都会留下不可自动撤销的事实（计次虚增 / 重复扣库存）。
+// 幂等命令通道：失败保留同一 UUID 供重试，成功即释放，内容变化后换新键。
+// 重复提交会造成计次虚增或重复扣库存。
 const idempotentKeys = new Map<string, string>();
 
 async function idempotentCommand<T>(path: string, data: unknown): Promise<ScmResponse<T>> {
@@ -49,7 +49,7 @@ async function idempotentCommand<T>(path: string, data: unknown): Promise<ScmRes
   return result;
 }
 
-/** 打印计次命令；端点与载荷保持 L0–L2 原样，只是改走共用通道。 */
+/** 打印计次命令；端点与载荷不变，只改走幂等通道。 */
 function printCommand<T>(path: string, data: unknown): Promise<ScmResponse<T>> {
   return idempotentCommand<T>(path, data);
 }
@@ -65,19 +65,11 @@ export const deliveryApi = {
       version,
       reason,
     }),
-  /**
-   * L3 发车：PLANNED → DISPATCHED，在同一事务内按分拣实发量生成出库单并扣库存。
-   * 载荷只有线路版本（`reason` 服务端不消费，因此不发，避免每次重试的签名都不一样）；
-   * 返回的 `outboundNo` 为 null 表示整条线路实发 0 —— 那是成功，不是失败。
-   */
+  /** 发车：PLANNED → DISPATCHED，同时按实发量生成出库单扣库存；outboundNo 为 null 表示实发 0，属于成功。 */
   dispatch: (id: Id, version: number) => idempotentCommand<DispatchResult>(`/routes/${id}/dispatch`, {version}),
-  /**
-   * L3 订单签收：IN_TRANSIT → SIGNED | EXCEPTION。
-   * 不带 Idempotency-Key —— 后端签名里没有这个头，重复提交由行版本乐观锁拒绝；
-   * 加了反而会把「别人已先签了」的冲突掩盖成一次成功回放。
-   */
+  /** 订单签收：IN_TRANSIT → SIGNED | EXCEPTION。不带幂等键，重复提交由行版本乐观锁拒绝。 */
   sign: (id: Id, orderId: Id, form: SignPayload) => call<string>('post', `/routes/${id}/orders/${orderId}/sign`, form),
-  /** L3 完成线路：DISPATCHED → COMPLETED；仍有活动订单未签收时服务端返回 41117。 */
+  /** 完成线路：DISPATCHED → COMPLETED；仍有订单未签收时服务端拒绝。 */
   complete: (id: Id, version: number) => call<string>('post', `/routes/${id}/complete`, {version}),
   candidates: (query: Query, options?: RequestOptions) => call<ScmPage<CandidateOrder>>('get', '/candidate-orders', query, options),
   addOrders: (id: Id, version: number, orderIds: Id[], reason: string) =>

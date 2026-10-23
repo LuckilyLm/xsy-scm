@@ -75,7 +75,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由弹窗内 Alert 提示（含重试），不再弹全局 toast
     const response = await financeApi.refundOptions(
       {pageNum: pageNum.value, pageSize: pageSize.value, keyword: keyword.value.trim() || undefined},
       {suppressGlobalErrorMessage: true}

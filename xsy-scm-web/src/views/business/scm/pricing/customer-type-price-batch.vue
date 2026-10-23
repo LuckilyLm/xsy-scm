@@ -1,4 +1,4 @@
-<!--  新写，参照 legacy 批量调价行为；整批提交，逐行错误。 -->
+<!-- 客户类型价批量调价：整批提交，逐行显示错误。 -->
 <template>
   <a-card size="small" :bordered="false">
     <template #title>
@@ -82,7 +82,7 @@ const router = useRouter(),
   error = ref('');
 let number = 0;
 const formRef = ref();
-/** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
+/** 必填项逐项校验，错误显示在输入框下方。 */
 const formRules = {batchKey: [{required: true, message: '请填写批次号', trigger: 'blur'}]};
 const columns: TableColumnsType<BatchRow> = [
   {title: '行号', dataIndex: 'rowNumber', width: 65},
@@ -119,7 +119,7 @@ function setPeriod(row: BatchRow, value: unknown) {
 async function submit() {
   error.value = '';
   failures.value = validateBatch(rows.value);
-  // 批次号走字段校验；「至少一行」是列表状态，用 toast
+  // 批次号走字段校验；至少一行用 toast 提示
   try {
     await formRef.value?.validate();
   } catch {
@@ -153,14 +153,14 @@ async function submit() {
 add();
 </script>
 <style scoped>
-/* 整批规则跟在标题同一行，不再单独占一行；标题的字重不传染给提示 */
+/* 规则提示与标题同一行 */
 .batch-title {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-/* 标题行里去掉胶囊底色，保留信息图标，文字改用主题色保持提示的辨识度 */
+/* 标题行的提示去掉底色，用主题色 */
 .batch-title .scm-note {
   background: none;
   margin: 0;

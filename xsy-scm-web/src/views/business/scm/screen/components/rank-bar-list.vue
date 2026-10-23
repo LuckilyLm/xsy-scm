@@ -33,7 +33,7 @@ export interface RankRow {
   text: string;
 }
 
-/** 排行使用紧凑的名称、金额与独立进度条布局。前三名只高亮序号，不使用大面积装饰色。 */
+/** 排行条：前三名只高亮序号。 */
 const props = withDefaults(
   defineProps<{
     items: RankRow[];
@@ -54,7 +54,7 @@ function barWidth(value: string | number): string {
     return '0%';
   }
   const ratio = toNumber(value) / max;
-  // 最小 2%：数值很小时也留一条可见的线，否则看起来像没渲染
+  // 最小 2%，避免短条看起来像没渲染
   return `${Math.max(ratio * 100, 2).toFixed(2)}%`;
 }
 </script>

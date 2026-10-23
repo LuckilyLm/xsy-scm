@@ -11,7 +11,7 @@
   >
     <template #bodyCell="{column, record}">
       <template v-if="column.dataIndex === 'level'">{{ record.level }} 级</template>
-      <!-- 分类路径是「生鲜 / 果蔬 / 苹果」；父分类 = 去掉最后一段，一级分类没有父级 -->
+      <!-- 父分类取分类路径去掉最后一段 -->
       <template v-else-if="column.dataIndex === 'parentName'">{{ parentName(record) }}</template>
       <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
         {{ record.status === 'ENABLED' ? '启用' : '停用' }}
@@ -45,10 +45,7 @@ const emit = defineEmits<{
   remove: [row: ProductCategory];
 }>();
 
-/**
- * 父分类来自 `categoryPath`（如「生鲜 / 果蔬 / 苹果」）去掉最后一段。
- * 一级分类没有父级，显示 — 而不是空白，与全站空值口径一致。
- */
+/** 父分类取分类路径去掉最后一段；一级分类显示 —。 */
 function parentName(record: ProductCategory): string {
   const segments = (record.categoryPath ?? '').split(' / ').filter(Boolean);
   return segments.length > 1 ? segments.slice(0, -1).join(' / ') : '—';

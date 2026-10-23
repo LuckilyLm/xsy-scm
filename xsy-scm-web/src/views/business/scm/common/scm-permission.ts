@@ -1,7 +1,7 @@
-/** SCM 页面权限与指令使用同一份登录权限。按钮显隐和表单禁用状态都要按权限判断，服务端仍负责最终校验。 */
+/** 页面和按钮使用同一份权限判断，服务端仍负责最终校验。 */
 import {useUserStore} from '/@/store/modules/system/user';
 
-/** `t_menu` 功能点在 store 里的最小形状（指令判定的就是 `webPerms` 这一个字段）。 */
+/** 权限点中只关心 `webPerms`。 */
 interface WebPermPoint {
   webPerms?: string;
 }

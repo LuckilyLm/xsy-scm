@@ -14,15 +14,7 @@ import type {
   OrderVersionPayload,
 } from '/@/views/business/scm/purchase/purchase-types';
 
-/**
- * 幂等命令封装。
- *
- * 失败的请求保留它原来的 UUID：同一个签名重试会复用同一个键，因此后端能识别成重放；
- * 一旦请求成功（或载荷变了）就换新键。这与 `order-api.ts` 的 `orderCommand` 同源。
- *
- * 放在本文件而不是独立模块：不新增共享文件；
- * 需求 / 收货 API 从这里 import。
- */
+/** 幂等命令：失败保留原 UUID 供重试，成功或载荷变化后换新键。需求 / 收货 API 从这里复用。 */
 const keys = new Map<string, string>();
 
 export async function purchaseCommand<T>(path: string, data: unknown): Promise<ScmResponse<T>> {
@@ -49,20 +41,17 @@ export const purchaseOrderApi = {
   /** 单张采购单的操作日志（按 `created_at DESC` 返回，最新在前）。 */
   logs: (orderId: Id, options?: RequestOptions) =>
     getRequest(`/scm/purchase/log/${orderId}`, {}, options) as unknown as Promise<ScmResponse<LogRow[]>>,
-  /** 采购单列表导出（只读）：当前筛选 + 勾选列落 xlsx，绝不改变采购状态。 */
+  /** 采购单导出：按当前筛选和勾选列生成文件，不改变单据状态。 */
   export: (data: OrderExportPayload) => postDownload('/scm/purchase/export', data),
 
   create: (data: OrderPayload) => purchaseCommand<Order>('/scm/purchase/create', data),
   update: (data: OrderPayload) => postRequest('/scm/purchase/update', data) as unknown as Promise<ScmResponse<Order>>,
-  /**
-   * 改派采购归属（scm:purchase:assign）：独立端点、独立权限，带乐观锁 version。
-   * `/update` 永不改归属，改派只有这一条路；不接幂等头（与 `/update` 同一取向，重复提交由 id+version 挡）。
-   */
+  /** 改派采购归属：独立权限；/update 不改归属，重复提交由版本号拦截。 */
   reassign: (data: OrderReassignPayload) => postRequest('/scm/purchase/reassign', data) as unknown as Promise<ScmResponse<Order>>,
   submit: (data: OrderVersionPayload) => purchaseCommand<Order>('/scm/purchase/submit', data),
   cancel: (data: OrderCancelPayload) => purchaseCommand<Order>('/scm/purchase/cancel', data),
   shortClose: (data: OrderShortClosePayload) => purchaseCommand<Order>('/scm/purchase/short-close', data),
-  /** 批量少收关单：整批原子、逐单校验；后端不接幂等头，故同 batchDelete 走 postRequest。 */
+  /** 批量少收关单：整批原子、逐单校验。 */
   batchShortClose: (data: OrderBatchShortClosePayload) =>
     postRequest('/scm/purchase/batch/short-close', data) as unknown as Promise<ScmResponse<string>>,
   delete: (data: OrderVersionPayload) => postRequest('/scm/purchase/delete', data) as unknown as Promise<ScmResponse<string>>,

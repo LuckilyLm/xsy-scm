@@ -1,11 +1,8 @@
 import type {ProductId, ProductImportError, ProductImportResult} from '/@/types/business/scm/product';
 
-/**
- * PCO-2 批量导入的纯前端辅助：只做「展示分组」和「预览匹配」，不做任何写库判断。
- * 导入的正确性由后端保证（0 错误才写、写失败整批回滚），这里仅把后端结果映射成可渲染结构。
- */
+/** 批量导入的前端辅助：只负责分组展示和预览匹配，写库判断都在后端。 */
 
-/** 把逐列错误按 Excel 行号归并，供「一行商品的多条错误一起展示」；行号升序，行内保持后端给出顺序。 */
+/** 按 Excel 行号归并逐列错误，行号升序。 */
 export interface ImportRowGroup {
   rowNumber: number;
   spuCode: string | null;
@@ -25,7 +22,7 @@ export function groupErrorsByRow(errors: ProductImportError[]): ImportRowGroup[]
   return [...byRow.values()].sort((a, b) => a.rowNumber - b.rowNumber);
 }
 
-/** totalErrors 是后端权威门控；为真时本次没有任何商品落库，页面必须显性说明「整批未导入」。 */
+/** totalErrors > 0 时整批没有写入，页面要明确提示。 */
 export function hasBlockingErrors(result: ProductImportResult): boolean {
   return result.totalErrors > 0;
 }
@@ -50,11 +47,7 @@ export interface FileMatchResult {
   candidates: SpuTarget[];
 }
 
-/**
- * 按「文件名去扩展名 == SPU 编码」做不区分大小写的精确匹配。
- * 命中多个（编码理论上唯一，仍防脏数据）判为歧义，命中零个判为未匹配；
- * 两者都必须显性回给用户，绝不能像后端回滚那样静默丢弃。
- */
+/** 按「文件名去掉扩展名 == SPU 编码」精确匹配，不区分大小写；多个或零个命中都要显示给用户。 */
 export function matchFilesBySpuCode(files: UploadedImageFile[], products: SpuTarget[]): FileMatchResult[] {
   const byCode = new Map<string, SpuTarget[]>();
   for (const product of products) {

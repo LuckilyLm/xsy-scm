@@ -1,4 +1,4 @@
-/** 报表接口只读。日期使用前端选取的闭区间字符串，分页与非分页结果分别使用对应类型；导出不传分页参数，使用统一下载函数。 */
+/** 报表接口只读；导出不传分页参数。 */
 import {getRequest, postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmAdvancedFilterField} from '/@/types/business/scm/advanced-filter';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
@@ -55,23 +55,14 @@ export const reportOverviewApi = {
   /** 指标卡。 */
   overview: (data: OverviewQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/overview`, data, options) as unknown as Promise<ScmResponse<ReportOverview>>,
-  /**
-   * 日趋势。返回补齐过的完整日期轴（无单据的天也是零值行），
-   * 因此折线不会自己跳过某天。
-   */
+  /** 日趋势：返回补齐的完整日期轴，无单据的天为零值。 */
   trend: (data: OverviewQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/overview/trend`, data, options) as unknown as Promise<ScmResponse<ReportDailyStat[]>>,
-  /**
-   * 每日统计。后端返回整段数组而不是分页结果：行数被 366 天的跨度上限天然约束住，
-   * 再套一层分页只会让「这一页的合计」被误读成「整段的合计」。
-   */
+  /** 每日统计：返回整段数组，不分页（跨度上限 366 天）。 */
   daily: (data: OverviewQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/overview/daily`, data, options) as unknown as Promise<ScmResponse<ReportDailyStat[]>>,
 
-  /**
-   * 每日统计导出。与列表同一个查询：日期轴补齐、成本 / 仓库字段按范围抹除，
-   * 导出不会比页面多看到一列。
-   */
+  /** 每日统计导出：查询条件与页面一致。 */
   dailyExport: (data: Partial<OverviewQuery>) => postDownload(`${BASE}/overview/daily/export`, data),
 };
 
@@ -91,7 +82,7 @@ export const reportSalesApi = {
   order: (data: SalesQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/sales/order/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<SalesOrderRow>>>,
 
-  /** TOP5 由 DB 直接 `LIMIT`，不在 Java 侧排序，也不取全量回内存。 */
+  /** TOP5 由数据库直接截取。 */
   productTop: (data: SalesQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/sales/product/top`, data, options) as unknown as Promise<ScmResponse<SalesTopItem[]>>,
   categoryTop: (data: SalesQuery, options?: RequestOptions) =>
@@ -122,13 +113,10 @@ export const reportPurchaseApi = {
   item: (data: PurchaseQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/purchase/item/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<PurchaseItemRow>>>,
 
-  /** 供应商采购入库成本 TOP10（来源是 `PURCHASE_IN` 流水，不是采购单金额）。 */
+  /** 供应商采购入库成本 TOP10：按入库流水统计，不是采购单金额。 */
   supplierTop: (data: ReportFilterQuery<PurchaseQuery>, options?: RequestOptions) =>
     postRequest(`${BASE}/purchase/supplier/top`, data, options) as unknown as Promise<ScmResponse<PurchaseTopItem[]>>,
-  /**
-   * 价格波动点。粒度 = 业务日 × SKU × 采购单位，
-   * 不同单位不会合并成一条线（箱价与公斤价混画没有意义）。
-   */
+  /** 价格波动：按业务日、商品规格和采购单位分组，不同单位不合并。 */
   priceTrend: (data: ReportFilterQuery<PurchaseQuery>, options?: RequestOptions) =>
     postRequest(`${BASE}/purchase/price-trend`, data, options) as unknown as Promise<ScmResponse<PurchasePriceTrendPoint[]>>,
 
@@ -142,14 +130,14 @@ export const reportPurchaseApi = {
   priceTrendExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/price-trend/export`, data),
 };
 
-/** 收货与入库：三张表是三种不同事实。 */
+/** 收货与入库：三张报表的统计规则不同。 */
 export const reportReceiptApi = {
   /** 收货明细：粒度 = `purchase_receipt_item`，按 `confirmed_at`。 */
   query: (data: ReceiptQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/receipt/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<ReceiptRow>>>,
   summary: (data: ReceiptQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/receipt/summary`, data, options) as unknown as Promise<ScmResponse<ReceiptSummary>>,
-  /** 入库明细：粒度 = 一条 `PURCHASE_IN` 流水，按 `occurred_at`。 */
+  /** 入库明细：一行对应一条入库流水。 */
   inboundQuery: (data: ReceiptQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/inbound/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<InboundRow>>>,
   inboundSummary: (data: ReceiptQuery, options?: RequestOptions) =>
@@ -164,7 +152,7 @@ export const reportReceiptApi = {
   inboundExport: (data: Partial<ReceiptQuery>) => postDownload(`${BASE}/inbound/export`, data),
 };
 
-/** 财务域不可变事实，与上面的经营口径报表指标分开。 */
+/** 财务报表：与经营指标分开。 */
 export const reportFinanceApi = {
   overview: (data: FinanceOverviewQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/finance/overview`, data, options) as unknown as Promise<ScmResponse<FinanceReportOverview>>,
@@ -188,7 +176,7 @@ export const reportInventoryApi = {
     postRequest(`${BASE}/inventory/loss/summary`, data, options) as unknown as Promise<ScmResponse<InventoryLossSummary>>,
   lossQuery: (data: InventoryReportQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/inventory/loss/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<InventoryLossRow>>>,
-  /** 当前库存价值：后端忽略日期区间（当前时点快照），页面也必须禁用日期筛选。 */
+  /** 当前库存价值：忽略日期区间，页面也要禁用日期筛选。 */
   valueQuery: (data: InventoryReportQuery, options?: RequestOptions) =>
     postRequest(`${BASE}/inventory/value/query`, data, options) as unknown as Promise<ScmResponse<InventoryValuePage>>,
   flowSummaryQuery: (data: InventoryReportQuery, options?: RequestOptions) =>

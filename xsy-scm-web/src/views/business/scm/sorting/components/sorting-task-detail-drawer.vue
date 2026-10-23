@@ -1,6 +1,5 @@
 <template>
-  <!-- workspace：分拣工作台 —— 明细表 scroll.x 1420，且录入时要把任务头、进度与明细行
-       放在同一屏里对照，横向空间即作业面。 -->
+  <!-- workspace：分拣工作台。明细表很宽，录入时要同时看到任务头、进度和明细行。 -->
   <a-drawer :open="open" title="分拣任务详情" :width="scmDrawerWidth('workspace')" :destroy-on-close="true" @close="emit('update:open', false)">
     <a-alert v-if="detailError" :message="detailError" type="error" show-icon>
       <template #action>

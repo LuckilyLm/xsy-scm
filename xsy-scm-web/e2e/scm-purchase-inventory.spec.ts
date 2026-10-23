@@ -16,7 +16,7 @@ import {join} from 'node:path';
 // ---------------------------------------------------------------- 来源：e2e/scm-inventory.spec.ts
 test.describe('scm-inventory', () => {
   const test = pwTest;
-  /* W6 real PostgreSQL/API/browser acceptance. Account secrets stay in memory. */
+  /* 真实数据库 / 接口 / 浏览器验收；账号口令只存内存。 */
 
   const apiUrl = 'http://127.0.0.1:18080';
   const name = 'w6_e2e_' + Date.now().toString(36) + 'i',
@@ -2392,12 +2392,12 @@ test.describe('scm-stocktake-import', () => {
       }
     });
 
-    test('页面选仓库后导出快照模板：命中模板端点并带回该仓库', async ({page}) => {
+    test('页面选仓库后导出盘点模板：命中模板端点并带回该仓库', async ({page}) => {
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(e.message));
       await authenticate(page, adminToken);
       await page.goto('/#/inventory/inventory-stocktake-list');
-      await expect(page.getByRole('button', {name: accessibleName('导出快照模板')})).toBeVisible();
+      await expect(page.getByRole('button', {name: accessibleName('导出盘点模板')})).toBeVisible();
       // a-upload 的外层 span 也带 role=button，所以这里取真实按钮（最后一个匹配）
       await expect(page.getByRole('button', {name: accessibleName('导入盘点')}).last()).toBeVisible();
 
@@ -2408,7 +2408,7 @@ test.describe('scm-stocktake-import', () => {
       await page.locator('.ant-select-dropdown:visible .ant-select-item').filter({hasText: warehouseName}).first().click();
 
       const download = page.waitForResponse((r) => r.url().includes('/stocktake/import/template'));
-      await page.getByRole('button', {name: accessibleName('导出快照模板')}).click();
+      await page.getByRole('button', {name: accessibleName('导出盘点模板')}).click();
       const res = await download;
       expect(res.url(), '导出的就是页面上选中的那个仓库').toContain(`warehouseId=${warehouseId}`);
       expect(res.status()).toBe(200);

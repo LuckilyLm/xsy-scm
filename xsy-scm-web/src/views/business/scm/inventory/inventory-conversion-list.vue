@@ -1,15 +1,4 @@
-<!--
-  库存规格转换。
-
-  状态机：PENDING → COMPLETED | REJECTED，两个终态都不可回退（流水 append-only）。
-  创建即提交待审核：转换会把两个 SKU 的余额同时改掉，而折算率是人工声明的，
-  没有审批等于录单人可以单方面决定「一箱等于多少 kg」。
-
-  跨 SKU、同仓库：源规格 → 目标规格（整件 → 散装）。跨仓搬运是「调拨」，不是转换。
-
-  页面上要讲清楚的一件事：两个单位都由单据声明，后端会与各自 SKU 的余额记账单位比对，
-  不一致直接失败（41059 / 41060）—— 库存不做自动换算。
--->
+<!-- 库存规格转换：同仓库内源规格转成目标规格，创建后需审批。单位必须与各自 SKU 的记账单位一致，系统不自动换算。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -76,7 +65,7 @@
         <template v-else-if="column.dataIndex === 'auditedAt'">{{ datetime(record.auditedAt) }}</template>
         <template v-else-if="column.dataIndex === 'auditor'">{{ record.auditor || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 行内常驻「详情」与待审核态的「审批」；驳回 / 编辑 / 删除收进「更多」 -->
+          <!-- 详情和审批常驻，其他操作收进“更多” -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
@@ -288,8 +277,7 @@ const statusOptions = Object.values(SCM_INVENTORY_CONVERSION_STATUS_ENUM).map((i
   label: i.desc,
 }));
 
-// 列表按「哪张单 / 哪个仓 / 什么类型 / 什么状态 / 为什么」排列。创建时间是技术字段，
-// 转换单的业务时刻是审核时间，不上列；审核人与审核时间合成一格。
+// 审核时间和审核人分列；创建时间不上列。
 const columns = ref<ScmListColumn[]>([
   {title: '转换单号', dataIndex: 'conversionNo', width: 200},
   {title: '仓库', dataIndex: 'warehouseName', width: 140},
@@ -321,12 +309,12 @@ const STATUS_TONE: Record<string, ScmStatusTone> = {
 };
 const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status ?? ''] ?? 'neutral';
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 更多菜单无法使用 `v-privilege`，改用 `hasPermission` 判断。 */
 const canUpdate = computed(() => hasPermission('scm:inventory:conversion:update'));
 const canReject = computed(() => hasPermission('scm:inventory:conversion:reject'));
 const canDelete = computed(() => hasPermission('scm:inventory:conversion:delete'));
 
-/** 只有待审核可写；动作集合与原行内按钮一一对应，只按频率重新分组。 */
+/** 只有待审核可写。 */
 function rowActions(row: InventoryConversion): ScmActionItem[] {
   const pending = row.status === 'PENDING';
   return [
@@ -401,12 +389,9 @@ function resetQuery() {
 interface EditableItem {
   _key: number;
   sourceSkuId?: string | number;
-  /**
-   * 数量在表单里是 `number`（InputNumber 只接受数字），提交时才转成后端要求的
-   * 4 位定点字符串。`null` = 还没填。
-   */
+  /** 表单里用 number，提交时转成 4 位定点字符串；null 表示未填。 */
   sourceQuantity?: number | null;
-  /** 单位是单据声明（折算关系的一部分），仍是自由文本，不做单位换算。 */
+  /** 单据声明的单位，不做换算。 */
   sourceUnit: string;
   targetSkuId?: string | number;
   targetQuantity?: number | null;
@@ -472,7 +457,7 @@ async function openEdit(record: InventoryConversion) {
   form.items = (d.items ?? []).map((i) => ({
     _key: ++keySeq,
     sourceSkuId: i.sourceSkuId,
-    // 后端以 4 位定点字符串返回数量，InputNumber 要 number；空值保持 null
+    // 后端返回定点字符串，InputNumber 需要 number；空值保持 null
     sourceQuantity: i.sourceQuantity == null ? null : Number(i.sourceQuantity),
     sourceUnit: i.sourceUnit ?? '',
     targetSkuId: i.targetSkuId,
@@ -490,7 +475,7 @@ function closeDrawer() {
   drawerOpen.value = false;
 }
 
-/** 明细校验在提交前做：逐行给出「第几行缺什么」，比一条笼统的「参数不合法」有用得多。 */
+/** 提交前逐行校验，并指出第几行缺什么。 */
 function buildPayload(): InventoryConversionAdd | null {
   const items = form.items.filter(
     (i) => i.sourceSkuId !== undefined && i.sourceSkuId !== null && i.targetSkuId !== undefined && i.targetSkuId !== null
@@ -509,8 +494,7 @@ function buildPayload(): InventoryConversionAdd | null {
       ['源数量', row.sourceQuantity],
       ['目标数量', row.targetQuantity],
     ] as const) {
-      // 数量恒为正：方向由「转出 / 转入」决定，不接受 0 或负数
-      // （大于 0 与最多 4 位小数已由 InputNumber 的 :min="0.0001" + :precision="4" 保证）
+      // 数量必须大于 0，最多 4 位小数
       if (fixed4(value) === undefined) {
         message.warning(`第 ${i + 1} 行：请填写${label}`);
         return null;
@@ -526,7 +510,7 @@ function buildPayload(): InventoryConversionAdd | null {
     convertType: form.convertType as string,
     reason: form.reason,
     remark: form.remark,
-    // 数量以定点字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
+    // 数量以定点字符串提交，后端不接受 JSON 数字
     items: items.map((i) => ({
       sourceSkuId: i.sourceSkuId as string | number,
       sourceQuantity: fixed4(i.sourceQuantity) as string,
@@ -564,7 +548,7 @@ async function onSubmit() {
 // ------------------------------------------------------------------ 详情与动作
 
 const detailOpen = ref(false);
-// Partial：初始为空对象（还没选中任何单据），打开详情时整体替换为后端返回的 VO
+// 初始为空对象，打开详情时替换为后端数据
 const detail = ref<Partial<InventoryConversion>>({});
 
 async function openDetail(record: InventoryConversion) {
@@ -585,10 +569,7 @@ const auditMode = ref<'approve' | 'reject'>('approve');
 const auditRecord = ref<Partial<InventoryConversion>>({});
 const auditOpinion = ref('');
 
-/**
- * 打开审批弹窗时把 `version` 一起记下来 —— 提交时原样回传。
- * 不重新拉取单据：审批人应当批准自己看到的那一版；重新拉取会让乐观锁失效。
- */
+/** 记录打开弹窗时的 version，提交时原样回传，不重新拉取单据。 */
 function openAudit(record: InventoryConversion, mode: 'approve' | 'reject') {
   auditRecord.value = {...record};
   auditMode.value = mode;
@@ -620,7 +601,7 @@ async function onAuditSubmit() {
     auditOpen.value = false;
     queryData();
   } catch (e) {
-    // 40921（单据在审批期间被改过）会走到这里；库存未受影响，刷新后重新审批即可
+    // 单据在审批期间被改过时会走到这里，刷新后可重新审批
     message.error(inventoryError(e));
     if (auditMode.value === 'approve') {
       queryData();
@@ -633,7 +614,7 @@ async function onAuditSubmit() {
 function onDelete(record: InventoryConversion) {
   Modal.confirm({
     title: '删除转换单',
-    content: `确认删除「${record.conversionNo}」？只有待审核的单据可删除，已审核的单据必须留痕。`,
+    content: `确认删除「${record.conversionNo}」？只有待审核的单据可删除。`,
     okText: '删除',
     okType: 'danger',
     cancelText: '返回',

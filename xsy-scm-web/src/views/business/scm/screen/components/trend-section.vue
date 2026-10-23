@@ -55,7 +55,7 @@ import {useEcharts} from '../composables/use-echarts';
 import {toNumber} from '../format';
 import type {ScreenRange, TrendData} from '../types';
 
-/** 三张趋势图共用一个日期区间，切换时同时刷新。趋势数据由统一接口获取，避免不同面板显示不同周期。 */
+/** 三张趋势图共用一个日期区间。 */
 const props = defineProps<{
   trend: TrendData;
   range: ScreenRange;
@@ -80,7 +80,7 @@ const salesChart = useEcharts(salesEl);
 const purchaseChart = useEcharts(purchaseEl);
 const inventoryChart = useEcharts(inventoryEl);
 
-// 与 styles/variables.less 保持一致（less 变量无法在 JS 里 import）
+// 颜色与 variables.less 保持一致
 const C = {
   text1: '#eaf6ff',
   text2: '#8fb7d9',
@@ -257,7 +257,7 @@ function renderInventory() {
   });
 }
 
-/** 空↔有数据来回切换时用 notMerge=true，避免残留上一次的 series。 */
+/** 趋势数据变化时重画三张图。 */
 watch(
   () => props.trend,
   () => {

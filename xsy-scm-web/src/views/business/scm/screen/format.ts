@@ -17,12 +17,7 @@ export function formatAmount(value: string | number | null | undefined): string 
   });
 }
 
-/**
- * 数量：千分位 + 最多两位小数，整数不带小数点。
- *
- * 后端数量是 NUMERIC(18,4)，直接渲染会显示成 `4051.0000`；大屏上按
- * 「能省则省」的规则展示更易读。
- */
+/** 数量：千分位 + 最多两位小数，整数不带小数点。 */
 export function formatQty(value: string | number | null | undefined): string {
   return toNumber(value).toLocaleString('zh-CN', {maximumFractionDigits: 2});
 }
@@ -41,13 +36,7 @@ export function formatCompact(value: string | number | null | undefined): string
   return formatQty(num);
 }
 
-/**
- * 环比：与上一期相比的百分比变化。
- *
- * 基数为 0 时返回 null，而不是 0% 或 +∞：昨天没营业、今天有 1 万，
- * 说「增长 0%」是错的，说「增长 ∞%」没有意义。返回 null 让调用方显示「—」，
- * 这是唯一诚实的表达。
- */
+/** 环比：与上一期相比的百分比；基数为 0 时返回 null，由调用方显示「—」。 */
 export function formatDelta(current: number, previous: number): number | null {
   if (previous === 0) {
     return null;
@@ -64,12 +53,7 @@ export function formatDeltaText(delta: number | null): string {
   return `${sign}${delta.toFixed(1)}%`;
 }
 
-/**
- * 环比的方向，决定颜色：涨/跌/持平/无基数。
- *
- * 注意这里只表达方向，不表达好坏 —— 销售额涨是好事、库存积压涨是坏事，
- * 由调用方决定用哪个颜色。所以不在这里映射 @state-ok / @state-danger。
- */
+/** 环比方向：涨、跌、持平、无基数。只表方向，好坏由调用方判断。 */
 export type DeltaDirection = 'up' | 'down' | 'flat' | 'unknown';
 
 export function deltaDirection(delta: number | null): DeltaDirection {

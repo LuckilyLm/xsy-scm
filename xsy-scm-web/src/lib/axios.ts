@@ -1,7 +1,4 @@
-/*
- *  ajax请求
- *
- */
+/* ajax 请求 */
 import {message, Modal} from 'ant-design-vue';
 import axios from 'axios';
 import {localRead} from '/@/utils/local-util';
@@ -13,7 +10,7 @@ import LocalStorageKeyConst from '/@/constants/local-storage-key-const';
 
 declare module 'axios' {
   interface AxiosRequestConfig {
-    /** Optional filter requests may fail closed without interrupting an otherwise usable page. */
+    /** 失败时不弹全局提示，由页面自行展示。 */
     suppressGlobalErrorMessage?: boolean;
   }
 }
@@ -22,10 +19,8 @@ export type RequestOptions = {
   suppressGlobalErrorMessage?: boolean;
 };
 
-// token的消息头
 const TOKEN_HEADER = 'Authorization';
 
-// 创建axios对象
 const smartAxios = axios.create({
   baseURL: import.meta.env.VITE_APP_API_URL,
 });
@@ -36,11 +31,11 @@ function logout() {
   location.href = '/';
 }
 
-// ================================= 请求拦截器 =================================
+// 请求拦截器
 
 smartAxios.interceptors.request.use(
   (config) => {
-    // 在发送请求之前消息头加入token token
+    // 带上登录令牌
     const token = localRead(LocalStorageKeyConst.USER_TOKEN);
     if (token) {
       config.headers[TOKEN_HEADER] = 'Bearer ' + token;
@@ -50,28 +45,24 @@ smartAxios.interceptors.request.use(
     return config;
   },
   (error) => {
-    // 对请求错误做些什么
     return Promise.reject(error);
   }
 );
 
-// ================================= 响应拦截器 =================================
-
-// 添加响应拦截器
+// 响应拦截器
 smartAxios.interceptors.response.use(
   (response) => {
-    // 根据content-type ，判断是否为 json 数据
+    // 非 JSON 直接返回原响应
     let contentType = response.headers['content-type'] ? response.headers['content-type'] : response.headers['Content-Type'];
     if (contentType.indexOf('application/json') === -1) {
       return Promise.resolve(response);
     }
 
-    // 如果是json数据
     if (response.data && response.data instanceof Blob) {
       return Promise.reject(response.data);
     }
 
-    // 如果是加密数据
+    // 加密数据先解密
     if (response.data.dataType === DATA_TYPE_ENUM.ENCRYPT.value) {
       response.data.encryptData = response.data.data;
       let decryptStr = decryptData(response.data.data);
@@ -90,7 +81,7 @@ smartAxios.interceptors.response.use(
         return Promise.reject(response);
       }
 
-      // 等保安全的登录提醒
+      // 登录安全提醒
       if (res.code === 30010 || res.code === 30011) {
         Modal.error({
           title: '重要提醒',
@@ -119,7 +110,6 @@ smartAxios.interceptors.response.use(
     }
   },
   (error) => {
-    // 对响应错误做点什么
     if (error.config?.suppressGlobalErrorMessage) {
       return Promise.reject(error);
     }
@@ -137,26 +127,19 @@ smartAxios.interceptors.response.use(
   }
 );
 
-// ================================= 对外提供请求方法：通用请求，get， post, 下载download等 =================================
+// 对外请求方法
 
-/**
- * get请求
- */
+/** GET 请求 */
 export const getRequest = (url: string, params?: any, options?: RequestOptions) => {
   return request({url, method: 'get', params, ...options});
 };
 
-/**
- * 通用请求封装
- * @param config
- */
+/** 通用请求封装 */
 export const request = (config) => {
   return smartAxios.request(config);
 };
 
-/**
- * post请求
- */
+/** POST 请求 */
 export const postRequest = (url: string, data?: any, options?: RequestOptions) => {
   return request({
     data,
@@ -166,11 +149,9 @@ export const postRequest = (url: string, data?: any, options?: RequestOptions) =
   });
 };
 
-// ================================= 加密 =================================
+// 加密
 
-/**
- * 加密请求参数的post请求
- */
+/** 加密请求参数的 POST 请求 */
 export const postEncryptRequest = (url, data) => {
   return request({
     data: {encryptData: encryptData(data)},
@@ -179,7 +160,7 @@ export const postEncryptRequest = (url, data) => {
   });
 };
 
-// ================================= 下载 =================================
+// 下载
 
 export const postDownload = function (url, data) {
   return request({
@@ -196,11 +177,7 @@ export const postDownload = function (url, data) {
     });
 };
 
-/**
- * 文件下载
- *
- * 返回 Promise 以便调用方展示下载中状态；失败已在此处统一提示，故 Promise 不会 reject。
- */
+/** 文件下载；失败已在此处提示，Promise 不会 reject。 */
 export const getDownload = function (url, params) {
   return request({
     method: 'get',
@@ -228,10 +205,7 @@ function handleDownloadError(error: unknown) {
   message.error('网络发生错误');
 }
 
-/**
- * 后端失败时也会返回二进制响应体，这里只从中提取可读文案。
- * 非 JSON 内容仅在足够短且不是 HTML 时采用，避免把整页错误页弹给用户。
- */
+/** 从二进制响应里提取可读错误文案，避免把整页 HTML 弹给用户。 */
 function downloadErrorText(text: string) {
   const value = (text || '').trim();
   if (!value) return '文件下载失败';

@@ -146,7 +146,7 @@
       <a-upload :file-list="[]" :before-upload="stageFiles" accept="image/*" multiple :show-upload-list="false">
         <a-button :loading="staging">选择多张图片</a-button>
       </a-upload>
-      <!-- 计数行始终渲染：一张都没选时也要显性给出「命中 0」，否则「预览确认后才写入」只剩一个禁用按钮 -->
+      <!-- 计数行始终显示，没选文件时也能看到命中 0 -->
       <div class="match-summary">
         命中 {{ matchedCount }} · 歧义 {{ ambiguousCount }} · 未匹配 {{ unmatchedCount }}
         <a-button v-if="matches.length" size="small" @click="clearMatches">清空</a-button>
@@ -204,7 +204,7 @@ const keyword = ref(''),
   products = ref<ProductRow[]>([]),
   pickLoading = ref(false),
   pickError = ref('');
-// 列定义：左侧只保留「名称（编码次行）/ 主图状态」，编码不再单独占列
+// 左侧选择区三列：编码、名称、主图状态。
 const pickColumns = [
   {title: '商品编码', dataIndex: 'spuCode', width: 130},
   {title: '商品名称', dataIndex: 'name'},
@@ -222,7 +222,7 @@ function markImageBroken(fileKey: string) {
   brokenImageKeys.value = new Set([...brokenImageKeys.value, fileKey]);
 }
 
-// 未绑定图片池：数据源是文件表里 public/image 目录下没有挂到任何商品的图，和上面按 SPU 的视图互不覆盖。
+// 未绑定图片池：公开目录里还没挂到任何商品的图片。
 const pool = ref<UnboundImage[]>([]),
   poolLoading = ref(false),
   poolError = ref(''),
@@ -240,7 +240,7 @@ async function loadPool() {
   }
 }
 
-/** 池里的图绑到当前选中商品；主图只在商品还没有任何图时给，避免顶掉用户已设的主图。 */
+/** 绑定到当前商品；商品没有图时才设为主图。 */
 async function bindFromPool(image: UnboundImage) {
   if (!view.value) return;
   const target = view.value;
@@ -255,7 +255,7 @@ async function bindFromPool(image: UnboundImage) {
   await loadPool();
 }
 
-/** 拖拽落点在右侧商品卡片上；商品内部换序的拖拽没有 poolDragKey，直接放行。 */
+/** 从图片池拖到商品卡片；商品内换序没有 poolDragKey，直接放行。 */
 async function dropFromPool() {
   const fileKey = poolDragKey.value;
   poolDragKey.value = '';
@@ -291,7 +291,7 @@ function resetPick() {
   keyword.value = '';
   onlyNoPrimary.value = false;
   view.value = null;
-  // 重置只清筛选条件，列表要重新拉一遍；清空 products 会让整页变成「暂无数据」，看着像数据没了。
+  // 重置只清筛选条件，列表重新加载。
   search();
 }
 
@@ -318,7 +318,7 @@ async function removeImage(image: ProductImage) {
   await runWrite(() => productImageApi.batchRemove({spuId: view.value!.spuId, imageIds: [image.imageId!]}), '图片已移除');
 }
 
-/** 顺序按「整列目标 imageId」下发，与后端 reorder 的精确集合校验对齐；from/to 越界时不动。 */
+/** 按整列 imageId 提交顺序；下标越界时不动。 */
 async function move(from: number, to: number) {
   if (!view.value) return;
   const images = view.value.images;
@@ -376,7 +376,7 @@ async function uploadFile(file: File): Promise<{fileKey: string}> {
   return {fileKey: response.data.fileKey};
 }
 
-// ---- 批量按文件名匹配 ----
+// 按文件名批量导入
 const batchOpen = ref(false),
   staging = ref(false),
   binding = ref(false),

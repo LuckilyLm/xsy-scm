@@ -1,7 +1,4 @@
-/*
- * 时间选择框快捷选择
- *
- */
+/* 时间选择框快捷选项 */
 
 import dayjs from 'dayjs';
 import {ref} from 'vue';

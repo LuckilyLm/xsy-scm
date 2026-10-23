@@ -1,7 +1,4 @@
-/*
- * 登录页面
- *
- */
+/* 登录页路由 */
 
 import {RouteRecordRaw} from 'vue-router';
 

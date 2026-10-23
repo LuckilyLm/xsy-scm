@@ -1,7 +1,4 @@
-/*
- * 角色
- *
- */
+/* 角色权限树 */
 import _ from 'lodash';
 import {defineStore} from 'pinia';
 
@@ -17,7 +14,7 @@ export const useRoleStore = defineStore({
     initCheckedData(data) {
       this.checkedData = [...new Set(data)];
     },
-    // 选中
+    // 选中一项
     addCheckedData(data) {
       if (this.checkedData.some((e) => e === data)) {
         return;
@@ -52,7 +49,7 @@ export const useRoleStore = defineStore({
         });
       }
     },
-    // 初始化权限树对象
+    // 建立 menuId → 节点的索引
     initTreeMap(tree) {
       for (let treeElement of tree) {
         if (!treeElement.menuId) {
@@ -66,22 +63,19 @@ export const useRoleStore = defineStore({
     },
     // 选中上一级
     selectUpperLevel(module) {
-      // 拿到上级key
       let parentId = module.parentId;
       if (!parentId) {
         return;
       }
-      // 从权限树对象 获取该父级对象
       let parentModule = this.treeMap.get(parentId);
       if (!parentModule) {
         return;
       }
-      // 选中父级
       let parentIndex = this.checkedData.findIndex((e) => parentModule.menuId === e);
       if (parentModule.menuId && parentIndex === -1) {
         this.addCheckedData(parentModule.menuId);
       }
-      // 如果上级还有上级 则进行递归
+      // 继续向上选中
       if (parentModule.parentId) {
         this.selectUpperLevel(parentModule);
       }

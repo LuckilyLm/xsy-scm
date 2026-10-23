@@ -207,10 +207,7 @@ function edit(report?: InspectionReport) {
 function filesChanged(files: Array<{fileKey?: string}>) {
   form.value.fileKeys = files.flatMap((file) => (file.fileKey ? [file.fileKey] : []));
 }
-/**
- * 保存前显式跑一遍表单校验：项目禁止业务页用 html-type="submit"，所以不能靠 a-form 的 finish 事件触发，
- * 校验失败时停留在表单上，不把必填错误推给后端。
- */
+/** 保存前先跑表单校验，必填错误不推给后端。 */
 async function submit() {
   if (busy.value) return;
   try {

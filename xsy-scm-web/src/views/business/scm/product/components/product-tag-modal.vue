@@ -1,4 +1,4 @@
-<!-- 商品标签内部编码由后端生成，表单仅提交业务属性。 -->
+<!-- 标签编码由后端生成，表单只提交业务属性。 -->
 <template>
   <a-modal
     v-model:open="visible"
@@ -65,7 +65,7 @@ function open(row?: ProductTag) {
 async function save() {
   saving.value = true;
   try {
-    // 新增不接受主键与版本，编辑必须带回乐观锁版本。
+    // 新增不带主键和版本；编辑要带乐观锁版本。
     if (form.tagId)
       await productTagApi.update({
         tagId: form.tagId,
@@ -84,7 +84,7 @@ async function save() {
     visible.value = false;
     emit('saved');
   } catch {
-    // 保存失败只走全局 toast
+    // 保存失败由全局 toast 提示
   } finally {
     saving.value = false;
   }

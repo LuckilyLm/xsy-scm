@@ -1,10 +1,4 @@
-<!--
-  库存出库单。
-
-  状态机：DRAFT → CONFIRMED，草稿可 CANCELLED。已确认不可回退（流水 append-only）。
-  「确认出库」会真实扣减库存并写不可逆流水，因此单独一个按钮 + 二次确认，
-  不与「编辑」混在一起。
--->
+<!-- 库存出库单：草稿确认后扣减库存并写流水，确认后不可撤销。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -64,8 +58,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'confirmedAt'">{{ datetime(record.confirmedAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 行内常驻「详情」与当前状态最高频的「确认出库」，其余收进「更多」；
-               确认出库不可撤销，故不与编辑 / 取消 / 删除混在一排 -->
+          <!-- 详情和确认出库常驻，其他操作收进“更多” -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
@@ -218,8 +211,7 @@ const statusOptions = Object.values(SCM_INVENTORY_OUTBOUND_STATUS_ENUM).map((i) 
   label: i.desc,
 }));
 
-// 列表按「哪张单 / 哪个仓 / 什么状态 / 谁在什么时候出的」排列。创建时间是技术字段：
-// 出库单的业务时刻是确认时间，草稿态的创建时间对使用者没有决策价值，不上列。
+// 创建时间不上列，出库时间用确认时间。
 type InventoryOutboundColumn = ScmListColumn;
 const columns = ref<InventoryOutboundColumn[]>([
   {title: '出库单号', dataIndex: 'outboundNo', width: 200},
@@ -248,7 +240,7 @@ const itemColumns: TableColumnsType = [
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
 
-// 明细的规格编码是名称下方的次要信息，不再各占一列（与列表页同一口径）。
+// 明细的规格编码作为次要信息展示。
 const detailItemColumns: TableColumnsType = [
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'sku', width: 170},
@@ -257,11 +249,11 @@ const detailItemColumns: TableColumnsType = [
   {title: '单位', dataIndex: 'unitSnapshot', width: 110},
 ];
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 更多菜单无法使用 `v-privilege`，改用 `hasPermission` 判断。 */
 const canUpdate = computed(() => hasPermission('scm:inventory:outbound:update'));
 const canDelete = computed(() => hasPermission('scm:inventory:outbound:delete'));
 
-/** 只有草稿可写；动作集合与原行内按钮一一对应，只按频率重新分组。 */
+/** 只有草稿可写。 */
 function rowActions(row: InventoryOutbound): ScmActionItem[] {
   const draft = row.status === 'DRAFT';
   return [
@@ -330,13 +322,7 @@ function resetQuery() {
   onSearch();
 }
 
-/**
- * URL 带入的筛选条件：配送线路详情页的「跳出库单」带 `?outboundNo=`。
- *
- * 只把值填进已有筛选项，不新增任何后端能力；出库单号是自由文本（`null` 白名单），
- * 但仍经 `deepLinkFilters` 做 trim 与空值收口，避免 `?outboundNo=` 空串被当成有效条件。
- * 用 `route.query` 而不是 props：菜单路由不传 props，hash 路由下 query 是唯一稳定通道。
- */
+/** 配送线路详情页可能带 `?outboundNo=`，只填入已有筛选项并去掉空值。 */
 const OUTBOUND_DEEP_LINK = {outboundNo: null};
 
 const route = useRoute();
@@ -361,10 +347,7 @@ watch(
 interface EditableItem {
   _key: number;
   skuId?: string | number;
-  /**
-   * 明细数量在表单里是 `number`（InputNumber 只接受数字），提交时才转成后端要求的
-   * 4 位定点字符串。`null` = 还没填。
-   */
+  /** 表单里用 number，提交时转成 4 位定点字符串；null 表示未填。 */
   quantity?: number | null;
   remark?: string;
 }
@@ -414,7 +397,7 @@ async function openEdit(record: InventoryOutbound) {
   form.items = (d.items ?? []).map((i) => ({
     _key: ++keySeq,
     skuId: i.skuId,
-    // 后端以 4 位定点字符串返回明细数量，InputNumber 要 number；空值保持 null
+    // 后端返回定点字符串，InputNumber 需要 number；空值保持 null
     quantity: i.quantity == null ? null : Number(i.quantity),
     remark: i.remark,
   }));
@@ -428,12 +411,7 @@ function closeDrawer() {
   drawerOpen.value = false;
 }
 
-/**
- * 明细校验在提交前做：逐行给出「第几行缺什么」，比一条笼统的「参数不合法」有用得多。
- *
- * 数量大于 0 与最多 4 位小数已由 InputNumber（`:min="0.0001"` + `:precision="4"`）
- * 结构性保证，这里只需拦住「整行没填数量」。
- */
+/** 提交前逐行校验，并指出第几行缺什么。 */
 function buildPayload(): InventoryOutboundAdd | null {
   const items = form.items.filter((i) => i.skuId !== undefined && i.skuId !== null);
   if (items.length === 0) {
@@ -449,7 +427,7 @@ function buildPayload(): InventoryOutboundAdd | null {
   return {
     warehouseId: form.warehouseId as string | number,
     remark: form.remark,
-    // 数量以定点字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
+    // 数量以定点字符串提交，后端不接受 JSON 数字
     items: items.map((i) => ({
       skuId: i.skuId as string | number,
       quantity: fixed4(i.quantity) as string,
@@ -483,7 +461,7 @@ async function onSubmit() {
 // ------------------------------------------------------------------ 详情与动作
 
 const detailOpen = ref(false);
-// Partial：初始为空对象（还没选中任何单据），打开详情时整体替换为后端返回的 VO
+// 初始为空对象，打开详情时替换为后端数据
 const detail = ref<Partial<InventoryOutbound>>({});
 
 async function openDetail(record: InventoryOutbound) {
@@ -509,7 +487,7 @@ function onConfirm(record: InventoryOutbound) {
         message.success('出库完成，库存已扣减');
         queryData();
       } catch (e) {
-        // 可用量不足（41011）等业务失败会走到这里，整单已回滚
+        // 可用量不足等业务失败会走到这里，整单已回滚
         message.error(inventoryError(e));
       }
     },
@@ -554,7 +532,7 @@ function onDelete(record: InventoryOutbound) {
 }
 
 onMounted(async () => {
-  // 首屏先落 URL 条件再查，否则从配送页跳进来会先闪一次全量列表。
+  // 先应用 URL 条件再查询，避免首屏闪出全量列表
   applyDeepLink(route.query);
   await applySingleWarehouseDefault();
   await queryData();

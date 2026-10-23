@@ -133,8 +133,7 @@ import RoutePrint from './route-print.vue';
 
 const query = reactive<Query>({pageNum: 1, pageSize: 20});
 const {canViewAmount, hasPerm} = useDeliveryPermission();
-// 无全量配送范围权限（调度岗）时，普通司机看到空表可能是「线路没排到自己」而非「没有线路」，
-// 文案要提示是授权/绑定问题，而不是一句「暂无数据」把配置缺口盖掉。
+// 没有全量范围权限时，空表可能是没排给自己，提示里要说清
 const emptyText = computed(() =>
   hasPerm(DELIVERY_PERM.SCOPE_ALL_QUERY) ? '暂无数据' : '当前仅显示您负责的线路；若无数据，可能是司机未绑定员工或线路未排到您名下，请联系调度确认。'
 );
@@ -150,9 +149,7 @@ const warehouses = ref<Warehouse[]>([]),
 const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
   printer = ref<InstanceType<typeof RoutePrint>>();
 const statusOptions = Object.entries(routeStatuses).map(([value, state]) => ({value, label: state.label}));
-// 金额列按权限出现：服务端已把无权限的 totalAmount 抹成 null，这里决定要不要留这一格。
-// 线路名称与编号分列；金额列仍按权限出现。
-// 操作列收到三个槽位（详情 / 路线 / 更多）：编辑与打印是低频动作，进「更多」。
+// 金额列按权限显示；编辑和打印是低频动作，收进「更多」。
 const columns = computed<TableColumnsType>(() => [
   {title: '配送日期', dataIndex: 'deliveryDate', width: 120},
   {title: '线路名称', dataIndex: 'routeName', width: 180},
@@ -178,7 +175,7 @@ const ROUTE_STATUS_TONE: Record<RouteStatus, ScmStatusTone> = {
   CANCELLED: 'neutral',
 };
 
-/** 全部停靠点都有坐标、且有起点坐标，才算定位完整（未定位的订单无法参与路线规划）。 */
+/** 所有停靠点和起点都有坐标，才算定位完整。 */
 function coverageOk(record: DeliveryRoute): boolean {
   return record.stopCount > 0 && record.locatedCount === record.stopCount && !!record.startGeomCrs;
 }
@@ -192,10 +189,7 @@ function coverageText(record: DeliveryRoute): string {
     : `已定位 ${record.locatedCount} / ${record.stopCount} 个停靠点，未定位的订单无法参与路线规划`;
 }
 
-/**
- * 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPerm 裁剪。
- * 打印按原口径挂线路查询权（与行内按钮一致），不新增权限点。
- */
+/** 「更多」菜单挂不上 v-privilege，改用 hasPerm 判断；打印沿用线路查询权限。 */
 function rowActions(record: DeliveryRoute): ScmActionItem[] {
   return [
     {
@@ -219,10 +213,7 @@ function onRowAction(key: string, record: DeliveryRoute) {
   }
 }
 
-/**
- * 当前列表筛选 → URL 参数，只带非空项，且省略等于默认值的分页键（URL 里不必出现 `pageNum=1`）。
- * 键取自 ROUTE_DEEP_LINK，保证「带出去」与「还原回来」用的是同一份清单，不会一边加了键另一边漏接。
- */
+/** 筛选转成 URL 参数，只带非空项；键取自 ROUTE_DEEP_LINK，带出和还原用同一份清单。 */
 function listFilterParams(): Record<string, string> {
   const params: Record<string, string> = {};
   for (const key of Object.keys(ROUTE_DEEP_LINK)) {
@@ -246,12 +237,7 @@ function sameQuery(current: Record<string, unknown>, next: Record<string, string
   return true;
 }
 
-/**
- * 把当前筛选写进 URL —— URL 是「已执行的查询」的唯一载体。
- *
- * 按钮与分页只改路由，下方 watcher 只消费路由并查询，两边不互相写，因此不会自触发。
- * 连点两次查询时目标与当前 URL 等价，路由不会产生新导航，此时直接查一次。
- */
+/** 把筛选写进 URL，由下面的 watcher 统一查询；URL 没变化时直接查一次。 */
 function applyQuery() {
   const params = listFilterParams();
   if (sameQuery(route.query, params)) {
@@ -261,10 +247,7 @@ function applyQuery() {
   void router.replace({path: route.path, query: params});
 }
 
-/**
- * 详情与路线都进独立详情页，仅 Tab 不同：路线直达地图工作台。
- * 列表筛选一并带过去，详情页「返回线路管理」时原样带回，用户不必重筛一遍。
- */
+/** 详情和路线都进同一个详情页，只是默认 Tab 不同；筛选一并带过去，返回时原样带回。 */
 function openDetail(id: Id, targetTab: 'base' | 'map' | 'orders') {
   void router.push({path: `/delivery/routes/${id}`, query: {tab: targetTab, ...listFilterParams()}});
 }
@@ -276,7 +259,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示并可重试
     const result = await deliveryApi.routes(query, {suppressGlobalErrorMessage: true});
     if (current === generation) {
       rows.value = result.data.list;
@@ -333,15 +316,8 @@ function created(id: Id) {
   openDetail(id, 'orders');
 }
 
-// 待办卡片带 `?status=DRAFT`（待排线线路）：点进来必须看到同一批数据。
-// 枚举键过字典白名单，自由文本键（编号 / 日期 / id）只做 trim 与空值收口。
-//
-// 这个 query 同时是「已执行的查询」的唯一载体：查询 / 重置 / 翻页只改路由，下面的 watcher
-// 只消费路由并 load()，两边不互相写，因此不会自触发。于是浏览器后退能回到上一次的筛选与页码，
-// 而「从普通菜单进入」因为 URL 没有 query，仍会回落到页面默认、不残留上次条件。
-//
-// 详情页「返回线路管理」复用同一份清单（openDetail 带出去、route-detail-page 的 backToList
-// 带回来），所以键名必须与那边一致。
+// 可带到 URL 的筛选键。待办卡片进来要看到同一批数据；详情页返回也复用这份清单。
+// 枚举键会校验取值，文本键只做 trim 和空值处理。
 const ROUTE_DEEP_LINK = {
   status: Object.keys(routeStatuses),
   keyword: null,
@@ -389,7 +365,7 @@ watch(
     const pageSize = Number(filters.pageSize);
     if (Number.isInteger(pageNum) && pageNum > 0) query.pageNum = pageNum;
     if (Number.isInteger(pageSize) && pageSize > 0) query.pageSize = pageSize;
-    // 级联控件只认连续路径，缺层的快照按未筛选处理，与 areaColumnsOf 同口径。
+    // 级联控件要求层级连续，缺层级时按未筛选处理
     area.value = areaNodesOf(query);
     load();
     const id = incomingQuery.routeId;

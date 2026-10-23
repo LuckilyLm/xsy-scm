@@ -288,7 +288,7 @@ const addForm = reactive({
   remark: '',
 });
 const addFormRef = ref();
-/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+/** 必填项逐项校验，错误显示在输入框下方。 */
 const addRules = {
   customerId: [{required: true, message: '请选择客户', trigger: 'change'}],
   amount: [
@@ -441,7 +441,7 @@ async function submitCod() {
 }
 
 async function submitAdd() {
-  // 必填项走表单校验：错误显示在对应输入框下方，顶部 alert 只留服务端错误
+  // 必填项由表单校验，顶部 alert 只显示服务端错误
   try {
     await addFormRef.value?.validate();
   } catch {
@@ -466,7 +466,7 @@ async function submitAdd() {
     addOpen.value = false;
     await queryData();
   } catch {
-    // 登记失败只走全局 toast；弹窗里的 addError 留给本地校验
+    // 登记失败由全局 toast 提示；addError 只用于本地校验
   } finally {
     addSaving.value = false;
   }
@@ -492,7 +492,7 @@ async function submitReverse() {
     reverseOpen.value = false;
     await queryData();
   } catch {
-    // 反向失败只走全局 toast；弹窗里的 reverseError 留给本地校验
+    // 反向失败由全局 toast 提示；reverseError 只用于本地校验
   } finally {
     reverseSaving.value = false;
   }
@@ -500,7 +500,7 @@ async function submitReverse() {
 
 onMounted(async () => {
   try {
-    // 客户选项加载失败也由页头 Alert 承担
+    // 客户选项加载失败时显示在页头 Alert
     const response = await customerApi.optionList({suppressGlobalErrorMessage: true});
     customerOptions.value = response.data.map((item: CustomerOption) => ({label: `${item.customerCode} · ${item.name}`, value: item.customerId}));
   } catch {

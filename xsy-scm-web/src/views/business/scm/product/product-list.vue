@@ -250,7 +250,7 @@ async function loadExportColumnOptions(): Promise<void> {
   if (exportColumnsLoaded.value) return;
   try {
     const response = await productApi.exportColumns();
-    // 「排序」是商品规格的内部排序值，不是业务字段，不放进导出勾选。
+    // 排序值是内部字段，不放进导出勾选。
     exportColumnOptions.value = response.data
       .filter((column) => column.key !== 'sortOrder')
       .map((column) => ({label: column.title, value: column.key}));
@@ -263,8 +263,7 @@ const user = useUserStore();
 const canBatch = computed(
   () => user.administratorFlag || user.getPointList?.some((point: {webPerms: string}) => point.webPerms === 'scm:product:batch')
 );
-// 当前按「全字段」摊开：接口返回的 25 个字段全部成列，便于一次性核对主数据完整性。
-// 列很多时表格横向滚动；需要精简可在「设置列」里隐藏，配置会按用户保存。
+// 默认摊开全部字段，便于核对；列太多可横向滚动或在「设置列」里隐藏。
 const columns = ref<TableColumnsType<ProductRow>>([
   {title: '主图', dataIndex: 'primaryImageUrl', width: SCM_COLUMN_WIDTH.image},
   {title: '商品编码', dataIndex: 'spuCode', width: 150},
@@ -293,21 +292,21 @@ const columns = ref<TableColumnsType<ProductRow>>([
   {title: '更新时间', dataIndex: 'updatedAt', width: SCM_COLUMN_WIDTH.dateTime},
   {title: '操作', dataIndex: 'action', width: SCM_COLUMN_WIDTH.actionThree, align: 'center', fixed: 'right'},
 ]);
-// 宽屏剩余空间补给仍在使用默认宽度的文本列（名称、分类），用户改过的列宽原样渲染。
+// 宽屏剩余空间补给默认宽度的文本列；用户改过的列宽不动。
 const {tableRef, displayColumns, scrollX} = useScmTableFill(
   columns,
   () => SCM_COLUMN_WIDTH.expand + (canBatch.value ? SCM_COLUMN_WIDTH.selection : 0)
 );
 
 const tagFilterOptions = computed(() => tagChoices.value.map((tag) => ({value: tag.tagId, label: tag.name})));
-// 空值统一显示连字符；BigDecimal 以字符串下发，Number() 去掉尾随零
+// 空值统一显示 —；金额以字符串下发，Number() 去掉尾随零
 const DASH = '—';
 const dash = (value: unknown) => (value === null || value === undefined || value === '' ? DASH : String(value));
 const days = (value?: number | string | null) => (value == null || value === '' ? DASH : `${Number(value)} 天`);
 const percent = (value?: number | string | null) => (value == null || value === '' ? DASH : `${Number(value)}%`);
 const enumText = (options: {value: string; label: string}[], value?: string | null) => options.find((item) => item.value === value)?.label || DASH;
 const cellText = (record: ProductRow, dataIndex: unknown) => dash((record as unknown as Record<string, unknown>)[String(dataIndex ?? '')]);
-// 标签列只展示首个标签，其余折成 +N；完整名称可从提示中查看。
+// 标签列只显示一个，其余折叠为 +N，完整名称见提示。
 const TAG_PREVIEW_LIMIT = 1;
 const restTagTitle = (tags: ProductTagRef[]) =>
   tags
@@ -322,7 +321,7 @@ const selectedItems = computed<ProductBatchItem[]>(() =>
     version: row.version,
   }))
 );
-// REMOVE 停用标签是批量摘标的正当用法：下拉里要连选中商品已挂的停用标签一起给出。
+// 批量摘标要能选到停用标签，所以下拉里补上选中商品已挂的停用标签。
 const batchTagOptions = computed(() => {
   const known = new Set(tagChoices.value.map((tag) => String(tag.tagId)));
   const retired = new Map<ProductTagRef['tagId'], string>();
@@ -349,7 +348,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const response = await productApi.query(
       {
         ...filters,
@@ -415,9 +414,7 @@ async function exportCurrent(exportColumnKeys: string[]) {
   });
 }
 
-/**
- * 点「导出」先选字段：字段默认全选，由弹窗负责确认与加载态。
- */
+/** 导出前先选字段，默认全选。 */
 async function openExport() {
   await loadExportColumnOptions();
   if (!exportColumnOptions.value.length) {
@@ -454,7 +451,7 @@ async function remove(row: ProductRow) {
 onMounted(async () => {
   void load();
   try {
-    // 筛选下拉的选项加载失败也由页头 Alert 承担
+    // 筛选选项加载失败也显示在页头 Alert
     const [tree, tags] = await Promise.all([
       productCategoryApi.tree({suppressGlobalErrorMessage: true}),
       productTagApi.options({suppressGlobalErrorMessage: true}),

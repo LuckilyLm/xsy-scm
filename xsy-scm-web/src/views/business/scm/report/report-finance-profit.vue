@@ -16,7 +16,7 @@
       <a-form-item label="商品 / 单号"
         ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称、商品规格编码或订单号" @pressEnter="search"
       /></a-form-item>
-      <!-- 操作项跟在本表单最后一项之后：放在第一行中间时，窄屏换行会把它夹在字段中间 -->
+      <!-- 按钮放在表单最后一项之后，窄屏换行时不会被夹在字段中间 -->
       <a-form-item>
         <a-space>
           <a-button type="primary" :loading="loading" v-privilege="PERM.FINANCE_PROFIT_QUERY" @click="search">查询</a-button>
@@ -35,7 +35,7 @@
     show-icon
     class="profit-alert"
     :message="`有 ${summary?.costMissingCount} 行历史销售成本缺失，毛利和毛利率暂不完整`"
-    description="销售成本金额仅显示已知部分；毛利相关指标显示为 —，请先核对对应出库流水的成本事实。"
+    description="销售成本金额仅显示已知部分；毛利相关指标显示为 —，请先核对对应出库流水的成本数据。"
   />
 
   <a-row :gutter="12" class="profit-kpis">
@@ -89,7 +89,7 @@
       :pagination="false"
       :loading="loading"
       :scroll="{x: scmColumnsWidth(columns)}"
-      :locale="{emptyText: '当前筛选范围没有销售毛利事实'}"
+      :locale="{emptyText: '当前筛选范围没有销售毛利数据'}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'bizDate'">{{ record.bizDate || '—' }}</template>
@@ -200,7 +200,7 @@ async function load() {
   summary.value = undefined;
   total.value = 0;
   try {
-    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页内 Alert 提示，不再弹全局 toast
     const quiet = {suppressGlobalErrorMessage: true};
     const [page, totals] = await Promise.all([financeProfitApi.query(payload, quiet), financeProfitApi.summary(payload, quiet)]);
     if (id !== requestId) return;

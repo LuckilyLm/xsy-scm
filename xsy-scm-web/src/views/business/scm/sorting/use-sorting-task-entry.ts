@@ -56,7 +56,7 @@ export function useSortingTaskEntry(options: {busy: Ref<boolean>; refreshTaskLis
   }
 
   function canEditRow(record: SortingTaskItem) {
-    // 已释放的历史占用行不是待办量；赠品事实也不写回分拣数量与结果。
+    // 已释放的行不是待办量；赠品不写回分拣数量和结果
     if (isGiftRow(record)) return false;
     return canEditItems.value && record.occupationStatus === 'ACTIVE';
   }

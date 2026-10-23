@@ -143,7 +143,7 @@ watch(
   },
   {immediate: true}
 );
-/** 外部退款凭证可能很长，表格固定宽度并用悬浮提示展示全文；钱包退款的流水入口保留独立操作按钮。 */
+/** 外部凭证固定宽度、超出截断；钱包退款的流水入口单独放按钮。 */
 const columns = ref<TableColumnsType<RefundRow>>([
   {
     title: '退款单号',
@@ -177,7 +177,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示并可重试
     const r = await api.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;

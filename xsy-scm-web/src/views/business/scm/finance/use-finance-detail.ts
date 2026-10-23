@@ -3,7 +3,7 @@ import type {ScmResponse} from '/@/types/business/scm/customer';
 import type {FinanceId} from './finance-types';
 import {financeError} from './finance-errors';
 
-/** 详情只接收最后一次请求；关闭或离开页面后，迟到响应不能回填。 */
+/** 只采用最后一次请求；关闭或离开页面后，迟到响应不回填。 */
 export function useFinanceDetail<T>(fetcher: (id: FinanceId) => Promise<ScmResponse<T>>) {
   const open = ref(false);
   const loading = ref(false);

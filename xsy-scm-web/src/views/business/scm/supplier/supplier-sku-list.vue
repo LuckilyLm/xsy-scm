@@ -1,10 +1,7 @@
-<!--
-  商品-供应商关系：先按公司看汇总卡片，点进去看这家公司的商品规格明细。
-  调整供货关系不在这里做，入口在「供应商档案」→「关联商品」。
--->
+<!-- 商品-供应商关系：先按公司看汇总，再点进去看这家公司的商品规格明细。 -->
 <template>
   <section aria-label="商品-供应商关系">
-    <!-- 一、公司卡片 -->
+    <!-- 公司卡片 -->
     <a-card v-if="!selected" size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
         <p class="scm-note scm-note--block">按公司查看可供货的商品；点卡片看明细。</p>
@@ -41,7 +38,7 @@
       </a-spin>
     </a-card>
 
-    <!-- 二、某家公司的商品明细 -->
+    <!-- 某家公司的商品明细 -->
     <a-card v-else size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
         <a-button type="link" class="scm-detail-header__back" @click="backToCards">
@@ -160,7 +157,7 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {supplierError} from './supplier-errors';
 import {datetime} from '../common/scm-display';
 
-// ---------------------------------------------------------------- 公司卡片
+// 公司卡片
 
 const cards = ref<SupplierSkuSupplierSummary[]>([]);
 const cardLoading = ref(false);
@@ -168,7 +165,7 @@ const cardError = ref('');
 const keyword = ref('');
 const selected = ref<SupplierSkuSupplierSummary | null>(null);
 
-/** 搜索只作用于已取回的公司，不再往返服务端：公司数量远小于商品行数。 */
+/** 搜索只在已取回的公司里过滤，不请求服务端。 */
 const visibleCards = computed(() => {
   const text = keyword.value.trim().toLowerCase();
   if (!text) return cards.value;
@@ -179,7 +176,7 @@ async function loadCards() {
   cardLoading.value = true;
   cardError.value = '';
   try {
-    // 加载失败由卡片区的 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由卡片区 Alert 提示，不再弹全局 toast
     const response = await supplierSkuApi.summarize(undefined, {suppressGlobalErrorMessage: true});
     cards.value = response.data ?? [];
   } catch (e) {
@@ -203,7 +200,7 @@ function backToCards() {
   error.value = '';
 }
 
-// ---------------------------------------------------------------- 明细表格
+// 明细表格
 
 const filters = reactive<SupplierSkuQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<SupplierSkuRow[]>([]);
@@ -245,10 +242,7 @@ const columns = ref<TableColumnsType<SupplierSkuRow>>([
   {title: '更新时间', dataIndex: 'updatedAt', width: 190, customRender: ({text}) => datetime(text)},
 ]);
 
-/**
- * 明细页只显示这一家公司的商品，供应商两列每行都一样，占着 350px 没有信息量。
- * 列设置里仍然保留它们（供应商视角下可能想调顺序），这里只是渲染时过滤掉。
- */
+/** 明细页隐藏供应商两列；列设置里仍保留。 */
 const detailColumns = computed<TableColumnsType<SupplierSkuRow>>(
   () =>
     (columns.value as Array<{dataIndex?: unknown}>).filter(
@@ -263,7 +257,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const response = await supplierSkuApi.query({...filters}, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       rows.value = response.data.list;
@@ -298,7 +292,7 @@ function search() {
   void load();
 }
 
-/** 重置只清「商品规格与状态」，公司是当前上下文，清掉就没有明细可看了。 */
+/** 只清商品规格和状态，保留当前公司。 */
 function resetDetail() {
   Object.assign(filters, {pageNum: 1, skuId: undefined, status: undefined});
   void load();
@@ -319,7 +313,7 @@ onMounted(loadCards);
   gap: 12px;
 }
 
-/* 整卡可点：用 button 而不是 div，键盘 Tab 与回车都能进明细 */
+/* 用 button 保证键盘可操作 */
 .supplier-card {
   display: flex;
   flex-direction: column;
@@ -357,7 +351,7 @@ onMounted(loadCards);
   white-space: nowrap;
 }
 
-/* 箭头只做「可以点进去」的暗示，不单独承载交互 */
+/* 箭头只作提示，不单独交互 */
 .supplier-card__arrow {
   color: var(--scm-text-secondary, #667085);
   font-size: 12px;
@@ -382,7 +376,7 @@ onMounted(loadCards);
   font-variant-numeric: tabular-nums;
 }
 
-/* 返回与列设置同一行：公共样式自带 8px 下边距，会把链接顶高，这里抹平 */
+/* 返回链接与列设置同一行，去掉公共下边距 */
 :deep(.scm-detail-header__back.ant-btn) {
   margin-bottom: 0;
 }

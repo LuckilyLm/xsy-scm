@@ -1,7 +1,4 @@
-/*
- * 项目的配置信息
- *
- */
+/* 应用配置 */
 import {defineStore} from 'pinia';
 import {appDefaultConfig} from '/@/config/app-config';
 import localStorageKeyConst from '/@/constants/local-storage-key-const';
@@ -9,10 +6,7 @@ import {smartSentry} from '/@/lib/smart-sentry';
 import {AppConfig} from '/@/types/config';
 import {localRead} from '/@/utils/local-util';
 
-/**
- * 每个版本「默认值改过」的项。迁移时只把这些键拉回新默认，其余键保留用户当前值 ——
- * 一次只重置改过的那几项，用户自己调的宽度、主题、标签页位置不会被顺手抹掉。
- */
+/** 各版本改过默认值的配置项；迁移时只重置这些键，其余保留用户设置。 */
 const CONFIG_MIGRATIONS: Record<number, string[]> = {
   // 6：侧栏宽度 208 → 168、主题色改极光绿、标签页位置改顶部、默认隐藏水印与帮助文档。
   6: ['sideMenuWidth', 'colorIndex', 'pageTagLocation', 'watermarkFlag', 'helpDocFlag'],
@@ -46,7 +40,6 @@ let language = appDefaultConfig.language;
 if (appConfigStr) {
   try {
     const cached = JSON.parse(appConfigStr);
-    // 版本迁移只刷新「默认值改过」的项，保留其他用户偏好。
     if (cached && cached.configVersion === appDefaultConfig.configVersion) {
       state = cached;
       language = state.language;
@@ -59,7 +52,7 @@ if (appConfigStr) {
       state = migrateConfig(cached);
       language = state.language;
     } else {
-      // 其他版本沿用默认配置，避免把未知旧结构当作当前结构继续使用。
+      // 未知旧结构直接回落默认配置
       state = {...appDefaultConfig};
       language = appDefaultConfig.language;
     }
@@ -68,9 +61,7 @@ if (appConfigStr) {
   }
 }
 
-/**
- * 获取初始化的语言
- */
+/** 取初始化的语言 */
 export const getInitializedLanguage = function () {
   return language;
 };
@@ -78,7 +69,7 @@ export const getInitializedLanguage = function () {
 export const useAppConfigStore = defineStore({
   id: 'appConfig',
   state: (): AppConfig => ({
-    // 读取config下的默认配置
+    // 本地缓存的配置，没有则用默认值
     ...state,
     // 全屏
     fullScreenFlag: false,

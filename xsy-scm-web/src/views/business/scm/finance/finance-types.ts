@@ -62,7 +62,7 @@ export interface FinanceCodCollectionForm {
   amount: string;
   method: FinancePaymentMethod;
   receivedAt: string;
-  // 凭据号和备注可不填；提交时将空字符串转换成 null。
+  // 可不填；提交时空字符串转成 null。
   externalReference?: string | null;
   remark?: string | null;
 }
@@ -237,11 +237,11 @@ export interface FinanceReceivableItem {
   unit: string;
   quantity: string;
   unitPrice: string;
-  /** 行毛额（未扣订单优惠）。 */
+  /** 行金额，未扣优惠。 */
   grossAmount?: string | null;
-  /** 该行承担的订单优惠分摊（正常为减免额；红字为反向减免额）。 */
+  /** 本行分摊的优惠，红字为反向。 */
   discountAmount?: string | null;
-  /** 行净额 = 毛额 − 优惠分摊。 */
+  /** 行净额 = 行金额 − 优惠分摊。 */
   amount: string;
 }
 

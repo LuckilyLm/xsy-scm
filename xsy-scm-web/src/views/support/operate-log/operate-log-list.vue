@@ -198,10 +198,10 @@ const defaultChooseTimeRange = defaultTimeRanges;
 
 const route = useRoute();
 
-// 与后端 AdminOperateLogController 支持的业务类型白名单保持一致。
+// 与后端 AdminOperateLogController 允许的业务类型保持一致。
 const BUSINESS_TYPES = ['PRODUCT', 'CUSTOMER', 'DELIVERY_ROUTE'];
 
-// 从路由解析业务上下文：类型须在白名单内、ID 须为正整数，否则视为无上下文。
+// 从路由解析业务上下文：类型须在允许范围内、ID 须为正整数，否则视为无上下文。
 function routeBusinessContext(): {businessType?: string; businessId?: number} {
   const businessType = route.query.businessType;
   const businessId = Number(route.query.businessId);

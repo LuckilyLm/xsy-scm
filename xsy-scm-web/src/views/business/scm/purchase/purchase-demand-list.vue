@@ -1,8 +1,4 @@
-<!--
-  采购需求列表。
-  - 时间段是半开区间 `[startAt, endAt)`，不是 `startTime`/`endTime`；
-  - 分配弹窗内联在本页（不新增组件文件）。
--->
+<!-- 采购需求列表；时间范围左闭右开。 -->
 <template>
   <a-tabs v-model:activeKey="activeTab">
     <a-tab-pane key="list" tab="采购需求">
@@ -134,7 +130,7 @@
 
   <PurchaseDemandBatchDetailDrawer :open="batchDrawer.open" :batch-id="batchDrawer.batchId" @close="batchDrawer.open = false" />
 
-  <!-- 分配到采购行：`allocate` 的入参是 `purchaseOrderItemId`，因此要先选单再选行 -->
+  <!-- 分配到采购行：先选采购单，再选同一商品规格的采购行 -->
   <a-modal
     :open="alloc.open"
     :title="`分配需求到采购行${alloc.demand?.salesOrderNoSnapshot ? '（' + alloc.demand.salesOrderNoSnapshot + '）' : ''}`"
@@ -190,7 +186,7 @@ import {useScmTableFill} from '../common/use-scm-table-fill';
 
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 
-/** ：本页两个 Tab —— 采购需求列表（既有）与只读缺口预览。 */
+/** 两个 Tab：采购需求列表和只读缺口预览。 */
 const activeTab = ref('list');
 
 const queryForm = reactive<DemandQuery>({pageNum: 1, pageSize: 20});
@@ -202,7 +198,7 @@ const error = ref('');
 const generateOpen = ref(false);
 let requestId = 0;
 
-/** 冻结批次回看的唯一抽屉实例：列表列与生成弹窗共用它，避免同源请求出现两份。 */
+/** 批次详情抽屉，列表和生成弹窗共用。 */
 const batchDrawer = reactive({
   open: false,
   batchId: undefined as Id | undefined,
@@ -229,9 +225,7 @@ const alloc = reactive({
   warehouseId: undefined as Id | undefined,
 });
 
-/**
- * 常用列保持在首屏；编码、已分配量、供应商、仓库和日期仍可通过列设置打开。
- */
+/** 常用列放在前面，其余可通过列设置打开。 */
 type DemandListColumn = ScmListColumn;
 const columns = ref<DemandListColumn[]>([
   {title: '来源单号', dataIndex: 'salesOrderNoSnapshot', width: 150},

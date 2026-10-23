@@ -1,10 +1,4 @@
-<!--
-  * 首页唯一主图：经营趋势
-  *
-  * 指标切换按钮只列出当前登录人有权查看的指标（由上层按权限传入），默认选中第一个。
-  * 销售额与采购额是「金额 + 笔数」两种量纲，用左右双轴；库存流转的入库量与出库量同量纲，
-  * 共用一根轴。
--->
+<!-- 经营趋势：指标切换只列出有权限的指标；金额与笔数用双轴。 -->
 <template>
   <default-home-card icon-name="section-business-trend" title="经营趋势">
     <div class="home-trend__bar">
@@ -89,10 +83,7 @@ function valueAxis(splitLine: boolean, money: boolean) {
   };
 }
 
-/**
- * 第一条序列恒为柱、第二条恒为折线：主量级（金额/入库量）看柱，辅量级（笔数/出库量）看线。
- * 同量纲时（库存流转）两条轴合并，柱线仍用两种形状区分，不靠颜色单打独斗。
- */
+/** 第一序列为柱、第二序列为折线；同量纲时共用一根轴。 */
 function seriesOf(index: number, trend: ScmDashboardTrend) {
   const meta = TREND_META[trend.metric];
   const color = index === 0 ? REPORT_CHART_COLORS.primary : REPORT_CHART_COLORS.secondary;

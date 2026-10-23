@@ -19,12 +19,7 @@ export const purchaseDemandApi = {
   query: (data: DemandQuery, options?: RequestOptions) =>
     postRequest('/scm/purchase/demand/query', data, options) as unknown as Promise<ScmResponse<ScmPage<Demand>>>,
 
-  /**
-   * 订单汇总 / 库存缺口预览（只读辅助决策）。
-   *
-   * 与 `generate` 同取数口径但不落任何数据、不改需求语义；数量全部后端算好，前端只渲染。
-   * 复用 `scm:purchase:demand:query` 权限，无幂等键（读操作）。
-   */
+  /** 订单汇总与库存缺口预览：只读，与生成同源取数，不写数据。 */
   summaryPreview: (data: DemandSummaryPreviewQuery, options?: RequestOptions) =>
     postRequest('/scm/purchase/demand/summary-preview', data, options) as unknown as Promise<ScmResponse<ScmPage<DemandSummaryRow>>>,
 
@@ -35,12 +30,7 @@ export const purchaseDemandApi = {
 
   generateBatch: (data: DemandBatchGenerate) => purchaseCommand<GenerateResult>('/scm/purchase/demand/batch/generate', data),
 
-  /**
-   * 冻结批次回看（只读：不重算、不写业务表）。
-   *
-   * 返回体含该仓的库存与预留数字，因此接口按 `scm:purchase:demand:batch:query`
-   * AND `scm:inventory:balance:query` 鉴权；前端按钮的 `v-privilege` 只是体验，不是权限边界。
-   */
+  /** 批次回看：只读，不重算；含库存与预留数字，需对应的查询权限。 */
   batchDetail: (data: DemandBatchGenerate, options?: RequestOptions) =>
     postRequest('/scm/purchase/demand/batch/detail', data, options) as unknown as Promise<ScmResponse<DemandBatchDetail>>,
 

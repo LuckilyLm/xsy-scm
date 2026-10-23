@@ -1,4 +1,4 @@
-<!-- PCO-1 辅助资料「商品标签」Tab：标签被引用后只能停用，历史商品仍保留展示。 -->
+<!-- 商品标签：已被引用的只能停用，历史商品仍保留展示。 -->
 <template>
   <a-form class="smart-query-form" layout="inline">
     <a-row class="smart-query-form-row">
@@ -81,7 +81,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页内 Alert 提示，不再弹全局 toast
     rows.value = (await productTagApi.list({...query}, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = productError(e);
@@ -106,7 +106,7 @@ async function remove(row: ProductTag) {
     message.success('标签已删除');
     await load();
   } catch {
-    // 删除失败只走全局 toast
+    // 删除失败由全局 toast 提示
   }
 }
 

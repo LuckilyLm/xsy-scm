@@ -50,8 +50,7 @@
           </div>
         </div>
         <div class="scm-summary-section">
-          <!-- 摘要只放可比较的数值指标；仓库、司机属于身份信息，见「基础信息」卡片。
-               无金额权限时只剩 3 项，用三列变体避免末行留白。 -->
+          <!-- 摘要只放数值指标；无金额权限时用三列布局 -->
           <div class="scm-summary" :class="canViewAmount ? '' : 'scm-summary--3'">
             <div class="scm-summary__item">
               <span class="scm-summary__label">停靠点</span>
@@ -191,7 +190,7 @@
       <p>{{ signTarget.orderNoSnapshot }} · {{ signTarget.customerName }}</p>
       <a-alert
         v-if="signForm.result === 'EXCEPTION'"
-        message="异常签收（含拒收）只登记到货事实：库存已按实发出库，此处不冲减，也不改动订单结算量。"
+        message="异常签收（含拒收）只登记到货情况：库存已按实发出库，此处不冲减，也不改动订单结算量。"
         type="warning"
         show-icon
       />
@@ -247,7 +246,7 @@ import {
 } from './delivery-types';
 import {deliveryPlanApi} from '/@/api/business/scm/delivery-plan-api';
 
-/** 状态视觉与列表页同口径：草稿 = 待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
+/** 状态配色与列表页一致。 */
 const ROUTE_STATUS_TONE: Record<RouteStatus, ScmStatusTone> = {
   DRAFT: 'warning',
   PLANNED: 'processing',
@@ -270,8 +269,7 @@ const routeId = ref<Id>(),
 const candidates = ref<InstanceType<typeof CandidateOrderModal>>(),
   printer = ref<InstanceType<typeof RoutePrint>>();
 const {canViewAmount, canSign, hasPerm} = useDeliveryPermission();
-// 编辑权 = 草稿态 ∧ route:update；权限判定与 v-privilege 共用 hasPerm 一份口径
-// （超管在其内部放行），不在这里再抄一次 administratorFlag。
+// 草稿态且有编辑权才能改线路；超级管理员的放行在 hasPerm 里处理
 const canEdit = computed(() => detail.value?.route.status === 'DRAFT' && hasPerm(DELIVERY_PERM.ROUTE_UPDATE));
 const startPoint = computed<MapPoint>(() => ({
   longitude: detail.value?.route.startLongitude,
@@ -291,9 +289,7 @@ const mapPoints = computed<MapPoint[]>(() => [
     }`,
   })) ?? []),
 ]);
-// ------------------------------------------------------------------
 // 辅助排线建议
-// ------------------------------------------------------------------
 
 const planBusy = ref(false);
 const planLoading = ref(false);
@@ -304,7 +300,7 @@ const planError = ref('');
 const proposal = ref<DeliveryPlanProposal>();
 const planHistory = ref<DeliveryPlanProposal[]>([]);
 
-/** 禁用「生成建议」的原因：区分草稿态与终态，避免只说「只有草稿线路可以…」。 */
+/** 不能生成建议的原因，按线路状态给出。 */
 const planDisabledReason = computed(() => {
   const status = detail.value?.route.status;
   if (status === 'DISPATCHED' || status === 'COMPLETED') {
@@ -328,7 +324,7 @@ async function loadPlan(id: Id) {
   planHistory.value = [];
   proposal.value = undefined;
   try {
-    // 加载失败由建议面板内的 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由建议面板内的 Alert 提示
     const result = await deliveryPlanApi.history(id, {suppressGlobalErrorMessage: true});
     if (!currentPlanContext(id, context) || request !== planRequest) return;
     planHistory.value = result.data ?? [];
@@ -413,33 +409,26 @@ const printLoading = ref(false);
 const printLoaded = ref(false);
 
 const canPrint = computed(() => ['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.value?.route.status ?? ''));
-/**
- * 展示用的客户范围筛选：打印状态的事实在服务端（生成时按当前有效订单重算），
- * 这里只决定列表可见行与未勾选时的提交范围。
- */
+/** 客户打印状态筛选，只影响列表显示和未勾选时的提交范围。 */
 const customersShown = computed(() =>
   customersView.value.filter((item) => customerStatusFilter.value === 'ALL' || item.printStatus === customerStatusFilter.value)
 );
 const canRecordPrint = computed(() =>
   printMode.value === 'orders'
     ? orderSelection.value.length > 0
-    : // 勾选行即候选范围；未勾选时必须给出收窄的状态范围，
-      // 否则一次请求会无选择地重打整条线路。
+    : // 未勾选客户时分页要限定状态范围，避免重打整条线路
       customerSelection.value.length > 0 || (customerStatusFilter.value !== 'ALL' && customersShown.value.length > 0)
 );
 const printTargetCount = computed(() =>
   printMode.value === 'orders' ? orderSelection.value.length : customerSelection.value.length || customersShown.value.length
 );
-/** 出库单只在发车之后存在；DRAFT / PLANNED 显示它只会让人以为漏了什么没填。 */
+/** 出库单只在发车后存在，之前不显示。 */
 const showOutbound = computed(() => ['DISPATCHED', 'COMPLETED'].includes(detail.value?.route.status ?? ''));
 
-/**
- * 履约视图只看仍挂在线路上的订单：CANCELLED 线路的详情会连 RELEASED 行一起返回，
- * 那些行已退出履约流程，留着它们会让人对着一条已取消的订单去点签收。
- */
+/** 履约只显示仍在线路上的订单，已移出的行不再展示。 */
 const activeOrders = computed<RouteOrder[]>(() => (detail.value?.orders ?? []).filter((order) => order.assignmentStatus === 'ACTIVE'));
 
-// 「没有行」有三种原因，文案要能区分：线路没订单 / 线路已取消，用户下一步要做的事完全不同。
+// 区分「线路没订单」和「线路已取消」，两种情况下一步不一样
 const fulfillmentEmptyText = computed(() =>
   detail.value?.route.status === 'CANCELLED' ? '线路已取消，不再有履约动作' : '线路还没有订单，请先在「线路订单」页加入订单'
 );
@@ -448,7 +437,7 @@ async function loadPrint() {
   if (routeId.value == null) return;
   printLoading.value = true;
   try {
-    // 打印视图加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 打印视图加载失败由页内的 Alert 提示
     const [o, c] = await Promise.all([
       deliveryApi.ordersView(routeId.value, {suppressGlobalErrorMessage: true}),
       deliveryApi.customersView(routeId.value, {suppressGlobalErrorMessage: true}),
@@ -465,8 +454,7 @@ async function loadPrint() {
 
 watch(tab, (value) => {
   if (value === 'print' && !printLoaded.value) loadPrint();
-  // 建议按需加载，查看计划地图不依赖建议生成。
-  // 但每次切回来都重取 —— 建议可能已被别人生成/应用，缓存旧结果会让人对着过期建议点「应用」。
+  // 每次切回建议页都重新加载，避免拿过期建议去「应用」
   if (value === 'plan' && routeId.value != null) void loadPlan(routeId.value);
   // Tab 落进 URL：刷新与分享都能回到同一页；未知取值不进 URL。
   if (route.query.tab !== value) {
@@ -483,7 +471,7 @@ async function recordPrint() {
     if (printMode.value === 'orders') {
       await deliveryApi.printOrders(route.id, route.version, orderSelection.value);
     } else {
-      // 未勾选行即「本状态范围内整条线路」；勾选时名单只作候选范围，状态由服务端复核。
+      // 未勾选时按状态范围打印整条线路；勾选时只作候选范围
       await deliveryApi.printCustomers(
         route.id,
         route.version,
@@ -511,11 +499,11 @@ async function reload() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示
     const result = await deliveryApi.detail(routeId.value, {suppressGlobalErrorMessage: true});
     if (current === generation) {
       detail.value = result.data;
-      // 线路结构（ACTIVE 订单集合）变化后，已加载的打印视图与旧选中项即失效，一并刷新。
+      // 线路订单变了，打印视图和已选项一起刷新
       if (printLoaded.value) {
         orderSelection.value = [];
         customerSelection.value = [];
@@ -536,10 +524,7 @@ function currentRouteId(): Id | undefined {
   return typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id) ? id : undefined;
 }
 
-/**
- * Tab 取值的唯一归一入口：白名单外的值回落基础信息，辅助排线还要求查询权 ——
- * 否则从 URL 直接改 `?tab=plan` 就能把这一页显示出来。
- */
+/** 未知 Tab 回落到基础信息；辅助排线还要有查询权限。 */
 function normalizeTab(value: unknown): string {
   const next = typeof value === 'string' && TAB_KEYS.includes(value) ? value : 'base';
   return next === 'plan' && !hasPerm(DELIVERY_PERM.PLAN_QUERY) ? 'base' : next;
@@ -563,8 +548,7 @@ function openRoute(id: Id, initialTab: string) {
   printMode.value = 'orders';
   customerStatusFilter.value = 'ALL';
   customerFilter.value = 'ALL';
-  // 换线路时签收弹窗一起关掉并清掉目标行：里面带的是上一条线路的行版本与订单号，
-  // 留着会把签收登记到另一条线路的订单上。
+  // 换线路时关掉签收弹窗，避免把签收登记到上一条线路的订单
   signVisible.value = false;
   signTarget.value = undefined;
   signError.value = '';
@@ -589,10 +573,7 @@ function syncFromRoute() {
   if (tab.value !== next) tab.value = next;
 }
 
-/**
- * 返回线路管理：把详情 URL 上的列表筛选原样带回列表（列表按同一套键还原），
- * 不走浏览器历史回退 —— 直接打开详情时上一页可能已经离开本系统。
- */
+/** 返回线路管理时把筛选原样带回，不用浏览器后退。 */
 function backToList() {
   const filters = {...route.query};
   delete filters.tab;
@@ -607,10 +588,7 @@ async function refreshAfterMutation() {
   await reload();
 }
 
-/**
- * 发车：PLANNED → DISPATCHED，服务端在同一事务内按分拣实发量生成一张出库单并扣库存。
- * 之后不能回退（要修正只能走退货新增反向事实），因此必须二次确认。
- */
+/** 发车会按实发量生成出库单并扣库存，且不能撤销，所以要二次确认。 */
 function dispatch() {
   const route = detail.value?.route;
   if (!route) return;
@@ -622,8 +600,7 @@ function dispatch() {
       busy.value = true;
       try {
         const result = await deliveryApi.dispatch(route.id, route.version);
-        // 整条线路实发为 0 时不存在出库单，那是合法成功：文案必须说清「为什么没有单号」，
-        // 否则用户会把空号当成发车失败再点一次。
+        // 实发为 0 时不生成出库单，属于正常成功，提示里要说明
         message.success(
           result.data.outboundNo
             ? `已发车：${result.data.orderCount} 张订单进入在途，出库单 ${result.data.outboundNo}`
@@ -637,11 +614,7 @@ function dispatch() {
   });
 }
 
-/**
- * 完成线路：DISPATCHED → COMPLETED。未全部签收时由服务端 41117 拒绝 ——
- * 刻意不在前端按当前行数预先禁用按钮：详情可能是别人签收前的旧快照，
- * 按旧快照禁用会把「其实已经能完成」的线路锁死在本页。
- */
+/** 完成线路。不在前端预先禁用，因为详情可能是签收前的旧数据，交给服务端判断。 */
 function complete() {
   const route = detail.value?.route;
   if (!route) return;
@@ -663,8 +636,7 @@ function complete() {
 }
 
 function goOutbound(outboundNo: string) {
-  // 出库单归库存域：这里只带走编号一个筛选条件，跳过去看 SALES_OUT 事实，
-  // 不在配送页复制数量或金额口径。
+  // 只带出库单号跳转，数量和金额由库存页自己展示
   void router.push({path: '/inventory/inventory-outbound-list', query: {outboundNo}});
 }
 
@@ -685,8 +657,7 @@ async function submitSign() {
   const route = detail.value?.route;
   if (!target || !route) return;
   const reason = signForm.value.reason.trim();
-  // 异常签收无原因在前端就拦住：后端 41118 是同一口径，但要等一次往返才看得见，
-  // 而弹窗若已被关掉，这句话只能重录一遍。
+  // 异常签收没填原因就在前端拦住，省一次往返
   if (signForm.value.result === 'EXCEPTION' && !reason) {
     signError.value = '异常签收必须填写原因';
     return;
@@ -694,8 +665,7 @@ async function submitSign() {
   busy.value = true;
   signError.value = '';
   try {
-    // version 用的是这一行打开弹窗时读到的行版本：同一线路上不同订单要能并发签收，
-    // 传线路版本等于用线路版本覆盖别人对这一行的签收。
+    // 提交订单行的版本，不能用线路版本
     await deliveryApi.sign(route.id, target.orderId, {
       version: target.version,
       result: signForm.value.result,
@@ -711,15 +681,12 @@ async function submitSign() {
   }
 }
 
-/**
- * 可签收 = 线路在途 ∧ 该行在途未签，两者缺一服务端都会拒。
- * 权限由 v-privilege 摘节点，这里只判状态，避免留下「能点但必然失败」的入口。
- */
+/** 线路已发车且该订单在途，才能签收。 */
 function signable(record: RouteOrder): boolean {
   return detail.value?.route.status === 'DISPATCHED' && SIGNABLE_FULFILLMENT.includes(record.fulfillmentStatus);
 }
 
-/** 不可签收的行要说清原因：终态已登记、未发车、线路已取消是三件不同的事。 */
+/** 不能签收时说明具体原因。 */
 function signHintOf(record: RouteOrder): string {
   if (record.fulfillmentStatus === 'SIGNED' || record.fulfillmentStatus === 'EXCEPTION') {
     return '已登记';

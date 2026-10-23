@@ -22,7 +22,7 @@ export const SCM_SORTING_RESULT_ENUM: SmartEnum<string> = {
   OVER: {value: 'OVER', desc: '多拣'},
 };
 
-/** 商品类型快照：标品按订购量核对，非标品以这里录入的实重为准。 */
+/** 商品类型：标品按订购量核对，非标品以录入的实重为准。 */
 export const SCM_SORTING_PRODUCT_TYPE_ENUM: SmartEnum<string> = {
   STANDARD: {value: 'STANDARD', desc: '标品'},
   NON_STANDARD: {value: 'NON_STANDARD', desc: '非标品'},

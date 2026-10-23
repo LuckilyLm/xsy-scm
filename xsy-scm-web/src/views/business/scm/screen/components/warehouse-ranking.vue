@@ -28,7 +28,7 @@ import ScreenPanel from './screen-panel.vue';
 import {formatQty, toNumber} from '../format';
 import type {WarehouseDistribution} from '../types';
 
-/** 仓库排行使用横向条形便于显示长仓库名。不同商品单位的数量不可直接换算，展示总数只用于相对比较。 */
+/** 横向条形便于显示长仓库名；数量只用于相对比较。 */
 const props = defineProps<{distribution: WarehouseDistribution[]}>();
 
 const total = computed(() => props.distribution.reduce((acc, cur) => acc + toNumber(cur.quantity), 0));
@@ -43,7 +43,7 @@ const rows = computed(() => {
       return {
         name: item.warehouseName,
         qtyText: formatQty(item.quantity),
-        // 条形长度与百分比文案共用同一个值，避免「条很长但写着 0%」
+        // 条形长度和百分比用同一个值
         pctText: `${pct.toFixed(1)}%`,
       };
     });
@@ -53,11 +53,7 @@ const rows = computed(() => {
 <style lang="less" scoped>
 @import '../styles/variables.less';
 
-// 仓库数量不受控（演示库 7 个、生产可能更多），固定 167px 的面板体放不下时必须
-// 自己滚动，而不是把行撑出面板边界 —— 溢出会让行列表格压到底部趋势带上，
-// 表现为「排版错乱」（2026-10-08 实测：7 行需要 696px，容器仅 167px，溢出 529px）。
-// 这里不再用 justify-content: space-around：它只分配剩余空间，不会压缩内容，
-// 内容超出时照样溢出。改为正常堆叠 + overflow-y: auto（.scm-scroll 提供细滚动条）。
+// 仓库多时在面板内滚动，不撑出边界。
 .scm-wh-list {
   flex: 1;
   min-height: 0;
@@ -97,7 +93,7 @@ const rows = computed(() => {
   color: @tech-cyan;
 }
 
-// 百分比与名称同行（贴在右侧），不压在条形上 —— 条形短时压在条上的文字看不清
+// 百分比放在名称行右侧
 .scm-wh-pct {
   flex: 0 0 48px;
   text-align: right;

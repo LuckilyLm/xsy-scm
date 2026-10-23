@@ -1,50 +1,29 @@
-/*
- * 水印
- *
- */
+/* 页面水印 */
 
 import dayjs from 'dayjs';
 
-/**
- *  水印DOM id
- */
+/** 水印 DOM id */
 const WATER_MARK_DOM_ID = 'smart_admin_water_mark';
 let smartAdminWaterMarkIntervalId: NodeJS.Timer | null = null;
 
-/**
- *
- * 因为modal的z-index为1000，所以为了modal的黑色背景隐藏掉，z-index为 999
- *
- * @param id
- * @param str
- * @returns
- */
-
 function setWatermark(id, str) {
-  //删掉之前的水印
+  // 删掉之前的水印
   if (document.getElementById(WATER_MARK_DOM_ID) !== null) {
     document.getElementById(WATER_MARK_DOM_ID).remove();
   }
 
   str = str + ' ' + dayjs().format('YYYY-MM-DD HH:mm');
 
-  //创建一个画布
   const can = document.createElement('canvas');
-  //设置画布的长宽
   can.width = 400;
   can.height = 200;
 
   const cans = can.getContext('2d');
-  //旋转角度
   cans.rotate((-15 * Math.PI) / 150);
   cans.font = '16px Microsoft JhengHei';
-  //设置填充绘画的颜色、渐变或者模式
   cans.fillStyle = 'rgba(190, 190, 190, 0.30)';
-  //设置文本内容的当前对齐方式
   cans.textAlign = 'left';
-  //设置在绘制文本时使用的当前文本基线
   cans.textBaseline = 'middle';
-  //在画布上绘制填色的文本（输出的文本，开始绘制文本的X坐标位置，开始绘制文本的Y坐标位置）
   cans.fillText(str, can.width / 8, can.height / 2);
   const div = document.createElement('div');
   div.id = WATER_MARK_DOM_ID;
@@ -57,10 +36,7 @@ function setWatermark(id, str) {
   div.style.height = '100%';
   div.style.background = 'url(' + can.toDataURL('image/png') + ') left top repeat';
 
-  // 容器不存在时必须静默返回：数据大屏（/#/screen）等页面是 SmartLayout 之外的独立路由，
-  // 没有水印容器，而 set() 注册的 window.onresize 是全局的、离开 Layout 也不会注销，
-  // 于是只要在大屏上缩放窗口就会抛
-  // "TypeError: Cannot read properties of null (reading 'appendChild')"。
+  // 大屏等独立路由没有水印容器，静默返回
   const container = document.getElementById(id);
   if (container === null) {
     return;
@@ -75,16 +51,15 @@ const watermark = {
   hide: function () {
     document.getElementById(WATER_MARK_DOM_ID).style.display = 'hide';
   },
-  // 该方法只允许调用一次
+  // 只允许调用一次
   set: function (id, str) {
-    // 如果存在水印，则不允许再调用了
     if (document.getElementById(WATER_MARK_DOM_ID) !== null) {
       return;
     }
 
     setWatermark(id, str);
 
-    //每隔1分钟检查一次水印
+    // 每分钟重绘一次
     smartAdminWaterMarkIntervalId = setInterval(() => {
       setWatermark(id, str);
     }, 60000);

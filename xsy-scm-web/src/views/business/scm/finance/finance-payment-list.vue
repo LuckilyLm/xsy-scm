@@ -254,11 +254,7 @@ const reverseOpen = ref(false),
   reverseError = ref(''),
   reverseReason = ref(''),
   reverseRow = ref<FinancePayment | null>(null);
-/**
- * 表单模型必须是稳定对象：原来写 `:model="{...addForm, supplierId, selectedRefund}"`，
- * 每次渲染都会新建对象，而 change 触发的校验发生在重渲染之前，读到的是上一份快照——
- * 选了供应商仍提示「请选择供应商」。付款对象与退款来源因此并入同一个模型。
- */
+/** 表单模型必须保持同一个对象；每次渲染新建对象会让校验读到旧值。付款对象与退款来源也放在这个模型里。 */
 const addForm = reactive<
   Omit<FinancePaymentAddForm, 'counterpartyId'> & {
     counterpartyType: 'CUSTOMER' | 'SUPPLIER';
@@ -278,7 +274,7 @@ const addForm = reactive<
   selectedRefund: null,
 });
 const addFormRef = ref();
-/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+/** 必填项逐项校验，错误显示在输入框下方。 */
 const addRules = {
   counterpartyType: [{required: true, message: '请选择往来方类型', trigger: 'change'}],
   supplierId: [{required: true, message: '请选择供应商', trigger: 'change'}],
@@ -301,12 +297,12 @@ const addRules = {
   method: [{required: true, message: '请选择付款方式', trigger: 'change'}],
   paidAt: [{required: true, message: '请选择付款时间', trigger: 'change'}],
 };
-// 查询是跨对手方的：两组方式都要给，否则筛选不到客户退款的在线支付
+// 查询跨客户和供应商，两组方式都要给
 const methodOptions = Object.values({...SCM_FINANCE_PAYMENT_METHOD_ENUM, ...SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM}).map((item) => ({
   label: item.desc,
   value: item.value,
 }));
-// 新增表单按对手方给选项，与后端 ck_finance_payment_method 的分组一致
+// 新增表单按往来方类型给选项，与后端约束一致
 const addMethodOptions = computed(() =>
   Object.values(addForm.counterpartyType === 'SUPPLIER' ? SCM_FINANCE_PAYMENT_METHOD_ENUM : SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM).map((item) => ({
     label: item.desc,
@@ -322,7 +318,7 @@ const pendingOptions = [
 ];
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
-/** 往来方类型（客户 / 供应商）决定这笔付款的性质，与名称并列成独立列。 */
+/** 往来方类型：客户或供应商。 */
 function counterpartyTypeText(value?: string | null): string {
   return value ? SCM_FINANCE_COUNTERPARTY_TYPE_ENUM[value]?.desc ?? value : '—';
 }
@@ -410,7 +406,7 @@ function selectRefund(option: FinanceRefundOption) {
 }
 
 async function submitAdd() {
-  // 必填项走表单校验：错误显示在对应输入框下方，顶部 alert 只留服务端错误
+  // 必填项由表单校验，顶部 alert 只显示服务端错误
   try {
     await addFormRef.value?.validate();
   } catch {
@@ -441,7 +437,7 @@ async function submitAdd() {
     addOpen.value = false;
     await queryData();
   } catch {
-    // 登记失败只走全局 toast；弹窗里的 addError 留给本地校验
+    // 登记失败由全局 toast 提示；addError 只用于本地校验
   } finally {
     addSaving.value = false;
   }
@@ -465,7 +461,7 @@ async function submitReverse() {
     reverseOpen.value = false;
     await queryData();
   } catch {
-    // 反向失败只走全局 toast；弹窗里的 reverseError 留给本地校验
+    // 反向失败由全局 toast 提示；reverseError 只用于本地校验
   } finally {
     reverseSaving.value = false;
   }

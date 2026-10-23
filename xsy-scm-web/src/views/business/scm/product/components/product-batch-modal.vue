@@ -1,4 +1,4 @@
-<!-- PCO-1 批量维护：上下架 / 主档启停、改分类、打标签三种命令共用一个入口。 -->
+<!-- 批量维护：状态、分类、标签三种命令共用一个弹窗。 -->
 <template>
   <a-modal v-model:open="visible" :title="TITLES[command]" :confirm-loading="saving" :width="620" @ok="submit" @cancel="visible = false">
     <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
@@ -105,13 +105,13 @@ async function submit() {
   } catch {
     return;
   }
-  // 两个状态下拉都允许留空（留空＝不改），所以「至少选一个」只能在这里判，不适合写成 rules。
+  // 两个状态都可留空（表示不改），「至少选一个」只能手写判断。
   if (command.value === 'STATUS' && !form.status && !form.masterStatus) {
     error.value = '请至少选择一个要修改的状态';
     return;
   }
   error.value = '';
-  // 「停止引用」会改变后续单据的可选范围，影响面放在操作时确认，不长期挂在弹窗上。
+  // 停止引用会影响后续单据，提交前再确认一次。
   if (command.value === 'STATUS' && form.masterStatus === 'DISABLED') {
     try {
       await Modal.confirm({
@@ -133,7 +133,7 @@ async function submit() {
         ? await productApi.batchCategory(items.value, form.categoryId as ProductId)
         : await productApi.batchTags(items.value, form.tagIds, form.mode);
     const result = response.data;
-    // 预校验失败时后端一行都不写，因此这里保持弹窗打开，让用户按行修正后重试。
+    // 整批没写入时保持弹窗打开，让用户按行修正后重试。
     if (result.failedCount) {
       failures.value = result.failures;
       hiddenFailures.value = result.failedCount - result.failures.length;
@@ -143,7 +143,7 @@ async function submit() {
     visible.value = false;
     emit('done');
   } catch {
-    // 批量维护失败只走全局 toast；弹窗里的 error 留给本地校验与逐行失败清单
+    // 保存失败由全局 toast 提示；error 只用于本地校验
   } finally {
     saving.value = false;
   }

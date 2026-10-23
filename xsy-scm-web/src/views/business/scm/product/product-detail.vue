@@ -105,7 +105,7 @@ const product = ref<ProductRow>(),
   error = ref('');
 let requestId = 0;
 
-/** 深链 spuId 是详情页唯一的上下文来源；非纯数字视为无效。 */
+/** 商品编号来自路由，非纯数字视为无效。 */
 const spuId = computed(() => {
   const id = route.query.spuId;
   return typeof id === 'string' && /^\d+$/.test(id) ? id : '';
@@ -123,7 +123,7 @@ async function load() {
   error.value = '';
   product.value = undefined;
   try {
-    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页内 Alert 提示，不再弹全局 toast
     const response = await productApi.detail(id, {suppressGlobalErrorMessage: true});
     if (request === requestId) product.value = response.data;
   } catch (e) {

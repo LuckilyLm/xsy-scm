@@ -1,4 +1,4 @@
-/** 分拣数量用四位小数字符串：null 表示未录入，"0.0000" 表示已录入零。任务和明细各自校验版本。分拣只记录作业数量，不修改订单或库存。 */
+/** 分拣数量用四位小数字符串：null 表示未录入，"0.0000" 表示已录入零。分拣只记录作业数量，不改订单和库存。 */
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 
 /** 后端主键是 `Long`，经 JSON 数字或字符串抵达前端；一律不参与算术。 */
@@ -10,7 +10,7 @@ export type SortingTaskStatus = 'PENDING' | 'SORTING' | 'COMPLETED' | 'CANCELLED
 /** 明细行的分拣结果；非 `NORMAL` 时后端强制要求原因。 */
 export type SortingLineResult = 'NORMAL' | 'SHORT' | 'OUT_OF_STOCK' | 'OVER';
 
-/** 商品类型快照（不做单位换算，非标品这里录的是实重）。 */
+/** 商品类型（不做单位换算，非标品录的是实重）。 */
 export type SortingProductType = 'STANDARD' | 'NON_STANDARD';
 
 /** 明细占用位：`ACTIVE` 才代表待办量；随取消释放的历史行仍随详情返回。 */
@@ -28,12 +28,12 @@ export interface SortingTaskQuery extends SortingPage {
   warehouseId?: Id;
   assigneeEmployeeId?: Id;
   unassignedOnly?: boolean;
-  /** 送货时间区间（半开），按建单时冻结的快照过滤。 */
+  /** 送货时间区间（半开），按建单时记录的时间过滤。 */
   deliveryTimeFrom?: string;
   deliveryTimeTo?: string;
   /** 预配送波次（线路维度由它表达）。 */
   deliveryWave?: string;
-  /** 供应商来源，按任务上冻结的供应商过滤。 */
+  /** 按任务上的供应商过滤。 */
   supplierId?: Id;
 }
 
@@ -41,7 +41,7 @@ export interface SortingSummaryQuery extends SortingPage {
   keyword?: string;
   warehouseId?: Id;
   taskStatus?: SortingTaskStatus;
-  /** 建单时冻结的送货日，按 Asia/Shanghai 日期查询。 */
+  /** 建单时记录的送货日，按北京时间日期查询。 */
   deliveryDate?: string;
 }
 
@@ -63,11 +63,11 @@ export interface SortingTask {
   itemCount: number;
   processedCount: number;
   remark?: string | null;
-  /** 建单时冻结的送货时间；筛选与展示都按它。 */
+  /** 建单时记录的送货时间，筛选和展示都按它。 */
   deliveryTimeSnapshot?: string | null;
-  /** 预配送波次；线路维度由它表达。 */
+  /** 预配送波次。 */
   deliveryWave?: string | null;
-  /** 建单时显式指定的供应商来源与名称快照。 */
+  /** 建单时选定的供应商。 */
   supplierId?: Id | null;
   supplierNameSnapshot?: string | null;
   createdAt: string;
@@ -82,7 +82,7 @@ export interface SortingTask {
 /** 分拣清单行的来源：订单行 / 满赠赠品权益。 */
 export type SortingItemSourceType = 'ORDER_ITEM' | 'PROMOTION_GIFT';
 
-/** 分拣明细的计划量在建单时确定。订单行与促销赠品分开读取；赠品不记录订单行 ID，也不回写分拣量。 */
+/** 分拣明细。赠品行没有订单行 ID，也不回写分拣量。 */
 export interface SortingTaskItem {
   id: Id;
   taskId: Id;
@@ -114,7 +114,7 @@ export interface SortingTaskItem {
   sourceType?: SortingItemSourceType | null;
 }
 
-/** 分次登记只追加待确认事件；最终数量必须显式确认，正式出库不读取这些事件。 */
+/** 分次登记只追加记录；最终数量要单独确认，出库不读这些记录。 */
 export interface SortingPartPayload {
   taskItemId: Id;
   version: number;
@@ -225,12 +225,7 @@ export interface SortingPrintResult {
   generatedAt: string;
 }
 
-/**
- * `SortingTaskCreateForm`：仓库由操作人显式选择，不从订单 / 客户 / 线路推断。
- *
- * `assigneeEmployeeId` 收窄成 `number`：原生 `EmployeeSelect` 的 `value` prop 声明为
- * `[Number, Array]`，传 `string | number` 在 vue-tsc 下会报 TS2322；后端本来就是 `Long`。
- */
+/** 建单参数：仓库由操作人选择，不从订单或线路推断。员工 id 用 number，符合选择器类型。 */
 export interface SortingTaskCreatePayload {
   warehouseId: Id;
   assigneeEmployeeId?: number | null;
@@ -245,12 +240,7 @@ export interface SortingAssignPayload {
   reason?: string | null;
 }
 
-/**
- * `SortingEntryItemForm`：一行明细的分拣结果。
- *
- * `sortedQuantity` 以字符串提交（4 位定点），`version` 是这一行读到的版本 ——
- * 一次批量录入里某行被他人改过只该顶掉那一行所在的这次提交，不能被任务版本掩盖。
- */
+/** 一行明细的分拣结果；version 是行版本，不能用任务版本代替。 */
 export interface SortingEntryItemPayload {
   id: Id;
   version: number;
@@ -273,10 +263,7 @@ export interface SortingActionPayload {
 export type SortingResponse<T> = ScmResponse<T>;
 export type SortingPageResponse<T> = ScmResponse<ScmPage<T>>;
 
-/**
- * 后端消息提取：范围守卫拒绝（30005）与状态机拒绝（41121）都必须把服务端 `msg` 原样显示，
- * 前端不改写成人话 —— 改写会让「你无权操作」与「状态不允许」看起来是同一件事。
- */
+/** 错误提示直接用后端消息，不改写：无权限和状态不允许要能分得清。 */
 export function sortingError(error: unknown): string {
   const response = error as {
     data?: {msg?: string};
@@ -286,18 +273,16 @@ export function sortingError(error: unknown): string {
   return response?.data?.msg ?? response?.response?.data?.msg ?? response?.message ?? '操作失败，请刷新后重试';
 }
 
-/** 定点数量文本：`null` 显示破折号，其余原样透传，不补零、不换算精度。 */
+/** 数量文本：空值显示「—」，其余原样显示。 */
 export function quantityText(value: string | null | undefined): string {
   return value === null || value === undefined || value === '' ? '—' : value;
 }
 
-// ------------------------------------------------------------------
-// 电子秤读数（ADM-11）
-// ------------------------------------------------------------------
+// 电子秤读数
 
 export type SortingScaleStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 
-/** 电子秤事件分别返回原始读数和人工接受数量。设备采集时间与服务端接收时间不同，重复上报不代表处理失败。 */
+/** 电子秤事件分别返回原始读数和人工接受数量；重复上报不代表处理失败。 */
 export interface SortingScaleEvent {
   id: Id;
   eventKey: string;

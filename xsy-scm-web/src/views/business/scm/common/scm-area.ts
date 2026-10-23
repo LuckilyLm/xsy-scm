@@ -1,19 +1,10 @@
-/*
- * 省 / 市 / 区选择的「路径 ↔ 编码 + 名称快照」双向转换（纯函数，可被 `node --test` 直接单测）
- *
- * 三张主档（customer / supplier / warehouse）各自存 6 列：三级编码 + 三级名称快照。
- * 名称只服务展示与导出，不参与任何关联，因此必须由同一次选择写入，不能事后按编码反查——
- * 区划会调整，快照要忠于当时。转换集中在这里，避免三个表单各写一遍下标拆解。
- *
- * 注意：`customer / supplier` 的 `empty*()` 初值各自显式列出六列，没有借用这里的函数——
- * 那两个模块要能被 `node --test` 直接加载，而本仓库纪律是 node 加载的模块不得有相对值导入。
- */
+/* 省市区选择与六列编码、名称之间的转换。名称只用于展示，随选择一起写入。 */
 
 import type {AreaColumns, AreaNode} from '/@/types/business/scm/area';
 
 const LEVELS = ['province', 'city', 'district'] as const;
 
-/** 6 列的联合键；直接写 `columns[codeKey(..)]` 会被 TS 收窄成 `null`，故统一经 `Draft` 赋值。 */
+/** 六列的联合键。 */
 type ColumnKey = keyof AreaColumns;
 type Draft = Record<ColumnKey, AreaColumns[ColumnKey]>;
 
@@ -56,12 +47,7 @@ export function areaColumnsOf(nodes?: readonly AreaNode[] | null): AreaColumns {
   return columns;
 }
 
-/**
- * 已存的 6 列还原成级联显示值，供编辑表单回填。
- *
- * 遇到第一个缺失的层级即停止：`a-cascader` 的取值必须是一条连续路径，
- * 拼成「省 + 空 + 区」会让组件显示异常。存量行只解析到省时返回单元素数组。
- */
+/** 把已保存的六列还原成级联显示值；遇到缺失层级就停止。 */
 export function areaNodesOf(columns?: Partial<AreaColumns> | null): AreaNode[] {
   const nodes: AreaNode[] = [];
   if (!columns) {

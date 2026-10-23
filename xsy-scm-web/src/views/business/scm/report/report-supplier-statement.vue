@@ -199,7 +199,7 @@ function printVersion() {
     '<!doctype html><html><head><meta charset="utf-8"><style>body{font:12px Arial,sans-serif;color:#222;padding:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:5px}h2{text-align:center}</style></head><body></body></html>'
   );
   doc.close();
-  // Vue has already escaped all external text; populate the complete row set using textContent.
+  // Vue 已经把外部文本转义过，这里用 textContent 填完整行
   doc.body.appendChild(printArea.value.cloneNode(true));
   doc.body.querySelector('.statement-lines')?.remove();
   const table = doc.createElement('table');

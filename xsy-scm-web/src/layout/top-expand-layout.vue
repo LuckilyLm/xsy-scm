@@ -284,7 +284,7 @@ console.log(33, token.value);
     width: 4px;
   }
 
-  /* 与 side-layout.vue 同一口径：不常驻滚动条，滑块只在 hover 侧栏时显形 */
+  /* 与 side-layout.vue 一致：不常驻滚动条，hover 侧栏时才显示滑块 */
   .side-menu::-webkit-scrollbar-thumb {
     border-radius: 10px;
     background: transparent;

@@ -1,9 +1,4 @@
-<!--
-  库存流水只读查询，来源单号可跳转至收货单列表。
-  时间筛选使用业务发生时刻 occurred_at，区间左闭右开；历史回填的写入时刻不参与筛选。
-  列按「谁 / 什么货 / 动了多少 / 动完剩多少」组织：仓库与商品规格的编码作为名称下方的
-  secondary text，期初量收进结存格的次要行，不再各占一列。
--->
+<!-- 库存流水只读查询，按业务发生时间筛选；业务单号可跳转收货单。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -57,14 +52,14 @@
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'occurredAt'">{{ datetime(record.occurredAt) }}</template>
         <template v-else-if="column.dataIndex === 'movementType'">
-          <!-- 流水表的 quantity 恒为正，方向只能由类型派生，故两者同格展示 -->
+          <!-- 数量恒为正，方向由类型显示 -->
           <span class="movement-type">
             <ScmStatusTag v-if="directionOf(record)" :tone="directionTone(directionOf(record))" :label="directionOf(record)" />
             <span>{{ movementTypeText(record.movementType, SCM_INVENTORY_MOVEMENT_TYPE_ENUM) }}</span>
           </span>
         </template>
         <template v-else-if="column.dataIndex === 'receiptNo'">
-          <!-- 入库显示收货单号、出库显示出库单号；两者是不同的跳转目标，故分开字段而非合并 -->
+          <!-- 入库跳收货单，出库只显示单号 -->
           <a v-if="record.receiptNo" @click="openReceipt(record.receiptNo)">{{ record.receiptNo }}</a>
           <span v-else-if="record.sourceDocumentNo">{{ record.sourceDocumentNo }}</span>
           <span v-else>—</span>
@@ -139,8 +134,7 @@ const loading = ref(false);
 const error = ref('');
 let requestId = 0;
 
-// 流水一行 = 一次库存变动。列按「何时 / 什么业务 / 哪张单 / 哪个仓 / 什么货 / 动多少 / 动完剩多少」排列；
-// 仓库与商品规格编码单独保留并默认收起；期初量仍是结存的对照行。
+// 一行就是一次库存变动；仓库和规格编码默认收起。
 type InventoryMovementColumn = ScmListColumn;
 const columns = ref<InventoryMovementColumn[]>([
   {title: '发生时间', dataIndex: 'occurredAt', width: 170},
@@ -159,13 +153,7 @@ const columns = ref<InventoryMovementColumn[]>([
 ]);
 const scrollX = computed(() => scmColumnsWidth(columns.value));
 
-/**
- * 入 / 出方向。
- *
- * 流水表的 `quantity` 恒为正，方向只能由类型派生，因此这里读的是与后端
- * `ScmInventoryMovementTypeEnum.getInbound()` 同源的 `SCM_INVENTORY_MOVEMENT_INBOUND_TYPES`，
- * 而不是在本页再写一份 IN / OUT 名单 —— 那样后端加类型时方向会判反，而数字看起来完全正常。
- */
+/** 入/出方向；用与后端相同的类型清单判断，避免新增类型时判反。 */
 function directionOf(record: InventoryMovement): '入' | '出' | undefined {
   const type = record.movementType;
   if (!type) {

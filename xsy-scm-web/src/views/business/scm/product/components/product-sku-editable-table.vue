@@ -143,7 +143,7 @@ import {emptySku, removeSku} from '../product-form-model';
 
 const props = defineProps<{modelValue: ProductSku[]; units: ProductUom[]}>();
 const emit = defineEmits<{'update:modelValue': [rows: ProductSku[]]}>();
-// 字典只给启用行；历史商品可能挂着已停用或字典外的单位，这些当前值要留在下拉里，否则编辑时看不出原值。
+// 字典只给启用单位；已停用或字典外的当前值也要留在下拉里。
 const unitOptions = computed(() => {
   const known = new Set(props.units.map((unit) => unit.name));
   const outside = [...new Set(props.modelValue.map((sku) => sku.saleUnit).filter((name) => name && !known.has(name)))];

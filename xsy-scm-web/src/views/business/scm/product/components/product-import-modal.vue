@@ -141,7 +141,7 @@ async function doImport() {
   }
 }
 
-/** 失败明细在前端即时导出，符合「本次即时查看/下载、不建历史批次表」的第一版约定。 */
+/** 失败明细当场下载，不留导入记录。 */
 function downloadErrors() {
   if (!result.value) return;
   const header = ['Excel行', '导入分组', '列', '原因码', '说明'];
@@ -171,7 +171,7 @@ defineExpose({show});
   margin-bottom: 8px;
 }
 
-/* 步骤序号：让「先下模板、再选文件、最后导入」的顺序在界面上立起来 */
+/* 步骤序号，突出操作顺序 */
 .import-step__index {
   display: inline-flex;
   align-items: center;
@@ -203,7 +203,7 @@ defineExpose({show});
     background-color 0.2s;
 }
 
-/* 选好文件后整块变浅绿：一眼能看出「文件已就位」 */
+/* 选中文件后整块变浅绿 */
 .import-drop.is-picked :deep(.ant-upload-drag) {
   border-color: #52c41a;
   background-color: #f6ffed;

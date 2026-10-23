@@ -30,7 +30,7 @@
           <a-form-item label="起点仓库" name="warehouseId">
             <a-select v-model:value="form.warehouseId" :options="warehouses.map((w) => ({value: w.id, label: w.name}))" placeholder="选择启用仓库" />
           </a-form-item>
-          <!-- 仓库未定位的提示紧贴字段，不额外撑开表单节奏 -->
+          <!-- 仓库未定位时在字段下方提示 -->
           <a-alert
             v-if="warehouse && !isLocated(warehouse)"
             class="field-warning"
@@ -130,7 +130,7 @@ async function open(route?: DeliveryRoute) {
     : {routeName: '', deliveryDate: dayjs().format('YYYY-MM-DD')};
   departure.value = route?.plannedDepartureTime ? dayjs(route.plannedDepartureTime).format('YYYY-MM-DD HH:mm:ss') : undefined;
   try {
-    // 选项加载失败由抽屉内 Alert 承担，不再让全局 toast 重复说一遍
+    // 选项加载失败由抽屉内的 Alert 提示
     const [w, d, v] = await Promise.all([
       deliveryApi.warehouses({suppressGlobalErrorMessage: true}),
       deliveryApi.drivers({suppressGlobalErrorMessage: true}),

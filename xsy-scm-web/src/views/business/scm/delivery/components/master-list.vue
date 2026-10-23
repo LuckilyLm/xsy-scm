@@ -131,12 +131,7 @@ const visible = ref(false),
 const form = ref<Partial<Driver & Vehicle>>({status: 'ENABLED'});
 const formRef = ref();
 
-/**
- * 逐项校验规则：错误显示在对应输入框下方，而不是顶部一条汇总红条。
- *
- * 「启用司机必须绑定系统员工」是跨字段约束（仅启用时要求），与服务端 requireBindableEmployee 同口径，
- * 放在这里提前挡掉必然失败的提交。
- */
+/** 校验错误显示在输入框下方。启用的司机必须绑定员工，与后端规则一致。 */
 const formRules = computed(() =>
   isDriver.value
     ? {
@@ -163,12 +158,7 @@ const formRules = computed(() =>
 let originalStatus = '',
   generation = 0;
 
-/**
- * 绑定员工下拉的桥接。
- *
- * 原生 `EmployeeSelect` 的 `value` prop 声明是 `[Number, Array]`，直接绑 `Id | null`
- * 会因 `string` / `null` 报 TS2322；这里把 `null` 折成 `undefined`，清空写回 `null`（解绑）。
- */
+/** 员工选择器只接受数字；清空时写回 null 表示解绑。 */
 const employeeValue = computed<number | undefined>({
   get: () => (form.value.employeeId == null ? undefined : Number(form.value.employeeId)),
   set: (value) => {
@@ -176,9 +166,7 @@ const employeeValue = computed<number | undefined>({
   },
 });
 
-// 列表按「谁 / 怎么联系 / 能不能派活」排列。司机编码是内部编号，不上列 ——
-// 它仍在查询条件与编辑表单里，隐藏列不影响任何提交载荷。
-// 车辆的两个数值列单位写进表头（kg / m³），避免同一列在不同车型下含义漂移。
+// 司机编码只在查询和编辑里出现，不上列表；车辆数值列的单位写在表头。
 const columns = computed<TableColumnsType>(() => [
   ...(isDriver.value
     ? [
@@ -202,7 +190,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示并可重试
     const result = await (isDriver.value
       ? deliveryApi.queryDrivers(query, {suppressGlobalErrorMessage: true})
       : deliveryApi.queryVehicles(query, {suppressGlobalErrorMessage: true}));
@@ -235,7 +223,7 @@ function open(row?: Driver | Vehicle) {
 }
 
 function save() {
-  // 校验交给 antd 表单：错误逐项显示在对应输入框下方，不再用顶部一条汇总红条。
+  // 校验交给表单，错误逐项显示在输入框下方
   formRef.value
     ?.validate()
     .then(() => {

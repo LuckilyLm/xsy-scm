@@ -103,7 +103,7 @@ let generation = 0;
 const formRef = ref();
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {reason: [{required: true, message: '请填写组单原因', trigger: 'blur'}]};
-// 候选池是调度能力，金额列仍按调用者的金额权限出现（服务端已把无权时的值抹成 null）。
+// 金额列按当前用户权限显示
 const columns = computed<TableColumnsType>(() => [
   {title: '订单号', dataIndex: 'orderNo', width: 170},
   {title: '客户', dataIndex: 'customerName', width: 160},
@@ -157,7 +157,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由弹窗内的 Alert 提示
     const result = await deliveryApi.candidates(query, {suppressGlobalErrorMessage: true});
     if (current === generation) {
       rows.value = result.data.list;

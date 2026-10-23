@@ -1,4 +1,4 @@
-<!-- PCO-1 辅助资料：计量单位与商品标签两个字典，供商品档案与后续采购/库存选择取值。 -->
+<!-- 辅助资料：计量单位和商品标签两个字典。 -->
 <template>
   <section aria-label="辅助资料">
     <a-card size="small" :bordered="false">

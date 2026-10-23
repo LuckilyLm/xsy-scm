@@ -1,4 +1,4 @@
-<!-- 供应商详情按 SCM 资料模板组织：页头、联系与地址、采购与账期、已关联商品快照和系统信息。已关联商品保留下单时的名称信息。 -->
+<!-- 供应商详情：页头、联系与地址、采购与账期、已关联商品、系统信息。关联商品保留下单时的名称。 -->
 <template>
   <a-card size="small" :bordered="false" :loading="loading">
     <header class="scm-detail-header">
@@ -94,7 +94,7 @@
           <a-empty v-if="!loading && relations.length === 0" description="尚未关联任何商品" />
         </section>
 
-        <!-- 系统信息：弱化卡片，编码与时间不占核心区域 -->
+        <!-- 系统信息 -->
         <section class="scm-detail-card scm-detail-card--muted scm-detail-block">
           <h3 class="scm-detail-card__title">系统信息</h3>
           <dl class="scm-field-list scm-field-list--3">
@@ -177,13 +177,13 @@ async function load() {
   supplier.value = undefined;
   relations.value = [];
   try {
-    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页内 Alert 提示，不再弹全局 toast
     const response = await supplierApi.detail(id, {suppressGlobalErrorMessage: true});
     if (request !== requestId) {
       return;
     }
     supplier.value = response.data;
-    // 关联关系是次要信息：单独取，失败不影响主体信息展示，也不弹全局提示。
+    // 关联商品单独加载，失败不影响主体信息。
     try {
       const relationResponse = await supplierSkuApi.listBySupplierId(id, {suppressGlobalErrorMessage: true});
       if (request === requestId) relations.value = relationResponse.data ?? [];

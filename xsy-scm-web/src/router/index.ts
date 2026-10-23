@@ -1,7 +1,4 @@
-/*
- * 路由
- *
- */
+/* 路由 */
 import nProgress from 'nprogress';
 import 'nprogress/nprogress.css';
 import {nextTick} from 'vue';
@@ -22,9 +19,9 @@ export const router = createRouter({
   scrollBehavior: () => ({left: 0, top: 0}),
 });
 
-// ----------------------- 路由加载前 -----------------------
+// 路由加载前
 router.beforeEach(async (to, from, next) => {
-  // 进度条开启
+  // 进度条开始
   nProgress.start();
 
   // 公共页面，任何时候都可以跳转
@@ -63,28 +60,26 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // 首页（ 需要登录 ，但不需要验证权限）
+  // 首页需要登录，不校验菜单权限
   if (to.path === HOME_PAGE_NAME) {
     next();
     return;
   }
 
-  // 下载路由对应的 页面组件，并修改组件的Name，如果修改过，则不需要修改
+  // 懒加载组件并补上 name，供 keep-alive 使用
   let toRouterInfo = routerMap.get(to.name);
   if (toRouterInfo && _.isFunction(toRouterInfo.component) && toRouterInfo.meta.renameComponentFlag === false) {
-    // 因为组件component 为 lazy load是个方法，所以可以直接执行 component()方法
+    // 懒加载组件是函数，直接调用
     toRouterInfo.component().then((val) => {
-      // 修改组件的name
       val.default.name = to.meta.componentName;
-      // 记录已经修改过 组件的name
       toRouterInfo.meta.renameComponentFlag = true;
     });
   }
 
-  // 设置tagNav
+  // 设置 tagNav
   useUserStore().setTagNav(to, from);
 
-  // 设置keepAlive
+  // 记录需要缓存的页面
   if (to.meta.keepAlive) {
     nextTick(() => {
       useUserStore().pushKeepAliveIncludes(to.meta.componentName);
@@ -94,26 +89,20 @@ router.beforeEach(async (to, from, next) => {
   next();
 });
 
-// ----------------------- 路由加载后 -----------------------
+// 路由加载后
 router.afterEach(() => {
   nProgress.done();
 });
 
-// ----------------------- 构建router对象 -----------------------
+// 构建路由对象
 const routerMap = new Map();
 
 export function buildRoutes(menuRouterList) {
   let menuList = menuRouterList ? menuRouterList : useUserStore().getMenuRouterList || [];
-  /**
-   * 1、构建整个路由信息
-   * 2、添加到路由里
-   */
   const routerList = [];
-  // 获取所有vue组件引用地址 用于构建路由
+  // 全部页面组件，按菜单路径匹配
   const modules = import.meta.glob('../views/**/**.vue');
-  // 获取所有vue组件 用于注入name属性 name属性用于keep-alive
 
-  //1、构建整个路由信息
   for (const e of menuList) {
     if (!e.menuId) {
       continue;
@@ -126,26 +115,26 @@ export function buildRoutes(menuRouterList) {
     }
     let route = {
       path: e.path.startsWith('/') ? e.path : `/${e.path}`,
-      // 使用【menuId】作为name唯一标识
+      // 用 menuId 作唯一的 name
       name: e.menuId.toString(),
       meta: {
-        // 数据库菜单(页面)id
+        // 数据库菜单 id
         id: e.menuId.toString(),
         // 组件名称
         componentName: e.menuId.toString(),
-        // 菜单展示
+        // 菜单标题
         title: e.menuName,
-        // 菜单图标展示
+        // 菜单图标
         icon: e.icon,
         // 是否在菜单隐藏
         hideInMenu: !e.visibleFlag,
-        // 页面是否keep-alive缓存
+        // 是否缓存页面
         keepAlive: e.cacheFlag,
         // 是否为外链
         frameFlag: e.frameFlag,
         // 外链地址
         frameUrl: e.frameUrl,
-        // 是否 rename了组件的名字
+        // 是否已补组件 name
         renameComponentFlag: false,
       },
     };
@@ -162,7 +151,7 @@ export function buildRoutes(menuRouterList) {
     routerMap.set(e.menuId.toString(), route);
   }
 
-  //2、添加到路由里
+  // 挂到布局路由下
   router.addRoute({
     path: '/',
     meta: {},

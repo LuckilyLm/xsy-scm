@@ -76,7 +76,7 @@
           <span class="scm-quantity">{{ progress(record.receivedProgress) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 行内只留当前状态最高频的两个动作，其余收进「更多」；各状态给出的动作集合与原行内按钮一致 -->
+          <!-- 当前状态最常用的两个动作常驻，其他操作收进“更多” -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <template v-if="record.status === 'DRAFT'">
               <a-button type="link" size="small" v-privilege="'scm:purchase:update'" @click="drawer?.open(record.id)"> 编辑 </a-button>
@@ -190,7 +190,7 @@ const shareModal = ref<InstanceType<typeof PurchaseShareModal>>();
 /** 打印对话框：单张与批量共用，只传要打印的采购单 id（渲染与冻结都在服务端）。 */
 const printBatch = reactive({open: false, ids: [] as (string | number)[]});
 
-/** 改派采购归属：独立动作、独立权限（scm:purchase:assign），带乐观锁 version；reason 可选留痕。 */
+/** 改派采购归属，需要独立权限，带乐观锁。 */
 const reassignVisible = ref(false);
 const reassignSaving = ref(false);
 const reassignTarget = ref<Order>();
@@ -228,7 +228,7 @@ async function submitReassign() {
     reassignVisible.value = false;
     await queryData();
   } catch {
-    // 失败原因由全局 toast 给出，弹窗里不再重复挂一条
+    // 失败原因由全局提示给出
   } finally {
     reassignSaving.value = false;
   }
@@ -255,7 +255,7 @@ function loadExportColumns(): string[] {
       }
     }
   } catch {
-    // 本地偏好损坏时静默回落整目录——偏好只是便利，坏了不能挡住导出。
+    // 本地偏好损坏时回落到全部列
   }
   return ALL_EXPORT_KEYS;
 }
@@ -270,8 +270,7 @@ const selectedOrders = computed(() => tableData.value.filter((o) => selected.val
 const draftSelected = computed(() => selectedOrders.value.filter((o) => o.status === 'DRAFT'));
 const partialSelected = computed(() => selectedOrders.value.filter((o) => o.status === 'PARTIALLY_RECEIVED'));
 
-// 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列。
-// 创建时间是技术时间戳，仍在详情抽屉与导出列里，只是不默认摊在列表上；计划到货才是采购跟单看的业务日期。
+// 创建时间不默认上列；计划到货才是采购跟单关注的日期。
 const columns = ref<TableColumnsType<Order>>([
   {title: '采购单号', dataIndex: 'orderNo', width: 190},
   {title: '供应商', dataIndex: 'supplierName', width: 220, ellipsis: true},
@@ -295,7 +294,7 @@ const STATUS_TONE: Record<string, ScmStatusTone> = {
 };
 const statusTone = (value?: string | null): ScmStatusTone => STATUS_TONE[value ?? ''] ?? 'neutral';
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 更多菜单无法使用 `v-privilege`，改用 `hasPermission` 判断。 */
 const canAssign = computed(() => hasPermission('scm:purchase:assign'));
 const canCancel = computed(() => hasPermission('scm:purchase:cancel'));
 const canShortClose = computed(() => hasPermission('scm:purchase:short-close'));
@@ -304,10 +303,7 @@ const canDelete = computed(() => hasPermission('scm:purchase:delete'));
 const SHAREABLE_STATUSES = ['SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED'];
 const canShare = computed(() => hasPermission('scm:purchase:share:create'));
 
-/**
- * 行内常驻当前状态最高频的两个动作，其余收进「更多」。
- * 各状态给出的动作集合与原行内按钮一一对应，只是按频率重新分组，不新增也不隐藏业务动作。
- */
+/** 当前状态可用的操作；低频动作收进“更多”。 */
 function moreActions(row: Order): ScmActionItem[] {
   const draft = row.status === 'DRAFT';
   return [
@@ -331,7 +327,7 @@ function onRowAction(key: string, row: Order) {
       shareModal.value?.openFor(row.id, row.orderNo);
     }
   } else if (key === 'detail') {
-    // `Order.id` 在 VO 里是可选的，详情抽屉要求确定的 Id，这里按同一口径先判空。
+    // 详情抽屉需要确定的 id，先判空
     if (row.id != null) {
       detail.value?.open(row.id);
     }
@@ -383,7 +379,7 @@ function resetQuery() {
   onSearch();
 }
 
-/** 状态类命令：成功后重载；失败由全局 toast 给出原因，确认框靠拒绝保持打开。 */
+/** 状态操作成功后重新加载；失败由全局提示给出原因。 */
 function submit(row: Order) {
   Modal.confirm({
     title: '提交这张采购单？提交后不可再改行与分配。',
@@ -409,7 +405,7 @@ function cancel(row: Order) {
       ]),
     onOk: async () => {
       if (!reason.trim()) {
-        // 确认框盖着页面，页头 Alert 看不见，缺原因的提示只能走 message
+        // 确认框遮住页面，缺少原因的提示只能用消息提示
         message.warning('请填写取消原因');
         throw new Error('cancel reason required');
       }
@@ -470,7 +466,7 @@ function batchDelete() {
   });
 }
 
-/** 批量少收关单：只作用于「部分收货」勾选，整批共享原因、后端同事务逐单校验。 */
+/** 批量少收关单只作用于“部分收货”，整批共用一个原因，任一单失败整批回滚。 */
 function batchShortClose() {
   const targets = partialSelected.value;
   if (!targets.length) {
@@ -482,7 +478,7 @@ function batchShortClose() {
     title: `对 ${targets.length} 张「部分收货」采购单批量少收关单？`,
     content: () =>
       h('div', [
-        h('p', '整批共享一个原因，在同一事务内逐单校验；任一单状态非法或被他人改过版本，整批都会失败回滚。'),
+        h('p', '整批共用一个原因；任一单状态变化，整批都会失败。'),
         h('p', '少收关单原因（必填）：'),
         h(Input.TextArea, {
           rows: 3,
@@ -505,7 +501,7 @@ function batchShortClose() {
   });
 }
 
-/** 导出走当前筛选（后端强制第 1 页 + 上限行，分页参数会被覆盖），只回传勾选列 key。 */
+/** 导出使用当前筛选，只回传勾选列；分页由后端固定。 */
 function onExport() {
   const payload = {...queryForm, exportColumns: exportColumns.value};
   void listExport.run(() => purchaseOrderApi.export(payload));
@@ -517,12 +513,7 @@ function saveExportSettings() {
   message.success('导出设置已保存');
 }
 
-/**
- * 打印走打印中心的模板渲染：先选模板、可预览，再正式打印。
- *
- * 正式打印会由服务端冻结模板版本与版面快照（打印记录），因此「纸上这张」与「库里这张」
- * 逐字一致；本页不再自己拼 HTML。纯读取业务数据，不改采购单状态。
- */
+/** 使用打印中心模板，正式打印时服务端会保存模板版本和版面。 */
 function printRow(row: Order) {
   if (row.id === undefined || row.id === null) {
     return;

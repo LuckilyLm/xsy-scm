@@ -31,7 +31,7 @@ import MetricCard from './metric-card.vue';
 import {formatAmount, formatDelta, formatInt, toNumber} from '../format';
 import type {BusinessData, InventoryData, PurchaseData, TrendData} from '../types';
 
-/** 今日指标的同比或环比只使用相同口径的历史指标。没有可比数据的指标显示无法比较，不拼凑百分比。 */
+/** 环比只用历史同期数据；没有可比数据就不显示百分比。 */
 const props = defineProps<{
   business: BusinessData | null;
   inventory: InventoryData | null;
@@ -39,7 +39,7 @@ const props = defineProps<{
   trend: TrendData;
 }>();
 
-/** 取趋势序列里「昨天」的值（最后一项是今天）。 */
+/** 取趋势序列的昨天值（最后一项是今天）。 */
 function yesterday(series: Array<string | number> | undefined): number | null {
   if (!series || series.length < 2) {
     return null;
@@ -79,7 +79,7 @@ const purchaseDelta = computed(() => deltaOf(props.purchase?.todayPurchaseOrderC
   display: flex;
   align-items: center;
   justify-content: center;
-  // hero 底部一条渐隐分隔线，把「最大数字」和次级指标分开
+  // 分隔主数字和次级指标
   border-bottom: 1px solid rgba(27, 77, 122, 0.5);
   padding-bottom: 6px;
   margin-bottom: 8px;

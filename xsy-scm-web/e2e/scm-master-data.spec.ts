@@ -16,20 +16,7 @@ import {join} from 'node:path';
 // ---------------------------------------------------------------- 来源：e2e/scm-customer.spec.ts
 test.describe('scm-customer', () => {
   const test = pwTest;
-  /*
-   * W2 客户域 E2E
-   *
-   * 来源：**W1 派生** —— 整体结构、登录方式（SM4 传输加密）、夹具账号生命周期、
-   * CJK 按钮空格处理、请求断言风格全部照抄本文件的商品用例。
-   *
-   * 覆盖的**业务不变量**（这些是 W2 相对 legacy/C 的新增能力，必须在真实链路上验证）：
-   * - 账期三形态：按时间 + 单位「月」+ 固定结算日必须完整落库（`creditPeriodType/Value/Unit/settleDay`）；
-   * - 授信额度是 4 位定点**字符串**，`"1234.5000"` 不能被浮点化；
-   * - 新建客户状态固定 `POTENTIAL`，状态变更只能走 `updateStatus`；
-   * - 省市区级联落成**编码 + 名称六列快照**，且编辑保存不会把它丢掉（地图 M0 的数据来源）；
-   * - 客户类型被客户引用时删不掉（40938），删掉客户后才能删类型；
-   * - 只读角色：接口 30005 + 「新增客户」按钮不渲染。
-   */
+  /* 客户域 E2E：账期三形态、授信额度字符串、状态变更、省市区六列、类型被引用后不可删、只读角色。 */
 
   const apiUrl = 'http://127.0.0.1:18080';
   const name = 'w2_e2e_' + Date.now().toString(36) + '_c';
@@ -40,9 +27,7 @@ test.describe('scm-customer', () => {
   const customerIds: (number | string)[] = [];
   const typeIds: (number | string)[] = [];
 
-  // Ant Design inserts a visual space between two CJK characters in button labels
-  // ("查询" renders as "查 询"). Match the accessible name with optional whitespace
-  // between characters instead of weakening the assertion to a substring match.
+  // antd 会在两个中文字之间插入视觉空格（「查询」显示为「查 询」），用允许空白的正则匹配
   const escapeRe = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const buttonName = (text: string) => new RegExp('^' + [...text].map(escapeRe).join('\\s*') + '$');
   const button = (root: Page | Locator, text: string) => root.getByRole('button', {name: buttonName(text)});
@@ -574,9 +559,7 @@ test.describe('scm-product', () => {
   const uomIds: (number | string)[] = [];
   const tagIds: (number | string)[] = [];
 
-  // Ant Design inserts a visual space between two CJK characters in button labels
-  // ("查询" renders as "查 询"). Match the accessible name with optional whitespace
-  // between characters instead of weakening the assertion to a substring match.
+  // antd 会在两个中文字之间插入视觉空格（「查询」显示为「查 询」），用允许空白的正则匹配
   const escapeRe = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const buttonName = (text: string) => new RegExp('^' + [...text].map(escapeRe).join('\\s*') + '$');
   const button = (root: Page | Locator, text: string) => root.getByRole('button', {name: buttonName(text)});

@@ -1,8 +1,4 @@
-/**
- * 客户专属推广二维码：生成、撤销、扫码记录。
- *
- * 码属于客户，归属业务员取该客户当前的 seller_id 快照；扫码只记录来源，不改任何归属。
- */
+/** 客户推广二维码：生成、撤销、扫码记录。扫码只记录来源，不改归属。 */
 import {getRequest, postRequest} from '/@/lib/axios';
 import type {ScmResponse} from '/@/types/business/scm/customer';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';

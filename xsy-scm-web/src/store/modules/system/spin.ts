@@ -1,7 +1,4 @@
-/*
- * loading
- *
- */
+/* 全局 loading */
 import {defineStore} from 'pinia';
 import {smartSentry} from '/@/lib/smart-sentry';
 
@@ -14,7 +11,7 @@ export const useSpinStore = defineStore({
   actions: {
     hide() {
       this.loading = false;
-      // 安全的DOM操作，避免null引用错误
+      // 调整遮罩层级，避免盖住弹窗
       try {
         const spins = document.querySelector('.ant-spin-nested-loading');
         if (spins) {
@@ -26,7 +23,7 @@ export const useSpinStore = defineStore({
     },
     show() {
       this.loading = true;
-      // 安全的DOM操作，避免null引用错误
+      // 调整遮罩层级，避免盖住弹窗
       try {
         const spins = document.querySelector('.ant-spin-nested-loading');
         if (spins) {

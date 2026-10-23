@@ -8,11 +8,7 @@ export const inventoryWarningApi = {
   query: (data: InventoryWarningQuery, options?: RequestOptions) =>
     postRequest('/scm/inventory/warning/query', data, options) as unknown as Promise<ScmResponse<ScmPage<InventoryWarning>>>,
 
-  /**
-   * 立即检查阈值跃迁并投递通知（不等下一轮定时扫描）。
-   *
-   * 只扫描调用者有授权的仓库；没有入参，范围由服务端解析。
-   */
+  /** 立即检查阈值并投递通知，只扫描有授权的仓库。 */
   scan: () => postRequest('/scm/inventory/warning/scan', {}) as unknown as Promise<ScmResponse<InventoryWarningScanResult>>,
 };
 

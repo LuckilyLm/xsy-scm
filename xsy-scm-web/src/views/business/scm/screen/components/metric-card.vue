@@ -29,14 +29,7 @@
 import {computed} from 'vue';
 import {deltaDirection, formatDeltaText} from '../format';
 
-/**
- * 单个指标卡。用 size 表达视觉层级，不让调用方各写样式。
- *
- * 环比写「较昨日」而不是「较上一期」：唯一的数据源就是今天 vs 昨天，
- * 说「较上一期」会让用户以为可以选周期。
- *
- * 基数为 0 时（昨天没营业）环比显示「—」而不是 0% —— 见 deltaDirection。
- */
+/** 指标卡：用 size 表达视觉层级；环比固定是今天对比昨天。 */
 const props = withDefaults(
   defineProps<{
     label: string;
@@ -133,7 +126,7 @@ const deltaText = computed(() => formatDeltaText(props.delta ?? null));
     font-size: 11px;
   }
 
-  // ---------- 层级 ----------
+  // 层级
   &.is-hero {
     gap: 6px;
 
@@ -170,7 +163,7 @@ const deltaText = computed(() => formatDeltaText(props.delta ?? null));
     }
   }
 
-  // ---------- 语义色 ----------
+  // 语义色
   &.tone-primary .scm-metric-value {
     color: @tech-cyan;
   }

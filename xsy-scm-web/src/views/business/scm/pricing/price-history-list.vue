@@ -1,4 +1,4 @@
-<!--  新写：双来源价格历史与字段级前后对照。 -->
+<!-- 价格变更历史：协议价和类型价两种来源，可查看前后差异。 -->
 <template>
   <a-form layout="inline" class="smart-query-form">
     <a-row class="smart-query-form-row">
@@ -119,12 +119,6 @@ let requestId = 0;
 const sourceOptions = Object.entries(HISTORY_SOURCE_LABEL).map(([value, label]) => ({value, label}));
 const operationOptions = Object.entries(HISTORY_OPERATION_LABEL).map(([value, label]) => ({value, label}));
 
-/**
- * 列按「哪来的 / 谁的价格 / 什么货 / 改了什么 / 现在是什么价、有效期到什么时候 / 谁在什么时候改的」排列。
- *
- * 时间不能隐藏：本页是变更账本，生效时间与变更时间就是它要回答的问题本身。
- * 编码（商品规格）与操作人各自下沉为名称 / 时间的次要行，不再各占一列。
- */
 const columns = ref<TableColumnsType<HistoryRow>>([
   {title: '来源', dataIndex: 'source', width: 120},
   {title: '客户', dataIndex: 'customerName', width: 170},
@@ -147,7 +141,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const r = await pricingApi.history(
       {
         ...query,

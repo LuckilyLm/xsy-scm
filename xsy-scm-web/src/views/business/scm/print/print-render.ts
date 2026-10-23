@@ -1,13 +1,8 @@
-/** 前端只对服务端给出的打印结果排序、转义与排版，不决定金额列也不计算金额。所有业务文本进入 HTML 前必须转义。 */
+/** 前端只负责排版和转义；金额列与金额由服务端决定。 */
 import QRCode from 'qrcode';
 import type {PrintRender} from './print-types';
 
-/**
- * 已生成的二维码图片，按内容缓存。
- *
- * 二维码只有包装码标签需要，而 `renderPrintHtml` 是同步的：先把图片算好放进这里，
- * 渲染时同步取用。缓存键就是二维码内容，重印同一张标签不会重复编码。
- */
+/** 二维码图片按内容缓存；渲染是同步的，先算好再取用。 */
 const qrImages = new Map<string, string>();
 
 function esc(value: unknown): string {
@@ -29,7 +24,7 @@ function bodyClass(render: PrintRender): string {
   return render.paper === 'TICKET_80' ? 'ticket' : 'a4';
 }
 
-/** 打印页脚标注模板名称、版本及冻结时间，便于识别历史重印；操作人编号不直接印到纸上。 */
+/** 页脚标注模板名称、版本和打印时间，便于识别历史重印。 */
 function traceLine(render: PrintRender): string {
   const template = render.templateName || render.templateCode;
   const parts = [`模板 ${template ?? '—'} v${render.templateVersion ?? '—'}`];
@@ -42,7 +37,7 @@ function traceLine(render: PrintRender): string {
 /** 一张单据的打印片段。 */
 export function renderPrintHtml(render: PrintRender): string {
   const header = render.headerFields
-    // traceUrl 只用于生成二维码；80mm 标签上没有空间再印一串 URL
+    // traceUrl 只用于二维码，不印在纸上
     .filter((field) => field.key !== 'traceUrl')
     .map((field) => `<span class="f"><b>${esc(field.label)}</b>：${esc(field.value)}</span>`)
     .join('');
@@ -70,12 +65,7 @@ export function renderPrintHtml(render: PrintRender): string {
   );
 }
 
-/**
- * 包装码标签上的二维码。
- *
- * 只对 `TRACE_UNIT` 生效：其它单据的字段契约是纯文本，加图片位会改变所有模板的排版语义。
- * 扫码链接本身不再以文字印出——标签只有 80mm 宽，一串 40 字符的 URL 印上去既挤又没人读。
- */
+/** 包装码标签上的二维码；其它单据不显示。 */
 function qrBlock(render: PrintRender): string {
   if (render.documentType !== 'TRACE_UNIT') {
     return '';
@@ -88,19 +78,14 @@ function qrBlock(render: PrintRender): string {
   return `<div class="qr"><img src="${image}" alt="${esc(traceUrl)}"/></div>`;
 }
 
-/**
- * 预生成包装码标签的二维码。
- *
- * 二维码编码是异步的，而渲染是同步的；打印前先算一遍，渲染时就能同步取到图片。
- * 没有公开地址（未配置 `scm.trace.public-base-url`）时 `traceUrl` 为空，标签只印码不印二维码。
- */
+/** 打印前先算好二维码；没有公开地址时不印二维码。 */
 export async function prepareQrCodes(renders: PrintRender[]): Promise<void> {
   const urls = renders
     .filter((render) => render.documentType === 'TRACE_UNIT')
     .map((render) => render.headerFields.find((field) => field.key === 'traceUrl')?.value)
     .filter((url): url is string => Boolean(url) && !qrImages.has(url as string));
   for (const url of new Set(urls)) {
-    // 标签只有 80mm 宽，240px 足够打印分辨率，再大只会拖慢生成
+    // 240px 足够打印分辨率
     qrImages.set(url, await QRCode.toDataURL(url, {margin: 0, width: 240}));
   }
 }
@@ -138,12 +123,7 @@ export function renderPrintDocument(renders: PrintRender[]): string {
   );
 }
 
-/**
- * 在隐藏 iframe 中渲染并调起浏览器打印。
- *
- * 用 iframe 而非 `window.open` 是为避开弹窗拦截；打印完即移除节点。纯客户端动作，
- * 不触发任何业务状态变化（正式打印的记录已在调用前由接口冻结）。
- */
+/** 在隐藏 iframe 中渲染并调起打印；用 iframe 避开弹窗拦截。 */
 export async function printRenders(renders: PrintRender[]): Promise<void> {
   if (!renders.length) return;
   await prepareQrCodes(renders);
@@ -169,7 +149,7 @@ export async function printRenders(renders: PrintRender[]): Promise<void> {
     const doc = iframe.contentDocument;
     if (!win || !doc) throw new Error('无法打开打印窗口，请重试');
     await doc.fonts.ready;
-    // 某些浏览器的 print 非阻塞；保留 iframe 直到对话框关闭，避免打印空白页。
+    // 保留 iframe 到打印结束，避免出现空白页。
     const cleanupTimer = window.setTimeout(() => iframe.remove(), 60000);
     win.addEventListener(
       'afterprint',

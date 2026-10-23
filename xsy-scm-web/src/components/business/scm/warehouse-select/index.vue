@@ -1,8 +1,4 @@
-<!--
-  仓库选择器。
-  端点：`GET /scm/warehouse/list`（只返回启用仓库；权限 `scm:warehouse:query`）。
-  `options` 由调用方传入时不再自己拉取 —— 调用方本来就要拉一次，传进来避免同一请求发两次。
--->
+<!-- 仓库选择器：只列启用仓库；options 传入时不再自行拉取。 -->
 <template>
   <a-select
     v-model:value="selectValue"
@@ -54,7 +50,7 @@ async function query() {
     const resp = await warehouseApi.list({suppressGlobalErrorMessage: true});
     fetched.value = resp.data ?? [];
   } catch (e) {
-    // 没有 `scm:warehouse:query` 时静默降级：仓库筛选只是便利，不该让整页失败
+    // 无权限时静默降级，仓库筛选不该让整页失败
     smartSentry.captureError(e);
   }
 }

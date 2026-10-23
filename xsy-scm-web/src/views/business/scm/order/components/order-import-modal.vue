@@ -15,7 +15,7 @@
   >
     <FormNote title="导入规则" :lines="IMPORT_RULES" />
 
-    <!-- 模板下载：按钮与说明同一水平线居中，说明不再做成绿色胶囊（和上面的信息色打架） -->
+    <!-- 模板下载按钮和文件格式说明 -->
     <div class="import-template">
       <a-button :loading="downloading" :disabled="loading" @click="downloadTemplate">
         <template #icon>
@@ -100,10 +100,7 @@ function reset() {
   loading.value = false;
 }
 
-/**
- * 模板下载沿用 scm:order:import 权限；失败时由请求层弹出后端文案，
- * 不会把错误 JSON 当成 .xlsx 保存。
- */
+/** 模板下载沿用导入权限；失败时由请求层提示后端文案。 */
 async function downloadTemplate() {
   if (downloading.value || loading.value) return;
   downloading.value = true;

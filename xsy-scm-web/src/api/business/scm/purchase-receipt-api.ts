@@ -24,15 +24,15 @@ export const purchaseReceiptApi = {
     getRequest(`/scm/purchase/receipt/detail/${id}`, {}, options) as unknown as Promise<ScmResponse<Receipt>>,
   items: (receiptId: Id, options?: RequestOptions) =>
     getRequest(`/scm/purchase/receipt/item/${receiptId}`, {}, options) as unknown as Promise<ScmResponse<ReceiptItem[]>>,
-  /** 按商品收货工作台（只读）：跨可收货采购单按 SKU×采购单位 归并，不新增收货事实。 */
+  /** 按商品收货工作台：只读，按商品规格和采购单位归并。 */
   itemWorkbench: (data: ReceiptItemWorkbenchQuery, options?: RequestOptions) =>
     postRequest('/scm/purchase/receipt/item-workbench/query', data, options) as unknown as Promise<ScmResponse<ScmPage<ReceiptItemWorkbenchRow>>>,
 
   /** 建草稿收货单：行由服务端按采购单全部活动行生成。 */
   create: (data: ReceiptCreatePayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/create', data),
-  /** `update` 只允许改备注（数量只在 `confirm` 一次性落库）。 */
+  /** `update` 只允许改备注，数量在确认时一次写入。 */
   update: (data: ReceiptUpdatePayload) => postRequest('/scm/purchase/receipt/update', data) as unknown as Promise<ScmResponse<Receipt>>,
-  /** 确认收货：必须覆盖全部收货行（40998），非标品必须带实重（40083）。 */
+  /** 确认收货：必须覆盖全部收货行，非标品必须带实重。 */
   confirm: (data: ReceiptConfirmPayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/confirm', data),
   /** 仓库确认入库：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
   putaway: (data: ReceiptPutawayPayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/putaway', data),

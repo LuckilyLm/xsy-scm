@@ -39,7 +39,7 @@
     >
   </div>
   <template v-if="printMode === 'orders'">
-    <!-- 1~3 行用轻量列表：一两条数据铺一张宽表格，下面会空出一大片 -->
+    <!-- 数据少时用卡片列表，避免宽表格下面留白 -->
     <div v-if="orders.length && orders.length <= 3" class="print-cards">
       <label v-for="record in orders" :key="record.orderId" class="print-card">
         <a-checkbox :checked="orderSelection.includes(record.orderId)" @change="toggleOrder(record.orderId, $event)" />
@@ -194,7 +194,7 @@ const customerRowSelection = computed(() => ({
   onChange: (keys: Array<string | number>) => emit('update:customerSelection', keys),
 }));
 
-/** 打印状态分布：字典顺序即展示顺序，计数只作提示，不参与提交口径。 */
+/** 打印状态分布，只作提示，不参与提交。 */
 const activeCounts = computed(() => {
   const rows: {printStatus: string}[] = props.printMode === 'orders' ? props.orders : props.customers;
   const counts = new Map<string, number>();

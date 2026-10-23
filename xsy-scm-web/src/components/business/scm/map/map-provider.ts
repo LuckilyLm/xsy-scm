@@ -126,7 +126,7 @@ function timeout<T>(work: Promise<T>): Promise<T> {
 async function position(sdk: Sdk, point: ScmLocation): Promise<RoutePosition> {
   const raw: RoutePosition = [Number(point.longitude), Number(point.latitude)];
   if (point.geomCrs === 'GCJ02') return raw;
-  // Conversion is display-only. Stored WGS84 snapshots are never relabelled as GCJ02.
+  // 转换只用于展示；存储的 WGS84 坐标不会改标为 GCJ02
   return timeout(
     new Promise((resolve, reject) =>
       sdk.convertFrom(raw, 'gps', (status, result) => {
@@ -175,7 +175,7 @@ export async function createMap(element: HTMLElement, onPick?: (location: ScmLoc
   function addPolylines(paths: RoutePosition[][]) {
     const usable = paths.filter((path) => path.length);
     if (!usable.length) return;
-    // 底图自带同色系的绿色道路，单画绿线会混进去；先铺白色描边再叠绿线，保证任何底图上都可辨识。
+    // 先铺白色描边再叠绿线，避免与底图道路混在一起
     const lines = usable.flatMap((path) => [
       new sdk.Polyline({path, strokeColor: '#FFFFFF', strokeWeight: 9, zIndex: 49}),
       new sdk.Polyline({path, strokeColor: '#00B96B', strokeWeight: 5, zIndex: 50, showDir: true}),
@@ -185,7 +185,7 @@ export async function createMap(element: HTMLElement, onPick?: (location: ScmLoc
     map.setFitView();
   }
 
-  /** Missing locations break the polyline; never imply a route skipping an unlocated stop. */
+  /** 未定位的点把折线断开，不跨越未定位的停靠点。 */
   function straightLines(positions: (RoutePosition | null)[]) {
     const lines: RoutePosition[][] = [];
     positions.forEach((point, index) => {
@@ -233,7 +233,7 @@ export async function createMap(element: HTMLElement, onPick?: (location: ScmLoc
       const result = await planRoadRoute(sdk, points);
       if (destroyed || current !== revision) return;
       if (result.fallback) {
-        // 任一段算不出道路路线就整体回退直线，避免一段道路一段直线被读成完整路线。
+        // 任一段失败就整体回退直线，避免半道路半直线
         addPolylines(straightLines(positions));
         onRouteStatus?.({state: 'fallback'});
         return;
@@ -282,7 +282,7 @@ export async function createMap(element: HTMLElement, onPick?: (location: ScmLoc
         map.setCenter(positions[0]);
         map.setZoom(16);
       }
-      // 先落 Marker 再异步补路线：算路期间地图上已经能看到起点与停靠点。
+      // 先落标记再异步补路线
       if (route) await drawRoute(positions, current);
     },
     destroy() {

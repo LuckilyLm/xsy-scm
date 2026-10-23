@@ -5,7 +5,7 @@ export function newOrder(): Order {
   return {orderSource: 'ADMIN', deliveryWarehouseId: null, items: [], address: {receiverName: '', receiverPhone: '', address: ''}};
 }
 
-/** 连续录单只保留客户与本次选定仓库，绝不沿用上单商品、地址快照、定价、补单关联或版本。 */
+/** 连续录单只沿用客户和仓库，其余内容一律重新填写。 */
 export function nextOrderForCustomer(previous: Order): Order {
   const next = newOrder();
   next.customerId = previous.customerId;
@@ -17,9 +17,7 @@ export function fixed(value: string | number): string {
   return new Decimal(value).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
 }
 
-/**
- * 本地未提交草稿的行：只保留用户录入，不含任何服务端解析结果。
- */
+/** 草稿明细行：只存用户输入的内容。 */
 export interface DraftItem {
   skuId?: string | number;
   orderedQuantity: string;
@@ -28,12 +26,7 @@ export interface DraftItem {
   overrideReason?: string | null;
 }
 
-/**
- * 本地未提交草稿（浏览器 localStorage，第一版不入库）。
- *
- * 刻意不含：权限结果、PriceResolver 最终价（draftUnitPrice/draftPriceSource）、库存可用量、
- * 后端 version、服务端计算/快照字段（status、orderNo、lockedUnitPrice 等）。恢复后一律重新解析。
- */
+/** 本地草稿（存在 localStorage）。不含价格解析结果、库存、版本等，恢复后重新向服务端获取。 */
 export interface Draft {
   customerId?: string | number;
   deliveryWarehouseId?: string | number | null;
@@ -45,12 +38,12 @@ export interface Draft {
   items: DraftItem[];
 }
 
-/** 草稿存储键：按登录用户隔离，避免不同操作员草稿互串（验收「不同登录用户草稿互不串」）。 */
+/** 草稿存储键按登录用户隔离，避免不同操作员的草稿互串。 */
 export function draftKey(employeeId: string | number): string {
   return `xsy-scm:order-draft:${employeeId}`;
 }
 
-/** 把当前新建表单压缩为草稿：逐字段白名单挑选，绝不落入解析价 / version / 快照。 */
+/** 把新建表单转成草稿，只挑用户输入字段，不存解析价和版本。 */
 export function serializeDraft(form: Order): Draft {
   return {
     customerId: form.customerId,
@@ -72,7 +65,7 @@ export function serializeDraft(form: Order): Draft {
   };
 }
 
-/** 从草稿还原为可编辑表单：仅回填用户录入字段，解析价 / 地址由调用方重新请求客户与价格填充。 */
+/** 从草稿还原表单，只回填用户输入；价格和地址由调用方重新获取。 */
 export function applyDraft(draft: Draft): Order {
   const form = newOrder();
   form.customerId = draft.customerId;
@@ -92,7 +85,7 @@ export function applyDraft(draft: Draft): Order {
   return form;
 }
 
-/** 复制历史订单只生成新草稿，不复制单号、状态、旧锁定价、库存预留和操作日志。价格与主档可用性在新订单中重新校验。 */
+/** 复制历史订单只生成新草稿，不带单号、状态、原价格和库存预留。 */
 export function fromHistory(detail: Order): Order {
   const form = newOrder();
   form.customerId = detail.customerId;
@@ -156,10 +149,7 @@ export function amount(value: string | null | undefined, unpriced = false): stri
   return value == null ? (unpriced ? '未定价' : '—') : '¥ ' + fixed(value);
 }
 
-/**
- * 「历史价」旁证的缓存状态。抽成纯模型是因为串数据的代价只有测试能钉死：
- * 缓存键一旦含行序号，换商品、删行上移、换客户都会静默显示上一个 SKU / 上一个客户的历史成交价。
- */
+/** 历史价缓存。缓存键只用客户 + 规格，不能带行号，否则换商品或删行后会显示错价格。 */
 export interface RecentPriceCache {
   loadingKey: string | null;
   rowsByKey: Record<string, RecentPrice[]>;
@@ -177,7 +167,7 @@ export function recentPriceKey(customerId: Id | null | undefined, skuId: Id | nu
   return `${customerId}:${skuId}`;
 }
 
-/** 已缓存（含「查过但确实没有历史价」）；未查过与空结果必须区分，否则空态与加载态混成一团。 */
+/** 是否已查过（查过但没有结果也算），用于区分空数据和未加载。 */
 export function hasRecentPrices(cache: RecentPriceCache, customerId: Id | null | undefined, skuId: Id | null | undefined): boolean {
   const key = recentPriceKey(customerId, skuId);
   return key != null && cache.rowsByKey[key] != null;
@@ -193,10 +183,7 @@ export function isLoadingRecentPrice(cache: RecentPriceCache, customerId: Id | n
   return key != null && cache.loadingKey === key;
 }
 
-/**
- * 点开「历史价」时取数：命中缓存直接复用不再请求；请求异常照常抛出，但加载态一定落回，
- * 否则一次网络失败会让该行永久转圈且再也点不动。缓存不写入，因此下次点击仍可重试。
- */
+/** 取历史价：有缓存直接返回；请求失败会清掉加载态，下次还能重试。 */
 export async function loadRecentPrices(
   cache: RecentPriceCache,
   customerId: Id | null | undefined,

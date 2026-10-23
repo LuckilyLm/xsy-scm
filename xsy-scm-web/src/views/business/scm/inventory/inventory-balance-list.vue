@@ -1,7 +1,4 @@
-<!--
-  库存余额只读查询，数量由收货确认产生的流水累加。
-  SKU 使用编码/名称筛选，避免额外依赖商品选项接口的权限。
--->
+<!-- 库存余额只读查询，数量来自收货确认产生的流水。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -113,8 +110,7 @@ const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
-// 余额按「仓库 + 商品规格」定位；低频编码单独保留并默认收起。
-// 库存/预留/可用/均价/金额是一组要横向比较的数值，统一右对齐 + 等宽数字。
+// 余额按仓库 + 商品规格定位；低频编码默认收起，数量列统一右对齐。
 type InventoryBalanceColumn = TableColumnsType<InventoryBalance>[number] & {showFlag?: boolean};
 const columns = ref<InventoryBalanceColumn[]>([
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
@@ -126,7 +122,7 @@ const columns = ref<InventoryBalanceColumn[]>([
   {title: '库存', dataIndex: 'quantity', width: 110},
   {title: '预留', dataIndex: 'reservedQuantity', width: 100},
   {title: '可用', dataIndex: 'availableQuantity', width: 100},
-  // V34 移动加权成本。均价恒有值（NOT NULL DEFAULT 0），金额由后端 quantity × avgCost 派生。
+  // 均价由后端计算，金额 = 库存 × 均价。
   {title: '平均成本', dataIndex: 'avgCost', width: 130},
   {title: '库存金额', dataIndex: 'amount', width: 140},
 ]);
@@ -155,9 +151,7 @@ async function queryData() {
   }
 }
 
-/**
- * 仅有一个启用仓库时默认选中；列表请求失败时跳过默认值，不阻断余额查询。
- */
+/** 只有一个启用仓库时默认选中；请求失败不阻断余额查询。 */
 async function applySingleWarehouseDefault() {
   try {
     const r = await warehouseApi.list({suppressGlobalErrorMessage: true});

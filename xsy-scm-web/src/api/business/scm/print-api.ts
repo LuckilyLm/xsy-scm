@@ -1,4 +1,4 @@
-/** 打印模板管理与业务单据查看权限分开校验。正式打印使用幂等键防重复记录；预览只读不计次。 */
+/** 打印模板管理与单据查看权限分开；正式打印用幂等键防重复，预览不计次。 */
 import {getRequest, postRequest, request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
@@ -42,7 +42,7 @@ export const printApi = {
   templateCatalog: (documentType: PrintDocumentType, options?: RequestOptions) =>
     getRequest('/scm/print/template/catalog', {documentType}, options) as unknown as Promise<ScmResponse<PrintFieldCatalog>>,
 
-  /** 可配置打印的单据类型清单（类型下拉用，不硬编码）。 */
+  /** 可配置打印的单据类型，供类型下拉使用。 */
   documentTypes: (options?: RequestOptions) =>
     getRequest('/scm/print/template/document-types', {}, options) as unknown as Promise<ScmResponse<PrintDocumentTypeOption[]>>,
 
@@ -67,13 +67,13 @@ export const printApi = {
     return getRequest(`/scm/print/${documentType}/${businessId}/preview${query}`, {}, options) as unknown as Promise<ScmResponse<PrintRender>>;
   },
 
-  /** 正式打印：冻结模板版本与版面快照，返回冻结版面。 */
+  /** 正式打印：保存模板版本和版面内容，返回本次打印版面。 */
   print: (documentType: PrintDocumentType, businessId: Id, templateId?: Id) =>
     printCommand<PrintRender>(`/scm/print/${documentType}/${businessId}/print`, {
       templateId: templateId ?? null,
     }),
 
-  /** 历史重印：只读冻结快照，并按当前调用者的金额权限重新剔除。 */
+  /** 历史重印：使用当时保存的内容，金额按当前权限重新过滤。 */
   reprint: (recordId: Id) => getRequest(`/scm/print/record/${recordId}/reprint`, {}) as unknown as Promise<ScmResponse<PrintRender>>,
 
   recordQuery: (data: PrintRecordQuery, options?: RequestOptions) =>

@@ -1,9 +1,4 @@
-<!--
-  包装码更正。
-
-  解绑不是删除：申请 → 他人审批 → 追加解绑事实，三步都留痕；批准后包装码回到可绑定状态。
-  申请与审批分离，避免现场自己改自己绑错的码。
--->
+<!-- 包装码更正：申请后由他人审批，批准后包装码恢复可绑定。 -->
 <template>
   <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
     <div class="scm-filter-fields">
@@ -163,7 +158,7 @@ async function queryData() {
     tableData.value = res.data?.list ?? [];
     total.value = Number(res.data?.total ?? 0);
   } catch (e) {
-    // 加载失败会渲染空表：页面上必须说清楚并给重试
+    // 失败时显示空表，同时在页面上提示并允许重试
     error.value = inventoryError(e);
     tableData.value = [];
     total.value = 0;
@@ -208,7 +203,7 @@ async function submitDecision() {
     decisionOpen.value = false;
     await queryData();
   } catch {
-    // 审批失败只走全局 toast；本地只保留「必须填原因」这类前置校验
+    // 审批失败由全局提示
   } finally {
     deciding.value = false;
   }

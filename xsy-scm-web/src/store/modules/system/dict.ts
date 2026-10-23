@@ -7,9 +7,9 @@ import {smartSentry} from '/@/lib/smart-sentry';
 export const useDictStore = defineStore({
   id: 'dict',
   state: () => ({
-    // 字典code集合
+    // 字典编码集合
     dictList: [],
-    // 字典集合
+    // 字典数据
     dictMap: new Map(),
   }),
 
@@ -26,7 +26,7 @@ export const useDictStore = defineStore({
       return dictDataList ? dictDataList : [];
     },
 
-    // 获取字典的值名称
+    // 按编码取字典项
     getDataList(dictCode, dataValue) {
       if (_.isNil(dataValue) || _.isNaN(dataValue)) {
         return '';
@@ -37,7 +37,7 @@ export const useDictStore = defineStore({
         return '';
       }
 
-      // 是数字的话，需要特殊处理
+      // 数字先转字符串再匹配
       if (_.isNumber(dataValue)) {
         let target = _.find(dict, {dataValue: String(dataValue)});
         return target ? target.dataLabel : '';
@@ -54,7 +54,7 @@ export const useDictStore = defineStore({
       return result;
     },
 
-    // 获取字典的值名称
+    // 按编码取字典项的显示名
     getDataLabels(dictCode, dataValue) {
       if (_.isNil(dataValue) || _.isNaN(dataValue)) {
         return '';
@@ -65,7 +65,7 @@ export const useDictStore = defineStore({
         return '';
       }
 
-      // 是数字的话，需要特殊处理
+      // 数字先转字符串再匹配
       if (_.isNumber(dataValue)) {
         let target = _.find(dict, {dataValue: String(dataValue)});
         return target ? target.dataLabel : '';
@@ -111,8 +111,6 @@ export const useDictStore = defineStore({
         }
         dataArray.push(data);
       }
-
-      console.log(this.dictList, 2);
     },
   },
 });

@@ -1,7 +1,7 @@
 /*
  * 省 / 市 / 区地理归属的共享类型
  *
- * 三张主档（customer / supplier / warehouse）都存同一组 6 列：三级编码 + 三级名称快照。
+ * 三张主档（customer / supplier / warehouse）都存同一组 6 列：三级编码 + 三级名称。
  * 编码是 GB/T 2260 六位整数，取值与 `area-cascader` 的数据源同源同值。
  */
 

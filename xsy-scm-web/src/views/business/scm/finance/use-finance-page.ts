@@ -22,7 +22,7 @@ export function useFinancePage<T, Q extends FinancePageQuery>(
     loading.value = true;
     error.value = '';
     try {
-      // 加载失败由页头 Alert 承担（含重试按钮），不再让全局 toast 重复说一遍
+      // 加载失败由页头 Alert 提示（含重试），不再弹全局 toast
       const response = await queryApi(query, {suppressGlobalErrorMessage: true});
       if (requestId === queryState.requestId) {
         tableData.value = response.data.list ?? [];

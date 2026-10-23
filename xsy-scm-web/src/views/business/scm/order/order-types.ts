@@ -44,9 +44,9 @@ export interface Order {
   sellerId?: Id | null;
   orderSource: string;
   mallCouponInstanceId?: Id | null;
-  /** 当前订单明确选定的履约仓（后台录单新字段）。 */
+  /** 订单选定的履约仓。 */
   deliveryWarehouseId?: Id | null;
-  /** 历史响应沿用的仓库字段。 */
+  /** 旧接口沿用的仓库字段。 */
   mallDeliveryWarehouseId?: Id | null;
   status?: string;
   originalOrderId?: Id | null;
@@ -60,18 +60,9 @@ export interface Order {
   items: Item[];
   address: Address;
   tags?: import('/@/api/business/scm/order-tag-api').OrderTag[];
-  /**
-   * 已冻结的订单优惠；没有优惠时为 null。
-   *
-   * 订单金额列仍是结算口径（不含优惠），优惠是独立事实：合成一个「净额」会让
-   * 「原价多少、减了多少」无法回答。
-   */
+  /** 订单优惠；无优惠时为 null。金额列不含优惠，原价和优惠额分开显示。 */
   discount?: OrderDiscount | null;
-  /**
-   * 满赠赠品权益；没有赠品时为空。
-   *
-   * 与 `discount` 分开：赠品是非金额权益，只有赠品没有金额优惠的订单不会有优惠行。
-   */
+  /** 满赠赠品；无赠品时为空。赠品不是金额，和优惠分开存。 */
   gifts?: OrderGiftEntitlement[] | null;
   inventoryFactsVisible?: boolean;
   sortingFactsVisible?: boolean;
@@ -188,11 +179,7 @@ export interface OrderPoolAssignee {
   actualName: string;
 }
 
-/**
- * 最近已确认订单价（只读）：某客户某 SKU 的历史 CONFIRMED 订单行锁定单价快照。
- * 仅用于录单旁证，不回算当前价格、不参与定价，故不是第二套价格事实。
- * limit 约束订单数；同一订单同一 SKU 的多行（受 (order_id,sku_id) 唯一索引限制实际各一行）带 itemId 分别返回。
- */
+/** 某客户某规格最近已确认订单的成交单价，只读，仅用于录单时参考，不参与定价。 */
 export interface RecentPrice {
   itemId: Id;
   orderId: Id;

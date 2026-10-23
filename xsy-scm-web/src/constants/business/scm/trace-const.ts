@@ -1,7 +1,7 @@
 import type {SmartEnum} from '/@/types/smart-enum';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 
-/** 与 ScmTraceInspectionStatusEnum 和报告表 CHECK 白名单逐值对应。过期是派生状态。 */
+/** 与 ScmTraceInspectionStatusEnum 和报告表 CHECK 约束逐值对应。过期是按时间算出来的。 */
 export const SCM_TRACE_INSPECTION_STATUS_ENUM = {
   DRAFT: {value: 'DRAFT', desc: '草稿'},
   PUBLISHED: {value: 'PUBLISHED', desc: '已发布'},

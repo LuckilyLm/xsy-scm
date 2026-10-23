@@ -14,14 +14,14 @@ import dayjs from 'dayjs';
 import type {DateRange} from '../report-model';
 import {datePresets} from '../report-model';
 
-/** 报表日期区间由统一组件处理。查询使用 yyyy-MM-dd 字符串，日历显示时转换为 dayjs；日期不能为空。 */
+/** 报表日期区间选择器。查询用 yyyy-MM-dd 字符串，不能为空。 */
 const props = defineProps<{value?: DateRange | undefined}>();
 
 const emit = defineEmits<{'update:value': [value: DateRange | undefined]}>();
 
 const model = computed({
   get: () => props.value,
-  // 组件在 `value-format` 下收发字符串；类型由 ant-design-vue 的宽声明决定，这里收敛成报表口径
+  // 统一收发日期字符串；空值或半截区间当作未选
   set: (value: unknown) => {
     const pair = value as [string, string] | null | undefined;
     emit('update:value', pair && pair[0] && pair[1] ? [pair[0], pair[1]] : undefined);

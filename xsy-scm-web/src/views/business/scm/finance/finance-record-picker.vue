@@ -145,7 +145,7 @@ async function search() {
   error.value = '';
   try {
     const base = {pageNum: pageNum.value, pageSize: pageSize.value, startDate: startDate.value, endDate: endDate.value};
-    // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由弹窗内 Alert 提示，不再弹全局 toast
     const quiet = {suppressGlobalErrorMessage: true};
     let response;
     if (props.kind === 'RECEIPT') {

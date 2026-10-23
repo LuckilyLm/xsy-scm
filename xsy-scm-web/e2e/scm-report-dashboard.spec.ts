@@ -14,25 +14,13 @@ import smCrypto from 'sm-crypto';
 // ---------------------------------------------------------------- 来源：e2e/scm-dashboard-todo.spec.ts
 test.describe('scm-dashboard-todo', () => {
   /*
-    Wave 4 §6.1 / §6.2 业务待办与站内提醒 E2E：真实后端 + 真实浏览器 + 自建临时账号与单据。
-
-    钉死四件此前只在「代码看起来对」层面的事：
-      1. 待办卡片的数字与目标列表接口 total 同源（同一套筛选口径，不是各算一遍）；
-      2. 卡片 route 上的筛选条件被目标页面**真正吃进查询请求**（§6.1 的原始断层）；
-      3. keep-alive 复用：普通菜单进入不残留旧 deep-link，再次跳入要重新套用新条件；
-      4. 报损报溢驳回消息按 messageType + dataId 直达目标单据，且跳转不绕过目标接口权限。
-
-    原文件靠外部注入 W4_E2E_ADMIN_TOKEN 门控，缺令牌即整组 skip —— 正是 §12 指出的
-    「E2E 文件存在但未跑」。现在它自己建临时账号（含「只读面 − loss-gain:query」扣权账号）、
-    自己造单据，收尾取消线路并删除账号。令牌与口令只存内存。
+    业务待办与站内提醒 E2E：卡片数字与列表同源、跳转条件真正生效、keep-alive 不残留旧条件、
+    驳回消息直达目标单据。临时账号和单据自建，收尾清理。
   */
 
   type Row = Record<string, any>;
 
-  /**
-   * 扣掉 `scm:inventory:loss-gain:query`：§6.2 要求「旧消息还在但权限已失去」时跳转仍被服务端拒。
-   * 再建一个第二管理员：报损报溢禁止自建自审（裁决第 8 条制衡），驳回不能由录单人自己发起。
-   */
+  /** 扣掉 loss-gain:query 验证失去权限后跳转仍被拒；另建第二管理员避免自建自审。 */
   const accounts: TempAccounts = provisionTempAccounts('w4', ['scm:inventory:loss-gain:query'], undefined, true);
   const runName = accounts.admin;
   const draftRouteName = runName + '待办线路';

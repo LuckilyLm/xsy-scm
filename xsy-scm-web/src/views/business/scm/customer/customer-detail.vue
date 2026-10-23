@@ -1,7 +1,7 @@
-<!-- 客户详情集中展示资料、订单和交易情况。各页签复用现有查询接口并遵守对应权限，只读内容不直接修改客户。 -->
+<!-- 客户详情：按页签展示资料、订单和交易情况，只读。 -->
 <template>
   <a-card size="small" :bordered="false">
-    <!-- 页头：整个页面的上下文，必须留在 Tabs 之外 -->
+    <!-- 页头在 Tabs 之外，切页签后仍可见 -->
     <header class="scm-detail-header">
       <div class="scm-detail-header__main">
         <a-button type="link" class="scm-detail-header__back" @click="backToList">
@@ -30,9 +30,9 @@
             </template>
           </a-alert>
           <template v-else-if="customer">
-            <!-- 阅读宽度：基础资料不铺满超宽屏；表格类 Tab 仍用完整宽度 -->
+            <!-- 基础资料限制阅读宽度 -->
             <div class="scm-detail-read">
-              <!-- 1. 客户经营概览：仅用详情接口已有字段 -->
+              <!-- 客户经营概览 -->
               <section class="scm-summary-section">
                 <h3 class="scm-detail-card__title">客户经营概览</h3>
                 <div class="scm-summary">
@@ -58,7 +58,7 @@
               </section>
 
               <div class="scm-detail-grid">
-                <!-- 2. 联系与地址 -->
+                <!-- 联系与地址 -->
                 <section class="scm-detail-card">
                   <h3 class="scm-detail-card__title">联系与地址</h3>
                   <dl class="scm-field-list">
@@ -77,7 +77,7 @@
                   </dl>
                 </section>
 
-                <!-- 3. 归属关系 -->
+                <!-- 归属关系 -->
                 <section class="scm-detail-card">
                   <h3 class="scm-detail-card__title">归属关系</h3>
                   <dl class="scm-field-list">
@@ -100,7 +100,7 @@
                   </dl>
                 </section>
 
-                <!-- 4. 授信与账期：整行卡片 -->
+                <!-- 授信与账期 -->
                 <section class="scm-detail-card scm-detail-card--full">
                   <h3 class="scm-detail-card__title">授信与账期</h3>
                   <dl class="scm-field-list scm-field-list--3">
@@ -184,7 +184,7 @@
                 </a-spin>
               </section>
 
-              <!-- 5. 系统信息：弱化卡片，编码与时间不占核心区域 -->
+              <!-- 系统信息 -->
               <section class="scm-detail-card scm-detail-card--muted scm-detail-block">
                 <h3 class="scm-detail-card__title">系统信息</h3>
                 <dl class="scm-field-list scm-field-list--3">
@@ -483,7 +483,7 @@ const router = useRouter();
 
 const activeTab = ref<'base' | 'orders' | 'frequent' | 'agreement' | 'visibility' | 'aliases'>('base');
 
-/** 深链参数即全部 Tab 的唯一上下文；非纯数字视为无效，任何 Tab 都不据此发请求。 */
+/** 客户编号来自路由；非法时不发请求。 */
 const customerId = computed(() => {
   const id = route.query.customerId;
   return typeof id === 'string' && /^\d+$/.test(id) ? id : '';
@@ -565,9 +565,7 @@ function backToList(): void {
   void router.push('/customer/customer-list');
 }
 
-// ---------------------------------------------------------------------------
-// 基础资料（沿用详情加载与竞态守卫）
-// ---------------------------------------------------------------------------
+// 基础资料
 const customer = ref<CustomerDetail>();
 const baseLoading = ref(false);
 const baseError = ref('');
@@ -606,12 +604,12 @@ const creditPeriodUnitText = computed(() => {
   return unit ? CREDIT_PERIOD_UNIT_ENUM[unit]?.desc || unit : '—';
 });
 
-/** 授信额度：`null` 是「未设置」，与 `"0.0000"`（明确授信为零）语义不同，不能混成一个 0。 */
+/** 授信额度：null 是未设置，与 0 区分。 */
 const creditLimitText = computed(() => (customer.value?.creditLimit == null ? '未设置' : formatAmount(customer.value.creditLimit)));
 
 const amountOrDash = (value: string | null | undefined): string => formatAmountOrDash(value);
 
-/** 概览里的「账期」一格：把类型与取值合成一句，明细仍在「授信与账期」卡片里逐项列出。 */
+/** 概览的账期摘要；明细在「授信与账期」卡片。 */
 const creditPeriodSummary = computed(() => {
   const current = customer.value;
   if (!current?.creditPeriodType) return '未设置账期';
@@ -701,10 +699,7 @@ async function loadBase() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// 上下文 Tab：统一的「首次进入才加载 + 竞态守卫 + 复位」抽象，
-// 各 Tab 只声明自己的取数（复用既有查询接口）与错误口径，不各自复制一套加载逻辑。
-// ---------------------------------------------------------------------------
+// 页签数据：首次进入才加载，请求序号防乱序。
 interface TabLoader<T> {
   rows: Ref<T[]>;
   total: Ref<number>;
@@ -764,7 +759,7 @@ const orders = useTab<Order>(
 );
 
 const freqDays = ref(90);
-/** 只有这四档：用 segmented 一次摊开，避免为一个四选一的窗口点两次下拉。 */
+/** 统计窗口四档，一次全部展开。 */
 const freqDayOptions = [
   {value: 30, label: '30天'},
   {value: 90, label: '90天'},
@@ -818,21 +813,19 @@ function onFreqDaysChange(): void {
   if (customerId.value) void frequent.reload();
 }
 
-// 可售商品反查对「全部可见」客户返回一行 SKU 为空的策略行，这里据实拆开：策略文案 + 白名单 SKU 明细。
+// 全部可见时接口返回一行策略行，拆成说明文字和 SKU 明细。
 const visPolicyText = computed(() => {
   const policy = visibility.rows.value[0]?.visibilityPolicy;
   if (!policy) return '';
-  return policy === 'ALL_ENABLED' ? '可见范围：全部已启用商品（未设商品规格白名单）' : '可见范围：按白名单可售，以下为该客户已授权商品规格';
+  return policy === 'ALL_ENABLED' ? '可见范围：全部已启用商品（未单独指定可售规格）' : '可见范围：只卖指定规格，以下为该客户已授权商品规格';
 });
 const visRows = computed(() => visibility.rows.value.filter((r) => r.skuId != null));
 
-// ---------------------------------------------------------------------------
-// 枚举翻译与列定义（静态）
-// ---------------------------------------------------------------------------
+// 枚举翻译与列定义
 
 const shelfStatusTone = (value?: string | null): ScmStatusTone => (value === 'ON_SHELF' ? 'success' : value === 'OFF_SHELF' ? 'neutral' : 'warning');
 
-/** 协议价有效期：无结束时间即长期有效（不是缺数据，不能显示破折号）。 */
+/** 协议价无结束时间即长期有效。 */
 const effectivePeriodText = (row: PriceRow): string =>
   `${datetime(row.effectiveFrom)} ～ ${row.effectiveTo ? datetime(row.effectiveTo) : '长期有效'}`;
 

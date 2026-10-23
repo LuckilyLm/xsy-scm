@@ -1,4 +1,4 @@
-<!-- 计量单位新增 / 编辑弹窗：编辑态只放开量纲、小数位、状态与排序，编码与名称留灰显示。 -->
+<!-- 计量单位弹窗：编辑时编码和名称不可改。 -->
 <template>
   <a-modal
     v-model:open="visible"
@@ -55,7 +55,7 @@ const emit = defineEmits<{saved: []}>();
 const visible = ref(false),
   saving = ref(false),
   formRef = ref<FormInstance>();
-// uomId 决定新增还是编辑；编码与名称只在新增时可填，编辑时后端表单根本没有这两个字段。
+// uomId 决定新增还是编辑；编码和名称只在新增时提交。
 const form = reactive({
   uomId: undefined as ProductUom['uomId'] | undefined,
   version: 0,
@@ -122,7 +122,7 @@ async function save() {
     visible.value = false;
     emit('saved');
   } catch {
-    // 保存失败只走全局 toast
+    // 保存失败由全局 toast 提示
   } finally {
     saving.value = false;
   }

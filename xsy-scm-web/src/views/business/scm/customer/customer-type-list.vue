@@ -1,4 +1,4 @@
-<!-- 客户类型列表支持筛选和排序。只对后端支持的字段开放排序。 -->
+<!-- 客户类型：只对后端支持的字段开放排序。 -->
 <template>
   <section aria-label="客户类型">
     <a-form class="smart-query-form" layout="inline">
@@ -88,10 +88,10 @@ const loading = ref(false);
 const error = ref('');
 const modal = ref<InstanceType<typeof CustomerTypeModal>>();
 
-/** 枚举值 → 中文；查不到时退回原值，避免表格出现空白单元格。 */
+/** 枚举值转中文；查不到保留原值。 */
 const statusText = (value: string): string => CUSTOMER_TYPE_STATUS_ENUM[value]?.desc || value;
 
-// 字典表只有四列值得常驻：编码、名称、状态、操作。创建时间不影响判断，不默认摊在列表上。
+// 只保留编码、名称、状态、操作四列。
 const columns = ref<TableColumnsType<CustomerType>>([
   {title: '类型编码', dataIndex: 'typeCode', width: 200, sorter: true},
   {title: '类型名称', dataIndex: 'name', width: 220, sorter: true},
@@ -99,7 +99,7 @@ const columns = ref<TableColumnsType<CustomerType>>([
   {title: '操作', dataIndex: 'action', width: 140, align: 'center', fixed: 'right'},
 ]);
 
-// 请求序号：避免快速切页时旧响应覆盖新响应（与 product-list 同策略）。
+// 请求序号防翻页乱序。
 let requestId = 0;
 
 async function load() {
@@ -107,7 +107,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const response = await customerTypeApi.query({...filters}, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       rows.value = response.data.list;
@@ -130,7 +130,7 @@ function reset() {
   void load();
 }
 
-// 排序白名单：只映射后端 CustomerTypeService.SORTABLE 允许的列。
+// 排序只映射后端允许的列。
 const sortChanged: TableProps<CustomerType>['onChange'] = (_page, _filters, sort) => {
   const item = Array.isArray(sort) ? sort[0] : sort;
   const names: Record<string, string> = {typeCode: 'type_code', name: 'name', status: 'status'};
@@ -145,7 +145,7 @@ async function remove(row: CustomerType) {
     message.success('客户类型已删除');
     await load();
   } catch {
-    // 删除失败只走全局 toast
+    // 删除失败由全局 toast 提示
   }
 }
 

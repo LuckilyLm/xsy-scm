@@ -1,4 +1,4 @@
-/** 建单和登记打印使用幂等键，失败重试应沿用原键；数量录入等操作通过版本号防重。预览打印不会增加计次。 */
+/** 建单和打印用幂等键，数量录入靠版本号防重；预览不计次。 */
 import {request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
@@ -71,7 +71,7 @@ export const sortingApi = {
   confirmedPerformance: (query: SortingSummaryQuery, options?: RequestOptions) =>
     call<ScmPage<SortingPerformance>>('get', '/confirmed-performance', query, options),
   candidateLines: (query: SortingCandidateQuery) => call<ScmPage<SortingCandidateLine>>('get', '/candidate-lines', query),
-  /** 预览：只读、不计次；仅 SORTING / COMPLETED 可取，否则业务码 41121。 */
+  /** 预览：只读不计次；仅分拣中或已完成的单据可取。 */
   printPreview: (id: Id) => call<SortingPrint>('get', `/tasks/${id}/print`),
   create: (form: SortingTaskCreatePayload) => command<SortingTaskDetail>('/tasks', form),
   assign: (id: Id, form: SortingAssignPayload) => call<string>('post', `/tasks/${id}/assign`, form),

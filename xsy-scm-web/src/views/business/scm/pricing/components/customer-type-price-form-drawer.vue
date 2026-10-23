@@ -66,7 +66,7 @@ import {pricingError} from '../pricing-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
-/** 表单模型：有效期是本地字段，提交时才折进 PriceForm。 */
+/** 表单模型：有效期是本地字段，提交时再写进 PriceForm。 */
 type CustomerTypePriceModel = PriceForm & {effectiveRange?: [string, string]};
 
 const emit = defineEmits<{saved: []}>();
@@ -76,7 +76,7 @@ const visible = ref(false),
   error = ref('');
 const form = reactive<CustomerTypePriceModel>({...emptyPrice(), effectiveRange: undefined});
 const formRef = ref();
-/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+/** 必填项逐项校验，错误显示在输入框下方。 */
 const formRules = {
   customerTypeId: [{required: true, message: '请选择客户类型', trigger: 'change'}],
   skuId: [{required: true, message: '请选择商品规格', trigger: 'change'}],
@@ -114,7 +114,7 @@ async function open(id?: ScmId) {
 }
 
 async function submit() {
-  // 必填项走表单校验：错误显示在对应输入框下方
+  // 必填项由表单校验
   try {
     await formRef.value?.validate();
   } catch {
@@ -122,7 +122,7 @@ async function submit() {
   }
   form.effectiveFrom = form.effectiveRange?.[0] || '';
   form.effectiveTo = form.effectiveRange?.[1] || null;
-  // 剩下的跨字段业务规则不是字段必填，用 toast
+  // 结束时间必须晚于开始时间这类跨字段规则，用 toast 提示
   const problems = validatePrice(form, 'customerTypeId');
   if (problems.length) {
     message.warning(problems.join('；'));
@@ -137,7 +137,7 @@ async function submit() {
     visible.value = false;
     emit('saved');
   } catch {
-    // 保存失败只走全局 toast；抽屉里的 error 留给加载失败
+    // 保存失败由全局 toast 提示；error 只用于加载失败
   } finally {
     saving.value = false;
   }

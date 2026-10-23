@@ -191,7 +191,7 @@ function printVersion() {
     '<!doctype html><html><head><meta charset="utf-8"><style>body{font:12px Arial,sans-serif;color:#222;padding:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:5px}h2{text-align:center}</style></head><body></body></html>'
   );
   doc.close();
-  // Clone the already escaped Vue DOM instead of injecting raw customer names into HTML.
+  // 直接克隆已经转义过的 Vue DOM，避免把客户名当 HTML 注入
   doc.body.appendChild(printArea.value.cloneNode(true));
   doc.body.querySelector('.statement-lines')?.remove();
   const table = doc.createElement('table');

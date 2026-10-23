@@ -1,10 +1,4 @@
-/**
- * 辅助排线建议接口。
- *
- * 排线建议分三步：生成（只算建议，不碰线路）→ 查看 → 显式应用（写回停靠顺序）。
- * 生成与应用在后端是两个独立权限：只看怎么排的人不该顺手获得改线路的能力。
- *
- */
+/** 排线建议：生成、查看、应用。生成与应用是独立权限。 */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmResponse} from '/@/types/business/scm/customer';
 import type {DeliveryPlanProposal, Id} from '/@/views/business/scm/delivery/delivery-types';

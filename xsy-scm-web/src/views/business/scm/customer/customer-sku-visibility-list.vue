@@ -10,7 +10,7 @@
         </a-form-item>
         <a-form-item label="可见策略" class="smart-query-form-item">
           <a-select v-model:value="filters.visibilityPolicy" allow-clear placeholder="全部策略" style="width: 150px">
-            <a-select-option value="ALLOWLIST">商品规格白名单</a-select-option>
+            <a-select-option value="ALLOWLIST">指定可售规格</a-select-option>
             <a-select-option value="ALL_ENABLED">全部可售</a-select-option>
           </a-select>
         </a-form-item>
@@ -119,7 +119,7 @@ let requestId = 0;
 
 const shelfStatusTone = (value?: string | null): ScmStatusTone => (value === 'ON_SHELF' ? 'success' : value === 'OFF_SHELF' ? 'neutral' : 'warning');
 
-// 编码列单独保留，但默认收起；列设置仍可打开这两项。
+// 两个编码列默认收起，可通过列设置打开。
 type VisibilityListColumn = TableColumnsType<VisibilityRow>[number] & {showFlag?: boolean};
 const columns = ref<VisibilityListColumn[]>([
   {title: '客户名称', dataIndex: 'customerName', width: 180},
@@ -134,7 +134,7 @@ const columns = ref<VisibilityListColumn[]>([
 ]);
 
 function visibilityPolicyLabel(policy: string): string {
-  return policy === 'ALLOWLIST' ? '商品规格白名单' : policy === 'ALL_ENABLED' ? '全部可售' : policy;
+  return policy === 'ALLOWLIST' ? '指定可售规格' : policy === 'ALL_ENABLED' ? '全部可售' : policy;
 }
 
 function visibilityRowKey(row: VisibilityRow): string {
@@ -146,7 +146,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const response = await customerVisibilityApi.query({...filters}, {suppressGlobalErrorMessage: true});
     if (currentRequest === requestId) {
       rows.value = response.data.list;

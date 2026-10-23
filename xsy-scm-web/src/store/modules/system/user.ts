@@ -1,7 +1,4 @@
-/*
- * 登录用户
- *
- */
+/* 登录用户 */
 import _ from 'lodash';
 import {defineStore} from 'pinia';
 import localKey from '/@/constants/local-storage-key-const';
@@ -15,42 +12,39 @@ export const useUserStore = defineStore({
   id: 'userStore',
   state: () => ({
     token: '',
-    //员工id
+    // 员工 id
     employeeId: '',
     // 头像
     avatar: '',
-    //登录名
+    // 登录名
     loginName: '',
-    //姓名
+    // 姓名
     actualName: '',
-    //手机号
+    // 手机号
     phone: '',
-    //部门id
+    // 部门 id
     departmentId: '',
-    //部门名词
+    // 部门名称
     departmentName: '',
-    //是否需要修改密码
+    // 是否需要修改密码
     needUpdatePwdFlag: false,
-    //是否为超级管理员
-    // 初值必须是 false：它是权限放行的总开关（指令、插件、各域 permission 组合式函数
-    // 都写成「是超管就直接 true」）。初值给 true 等于「登录信息到达前一律放行」，
-    // 页面在登录态未就绪时渲染就会短暂露出本无权限的操作。授权只能由登录响应显式授予。
+    // 超管标记是权限放行的总开关；初值 false，只能由登录响应授予
     administratorFlag: false,
-    //上次登录ip
+    // 上次登录 IP
     lastLoginIp: '',
-    //上次登录ip地区
+    // 上次登录 IP 地区
     lastLoginIpRegion: '',
-    //上次登录 设备
+    // 上次登录设备
     lastLoginUserAgent: '',
-    //上次登录时间
+    // 上次登录时间
     lastLoginTime: '',
-    //左侧菜单树形结构
+    // 左侧菜单树
     menuTree: [],
-    //存在页面路由的菜单集合
+    // 有页面路由的菜单
     menuRouterList: [],
-    //是否完成menuRouter初始化
+    // 菜单路由是否初始化完成
     menuRouterInitFlag: false,
-    //父类菜单集合
+    // 父级菜单集合
     menuParentIdListMap: new Map(),
     // 功能点集合
     pointsList: [],
@@ -71,23 +65,23 @@ export const useUserStore = defineStore({
     getNeedUpdatePwdFlag(state) {
       return state.needUpdatePwdFlag;
     },
-    //是否初始化了 路由
+    // 路由是否初始化完成
     getMenuRouterInitFlag(state) {
       return state.menuRouterInitFlag;
     },
-    //菜单树
+    // 菜单树
     getMenuTree(state) {
       return state.menuTree;
     },
-    //菜单的路由
+    // 菜单路由
     getMenuRouterList(state) {
       return state.menuRouterList;
     },
-    //菜单的父级id
+    // 菜单的父级 id
     getMenuParentIdListMap(state) {
       return state.menuParentIdListMap;
     },
-    //功能点
+    // 功能点
     getPointList(state) {
       if (_.isEmpty(state.pointsList)) {
         let localUserPoints = localRead(localKey.USER_POINTS) || '';
@@ -95,7 +89,7 @@ export const useUserStore = defineStore({
       }
       return state.pointsList;
     },
-    //标签页
+    // 标签页
     getTagNav(state) {
       if (_.isNull(state.tagNav)) {
         let localTagNav = localRead(localKey.USER_TAG_NAV) || '';
@@ -135,8 +129,7 @@ export const useUserStore = defineStore({
       this.menuParentIdListMap = new Map();
       this.pointsList = [];
       // —— 界面状态 ——
-      // 置 null 而不是 []：getTagNav 用 _.isNull 判断「还没从本地读过」，
-      // 给 [] 会让它跳过本地读取，行为与初始值不一致。
+      // 置 null 而不是 []：getTagNav 用它判断是否已从本地读取
       this.tagNav = null;
       this.keepAliveIncludes = [];
       this.unreadMessageCount = 0;
@@ -157,7 +150,7 @@ export const useUserStore = defineStore({
         smartSentry.captureError(e);
       }
     },
-    //设置登录信息
+    // 设置登录信息
     setUserLoginInfo(data) {
       // 用户基本信息
       this.token = data.token;
@@ -175,16 +168,16 @@ export const useUserStore = defineStore({
       this.lastLoginUserAgent = data.lastLoginUserAgent;
       this.lastLoginTime = data.lastLoginTime;
 
-      //菜单权限
+      // 菜单权限
       this.menuTree = buildMenuTree(data.menuList);
 
-      //拥有路由的菜单
+      // 有路由的菜单
       this.menuRouterList = data.menuList.filter((e) => e.path || e.frameUrl);
 
-      //父级菜单集合
+      // 父级菜单集合
       this.menuParentIdListMap = buildMenuParentIdListMap(this.menuTree);
 
-      //功能点
+      // 功能点
       this.pointsList = data.menuList.filter((menu) => menu.menuType === MENU_TYPE_ENUM.POINTS.value && menu.visibleFlag && !menu.disabledFlag);
 
       // 获取用户未读消息
@@ -195,13 +188,13 @@ export const useUserStore = defineStore({
       this.token = token;
     },
 
-    //设置标签页
+    // 设置标签页
     setTagNav(route, from) {
       if (_.isNull(this.tagNav)) {
         let localTagNav = localRead(localKey.USER_TAG_NAV) || '';
         this.tagNav = localTagNav ? JSON.parse(localTagNav) : [];
       }
-      // name唯一标识
+      // name 是菜单唯一标识
       let name = route.name;
       if (!name || name === HOME_PAGE_NAME || name === '403' || name === '404') {
         return;
@@ -228,7 +221,7 @@ export const useUserStore = defineStore({
       }
       localSave(localKey.USER_TAG_NAV, JSON.stringify(this.tagNav));
     },
-    //关闭标签页
+    // 关闭标签页
     closeTagNav(menuName, closeAll) {
       if (_.isEmpty(this.getTagNav)) return;
       if (closeAll && !menuName) {
@@ -252,13 +245,13 @@ export const useUserStore = defineStore({
       }
       localSave(localKey.USER_TAG_NAV, JSON.stringify(this.tagNav));
     },
-    //关闭页面
+    // 关闭页面
     closePage(route, router, path) {
       if (!this.getTagNav || _.isEmpty(this.getTagNav)) return;
       if (path) {
         router.push({path});
       } else {
-        // 寻找tagNav
+        // 找当前标签页
         let index = this.getTagNav.findIndex((e) => e.menuName === route.name);
         if (index === -1) {
           router.push({name: HOME_PAGE_NAME});
@@ -267,7 +260,7 @@ export const useUserStore = defineStore({
           if (tagNav.fromMenuName && this.getTagNav.some((e) => e.menuName === tagNav.fromMenuName)) {
             router.push({name: tagNav.fromMenuName, query: tagNav.fromMenuQuery});
           } else {
-            // 查询左侧tag
+            // 退回左侧标签页
             let leftTagNav = this.getTagNav[index - 1];
             router.push({name: leftTagNav.menuName, query: leftTagNav.menuQuery});
           }
@@ -275,7 +268,7 @@ export const useUserStore = defineStore({
       }
       this.closeTagNav(route.name, false);
     },
-    // 加入缓存
+    // 加入缓存列表
     pushKeepAliveIncludes(val) {
       if (!val) {
         return;
@@ -311,9 +304,7 @@ export const useUserStore = defineStore({
   },
 });
 
-/**
- * 构建菜单父级集合
- */
+/** 构建菜单父级集合 */
 function buildMenuParentIdListMap(menuTree) {
   let menuParentIdListMap = new Map();
   recursiveBuildMenuParentIdListMap(menuTree, [], menuParentIdListMap);
@@ -338,17 +329,12 @@ function recursiveBuildMenuParentIdListMap(menuList, parentMenuList, menuParentI
   }
 }
 
-/**
- * 构建菜单树
- *
- * @param  menuList
- * @returns
- */
+/** 构建菜单树 */
 function buildMenuTree(menuList) {
-  //1 获取所有 有效的 目录和菜单
+  // 有效的目录和菜单
   let catalogAndMenuList = menuList.filter((menu) => menu.menuType !== MENU_TYPE_ENUM.POINTS.value && menu.visibleFlag && !menu.disabledFlag);
 
-  //2 获取顶级目录
+  // 顶级目录
   let topCatalogList = catalogAndMenuList.filter((menu) => menu.parentId === 0);
   for (const topCatalog of topCatalogList) {
     buildMenuChildren(topCatalog, catalogAndMenuList);

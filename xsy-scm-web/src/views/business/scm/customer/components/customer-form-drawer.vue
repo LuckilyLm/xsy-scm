@@ -1,9 +1,4 @@
-<!--
-  客户 新建 / 编辑 抽屉。
-  - 表单不含 status：新建固定「潜在」，编辑时只读展示；变更走独立的 `updateStatus` 端点。
-  - 上级客户只接受集团且拒绝环形（后端 `CustomerValidator.validateParent`），
-    前端提前挡掉必然失败的选项。
--->
+<!-- 客户新建/编辑抽屉：状态只读，变更在列表里操作；上级客户只选集团。 -->
 <template>
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('m')" @close="close">
     <a-spin :spinning="loading">
@@ -147,7 +142,7 @@
             <h3 class="scm-form-section__title">授信与账期</h3>
           </div>
           <a-row :gutter="20">
-            <!-- 额度与阈值都是后端的 4 位定点字符串，必须 string-mode：走 number 会丢精度、也会改掉提交类型 -->
+            <!-- 金额字段用 string-mode 保留 4 位小数 -->
             <a-col :xs="24" :sm="12">
               <a-form-item name="creditLimit">
                 <template #label>
@@ -270,19 +265,19 @@ const saving = ref(false);
 const error = ref('');
 const formRef = ref<FormInstance>();
 
-/** 详情里的状态（只读展示用）。新建时后端固定给「潜在」。 */
+/** 状态只读展示；新建时固定为「潜在」。 */
 const status = ref<CustomerStatus>('POTENTIAL');
-/** 与客户列表同一套配色：合作中绿、暂停合作橙、黑名单红、潜在灰。 */
+/** 状态配色，与客户列表一致。 */
 const STATUS_COLOR: Record<CustomerStatus, string> = {
   POTENTIAL: 'default',
   COOPERATING: 'green',
   SUSPENDED: 'orange',
   BLACKLIST: 'red',
 };
-/** 编辑态回显的当前负责人姓名；归属只能通过列表「改派业务员」变更，编辑不动它。 */
+/** 负责人姓名只读；改派在列表里操作。 */
 const sellerName = ref('');
 
-/** 分配/改派权：与服务端 resolveSellerOnCreate 同一口径 —— 无此权者新建一律落自己名下。 */
+/** 没有分配权限时，新建客户默认归自己。 */
 const canAssign = computed(() => hasPermission('scm:customer:assign'));
 const canWarehouseUpdate = computed(
   () => hasPermission('scm:customer:update') && hasPermission('scm:warehouse:update') && hasPermission('scm:warehouse:query')
@@ -291,7 +286,7 @@ const isEdit = computed(() => form.customerId != null);
 
 const form = reactive<CustomerFormModel>(emptyCustomer());
 
-/** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
+/** 省市区选择路径，与表单的地区列互转。 */
 const area = ref<AreaNode[]>([]);
 
 function onAreaChange(_value: unknown, nodes: AreaNode[]) {
@@ -301,12 +296,7 @@ function onAreaChange(_value: unknown, nodes: AreaNode[]) {
 const title = computed(() => (form.customerId ? '编辑客户' : '新增客户'));
 const statusText = computed(() => CUSTOMER_STATUS_ENUM[status.value]?.desc || status.value);
 
-/**
- * 业务员下拉的桥接。
- *
- * 原生 `EmployeeSelect` 的 `value` prop 声明是 `[Number, Array]`，
- * 直接绑 `number | null` 会因 `null` 报 TS2322；这里统一把 `null` 折成 `undefined`。
- */
+/** 业务员下拉桥接：null 折成 undefined，避免类型报错。 */
 const sellerValue = computed<number | undefined>({
   get: () => form.sellerId ?? undefined,
   set: (value) => {
@@ -321,7 +311,7 @@ const mallWarehouseValue = computed<string | number | undefined>({
   },
 });
 
-/** 打开抽屉。传 `customerId` 即编辑模式（先拉详情再填表）。 */
+/** 传 customerId 进入编辑，否则新建。 */
 async function open(customerId?: ScmId) {
   visible.value = true;
   error.value = '';
@@ -332,7 +322,7 @@ async function open(customerId?: ScmId) {
   if (customerId == null) {
     await nextTick();
     formRef.value?.clearValidate();
-    // 扫码带来的线索：业务员按最近一次扫码归属预填，管理员仍可改
+    // 新建时按最近一次扫码预填业务员，管理员仍可改
     try {
       const attribution = await customerPromotionApi.attribution();
       if (attribution.data?.sellerId != null) {
@@ -345,10 +335,10 @@ async function open(customerId?: ScmId) {
   }
   loading.value = true;
   try {
-    // 加载失败由抽屉内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由抽屉内 Alert 提示，不再弹全局 toast
     const response = await customerApi.detail(customerId, {suppressGlobalErrorMessage: true});
     const detail = response.data;
-    // 列表 VO 不含地址 / 账期 / 备注，因此编辑必须先取详情，不能直接复用列表行。
+    // 列表数据不含地址、账期等字段，编辑要先取详情。
     Object.assign(form, {
       customerId: detail.customerId,
       version: detail.version,
@@ -390,15 +380,14 @@ async function open(customerId?: ScmId) {
     error.value = customerError(e);
   } finally {
     loading.value = false;
-    // 抽屉内容首次打开才挂载，而 AreaCascader 只用非 immediate 的 watch 同步 value，
-    // 因此回填必须排在 nextTick 之后，否则第一次编辑时选择器是空的。
+    // 区划选择器挂载后才生效，回填要等 nextTick。
     await nextTick();
     area.value = areaNodesOf(form);
     formRef.value?.clearValidate();
   }
 }
 
-/** 账期类型可不填。切换账期方式时清理另一方式的值，避免提交互相冲突的配置。 */
+/** 账期类型可不填；切换时清掉另一形态的值。 */
 const creditPeriodTypeValue = computed<string | undefined>({
   get: () => form.creditPeriodType ?? undefined,
   set: (value) => {
@@ -406,7 +395,7 @@ const creditPeriodTypeValue = computed<string | undefined>({
   },
 });
 
-/** 账期单位桥接；setter 在切到「天」时清掉结算日（按天账期没有结算日概念）。 */
+/** 账期单位桥接；切到「天」时清掉结算日。 */
 const creditPeriodUnitValue = computed<string | undefined>({
   get: () => form.creditPeriodUnit ?? undefined,
   set: (value) => {
@@ -424,7 +413,7 @@ async function submit() {
   } catch {
     return;
   }
-  // 表单规则覆盖不到的跨字段约束（账期三形态互斥、金额格式）由纯函数兜底。
+  // 跨字段规则（账期互斥、金额格式）由纯函数校验。
   const problem = locationError(form) || validateCustomer(form);
   if (problem) {
     error.value = problem;
@@ -444,7 +433,7 @@ async function submit() {
     visible.value = false;
     emit('saved');
   } catch {
-    // 保存失败只走全局 toast；抽屉里的 error 留给本地校验与加载失败
+    // 保存失败由全局 toast 提示；error 只用于本地校验和加载失败
   } finally {
     saving.value = false;
   }

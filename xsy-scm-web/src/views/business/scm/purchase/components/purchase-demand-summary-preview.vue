@@ -82,7 +82,7 @@ import type {DemandSummaryRow, Id} from '../purchase-types';
 import {quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 
-/** 这些列是后端下发的四位定点字符串，统一走 `quantity` 渲染（null → —）。 */
+/** 数量列统一按四位小数显示，空值显示“—”。 */
 const numericColumns = [
   'orderDemandQuantity',
   'onHandQuantity',
@@ -128,8 +128,7 @@ const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
   {title: '有效在途未收', dataIndex: 'inTransitQuantity', width: 130},
   {title: '已有采购覆盖', dataIndex: 'purchaseCoverageQuantity', width: 130},
   {
-    // 「净采购缺口」容易被当成「该买这么多」，用表头问号说明它只是预览口径。
-    // 放表头而不是页面常驻一行：不操作的人不需要看到，需要的人悬停即可。
+    // 表头问号说明：这里只是预览，不代表最终采购建议
     title: () => h('span', [h('span', '净采购缺口'), h(ScmFieldHelp, {label: '净采购缺口', text: '预览不是最终净采购建议，也不生成采购单。'})]),
     dataIndex: 'netPurchaseGap',
     width: 125,
@@ -150,7 +149,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页内 Alert 承担（带重试），不再让全局 toast 重复说一遍
+    // 加载失败由页头的 Alert 提示并可重试
     const r = await purchaseDemandApi.summaryPreview(
       {
         startAt: range.value[0],

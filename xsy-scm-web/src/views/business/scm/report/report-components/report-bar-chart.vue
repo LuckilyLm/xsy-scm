@@ -2,11 +2,7 @@
   <a-card size="small" class="report-chart">
     <template #title>{{ title }}</template>
     <a-empty v-if="!items.length" :image-style="{height: '40px'}" :description="emptyText" class="report-chart-empty" />
-    <!--
-      图表容器用 `v-show` 而不是 `v-if`：`useEcharts` 在 `onMounted` 时对被观察的那个元素
-      注册 ResizeObserver，元素后来才被创建就永远等不到尺寸，图会一直空白。
-      隐藏时容器尺寸是 0，composable 自己会把配置挂起，等显示后再补 init。
-    -->
+    <!-- 容器用 v-show：useEcharts 挂载时就要观察到这个元素，用 v-if 图表会一直空白 -->
     <div v-show="items.length" ref="chartEl" :style="{height}" />
   </a-card>
 </template>
@@ -17,7 +13,7 @@ import {useEcharts} from '/@/views/business/scm/screen/composables/use-echarts';
 import {REPORT_CHART_COLORS, REPORT_CHART_HEIGHT} from './chart-theme';
 import type {ReportChartBar} from '../report-types';
 
-/** 排行榜保留无值条目，使用占位提示，不自行删除导致 TOP5 变 TOP4；值与显示文本分别用于图形和标签。 */
+/** 无值的条目也保留，占位显示，避免 TOP5 变成 TOP4。 */
 const props = withDefaults(
   defineProps<{
     title: string;
@@ -56,7 +52,7 @@ function render() {
     },
     yAxis: {
       type: 'category',
-      // 倒序：第 1 名画在最上面，与表格「金额排名 1 在第一行」的阅读顺序一致
+      // 第 1 名画在最上面，和表格顺序一致
       inverse: true,
       data: items.map((item) => item.name),
       axisLabel: {color: REPORT_CHART_COLORS.axisText, width: 140, overflow: 'truncate'},

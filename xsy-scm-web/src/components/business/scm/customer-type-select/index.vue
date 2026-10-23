@@ -1,4 +1,4 @@
-<!-- 后端 `/scm/customer/type/option/list` 只返回 `ENABLED` 的类型。 -->
+<!-- 类型下拉只列出启用状态 -->
 <template>
   <a-select
     v-model:value="selectValue"

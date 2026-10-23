@@ -1,8 +1,4 @@
-/**
- * 公开扫码溯源：免登录，凭据是标签上的令牌。
- *
- * 只读接口，失败由页面内联提示，不让全局 toast 再重复说一遍。
- */
+/** 公开扫码溯源：免登录，凭令牌访问；失败由页面内联提示。 */
 import {getRequest} from '/@/lib/axios';
 import type {ScmResponse} from '/@/types/business/scm/customer';
 import type {InspectionConclusion, InspectionStatus} from '/@/constants/business/scm/trace-const';

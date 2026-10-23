@@ -1,9 +1,5 @@
-<!--
- * 收货确认弹窗。
- * - 非标品必须录入实重（`effectiveQuantity` 取实重）；
- * - 必须覆盖全部收货行（后端 40998）；
- * - 超收容差是服务端配置，弹窗只给「剩余可收」这个确定事实，不在前端判定容差。
--->
+<!-- 收货确认弹窗。非标品必须填实重，所有收货行都要填。
+     超收容差由服务端配置，前端只显示剩余可收量，不判断超收。 -->
 <template>
   <a-modal
     :open="visible"
@@ -146,7 +142,7 @@ const columns: TableColumnsType<ReceiptItem> = [
   {title: '修正原因', dataIndex: 'correctionReason', width: 170},
 ];
 
-/** 按收货行 id 取（并缓存）对应的确认行 —— 输入框双向绑定需要稳定对象。 */
+/** 按收货行 id 取确认行；没有就新建并缓存，保证输入框绑定的对象不变。 */
 function lineOf(receiptItemId: Id): ReceiptConfirmItemPayload {
   let line = lines.value.find((row) => String(row.receiptItemId) === String(receiptItemId));
   if (!line) {
@@ -194,12 +190,7 @@ async function load() {
   }
 }
 
-/**
- * 打开某一行的批次登记。
- *
- * 首次打开时用「本次有效收货量」预填一条，仓管员只需要拆成多个批次或补来源批号，
- * 不用再手抄一遍数量 —— 但合计仍必须等于本次收货量，否则提交会被拦下。
- */
+/** 打开某一行的批次登记：首次用本次收货量预填一条，合计必须等于本次收货量。 */
 function openLots(record: ReceiptItem) {
   const line = lineOf(record.id);
   lotLineId.value = record.id;

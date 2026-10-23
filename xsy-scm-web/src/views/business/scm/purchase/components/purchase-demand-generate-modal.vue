@@ -1,10 +1,5 @@
-<!--
- * 采购需求生成弹窗。
- * - 时间段是半开区间 `[startAt, endAt)`，不是 `startTime`/`endTime`，也不是闭区间；
- * - `demand_date` 取 `confirmed_at` 在上海时区下的日期；
- * - 两步走：先 `demand/batch/create` 冻结净需求批次，再由 `demand/batch/generate`
- *   从同一批次生成需求 —— 重复生成不会重复建需求。
--->
+<!-- 采购需求生成弹窗。时间段含开始日、不含结束日。
+     先生成冻结批次，再由同一批次生成需求，重复生成不会重复建需求。 -->
 <template>
   <a-modal :open="open" title="汇总生成采购需求" width="720px" :confirm-loading="saving" ok-text="生成需求" @ok="generate" @cancel="close">
     <a-alert v-if="error" :message="error" type="error" show-icon />
@@ -63,10 +58,7 @@ import FormNote from '/@/components/framework/form-note/index.vue';
 const props = defineProps<{open: boolean}>();
 const emit = defineEmits<{close: []; generated: []; viewBatch: [batchId: Id]}>();
 
-/**
- * 表单模型必须是稳定对象：原来写 `:model="{...form, range}"`，每次渲染都会新建对象，
- * 而 change 触发的校验发生在重渲染之前，读到的是上一份快照——选了区间仍提示未选择。
- */
+/** 表单模型要保持同一个对象；每次渲染新建对象会让校验读到旧值。 */
 const form = reactive<{
   warehouseId?: Id;
   supplierId?: Id;
@@ -93,14 +85,7 @@ const warehouses = ref<{id: Id; warehouseCode?: string; name?: string}[]>([]);
 
 const warehouseOptions = computed(() => warehouses.value.map((w) => ({value: w.id, label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）`})));
 
-/**
- * 采购员下拉的桥接。
- *
- * 原生 `EmployeeSelect` 的 `value` prop 声明是 `[Number, Array]`，
- * 直接绑 `Id | undefined` 会因为 `string` 报 TS2322。
- * 员工 id 在后端是自增数字，这里显式收敛成 `number | undefined`；
- * 本弹窗的 `purchaserId` 本就是可选（提交时 `?? null`），因此清空写回 `undefined`。
- */
+/** 员工选择器的 value 只接受数字，这里把 id 转成 number；清空时回写 undefined。 */
 const purchaserValue = computed<number | undefined>({
   get: () => (form.purchaserId == null ? undefined : Number(form.purchaserId)),
   set: (value) => {
@@ -124,7 +109,7 @@ async function loadWarehouses() {
 
 void loadWarehouses();
 
-// 弹窗每次打开都清掉上一次的区间与结果，避免「以为重新生成了其实没有」
+// 每次打开清掉上一次的区间和结果
 watch(
   () => props.open,
   (open) => {
@@ -175,7 +160,7 @@ function close() {
   emit('close');
 }
 
-/** 把回看交给列表页那个唯一的抽屉实例：这里再挂一个抽屉会出现两份同源请求。 */
+/** 复用列表页的批次抽屉，避免再挂一份重复请求。 */
 function viewBatch() {
   if (batch.value) {
     emit('viewBatch', batch.value.batchId);

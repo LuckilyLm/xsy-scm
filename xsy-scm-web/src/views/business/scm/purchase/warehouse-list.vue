@@ -1,9 +1,4 @@
-<!--
-  仓库列表。
-  - 启用 / 停用走独立命令，基础信息表单不直接修改状态；
-  - 「所在地区」的省市区级联与 `address` 自由文本并存：编码供大屏按市聚合，
-    地址仍是收货与展示口径。
--->
+<!-- 仓库列表。启用/停用是独立操作；省市区编码用于统计，地址用于收货和展示。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -70,8 +65,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'remark'">{{ record.remark || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 行内只留高频的「编辑」与「授权员工」；启用/停用是状态机动作，
-               停用还会影响「默认仓库」判定（唯一启用仓库），不与普通动作同排常驻 -->
+          <!-- 编辑和授权员工常驻，启用/停用收进“更多” -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:warehouse:update'" @click="open(record)">编辑</a-button>
             <a-button type="link" size="small" v-privilege="'scm:warehouse:scope:query'" @click="scopeModal?.openEmployees(record.id, record.name)">
@@ -177,11 +171,7 @@ function onAreaChange(_value: unknown, nodes: AreaNode[]) {
 
 let requestId = 0;
 
-/**
- * 列表列。仓库是配置类主数据，与普通主数据口径不同：
- * 编码保留成独立列（对账、盘点、接口对接都用它）；创建时间下沉到详情；
- * 「未定位」是唯一要一眼挑出来的信号（未定位无法参与路线规划），用图标 + Tooltip。
- */
+/** 列表列。编码单独一列；“未定位”用图标提示，未定位不能参与路线规划。 */
 const columns = ref<TableColumnsType<Warehouse>>([
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 160},
   {title: '仓库名称', dataIndex: 'name', width: 200},
@@ -193,17 +183,17 @@ const columns = ref<TableColumnsType<Warehouse>>([
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
 
-/** 区域摘要：省 / 市 / 区三级名称快照拼一行；未选任何层级时给 `—`（全域空值口径）。 */
+/** 省市区名称拼成一行；未选择时显示“—”。 */
 function areaText(record: Warehouse): string {
   const nodes = areaNodesOf(record);
   return nodes.length ? nodes.map((node) => node.label).join(' / ') : '—';
 }
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 更多菜单无法使用 `v-privilege`，改用 `hasPermission` 判断。 */
 const canEnable = computed(() => hasPermission('scm:warehouse:enable'));
 const canDisable = computed(() => hasPermission('scm:warehouse:disable'));
 
-/** 状态机动作按当前状态二选一，与原行内按钮一一对应。 */
+/** 按当前状态显示启用或停用。 */
 function rowActions(row: Warehouse): ScmActionItem[] {
   const enabled = row.status === 'ENABLED';
   return [{key: 'state', label: enabled ? '停用' : '启用', danger: enabled, hidden: enabled ? !canDisable.value : !canEnable.value}];
@@ -278,8 +268,7 @@ async function open(row?: Warehouse) {
     : {warehouseCode: '', name: ''};
   area.value = [];
   visible.value = true;
-  // 弹窗内容首次打开才挂载，而 AreaCascader 只用非 immediate 的 watch 同步 value，
-  // 因此回填必须排在 nextTick 之后，否则第一次编辑时选择器是空的。
+  // 弹窗首次打开才挂载，需等 nextTick 后再回填地区选择器
   await nextTick();
   area.value = areaNodesOf(form.value);
 }
@@ -306,7 +295,7 @@ async function save() {
     visible.value = false;
     await queryData();
   } catch {
-    // 保存失败只走全局 toast；这里只保留「未定位」这类本地前置校验的提示
+    // 保存失败由全局提示给出
   } finally {
     saving.value = false;
   }
@@ -318,7 +307,7 @@ async function enable(row: Warehouse) {
     message.success('仓库已启用');
     await queryData();
   } catch {
-    // 状态机动作失败只走全局 toast，不往页头 Alert 上再写一条
+    // 状态操作失败由全局提示给出
   }
 }
 
@@ -329,7 +318,7 @@ function disable(row: Warehouse) {
     content: '停用后不能再用于新的采购需求、采购单与收货单。',
     okType: 'danger',
     onOk: async () => {
-      // 失败时拒绝以保留确认框，原因由全局 toast 给出（库存余额 / 在途采购单 / 待入库收货单）
+      // 失败原因由全局提示给出
       await warehouseApi.disable({id: row.id, version: row.version!});
       message.success('仓库已停用');
       await queryData();

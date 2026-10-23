@@ -1,9 +1,9 @@
-/** 把操作日志的修改前后内容整理为字段差异；保留历史原值，不使用当前主档替换旧信息。 */
+/** 把操作日志的前后内容整理成字段差异，保留历史原值。 */
 import {isHiddenChildAuditKey} from './scm-audit-hidden-keys';
 
 /** 差异表的一行：一个标量字段，或一个数组字段。 */
 export interface DiffField {
-  /** 快照里的原始键名（不翻译，保留可追溯性）。 */
+  /** 原始键名，不翻译。 */
   key: string;
   /** 变更前的展示值。 */
   before: string;
@@ -32,9 +32,9 @@ export interface DiffArray {
   rows: DiffChild[];
 }
 
-/** 一次快照比较的完整结果。 */
+/** 一次比较的结果。 */
 export interface DiffResult {
-  /** 标量字段；对象值已拍平成独立字段。 */
+  /** 标量字段；对象值已展开成独立字段。 */
   fields: DiffField[];
   /** 数组字段的逐行展开。 */
   arrays: DiffArray[];
@@ -51,13 +51,13 @@ function show(value: unknown, labelOf: LabelFn): string {
     return '—';
   }
   if (typeof value === 'object') {
-    // 对象值不再甩成一行三百多字的 JSON（如订单的地址快照：17 个键、大半是 null）。
+    // 对象值展开成多行，避免显示大段 JSON
     return objectLines(value as Record<string, unknown>, labelOf);
   }
   return String(value);
 }
 
-/** 审计差异中的嵌套对象按字段展开，空值合并展示，内部技术字段过滤，不直接呈现大段 JSON。 */
+/** 嵌套对象按字段展开，过滤内部字段，不显示大段 JSON。 */
 function objectLines(value: Record<string, unknown>, labelOf: LabelFn): string {
   const entries = Object.entries(value).filter(([key]) => !isHiddenChildAuditKey(key));
   if (!entries.length) {
@@ -85,8 +85,7 @@ function differs(a: unknown, b: unknown): boolean {
     return false;
   }
   if (a === null || a === undefined || b === null || b === undefined) {
-    // 到这里说明两者不相等，且至少有一个是空值 → 视为变化。
-    // 但 `null` 与 `undefined` 之间不算变化（都是「无值」）。
+    // 至少一个是空值即视为变化；null 与 undefined 都算「无值」。
     return (a ?? null) !== (b ?? null);
   }
   if (typeof a !== typeof b) {
@@ -98,7 +97,7 @@ function differs(a: unknown, b: unknown): boolean {
 /** 行标识的候选键，按优先级排列。 */
 const IDENTITY_KEYS = ['skuId', 'allocationId', 'demandId', 'id', 'receiptItemId', 'returnId'];
 
-/** 给数组元素找一个稳定的行标识，用于跨快照配对。 */
+/** 给数组元素找稳定的行标识，用于配对变更前后的行。 */
 function identityOf(row: unknown, index: number): string {
   if (row && typeof row === 'object') {
     const record = row as Record<string, unknown>;
@@ -132,12 +131,12 @@ function pushFlattened(target: DiffField[], before: unknown, after: unknown, lab
   }
 }
 
-/** 一次比较里既不是数组、也不是对象值的键；这些键名在拍平对象时不能被覆盖。 */
+/** 既不是数组也不是对象的键；展开对象时不能被同名键覆盖。 */
 function scalarKeysOf(keys: string[], b: Record<string, unknown>, a: Record<string, unknown>): Set<string> {
   return new Set(keys.filter((key) => !Array.isArray(a[key]) && !Array.isArray(b[key]) && !isPlainObject(a[key]) && !isPlainObject(b[key])));
 }
 
-/** 把一行对象拍平成 `DiffField[]`（忽略其中的嵌套数组，嵌套数组不再递归展开）。 */
+/** 把一行对象展开成字段列表，嵌套数组不再递归。 */
 function fieldsOf(before: unknown, after: unknown, labelOf: LabelFn): DiffField[] {
   const b = isPlainObject(before) ? before : {};
   const a = isPlainObject(after) ? after : {};
@@ -157,12 +156,7 @@ function fieldsOf(before: unknown, after: unknown, labelOf: LabelFn): DiffField[
   return fields;
 }
 
-/**
- * 行内字段：把「行标识」本身去掉。
- *
- * 行标识已经作为分组标题显示（如 `skuId=520`、`id=104`），
- * 再在明细里重复一行 `id 104 → 104` 只是噪音。
- */
+/** 行内字段，去掉已作为分组标题的行标识。 */
 function rowFields(before: unknown, after: unknown, labelOf: LabelFn): DiffField[] {
   const identityKey = identityKeyOf(before) ?? identityKeyOf(after);
   return fieldsOf(before, after, labelOf).filter((f) => f.key !== identityKey);
@@ -217,20 +211,7 @@ function arrayOf(key: string, before: unknown, after: unknown, labelOf: LabelFn)
   return {key, rows};
 }
 
-/**
- * 比较两个快照，产出可渲染的差异结构。
- *
- * @param before  变更前快照（`null` 表示无前态，如 `CREATE` / `DEMAND_GENERATE`）
- * @param after   变更后快照
- * @param labelOf 字段名 → 展示名；对象值拍平后的键也走它。默认原样返回，保证
- *                `diffSnapshot` 不依赖任何文案表。
- *
- * @example
- * // SUBMIT: { status: 'DRAFT' } -> { status: 'SUBMITTED' }
- * diffSnapshot({ status: 'DRAFT' }, { status: 'SUBMITTED' })
- * // { fields: [{ key: 'status', before: 'DRAFT', after: 'SUBMITTED', changed: true }],
- * //   arrays: [], changedCount: 1 }
- */
+/** 比较变更前后的数据，生成可展示的字段差异。`before` 为空表示新建。 */
 export function diffSnapshot(before: unknown, after: unknown, labelOf: LabelFn = (key) => key): DiffResult {
   const b = (before && typeof before === 'object' ? before : {}) as Record<string, unknown>;
   const a = (after && typeof after === 'object' ? after : {}) as Record<string, unknown>;

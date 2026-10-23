@@ -1,8 +1,5 @@
-<!--
- * 采购单明细（表单内可编辑表格）。
- * - 明细只能随采购单整体提交，没有独立的明细 CRUD 端点；
- * - 需求单位 ≠ 采购单位时禁止加入分配（不猜折算率）。
--->
+<!-- 采购单明细，随采购单整体保存。
+     需求单位与采购单位不同时不能加入分配，不做自动换算。 -->
 <template>
   <a-table
     id="purchase-order-item-table"
@@ -52,7 +49,7 @@
       </template>
     </template>
 
-    <!-- 一行的分配是集合，用展开行承载「多需求分配」编辑 -->
+    <!-- 展开行编辑该行的多条需求分配 -->
     <template #expandedRowRender="slot">
       <div class="alloc-block">
         <a-table
@@ -95,7 +92,7 @@
 
   <a-button class="add-line" @click="items.push(newOrderItem())">添加采购行</a-button>
 
-  <!-- 需求选择：只列同一 SKU且仍有可分配余量的需求（跨 SKU → 40995） -->
+  <!-- 只列同一商品规格、还有可分配余量的需求 -->
   <a-modal :open="picker.open" title="选择采购需求" width="900px" :footer="null" @cancel="picker.open = false">
     <a-alert v-if="picker.error" :message="picker.error" type="error" show-icon />
     <a-spin :spinning="picker.loading">
@@ -162,10 +159,7 @@ const picker = reactive({
   item: undefined as OrderItem | undefined,
 });
 
-/**
- * `expandedRowRender` 的 slot props 在 antd 里是 `any`，直接解构会让 `record.allocations`
- * 变成隐式 any 访问。这里用一次显式收窄把类型边界钉住，而不是给整块模板加 `@ts-ignore`。
- */
+/** 展开行的 record 类型是 any，这里收窄成 OrderItem。 */
 function asItem(record: unknown): OrderItem {
   return record as OrderItem;
 }
@@ -174,13 +168,7 @@ function removeAllocation(item: OrderItem, index: number) {
   item.allocations = (item.allocations ?? []).filter((_row, i) => i !== index);
 }
 
-/**
- * 失焦时把输入框里的裸数显示成四位定点（`"2"` → `"2.0000"`）。
- *
- * `a-input-number` 只在 blur 之后才按 `precision` 归一（读的是组件内部 `inputValue`），
- * 而 `props.value` 的 watch 会因为「新值等于当前解析值」而跳过回写，
- * 于是显示值会一直停在 `"2"`。这里直接写模型：不等值才赋值，避免多余渲染。
- */
+/** 失焦时补成四位小数（"2" → "2.0000"）。input-number 只有在值实际变化时才回写显示。 */
 function normalizeNumber(target: object, key: 'plannedQuantity' | 'purchasePrice' | 'quantity') {
   const self = target as Record<string, string | null | undefined>;
   const normalized = normalizeTyped(self[key]);
@@ -191,7 +179,7 @@ function normalizeNumber(target: object, key: 'plannedQuantity' | 'purchasePrice
 
 function onSkuChange(item: OrderItem, value: Id | Id[] | undefined) {
   item.skuId = Array.isArray(value) ? value[0] : value;
-  // 换 SKU 后原有的分配必然不匹配（40995），直接清空比留着一堆无效行更安全。
+  // 换商品规格后原分配已不匹配，直接清空
   item.allocations = [];
 }
 
@@ -207,7 +195,7 @@ async function openDemandPicker(item: OrderItem) {
   picker.rows = [];
   try {
     const r = await purchaseDemandApi.query({pageNum: 1, pageSize: 50, skuId: item.skuId});
-    // 只保留还有余量的需求（`unallocated = 0` 的加进去必然 40082）
+    // 只保留还有余量的需求
     picker.rows = r.data.list.filter((d) => Number(d.unallocatedQuantity ?? '0') > 0);
     if (!picker.rows.length) {
       picker.error = '该商品规格没有可分配的采购需求，请先在「采购需求」页生成需求';
@@ -225,7 +213,7 @@ function pick(demand: Demand) {
     message.warning('该需求已经在这一行上，请直接修改它的分配数量');
     return;
   }
-  // 单位不一致时拒绝，不猜换算系数、不换单位字符串。
+  // 单位不一致时拒绝，不做自动换算
   if (unitMismatch(item, demand)) {
     picker.error = `需求单位 ${demand.demandUnit} 与采购单位 ${item.purchaseUnit} 不一致：不支持自动换算，请改用与需求单位一致的供应商采购配置`;
     return;

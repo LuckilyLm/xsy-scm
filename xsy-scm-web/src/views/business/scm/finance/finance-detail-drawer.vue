@@ -5,7 +5,6 @@
     </a-alert>
     <a-spin class="finance-detail-content" :spinning="loading">
       <template v-if="detail">
-        <!-- 1. 单据概要：只放「这是什么单」。金额不在这里，见「金额组成」。 -->
         <section class="detail-section">
           <h3>单据概要</h3>
           <a-descriptions bordered size="small" :column="{xs: 1, sm: 2}">
@@ -17,7 +16,6 @@
           </a-descriptions>
         </section>
 
-        <!-- 2. 对象信息：跟谁发生关系、挂在哪张业务单上。 -->
         <section class="detail-section">
           <h3>对象信息</h3>
           <a-descriptions bordered size="small" :column="{xs: 1, sm: 2}">
@@ -27,7 +25,6 @@
             <a-descriptions-item v-if="isAccount" label="冻结到期日">{{ header.dueDate || '未设置（不推算历史账期）' }}</a-descriptions-item>
           </a-descriptions>
 
-          <!-- 3. 金额组成：金额摘要比 ID、编码更突出，所以单独成段并用数值强调。 -->
           <h3 class="detail-section--nested">金额组成</h3>
           <div class="amount-grid">
             <div class="amount-cell">
@@ -64,7 +61,6 @@
           </div>
         </section>
 
-        <!-- 4. 来源单据：这张财务单是从哪张业务单派生出来的明细。 -->
         <section v-if="receivableItems.length || payableItems.length" class="detail-section">
           <h3>来源单据</h3>
           <a-table
@@ -87,7 +83,6 @@
           />
         </section>
 
-        <!-- 5. 核销 / 退款 / 红字关系：把互相抵消的事实放在一起，便于对账。 -->
         <section v-if="relationText || writeOffs.length || redEntries.length" class="detail-section">
           <h3>核销 / 红字关系</h3>
           <a-alert v-if="relationText" class="relation-alert" type="info" show-icon :message="relationText" />
@@ -105,7 +100,6 @@
           <a-table v-if="redEntries.length" size="small" :data-source="redEntries" :columns="redColumns" :row-key="redEntryKey" :pagination="false" />
         </section>
 
-        <!-- 6. 流水记录：财务操作审计流水。 -->
         <section v-if="operationLogs.length" class="detail-section">
           <h3>流水记录</h3>
           <a-table
@@ -141,7 +135,7 @@
     </a-spin>
   </a-drawer>
 
-  <!-- 审计快照在抽屉里放不下：150px 的单元格塞不下字段级差异表，改弹窗按行读。 -->
+  <!-- 差异表在抽屉里放不下，改用弹窗展示 -->
   <a-modal :open="auditOpen" title="变更前后" width="900px" :footer="null" @cancel="auditOpen = false">
     <ScmDiffTable :before="auditLog?.beforeData" :after="auditLog?.afterData" :scope="auditLog?.operationType" />
   </a-modal>
@@ -220,7 +214,7 @@ const receivableColumns: TableColumnsType<FinanceReceivableItem> = [
   {title: '商品', dataIndex: 'skuName', width: 200},
   {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text)},
   {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text)},
-  // 毛额 − 优惠 = 净额：三列一起看才能解释「这行为什么只记这么多应收」
+  // 毛额 − 优惠 = 净额
   {title: '毛额', dataIndex: 'grossAmount', width: 148, customRender: ({text}) => moneyText(text)},
   {title: '订单优惠', dataIndex: 'discountAmount', width: 148, customRender: ({text}) => moneyText(text)},
   {title: '净额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
@@ -262,7 +256,7 @@ const logColumns: TableColumnsType<FinanceOperationLog> = [
   {title: '记录内容', dataIndex: 'snapshot', width: 150},
 ];
 
-// 审计快照弹窗：整张表只共用一个，靠 auditLog 指向当前点开的那一行。
+// 差异弹窗全表共用一个，auditLog 指向当前行。
 const auditLog = ref<FinanceOperationLog | null>(null);
 const auditOpen = ref(false);
 
@@ -290,13 +284,12 @@ function close() {
   font-weight: 600;
 }
 
-/* 金额组成是同一段里的第二个小标题（要求金额比 ID、编码更突出）；
-   选择器必须压过 `.detail-section h3`，否则上边距被它的 margin 简写吃掉 */
+/* 金额组成是段内小标题，选择器要压过 .detail-section h3 的 margin */
 .detail-section h3.detail-section--nested {
   margin-top: 20px;
 }
 
-/* 对象信息段里的金额组：四格摘要，数值比标签大一号 */
+/* 四格金额摘要，数值比标签大 */
 .amount-grid {
   display: grid;
   gap: 12px;
@@ -335,7 +328,7 @@ function close() {
   margin-bottom: 12px;
 }
 
-/* 提示宽度跟着文字走、不拉满整行；同行标签与提示居中对齐，外围间距统一收在行上 */
+/* 提示宽度随文字，不拉满整行 */
 .over-applied-row {
   display: flex;
   flex-wrap: wrap;

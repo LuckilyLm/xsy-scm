@@ -20,18 +20,13 @@ export const inventoryTransferApi = {
     postRequest(`/scm/inventory/transfer/update/${id}`, data) as unknown as Promise<ScmResponse<string>>,
   /** 发出：从源仓扣减，单据进入在途。 */
   ship: (id: Id) => postRequest(`/scm/inventory/transfer/ship/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
-  /** 收货：向目标仓累加，单据完成。目标仓单位必须与调拨单位一致（41044）。 */
+  /** 收货：向目标仓累加，单据完成。目标仓单位必须与调拨单位一致。 */
   receive: (id: Id) => postRequest(`/scm/inventory/transfer/receive/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
   /** 取消草稿（无库存影响）。在途不可取消。 */
   cancel: (id: Id) => postRequest(`/scm/inventory/transfer/cancel/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
   /** 删除草稿（逻辑删）。 */
   delete: (id: Id) => postRequest(`/scm/inventory/transfer/delete/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
-  /**
-   * 在途库存报表（只读聚合，不进 `inventory_balance`）。
-   *
-   * 把 SHIPPED 的调拨单展开成明细行，用于对账与库存查询 —— 这是「在途库存可见」的
-   * 落地方式：不引入虚拟在途仓，而是以报表形式暴露。因此在途量不会出现在库存余额页。
-   */
+  /** 在途库存报表：把已发出的调拨单展开成明细；不引入虚拟在途仓，因此在途量不出现在库存余额页。 */
   inTransit: () => getRequest('/scm/inventory/transfer/in-transit', {}) as unknown as Promise<ScmResponse<InventoryInTransit[]>>,
 };
 

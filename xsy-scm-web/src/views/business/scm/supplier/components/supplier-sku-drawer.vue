@@ -1,4 +1,4 @@
-<!-- 供应商商品关系按完整列表替换，提交空列表会清空全部关联。已有关系必须携带 ID 和版本；任何版本冲突整批回滚。 -->
+<!-- 关联商品整表替换；已有行带 id 和版本，版本冲突整批回滚。 -->
 <template>
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('xl')" @close="close">
     <a-spin :spinning="loading">
@@ -32,14 +32,14 @@ const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
 const drafts = ref<SkuDraft[]>([]);
-// 打开时已存在的关联行数：用于判断本次保存是否会把全部关联清空。
+// 打开时的关联行数，用来提示清空全部关联。
 const loadedCount = ref(0);
 const supplierId = ref<ScmId>();
 const supplierName = ref('');
 
 const title = computed(() => (supplierName.value ? `关联商品 · ${supplierName.value}` : '关联商品'));
 
-/** 打开抽屉并加载该供应商当前的活动关联行。 */
+/** 打开抽屉并加载已有关联。 */
 async function open(row: SupplierRow) {
   visible.value = true;
   error.value = '';
@@ -72,7 +72,7 @@ async function submit() {
     error.value = problem;
     return;
   }
-  // 清空全部行并保存等于删除所有关联，属于不可逆影响，落在操作时确认。
+  // 清空全部关联不可逆，保存前确认。
   if (drafts.value.length === 0 && loadedCount.value > 0) {
     try {
       await Modal.confirm({
@@ -93,7 +93,7 @@ async function submit() {
     visible.value = false;
     emit('saved');
   } catch {
-    // 保存失败只走全局 toast；抽屉里的 error 留给本地校验与加载失败
+    // 保存失败由全局 toast 提示；error 只用于本地校验和加载失败
   } finally {
     saving.value = false;
   }

@@ -1,9 +1,4 @@
-<!--
-  营销活动列表与编辑。
-
-  活动规则是受控键值（不是表达式）：每种类型只接受自己的键，多传未知键会被服务端拒收（41324），
-  因此切换类型时必须清空规则，编辑表单也只提交当前类型用得上的键。
--->
+<!-- 营销活动列表与编辑。规则用固定键值，切换类型时清空旧规则。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -299,7 +294,7 @@ const saving = ref(false);
 const typeOptions = Object.entries(activityTypes).map(([value, item]) => ({value, label: item.label}));
 const statusOptions = Object.entries(promotionStatuses).map(([value, item]) => ({value, label: item.label}));
 
-/** 状态视觉：草稿 = 待处理（橙），生效中 = 绿，已停用 = 灰。 */
+/** 状态配色：草稿橙、生效绿、停用灰。 */
 const PROMOTION_STATUS_TONE: Record<PromotionStatus, ScmStatusTone> = {
   DRAFT: 'warning',
   ACTIVE: 'success',
@@ -307,11 +302,7 @@ const PROMOTION_STATUS_TONE: Record<PromotionStatus, ScmStatusTone> = {
 };
 const statusTone = (status: PromotionStatus): ScmStatusTone => PROMOTION_STATUS_TONE[status] ?? 'neutral';
 
-/**
- * 表格 slot 里的 `record` 是 `any`，索引映射表会触发 TS7053。
- * 在这里把类型收口一次，避免 `as` 散落到模板各处；枚举缺项时回落原值
- * （后端加了新类型而前端没跟上时，一个英文常量本身就是有用信号）。
- */
+/** 枚举缺项时保留原值，便于发现后端新增类型。 */
 function typeColorOf(value: string): string | undefined {
   return activityTypes[value as PromotionActivityType]?.color;
 }
@@ -324,10 +315,7 @@ function statusLabelOf(value: string): string {
   return promotionStatuses[value as PromotionStatus]?.label ?? value;
 }
 
-/**
- * 列按「叫什么 / 什么类型 / 怎么算 / 什么时候有效 / 能不能叠加 / 上没上线」排列。
- * 活动编码下沉为名称的次要行；生效与失效时间合成一格（它们回答同一个问题）。
- */
+// 活动列表的列定义
 const columns: TableColumnsType<PromotionActivity> = [
   {title: '活动编码', dataIndex: 'activityCode', width: 130},
   {title: '活动名称', dataIndex: 'activityName', width: 200},
@@ -341,10 +329,7 @@ const columns: TableColumnsType<PromotionActivity> = [
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ];
 
-/**
- * 表单里的规则：数值字段用 `number`（InputNumber 只接受数字），提交时才收口成定点字符串。
- * `skuId` / `giftSkuId` 是选择器给的 id，按字符串提交（与后端规则的键类型一致）。
- */
+/** 规则表单：数值用 number，提交时转成定点字符串。 */
 interface RuleForm {
   skuId?: string;
   discountPercent: number | null;
@@ -366,10 +351,7 @@ const emptyRule = (): RuleForm => ({
 });
 
 const formRef = ref();
-/**
- * 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。
- * 规则区的字段按活动类型条件渲染，未挂载的 form-item 不会被校验，所以这里可以一次列全。
- */
+/** 必填项逐项校验；未挂载的规则字段不会被校验。 */
 const formRules = {
   activityCode: [{required: true, message: '请填写活动编码', trigger: 'blur'}],
   activityName: [{required: true, message: '请填写活动名称', trigger: 'blur'}],
@@ -385,11 +367,7 @@ const formRules = {
   validTo: [{required: true, message: '请选择失效时间', trigger: 'change'}],
 };
 
-/**
- * 表单模型必须是稳定对象：原来写 `:model="{...form, ...rule}"`，每次渲染都会新建对象，
- * 而 blur/change 触发的校验发生在重渲染之前，读到的是上一份快照——填了值仍提示未填写。
- * 规则区字段因此并入同一个模型；提交时用 `RULE_FIELDS` 剔掉，服务端 DTO 不接受这些扁平字段。
- */
+/** 表单模型要保持同一个对象；规则字段并入模型，提交时再剔除。 */
 const form = reactive<PromotionActivitySave & RuleForm>({
   activityCode: '',
   activityName: '',
@@ -402,11 +380,11 @@ const form = reactive<PromotionActivitySave & RuleForm>({
   remark: null,
   ...emptyRule(),
 });
-/** 规则区字段与表单同属一个模型，保留 `rule.xxx` 这个读法以免模板与规则装配两处各写一套。 */
+/** 规则字段与表单共用同一个模型。 */
 const rule = form;
 const RULE_FIELDS = Object.keys(emptyRule());
 
-/** 规则的可读描述：受控键值 → 一句话，便于在列表上直接看出「这条活动减多少」。 */
+/** 规则摘要，显示在列表上。 */
 function ruleText(source?: PromotionRule): string {
   if (!source) return '—';
   if (source.discountRate) return `折扣率 ${rateToPercent(source.discountRate) ?? source.discountRate}%`;
@@ -416,7 +394,7 @@ function ruleText(source?: PromotionRule): string {
   return '—';
 }
 
-/** 把后端规则摊回表单：比率换算成百分比，定点字符串换算成 number。 */
+/** 后端规则转表单：比率转百分比，金额转 number。 */
 function ruleToForm(source?: PromotionRule) {
   Object.assign(rule, emptyRule());
   if (!source) return;
@@ -429,10 +407,7 @@ function ruleToForm(source?: PromotionRule) {
   rule.giftQuantity = source.giftQuantity == null ? null : Number(source.giftQuantity);
 }
 
-/**
- * 表单规则 → 后端规则：数值补足 4 位定点，空值不进载荷。
- * 多带一个当前类型用不上的键会被服务端当成未知键拒收（41324）。
- */
+/** 表单规则转后端规则：金额补足 4 位小数，空值不提交。 */
 function formToRule(source: RuleForm): PromotionRule {
   const out: Record<string, string> = {};
   const put = (key: string, value: string | undefined) => {
@@ -448,7 +423,7 @@ function formToRule(source: RuleForm): PromotionRule {
   return out as PromotionRule;
 }
 
-/** SKU 选择器给出的是 id（可能是数字）；规则里的键统一按字符串提交。 */
+/** SKU id 统一按字符串提交。 */
 function onSpecialSkuChange(value: ScmId | ScmId[] | undefined) {
   rule.skuId = value === undefined || value === null ? undefined : String(value);
 }
@@ -461,7 +436,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const r = await promotionApi.activityQuery({...queryForm}, {suppressGlobalErrorMessage: true});
     tableData.value = r.data.list ?? [];
     total.value = r.data.total ?? 0;
@@ -520,14 +495,14 @@ function openEdit(record: PromotionActivity) {
   editOpen.value = true;
 }
 
-/** 切换类型时清空规则：残留的键会被服务端当成「未知键」拒收，提前清掉比提交后才报错好。 */
+/** 切换类型时清空旧规则，避免后端拒收未知键。 */
 function onTypeChange() {
   Object.assign(rule, emptyRule());
   form.rule = {};
 }
 
 async function submit() {
-  // 必填项走表单校验：缺哪个就在哪个输入框下方提示（规则区字段按活动类型条件渲染，只会校验当前挂载的）
+  // 必填项由表单校验，只校验当前类型挂载的字段
   try {
     await formRef.value?.validate();
   } catch {
@@ -542,7 +517,7 @@ async function submit() {
     editOpen.value = false;
     await queryData();
   } catch {
-    // 保存失败只走全局 toast
+    // 保存失败由全局 toast 提示
   } finally {
     saving.value = false;
   }
@@ -554,7 +529,7 @@ async function changeStatus(record: PromotionActivity, status: 'ACTIVE' | 'STOPP
     message.success(status === 'ACTIVE' ? '活动已上线' : '活动已停用');
     await queryData();
   } catch {
-    // 启停失败只走全局 toast
+    // 启停失败由全局 toast 提示
   }
 }
 

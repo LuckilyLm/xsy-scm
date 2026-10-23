@@ -9,7 +9,7 @@ import type {SmartEnum} from '/@/types/smart-enum';
  *
  * 方向编码在类型里：`PURCHASE_IN` / `STOCKTAKE_GAIN` / `GAIN_REPORT` / `TRANSFER_IN` /
  * `CONVERT_IN` 即「入」，其余即「出」，因此流水没有独立的 `direction` 列，
- * `quantity` 恒为正。新增类型必须先扩 DB CHECK 白名单。
+ * `quantity` 恒为正。新增类型要先改数据库 CHECK 约束。
  */
 export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
   PURCHASE_IN: {value: 'PURCHASE_IN', desc: '采购入库'},
@@ -31,10 +31,9 @@ export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
 /**
  * 「入」方向的流水类型（与后端 `ScmInventoryMovementTypeEnum.getInbound()` 同集合）。
  *
- * 流水表没有 `direction` 列、`quantity` 恒为正，所以任何要展示「入 / 出」的页面
- * （库存流水列表、报表中心的流水 Tab）都只能从这里派生方向。
- * 在别处再写一份 IN / OUT 判断，就是第二份真相：
- * 后端加类型时改了这个集合，方向立刻判反，而数字看起来完全正常。
+ * 流水表没有 `direction` 列、`quantity` 恒为正，展示「入 / 出」的页面
+ * （库存流水列表、报表中心的流水 Tab）都从这里取方向。
+ * 别处不要再写一份 IN / OUT 判断，否则后端新增类型后会判反，数字看起来却正常。
  */
 export const SCM_INVENTORY_MOVEMENT_INBOUND_TYPES: readonly string[] = [
   'PURCHASE_IN',
@@ -131,7 +130,7 @@ export const SCM_INVENTORY_TRANSFER_STATUS_ENUM: SmartEnum<string> = {
 /**
  * 库存预警状态（与后端 `ScmInventoryWarningStatusEnum` 逐字对应）。
  *
- * 这是派生值，不落库：完全由 `(阈值, 可用量)` 决定，读时计算。
+ * 这是算出来的值，不存库：由 `(阈值, 可用量)` 决定，读时计算。
  * 判定基准是可用量（现有量 − 预留量）而不是现有量。
  * 取等号算正常：`可用量 == 下限` 是「不低于下限」，属 `NORMAL`。
  */

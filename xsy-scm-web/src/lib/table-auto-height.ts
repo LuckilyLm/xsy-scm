@@ -1,11 +1,4 @@
-/**
- * 计算表格自适应高度
- *
- * @param {*} heightRef
- * @param {*} removeRefArray
- * @param {*} extraRemoveHeight
- * @returns
- */
+/** 计算表格自适应高度：内容区高度减去工具栏等占位。 */
 
 import {useAppConfigStore} from '../store/modules/system/app-config';
 

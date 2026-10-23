@@ -17,7 +17,7 @@
         <div v-if="!cities.length" class="scm-map-empty">暂无已归属到市的客户 / 供应商 / 仓库</div>
       </div>
 
-      <!-- 仓库明细：地图只到市，逐仓的库存与今日出库量仍然要看得见 -->
+      <!-- 仓库明细：地图只到市，逐仓数据单独列出 -->
       <div class="scm-map-rail">
         <div class="scm-map-rail-title">启用仓库</div>
         <div v-if="!nodes.length" class="scm-map-rail-empty">暂无启用仓库</div>
@@ -87,7 +87,7 @@ const baseMapError = ref('');
 const cities = computed(() => props.geo.cities ?? []);
 const nodes = computed(() => props.inventory?.warehouseNodes ?? []);
 
-/** 覆盖度差额：没归属到市的量画不出气泡，必须显性化，否则图会被当成全部业务量。 */
+/** 未归属到市的量要单独显示，否则图会被当成全部业务量。 */
 const unlocatedText = computed(() => {
   const c = props.geo.coverage;
   if (!c) {
@@ -109,13 +109,10 @@ const unlocatedText = computed(() => {
   return parts.length ? `未归属：${parts.join(' · ')}` : '';
 });
 
-/**
- * 底图只注册一次：面板每 30 秒静默刷新一次数据，GeoJSON 却不该跟着重复下载 576 KB。
- * 失败时把缓存清掉，让「重新加载底图」真的会重试。
- */
+/** 底图只加载一次；失败时清掉缓存，便于重试。 */
 let baseMap: Promise<void> | null = null;
 
-/** 地图省份用行政区划编码匹配边界与业务数据，不用省名字符串匹配，避免简称不同造成漏显示。 */
+/** 省份按行政区划编码匹配，不按名称。 */
 const boundaryNameByAdcode = new Map<number, string>();
 
 interface GeoFeature {
@@ -150,7 +147,7 @@ function loadBaseMap(): Promise<void> {
 }
 
 function bubbleSize(total: number, max: number): number {
-  // 开根号而不是线性：气泡面积才与数量成正比，线性放大会让最大城市糊掉整张图
+  // 用开根号，让气泡面积与数量成正比
   return 7 + 24 * Math.sqrt(max > 0 ? total / max : 0);
 }
 
@@ -195,8 +192,7 @@ function render() {
       borderColor: C.border,
       textStyle: {color: C.text1, fontSize: 12},
     },
-    // 着色口径固定在「客户数」：大屏上同一张图同时表达三种量，气泡已经带了明细，
-    // 底色再换成综合值就会让颜色和位置说两件不同的事。
+    // 底色固定表示客户数，气泡另带明细。
     visualMap: {
       type: 'continuous',
       min: 0,
@@ -231,7 +227,7 @@ function render() {
         geoIndex: 0,
         tooltip: {formatter: tooltip},
         data: (props.geo.provinces ?? []).map((province) => ({
-          // 按码取底图名；字典里冒出底图没有的码时退回原名（宁可少着色，不隐藏数据）
+          // 底图没有的码退回原名，不隐藏数据
           name: boundaryNameByAdcode.get(province.provinceCode) ?? province.provinceName,
           value: province.customerCount,
           customerCount: province.customerCount,
@@ -243,7 +239,7 @@ function render() {
       {
         type: 'effectScatter',
         coordinateSystem: 'geo',
-        // 只有真拿到归属数据的市才会成为气泡，图上不会出现空转的涟漪
+        // 只有已归属到市的数据才画气泡
         rippleEffect: {brushType: 'stroke', scale: 3},
         symbolSize: (_value: unknown, params: {data?: {total: number}}) => bubbleSize(params.data?.total ?? 0, maxTotal),
         tooltip: {formatter: tooltip},
@@ -269,7 +265,7 @@ async function retryBaseMap() {
 async function mountBaseMap() {
   try {
     await loadBaseMap();
-    // 容器在底图下载期间已经拿到尺寸，注册完成后必须再喂一次配置
+    // 底图注册完成后重新应用配置
     await nextTick();
     render();
   } catch (e: any) {
@@ -323,7 +319,7 @@ watch(() => props.geo, render);
   height: 100%;
 }
 
-// 底图已画出、但一个市都没归属上时的说明，浮在图上而不是替换掉图
+// 没有归属数据时浮在图上提示
 .scm-map-empty {
   position: absolute;
   left: 50%;
@@ -338,7 +334,7 @@ watch(() => props.geo, render);
   white-space: nowrap;
 }
 
-// ---------- 右侧仓库明细 ----------
+// 右侧仓库明细
 .scm-map-rail {
   flex: 0 0 186px;
   min-height: 0;
@@ -406,7 +402,7 @@ watch(() => props.geo, render);
   }
 }
 
-// ---------- 底部统计条 ----------
+// 底部统计条
 .scm-map-stats {
   flex: 0 0 auto;
   display: grid;

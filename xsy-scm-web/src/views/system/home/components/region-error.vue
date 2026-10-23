@@ -1,9 +1,4 @@
-<!--
-  * 区块加载失败的提示
-  *
-  * 首页有多个互不相关的数据源，失败只影响自己那一块：这里给一句可读的原因和一个重试入口，
-  * 不弹全局提示、不把整页变成错误页。
--->
+<!-- 区块加载失败提示：只影响自己这一块，不弹全局提示。 -->
 <template>
   <a-empty class="home-region-error" role="alert" aria-live="polite" :description="message" :style="{minHeight: minHeight + 'px'}">
     <template #image>

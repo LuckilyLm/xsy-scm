@@ -1,9 +1,4 @@
-<!--
-  供应商档案列表。
-  - 不做批量删除：后端没有 `batchDelete` 端点；
-  - 「关联商品」走 `supplier_sku` 的整表替换写入口；
-  - 状态变更收敛成单条「启用 / 停用」二次确认。
--->
+<!-- 供应商列表：只有单条删除；关联商品走独立的整表替换接口。 -->
 <template>
   <section aria-label="供应商档案">
     <a-form class="smart-query-form" layout="inline">
@@ -126,7 +121,7 @@ const statusText = (value: EnableStatus): string => SUPPLIER_STATUS_ENUM[value]?
 /** 启用=正常（绿），停用=失效（灰）。 */
 const statusTone = (value: EnableStatus): ScmStatusTone => (value === 'ENABLED' ? 'success' : 'neutral');
 
-// 名称、编码、联系人和电话可独立查看、比较；更新时间仍由搜索、详情、编辑与导出承载。
+// 更新时间不上列表，可在详情里查看。
 const columns = ref<TableColumnsType<SupplierRow>>([
   {title: '供应商名称', dataIndex: 'name', width: 190, sorter: true, ellipsis: true},
   {title: '供应商编码', dataIndex: 'supplierCode', width: 140},
@@ -136,7 +131,7 @@ const columns = ref<TableColumnsType<SupplierRow>>([
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
   {title: '操作', dataIndex: 'action', width: 170, align: 'center', fixed: 'right'},
 ]);
-// 宽屏剩余宽度补给文本列；用户改过列宽则原样渲染。
+// 文本列撑满剩余宽度；用户改过的列宽不动。
 const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 let requestId = 0;
@@ -146,7 +141,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const response = await supplierApi.query({...filters}, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       rows.value = response.data.list;
@@ -169,7 +164,7 @@ function reset() {
   void load();
 }
 
-// 排序白名单：只映射后端 SupplierQueryService.SORTABLE 允许的四列。
+// 排序只映射后端允许的四列。
 const sortChanged: TableProps<SupplierRow>['onChange'] = (_page, _filters, sort) => {
   const item = Array.isArray(sort) ? sort[0] : sort;
   const names: Record<string, string> = {
@@ -187,7 +182,7 @@ function detail(id: ScmId) {
   void router.push({path: '/supplier/supplier-detail', query: {supplierId: String(id)}});
 }
 
-/** 打开「关联商品」抽屉，传入供应商行以便回显编码 / 名称。 */
+/** 传入供应商行，用于回显编码和名称。 */
 function openSku(row: SupplierRow) {
   void skuDrawer.value?.open(row);
 }
@@ -199,7 +194,7 @@ async function toggleStatus(row: SupplierRow) {
     message.success('供应商状态已更新');
     await load();
   } catch {
-    // 状态流转失败只走全局 toast
+    // 状态更新失败由全局 toast 提示
   }
 }
 
@@ -209,15 +204,15 @@ async function remove(row: SupplierRow) {
     message.success('供应商已删除');
     await load();
   } catch {
-    // 删除失败只走全局 toast
+    // 删除失败由全局 toast 提示
   }
 }
 
-/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+/** 菜单项不能挂 v-privilege，用 hasPermission 判断。 */
 const canUpdateStatus = computed(() => hasPermission('scm:supplier:status'));
 const canDelete = computed(() => hasPermission('scm:supplier:delete'));
 
-/** 操作列常驻「编辑 + 关联商品」，其余低频与危险动作收进「更多」，把宽度留给业务字段。 */
+/** 低频和危险动作收进「更多」。 */
 function rowActions(): ScmActionItem[] {
   return [
     {key: 'detail', label: '详情'},
@@ -231,7 +226,7 @@ function onRowAction(key: string, row: SupplierRow) {
     detail(row.supplierId);
   } else if (key === 'toggle') {
     const next = row.status === 'ENABLED' ? '停用' : '启用';
-    // 菜单项挂不上 a-popconfirm，二次确认改由 Modal 承担，语义与原 popconfirm 一致。
+    // 菜单项不能挂 a-popconfirm，改用 Modal 确认。
     Modal.confirm({
       title: `${next}供应商`,
       content: `确认${next}「${row.name}」？`,

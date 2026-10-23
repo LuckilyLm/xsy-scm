@@ -5,7 +5,7 @@
     </a-button>
     <span class="order-count">共 {{ orders.length }} 单</span>
   </div>
-  <!-- 1~3 行用轻量列表：一两条数据铺一张宽表格，下面会空出一大片 -->
+  <!-- 订单少时用卡片列表，避免宽表格下面留白 -->
   <a-empty v-if="!orders.length" description="还没有订单，请先加入订单" />
   <div v-else-if="orders.length <= 3" class="order-cards">
     <div v-for="record in orders" :key="record.id" class="order-card">

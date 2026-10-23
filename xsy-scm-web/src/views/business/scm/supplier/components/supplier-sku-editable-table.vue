@@ -1,4 +1,4 @@
-<!-- 供应商关联商品可以编辑多行。同一供应商允许多个优先采购来源；价格按精确小数字符串处理。 -->
+<!-- 关联商品可编辑多行；允许多个优先采购来源，价格用字符串。 -->
 <template>
   <div class="sku-editor">
     <div class="sku-scroll">
@@ -81,8 +81,7 @@ import type {SkuDraft} from '../supplier-form-model';
 const props = defineProps<{modelValue: SkuDraft[]}>();
 const emit = defineEmits<{'update:modelValue': [rows: SkuDraft[]]}>();
 
-// 模板里 `modelValue` 直接引用 props（与 product-sku-editable-table 同写法）；
-// 这里显式引用一次，避免 `noUnusedLocals` 把 props 变量判为未使用。
+// 显式引用 props，避免 noUnusedLocals 报警。
 void props;
 </script>
 

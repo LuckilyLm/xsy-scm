@@ -1,8 +1,4 @@
-/**
- * 批次库存与批次流水：只读。
- *
- * 批次余额是子账，写入只发生在采购收货确认与销售出库命令里（与总账同事务），因此这里没有任何写接口。
- */
+/** 批次库存与流水只读；写入只发生在收货确认和销售出库。 */
 import {postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

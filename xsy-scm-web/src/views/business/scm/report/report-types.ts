@@ -1,56 +1,36 @@
-/** 报表金额和数量均用定点数字符串。销售额、实收和应收分别统计；缺失值不当作零。 */
+/** 金额和数量都用定点数字符串；缺失值不当作零。 */
 import type {ScmPage} from '/@/types/business/scm/customer';
 
-/** 后端主键是 `Long`，经 JSON 数字或字符串抵达前端；一律不参与算术。 */
+/** 主键可能是数字或字符串，不参与运算。 */
 export type ReportId = string | number;
 
-/** 分页入参：`pageNum` / `pageSize` 必填（后端 `PageParam` 为 null 时 `convert2PageQuery` 会 NPE）。 */
+/** 分页入参，两个字段都必填。 */
 export interface ReportPage {
   pageNum: number;
   pageSize: number;
 }
 
-/**
- * 非分页入参：与对应的分页入参同形，但去掉分页字段。
- *
- * 指标卡、TOP 榜与价格波动返回的是单行或整段数组，导出由后端强制第 1 页与行数上限，
- * 这些端点都不接收分页参数。类型上不放 `pageNum` / `pageSize`，否则「后端不接受分页」
- * 这件事会被「类型说必填」掩盖，调用处只能靠断言绕过。
- */
+/** 非分页入参：去掉分页字段，这些接口不接收分页参数。 */
 export type ReportFilterQuery<T> = Omit<T, 'pageNum' | 'pageSize'>;
 
-/**
- * 报表查询的公共日期段（Asia/Shanghai 日界的闭区间）。
- *
- * 后端把它转成 `[startDate 00:00, endDate+1 00:00)` 的半开区间，前端不参与这个换算。
- */
+/** 报表日期区间，闭区间；前端只传日期字符串。 */
 export interface ReportDateQuery {
   startDate?: string;
   endDate?: string;
 }
 
 // ==================================================================
-// 图表数据形状（不是后端契约：由页面从契约行映射而来）
+// 图表数据形状（由页面从接口数据映射）
 // ==================================================================
 
-/**
- * TOP 排名条形图的一行。
- *
- * `value` 只决定条长（由 `report-model.chartValue` 从后端定点字符串安全转换，
- * `null` 保持 `null`）；`text` 是后端原文，tooltip 与条末标签都只用它，
- * 这样图上的数字与表格那一行位数完全一致。
- */
+/** TOP 条形图的一行。value 只用来画条；text 是后端原文，用于提示和标签。 */
 export interface ReportChartBar {
   name: string;
   value: number | null;
   text: string;
 }
 
-/**
- * 折线图的一条线：`data` 与 `texts` 等长。
- *
- * 两套值的理由与条形图相同 —— 折线要数字才能画，展示必须是原样字符串。
- */
+/** 折线图的一条线：data 画图，texts 展示，两者等长。 */
 export interface ReportChartLine {
   name: string;
   data: Array<number | null>;
@@ -68,32 +48,32 @@ export interface ReportChartSlice {
 // 经营概览
 // ==================================================================
 
-/** `ReportOverviewVO`：概览指标卡。 */
+/** 概览指标卡。 */
 export interface ReportOverview {
-  /** `status=CONFIRMED` 且 `confirmed_at` 落在区间内的订单数。 */
+  /** 区间内已确认的订单数。 */
   confirmedOrderCount?: number | null;
-  /** 同一确认范围内的去重下单客户数。 */
+  /** 去重下单客户数。 */
   customerCount?: number | null;
-  /** 「已确认订单金额」：`SUM(settlement_total_amount)`，结算口径而非下单口径。 */
+  /** 已确认订单金额，按结算总额汇总，不按下单金额。 */
   confirmedOrderAmount?: string | null;
-  /** `order_refund` 中 `COMPLETED` 的退款额；独立展示，不冲减订单金额。 */
+  /** 已完成退款额；单独展示，不冲减订单金额。 */
   completedRefundAmount?: string | null;
   submittedPurchaseOrderCount?: number | null;
-  /** 已提交（含部分收货 / 已收货 / 短关）采购单的 `SUM(total_amount)`。 */
+  /** 已提交采购单的金额合计（含部分收货、已收货、短关）。 */
   submittedPurchaseAmount?: string | null;
-  /** `PURCHASE_IN` 流水的 `SUM(quantity * unit_cost)`。 */
+  /** 采购入库成本合计。 */
   purchaseInCostAmount?: string | null;
-  /** > 0 表示 purchaseInCostAmount 是不完整的和，页面必须显性提示。 */
+  /** 无成本的流水行数；大于 0 说明成本合计不完整，要提示。 */
   purchaseInCostMissingCount?: number | null;
-  /** 当前库存账面金额：`SUM(inventory_balance.quantity * avg_cost)`，不受查询区间影响。 */
+  /** 当前库存账面金额，不受日期区间影响。 */
   inventoryBookValue?: string | null;
-  /** 当前有账面库存的余额行数。 */
+  /** 有库存的 SKU 数。 */
   stockedSkuCount?: number | null;
-  /** inventoryBookValue 的取值时点；必须与金额一起读才是完整事实。 */
+  /** 账面金额的取值时点。 */
   snapshotAt?: string | null;
 }
 
-/** Six fixed measures; field names describe the source fact and time role. */
+/** 财务概览的六个固定指标。 */
 export interface FinanceReportOverview {
   receivableOccurredAmount: string | null;
   receivableWrittenOffAmount: string | null;
@@ -109,7 +89,7 @@ export interface FinanceReportQuery extends ReportPage, ReportDateQuery {
   keyword?: string;
 }
 
-/** Normal receivable bills with linked red facts and their end-date balances. */
+/** 应收明细行：原单、关联红字和期末余额。 */
 export interface FinanceReceivableDetailRow {
   receivableId: ReportId;
   receivableNo: string;
@@ -124,7 +104,7 @@ export interface FinanceReceivableDetailRow {
   eventAt: string;
 }
 
-/** Normal payable bills with linked red facts and their end-date balances. */
+/** 应付明细行：原单、关联红字和期末余额。 */
 export interface FinancePayableDetailRow {
   payableId: ReportId;
   payableNo: string;
@@ -139,9 +119,9 @@ export interface FinancePayableDetailRow {
   eventAt: string;
 }
 
-/** `ReportDailyStatVO`：按业务日聚合的一行，同时服务趋势折线与每日统计表。 */
+/** 按业务日汇总的一行，供趋势图和每日统计表使用。 */
 export interface ReportDailyStat {
-  /** 业务日期 `yyyy-MM-dd`（Asia/Shanghai）。日期轴由 SQL 补齐，没有单据的天也在。 */
+  /** 业务日期 yyyy-MM-dd；没有单据的日子也在。 */
   bizDate: string;
   confirmedOrderCount?: number | null;
   customerCount?: number | null;
@@ -152,11 +132,11 @@ export interface ReportDailyStat {
   purchaseInCostMissingCount?: number | null;
 }
 
-/** `ScmOverviewReportQueryForm`：概览 / 趋势 / 每日统计共用同一条件。 */
+/** 概览、趋势和每日统计共用的查询条件。 */
 export interface OverviewQuery extends ReportDateQuery {
   warehouseId?: ReportId;
   customerId?: ReportId;
-  /** 员工 id：选择器组件的取值是 `number`，这里不用 `ReportId` 以免绑定处需要断言。 */
+  /** 员工 id，选择器返回 number。 */
   sellerId?: number;
   orderSource?: string;
   categoryId?: ReportId;
@@ -167,49 +147,43 @@ export interface OverviewQuery extends ReportDateQuery {
 // 销售分析
 // ==================================================================
 
-/** `SalesReportVO.TopItem`：通用 TOP N 行。 */
+/** 通用 TOP N 行。 */
 export interface SalesTopItem {
   id?: ReportId | null;
   name?: string | null;
   amount?: string | null;
 }
 
-/**
- * 供应商采购入库成本 TOP N 行。
- *
- * 形状与 SalesTopItem 相同（`id` / `name` / `amount`）。后端 `PurchaseReportVO`
- * 目前没有 `TopItem` 内部类，计划口径是复用同一个通用 TOP 行；若最终落为独立类，
- * 只需把本别名换成对应字段，页面不受影响。
- */
+/** 供应商采购入库成本 TOP N 行，形状同 SalesTopItem。 */
 export type PurchaseTopItem = SalesTopItem;
 
-/** `SalesReportVO.ProductRow`：粒度 = SKU × 销售单位快照。 */
+/** 粒度：SKU × 销售单位。 */
 export interface SalesProductRow {
   skuId?: ReportId;
   spuCode?: string | null;
   productName?: string | null;
   skuCode?: string | null;
-  /** 订单行上的规格快照，不实时回查商品主档。 */
+  /** 下单时的规格，不实时回查商品主档。 */
   specName?: string | null;
   saleUnit?: string | null;
   rootCategoryName?: string | null;
   leafCategoryName?: string | null;
   orderCount?: number | null;
   customerCount?: number | null;
-  /** `SUM(actual_quantity)`：确认数量；未回写实量的行为 null，不计入。 */
+  /** 确认数量；未回写实量的行不计入。 */
   confirmedQuantity?: string | null;
-  /** 成交均价 = 结算金额 / 确认数量（同单位内）。数量为 0 或 null 时是 null 而非 0。 */
+  /** 成交均价 = 结算金额 / 确认数量；数量为 0 或空时为 null。 */
   avgTransactionPrice?: string | null;
   settlementAmount?: string | null;
-  /** 当前查询范围内商品行的销售金额占比（百分数），在分页前计算。 */
+  /** 销售金额占比（百分比），分页前计算。 */
   salesAmountSharePercent?: string | null;
-  /** 按金额排序的累计占比（百分数），用于识别重点商品。 */
+  /** 按金额排序的累计占比（百分比）。 */
   cumulativeSalesAmountSharePercent?: string | null;
-  /** 金额排名由 SQL 窗口函数在分页之前算出，所以第 2 页仍是全局排名。 */
+  /** 全局金额排名，翻页后不变。 */
   amountRank?: number | null;
 }
 
-/** `SalesReportVO.CategoryRow`：粒度 = 末级分类。 */
+/** 粒度：末级分类。 */
 export interface SalesCategoryRow {
   categoryId?: ReportId;
   rootCategoryName?: string | null;
@@ -220,7 +194,7 @@ export interface SalesCategoryRow {
   amountRank?: number | null;
 }
 
-/** `SalesReportVO.CustomerRow`：粒度 = 客户。 */
+/** 粒度：客户。 */
 export interface SalesCustomerRow {
   customerId?: ReportId;
   customerCode?: string | null;
@@ -234,7 +208,7 @@ export interface SalesCustomerRow {
   amountRank?: number | null;
 }
 
-/** `SalesReportVO.SellerRow`：粒度 = 销售员；`seller_id` 为空归入「未分配销售员」。 */
+/** 粒度：销售员；没有销售员的归入「未分配销售员」。 */
 export interface SalesSellerRow {
   sellerId?: ReportId | null;
   sellerName?: string | null;
@@ -245,7 +219,7 @@ export interface SalesSellerRow {
   lastConfirmedAt?: string | null;
 }
 
-/** `SalesReportVO.ItemRow`：粒度 = `sales_order_item`，业务字段全部取订单行快照。 */
+/** 粒度：订单行；业务字段都取订单行当时的值。 */
 export interface SalesItemRow {
   orderId?: ReportId;
   orderItemId?: ReportId;
@@ -273,10 +247,8 @@ export interface SalesItemRow {
 }
 
 /**
- * `SalesReportVO.OrderRow`：粒度 = `sales_order`（订单表头级）。
- *
- * 与 SalesItemRow 的分工：行级回答「这单买了什么」，本行回答「这个客户有几单、每单多少」。
- * 分类 / 关键词在本维度下只判定订单是否命中，金额仍按整单汇总。
+ * 粒度：订单表头。
+ * 行级看买了什么，这里看每个客户有几单、每单多少；分类和关键词只判定订单是否命中。
  */
 export interface SalesOrderRow {
   orderId?: ReportId;
@@ -293,13 +265,13 @@ export interface SalesOrderRow {
   completedRefundAmount?: string | null;
 }
 
-/** `ScmSalesReportQueryForm`：五个维度共用一个表单（切 Tab 不串条件是前端职责）。 */
+/** 五个维度共用的查询条件。 */
 export interface SalesQuery extends ReportPage, ReportDateQuery {
   advancedFilters?: import('/@/types/business/scm/advanced-filter').ScmAdvancedFilterCondition[];
-  /** 仅导出端点使用；服务端对白名单字段再次校验。 */
+  /** 仅导出使用；服务端会再校验允许的字段。 */
   exportColumnKeys?: string[];
   customerId?: ReportId;
-  /** 员工 id，见 OverviewQuery.sellerId 的理由。 */
+  /** 员工 id。 */
   sellerId?: number;
   orderSource?: string;
   categoryId?: ReportId;
@@ -310,20 +282,20 @@ export interface SalesQuery extends ReportPage, ReportDateQuery {
 // 采购分析
 // ==================================================================
 
-/** `PurchaseReportVO.Overview`：采购概览指标卡。 */
+/** 采购概览指标卡。 */
 export interface PurchaseOverview {
   submittedOrderCount?: number | null;
   submittedAmount?: string | null;
   confirmedReceiptCount?: number | null;
-  /** 收货数量 × 采购单价，只用于对价格与数量的交叉核对；不叫应付金额。 */
+  /** 收货数量 × 采购单价，只用于核对价格和数量，不是应付金额。 */
   receiptReferenceAmount?: string | null;
   purchaseInCostAmount?: string | null;
   purchaseInCostMissingCount?: number | null;
-  /** `WAREHOUSE_CONFIRM + CONFIRMED + PENDING` 的收货单数。 */
+  /** 待入库的收货单数（仓库确认、已确认、待处理）。 */
   pendingPutawayReceiptCount?: number | null;
 }
 
-/** `PurchaseReportVO.ProductRow`：粒度 = SKU × 采购单位快照。 */
+/** 粒度：SKU × 采购单位。 */
 export interface PurchaseProductRow {
   skuId?: ReportId;
   spuCode?: string | null;
@@ -335,15 +307,15 @@ export interface PurchaseProductRow {
   plannedQuantity?: string | null;
   receivedQuantity?: string | null;
   orderAmount?: string | null;
-  /** 采购成交均价 = 采购行金额合计 / 计划数量合计，不是若干单价的算术平均。 */
+  /** 采购均价 = 行金额合计 / 计划数量合计，不是单价的算术平均。 */
   avgPurchasePrice?: string | null;
-  /** 入库数量以文本表达（按库存记账单位分组）：与采购单位可能不同，相加无量纲。 */
+  /** 入库数量按库存单位分组，用文本展示。 */
   inboundQuantityText?: string | null;
   inboundCostAmount?: string | null;
   inboundCostMissingCount?: number | null;
 }
 
-/** `PurchaseReportVO.SupplierRow`：粒度 = 供应商。 */
+/** 粒度：供应商。 */
 export interface PurchaseSupplierRow {
   supplierId?: ReportId;
   supplierCode?: string | null;
@@ -358,7 +330,7 @@ export interface PurchaseSupplierRow {
   amountRank?: number | null;
 }
 
-/** `PurchaseReportVO.PurchaserRow`：粒度 = 采购员。 */
+/** 粒度：采购员。 */
 export interface PurchasePurchaserRow {
   purchaserId?: ReportId;
   purchaserName?: string | null;
@@ -371,7 +343,7 @@ export interface PurchasePurchaserRow {
   lastSubmittedAt?: string | null;
 }
 
-/** `PurchaseReportVO.ItemRow`：粒度 = `purchase_order_item`。 */
+/** 粒度：采购行。 */
 export interface PurchaseItemRow {
   purchaseOrderId?: ReportId;
   purchaseOrderItemId?: ReportId;
@@ -393,35 +365,35 @@ export interface PurchaseItemRow {
   lineAmount?: string | null;
 }
 
-/** `PurchaseReportVO.PriceTrendPoint`：粒度 = 业务日 × SKU × 采购单位。 */
+/** 粒度：业务日 × SKU × 采购单位。 */
 export interface PurchasePriceTrendPoint {
   bizDate?: string | null;
   skuId?: ReportId;
   skuCode?: string | null;
   productName?: string | null;
-  /** 不同单位永不合并成一条线（箱价与公斤价混画没有意义）。 */
+  /** 不同单位不合并成一条线。 */
   purchaseUnit?: string | null;
   weightedAvgPrice?: string | null;
-  /** 上次有效均价，仅在相同商品规格和采购单位中比较。 */
+  /** 上一次有效均价，只在相同规格和单位间比较。 */
   previousWeightedAvgPrice?: string | null;
   priceChangeAmount?: string | null;
-  /** 以百分数为单位，零基期时为 null。 */
+  /** 百分比；基期为 0 时为 null。 */
   priceChangePercent?: string | null;
   sampleLineCount?: number | null;
 }
 
-/** `ScmPurchaseReportQueryForm`：六个维度共用（默认统计四个「已提交」状态，SQL 固定）。 */
+/** 六个维度共用的查询条件。 */
 export interface PurchaseQuery extends ReportPage, ReportDateQuery {
   advancedFilters?: import('/@/types/business/scm/advanced-filter').ScmAdvancedFilterCondition[];
-  /** 仅导出端点使用；敏感成本列由后端权限独立控制。 */
+  /** 仅导出使用；成本列由后端权限控制。 */
   exportColumnKeys?: string[];
   supplierId?: ReportId;
-  /** 员工 id，见 OverviewQuery.sellerId 的理由。 */
+  /** 员工 id。 */
   purchaserId?: number;
   warehouseId?: ReportId;
   status?: string;
   keyword?: string;
-  /** 价格波动维度：按 SKU 收窄，避免把不同单位的价格画进同一条线。 */
+  /** 价格波动维度按 SKU 收窄，避免不同单位画进同一线。 */
   skuId?: ReportId;
 }
 
@@ -444,7 +416,7 @@ export interface ReceiptSummary {
 export interface InboundSummary {
   movementCount: number;
   quantities: ReceiptUnitQuantity[];
-  /** 仅已知成本流水的小计；有无成本流水时不可当作全量成本。 */
+  /** 只含已知成本流水的小计，不是全量成本。 */
   knownCostAmount: string | null;
   costMissingCount: number | null;
 }
@@ -454,7 +426,7 @@ export interface PendingPutawaySummary {
   quantities: ReceiptUnitQuantity[];
 }
 
-/** `ReceiptReportVO.ReceiptRow`：粒度 = `purchase_receipt_item`（收货确认这一事实）。 */
+/** 粒度：收货明细行。 */
 export interface ReceiptRow {
   receiptId?: ReportId;
   receiptItemId?: ReportId;
@@ -465,7 +437,7 @@ export interface ReceiptRow {
   warehouseName?: string | null;
   /** `DIRECT` / `WAREHOUSE_CONFIRM`。 */
   receiptMode?: string | null;
-  /** `PENDING` / `COMPLETED`，即库存入账状态；不得把已确认收货显示成已入库。 */
+  /** 入库状态；已确认收货不等于已入库。 */
   putawayStatus?: string | null;
   confirmedAt?: string | null;
   confirmedBy?: string | null;
@@ -475,17 +447,17 @@ export interface ReceiptRow {
   skuName?: string | null;
   purchaseUnit?: string | null;
   receivedQuantity?: string | null;
-  /** 该采购行在全部收货单上的累计已收量，不应用于本行求和。 */
+  /** 该采购行的累计已收量，不要按行相加。 */
   cumulativeReceivedQuantity?: string | null;
   remainingQuantity?: string | null;
   overReceiptQuantity?: string | null;
   receiptDifference?: string | null;
   purchasePrice?: string | null;
-  /** 本次收货量 × 采购单价；命名固定「收货参考金额」。 */
+  /** 本次收货量 × 采购单价，称为收货参考金额。 */
   receiptReferenceAmount?: string | null;
 }
 
-/** `ReceiptReportVO.InboundRow`：粒度 = 一条 `PURCHASE_IN` 流水（库存入账这一事实）。 */
+/** 粒度：一条采购入库流水。 */
 export interface InboundRow {
   movementId?: ReportId;
   occurredAt?: string | null;
@@ -499,12 +471,12 @@ export interface InboundRow {
   quantity?: string | null;
   unitCost?: string | null;
   costAmount?: string | null;
-  /** `unit_cost` 缺失或调用者无成本权限时为 true：页面显示 `—` 而不是 0。 */
+  /** 成本缺失或没有成本权限时为 true：显示 — 而不是 0。 */
   costMissing?: boolean | null;
   operator?: string | null;
 }
 
-/** `ReceiptReportVO.PendingPutawayRow`：粒度 = 一张待入库收货单。 */
+/** 粒度：一张待入库收货单。 */
 export interface PendingPutawayRow {
   receiptId?: ReportId;
   receiptNo?: string | null;
@@ -514,11 +486,11 @@ export interface PendingPutawayRow {
   warehouseName?: string | null;
   confirmedAt?: string | null;
   skuKindCount?: number | null;
-  /** 按采购单位分组后的数量文本（如 `12kg / 3箱`）；刻意不是单个数字。 */
+  /** 按单位分组的数量文本（如 12kg / 3箱）。 */
   quantityText?: string | null;
 }
 
-/** `ScmReceiptReportQueryForm`：三个 Tab 共用。 */
+/** 三个标签页共用的查询条件。 */
 export interface ReceiptQuery extends ReportPage, ReportDateQuery {
   supplierId?: ReportId;
   warehouseId?: ReportId;
@@ -532,12 +504,7 @@ export interface ReceiptQuery extends ReportPage, ReportDateQuery {
 // 库存分析
 // ==================================================================
 
-/**
- * 库存流水报表行。
- *
- * 方向不在字段里：`quantity` 恒为正，方向由 `movementType` 经
- * `SCM_INVENTORY_MOVEMENT_INBOUND_TYPES` 派生（计划禁止报表再维护一份 IN / OUT 硬编码）。
- */
+/** 库存流水报表行。方向由 movementType 推出，不在字段里。 */
 export interface InventoryMovementRow {
   movementId?: ReportId;
   occurredAt?: string | null;
@@ -550,22 +517,22 @@ export interface InventoryMovementRow {
   productName?: string | null;
   movementType?: string | null;
   sourceDocumentType?: string | null;
-  /** 来源单号：收货单号 / 出库单号 / 盘点单号等，后端 COALESCE 成一个展示列。 */
+  /** 来源单号（收货单、出库单、盘点单等）。 */
   sourceDocumentNo?: string | null;
   sourceDocumentId?: ReportId | null;
   sourceDocumentItemId?: ReportId | null;
   quantity?: string | null;
-  /** 写入时冻结的记账单位快照。 */
+  /** 记账时的单位。 */
   unitSnapshot?: string | null;
   unitCost?: string | null;
-  /** `quantity × unit_cost`，由后端算；无成本或无成本权限时为 null。 */
+  /** 成本金额，后端算；无成本或无权限时为 null。 */
   costAmount?: string | null;
   beforeQuantity?: string | null;
   afterQuantity?: string | null;
   operator?: string | null;
 }
 
-/** 损耗分析 KPI。数量按单位分组，因此只有文本没有可加数字。 */
+/** 损耗分析指标。数量按单位分组，只能看文本。 */
 export interface InventoryLossSummary {
   /** 盘亏数量文本（按记账单位分组）。 */
   stocktakeLossQuantityText?: string | null;
@@ -573,20 +540,15 @@ export interface InventoryLossSummary {
   /** 报损数量文本（按记账单位分组）。 */
   lossReportQuantityText?: string | null;
   lossReportCostAmount?: string | null;
-  /** 损耗总成本金额（后端聚合，前端不相加）。 */
+  /** 损耗总成本，后端聚合。 */
   totalLossCostAmount?: string | null;
-  /** 无成本行数；> 0 时服务端相关聚合金额为 null，不会用已知部分冒充全额。 */
+  /** 无成本行数；大于 0 时相关金额为 null，不用部分数据冒充全额。 */
   costMissingCount?: number | null;
-  /**
-   * 按日损耗成本趋势（的「损耗金额按日趋势」）。
-   *
-   * 后端未提供该聚合时这里是 `undefined`，页面显示图表空态而不在前端把明细行相加：
-   * 明细是分页的，拿一页去代表整个区间会画出一张错的图。
-   */
+  /** 按日损耗成本趋势；后端没给就显示空图，不拿一页明细自己拼。 */
   dailyTrend?: InventoryLossTrendPoint[] | null;
 }
 
-/** 损耗按日趋势点（服务端只返回期内存在损耗流水的业务日，不用分页拼趋势）。 */
+/** 损耗按日趋势点。 */
 export interface InventoryLossTrendPoint {
   bizDate?: string | null;
   costMissingCount?: number | null;
@@ -601,7 +563,7 @@ export interface InventoryLossRow {
   productName?: string | null;
   skuCode?: string | null;
   warehouseName?: string | null;
-  /** 与服务端 LossRow.lossType 精确一致，不借用库存流水的 movementType 字段。 */
+  /** 损耗类型，和库存流水的 movementType 不是一回事。 */
   lossType?: string | null;
   quantity?: string | null;
   unit?: string | null;
@@ -614,9 +576,7 @@ export interface InventoryLossRow {
 
 /**
  * 当前库存价值行。
- *
- * 当前时点值：不受查询区间影响，页面必须标注「当前时点」，日期筛选在该 Tab 下失效。
- * 成本列受 `scm:report:cost:query` 控制，后端已对无权限调用者置 null。
+ * 当前时点值，不受日期区间影响；成本列受权限控制，无权限时后端置 null。
  */
 export interface InventoryValueRow {
   balanceId?: ReportId;
@@ -631,20 +591,14 @@ export interface InventoryValueRow {
   /** 记账单位；一个 (仓库, SKU) 只有一个单位。 */
   unit?: string | null;
   avgCost?: string | null;
-  /** `quantity × avg_cost`，后端派生。 */
+  /** 库存金额 = 数量 × 平均成本。 */
   amount?: string | null;
 }
 
-/**
- * `/inventory/value/query` 的响应：分页行 + 可选的当前时点汇总。
- *
- * KPI 三项（账面金额 / 有货 SKU 数 / 零库存 SKU 数）是聚合值，放不进 SmartAdmin 的
- * `PageResult`，后端若不额外提供就取不到。这里按「有则显示、无则不显示」处理，
- * 不在前端把当页行的 `amount` 相加冒充总金额 —— 那会把一页当成全库。
- */
+/** 库存价值查询结果：分页行 + 可选汇总。汇总缺失时不显示指标卡，不用当页数据替代。 */
 export type InventoryValuePage = ScmPage<InventoryValueRow> & InventoryValueSummary;
 
-/** 当前库存价值的时点汇总（全部可选：后端未提供时页面不显示 KPI 行）。 */
+/** 库存价值汇总；字段都可选。 */
 export interface InventoryValueSummary {
   bookValue?: string | null;
   stockedSkuCount?: number | null;
@@ -652,7 +606,7 @@ export interface InventoryValueSummary {
   snapshotAt?: string | null;
 }
 
-/** 收发存（数量版）行：粒度 = 仓库 + SKU + 记账单位。 */
+/** 收发存（数量）行：粒度 = 仓库 + SKU + 单位。 */
 export interface InventoryFlowSummaryRow {
   warehouseId?: ReportId;
   warehouseName?: string | null;
@@ -671,11 +625,11 @@ export interface InventoryFlowSummaryRow {
   transferOutQuantity?: string | null;
   convertInQuantity?: string | null;
   convertOutQuantity?: string | null;
-  /** 期内净变动量（后端按方向算好）；没有期初 / 期末，那需要成本快照， 不做。 */
+  /** 期内净变动量。 */
   netChangeQuantity?: string | null;
 }
 
-/** `ScmInventoryReportQueryForm`：四个 Tab 共用。 */
+/** 四个标签页共用的查询条件。 */
 export interface InventoryReportQuery extends ReportPage, ReportDateQuery {
   warehouseId?: ReportId;
   skuId?: ReportId;

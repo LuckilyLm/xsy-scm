@@ -11,20 +11,15 @@ import {
   type TrendData,
 } from '../types';
 
-/**
- * 静默刷新间隔。
- *
- * 30 秒对应设计稿的「排行榜 30s 更新一次」。刷新时不显示 loading：
- * 大屏上任何一次整屏闪烁都会被注意到，而绝大多数刷新拿回的数据和上次一样。
- */
+/** 静默刷新间隔 30 秒；刷新时不显示 loading。 */
 const REFRESH_INTERVAL = 30_000;
 
-/** 首次加载失败显示错误；后台静默刷新失败时保留旧数据并标注可能过期。切换趋势周期不重新请求其他业务指标。 */
+/** 首次加载失败显示错误；后台刷新失败保留旧数据并提示。切换趋势周期只重拉趋势。 */
 export function useScreenData() {
   const business = ref<BusinessData | null>(null);
   const inventory = ref<InventoryData | null>(null);
   const purchase = ref<PurchaseData | null>(null);
-  // 初值就是空地理数据而不是 null：接口挂了地图面板仍要画出底图 + 「暂无归属数据」
+  // 初值用空数据，接口失败时地图仍能显示底图。
   const geoData = ref<GeoData>(emptyGeo());
   const trend = ref<TrendData>(emptyTrend());
 
@@ -70,7 +65,7 @@ export function useScreenData() {
 
     const failed = results.filter((r) => r.status === 'rejected').length;
     if (failed === results.length) {
-      // 全挂：没有可用数据，交给错误态
+      // 全部失败：进入错误态
       const first = results[0] as PromiseRejectedResult;
       error.value = String(first.reason?.msg ?? first.reason?.message ?? '数据加载失败');
       return false;
@@ -117,12 +112,7 @@ export function useScreenData() {
     }
   }
 
-  /**
-   * 页面不可见时跳过刷新。
-   *
-   * 大屏常年开着，切到后台标签页还在每 30 秒打接口纯属浪费；
-   * 而重新可见时立刻补一次，避免用户切回来看到的是十几分钟前的数据。
-   */
+  /** 页面不可见时跳过刷新；重新可见时立即补一次。 */
   function onVisibilityChange() {
     if (!document.hidden) {
       refresh();

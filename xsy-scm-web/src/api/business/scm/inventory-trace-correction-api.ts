@@ -1,8 +1,4 @@
-/**
- * 包装码更正：申请 → 他人审批 → 追加解绑事实。
- *
- * 解绑不是删除：申请、审批、解绑三步都留痕；批准后包装码回到可绑定状态。
- */
+/** 包装码更正：申请、他人审批、解绑。三步都留痕，批准后码回到可绑定状态。 */
 import {postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {TraceCorrection, TraceCorrectionDecision, TraceCorrectionQuery} from '/@/views/business/scm/inventory/inventory-types';

@@ -1,9 +1,4 @@
-/**
- * 营销中心接口。
- *
- * 试算是只读的（`POST` 只是因为要传订单行数组）：不占用券、不写任何表；
- * 只有 `confirm` 才占用券并冻结优惠 —— 预览不等于最终占用。
- */
+/** 营销中心接口。试算只读，不占券不写表；只有确认订单才占用优惠。 */
 import {getRequest, postRequest, request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
@@ -19,10 +14,7 @@ import type {
   PromotionDiscountLine,
 } from '/@/views/business/scm/promotion/promotion-types';
 
-/**
- * 带 `Idempotency-Key` 的命令通道：失败保留同一 UUID 供重试回放原结果，
- * 成功即释放，内容变化后换用新键。发券是「多张 INSERT」的写命令，重试不该多发一批券。
- */
+/** 幂等命令通道：失败保留同一 UUID 供重试，成功即释放，内容变化后换新键。 */
 const keys = new Map<string, string>();
 
 async function promotionCommand<T>(path: string, data: unknown): Promise<ScmResponse<T>> {

@@ -98,7 +98,7 @@ async function load() {
       qrDataUrl.value = '';
     }
   } catch {
-    // 列表失败只走全局提示
+    // 列表加载失败由全局 toast 提示
   }
 }
 

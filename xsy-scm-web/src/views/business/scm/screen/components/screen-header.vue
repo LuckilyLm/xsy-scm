@@ -6,10 +6,7 @@
         <span class="scm-brand-name">鲜蔬园智链</span>
       </div>
       <span class="scm-brand-divider" />
-      <!--
-        运行状态跟着品牌走：它是「系统级」信号，右侧 400px 留给「日期时间 + 更新时间 + 两个按钮」
-        已经刚好够用，再挤一个徽章就会把「2026-10-11 星期日」压成两行。
-      -->
+      <!-- 运行状态放在品牌旁，右侧空间留给时钟和按钮 -->
       <span class="scm-status-item" :class="statusClass"> <i class="scm-dot" />{{ statusText }} </span>
     </div>
 
@@ -70,7 +67,7 @@
 import {computed} from 'vue';
 import {useScreenClock} from '../composables/use-screen-clock';
 
-/** 大屏顶部显示时钟、刷新状态与全屏入口；静默刷新失败时必须提示数据可能过期。 */
+/** 顶部时钟、刷新状态与全屏入口。 */
 const props = defineProps<{
   /** 静默刷新失败信息（空串表示正常） */
   staleError: string;
@@ -115,10 +112,7 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
     gap: 12px;
   }
 
-  /*
-    右侧装的是「日期 + 时间 + 更新时间 + 两个按钮」，比左侧的品牌长。
-    400px 是下限而不是定值：内容再长也不会把「2026-10-11 星期日」压成两行。
-  */
+  /* 400px 是下限，保证时钟不折行 */
   &.is-right {
     flex: 0 0 auto;
     min-width: 400px;
@@ -126,7 +120,7 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
   }
 }
 
-/* 品牌与运行状态之间的细分隔线：两件事，别被读成一句话 */
+/* 分隔品牌和运行状态 */
 .scm-brand-divider {
   flex: 0 0 auto;
   width: 1px;
@@ -172,7 +166,7 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
     font-weight: 700;
     letter-spacing: 4px;
     color: @text-1;
-    // 标题两侧的直角括号：克制，只有上下两条细线
+    // 标题上下细线
     border-top: 1px solid @panel-border-strong;
     border-bottom: 1px solid @panel-border-strong;
     text-shadow: 0 0 14px rgba(39, 215, 254, 0.28);
@@ -182,18 +176,12 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
 .scm-clock {
   flex: 0 0 auto;
   display: flex;
-  /*
-    日期与时间排同一行。拆成上下两行会占掉 55px 顶栏高度（顶栏只有 64px），
-    而右侧本来就只有「现在几点」这一件事，一行说完更省地方也更像时钟。
-  */
+  /* 日期和时间排同一行 */
   align-items: baseline;
   gap: 8px;
   line-height: 1.25;
   margin-right: 14px;
-  /*
-    字号 / 字重 / 字体 / 颜色写在容器上，两段共用：日期与时间是同一条信息的两半，
-    做成「小号弱色 + 大号粗体」会被读成主次关系，那不是这里要表达的。
-  */
+  /* 日期和时间共用同一套字号、颜色 */
   font-family: @font-num;
   font-size: 20px;
   font-weight: 600;
@@ -202,7 +190,7 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
 
   .scm-clock-date,
   .scm-clock-time {
-    /* 日期 + 星期是一个整体，折行会变成「…星期」+「日」，两行都不像话 */
+    /* 日期和星期不能折行 */
     white-space: nowrap;
   }
 }

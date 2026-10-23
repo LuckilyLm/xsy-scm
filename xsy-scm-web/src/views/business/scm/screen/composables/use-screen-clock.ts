@@ -6,12 +6,7 @@ function pad(value: number): string {
   return String(value).padStart(2, '0');
 }
 
-/**
- * 大屏时钟（日期 + 星期 + 时分秒）。
- *
- * 秒级刷新只影响这一个 1 秒定时器，不触发任何数据请求 —— 时间在走不代表数据要重拉，
- * 否则大屏每分钟都在打接口，而绝大多数时刻数据根本没变。
- */
+/** 大屏时钟：每秒刷新时间，不触发数据请求。 */
 export function useScreenClock() {
   const now = ref(new Date());
   let timer: number | undefined;

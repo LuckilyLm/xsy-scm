@@ -88,7 +88,7 @@ const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}),
   visible = ref(false),
   active = ref<LogRow>();
 let requestId = 0;
-/** 订单日志保留操作时间、修改原因和前后变化，便于核对是谁在何时修改了单据。 */
+/** 日志显示操作时间、原因和变更前后。 */
 const columns = ref<TableColumnsType<LogRow>>([
   {
     title: '时间',
@@ -117,7 +117,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示并可重试
     const r = await api.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;

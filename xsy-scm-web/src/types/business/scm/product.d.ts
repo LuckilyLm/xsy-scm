@@ -229,7 +229,7 @@ export interface ProductBatchResult {
   failures: {spuId: ProductId; spuCode: string | null; reasonCode: number; reasonMsg: string}[];
 }
 
-/** Excel 导入逐行定位错误：后端 0 错误才写、写失败整批回滚，故这些错误永远代表“本次没有任何商品落库”。 */
+/** Excel 导入逐行定位错误：后端 0 错误才写、写失败整批回滚，故这些错误永远代表“本次没有任何商品写入”。 */
 export interface ProductImportError {
   rowNumber: number;
   spuCode: string | null;

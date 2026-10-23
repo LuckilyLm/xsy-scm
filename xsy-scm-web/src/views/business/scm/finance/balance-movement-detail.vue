@@ -33,7 +33,7 @@ async function open(filter: {movementId?: Id; sourceType?: string; sourceId?: Id
   error.value = '';
   rows.value = [];
   try {
-    // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由弹窗内 Alert 提示，不再弹全局 toast
     const response = await paymentApi.movements(filter, {suppressGlobalErrorMessage: true});
     if (current === generation) rows.value = response.data.list;
   } catch (cause) {

@@ -1,8 +1,4 @@
-<!--
-  *  商品导出字段选择
-  *
-  *  点「导出」先在这里挑字段，默认全选；不再用常驻下拉占着工具栏。
--->
+<!-- 商品导出字段选择：点「导出」时先选字段，默认全选。 -->
 <template>
   <a-modal :open="visible" title="选择导出字段" :width="680" :mask-closable="false" :destroy-on-close="true" @cancel="hide">
     <FormNote :lines="['默认导出全部字段；取消勾选可缩小范围，至少保留一个字段。']" />
@@ -41,15 +37,10 @@ const selectedKeys = ref<string[]>([]);
 
 let submitHandler: ((keys: string[]) => Promise<void>) | null = null;
 
-/**
- * 打开弹窗。
- *
- * @param columns 可导出字段；每次打开都重新给，避免沿用上一次的旧列表。
- * @param onSubmit 实际导出动作；由调用方负责请求，弹窗只等结果决定是否关闭。
- */
+/** 打开弹窗；字段和导出回调由调用方每次传入。 */
 function show(columns: ExportColumn[], onSubmit: (keys: string[]) => Promise<void>) {
   options.value = columns;
-  // 默认全选：现场多半是「先全导，再删不需要的」，从空开始勾 25 项太慢。
+  // 默认全选，减少逐项勾选。
   selectedKeys.value = columns.map((column) => column.value);
   submitHandler = onSubmit;
   visible.value = true;
@@ -85,7 +76,7 @@ async function confirm() {
     await submitHandler(selectedKeys.value.slice());
     hide();
   } catch {
-    // 导出失败保持弹窗：用户可改字段重试；错误提示由请求层统一给出。
+    // 导出失败保持弹窗，错误由请求层提示。
   } finally {
     loading.value = false;
   }

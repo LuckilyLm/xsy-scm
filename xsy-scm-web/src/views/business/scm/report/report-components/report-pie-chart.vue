@@ -2,7 +2,7 @@
   <a-card size="small" class="report-chart">
     <template #title>{{ title }}</template>
     <a-empty v-if="!hasData" :image-style="{height: '40px'}" :description="emptyText" class="report-chart-empty" />
-    <!-- 同 `report-bar-chart`：容器必须一直存在，否则 `useEcharts` 观察不到后来才创建的元素 -->
+    <!-- 容器必须一直存在，否则 useEcharts 观察不到这个元素 -->
     <div v-show="hasData" ref="chartEl" :style="{height}" />
   </a-card>
 </template>
@@ -13,13 +13,7 @@ import {useEcharts} from '/@/views/business/scm/screen/composables/use-echarts';
 import {REPORT_CHART_COLORS, REPORT_CHART_HEIGHT, REPORT_CHART_SERIES} from './chart-theme';
 import type {ReportChartSlice} from '../report-types';
 
-/**
- * 分类占比饼图（损耗类型金额占比）。
- *
- * 切片值只做角度分配：占比由 ECharts 自己按值算，文本一律用 `text`
- * （后端 4 位定点原文，见 `report-types.ReportChartSlice`）。饼图刻意不显示「合计」，
- * 因为合计是聚合事实，需要的时候由 KPI 卡给出，不在图例里再算一遍。
- */
+/** 分类占比饼图。切片值只用来分角度，文本用后端原文；合计由指标卡给出。 */
 const props = withDefaults(
   defineProps<{
     title: string;
@@ -33,7 +27,7 @@ const props = withDefaults(
 const chartEl = ref<HTMLElement>();
 const {setOption} = useEcharts(chartEl);
 
-/** 全零 / 全无值时饼图只会画出一个空圈，那不如给空态；这里判断的是「画不画」，不是业务数字。 */
+/** 全零或全空时显示空态，不画空圈。 */
 const hasData = computed(() => props.slices.some((slice) => slice.value !== null && slice.value > 0));
 
 function render() {

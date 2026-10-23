@@ -1,4 +1,4 @@
-<!-- 经营概览展示已确认订单额、独立的已完成退款金额和当前库存账面金额。库存金额是当前时点数据，不受日期区间限制；所有内容只读。 -->
+<!-- 经营概览：只读。库存金额是当前时点数据，不受日期区间限制。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -43,8 +43,7 @@
     </template>
   </a-alert>
 
-  <!-- 区间指标与当前时点指标分开排：前者随查询区间变化，后者是余额快照，
-       混在一行会让「本月订单额」和「此刻库存金额」看起来同源。 -->
+  <!-- 区间指标和当前时点指标分开排，避免两种数字混在一起 -->
   <section v-for="band in kpiBands" :key="band.key" class="report-kpi-band">
     <h3 class="report-kpi-band__title">{{ band.title }}</h3>
     <div class="report-kpi-grid" :class="`report-kpi-grid--${band.key}`">
@@ -105,10 +104,7 @@
           </a-tooltip>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 下钻的四个维度（销售 / 采购 / 收货入库 / 库存）是完全平级的只读分析入口，
-               没有任何依据说明其中两个更高频，因此不人为制造信息层级：
-               四个入口统一收进一个「下钻」菜单，行内只留一个入口。
-               跳转不涉及写操作，因此没有权限需要裁剪。 -->
+          <!-- 四个下钻入口平级，收进一个菜单；只做跳转，无需按权限裁剪 -->
           <div class="scm-table-actions">
             <ScmActionMore label="下钻" :actions="drilldownActions" @select="onDrilldown($event, record)" />
           </div>
@@ -161,11 +157,7 @@ import {reportError} from './report-errors';
 import {useReportPermission} from './use-report-permission';
 import type {DateRange} from './report-model';
 
-/**
- * 权限码取自 `SCM_REPORT_PERMISSION` 常量而不是散落字面量：
- * 同一份码要在「按钮 `v-privilege`」「列裁剪」「Tab 可见性」三处判断，
- * 写三遍字面量就意味着改一次权限要找三个地方。
- */
+/** 权限码统一从常量取，按钮、列裁剪和页签可见性共用。 */
 const PERM = SCM_REPORT_PERMISSION;
 
 const router = useRouter();
@@ -183,7 +175,7 @@ const trendRows = ref<ReportDailyStat[]>([]);
 const loading = ref(false);
 const error = ref('');
 
-/** 竞态保护：慢的旧响应不得覆盖新结果（三个请求共用一次刷新令牌）。 */
+/** 只采用最后一次刷新结果，三个请求共用一个令牌。 */
 let requestId = 0;
 
 const columns = ref<TableColumnsType<ReportDailyStat>>([
@@ -197,10 +189,7 @@ const columns = ref<TableColumnsType<ReportDailyStat>>([
   {title: '下钻', dataIndex: 'action', align: 'center', fixed: 'right', width: 110},
 ]);
 
-/**
- * 下钻的四个平级维度，按业务主线排序（销售 → 采购 → 收货入库 → 库存）。
- * 都是只读跳转、没有权限差异，因此不裁剪 `hidden` —— 与写操作型菜单不同。
- */
+/** 四个下钻维度：销售、采购、收货入库、库存。只读跳转，不做权限裁剪。 */
 const drilldownActions: ScmActionItem[] = [
   {key: 'sales', label: '销售分析'},
   {key: 'purchase', label: '采购分析'},
@@ -214,7 +203,7 @@ function onDrilldown(key: string, record: ReportDailyStat) {
   }
 }
 
-/** 成本列：无 `scm:report:cost:query` 时整列不出现（不是显示一串 `—`）。 */
+/** 没有成本权限时整列不显示。 */
 const COST_INDEXES = ['purchaseInCostAmount'];
 const visibleColumns = computed(() => filterCostColumns(columns.value, COST_INDEXES, canViewCost.value));
 
@@ -270,10 +259,7 @@ const kpiCards = computed(() => {
   return cards.filter((card) => !card.cost || canViewCost.value);
 });
 
-/**
- * 两段指标：区间统计随「确认日期」筛选变化，当前时点是余额快照。
- * 权限裁剪后某段可能为空，空段整段不渲染，避免只剩标题。
- */
+/** 区间统计随筛选变化，当前时点是余额；某段被裁空就整段不渲染。 */
 const kpiBands = computed(() => {
   const cards = kpiCards.value;
   return [
@@ -284,10 +270,7 @@ const kpiBands = computed(() => {
 
 const trendAxis = computed(() => trendRows.value.map((row) => row.bizDate));
 
-/**
- * 趋势固定三条：已确认订单金额 / 已完成退款金额 / 采购入库成本金额（.3）。
- * 不加「收入」「毛利」第四条线 —— 那些事实当前还不存在。
- */
+/** 趋势三条线：订单金额、退款金额、采购入库成本；没有成本权限时不加第三条。 */
 const trendSeries = computed(() => {
   const rows = trendRows.value;
   const series = [
@@ -308,7 +291,7 @@ async function queryAll() {
   const id = ++requestId;
   const overLimit = rangeOverLimitError(dateRange.value);
   if (overLimit) {
-    // 前端拦一道：跨度超过上限后端会以 41111 拒绝，先把「改哪里」说清楚
+    // 前端先拦：超限后端也会拒绝，这里先说清楚怎么改
     loading.value = false;
     error.value = overLimit;
     return;
@@ -317,7 +300,7 @@ async function queryAll() {
   error.value = '';
   const payload = query.value;
   try {
-    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页内 Alert 提示，不再弹全局 toast
     const quiet = {suppressGlobalErrorMessage: true};
     const [overviewResponse, trendResponse, dailyResponse] = await Promise.all([
       reportOverviewApi.overview(payload, quiet),
@@ -345,7 +328,7 @@ function onSearch() {
   queryAll();
 }
 
-/** 导出每日统计：与列表同一筛选、同一查询方法，成本 / 仓库字段按当前权限同样抹除。 */
+/** 导出每日统计：与列表同筛选，成本字段按权限处理。 */
 function exportDaily() {
   void dailyExport.run(() => reportOverviewApi.dailyExport(query.value));
 }
@@ -370,24 +353,20 @@ const ANALYSIS_PATH: Record<AnalysisKey, string> = {
   inventory: '/report/report-inventory-list',
 };
 
-/** 带日期跳到分析页；目标页用 `rangeFromQuery` 还原区间，参数不合法时它自己回落本月。 */
+/** 带日期跳到分析页；参数不合法时目标页回落到本月。 */
 function goAnalysis(target: AnalysisKey, bizDate: string) {
   const [startDate, endDate] = dayRange(bizDate);
   void router.push({path: ANALYSIS_PATH[target], query: {startDate, endDate}});
 }
 
-/**
- * 默认区间本月；从分析页「返回概览」时可以带 `?startDate&endDate` 回来，
- * 这样来回跳不需要重新选一次日期。URL 是可手改的输入，
- * 所以取值交给 `rangeFromQuery` 校验，半截或非法区间一律按未提供处理。
- */
+/** 默认本月；从分析页返回时可带日期，取值交给 rangeFromQuery 校验。 */
 onMounted(async () => {
   dateRange.value = rangeFromQuery(route.query) ?? defaultDateRange();
   try {
     const tree = await productCategoryApi.tree();
     categories.value = tree.data ?? [];
   } catch {
-    // 分类字典拉不到不该挡住概览：高级筛选少一个下拉，比整页空白好
+    // 分类拉不到不影响概览，只是少一个筛选
     categories.value = [];
   }
   await queryAll();
@@ -395,11 +374,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/*
- * KPI 分段：段标题说明这组数字的口径（随查询区间变化 / 当前余额快照）。
- * 列数由可用宽度决定，卡片数量少于列数时 auto-fit 会收起空轨道、让已有卡片均分整行，
- * 因此权限裁掉成本指标后也不会留下尾部空格。
- */
+/* KPI 分段：段标题说明这组数字是区间统计还是当前时点 */
 .report-kpi-band {
   margin-top: 12px;
 }
@@ -418,7 +393,7 @@ onMounted(async () => {
   gap: 12px;
 }
 
-/* 时点指标通常只有一张：固定阅读宽度，不跟着整行拉满 */
+/* 时点指标通常只有一张，固定宽度 */
 .report-kpi-grid--point {
   grid-template-columns: minmax(0, 320px);
   justify-content: start;

@@ -1,12 +1,8 @@
-<!-- 库存分析展示流水、损耗、库存价值和收发存。流向沿用库存类型，金额及成本字段根据当前权限显示。 -->
+<!-- 库存分析：流水、损耗、库存价值和收发存。成本字段按权限显示。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
-      <!--
-        「当前库存价值」是当前时点快照，与日期区间无关，因此在该 Tab 下收掉日期筛选：
-        留着它会被读成「这段区间的库存金额」。后端日期字段必填，所以请求仍带当前区间，
-        只是那个值在该 Tab 不参与计算。
-      -->
+      <!-- 当前库存价值是当前时点数据，这里不显示日期筛选；请求仍带日期，后端会忽略 -->
       <a-form-item v-if="activeTab !== 'value'" label="发生日期" class="smart-query-form-item">
         <ReportDateRangePicker v-model:value="dateRange" />
       </a-form-item>
@@ -49,7 +45,6 @@
   </a-alert>
 
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
-    <!-- ==================== 库存流水 ==================== -->
     <a-tab-pane key="movement" tab="库存流水">
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
@@ -125,7 +120,6 @@
       </a-card>
     </a-tab-pane>
 
-    <!-- ==================== 损耗分析 ==================== -->
     <a-tab-pane key="loss" tab="损耗分析">
       <InventoryLossAnalysisTab
         :summary="lossSummary"
@@ -143,7 +137,6 @@
       />
     </a-tab-pane>
 
-    <!-- ==================== 当前库存价值（成本权限可见） ==================== -->
     <a-tab-pane v-if="canViewCost" key="value" tab="当前库存价值">
       <a-row v-if="hasValueSummary" :gutter="[12, 12]">
         <a-col v-for="card in valueCards" :key="card.label" :xs="24" :sm="12" :md="8">
@@ -210,7 +203,6 @@
       </a-card>
     </a-tab-pane>
 
-    <!-- ==================== 收发存（数量版） ==================== -->
     <a-tab-pane key="flow" tab="收发存（数量版）">
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
@@ -337,7 +329,7 @@ const lossExport = useScmExport(loss);
 const movementExport = useScmExport(movement);
 const valueExport = useScmExport(value);
 
-/** 无成本权限时不展示价值 Tab；此时如果正停在价值 Tab，回落到流水（见 `onTabChange`）。 */
+/** 成本列受权限控制。 */
 const COST_INDEXES = ['unitCost', 'costAmount'];
 
 const movementColumns = ref<TableColumnsType<InventoryMovementRow>>([
@@ -372,7 +364,7 @@ const valueColumns = ref<TableColumnsType<InventoryValueRow>>([
   {title: '当前账面金额', dataIndex: 'amount', width: 148},
 ]);
 
-/** 收发存的全部数量列（同一份名单既驱动渲染，也说明「这些列不可相加」）。 */
+/** 收发存的全部数量列；不同单位不可相加。 */
 const QUANTITY_INDEXES = [
   'purchaseInQuantity',
   'salesOutQuantity',
@@ -411,7 +403,7 @@ function directionOf(movementType: string | null | undefined): 'IN' | 'OUT' | nu
   return movementDirection(movementType, SCM_INVENTORY_MOVEMENT_INBOUND_TYPES);
 }
 
-/** 价值 KPI：后端没给聚合就不显示，绝不把当页金额相加冒充总额。 */
+/** 后端没给汇总就不显示指标卡，不用当页数据加总。 */
 const hasValueSummary = computed(() => Object.values(valueSummary.value).some((item) => item !== undefined && item !== null));
 const valueCards = computed(() => {
   const data = valueSummary.value;
@@ -450,7 +442,7 @@ const loadLossSummary = createGuardedLoader(
   chartError
 );
 
-/** 价值页：日期必填但被后端忽略（当前时点快照），仍带当前区间过去以满足校验。 */
+/** 价值页按当前时点取数；日期仍要带，后端会忽略。 */
 const loadValue = createTabLoader(
   value,
   () => inventoryQuery(value),
@@ -493,7 +485,7 @@ function queryActiveTab() {
 }
 
 function onTabChange() {
-  // 无成本权限时价值 Tab 整个不渲染；若权限在停留期间被收回，回落到流水而不是查一个空页
+  // 没有成本权限时价值页不渲染；权限被收回就回落到流水
   if (activeTab.value === 'value' && !canViewCost.value) {
     activeTab.value = 'movement';
     enterTab(movement);

@@ -42,10 +42,7 @@ export function emptyProduct(): ProductForm {
   };
 }
 
-/**
- * 详情 VO → 编辑表单。标签压成 tagId 列表：编辑接口按它整批替换，漏映射等于清空商品标签。
- * 列表页独有的汇总字段（skuCount、categoryPath、价格区间等）不带进表单，避免原样回传。
- */
+/** 详情转编辑表单。标签换成 tagId 列表，漏映射会清空商品标签。 */
 export function productFormOf(row: ProductRow): ProductForm {
   return {
     spuId: row.spuId,
@@ -87,7 +84,7 @@ export function removeSku(rows: ProductSku[], index: number): ProductSku[] {
 }
 
 export function validateProduct(form: ProductForm): string | undefined {
-  // 与 product_spu 的 ck_product_spu_archived_off_shelf 同口径；服务层也会拒，这里只为提前给出可读提示。
+  // 与数据库约束一致；服务端也会拒绝，这里提前给出提示
   if (form.masterStatus === 'ARCHIVED' && form.status === 'ON_SHELF') return '已归档商品不能处于上架状态';
   if (!form.skuList.length) return '至少保留一个商品规格';
   if (form.skuList.filter((s) => s.defaultFlag).length !== 1) return '请选择且仅选择一个默认商品规格';

@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-/** 报表指标卡只显示调用方格式化的金额和数量，不重新处理定点数。当前时点的指标须标注时间，避免与区间合计混淆。 */
+/** 指标卡只显示调用方格式化好的值，不重新处理数字；当前时点指标要标时间。 */
 defineProps<{
   label: string;
   value: string;
@@ -21,7 +21,7 @@ defineProps<{
   warning?: string;
   /** 时点值标记。 */
   currentPoint?: boolean;
-  /** 数值语义色：danger 用于逾期合计这类必须第一眼看到的坏消息；颜色之外标签仍说明含义。 */
+  /** 数值颜色：danger 用于逾期合计这类要第一眼看到的指标。 */
   tone?: 'danger';
 }>();
 </script>
@@ -49,7 +49,7 @@ defineProps<{
 }
 
 .report-kpi-value--danger {
-  /* 用 SCM 主题变量：antd 4.2.5 不开 cssVar，`--ant-color-*` 在项目里从未定义（全仓库已清零） */
+  /* 用 SCM 主题变量；项目没有定义 antd 的 --ant-color-* */
   color: var(--scm-error, #cf1322);
 }
 

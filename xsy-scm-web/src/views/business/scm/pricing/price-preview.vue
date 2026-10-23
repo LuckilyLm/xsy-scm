@@ -1,4 +1,4 @@
-<!--  价格试算。价格状态与可售状态独立展示。 -->
+<!-- 价格试算：价格状态和可售状态分开显示。 -->
 <template>
   <a-card size="small" :bordered="false">
     <template #title>
@@ -45,7 +45,7 @@
           <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unitPrice'">
-          <!-- 本页要回答的就是「最终多少钱」：这个数字必须是全表最重的 -->
+          <!-- 最终价格是全表最重的数字 -->
           <span :class="record.priceStatus === 'PRICED' ? 'final-price' : 'final-price final-price--muted'">
             {{ formatAmount(record.unitPrice) }}
           </span>
@@ -167,11 +167,7 @@ async function trial() {
   }
 }
 
-/**
- * 来源的语义档位：协议价最具体（蓝）、类型价次之（绿）、市场价是兜底（灰）。
- * 来源不是「状态」，但它正是本页第二个要突出的信息 —— 只看价格不看来源，
- * 用户无法判断这个价是不是专门给自己谈的。
- */
+/** 来源颜色：协议价蓝、类型价绿、时价橙、市场价灰。 */
 const PRICE_SOURCE_TONE: Record<string, ScmStatusTone> = {
   AGREEMENT: 'processing',
   CUSTOMER_TYPE: 'success',
@@ -179,12 +175,7 @@ const PRICE_SOURCE_TONE: Record<string, ScmStatusTone> = {
   MARKET: 'neutral',
 };
 
-/**
- * 列只留「什么货 / 多少钱 / 这个价哪来的 / 能不能卖 / 为什么」。
- *
- * 刻意不展示 `sourceRecordId`：那是命中的那条价格记录的数据库主键，
- * 对使用者没有信息量，需要追溯时走价格历史页。
- */
+/** 不展示 sourceRecordId（数据库主键），需要追溯时走价格历史页。 */
 const columns: TableColumnsType<ResolvedPrice> = [
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'specName', width: 170},
@@ -221,7 +212,7 @@ async function resolve() {
   error.value = '';
   result.value = undefined;
   try {
-    // 试算失败由页内 Alert 承担（不提示会被读成「没有价格」），不再让全局 toast 重复说一遍
+    // 试算失败由页内 Alert 提示，不然会被当成「没有价格」
     const r = await pricingApi.resolve(
       {
         customerId: customerId.value,
@@ -240,7 +231,7 @@ async function resolve() {
 }
 </script>
 <style scoped>
-/* 最终价格是全表最重的数字；未定价时退成次要色，避免「一个灰色大数字」被误读成价格 */
+/* 最终价格是全表最重的数字；未定价时用次要色 */
 .final-price {
   font-size: 16px;
   font-weight: 600;

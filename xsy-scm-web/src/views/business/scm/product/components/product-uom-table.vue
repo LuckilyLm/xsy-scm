@@ -1,4 +1,4 @@
-<!-- PCO-1 辅助资料「计量单位」Tab：字典只作取值来源，编码与名称不可改。 -->
+<!-- 计量单位：只作取值来源，编码和名称不可改。 -->
 <template>
   <a-form class="smart-query-form" layout="inline">
     <a-row class="smart-query-form-row">
@@ -84,7 +84,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页内 Alert 提示，不再弹全局 toast
     rows.value = (await productUomApi.list({...query}, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = productError(e);
@@ -109,7 +109,7 @@ async function remove(row: ProductUom) {
     message.success('计量单位已删除');
     await load();
   } catch {
-    // 删除失败只走全局 toast
+    // 删除失败由全局 toast 提示
   }
 }
 

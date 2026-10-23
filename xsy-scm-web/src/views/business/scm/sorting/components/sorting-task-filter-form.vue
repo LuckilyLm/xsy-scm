@@ -24,7 +24,7 @@
     <a-form-item label="仓库" class="smart-query-form-item">
       <WarehouseSelect :value="warehouseId" placeholder="全部仓库" width="200px" @update:value="emit('update:warehouseId', $event)" />
     </a-form-item>
-    <!-- 未指派队列与按人筛选只对持指派权（即跨指派人可见）的人有意义。 -->
+    <!-- 有指派权的人才能看未指派队列和按人筛选 -->
     <template v-if="isQueueManager">
       <a-form-item label="只看未指派" class="smart-query-form-item">
         <a-switch :checked="unassignedOnly" @update:checked="emit('update:unassignedOnly', $event)" />
@@ -33,7 +33,7 @@
         <EmployeeSelect :value="assigneeId" placeholder="全部" width="180px" @update:value="emit('update:assigneeId', $event)" />
       </a-form-item>
     </template>
-    <!-- 三个维度按建单时冻结的快照筛选，不随主档或配送线路变化。 -->
+    <!-- 按建单时记录的值筛选，不随主档或配送线路变化 -->
     <a-form-item label="送货时间" class="smart-query-form-item">
       <a-range-picker v-model:value="deliveryRangeModel" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 340px" />
     </a-form-item>

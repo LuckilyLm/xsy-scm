@@ -44,8 +44,7 @@ export function useEcharts(elRef: Ref<HTMLElement | undefined>) {
       return;
     }
     observer = new ResizeObserver(() => {
-      // 元素尺寸为 0 时（v-show 隐藏）不做任何事：此时 setOption 会被 ensure() 挡下，
-      // 配置只会留在 pending 里，等它重新可见时由下面那条分支补上。
+      // 元素隐藏时尺寸为 0，配置留在 pending 里，等可见后再应用。
       if (!el.clientWidth || !el.clientHeight) {
         return;
       }
@@ -57,10 +56,7 @@ export function useEcharts(elRef: Ref<HTMLElement | undefined>) {
         }
         return;
       }
-      // 已有实例但元素曾经被隐藏过：不能只 resize()。隐藏期间发生的数据变更
-      // （例如首页切换指标时 v-show 短暂收起再展开）其 setOption 已被 ensure() 丢弃，
-      // 只存进了 pending；若此处仅 resize()，画布会用旧配置重绘，表现为「切换了但图不变」。
-      // 因此这里把最新配置重新应用一遍；setOption 自身会让画布适配当前尺寸。
+      // 隐藏期间的数据变更只存在 pending 里，恢复显示时要重新应用。
       if (pending) {
         chart.setOption(pending, true);
       }
@@ -72,7 +68,7 @@ export function useEcharts(elRef: Ref<HTMLElement | undefined>) {
   onBeforeUnmount(() => {
     observer?.disconnect();
     observer = null;
-    // 必须 dispose：ECharts 实例持有 canvas 与全局事件，只置 null 会随路由反复切换而泄漏
+    // 必须 dispose，否则切换路由会泄漏 canvas 和事件。
     dispose();
   });
 

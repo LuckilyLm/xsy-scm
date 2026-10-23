@@ -212,7 +212,7 @@ const visible = ref(false),
   loadFailed = ref(false);
 const tagPickerOpen = ref(false),
   tagKeyword = ref('');
-// 停用标签仍要出现在下拉里：编辑只校验新增绑定，摘不掉就等于历史标签永远清不掉。
+// 停用标签也要列出，否则已绑定的历史标签摘不掉。
 const tagOptions = computed(() => {
   const active = tagChoices.value.map((tag) => ({value: tag.tagId, label: tag.name}));
   const known = new Set(tagChoices.value.map((tag) => String(tag.tagId)));
@@ -260,7 +260,7 @@ async function load(id?: ProductId) {
   error.value = '';
   loadFailed.value = false;
   try {
-    // 加载失败由抽屉内 Alert 承担（loadFailed 决定是否给重试），不再让全局 toast 重复说一遍
+    // 加载失败由抽屉内 Alert 提示，不再弹全局 toast
     const [tree, detail, uomOptions, tagOptionsResponse] = await Promise.all([
       productCategoryApi.tree({suppressGlobalErrorMessage: true}),
       id ? productApi.detail(id, {suppressGlobalErrorMessage: true}) : Promise.resolve(undefined),
@@ -297,7 +297,7 @@ async function save() {
   saving.value = true;
   try {
     const payload = JSON.parse(JSON.stringify(form.value)) as ProductForm;
-    // 只提交业务属性；内部 SPU/SKU 编码由后端发号或原样保留。
+    // 编码由后端发号，不随表单提交。
     delete payload.spuCode;
     payload.skuList.forEach((sku) => {
       delete sku.skuCode;
@@ -307,7 +307,7 @@ async function save() {
     visible.value = false;
     emit('saved');
   } catch {
-    // 保存失败只走全局 toast；抽屉里的 error 留给本地校验与加载失败
+    // 保存失败由全局 toast 提示；error 只用于本地校验和加载失败
   } finally {
     saving.value = false;
   }
@@ -325,10 +325,7 @@ async function submit() {
 }
 </script>
 <style scoped>
-/*
- * 商品字段多、值都短（状态、单位、天数、百分比），两列会让每个控件横着拉满整列，
- * 抽屉只能靠加高来放字段。三列栅格 + 短字段走 compact，一屏能看全。
- */
+/* 字段多、值短，用三列栅格一屏放下 */
 .product-form-section + .product-form-section {
   margin-top: 20px;
   padding-top: 16px;

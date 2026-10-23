@@ -1,13 +1,4 @@
-<!--
-  库存预警列表。
-
-  列表本身只读：预警不是可以「标记已读」的状态，它只是 (阈值, 可用量) 的当前计算结果。
-  引入「已读 / 已忽略」会让预警与真实库存脱钩。唯一的写动作是「检查并发送预警通知」，
-  它不改变任何预警，只把当前已经发生的阈值跃迁投递成站内信，单独授权。
-
-  判定基准是可用量（现有量 − 预留量），不是现有量 —— 货已被订走就不算有货，
-  因此三个数量都展示出来，用户能自己看懂预警为什么触发。
--->
+<!-- 库存预警列表只读，按可用量（现有量 − 预留量）判断。写操作只有“检查并发送预警通知”。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -74,7 +65,7 @@
           <span class="scm-quantity">{{ quantityText(record.reservedQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'availableQuantity'">
-          <!-- 判定基准，加粗以便与「现有量」一眼区分 -->
+          <!-- 判定依据，加粗显示 -->
           <span class="scm-quantity available">{{ quantityText(record.availableQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'warnMin'">
@@ -130,17 +121,14 @@ const loading = ref(false);
 const scanning = ref(false);
 const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
-/** 来自站内信的阈值配置锚点；非空时页面顶部提示「已定位到某一条」。 */
+/** 从站内信进入时的阈值配置 ID。 */
 const anchorThresholdId = ref<Id | undefined>(undefined);
 let requestId = 0;
 
 const route = useRoute();
 const warningRouteName = route.name;
 
-/**
- * 第一项是「仅异常」而不是「全部」—— 后端 status 为空时的语义就是只看异常。
- * 标成「全部」会与事实不符，用户选了它却看不到正常项会以为系统漏数据。
- */
+/** 第一项是“仅异常”；后端 status 为空时也只返回异常项。 */
 const statusOptions = [
   {value: undefined, label: '仅异常'},
   ...Object.values(SCM_INVENTORY_WARNING_STATUS_ENUM).map((i) => ({
@@ -149,9 +137,7 @@ const statusOptions = [
   })),
 ];
 
-// 列按「哪个仓 / 什么货 / 还够不够发 / 阈值是多少」排列。三个数量都保留：
-// 判定基准是可用量，只给一个数字会让用户看不懂预警为什么触发。
-// 仓库与商品规格编码单独保留并默认收起；上下限仍合成一格（各自可空）。
+// 三个数量都保留，便于解释预警为什么触发；编码列默认收起。
 type InventoryWarningColumn = ScmListColumn;
 const columns = ref<InventoryWarningColumn[]>([
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
@@ -212,12 +198,7 @@ async function applySingleWarehouseDefault() {
   }
 }
 
-/**
- * 立即检查阈值跃迁并投递通知。
- *
- * 只扫描调用者有授权的仓库（范围由服务端解析，前端不传）；重复点击不会重复发信 ——
- * 同一次跃迁的 event_key 是稳定的，第二次起会被去重表挡掉，因此这里不需要额外的防抖。
- */
+/** 检查阈值并发送通知。只扫描有权限的仓库；同一次预警不会重复发送。 */
 async function scan() {
   scanning.value = true;
   error.value = '';
@@ -246,18 +227,13 @@ function resetQuery() {
   queryForm.warehouseId = undefined;
   queryForm.skuCode = undefined;
   queryForm.thresholdId = undefined;
-  // 重置回「仅异常」而不是「全部」：这是本页的默认语义
+  // 重置回“仅异常”
   queryForm.status = undefined;
   anchorThresholdId.value = undefined;
   onSearch();
 }
 
-/**
- * 进入页面（首次挂载与 keep-alive 复用同一条路径）。
- *
- * 站内信跳转带 `thresholdId`（消息的 dataId 就是阈值配置 id），按它精确定位那一条；
- * 普通菜单进入没有 query，于是锚点回落 `undefined`，即页面默认（未筛选）。
- */
+/** 进入页面时按站内信的 thresholdId 定位；普通菜单进入不筛选。 */
 async function enterPage() {
   const anchor = deepLinkId(route.query, 'thresholdId');
   anchorThresholdId.value = anchor;
@@ -265,7 +241,7 @@ async function enterPage() {
   queryForm.skuCode = undefined;
   queryForm.status = undefined;
   queryForm.pageNum = 1;
-  // 带锚点时不再套用「只有一个仓库就默认选中」：那会把锚点所在的仓筛掉，看起来像没数据
+  // 有锚点时不再默认选中单仓，否则会把锚点所在的仓筛掉
   if (anchor === undefined) {
     queryForm.warehouseId = undefined;
     await applySingleWarehouseDefault();

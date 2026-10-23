@@ -1,4 +1,4 @@
-<!-- 仓库授权按员工整体保存：编辑某员工可访问的全部仓库；按仓库查看员工仅用于查询，不能只修改其中一项以免覆盖其他授权。 -->
+<!-- 按员工整体保存仓库授权；按仓库查看员工只读。 -->
 <template>
   <a-modal
     v-model:open="visible"
@@ -80,7 +80,7 @@ const viewWarehouseName = ref('');
 const viewLoading = ref(false);
 const employees = ref<WarehouseScopeEmployee[]>([]);
 
-/** 员工维度的编辑目标；EmployeeSelect 的 value 不接受 null（[Number, Array]），用 undefined 桥接未选。 */
+/** 员工选择器的 value 只接受数字，未选时用 undefined。 */
 const employeeId = ref<number | undefined>(undefined);
 const formRef = ref();
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
@@ -110,10 +110,7 @@ const employeeValue = computed<number | undefined>({
   },
 });
 
-/**
- * 仓库主数据不套数据范围（scm:warehouse:query 即可读全量），一次取全含停用，避免授权到停用仓时选项缺失。
- * 条数取接口上限 100：`WarehouseQueryForm.pageSize` 的 `@Max` 就是 100，写更大值会被参数校验挡回来。
- */
+/** 一次取全部仓库（含停用），否则没法给停用仓授权。pageSize 上限 100。 */
 async function ensureWarehouses() {
   if (warehouses.value.length) {
     return;
@@ -187,12 +184,12 @@ async function save() {
 async function saveConfirmed(target: number) {
   saving.value = true;
   try {
-    // 整体替换：提交当前勾选的全集，空数组即回收该员工全部仓库授权。
+    // 整体替换：提交全部勾选，空数组表示收回所有授权
     await warehouseApi.scopeUpdate({employeeId: target, warehouseIds: warehouseIds.value});
     message.success('授权已更新');
     visible.value = false;
   } catch {
-    // 保存失败只走全局 toast：弹窗里再挂一条同样的话，等于让用户读两遍
+    // 保存失败由全局提示给出
   } finally {
     saving.value = false;
   }

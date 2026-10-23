@@ -1,4 +1,4 @@
-<!-- B7 优惠券来源与让利投影验证：docs/status.md。用户操作结果以服务端返回为准。 -->
+<!-- 优惠券：发放、领取和使用统计以服务端为准；券来源与让利投影的缺口见 docs/status.md B7。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -51,7 +51,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'discountText'">{{ discountText(record) }}</template>
         <template v-else-if="column.dataIndex === 'minOrderAmount'">
-          <!-- 「0 表示无门槛」是业务语义，不是缺值：显示成「无门槛」而不是 ¥ 0.0000 -->
+          <!-- 0 表示无门槛，显示成「无门槛」而不是 ¥ 0 -->
           <span v-if="isNoThreshold(record.minOrderAmount)" class="scm-cell-hint">无门槛</span>
           <span v-else class="scm-money">¥ {{ record.minOrderAmount }}</span>
         </template>
@@ -303,7 +303,7 @@ const discountTypeOptions = [
   {value: 'RATE', label: '折扣券（折扣率）'},
 ];
 
-/** 状态视觉：草稿 = 待处理（橙），生效中 = 绿，已停用 = 灰。 */
+/** 状态配色：草稿橙、生效绿、停用灰。 */
 const PROMOTION_STATUS_TONE: Record<PromotionStatus, ScmStatusTone> = {
   DRAFT: 'warning',
   ACTIVE: 'success',
@@ -311,10 +311,7 @@ const PROMOTION_STATUS_TONE: Record<PromotionStatus, ScmStatusTone> = {
 };
 const statusTone = (status: PromotionStatus): ScmStatusTone => PROMOTION_STATUS_TONE[status] ?? 'neutral';
 
-/**
- * 表格 slot 里的 `record` 是 `any`，索引映射表会触发 TS7053；在这里收口一次类型，
- * 枚举缺项时回落原值（后端加了新状态而前端没跟上时，英文常量本身就是有用信号）。
- */
+/** 枚举缺项时保留原值，便于发现后端新增状态。 */
 function statusLabelOf(value: string): string {
   return promotionStatuses[value as PromotionStatus]?.label ?? value;
 }
@@ -323,11 +320,7 @@ function discountTypeLabel(value: PromotionCouponDiscountType): string {
   return discountTypeOptions.find((option) => option.value === value)?.label ?? value;
 }
 
-/**
- * 列按「叫什么 / 什么券 / 优惠多少 / 什么门槛 / 什么时候有效 / 上没上线」排列。
- * 券编码下沉为名称的次要行；生效与失效时间合成一格（它们回答同一个问题）。
- * 统计由服务端按券实例来源与状态汇总，和模板当前启停状态分开。
- */
+// 优惠券列表的列定义
 const columns: TableColumnsType<PromotionCoupon> = [
   {title: '券编码', dataIndex: 'couponCode', width: 130},
   {title: '券名称', dataIndex: 'couponName', width: 180},
@@ -346,11 +339,7 @@ const columns: TableColumnsType<PromotionCoupon> = [
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];
 
-/**
- * 表单模型必须是稳定对象：原来写 `:model="{...form, discountValue}"`，每次渲染都会新建对象，
- * 而 blur/change 触发的校验发生在重渲染之前，读到的是上一份快照——填了优惠值仍提示未填写。
- * 优惠值输入框用数字，提交时才由 fixed4 / percentToRate 收口成后端要的定点字符串。
- */
+/** 表单模型要保持同一个对象；优惠值用数字输入，提交时转成定点字符串。 */
 const form = reactive<PromotionCouponSave & {discountValueInput: number | null}>({
   couponCode: '',
   couponName: '',
@@ -366,7 +355,7 @@ const form = reactive<PromotionCouponSave & {discountValueInput: number | null}>
   remark: null,
 });
 const formRef = ref();
-/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+/** 必填项逐项校验。 */
 const formRules = {
   couponCode: [{required: true, message: '请填写券编码', trigger: 'blur'}],
   couponName: [{required: true, message: '请填写券名称', trigger: 'blur'}],
@@ -384,12 +373,12 @@ const formRules = {
   validTo: [{required: true, message: '请选择失效时间', trigger: 'change'}],
 };
 
-/** 门槛金额同样用数字控件，提交时才收口回定点字符串。 */
+/** 门槛金额用数字输入，提交时转字符串。 */
 const minOrderAmount = ref<number | null>(0);
 
 const issueForm = reactive<{couponId?: Id; customerId?: Id; quantity: number}>({quantity: 1});
 
-/** 门槛 0 是「无门槛」这个业务事实，不是缺值。 */
+/** 门槛 0 表示无门槛，不是缺值。 */
 function isNoThreshold(value?: string | null): boolean {
   return value === null || value === undefined || Number(value) === 0;
 }
@@ -402,7 +391,7 @@ function discountText(record: PromotionCoupon): string {
   return `减 ¥ ${record.discountValue ?? '—'}`;
 }
 
-/** 比率与金额是两种量纲：切换类型后残留的数值会被按新类型解释（0.95 变成 0.95 元），必须清空。 */
+/** 切换优惠类型后清空数值，避免按新类型解释旧值。 */
 function onDiscountTypeChange() {
   form.discountValueInput = null;
 }
@@ -411,7 +400,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     const r = await promotionApi.couponQuery({...queryForm}, {suppressGlobalErrorMessage: true});
     tableData.value = r.data.list ?? [];
     total.value = r.data.total ?? 0;
@@ -483,7 +472,7 @@ function openEdit(record: PromotionCoupon) {
 async function submit() {
   form.discountValue = form.discountType === 'RATE' ? percentToRate(form.discountValueInput) ?? '' : fixed4(form.discountValueInput) ?? '';
   form.minOrderAmount = fixed4(minOrderAmount.value) ?? '0';
-  // 必填项走表单校验：错误显示在对应输入框下方
+  // 必填项由表单校验
   try {
     await formRef.value?.validate();
   } catch {
@@ -496,7 +485,7 @@ async function submit() {
     editOpen.value = false;
     await queryData();
   } catch {
-    // 保存失败只走全局 toast
+    // 保存失败由全局 toast 提示
   } finally {
     saving.value = false;
   }
@@ -510,16 +499,14 @@ function openIssue(record: PromotionCoupon) {
   issueOpen.value = true;
 }
 
-/**
- * 启停券模板。券新建后是草稿，必须先启用才能发券；已过期的券不能再次启用（服务端 41327 兜底）。
- */
+/** 启停券模板；草稿必须先启用才能发券。 */
 async function changeStatus(record: PromotionCoupon, status: 'ACTIVE' | 'STOPPED') {
   try {
     await promotionApi.couponStatus(record.id, record.version, status);
     message.success(status === 'ACTIVE' ? '优惠券已启用' : '优惠券已停用');
     await queryData();
   } catch {
-    // 启停失败只走全局 toast
+    // 启停失败由全局 toast 提示
   }
 }
 
@@ -536,7 +523,7 @@ async function submitIssue() {
     issueOpen.value = false;
     await queryData();
   } catch {
-    // 发券失败只走全局 toast；弹窗里的 issueError 留给本地校验
+    // 发券失败由全局 toast 提示；issueError 只用于本地校验
   } finally {
     saving.value = false;
   }

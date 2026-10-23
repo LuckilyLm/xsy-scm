@@ -1,14 +1,7 @@
-/*
- * 客户表单模型（纯函数，可被 `node --test` 直接单测）。
- *
- * 关键业务规则（与后端一致）：
- * - 账期三种形态互斥且穷尽：不设置 / 按金额 / 按时间（后端 `ck_customer_credit_period`）；
- * - 单位为「月」时结算日限 1–28（保证 2 月也存在该日期）；
- * - 金额一律是字符串形式的 4 位定点数，绝不做 `Number()` 运算。
- */
+/** 客户表单模型：纯函数，可直接单测。账期三形态互斥，金额用 4 位定点字符串。 */
 import type {CreditPeriodType, CustomerFormModel, CustomerPayload} from '/@/types/business/scm/customer';
 
-/** 非负定点数：最多 14 位整数 + 最多 4 位小数（与后端 `ScmDecimalStrings.PATTERN` 同构）。 */
+/** 非负定点数，最多 4 位小数，与后端一致。 */
 const DECIMAL = /^\d{1,14}(\.\d{1,4})?$/;
 
 /** 宽松手机号 / 固话校验。 */
@@ -16,8 +9,7 @@ const PHONE = /^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$/;
 
 export function emptyCustomer(): CustomerFormModel {
   return {
-    // 区划六列（`AreaColumns`）只能显式列出：本模块要能被 `node --test` 直接加载，
-    // 不能有相对值导入。少一个键就会让上一条记录的区划串进新建的客户。
+    // 区划等字段要显式列全，避免上一条记录的值串进新建客户。
     longitude: null,
     latitude: null,
     geomCrs: null,
@@ -51,11 +43,7 @@ export function emptyCustomer(): CustomerFormModel {
   };
 }
 
-/**
- * 切换账期类型时清掉不属于该形态的字段。
- *
- * 不做清理的话，「按金额」的行会残留上一次「按时间」的账期值，后端会直接判为非法组合（40000）。
- */
+/** 切换账期类型时清掉不属于该形态的字段，避免后端判为非法组合。 */
 export function applyCreditPeriodType(form: CustomerFormModel, type?: CreditPeriodType | null): CustomerFormModel {
   const next: CustomerFormModel = {...form, creditPeriodType: type ?? undefined};
   if (type !== 'BY_AMOUNT') {
@@ -74,7 +62,7 @@ export function applyCreditPeriodType(form: CustomerFormModel, type?: CreditPeri
   return next;
 }
 
-/** 单位切到「天」时清掉结算日（按天账期没有结算日概念）。 */
+/** 单位切到「天」时清掉结算日。 */
 export function applyCreditPeriodUnit(form: CustomerFormModel, unit?: 'DAY' | 'MONTH' | null): CustomerFormModel {
   const next: CustomerFormModel = {...form, creditPeriodUnit: unit ?? undefined};
   if (unit !== 'MONTH') {
@@ -121,7 +109,7 @@ export function validateCustomer(form: CustomerFormModel): string | undefined {
   return undefined;
 }
 
-/** 提交客户表单时将空字符串转为 null，允许清空可选字段。客户编码由服务端生成，不放入提交参数。 */
+/** 提交前把空字符串转 null，便于清空字段；客户编码由服务端生成，不提交。 */
 export function toCustomerPayload(form: CustomerFormModel): CustomerPayload {
   const blankToNull = (value?: string | null): string | null => {
     const text = value == null ? '' : String(value).trim();
@@ -140,7 +128,7 @@ export function toCustomerPayload(form: CustomerFormModel): CustomerPayload {
     remark: blankToNull(form.remark),
     creditLimit: blankToNull(form.creditLimit),
     codAllowed: form.codAllowed === true,
-    // 非 GROUP 结算时后端会强制置假，这里也一并收口，避免提交一个语义为空的开关
+    // 只有集团结算才可能共享结算，其余情况置假
     sharedSettlementEnabled: form.settleMode === 'GROUP' && form.sharedSettlementEnabled === true,
     creditPeriodType: form.creditPeriodType ?? null,
     creditAmountThreshold: blankToNull(form.creditAmountThreshold),

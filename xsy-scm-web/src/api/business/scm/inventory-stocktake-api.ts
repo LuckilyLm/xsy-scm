@@ -36,9 +36,9 @@ export const inventoryStocktakeApi = {
   query: (data: InventoryStocktakeQuery, options?: RequestOptions) =>
     postRequest('/scm/inventory/stocktake/query', data, options) as unknown as Promise<ScmResponse<ScmPage<InventoryStocktake>>>,
   detail: (id: Id) => getRequest(`/scm/inventory/stocktake/detail/${id}`, {}) as unknown as Promise<ScmResponse<InventoryStocktake>>,
-  /** 新建草稿，返回新单 id。保存时会从余额行快照账面量。 */
+  /** 新建草稿，返回新单 id。保存时记录当前账面量。 */
   create: (data: InventoryStocktakeAdd) => postRequest('/scm/inventory/stocktake/create', data) as unknown as Promise<ScmResponse<Id>>,
-  /** 改草稿（仅 DRAFT 可改）；会重新快照账面量。 */
+  /** 改草稿（仅 DRAFT 可改）；会重新记录当前账面量。 */
   update: (id: Id, data: InventoryStocktakeAdd) =>
     postRequest(`/scm/inventory/stocktake/update/${id}`, data) as unknown as Promise<ScmResponse<string>>,
   /** 确认盘点：差异转盘盈 / 盘亏流水并调整余额。 */
@@ -47,12 +47,9 @@ export const inventoryStocktakeApi = {
   cancel: (id: Id) => postRequest(`/scm/inventory/stocktake/cancel/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
   /** 删除草稿（逻辑删）。 */
   delete: (id: Id) => postRequest(`/scm/inventory/stocktake/delete/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
-  /**
-   * 导出某仓库当前余额的实时快照模板（带签名凭证的 xlsx）。
-   * 用户只填实盘数与备注，来源行由凭证锁定，不得增删替换。
-   */
+  /** 导出当前余额的盘点模板（带签名凭证）；用户只填实盘数，原行不能增删替换。 */
   downloadImportTemplate: (warehouseId: Id) => getDownload('/scm/inventory/stocktake/import/template', {warehouseId}),
-  /** 导入填好的 Excel，签名快照校验通过后创建新 DRAFT（不写库存）。 */
+  /** 导入 Excel，凭证校验通过后新建草稿（不写库存）。 */
   importStocktake,
 };
 

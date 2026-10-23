@@ -164,7 +164,7 @@ const formRules = {
 const userStore = useUserStore();
 let requestId = 0;
 
-/* 草稿只存本地、按登录用户隔离；解析价 / version / 快照一律不落，恢复后重新请求。 */
+/* 草稿只存本地、按登录用户隔离，不存解析价和版本。 */
 function draftStorageKey() {
   return draftKey(userStore.employeeId);
 }
@@ -210,10 +210,7 @@ async function open(id?: Id) {
   }
 }
 
-/**
- * 打开新建时若存在本地草稿，弹窗让用户选择恢复或丢弃。
- * 恢复后必须重新请求客户 / 价格：草稿只存用户录入，不含解析价、快照与 version。
- */
+/** 新建时若存在本地草稿，让用户选择恢复或丢弃；恢复后重新获取客户和价格。 */
 async function promptRestoreDraft() {
   const draft = readDraft();
   if (!draft || (!draft.customerId && !draft.items.length)) return;
@@ -223,8 +220,7 @@ async function promptRestoreDraft() {
     okText: '恢复',
     cancelText: '丢弃',
     maskClosable: false,
-    // 本次会话首次打开时，抽屉容器在 Vue 异步更新后才挂到 body，可能排在确认框之后并以同级的 z-index 1000 盖住它；
-    // 抬高一层保证「恢复 / 丢弃」始终可点（与仓库内浮于抽屉之上的对话框取同一量级）。
+    // 抽屉晚于确认框挂载，同层级时可能盖住确认框，抬高一层保证能点
     zIndex: 9999,
     onOk: async () => {
       const restored = applyDraft(draft);
@@ -244,11 +240,10 @@ async function promptRestoreDraft() {
   });
 }
 
-/** 明细表暴露的收起价签入口；只用到这一个契约，不依赖组件实例的具体类型。 */
+/** 只用到明细表的 closeRecentPopover，不依赖组件实例的具体类型。 */
 const itemTableRef = ref<{closeRecentPopover: () => void} | null>(null);
 
-// 关闭路径不止一条（关闭按钮、Esc、创建成功自动关），所以在 visible 落 false 时统一收起，
-// 而不是在各处分别补调用。
+// 关闭方式有多种，统一在 visible 变为 false 时收起价签浮层
 watch(
   () => form.value.deliveryWarehouseId,
   () => {
@@ -266,7 +261,7 @@ watch(visible, (opened) => {
   }
 });
 
-/** 尚未保存的新建单才落草稿；抽屉已关闭时不写，避免创建成功后又把已保存的单写回草稿。 */
+/** 只为未保存的新建单写草稿；已关闭或已保存的都不写。 */
 function persistUnsavedDraft() {
   if (!visible.value) return;
   if (exchangeReturnId.value) return;
@@ -275,24 +270,21 @@ function persistUnsavedDraft() {
   }
 }
 
-/** 关闭 Drawer：仅对「尚未保存的新建单」落本地草稿，编辑既有单不产生草稿。 */
+/** 关闭时只给未保存的新建单存草稿，编辑已有单不产生草稿。 */
 function closeDrawer() {
   persistUnsavedDraft();
   requestId++;
   visible.value = false;
 }
 
-// 刷新、路由切换、组件卸载都不经过 closeDrawer()，所以离页各补一次落草稿。
+// 刷新、路由切换、卸载不走 closeDrawer，这里各补一次存草稿
 onBeforeRouteLeave(() => persistUnsavedDraft());
 onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', persistUnsavedDraft);
   persistUnsavedDraft();
 });
 
-/**
- * 历史订单复用：读取历史单，仅复制允许字段构造新的新增草稿，价格 / 可用性重新解析。
- * 不进入草稿恢复提示，也不复用历史价 / 状态 / version。
- */
+/** 复用历史订单：只复制基本信息，价格和可用性重新解析。 */
 async function openFromHistory(id: Id) {
   requestId++;
   exchangeReturnId.value = undefined;
@@ -399,7 +391,7 @@ async function loadOriginals(keyword: string) {
   }
 }
 
-/** 成功创建后继续录下一单：仅保留客户/选仓，地址须从当前客户重取，所有价格和商品重新录入。 */
+/** 继续录下一单：只保留客户和仓库，地址重新获取，商品和价格重新录入。 */
 async function continueWithNextOrder(previous: Order): Promise<void> {
   const token = ++requestId;
   form.value = nextOrderForCustomer(previous);
@@ -489,11 +481,7 @@ defineExpose({open, openFromHistory, openForExchange});
 </script>
 
 <style scoped>
-/*
- * 明细区两个动作：「添加商品」在 ItemTable 内部、这里只放「重新解析价格」，
- * 两者原本只是挨着排，没有统一间距。这里把容器做成 inline-flex，
- * 并给 ItemTable 的按钮补右间距，让它们成为间距一致的同一行动作。
- */
+/* 让明细区的「添加商品」和「重新解析价格」排在同一行、间距一致 */
 .item-actions {
   display: inline-flex;
   align-items: center;

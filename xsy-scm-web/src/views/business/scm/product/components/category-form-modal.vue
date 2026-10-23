@@ -69,7 +69,7 @@ async function save() {
     visible.value = false;
     emit('saved');
   } catch {
-    // 保存失败只走全局 toast
+    // 保存失败由全局 toast 提示
   } finally {
     saving.value = false;
   }

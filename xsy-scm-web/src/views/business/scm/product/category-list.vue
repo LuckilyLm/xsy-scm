@@ -36,7 +36,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 加载失败由页头 Alert 提示，不再弹全局 toast
     rows.value = (await productCategoryApi.tree({suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = productError(e);
@@ -51,7 +51,7 @@ async function remove(row: ProductCategory) {
     message.success('分类已删除');
     await load();
   } catch {
-    // 删除失败只走全局 toast
+    // 删除失败由全局 toast 提示
   }
 }
 

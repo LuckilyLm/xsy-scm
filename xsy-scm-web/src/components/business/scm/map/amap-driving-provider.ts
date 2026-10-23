@@ -48,10 +48,7 @@ export function splitDrivingBatches(positions: RoutePosition[]): RoutePosition[]
   return batches;
 }
 
-/**
- * 结果按 JSAPI 2.0 实际返回的 `routes[]` 读取：距离单位为米、耗时单位为秒，
- * 折线在每个 step 的 `path` 上。官方文档里的 `route.paths` 是旧口径，按它读会拿不到路线。
- */
+/** 按 JSAPI 2.0 实际返回的 `routes[]` 读取：距离米、耗时秒，折线在各 step 的 `path` 上。 */
 function searchBatch(sdk: DrivingSdk, points: RoutePosition[]): Promise<DrivingBatch> {
   const waypoints = points.slice(1, -1);
   return new Promise((resolve, reject) => {
@@ -72,10 +69,7 @@ function searchBatch(sdk: DrivingSdk, points: RoutePosition[]): Promise<DrivingB
   });
 }
 
-/**
- * 按传入顺序请求驾车路线：途经点顺序即停靠顺序，不启用任何重排途经点的选项。
- * 任一段失败即整体回退（fallback: true），不返回残缺的道路折线。
- */
+/** 按传入顺序算路；任一段失败即整体回退，不返回残缺折线。 */
 export async function planRoadRoute(sdk: DrivingSdk, positions: RoutePosition[]): Promise<RouteDrivingResult> {
   const failed: RouteDrivingResult = {
     distanceMeters: 0,

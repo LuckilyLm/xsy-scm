@@ -1,9 +1,4 @@
-<!--
-  采购操作日志。
-  没有全局日志分页端点 —— 只有 `GET /scm/purchase/log/{orderId}`，
-  因此按采购单维度查询：先用单号定位采购单，再拉它的日志。
-  日志按 `created_at DESC` 返回，最新在前。
--->
+<!-- 采购操作日志。先按采购单号找到采购单，再查询它的日志。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -98,7 +93,7 @@ const visible = ref(false);
 const active = ref<LogRow>();
 let requestId = 0;
 
-/** 采购日志列表已根据当前采购单查询，不重复展示采购单 ID。保留关联收货单，便于区分不同收货操作。 */
+/** 日志已按采购单筛选，不再显示采购单 ID；保留关联收货单。 */
 const columns = ref<TableColumnsType<LogRow>>([
   {title: '时间', dataIndex: 'createdAt', width: 200, customRender: ({text}) => datetime(text)},
   {title: '操作', dataIndex: 'operationType', align: 'center', width: 150},
@@ -117,7 +112,7 @@ async function queryData() {
     if (!orderNo.value?.trim()) {
       return;
     }
-    // 查询失败由页头 Alert 承担（含「采购单不存在」这类本地判定），不再让全局 toast 重复说一遍
+    // 查询失败由页头提示并允许重试
     const found = await purchaseOrderApi.query({pageNum: 1, pageSize: 1, orderNo: orderNo.value.trim()}, {suppressGlobalErrorMessage: true});
     const order = found.data.list[0];
     if (!order) {

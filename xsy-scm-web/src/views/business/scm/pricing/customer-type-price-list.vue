@@ -120,7 +120,7 @@ const columns = ref<CustomerTypePriceColumn[]>([
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 120},
 ]);
 
-/** 生效状态由前端按有效区间推导（VO 不带状态字段），只用于展示。 */
+/** 生效状态按有效区间推导，只用于展示。 */
 function effectiveness(row: PriceRow) {
   return PRICE_EFFECTIVENESS[priceEffectiveness(row.effectiveFrom, row.effectiveTo)];
 }

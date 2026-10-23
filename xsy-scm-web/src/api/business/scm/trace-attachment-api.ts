@@ -1,8 +1,4 @@
-/**
- * 溯源附件：商品资质与批次检测报告。
- *
- * 查看沿用商品/包装码的权限；管理统一收在 `scm:trace:file:manage`。
- */
+/** 溯源附件：商品资质与批次检测报告；管理需 scm:trace:file:manage。 */
 import {getRequest, postRequest} from '/@/lib/axios';
 import type {ScmResponse} from '/@/types/business/scm/customer';
 

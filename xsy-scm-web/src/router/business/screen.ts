@@ -1,7 +1,4 @@
-/*
- * 数据大屏静态路由
- *
- */
+/* 数据大屏路由 */
 import type {RouteRecordRaw} from 'vue-router';
 
 export const screenRouters: Array<RouteRecordRaw> = [

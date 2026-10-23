@@ -1,13 +1,4 @@
-<!--
-  预警阈值配置。
-
-  一个 (仓库, SKU) 只允许一条配置：两条会让「按哪条判断」变得没有答案，
-  而预警是给人看的，含糊的预警等于没有预警。
-
-  本页不改变库存：阈值是配置，余额是派生状态，两者的写路径完全分开 ——
-  配置路径不会、也不应该创建余额行（否则就会造出「没有任何流水支撑的余额行」）。
-  因此没有「确认 / 审批」这类动作，改配置立即生效（预警是读时计算的，天然实时）。
--->
+<!-- 预警阈值配置。同一仓库和商品规格只能有一条配置，修改后立即生效。 -->
 <template>
   <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
     <div class="scm-filter-fields">
@@ -221,10 +212,7 @@ const form = reactive<{
   id?: string | number;
   warehouseId?: string | number;
   skuId?: string | number;
-  /**
-   * 上下限在表单里是 `number`（InputNumber 只接受数字），提交时才转成后端要求的
-   * 4 位定点字符串。`null` = 不设该边界，与 `0` 是两件事。
-   */
+  /** 表单里用 number（InputNumber 只接受数字），提交时转成 4 位定点字符串；null 表示不设该边界。 */
   warnMin?: number | null;
   warnMax?: number | null;
   remark?: string;
@@ -268,11 +256,7 @@ function closeDrawer() {
   drawerOpen.value = false;
 }
 
-/**
- * 提交前校验两条判据：至少填一个、下限不高于上限。
- * 非负与小数位数已由 InputNumber（`:min="0"` + `:precision="4"`）结构性保证，
- * 后端会再判一次（41051）并给出可读错误。
- */
+/** 提交前检查至少填一个、下限不高于上限；后端会再校验一次（41051）。 */
 function buildPayload(): InventoryWarningThresholdAdd | null {
   const min = fixed4(form.warnMin);
   const max = fixed4(form.warnMax);

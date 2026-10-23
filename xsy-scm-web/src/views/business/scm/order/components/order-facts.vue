@@ -109,7 +109,7 @@
 
   <section v-if="order.refundFactsVisible" class="order-fact-section">
     <h3>退款与资金返还</h3>
-    <a-alert message="退款单完成与资金到账分开记录；资金结果以原资金来源返还事实为准。" type="info" show-icon class="order-fact-note" />
+    <a-alert message="退款单完成和资金到账分开记录，以实际返还结果为准。" type="info" show-icon class="order-fact-note" />
     <a-table
       :data-source="order.refunds ?? []"
       :columns="refundColumns"
@@ -186,7 +186,7 @@ function fundingLabel(status?: OrderRefundFact['fundingStatus']): string {
   if (status === 'PROCESSING') return '处理中';
   if (status === 'SUCCEEDED') return '已返还';
   if (status === 'FAILED') return '返还失败';
-  return '暂无资金返还事实';
+  return '暂无资金返还记录';
 }
 </script>
 

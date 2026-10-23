@@ -30,11 +30,7 @@
           @keydown.enter="goto(row.route)"
         >
           <span class="home-kpi__accent" aria-hidden="true" />
-          <!--
-            图标移到右侧：五列时单卡有 268px，而「图标 + 标签」只占 110px，
-            原来把图标放在标签左边会让右侧 150px 全是空白。
-            现在左文字块、右图标块，宽度被两侧一起占满，卡片高度也从 146px 收到 ~92px。
-          -->
+          <!-- 图标放右侧：左文字、右图标，避免右侧留白 -->
           <div class="home-kpi__body">
             <div class="home-kpi__text">
               <span class="home-kpi__label">{{ row.label }}</span>
@@ -105,11 +101,7 @@ defineExpose({load});
     grid-template-columns: minmax(0, 320px);
   }
 
-  /*
-     * 断点按「单卡最小可用宽度」定，不按「屏幕档位」定：
-     * 5 列在 1280px 以上就能排下（内容区约 1000px，每卡 ~185px），
-     * 更早收窄会让标准 1440 桌面白白折成 3+2。
-     */
+  /* 断点按单卡最小可用宽度定，5 列在 1280px 以上即可排下 */
   @media (max-width: 1279px) {
     grid-template-columns: repeat(var(--kpi-compact-columns), minmax(0, 1fr));
 
