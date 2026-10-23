@@ -3,9 +3,9 @@
 <mapper namespace="com.xsy.scm.promotion.dao.PromotionCouponDao">
 
     <sql id="columns">
-        id, coupon_code, coupon_name, discount_type, discount_value, min_order_amount, valid_from, valid_to,
-        status, claimable, per_customer_limit, total_limit, remark, version, deleted, created_at, updated_at,
-        created_by, updated_by
+        id, coupon_code, coupon_name, discount_type, discount_value, min_order_amount, valid_from, valid_to, status,
+            claimable, per_customer_limit, total_limit, remark, version, deleted, created_at, updated_at, created_by,
+            updated_by
     </sql>
 
     <select id="queryPage" resultType="com.xsy.scm.promotion.domain.entity.PromotionCouponEntity">
@@ -13,12 +13,10 @@
         <include refid="columns"/>
         FROM xsy_promotion_coupon
         WHERE deleted = FALSE
-        <if test="query.status != null and query.status != ''">
-            AND status = #{query.status}
-        </if>
+        <if test="query.status != null and query.status != ''">AND status = #{query.status}</if>
         <if test="query.keyword != null and query.keyword != ''">
-            AND (coupon_code ILIKE CONCAT('%', #{query.keyword}, '%')
-                 OR coupon_name ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (coupon_code ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                coupon_name ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         ORDER BY id DESC
     </select>
@@ -28,9 +26,9 @@
         <include refid="columns"/>
         FROM xsy_promotion_coupon
         WHERE deleted = FALSE
-          AND status = 'ACTIVE'
-          AND valid_from &lt;= #{at}
-          AND valid_to &gt; #{at}
+            AND status = 'ACTIVE'
+            AND valid_from &lt;= #{at}
+            AND valid_to &gt; #{at}
         ORDER BY id ASC
     </select>
 
@@ -39,8 +37,8 @@
         <include refid="columns"/>
         FROM xsy_promotion_coupon
         WHERE id = #{id}
-          AND deleted = FALSE
-            FOR UPDATE
+            AND deleted = FALSE
+        FOR UPDATE
     </select>
 
 </mapper>

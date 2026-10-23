@@ -4,64 +4,68 @@
 
     <sql id="columns">
         t.id, t.sku_id AS skuId, k.sku_code AS skuCode, p.name AS productName, k.spec_name AS skuName,
-        k.sale_unit AS saleUnit, t.unit_price AS unitPrice, t.start_at AS startAt, t.end_at AS endAt,
-        t.remark, t.version, t.created_by AS createdBy, t.created_at AS createdAt
+            k.sale_unit AS saleUnit, t.unit_price AS unitPrice, t.start_at AS startAt, t.end_at AS endAt, t.remark,
+            t.version, t.created_by AS createdBy, t.created_at AS createdAt
     </sql>
 
     <select id="queryPage" resultType="com.xsy.scm.pricing.domain.vo.TimePriceVO">
-        SELECT <include refid="columns"/>
+        SELECT
+        <include refid="columns"/>
         FROM xsy_pricing_time_price t
         LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
         LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE t.deleted = FALSE
         <if test="query.skuId != null">AND t.sku_id = #{query.skuId}</if>
-        <if test="query.at != null">
-            AND t.start_at &lt;= #{query.at} AND t.end_at &gt; #{query.at}
-        </if>
+        <if test="query.at != null">AND t.start_at &lt;= #{query.at} AND t.end_at &gt; #{query.at}</if>
         <if test="query.keyword != null and query.keyword != ''">
-            AND (p.name LIKE CONCAT('%', #{query.keyword}, '%')
-                 OR k.sku_code LIKE CONCAT('%', #{query.keyword}, '%')
-                 OR k.spec_name LIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (p.name LIKE CONCAT('%', #{query.keyword}, '%') OR k.sku_code LIKE CONCAT('%', #{query.keyword}, '%') OR
+                k.spec_name LIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         ORDER BY t.start_at DESC, t.id DESC
     </select>
 
     <select id="detail" resultType="com.xsy.scm.pricing.domain.vo.TimePriceVO">
-        SELECT <include refid="columns"/>
+        SELECT
+        <include refid="columns"/>
         FROM xsy_pricing_time_price t
         LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
         LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
-        WHERE t.id = #{id} AND t.deleted = FALSE
+        WHERE t.id = #{id}
+            AND t.deleted = FALSE
     </select>
 
     <select id="selectEffective" resultType="com.xsy.scm.pricing.domain.entity.TimePriceEntity">
         SELECT id, sku_id, unit_price, start_at, end_at, version, deleted
         FROM xsy_pricing_time_price
         WHERE deleted = FALSE
-          AND start_at &lt;= #{at} AND end_at &gt; #{at}
-          AND sku_id IN
-          <foreach collection="skuIds" item="sku" open="(" separator="," close=")">#{sku}</foreach>
+            AND start_at &lt;= #{at}
+            AND end_at &gt; #{at}
+            AND sku_id IN <foreach collection="skuIds" item="sku" open="(" separator="," close=")">#{sku}</foreach>
         ORDER BY start_at DESC, id DESC
     </select>
 
     <select id="countOverlapping" resultType="long">
-        SELECT count(*) FROM xsy_pricing_time_price
+        SELECT count(*)
+        FROM xsy_pricing_time_price
         WHERE deleted = FALSE
-          AND sku_id = #{skuId}
-          AND start_at &lt; #{endAt} AND end_at &gt; #{startAt}
-          <if test="excludeId != null">AND id &lt;&gt; #{excludeId}</if>
+            AND sku_id = #{skuId}
+            AND start_at &lt; #{endAt}
+            AND end_at &gt; #{startAt}
+        <if test="excludeId != null">AND id &lt;&gt; #{excludeId}</if>
     </select>
 
     <update id="softDelete">
         UPDATE xsy_pricing_time_price
         SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE id = #{id} AND version = #{version} AND deleted = FALSE
+        WHERE id = #{id}
+            AND version = #{version}
+            AND deleted = FALSE
     </update>
+
     <insert id="log">
-        INSERT INTO xsy_pricing_time_price_operation_log
-          (time_price_id, operation_type, operator, before_data, after_data, created_by)
-        VALUES
-          (#{id}, #{operation}, #{operator}, CAST(#{before} AS jsonb), CAST(#{after} AS jsonb), #{operator})
+        INSERT INTO xsy_pricing_time_price_operation_log (time_price_id, operation_type, operator, before_data,
+            after_data, created_by)
+        VALUES (#{id}, #{operation}, #{operator}, CAST(#{before} AS jsonb), CAST(#{after} AS jsonb), #{operator})
     </insert>
 
 </mapper>

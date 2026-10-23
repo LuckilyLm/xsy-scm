@@ -1,26 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.product.dao.ProductSkuStockConversionDao">
+
     <select id="list" resultType="com.xsy.scm.product.domain.vo.ProductSkuStockConversionVO">
         SELECT stock_unit AS stockUnit, stock_units_per_sale_unit AS stockUnitsPerSaleUnit
         FROM xsy_product_sku_stock_conversion
-        WHERE sku_id = #{skuId} AND sale_unit = #{saleUnit} AND deleted = FALSE
+        WHERE sku_id = #{skuId}
+            AND sale_unit = #{saleUnit}
+            AND deleted = FALSE
         ORDER BY stock_unit
     </select>
+
     <insert id="upsert">
-        INSERT INTO xsy_product_sku_stock_conversion
-        (sku_id, sale_unit, stock_unit, stock_units_per_sale_unit, created_by, updated_by)
+        INSERT INTO xsy_product_sku_stock_conversion (sku_id, sale_unit, stock_unit, stock_units_per_sale_unit,
+            created_by, updated_by)
         VALUES (#{skuId}, #{saleUnit}, #{stockUnit}, #{factor}, #{operator}, #{operator})
-        ON CONFLICT (sku_id, sale_unit, stock_unit) WHERE deleted = FALSE DO UPDATE SET
-            stock_units_per_sale_unit = EXCLUDED.stock_units_per_sale_unit,
-            version = xsy_product_sku_stock_conversion.version + 1,
-            updated_at = CURRENT_TIMESTAMP,
+        ON CONFLICT (sku_id, sale_unit, stock_unit)
+        WHERE deleted = FALSE DO UPDATE
+        SET stock_units_per_sale_unit = EXCLUDED.stock_units_per_sale_unit,
+            version = xsy_product_sku_stock_conversion.version + 1, updated_at = CURRENT_TIMESTAMP,
             updated_by = EXCLUDED.updated_by
     </insert>
+
     <update id="delete">
-        UPDATE xsy_product_sku_stock_conversion SET deleted = TRUE,
-            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE sku_id = #{skuId} AND sale_unit = #{saleUnit} AND stock_unit = #{stockUnit}
+        UPDATE xsy_product_sku_stock_conversion
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE sku_id = #{skuId}
+            AND sale_unit = #{saleUnit}
+            AND stock_unit = #{stockUnit}
             AND deleted = FALSE
     </update>
+
 </mapper>

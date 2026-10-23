@@ -1,37 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.finance.dao.FinancePaymentSourceDao">
+
     <select id="matchesSuccessfulRefund" resultType="boolean">
         <choose>
             <when test="paymentRefundId != null">
-                SELECT EXISTS (SELECT 1 FROM xsy_payment_refund p
-                    JOIN xsy_payment_intent i ON i.id = p.intent_id AND i.deleted = FALSE
-                    WHERE p.id = #{paymentRefundId} AND p.source_type = 'ORDER_REFUND'
-                        AND p.source_id = #{refundId} AND p.deleted = FALSE AND p.status = 'SUCCEEDED'
-                        AND i.customer_id = #{customerId} AND p.amount = #{amount} AND p.provider_amount = #{amount})
+                SELECT EXISTS (SELECT 1 FROM xsy_payment_refund p JOIN xsy_payment_intent i ON i.id = p.intent_id AND
+                    i.deleted = FALSE WHERE p.id = #{paymentRefundId} AND p.source_type = 'ORDER_REFUND' AND
+                    p.source_id = #{refundId} AND p.deleted = FALSE AND p.status = 'SUCCEEDED' AND
+                    i.customer_id = #{customerId} AND p.amount = #{amount} AND p.provider_amount = #{amount})
             </when>
             <otherwise>
-                SELECT COUNT(*) > 0 AND COALESCE(SUM(a.allocated_amount), 0) = #{amount}
-                    AND COALESCE(BOOL_AND(a.status = 'SUCCEEDED' AND a.customer_id = #{customerId}
-                        AND CASE WHEN a.source_method = 'ONLINE' THEN
-                            p.id IS NOT NULL AND p.status = 'SUCCEEDED' AND p.source_type = 'REFUND_FUNDING_ALLOCATION'
-                            AND p.source_id = a.id AND p.transaction_id = a.source_id
-                            AND p.amount = a.allocated_amount AND p.provider_amount = a.allocated_amount
-                        ELSE m.id IS NOT NULL AND m.type = 'REFUND' AND m.direction = 'CREDIT'
-                            AND m.source_type = 'REFUND_FUNDING_ALLOCATION' AND m.source_id = a.id
-                            AND m.customer_id = a.customer_id AND m.settlement_customer_id = a.settlement_customer_id
-                            AND m.amount = a.allocated_amount END), FALSE)
+                SELECT COUNT(*) > 0
+                    AND COALESCE(SUM(a.allocated_amount), 0) = #{amount}
+                    AND COALESCE(BOOL_AND(a.status = 'SUCCEEDED' AND a.customer_id = #{customerId} AND
+                    CASE WHEN a.source_method = 'ONLINE' THEN p.id IS NOT NULL AND p.status = 'SUCCEEDED' AND
+                    p.source_type = 'REFUND_FUNDING_ALLOCATION' AND p.source_id = a.id AND
+                    p.transaction_id = a.source_id AND p.amount = a.allocated_amount AND
+                    p.provider_amount = a.allocated_amount ELSE m.id IS NOT NULL AND m.type = 'REFUND' AND
+                    m.direction = 'CREDIT' AND m.source_type = 'REFUND_FUNDING_ALLOCATION' AND m.source_id = a.id AND
+                    m.customer_id = a.customer_id AND m.settlement_customer_id = a.settlement_customer_id AND
+                    m.amount = a.allocated_amount END), FALSE)
                 FROM xsy_refund_funding_allocation a
-                LEFT JOIN xsy_payment_refund p ON a.source_method = 'ONLINE' AND p.id = a.result_source_id AND p.deleted = FALSE
+                LEFT JOIN xsy_payment_refund p ON a.source_method = 'ONLINE'
+                    AND p.id = a.result_source_id
+                    AND p.deleted = FALSE
                 LEFT JOIN xsy_customer_balance_movement m ON a.source_method = 'BALANCE'
-                    AND m.id = a.result_source_id AND m.deleted = FALSE
-                WHERE a.order_refund_id = #{refundId} AND a.deleted = FALSE
+                    AND m.id = a.result_source_id
+                    AND m.deleted = FALSE
+                WHERE a.order_refund_id = #{refundId}
+                    AND a.deleted = FALSE
             </otherwise>
         </choose>
     </select>
+
     <select id="hasRefundFundingAllocations" resultType="boolean">
-        SELECT EXISTS (SELECT 1 FROM xsy_refund_funding_allocation
-            WHERE order_id = #{orderId} AND deleted = FALSE)
+        SELECT EXISTS (SELECT 1 FROM xsy_refund_funding_allocation WHERE order_id = #{orderId} AND deleted = FALSE)
     </select>
 
     <!--
@@ -41,28 +45,20 @@
       刻意不读 xsy_order_refund.external_reference：那是订单侧的凭据文本，
       财务付款凭据号必须独立登记（/）。
     -->
-    <select id="selectOrderRefund"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceRefundFactDto">
-        SELECT r.id             AS refundId,
-               r.order_id       AS orderId,
-               r.customer_id    AS customerId,
-               CASE WHEN r.status = 'COMPLETED' THEN TRUE ELSE FALSE END AS completed,
-               r.refund_amount  AS refundAmount
+    <select id="selectOrderRefund" resultType="com.xsy.scm.finance.domain.dto.FinanceRefundFactDto">
+        SELECT r.id AS refundId, r.order_id AS orderId, r.customer_id AS customerId,
+            CASE WHEN r.status = 'COMPLETED' THEN TRUE ELSE FALSE END AS completed, r.refund_amount AS refundAmount
         FROM xsy_order_refund r
         WHERE r.id = #{refundId}
-          AND r.deleted = FALSE
+            AND r.deleted = FALSE
     </select>
 
-    <select id="lockOrderRefund"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceRefundFactDto">
-        SELECT r.id             AS refundId,
-               r.order_id       AS orderId,
-               r.customer_id    AS customerId,
-               CASE WHEN r.status = 'COMPLETED' THEN TRUE ELSE FALSE END AS completed,
-               r.refund_amount  AS refundAmount
+    <select id="lockOrderRefund" resultType="com.xsy.scm.finance.domain.dto.FinanceRefundFactDto">
+        SELECT r.id AS refundId, r.order_id AS orderId, r.customer_id AS customerId,
+            CASE WHEN r.status = 'COMPLETED' THEN TRUE ELSE FALSE END AS completed, r.refund_amount AS refundAmount
         FROM xsy_order_refund r
         WHERE r.id = #{refundId}
-          AND r.deleted = FALSE
+            AND r.deleted = FALSE
         FOR UPDATE
     </select>
 
@@ -71,49 +67,50 @@
       NORMAL ORDER_REFUND payment source, and applies the same live xsy_customer seller scope
       as xsy_customer payments. The unique source index remains the final concurrent guard.
     -->
-    <select id="selectCompletedRefundOptions"
-            resultType="com.xsy.scm.finance.domain.vo.FinanceRefundOptionVO">
-        SELECT r.id          AS refundId,
-               r.refund_no   AS refundNo,
-               rt.return_no  AS returnNo,
-               o.order_no    AS orderNo,
-               r.customer_id AS customerId,
-               c.name        AS customerName,
-               r.refund_amount AS refundAmount,
-               r.completed_at AS completedAt
+    <select id="selectCompletedRefundOptions" resultType="com.xsy.scm.finance.domain.vo.FinanceRefundOptionVO">
+        SELECT r.id AS refundId, r.refund_no AS refundNo, rt.return_no AS returnNo, o.order_no AS orderNo,
+            r.customer_id AS customerId, c.name AS customerName, r.refund_amount AS refundAmount,
+            r.completed_at AS completedAt
         FROM xsy_order_refund r
-                 JOIN xsy_customer c ON c.id = r.customer_id AND c.deleted = FALSE
-                 LEFT JOIN xsy_order_return rt ON rt.id = r.return_id AND rt.deleted = FALSE
-                 LEFT JOIN xsy_sales_order o ON o.id = r.order_id AND o.deleted = FALSE
-                 LEFT JOIN xsy_finance_payment p ON p.source_type = 'ORDER_REFUND'
-                    AND p.source_id = r.id AND p.entry_type = 'NORMAL' AND p.deleted = FALSE
+        JOIN xsy_customer c ON c.id = r.customer_id
+            AND c.deleted = FALSE
+        LEFT JOIN xsy_order_return rt ON rt.id = r.return_id
+            AND rt.deleted = FALSE
+        LEFT JOIN xsy_sales_order o ON o.id = r.order_id
+            AND o.deleted = FALSE
+        LEFT JOIN xsy_finance_payment p ON p.source_type = 'ORDER_REFUND'
+            AND p.source_id = r.id
+            AND p.entry_type = 'NORMAL'
+            AND p.deleted = FALSE
         WHERE r.deleted = FALSE
-          AND r.status = 'COMPLETED'
-          AND p.id IS NULL
+            AND r.status = 'COMPLETED'
+            AND p.id IS NULL
         <choose>
             <when test="scope == null">AND FALSE</when>
             <when test="scope.customerSellerScope.all"></when>
             <when test="scope.customerSellerScope.empty">AND FALSE</when>
             <otherwise>
                 AND c.seller_id IN
-                <foreach collection="scope.customerSellerScope.ids" item="sellerId"
-                         open="(" separator="," close=")">#{sellerId}</foreach>
+                <foreach collection="scope.customerSellerScope.ids" item="sellerId" open="(" separator="," close=")">
+                    #{sellerId}
+                </foreach>
             </otherwise>
         </choose>
         <if test="query.keyword != null and query.keyword != ''">
-            AND (r.refund_no ILIKE CONCAT('%', #{query.keyword}, '%')
-                 OR COALESCE(rt.return_no, '') ILIKE CONCAT('%', #{query.keyword}, '%')
-                 OR COALESCE(o.order_no, '') ILIKE CONCAT('%', #{query.keyword}, '%')
-                 OR c.name ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (r.refund_no ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                COALESCE(rt.return_no, '') ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                COALESCE(o.order_no, '') ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                c.name ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         ORDER BY r.completed_at DESC, r.id DESC
     </select>
+
     <select id="selectActivePaymentRefund" resultType="java.lang.Long">
         SELECT r.id
         FROM xsy_payment_refund r
         WHERE r.source_type = 'ORDER_REFUND'
-          AND r.source_id = #{orderRefundId}
-          AND r.deleted = FALSE
+            AND r.source_id = #{orderRefundId}
+            AND r.deleted = FALSE
         LIMIT 1
     </select>
 

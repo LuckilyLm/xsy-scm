@@ -1,40 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.product.dao.ProductBundleComponentDao">
+
     <select id="listByBundleSku" resultType="com.xsy.scm.product.domain.entity.ProductBundleComponentEntity">
-        SELECT * FROM xsy_product_bundle_component
-        WHERE bundle_sku_id = #{bundleSkuId} AND deleted = FALSE
+        SELECT *
+        FROM xsy_product_bundle_component
+        WHERE bundle_sku_id = #{bundleSkuId}
+            AND deleted = FALSE
         ORDER BY component_sku_id, id
     </select>
+
     <select id="detailByBundleSku" resultType="com.xsy.scm.product.domain.vo.ProductBundleComponentVO">
-        SELECT bc.component_sku_id AS componentSkuId, s.sku_code AS skuCode,
-               p.name AS productName, s.spec_name AS specName, s.sale_unit AS saleUnit,
-               bc.quantity_per_bundle_sale_unit AS quantityPerBundleSaleUnit
+        SELECT bc.component_sku_id AS componentSkuId, s.sku_code AS skuCode, p.name AS productName,
+            s.spec_name AS specName, s.sale_unit AS saleUnit,
+            bc.quantity_per_bundle_sale_unit AS quantityPerBundleSaleUnit
         FROM xsy_product_bundle_component bc
         JOIN xsy_product_sku s ON s.id = bc.component_sku_id
         JOIN xsy_product_spu p ON p.id = s.spu_id
-        WHERE bc.bundle_sku_id = #{bundleSkuId} AND bc.deleted = FALSE
+        WHERE bc.bundle_sku_id = #{bundleSkuId}
+            AND bc.deleted = FALSE
         ORDER BY bc.component_sku_id, bc.id
     </select>
+
     <select id="listByBundleSkus" resultType="com.xsy.scm.product.domain.entity.ProductBundleComponentEntity">
-        SELECT * FROM xsy_product_bundle_component WHERE deleted = FALSE AND bundle_sku_id IN
+        SELECT *
+        FROM xsy_product_bundle_component
+        WHERE deleted = FALSE
+            AND bundle_sku_id IN
         <foreach collection="bundleSkuIds" item="id" open="(" separator="," close=")">#{id}</foreach>
         ORDER BY bundle_sku_id, component_sku_id, id
     </select>
+
     <update id="softDeleteByBundleSku">
-        UPDATE xsy_product_bundle_component SET deleted = TRUE, version = version + 1,
-            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE bundle_sku_id = #{bundleSkuId} AND deleted = FALSE
+        UPDATE xsy_product_bundle_component
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE bundle_sku_id = #{bundleSkuId}
+            AND deleted = FALSE
     </update>
+
     <select id="countByComponentSku" resultType="long">
-        SELECT count(*) FROM xsy_product_bundle_component
-        WHERE component_sku_id = #{componentSkuId} AND deleted = FALSE
+        SELECT count(*)
+        FROM xsy_product_bundle_component
+        WHERE component_sku_id = #{componentSkuId}
+            AND deleted = FALSE
     </select>
+
     <select id="countReferencesBySkuIds" resultType="long">
-        SELECT COUNT(*) FROM xsy_product_bundle_component
-        WHERE deleted = FALSE AND (bundle_sku_id IN
-        <foreach collection="skuIds" item="id" open="(" separator="," close=")">#{id}</foreach>
-        OR component_sku_id IN
-        <foreach collection="skuIds" item="id" open="(" separator="," close=")">#{id}</foreach>)
+        SELECT COUNT(*)
+        FROM xsy_product_bundle_component
+        WHERE deleted = FALSE
+            AND (bundle_sku_id IN
+            <foreach collection="skuIds" item="id" open="(" separator="," close=")">#{id}</foreach> OR
+            component_sku_id IN <foreach collection="skuIds" item="id" open="(" separator="," close=")">#{id}</foreach>)
     </select>
+
 </mapper>

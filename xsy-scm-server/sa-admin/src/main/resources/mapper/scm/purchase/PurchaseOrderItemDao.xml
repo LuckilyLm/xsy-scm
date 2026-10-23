@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.purchase.dao.PurchaseOrderItemDao">
 
-    <resultMap id="itemRowMap"
-               type="com.xsy.scm.purchase.domain.entity.PurchaseOrderItemEntity">
+    <resultMap id="itemRowMap" type="com.xsy.scm.purchase.domain.entity.PurchaseOrderItemEntity">
         <id column="id" property="id"/>
-        <result column="spec_values_snapshot" property="specValuesSnapshot"
+        <result column="spec_values_snapshot"
+                property="specValuesSnapshot"
                 typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
@@ -13,15 +13,16 @@
         SELECT *
         FROM xsy_purchase_order_item
         WHERE deleted = FALSE
-          AND purchase_order_id = #{purchaseOrderId}
+            AND purchase_order_id = #{purchaseOrderId}
         ORDER BY sort_order ASC, id ASC
     </select>
 
     <select id="listByOrderIds" resultMap="itemRowMap">
-        SELECT * FROM xsy_purchase_order_item
+        SELECT *
+        FROM xsy_purchase_order_item
         WHERE deleted = FALSE
-        AND purchase_order_id IN
-        <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
+            AND purchase_order_id IN
+            <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
         ORDER BY purchase_order_id ASC, sort_order ASC, id ASC
     </select>
 
@@ -30,59 +31,52 @@
         SELECT *
         FROM xsy_purchase_order_item
         WHERE deleted = FALSE
-          AND purchase_order_id = #{purchaseOrderId}
+            AND purchase_order_id = #{purchaseOrderId}
         ORDER BY id ASC
-            FOR UPDATE
+        FOR UPDATE
     </select>
 
     <select id="lock" resultMap="itemRowMap">
         SELECT *
         FROM xsy_purchase_order_item
         WHERE id = #{id}
-          AND deleted = FALSE FOR UPDATE
+            AND deleted = FALSE
+        FOR UPDATE
     </select>
 
     <!-- received_quantity 只增不减；不做上限判定（上限是运行时 t_config 容差，静态表达不了） -->
     <update id="accumulateReceived">
         UPDATE xsy_purchase_order_item
-        SET received_quantity = received_quantity + #{delta},
-            version           = version + 1,
-            updated_at        = CURRENT_TIMESTAMP,
-            updated_by        = #{operator}
+        SET received_quantity = received_quantity + #{delta}, version = version + 1, updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
         WHERE id = #{id}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </update>
 
     <update id="softDelete">
         UPDATE xsy_purchase_order_item
-        SET deleted    = TRUE,
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND version = #{version}
-          AND deleted = FALSE
+            AND version = #{version}
+            AND deleted = FALSE
     </update>
 
     <update id="softDeleteByOrderId">
         UPDATE xsy_purchase_order_item
-        SET deleted    = TRUE,
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE purchase_order_id = #{purchaseOrderId}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </update>
 
     <select id="countActiveByOrderId" resultType="int">
         SELECT count(*)
         FROM xsy_purchase_order_item
         WHERE deleted = FALSE
-          AND purchase_order_id = #{purchaseOrderId}
+            AND purchase_order_id = #{purchaseOrderId}
     </select>
 
     <!--
-       按商品收货工作台（只读聚合）：跨「可收货」采购单把同一 SKU 的计划 / 已收并排展示。
+      按商品收货工作台（只读聚合）：跨「可收货」采购单把同一 SKU 的计划 / 已收并排展示。
 
       口径全部来自 xsy_purchase_order_item（收货回写的目标行），因此工作台汇总与底层收货单逐行求和恒等；
       本视图不新增收货事实，确认收货仍走各收货单的既有端点。
@@ -97,51 +91,36 @@
       已收量所属的那个仓；范围外的采购单整单不参与分组，聚合数字随行集收缩后重算，
       不是「先按全量算完再把行藏掉」。scope 为 null 按失败关闭返回 0 行。
     -->
-    <select id="workbench"
-            resultType="com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO">
-        SELECT oi.sku_id,
-               oi.sku_code_snapshot                           AS sku_code,
-               oi.sku_name_snapshot                           AS sku_name,
-               oi.product_name_snapshot                       AS product_name,
-               oi.purchase_unit_snapshot                      AS purchase_unit,
-               oi.product_type_snapshot                       AS product_type,
-               COUNT(DISTINCT oi.purchase_order_id)           AS order_count,
-               COUNT(oi.id)                                   AS line_count,
-               SUM(oi.planned_quantity)                       AS planned_quantity,
-               SUM(oi.received_quantity)                      AS received_quantity,
-               SUM(GREATEST(oi.planned_quantity - oi.received_quantity, 0)) AS pending_quantity,
-               SUM(GREATEST(oi.received_quantity - oi.planned_quantity, 0)) AS over_receipt_quantity
+    <select id="workbench" resultType="com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO">
+        SELECT oi.sku_id, oi.sku_code_snapshot AS sku_code, oi.sku_name_snapshot AS sku_name,
+            oi.product_name_snapshot AS product_name, oi.purchase_unit_snapshot AS purchase_unit,
+            oi.product_type_snapshot AS product_type, COUNT(DISTINCT oi.purchase_order_id) AS order_count,
+            COUNT(oi.id) AS line_count, SUM(oi.planned_quantity) AS planned_quantity,
+            SUM(oi.received_quantity) AS received_quantity,
+            SUM(GREATEST(oi.planned_quantity - oi.received_quantity, 0)) AS pending_quantity,
+            SUM(GREATEST(oi.received_quantity - oi.planned_quantity, 0)) AS over_receipt_quantity
         FROM xsy_purchase_order_item oi
-                 JOIN xsy_purchase_order o ON o.id = oi.purchase_order_id AND o.deleted = FALSE
+        JOIN xsy_purchase_order o ON o.id = oi.purchase_order_id
+            AND o.deleted = FALSE
         WHERE oi.deleted = FALSE
-          AND o.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED')
-        <if test="query.supplierId != null">
-            AND o.supplier_id = #{query.supplierId}
-        </if>
-        <if test="query.warehouseId != null">
-            AND o.warehouse_id = #{query.warehouseId}
-        </if>
+            AND o.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED')
+        <if test="query.supplierId != null">AND o.supplier_id = #{query.supplierId}</if>
+        <if test="query.warehouseId != null">AND o.warehouse_id = #{query.warehouseId}</if>
         <if test="scope != null and scope.all == false">
             AND o.warehouse_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
+        <if test="scope == null">AND FALSE</if>
         <if test="query.orderNo != null and query.orderNo != ''">
             AND o.order_no ILIKE CONCAT('%', #{query.orderNo}, '%')
         </if>
         <if test="query.keyword != null and query.keyword != ''">
-            AND (oi.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
-                OR oi.sku_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
-                OR oi.sku_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (oi.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                oi.sku_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                oi.sku_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
-        GROUP BY oi.sku_id,
-                 oi.purchase_unit_snapshot,
-                 oi.sku_code_snapshot,
-                 oi.sku_name_snapshot,
-                 oi.product_name_snapshot,
-                 oi.product_type_snapshot
+        GROUP BY oi.sku_id, oi.purchase_unit_snapshot, oi.sku_code_snapshot, oi.sku_name_snapshot,
+            oi.product_name_snapshot, oi.product_type_snapshot
         ORDER BY pending_quantity DESC NULLS LAST, oi.sku_id ASC
     </select>
 

@@ -1,24 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.payment.dao.PaymentMockLedgerDao">
+
     <select id="lockRefundReference" resultType="java.lang.String">
         SELECT pg_advisory_xact_lock(hashtextextended(CONCAT('MOCK_REFUND:', #{providerRefundNo}), 0))
     </select>
+
     <select id="selectOutByProviderRefundNo" resultType="com.xsy.scm.payment.domain.entity.PaymentMockLedgerEntity">
-        SELECT * FROM xsy_payment_mock_ledger
-        WHERE provider_refund_no = #{providerRefundNo} AND direction = 'OUT' ORDER BY id
+        SELECT *
+        FROM xsy_payment_mock_ledger
+        WHERE provider_refund_no = #{providerRefundNo}
+            AND direction = 'OUT'
+        ORDER BY id
     </select>
 
-    <select id="selectInByProviderTransactionNo"
-            resultType="com.xsy.scm.payment.domain.entity.PaymentMockLedgerEntity">
-        SELECT * FROM xsy_payment_mock_ledger
+    <select id="selectInByProviderTransactionNo" resultType="com.xsy.scm.payment.domain.entity.PaymentMockLedgerEntity">
+        SELECT *
+        FROM xsy_payment_mock_ledger
         WHERE provider_transaction_no = #{providerTransactionNo}
-          AND direction = 'IN'
+            AND direction = 'IN'
         LIMIT 1
     </select>
 
     <select id="listByBizDate" resultType="com.xsy.scm.payment.domain.entity.PaymentMockLedgerEntity">
-        SELECT * FROM xsy_payment_mock_ledger
+        SELECT *
+        FROM xsy_payment_mock_ledger
         WHERE biz_date = #{bizDate}
         ORDER BY id
     </select>

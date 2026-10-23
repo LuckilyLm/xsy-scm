@@ -3,28 +3,22 @@
 <mapper namespace="com.xsy.scm.customer.dao.CustomerTypeDao">
 
     <select id="queryPage" resultType="com.xsy.scm.customer.domain.entity.CustomerTypeEntity">
-        SELECT t.id, t.version, t.type_code, t.name, t.status,
-        t.created_at, t.updated_at, t.created_by, t.updated_by
+        SELECT t.id, t.version, t.type_code, t.name, t.status, t.created_at, t.updated_at, t.created_by, t.updated_by
         FROM xsy_customer_type t
         WHERE t.deleted = FALSE
         <if test="query.keyword != null and query.keyword != ''">
-            AND (t.type_code ILIKE CONCAT('%', #{query.keyword}, '%')
-            OR t.name ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (t.type_code ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                t.name ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
-        <if test="query.status != null and query.status != ''">
-            AND t.status = #{query.status}
-        </if>
+        <if test="query.status != null and query.status != ''">AND t.status = #{query.status}</if>
     </select>
 
     <update id="softDelete">
         UPDATE xsy_customer_type
-        SET deleted    = TRUE,
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{typeId}
-          AND version = #{version}
-          AND deleted = FALSE
+            AND version = #{version}
+            AND deleted = FALSE
     </update>
 
 </mapper>

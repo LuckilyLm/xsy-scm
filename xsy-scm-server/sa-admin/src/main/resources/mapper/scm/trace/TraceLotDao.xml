@@ -3,22 +3,19 @@
 <mapper namespace="com.xsy.scm.trace.dao.TraceLotDao">
 
     <insert id="createLot" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_trace_lot
-          (lot_no, source_lot_no, supplier_id, sku_id, origin_type, first_receipt_item_id, created_by)
-        VALUES
-          (#{lotNo}, #{sourceLotNo}, #{supplierId}, #{skuId}, #{originType}, #{firstReceiptItemId}, #{createdBy})
+        INSERT INTO xsy_trace_lot (lot_no, source_lot_no, supplier_id, sku_id, origin_type, first_receipt_item_id,
+            created_by)
+        VALUES (#{lotNo}, #{sourceLotNo}, #{supplierId}, #{skuId}, #{originType}, #{firstReceiptItemId}, #{createdBy})
     </insert>
 
     <insert id="linkReceiptItemLot">
-        INSERT INTO xsy_purchase_receipt_item_lot
-          (purchase_receipt_item_id, lot_id, quantity, created_by)
-        VALUES
-          (#{receiptItemId}, #{lotId}, #{quantity}, #{createdBy})
+        INSERT INTO xsy_purchase_receipt_item_lot (purchase_receipt_item_id, lot_id, quantity, created_by)
+        VALUES (#{receiptItemId}, #{lotId}, #{quantity}, #{createdBy})
     </insert>
 
     <select id="listByReceiptItemIds" resultType="com.xsy.scm.trace.domain.vo.TraceLotVO$ReceiptItemLot">
-        SELECT l.purchase_receipt_item_id AS receiptItemId, l.lot_id AS lotId,
-               t.lot_no AS lotNo, t.source_lot_no AS sourceLotNo, l.quantity AS quantity
+        SELECT l.purchase_receipt_item_id AS receiptItemId, l.lot_id AS lotId, t.lot_no AS lotNo,
+            t.source_lot_no AS sourceLotNo, l.quantity AS quantity
         FROM xsy_purchase_receipt_item_lot l
         JOIN xsy_trace_lot t ON t.id = l.lot_id
         WHERE l.purchase_receipt_item_id IN
@@ -28,8 +25,9 @@
 
     <select id="findById" resultType="com.xsy.scm.trace.domain.vo.TraceLotVO$Lot">
         SELECT id, lot_no AS lotNo, source_lot_no AS sourceLotNo, supplier_id AS supplierId, sku_id AS skuId,
-               origin_type AS originType, first_receipt_item_id AS firstReceiptItemId, created_by AS createdBy
-        FROM xsy_trace_lot WHERE id = #{lotId}
+            origin_type AS originType, first_receipt_item_id AS firstReceiptItemId, created_by AS createdBy
+        FROM xsy_trace_lot
+        WHERE id = #{lotId}
     </select>
 
 </mapper>

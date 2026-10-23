@@ -3,8 +3,8 @@
 <mapper namespace="com.xsy.scm.promotion.dao.PromotionCouponInstanceDao">
 
     <sql id="columns">
-        id, coupon_id, customer_id, instance_no, issue_source, status, reserved_order_id, reserved_at,
-        used_order_id, used_at, released_at, release_reason, version
+        id, coupon_id, customer_id, instance_no, issue_source, status, reserved_order_id, reserved_at, used_order_id,
+            used_at, released_at, release_reason, version
     </sql>
 
     <select id="lockById" resultType="com.xsy.scm.promotion.domain.entity.PromotionCouponInstanceEntity">
@@ -12,7 +12,7 @@
         <include refid="columns"/>
         FROM xsy_promotion_coupon_instance
         WHERE id = #{id}
-            FOR UPDATE
+        FOR UPDATE
     </select>
 
     <select id="listByCustomer" resultType="com.xsy.scm.promotion.domain.entity.PromotionCouponInstanceEntity">
@@ -20,64 +20,54 @@
         <include refid="columns"/>
         FROM xsy_promotion_coupon_instance
         WHERE customer_id = #{customerId}
-        <if test="status != null and status != ''">
-            AND status = #{status}
-        </if>
+        <if test="status != null and status != ''">AND status = #{status}</if>
         ORDER BY id DESC
         LIMIT #{limit}
     </select>
 
     <select id="usageStatsByCouponIds" resultType="com.xsy.scm.promotion.domain.vo.PromotionCouponVO$UsageStats">
-        SELECT i.coupon_id AS couponId,
-               COUNT(*) FILTER (WHERE i.issue_source = 'ADMIN_ISSUE') AS adminIssuedCount,
-               COUNT(*) FILTER (WHERE i.issue_source = 'MALL_CLAIM') AS mallClaimedCount,
-               COUNT(*) FILTER (WHERE i.status = 'USED') AS usedCount,
-               COALESCE(SUM((od.coupon_snapshot -&gt;&gt; 'couponDiscount')::numeric)
-                   FILTER (WHERE i.status = 'USED'), 0) AS usedDiscountAmount,
-               COUNT(*) FILTER (WHERE i.status = 'USED'
-                   AND (od.id IS NULL OR od.coupon_snapshot -&gt;&gt; 'couponDiscount' IS NULL)) AS discountMissingCount
+        SELECT i.coupon_id AS couponId, COUNT(*) FILTER (WHERE i.issue_source = 'ADMIN_ISSUE') AS adminIssuedCount,
+            COUNT(*) FILTER (WHERE i.issue_source = 'MALL_CLAIM') AS mallClaimedCount,
+            COUNT(*) FILTER (WHERE i.status = 'USED') AS usedCount,
+            COALESCE(SUM((od.coupon_snapshot - &gt; &gt; 'couponDiscount')::numeric) FILTER (WHERE i.status = 'USED'),
+            0) AS usedDiscountAmount,
+            COUNT(*) FILTER (WHERE i.status = 'USED' AND
+            (od.id IS NULL OR od.coupon_snapshot - &gt; &gt; 'couponDiscount' IS NULL)) AS discountMissingCount
         FROM xsy_promotion_coupon_instance i
-                 LEFT JOIN xsy_order_discount od ON od.sales_order_id = i.used_order_id
-                     AND od.coupon_instance_id = i.id
+        LEFT JOIN xsy_order_discount od ON od.sales_order_id = i.used_order_id
+            AND od.coupon_instance_id = i.id
         WHERE i.coupon_id IN
         <foreach collection="couponIds" item="couponId" open="(" separator="," close=")">#{couponId}</foreach>
         GROUP BY i.coupon_id
     </select>
 
-    <!-- 状态流转一律带 status 前置条件：并发下同一张券只能被占用一次，
-         第二次影响 0 行，调用方据此回答「券已被占用」而不是覆盖别人的占用。 -->
+    <!--
+      状态流转一律带 status 前置条件：并发下同一张券只能被占用一次，
+      第二次影响 0 行，调用方据此回答「券已被占用」而不是覆盖别人的占用。
+    -->
     <update id="markReserved">
         UPDATE xsy_promotion_coupon_instance
-        SET status           = 'RESERVED',
-            reserved_order_id = #{orderId},
-            reserved_at      = CURRENT_TIMESTAMP,
-            version          = version + 1
+        SET status = 'RESERVED', reserved_order_id = #{orderId}, reserved_at = CURRENT_TIMESTAMP, version = version + 1
         WHERE id = #{id}
-          AND status = 'AVAILABLE'
-          AND version = #{version}
+            AND status = 'AVAILABLE'
+            AND version = #{version}
     </update>
 
     <update id="markUsed">
         UPDATE xsy_promotion_coupon_instance
-        SET status       = 'USED',
-            used_order_id = #{orderId},
-            used_at      = CURRENT_TIMESTAMP,
-            version      = version + 1
+        SET status = 'USED', used_order_id = #{orderId}, used_at = CURRENT_TIMESTAMP, version = version + 1
         WHERE id = #{id}
-          AND status = 'RESERVED'
-          AND version = #{version}
+            AND status = 'RESERVED'
+            AND version = #{version}
     </update>
 
     <!-- 释放：只从 RESERVED 释放。不回到 AVAILABLE（见实体说明），RELEASED 是历史痕迹。 -->
     <update id="markReleased">
         UPDATE xsy_promotion_coupon_instance
-        SET status         = 'RELEASED',
-            released_at    = CURRENT_TIMESTAMP,
-            release_reason = #{reason},
-            version        = version + 1
+        SET status = 'RELEASED', released_at = CURRENT_TIMESTAMP, release_reason = #{reason}, version = version + 1
         WHERE id = #{id}
-          AND status = 'RESERVED'
-          AND version = #{version}
+            AND status = 'RESERVED'
+            AND version = #{version}
     </update>
 
     <insert id="insertBatch">

@@ -7,23 +7,33 @@
         <choose>
             <when test="scope == null or scope.customerSellerScope.empty">AND FALSE</when>
             <when test="scope.customerSellerScope.all"></when>
-            <otherwise>AND c.seller_id IN
-                <foreach collection="scope.customerSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            <otherwise>
+                AND c.seller_id IN
+                <foreach collection="scope.customerSellerScope.ids" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
             </otherwise>
-        </choose>)
-        AND (i.source_type = 'BALANCE_RECHARGE' OR (i.source_type = 'SALES_ORDER' AND EXISTS (
-            SELECT 1 FROM xsy_sales_order so WHERE so.id = i.source_id AND so.deleted = FALSE
-            <choose>
-                <when test="scope == null or scope.orderSellerScope.empty">AND FALSE</when>
-                <when test="scope.orderSellerScope.all"></when>
-                <otherwise>AND so.seller_id IN
-                    <foreach collection="scope.orderSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
-                </otherwise>
-            </choose>)))
+        </choose>
+        )
+            AND (i.source_type = 'BALANCE_RECHARGE' OR
+            (i.source_type = 'SALES_ORDER' AND
+            EXISTS (SELECT 1 FROM xsy_sales_order so WHERE so.id = i.source_id AND so.deleted = FALSE
+        <choose>
+            <when test="scope == null or scope.orderSellerScope.empty">AND FALSE</when>
+            <when test="scope.orderSellerScope.all"></when>
+            <otherwise>
+                AND so.seller_id IN
+                <foreach collection="scope.orderSellerScope.ids" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </otherwise>
+        </choose>
+        )))
     </sql>
 
     <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentIntentEntity">
-        SELECT i.* FROM xsy_payment_intent i
+        SELECT i.*
+        FROM xsy_payment_intent i
         WHERE i.deleted = FALSE
         <include refid="visibleIntent"/>
         <if test="query.sourceType != null and query.sourceType != ''">AND i.source_type = #{query.sourceType}</if>
@@ -33,58 +43,66 @@
         <if test="query.method != null and query.method != ''">AND method = #{query.method}</if>
         <if test="query.status != null and query.status != ''">AND status = #{query.status}</if>
         <if test="query.keyword != null and query.keyword != ''">
-            AND (intent_no ILIKE CONCAT('%', #{query.keyword}, '%')
-             OR source_no_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
-             OR customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (intent_no ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                source_no_snapshot ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         ORDER BY created_at DESC, id DESC
     </select>
 
     <select id="selectByIntentNo" resultType="com.xsy.scm.payment.domain.entity.PaymentIntentEntity">
-        SELECT * FROM xsy_payment_intent WHERE intent_no = #{intentNo} AND deleted = FALSE
+        SELECT *
+        FROM xsy_payment_intent
+        WHERE intent_no = #{intentNo}
+            AND deleted = FALSE
     </select>
 
     <select id="lockById" resultType="com.xsy.scm.payment.domain.entity.PaymentIntentEntity">
-        SELECT * FROM xsy_payment_intent WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM xsy_payment_intent
+        WHERE id = #{id}
+            AND deleted = FALSE
+        FOR UPDATE
     </select>
 
     <update id="updateStatus">
         UPDATE xsy_payment_intent
-        SET status     = #{to},
-            -- 成功时刻与关闭时刻由状态派生，与 ck_payment_intent_*_pairing 一一对应
-            succeeded_at = CASE WHEN #{to} = 'SUCCEEDED' THEN CURRENT_TIMESTAMP ELSE succeeded_at END,
-            closed_at  = CASE WHEN #{to} = 'CLOSED' THEN CURRENT_TIMESTAMP ELSE closed_at END,
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+        SET status = #{to},
+        -- 成功时刻与关闭时刻由状态派生，与 ck_payment_intent_*_pairing 一一对应
+        succeeded_at = CASE WHEN #{to} = 'SUCCEEDED' THEN CURRENT_TIMESTAMP ELSE succeeded_at END,
+            closed_at = CASE WHEN #{to} = 'CLOSED' THEN CURRENT_TIMESTAMP ELSE closed_at END, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND status = #{from}
-          AND deleted = FALSE
+            AND status = #{from}
+            AND deleted = FALSE
     </update>
 
     <update id="markBalanceSucceeded">
-        UPDATE xsy_payment_intent SET status = 'SUCCEEDED', succeeded_at = #{succeededAt},
-            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE id = #{id} AND method = 'BALANCE' AND provider = 'INTERNAL_BALANCE'
-            AND status = 'PENDING' AND deleted = FALSE
+        UPDATE xsy_payment_intent
+        SET status = 'SUCCEEDED', succeeded_at = #{succeededAt}, version = version + 1, updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+            AND method = 'BALANCE'
+            AND provider = 'INTERNAL_BALANCE'
+            AND status = 'PENDING'
+            AND deleted = FALSE
     </update>
 
     <update id="bindExternalIntent">
         UPDATE xsy_payment_intent
-        SET external_intent_id = #{externalIntentId},
-            version            = version + 1,
-            updated_at         = CURRENT_TIMESTAMP,
-            updated_by         = #{operator}
-        WHERE id = #{id} AND deleted = FALSE
+        SET external_intent_id = #{externalIntentId}, version = version + 1, updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+            AND deleted = FALSE
     </update>
 
     <select id="sumSucceededBySource" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(amount), 0)
         FROM xsy_payment_intent
         WHERE source_type = #{sourceType}
-          AND source_id = #{sourceId}
-          AND status = 'SUCCEEDED'
-          AND deleted = FALSE
+            AND source_id = #{sourceId}
+            AND status = 'SUCCEEDED'
+            AND deleted = FALSE
     </select>
 
 </mapper>

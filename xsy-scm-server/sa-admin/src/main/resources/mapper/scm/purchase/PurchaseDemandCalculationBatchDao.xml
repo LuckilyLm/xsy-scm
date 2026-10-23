@@ -1,43 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.purchase.dao.PurchaseDemandCalculationBatchDao">
+
     <select id="lock" resultType="com.xsy.scm.purchase.domain.entity.PurchaseDemandCalculationBatchEntity">
-        SELECT * FROM xsy_purchase_demand_calculation_batch WHERE id=#{batchId} FOR UPDATE
+        SELECT *
+        FROM xsy_purchase_demand_calculation_batch
+        WHERE id = #{batchId}
+        FOR UPDATE
     </select>
 
-    <!-- 回看用的批次头：联仓库 / 供应商 / 员工取当前名称（快照里没有名称，
-         名称不是冻结对象——冻结的是数量口径与输入条件）。列走下划线→驼峰自动映射。 -->
+    <!--
+      回看用的批次头：联仓库 / 供应商 / 员工取当前名称（快照里没有名称，
+      名称不是冻结对象——冻结的是数量口径与输入条件）。列走下划线→驼峰自动映射。
+    -->
     <select id="selectHeader" resultType="com.xsy.scm.purchase.domain.vo.PurchaseDemandCalculationBatchDetailVO">
-        SELECT b.id                     AS batch_id,
-               b.status,
-               b.start_at,
-               b.end_at,
-               b.warehouse_id,
-               w.name                   AS warehouse_name,
-               b.supplier_id,
-               s.name                   AS supplier_name,
-               b.purchaser_id,
-               e.actual_name            AS purchaser_name,
-               b.category_id,
-               b.keyword,
-               b.source_line_count,
-               b.candidate_line_count,
-               b.generated_count,
-               b.skipped_count,
-               b.created_at,
-               b.created_by,
-               b.generated_at
+        SELECT b.id AS batch_id, b.status, b.start_at, b.end_at, b.warehouse_id, w.name AS warehouse_name,
+            b.supplier_id, s.name AS supplier_name, b.purchaser_id, e.actual_name AS purchaser_name, b.category_id,
+            b.keyword, b.source_line_count, b.candidate_line_count, b.generated_count, b.skipped_count, b.created_at,
+            b.created_by, b.generated_at
         FROM xsy_purchase_demand_calculation_batch b
-                 LEFT JOIN xsy_warehouse w ON w.id = b.warehouse_id AND w.deleted = FALSE
-                 LEFT JOIN xsy_supplier s ON s.id = b.supplier_id AND s.deleted = FALSE
-                 LEFT JOIN t_employee e ON e.employee_id = b.purchaser_id AND e.deleted_flag = FALSE
+        LEFT JOIN xsy_warehouse w ON w.id = b.warehouse_id
+            AND w.deleted = FALSE
+        LEFT JOIN xsy_supplier s ON s.id = b.supplier_id
+            AND s.deleted = FALSE
+        LEFT JOIN t_employee e ON e.employee_id = b.purchaser_id
+            AND e.deleted_flag = FALSE
         WHERE b.id = #{batchId}
     </select>
 
     <update id="markGenerated">
-        UPDATE xsy_purchase_demand_calculation_batch SET status='GENERATED', generated_count=#{generatedCount},
-            skipped_count=#{skippedCount}, result_snapshot=#{resultSnapshot,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
-            generated_at=#{generatedAt}, updated_at=#{generatedAt}, updated_by=#{operator}
-        WHERE id=#{batchId} AND status='READY'
+        UPDATE xsy_purchase_demand_calculation_batch
+        SET status = 'GENERATED', generated_count = #{generatedCount}, skipped_count = #{skippedCount},
+            result_snapshot = #{resultSnapshot,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
+            generated_at = #{generatedAt}, updated_at = #{generatedAt}, updated_by = #{operator}
+        WHERE id = #{batchId}
+            AND status = 'READY'
     </update>
+
 </mapper>

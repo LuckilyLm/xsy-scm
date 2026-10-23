@@ -3,13 +3,15 @@
 <mapper namespace="com.xsy.scm.balance.dao.CustomerBalanceMovementDao">
 
     <insert id="insertOnConflictDoNothing" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_customer_balance_movement (movement_no, account_id, settlement_customer_id, customer_id,
-            type, direction, amount, source_type, source_id, reason, occurred_at,
-            created_at, updated_at, created_by, updated_by)
-        VALUES (#{movementNo}, #{accountId}, #{settlementCustomerId}, #{customerId},
-            #{type}, #{direction}, #{amount}, #{sourceType}, #{sourceId}, #{reason}, #{occurredAt},
-            #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
-        ON CONFLICT (source_type, source_id) WHERE deleted = FALSE AND source_type IS NOT NULL DO NOTHING
+        INSERT INTO xsy_customer_balance_movement (movement_no, account_id, settlement_customer_id, customer_id, type,
+            direction, amount, source_type, source_id, reason, occurred_at, created_at, updated_at, created_by,
+            updated_by)
+        VALUES (#{movementNo}, #{accountId}, #{settlementCustomerId}, #{customerId}, #{type}, #{direction}, #{amount},
+            #{sourceType}, #{sourceId}, #{reason}, #{occurredAt}, #{createdAt}, #{updatedAt}, #{createdBy},
+            #{updatedBy})
+        ON CONFLICT (source_type, source_id)
+        WHERE deleted = FALSE
+            AND source_type IS NOT NULL DO NOTHING
     </insert>
 
     <!--
@@ -20,14 +22,15 @@
         SELECT COALESCE(SUM(CASE WHEN direction = #{credit} THEN amount ELSE -amount END), 0)
         FROM xsy_customer_balance_movement
         WHERE account_id = #{accountId}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </select>
 
     <select id="selectBySource" resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity">
-        SELECT * FROM xsy_customer_balance_movement
+        SELECT *
+        FROM xsy_customer_balance_movement
         WHERE source_type = #{sourceType}
-          AND source_id = #{sourceId}
-          AND deleted = FALSE
+            AND source_id = #{sourceId}
+            AND deleted = FALSE
     </select>
 
     <!--
@@ -36,41 +39,31 @@
       一次 JOIN 出结算主体名与实际业务客户名，页面不必逐行回查。
     -->
     <select id="queryPage" resultType="com.xsy.scm.balance.domain.vo.BalanceMovementVO">
-        SELECT m.id                     AS id,
-               m.movement_no            AS movementNo,
-               m.account_id             AS accountId,
-               m.settlement_customer_id AS settlementCustomerId,
-               sc.name                  AS settlementCustomerName,
-               m.customer_id            AS customerId,
-               bc.name                  AS customerName,
-               m.type                   AS movementType,
-               m.direction              AS direction,
-               m.amount                 AS amount,
-               m.source_type            AS sourceType,
-               m.source_id              AS sourceId,
-               m.reason                 AS reason,
-               m.occurred_at            AS occurredAt,
-               m.created_at             AS createdAt,
-               m.created_by             AS operator
+        SELECT m.id AS id, m.movement_no AS movementNo, m.account_id AS accountId,
+            m.settlement_customer_id AS settlementCustomerId, sc.name AS settlementCustomerName,
+            m.customer_id AS customerId, bc.name AS customerName, m.type AS movementType, m.direction AS direction,
+            m.amount AS amount, m.source_type AS sourceType, m.source_id AS sourceId, m.reason AS reason,
+            m.occurred_at AS occurredAt, m.created_at AS createdAt, m.created_by AS operator
         FROM xsy_customer_balance_movement m
-                 JOIN xsy_customer sc ON sc.id = m.settlement_customer_id AND sc.deleted = FALSE
-                 LEFT JOIN xsy_customer bc ON bc.id = m.customer_id AND bc.deleted = FALSE
+        JOIN xsy_customer sc ON sc.id = m.settlement_customer_id
+            AND sc.deleted = FALSE
+        LEFT JOIN xsy_customer bc ON bc.id = m.customer_id
+            AND bc.deleted = FALSE
         WHERE m.deleted = FALSE
         <choose>
             <when test="scope == null or scope.customerSellerScope.empty">AND FALSE</when>
             <when test="scope.customerSellerScope.all"></when>
             <otherwise>
                 AND sc.seller_id IN
-                <foreach collection="scope.customerSellerScope.ids" item="sellerId"
-                         open="(" separator="," close=")">#{sellerId}</foreach>
+                <foreach collection="scope.customerSellerScope.ids" item="sellerId" open="(" separator="," close=")">
+                    #{sellerId}
+                </foreach>
             </otherwise>
         </choose>
         <if test="query.movementId != null">AND m.id = #{query.movementId}</if>
         <if test="query.sourceType != null and query.sourceType != ''">AND m.source_type = #{query.sourceType}</if>
         <if test="query.sourceId != null">AND m.source_id = #{query.sourceId}</if>
-        <if test="query.settlementCustomerId != null">
-            AND m.settlement_customer_id = #{query.settlementCustomerId}
-        </if>
+        <if test="query.settlementCustomerId != null">AND m.settlement_customer_id = #{query.settlementCustomerId}</if>
         <if test="query.customerId != null">AND m.customer_id = #{query.customerId}</if>
         <if test="query.type != null and query.type != ''">AND m.type = #{query.type}</if>
         <if test="query.direction != null and query.direction != ''">AND m.direction = #{query.direction}</if>
@@ -80,9 +73,10 @@
     </select>
 
     <select id="listByAccount" resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity">
-        SELECT * FROM xsy_customer_balance_movement
+        SELECT *
+        FROM xsy_customer_balance_movement
         WHERE account_id = #{accountId}
-          AND deleted = FALSE
+            AND deleted = FALSE
         ORDER BY occurred_at, id
     </select>
 

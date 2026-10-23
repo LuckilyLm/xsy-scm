@@ -5,13 +5,15 @@
     <update id="revokeActiveByCustomer">
         UPDATE xsy_customer_promotion_code
         SET revoked_at = #{revokedAt}, updated_at = CURRENT_TIMESTAMP
-        WHERE customer_id = #{customerId} AND revoked_at IS NULL
+        WHERE customer_id = #{customerId}
+            AND revoked_at IS NULL
     </update>
 
     <update id="revokeById">
         UPDATE xsy_customer_promotion_code
         SET revoked_at = #{revokedAt}, updated_at = CURRENT_TIMESTAMP
-        WHERE id = #{id} AND revoked_at IS NULL
+        WHERE id = #{id}
+            AND revoked_at IS NULL
     </update>
 
     <insert id="insertCode" useGeneratedKeys="true" keyProperty="id">
@@ -20,49 +22,57 @@
     </insert>
 
     <sql id="codeColumns">
-        c.id, c.customer_id AS customerId, u.name AS customerName, c.code,
-        u.seller_id AS sellerId, e.actual_name AS sellerName,
-        c.revoked_at AS revokedAt, c.created_by AS createdBy, c.created_at AS createdAt,
-        (SELECT count(*) FROM xsy_customer_promotion_scan s WHERE s.code_id = c.id) AS scanCount
+        c.id, c.customer_id AS customerId, u.name AS customerName, c.code, u.seller_id AS sellerId,
+            e.actual_name AS sellerName, c.revoked_at AS revokedAt, c.created_by AS createdBy,
+            c.created_at AS createdAt,
+            (SELECT count(*) FROM xsy_customer_promotion_scan s WHERE s.code_id = c.id) AS scanCount
     </sql>
 
     <select id="findByCode" resultType="com.xsy.scm.customer.domain.vo.CustomerPromotionVO">
-        SELECT <include refid="codeColumns"/>
+        SELECT
+        <include refid="codeColumns"/>
         FROM xsy_customer_promotion_code c
-        LEFT JOIN xsy_customer u ON u.id = c.customer_id AND u.deleted = FALSE
-        LEFT JOIN t_employee e ON e.employee_id = u.seller_id AND e.deleted_flag = FALSE
+        LEFT JOIN xsy_customer u ON u.id = c.customer_id
+            AND u.deleted = FALSE
+        LEFT JOIN t_employee e ON e.employee_id = u.seller_id
+            AND e.deleted_flag = FALSE
         WHERE c.code = #{code}
     </select>
 
     <select id="findById" resultType="com.xsy.scm.customer.domain.vo.CustomerPromotionVO">
-        SELECT <include refid="codeColumns"/>
+        SELECT
+        <include refid="codeColumns"/>
         FROM xsy_customer_promotion_code c
-        LEFT JOIN xsy_customer u ON u.id = c.customer_id AND u.deleted = FALSE
-        LEFT JOIN t_employee e ON e.employee_id = u.seller_id AND e.deleted_flag = FALSE
+        LEFT JOIN xsy_customer u ON u.id = c.customer_id
+            AND u.deleted = FALSE
+        LEFT JOIN t_employee e ON e.employee_id = u.seller_id
+            AND e.deleted_flag = FALSE
         WHERE c.id = #{id}
     </select>
 
     <select id="listByCustomer" resultType="com.xsy.scm.customer.domain.vo.CustomerPromotionVO">
-        SELECT <include refid="codeColumns"/>
+        SELECT
+        <include refid="codeColumns"/>
         FROM xsy_customer_promotion_code c
-        LEFT JOIN xsy_customer u ON u.id = c.customer_id AND u.deleted = FALSE
-        LEFT JOIN t_employee e ON e.employee_id = u.seller_id AND e.deleted_flag = FALSE
+        LEFT JOIN xsy_customer u ON u.id = c.customer_id
+            AND u.deleted = FALSE
+        LEFT JOIN t_employee e ON e.employee_id = u.seller_id
+            AND e.deleted_flag = FALSE
         WHERE c.customer_id = #{customerId}
         ORDER BY c.id DESC
     </select>
 
     <insert id="insertScan">
-        INSERT INTO xsy_customer_promotion_scan
-          (code_id, customer_id, seller_id, client_ip, user_agent)
-        VALUES
-          (#{codeId}, #{customerId}, #{sellerId}, #{clientIp}, #{userAgent})
+        INSERT INTO xsy_customer_promotion_scan (code_id, customer_id, seller_id, client_ip, user_agent)
+        VALUES (#{codeId}, #{customerId}, #{sellerId}, #{clientIp}, #{userAgent})
     </insert>
 
     <select id="listScans" resultType="com.xsy.scm.customer.domain.vo.CustomerPromotionVO$Scan">
         SELECT s.id, s.scanned_at AS scannedAt, s.seller_id AS sellerId, e.actual_name AS sellerName,
-               s.client_ip AS clientIp, s.user_agent AS userAgent
+            s.client_ip AS clientIp, s.user_agent AS userAgent
         FROM xsy_customer_promotion_scan s
-        LEFT JOIN t_employee e ON e.employee_id = s.seller_id AND e.deleted_flag = FALSE
+        LEFT JOIN t_employee e ON e.employee_id = s.seller_id
+            AND e.deleted_flag = FALSE
         WHERE s.code_id = #{codeId}
         ORDER BY s.id DESC
         LIMIT #{limit}
@@ -70,11 +80,13 @@
 
     <select id="latestAttribution" resultType="com.xsy.scm.customer.domain.vo.CustomerPromotionVO$Scan">
         SELECT s.id, s.scanned_at AS scannedAt, s.seller_id AS sellerId, e.actual_name AS sellerName,
-               s.client_ip AS clientIp, s.user_agent AS userAgent
+            s.client_ip AS clientIp, s.user_agent AS userAgent
         FROM xsy_customer_promotion_scan s
-        LEFT JOIN t_employee e ON e.employee_id = s.seller_id AND e.deleted_flag = FALSE
+        LEFT JOIN t_employee e ON e.employee_id = s.seller_id
+            AND e.deleted_flag = FALSE
         WHERE s.seller_id IS NOT NULL
         ORDER BY s.id DESC
         LIMIT 1
     </select>
+
 </mapper>

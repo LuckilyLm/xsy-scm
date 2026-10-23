@@ -4,13 +4,12 @@
 
     <resultMap id="activityMap" type="com.xsy.scm.promotion.domain.entity.PromotionActivityEntity">
         <id column="id" property="id"/>
-        <result column="rule" property="rule"
-                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+        <result column="rule" property="rule" typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
     </resultMap>
 
     <sql id="columns">
-        id, activity_code, activity_name, activity_type, exclusive_group, priority, valid_from, valid_to,
-        status, rule, remark, version, deleted, created_at, updated_at, created_by, updated_by
+        id, activity_code, activity_name, activity_type, exclusive_group, priority, valid_from, valid_to, status, rule,
+            remark, version, deleted, created_at, updated_at, created_by, updated_by
     </sql>
 
     <select id="queryPage" resultMap="activityMap">
@@ -21,12 +20,10 @@
         <if test="query.activityType != null and query.activityType != ''">
             AND activity_type = #{query.activityType}
         </if>
-        <if test="query.status != null and query.status != ''">
-            AND status = #{query.status}
-        </if>
+        <if test="query.status != null and query.status != ''">AND status = #{query.status}</if>
         <if test="query.keyword != null and query.keyword != ''">
-            AND (activity_code ILIKE CONCAT('%', #{query.keyword}, '%')
-                 OR activity_name ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (activity_code ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                activity_name ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         ORDER BY priority DESC, id DESC
     </select>
@@ -37,9 +34,9 @@
         <include refid="columns"/>
         FROM xsy_promotion_activity
         WHERE deleted = FALSE
-          AND status = 'ACTIVE'
-          AND valid_from &lt;= #{at}
-          AND valid_to &gt; #{at}
+            AND status = 'ACTIVE'
+            AND valid_from &lt;= #{at}
+            AND valid_to &gt; #{at}
         ORDER BY priority DESC, id ASC
     </select>
 
@@ -48,19 +45,16 @@
         <include refid="columns"/>
         FROM xsy_promotion_activity
         WHERE id = #{id}
-          AND deleted = FALSE
-            FOR UPDATE
+            AND deleted = FALSE
+        FOR UPDATE
     </select>
 
     <update id="updateStatus">
         UPDATE xsy_promotion_activity
-        SET status     = #{status},
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+        SET status = #{status}, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND deleted = FALSE
-          AND version = #{version}
+            AND deleted = FALSE
+            AND version = #{version}
     </update>
 
 </mapper>

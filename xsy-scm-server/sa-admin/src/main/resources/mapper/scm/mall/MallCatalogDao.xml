@@ -1,113 +1,112 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.mall.catalog.dao.MallCatalogDao">
+
     <sql id="visibleSku">
-        s.deleted = FALSE AND s.status = 'ON_SHELF'
-        AND p.deleted = FALSE AND p.status = 'ON_SHELF'
-        AND c.deleted = FALSE AND c.status = 'ENABLED'
-        AND EXISTS (
-            SELECT 1 FROM xsy_customer customer
-            WHERE customer.id = #{customerId} AND customer.deleted = FALSE
-              AND customer.status = 'COOPERATING'
-              AND (customer.visibility_policy = 'ALL_ENABLED'
-                   OR EXISTS (SELECT 1 FROM xsy_customer_sku_visibility visibility
-                              WHERE visibility.customer_id = customer.id
-                                AND visibility.sku_id = s.id AND visibility.deleted = FALSE))
-        )
+        s.deleted = FALSE
+            AND s.status = 'ON_SHELF'
+            AND p.deleted = FALSE
+            AND p.status = 'ON_SHELF'
+            AND c.deleted = FALSE
+            AND c.status = 'ENABLED'
+            AND EXISTS (SELECT 1 FROM xsy_customer customer WHERE customer.id = #{customerId} AND
+            customer.deleted = FALSE AND customer.status = 'COOPERATING' AND
+            (customer.visibility_policy = 'ALL_ENABLED' OR
+            EXISTS (SELECT 1 FROM xsy_customer_sku_visibility visibility WHERE visibility.customer_id = customer.id AND
+            visibility.sku_id = s.id AND visibility.deleted = FALSE)))
     </sql>
+
     <sql id="productColumns">
-        <!-- 库存可售状态暂不可判定：商城尚未确定「按哪个仓库取可售量」的产品口径，
-             这里显式返回 UNKNOWN，不用近似值冒充「有货/缺货」。库存充足性由结算与下单时服务端重验。 -->
+        <!--
+          库存可售状态暂不可判定：商城尚未确定「按哪个仓库取可售量」的产品口径，
+          这里显式返回 UNKNOWN，不用近似值冒充「有货/缺货」。库存充足性由结算与下单时服务端重验。
+        -->
         s.id AS sku_id, p.id AS spu_id, p.category_id, c.name AS category_name,
-        COALESCE(customer_alias.alias, p.name) AS product_name, s.sku_code,
-        s.spec_name, s.sale_unit, s.mall_min_quantity AS min_order_qty,
-        s.mall_quantity_step AS step_qty,
-        s.product_type, (s.product_type = 'NON_STANDARD') AS non_standard,
-        p.description,
-        image.file_key AS primary_image_key,
-        'UNKNOWN' AS stock_status
+            COALESCE(customer_alias.alias, p.name) AS product_name, s.sku_code, s.spec_name, s.sale_unit,
+            s.mall_min_quantity AS min_order_qty, s.mall_quantity_step AS step_qty, s.product_type,
+            (s.product_type = 'NON_STANDARD') AS non_standard, p.description, image.file_key AS primary_image_key,
+            'UNKNOWN' AS stock_status
     </sql>
+
     <sql id="productJoins">
         FROM xsy_product_sku s
         JOIN xsy_product_spu p ON p.id = s.spu_id
         JOIN xsy_product_category c ON c.id = p.category_id
-        LEFT JOIN xsy_customer_sku_alias customer_alias
-          ON customer_alias.customer_id = #{customerId}
-         AND customer_alias.sku_id = s.id AND customer_alias.deleted = FALSE
-        LEFT JOIN LATERAL (
-            SELECT i.file_key FROM xsy_product_image i
-            WHERE i.spu_id = p.id AND i.deleted = FALSE AND i.is_primary = TRUE
-              AND i.file_key LIKE 'public/%'
-            ORDER BY i.id LIMIT 1
-        ) image ON TRUE
+        LEFT JOIN xsy_customer_sku_alias customer_alias ON customer_alias.customer_id = #{customerId}
+            AND customer_alias.sku_id = s.id
+            AND customer_alias.deleted = FALSE
+        LEFT JOIN LATERAL (SELECT i.file_key FROM xsy_product_image i WHERE i.spu_id = p.id AND i.deleted = FALSE AND
+            i.is_primary = TRUE AND i.file_key LIKE 'public/%' ORDER BY i.id LIMIT 1) image ON TRUE
     </sql>
 
     <select id="categories" resultType="com.xsy.scm.mall.catalog.domain.vo.MallCategoryVO">
-        WITH RECURSIVE visible_category AS (
-            SELECT DISTINCT c.id, c.parent_id, c.name, c.level, c.sort_order
-            FROM xsy_product_category c
-            WHERE c.deleted = FALSE AND c.status = 'ENABLED'
-              AND EXISTS (
-                  SELECT 1 FROM xsy_product_spu p JOIN xsy_product_sku s ON s.spu_id = p.id
-                  WHERE p.category_id = c.id AND <include refid="visibleSku"/>
-              )
-            UNION
-            SELECT parent.id, parent.parent_id, parent.name, parent.level, parent.sort_order
-            FROM xsy_product_category parent JOIN visible_category child ON child.parent_id = parent.id
-            WHERE parent.deleted = FALSE AND parent.status = 'ENABLED'
+        WITH RECURSIVE visible_category AS(SELECT DISTINCT c.id, c.parent_id, c.name, c.level,
+            c.sort_order FROM xsy_product_category c WHERE c.deleted = FALSE AND c.status = 'ENABLED' AND
+            EXISTS (SELECT 1 FROM xsy_product_spu p JOIN xsy_product_sku s ON s.spu_id = p.id WHERE p.category_id = c.id
+            AND
+        <include refid="visibleSku"/>
         )
+        UNION
+        SELECT parent.id, parent.parent_id, parent.name, parent.level, parent.sort_order
+        FROM xsy_product_category parent
+        JOIN visible_category child ON child.parent_id = parent.id
+        WHERE parent.deleted = FALSE
+            AND parent.status = 'ENABLED')
         SELECT id AS category_id, parent_id, name, level, sort_order
         FROM visible_category
         ORDER BY level, sort_order, id
     </select>
 
     <select id="products" resultType="com.xsy.scm.mall.catalog.domain.vo.MallProductVO">
-        SELECT <include refid="productColumns"/>
+        SELECT
+        <include refid="productColumns"/>
         <include refid="productJoins"/>
-        WHERE <include refid="visibleSku"/>
+        WHERE
+        <include refid="visibleSku"/>
         <if test="query.keyword != null and query.keyword != ''">
-            AND (p.name ILIKE CONCAT('%', #{query.keyword}, '%') OR p.spu_code ILIKE CONCAT('%', #{query.keyword}, '%')
-                 OR s.sku_code ILIKE CONCAT('%', #{query.keyword}, '%')
-                 OR COALESCE(s.barcode, '') ILIKE CONCAT('%', #{query.keyword}, '%')
-                 OR COALESCE(p.alias, '') ILIKE CONCAT('%', #{query.keyword}, '%')
-                 OR COALESCE(p.mnemonic_code, '') ILIKE CONCAT('%', #{query.keyword}, '%')
-                 OR COALESCE(customer_alias.alias, '') ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (p.name ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                p.spu_code ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                s.sku_code ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                COALESCE(s.barcode, '') ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                COALESCE(p.alias, '') ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                COALESCE(p.mnemonic_code, '') ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                COALESCE(customer_alias.alias, '') ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         <!-- 分类按子树过滤：商品只挂叶子分类，点一级/二级分类时也要能看到下级商品 -->
         <if test="query.categoryId != null">
-            AND p.category_id IN (
-                WITH RECURSIVE category_subtree AS (
-                    SELECT id FROM xsy_product_category WHERE id = #{query.categoryId}
-                    UNION ALL
-                    SELECT child.id FROM xsy_product_category child
-                    JOIN category_subtree parent ON child.parent_id = parent.id
-                )
-                SELECT id FROM category_subtree
-            )
+            AND p.category_id IN (WITH RECURSIVE category_subtree AS(SELECT id FROM xsy_product_category WHERE id =
+                #{query.categoryId} UNION ALL SELECT child.id FROM xsy_product_category child JOIN category_subtree
+                parent ON child.parent_id = parent.id) SELECT id FROM category_subtree)
         </if>
         ORDER BY p.name, s.sort_order, s.id
     </select>
 
     <select id="product" resultType="com.xsy.scm.mall.catalog.domain.vo.MallProductVO">
-        SELECT <include refid="productColumns"/>
+        SELECT
+        <include refid="productColumns"/>
         <include refid="productJoins"/>
-        WHERE <include refid="visibleSku"/> AND s.id = #{skuId}
+        WHERE
+        <include refid="visibleSku"/>
+        AND s.id = #{skuId}
     </select>
 
     <select id="productsBySkuIds" resultType="com.xsy.scm.mall.catalog.domain.vo.MallProductVO">
-        SELECT <include refid="productColumns"/>
+        SELECT
+        <include refid="productColumns"/>
         <include refid="productJoins"/>
-        WHERE <include refid="visibleSku"/> AND s.id IN
-        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
-        ORDER BY array_position(ARRAY[
-        <foreach collection="skuIds" item="skuId" separator=",">CAST(#{skuId} AS BIGINT)</foreach>
+        WHERE
+        <include refid="visibleSku"/>
+        AND s.id IN <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
+        ORDER BY array_position(ARRAY [
+        <foreach collection="skuIds" item="skuId" separator=",">CAST( #{skuId} AS BIGINT)</foreach>
         ], s.id)
     </select>
 
     <select id="newestSkuIds" resultType="java.lang.Long">
         SELECT s.id
         <include refid="productJoins"/>
-        WHERE <include refid="visibleSku"/>
+        WHERE
+        <include refid="visibleSku"/>
         ORDER BY s.created_at DESC, s.id DESC
         LIMIT #{limit}
     </select>
@@ -116,13 +115,10 @@
     <select id="primaryImagesBySkuIds" resultType="com.xsy.scm.mall.order.domain.vo.MallSkuImageVO">
         SELECT s.id AS sku_id, image.file_key AS primary_image_key
         FROM xsy_product_sku s
-        LEFT JOIN LATERAL (
-            SELECT i.file_key FROM xsy_product_image i
-            WHERE i.spu_id = s.spu_id AND i.deleted = FALSE AND i.is_primary = TRUE
-              AND i.file_key LIKE 'public/%'
-            ORDER BY i.id LIMIT 1
-        ) image ON TRUE
-        WHERE s.id IN
-        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
+        LEFT JOIN LATERAL (SELECT i.file_key FROM xsy_product_image i WHERE i.spu_id = s.spu_id AND
+            i.deleted = FALSE AND i.is_primary = TRUE AND
+            i.file_key LIKE 'public/%' ORDER BY i.id LIMIT 1) image ON TRUE
+        WHERE s.id IN <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
     </select>
+
 </mapper>

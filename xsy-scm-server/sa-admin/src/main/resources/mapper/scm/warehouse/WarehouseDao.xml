@@ -4,21 +4,16 @@
 
     <!-- 显式列出全部列：不用 SELECT *，避免新增列时静默进入自动驼峰映射。 -->
     <select id="queryPage" resultType="com.xsy.scm.warehouse.domain.entity.WarehouseEntity">
-        SELECT t.id, t.warehouse_code, t.name, t.status, t.address, t.remark, t.lot_tracking_enabled,
-        t.province_code, t.province_name, t.city_code, t.city_name,
-        t.district_code, t.district_name, t.longitude, t.latitude, t.geom_crs,
-        t.version, t.created_at, t.updated_at, t.created_by, t.updated_by
+        SELECT t.id, t.warehouse_code, t.name, t.status, t.address, t.remark, t.lot_tracking_enabled, t.province_code,
+            t.province_name, t.city_code, t.city_name, t.district_code, t.district_name, t.longitude, t.latitude,
+            t.geom_crs, t.version, t.created_at, t.updated_at, t.created_by, t.updated_by
         FROM xsy_warehouse t
         WHERE t.deleted = FALSE
         <if test="query.warehouseCode != null and query.warehouseCode != ''">
             AND t.warehouse_code ILIKE CONCAT('%', #{query.warehouseCode}, '%')
         </if>
-        <if test="query.name != null and query.name != ''">
-            AND t.name ILIKE CONCAT('%', #{query.name}, '%')
-        </if>
-        <if test="query.status != null and query.status != ''">
-            AND t.status = #{query.status}
-        </if>
+        <if test="query.name != null and query.name != ''">AND t.name ILIKE CONCAT( '%', #{query.name}, '%')</if>
+        <if test="query.status != null and query.status != ''">AND t.status = #{query.status}</if>
         <!--
           仓库主档按授权范围收窄：非管理员不得从未授权仓库拿到 id、名称或地址。
           all 不拼谓词；scope 为空或没有授权值即 AND FALSE —— 与库存族读侧同一条失败关闭口径。

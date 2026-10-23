@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.finance.dao.FinanceReceivableSourceDao">
+
     <select id="countIncompleteBundleOutbound" resultType="long">
-        SELECT COUNT(*) FROM (
-            SELECT ob.outbound_id, ob.sales_order_item_id
-            FROM xsy_inventory_outbound_item ob
-            WHERE ob.sales_order_id = #{salesOrderId} AND ob.bundle_component_id IS NOT NULL
-              AND ob.deleted = FALSE
-            GROUP BY ob.outbound_id, ob.sales_order_item_id
-            HAVING COUNT(*) &lt;&gt; (SELECT COUNT(*) FROM xsy_order_bundle_component bc
-                                   WHERE bc.order_item_id = ob.sales_order_item_id)
-                OR MIN(ob.bundle_sale_quantity) &lt;&gt; MAX(ob.bundle_sale_quantity)
-        ) incomplete
+        SELECT COUNT(*)
+        FROM (SELECT ob.outbound_id,
+            ob.sales_order_item_id FROM xsy_inventory_outbound_item ob WHERE ob.sales_order_id = #{salesOrderId} AND
+            ob.bundle_component_id IS NOT NULL AND
+            ob.deleted = FALSE GROUP BY ob.outbound_id,
+            ob.sales_order_item_id HAVING COUNT(*) &lt;&gt; (SELECT COUNT(*) FROM xsy_order_bundle_component bc WHERE
+            bc.order_item_id = ob.sales_order_item_id) OR
+            MIN(ob.bundle_sale_quantity) &lt;&gt; MAX(ob.bundle_sale_quantity)) incomplete
     </select>
+
     <select id="hasFinalDeliveryResult" resultType="boolean">
-        SELECT EXISTS (SELECT 1 FROM xsy_delivery_route_order d
-            WHERE d.order_id = #{salesOrderId} AND d.assignment_status = 'ACTIVE'
-                AND d.fulfillment_status IN ('SIGNED', 'EXCEPTION') AND d.deleted = FALSE)
+        SELECT EXISTS (SELECT 1 FROM xsy_delivery_route_order d WHERE d.order_id = #{salesOrderId} AND
+            d.assignment_status = 'ACTIVE' AND d.fulfillment_status IN ('SIGNED', 'EXCEPTION') AND d.deleted = FALSE)
     </select>
 
     <!--
@@ -26,21 +25,16 @@
       一次真实签收静默变成「什么都不生成」（漏账比多读一行危险），缺行时结果集为空、
       由服务侧的 null 判据失败并让签收回滚。
     -->
-    <select id="selectSignedAssignment"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableSourceDto">
-        SELECT ro.id                    AS deliveryRouteOrderId,
-               ro.order_id              AS salesOrderId,
-               ro.signed_at             AS signedAt,
-               ro.signed_by             AS signedBy,
-               o.customer_id            AS customerId,
-               o.customer_name_snapshot AS customerNameSnapshot,
-               o.settlement_customer_id AS settlementCustomerId,
-               o.settlement_customer_name_snapshot AS settlementCustomerNameSnapshot
+    <select id="selectSignedAssignment" resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableSourceDto">
+        SELECT ro.id AS deliveryRouteOrderId, ro.order_id AS salesOrderId, ro.signed_at AS signedAt,
+            ro.signed_by AS signedBy, o.customer_id AS customerId, o.customer_name_snapshot AS customerNameSnapshot,
+            o.settlement_customer_id AS settlementCustomerId,
+            o.settlement_customer_name_snapshot AS settlementCustomerNameSnapshot
         FROM xsy_delivery_route_order ro
-                 JOIN xsy_sales_order o ON o.id = ro.order_id
+        JOIN xsy_sales_order o ON o.id = ro.order_id
         WHERE ro.id = #{deliveryRouteOrderId}
-          AND ro.deleted = FALSE
-          AND ro.fulfillment_status = 'SIGNED'
+            AND ro.deleted = FALSE
+            AND ro.fulfillment_status = 'SIGNED'
     </select>
 
     <!--
@@ -52,42 +46,33 @@
       变成静默漏账。单位取订单行的 sale_unit_snapshot：发车链路不写出库行的 unit_snapshot，
       而 locked_unit_price 正是按订单行销售单位计价的。
     -->
-    <select id="selectOutboundLines"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableSourceLineDto">
-        SELECT ob.id                  AS inventoryOutboundItemId,
-               ob.sales_order_item_id AS salesOrderItemId,
-               oi.sku_id              AS skuId,
-               oi.product_name_snapshot AS skuNameSnapshot,
-               oi.sale_unit_snapshot  AS unitSnapshot,
-               ob.quantity            AS quantity,
-               oi.locked_unit_price   AS unitPrice,
-               oi.ordered_line_amount AS orderedLineAmount
-        FROM xsy_inventory_outbound_item ob
-                 JOIN xsy_sales_order_item oi ON oi.id = ob.sales_order_item_id
-        WHERE ob.deleted = FALSE
-          AND ob.sales_order_id = #{salesOrderId}
-          AND ob.sales_order_item_id IS NOT NULL
-          AND ob.bundle_component_id IS NULL
-          AND ob.quantity > 0
-        UNION ALL
-        SELECT MIN(ob.id)           AS inventoryOutboundItemId,
-               ob.sales_order_item_id AS salesOrderItemId,
-               oi.sku_id           AS skuId,
-               oi.product_name_snapshot AS skuNameSnapshot,
-               oi.sale_unit_snapshot AS unitSnapshot,
-               MAX(ob.bundle_sale_quantity) AS quantity,
-               oi.locked_unit_price AS unitPrice,
-               oi.ordered_line_amount AS orderedLineAmount
+    <select id="selectOutboundLines" resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableSourceLineDto">
+        SELECT ob.id AS inventoryOutboundItemId, ob.sales_order_item_id AS salesOrderItemId, oi.sku_id AS skuId,
+            oi.product_name_snapshot AS skuNameSnapshot, oi.sale_unit_snapshot AS unitSnapshot, ob.quantity AS quantity,
+            oi.locked_unit_price AS unitPrice, oi.ordered_line_amount AS orderedLineAmount
         FROM xsy_inventory_outbound_item ob
         JOIN xsy_sales_order_item oi ON oi.id = ob.sales_order_item_id
-        WHERE ob.deleted = FALSE AND ob.sales_order_id = #{salesOrderId}
-          AND ob.bundle_component_id IS NOT NULL AND ob.quantity > 0
-        GROUP BY ob.outbound_id, ob.sales_order_item_id, oi.sku_id,
-                 oi.product_name_snapshot, oi.sale_unit_snapshot,
-                 oi.locked_unit_price, oi.ordered_line_amount
-        HAVING COUNT(*) = (SELECT COUNT(*) FROM xsy_order_bundle_component bc
-                           WHERE bc.order_item_id = ob.sales_order_item_id)
-           AND MIN(ob.bundle_sale_quantity) = MAX(ob.bundle_sale_quantity)
+        WHERE ob.deleted = FALSE
+            AND ob.sales_order_id = #{salesOrderId}
+            AND ob.sales_order_item_id IS NOT NULL
+            AND ob.bundle_component_id IS NULL
+            AND ob.quantity > 0
+        UNION ALL
+        SELECT MIN(ob.id) AS inventoryOutboundItemId, ob.sales_order_item_id AS salesOrderItemId, oi.sku_id AS skuId,
+            oi.product_name_snapshot AS skuNameSnapshot, oi.sale_unit_snapshot AS unitSnapshot,
+            MAX(ob.bundle_sale_quantity) AS quantity, oi.locked_unit_price AS unitPrice,
+            oi.ordered_line_amount AS orderedLineAmount
+        FROM xsy_inventory_outbound_item ob
+        JOIN xsy_sales_order_item oi ON oi.id = ob.sales_order_item_id
+        WHERE ob.deleted = FALSE
+            AND ob.sales_order_id = #{salesOrderId}
+            AND ob.bundle_component_id IS NOT NULL
+            AND ob.quantity > 0
+        GROUP BY ob.outbound_id, ob.sales_order_item_id, oi.sku_id, oi.product_name_snapshot, oi.sale_unit_snapshot,
+            oi.locked_unit_price, oi.ordered_line_amount
+        HAVING COUNT(*) = (SELECT COUNT(*) FROM xsy_order_bundle_component bc WHERE bc.order_item_id =
+            ob.sales_order_item_id)
+            AND MIN(ob.bundle_sale_quantity) = MAX(ob.bundle_sale_quantity)
         ORDER BY inventoryOutboundItemId
     </select>
 
@@ -95,33 +80,28 @@
         SELECT seller_id
         FROM xsy_sales_order
         WHERE id = #{salesOrderId}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </select>
 
     <!--
       退货批准事实（单头）。reason 是建单时填写的退货原因，红字直接继承，
       财务侧不另造原因、不现取 now()（第三批 D-2：红字是已成立业务事实的映射）。
     -->
-    <select id="selectApprovedReturn"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceReturnSourceDto">
-        SELECT rt.id           AS orderReturnId,
-               rt.return_no    AS returnNo,
-               rt.order_id     AS orderId,
-               rt.approved_at  AS approvedAt,
-               rt.updated_by   AS approvedBy,
-               rt.reason       AS reason
+    <select id="selectApprovedReturn" resultType="com.xsy.scm.finance.domain.dto.FinanceReturnSourceDto">
+        SELECT rt.id AS orderReturnId, rt.return_no AS returnNo, rt.order_id AS orderId, rt.approved_at AS approvedAt,
+            rt.updated_by AS approvedBy, rt.reason AS reason
         FROM xsy_order_return rt
         WHERE rt.id = #{orderReturnId}
-          AND rt.deleted = FALSE
-          AND rt.status = 'APPROVED'
+            AND rt.deleted = FALSE
+            AND rt.status = 'APPROVED'
     </select>
 
     <select id="selectApprovedReturnIds" resultType="long">
         SELECT rt.id
         FROM xsy_order_return rt
         WHERE rt.order_id = #{salesOrderId}
-          AND rt.deleted = FALSE
-          AND rt.status = 'APPROVED'
+            AND rt.deleted = FALSE
+            AND rt.status = 'APPROVED'
         ORDER BY rt.id
     </select>
 
@@ -130,23 +110,17 @@
       不在 SQL 里乘回来 —— 订单域已按 round(approved_quantity × locked_unit_price, 4) 落库。
       商品三件套从来源订单行取（xsy_order_return_item 不存快照）。
     -->
-    <select id="selectApprovedReturnLines"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceReturnSourceLineDto">
-        SELECT ri.id                AS orderReturnItemId,
-               ri.order_item_id     AS orderItemId,
-               oi.sku_id            AS skuId,
-               oi.product_name_snapshot AS skuNameSnapshot,
-               oi.sale_unit_snapshot AS unitSnapshot,
-               ri.approved_quantity AS approvedQuantity,
-               ri.locked_unit_price AS lockedUnitPrice,
-               ri.approved_amount   AS approvedAmount,
-               oi.ordered_line_amount AS orderedLineAmount
+    <select id="selectApprovedReturnLines" resultType="com.xsy.scm.finance.domain.dto.FinanceReturnSourceLineDto">
+        SELECT ri.id AS orderReturnItemId, ri.order_item_id AS orderItemId, oi.sku_id AS skuId,
+            oi.product_name_snapshot AS skuNameSnapshot, oi.sale_unit_snapshot AS unitSnapshot,
+            ri.approved_quantity AS approvedQuantity, ri.locked_unit_price AS lockedUnitPrice,
+            ri.approved_amount AS approvedAmount, oi.ordered_line_amount AS orderedLineAmount
         FROM xsy_order_return_item ri
-                 JOIN xsy_sales_order_item oi ON oi.id = ri.order_item_id
+        JOIN xsy_sales_order_item oi ON oi.id = ri.order_item_id
         WHERE ri.return_id = #{orderReturnId}
-          AND ri.deleted = FALSE
-          AND ri.approved_quantity &gt; 0
-          AND ri.approved_amount &gt; 0
+            AND ri.deleted = FALSE
+            AND ri.approved_quantity &gt; 0
+            AND ri.approved_amount &gt; 0
         ORDER BY ri.id
     </select>
 
@@ -157,63 +131,52 @@
       刻意不在 SQL 里做等比折算：折算比例依赖「该行本次金额 / 下单金额」，
       是行级计算，放在 Service 里与正常、红字两条路径共用同一段代码。
     -->
-    <select id="selectOrderDiscountLines"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto">
-        SELECT (allocation -&gt;&gt; 'orderItemId')::bigint     AS orderItemId,
-               (allocation -&gt;&gt; 'discountAmount')::numeric AS discountAmount
+    <select id="selectOrderDiscountLines" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto">
+        SELECT (allocation - &gt; &gt; 'orderItemId')::bigint AS orderItemId,
+            (allocation - &gt; &gt; 'discountAmount')::numeric AS discountAmount
         FROM xsy_order_discount od
-                 CROSS JOIN LATERAL jsonb_array_elements(od.allocations) AS allocation
+        CROSS JOIN LATERAL jsonb_array_elements(od.allocations) AS allocation
         WHERE od.sales_order_id = #{salesOrderId}
     </select>
 
     <!-- 与签收应收同一组列：量取实重、价取冻结售价；应付净额由同一段 discountShare 算出，不另起口径。 -->
-    <select id="selectOrderPayableLines"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto">
-        SELECT id AS orderItemId,
-               actual_quantity AS actualQuantity,
-               locked_unit_price AS lockedUnitPrice,
-               ordered_line_amount AS orderedLineAmount
+    <select id="selectOrderPayableLines" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto">
+        SELECT id AS orderItemId, actual_quantity AS actualQuantity, locked_unit_price AS lockedUnitPrice,
+            ordered_line_amount AS orderedLineAmount
         FROM xsy_sales_order_item
-        WHERE order_id = #{salesOrderId} AND deleted = FALSE
+        WHERE order_id = #{salesOrderId}
+            AND deleted = FALSE
         ORDER BY id
     </select>
 
     <!-- 批量版：与单订单取数读同一组列，只是把订单条件换成 IN，供一次算完一批订单的应付净额。 -->
-    <select id="selectPayableLinesByOrders"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto">
-        SELECT order_id AS salesOrderId,
-               id AS orderItemId,
-               actual_quantity AS actualQuantity,
-               locked_unit_price AS lockedUnitPrice,
-               ordered_line_amount AS orderedLineAmount
+    <select id="selectPayableLinesByOrders" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto">
+        SELECT order_id AS salesOrderId, id AS orderItemId, actual_quantity AS actualQuantity,
+            locked_unit_price AS lockedUnitPrice, ordered_line_amount AS orderedLineAmount
         FROM xsy_sales_order_item
-        WHERE deleted = FALSE AND order_id IN
-        <foreach collection="salesOrderIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        WHERE deleted = FALSE
+            AND order_id IN
+            <foreach collection="salesOrderIds" item="id" open="(" separator="," close=")">#{id}</foreach>
         ORDER BY order_id, id
     </select>
 
     <!-- 批量版：与单订单取数同源同列，行上带 sales_order_id 供调用方归回订单。 -->
-    <select id="selectDiscountLinesByOrders"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto">
-        SELECT od.sales_order_id                            AS salesOrderId,
-               (allocation -&gt;&gt; 'orderItemId')::bigint     AS orderItemId,
-               (allocation -&gt;&gt; 'discountAmount')::numeric AS discountAmount
+    <select id="selectDiscountLinesByOrders" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto">
+        SELECT od.sales_order_id AS salesOrderId, (allocation - &gt; &gt; 'orderItemId')::bigint AS orderItemId,
+            (allocation - &gt; &gt; 'discountAmount')::numeric AS discountAmount
         FROM xsy_order_discount od
-                 CROSS JOIN LATERAL jsonb_array_elements(od.allocations) AS allocation
+        CROSS JOIN LATERAL jsonb_array_elements(od.allocations) AS allocation
         WHERE od.sales_order_id IN
         <foreach collection="salesOrderIds" item="id" open="(" separator="," close=")">#{id}</foreach>
     </select>
 
     <!-- 结算约定是否为 COD 在这里判定：财务域不依赖其它业务域，拿不到订单域的结算方式枚举。 -->
-    <select id="selectCodCollectionOrder"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceCodCollectionOrderDto">
-        SELECT o.id AS orderId,
-               o.order_no AS orderNo,
-               o.seller_id AS sellerId,
-               o.customer_id AS customerId,
-               (o.settlement_method = 'COD') AS codSettlement
+    <select id="selectCodCollectionOrder" resultType="com.xsy.scm.finance.domain.dto.FinanceCodCollectionOrderDto">
+        SELECT o.id AS orderId, o.order_no AS orderNo, o.seller_id AS sellerId, o.customer_id AS customerId,
+            (o.settlement_method = 'COD') AS codSettlement
         FROM xsy_sales_order o
-        WHERE o.id = #{salesOrderId} AND o.deleted = FALSE
+        WHERE o.id = #{salesOrderId}
+            AND o.deleted = FALSE
     </select>
 
 </mapper>

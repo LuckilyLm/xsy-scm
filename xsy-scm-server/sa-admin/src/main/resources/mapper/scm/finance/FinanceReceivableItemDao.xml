@@ -11,24 +11,22 @@
     -->
     <insert id="insertOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity">
-        INSERT INTO xsy_finance_receivable_item (receivable_id, source_type, source_id, order_item_id,
-                                             sku_id, sku_name_snapshot, unit_snapshot,
-                                             quantity, unit_price, discount_amount, amount,
-                                             version, deleted, created_at, updated_at, created_by, updated_by)
-        VALUES (#{receivableId}, #{sourceType}, #{sourceId}, #{orderItemId},
-                #{skuId}, #{skuNameSnapshot}, #{unitSnapshot},
-                #{quantity}, #{unitPrice}, #{discountAmount}, #{amount},
-                0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+        INSERT INTO xsy_finance_receivable_item (receivable_id, source_type, source_id, order_item_id, sku_id,
+            sku_name_snapshot, unit_snapshot, quantity, unit_price, discount_amount, amount, version, deleted,
+            created_at, updated_at, created_by, updated_by)
+        VALUES (#{receivableId}, #{sourceType}, #{sourceId}, #{orderItemId}, #{skuId}, #{skuNameSnapshot},
+            #{unitSnapshot}, #{quantity}, #{unitPrice}, #{discountAmount}, #{amount}, 0, FALSE, #{createdAt},
+            #{updatedAt}, #{createdBy}, #{updatedBy})
         ON CONFLICT (source_type, source_id)
-            WHERE deleted = FALSE DO NOTHING
+        WHERE deleted = FALSE DO NOTHING
     </insert>
 
-    <select id="selectByReceivableId"
-            resultType="com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity">
+    <select id="selectByReceivableId" resultType="com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity">
         SELECT *
         FROM xsy_finance_receivable_item
         WHERE receivable_id = #{receivableId}
-          AND deleted = FALSE
+            AND deleted = FALSE
         ORDER BY id
     </select>
+
 </mapper>

@@ -1,43 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.order.dao.SalesOrderDao">
+
     <select id="hasPriceFreezeBlockingFact" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM xsy_payment_intent WHERE source_type = 'SALES_ORDER' AND source_id = #{orderId})
             OR EXISTS (SELECT 1 FROM xsy_finance_receivable WHERE order_id = #{orderId})
-            OR EXISTS (SELECT 1 FROM xsy_inventory_reservation
-                       WHERE source_document_type = 'SALES_ORDER_ITEM' AND source_document_id = #{orderId})
+            OR EXISTS (SELECT 1 FROM xsy_inventory_reservation WHERE source_document_type = 'SALES_ORDER_ITEM' AND
+            source_document_id = #{orderId})
             OR EXISTS (SELECT 1 FROM xsy_inventory_outbound_item WHERE sales_order_id = #{orderId})
             OR EXISTS (SELECT 1 FROM xsy_sorting_task_item WHERE sales_order_id = #{orderId})
     </select>
+
     <select id="unassignedMallOrders" resultMap="row">
-        SELECT * FROM xsy_sales_order
-        WHERE deleted = FALSE AND order_source = 'MALL' AND seller_id IS NULL
+        SELECT *
+        FROM xsy_sales_order
+        WHERE deleted = FALSE
+            AND order_source = 'MALL'
+            AND seller_id IS NULL
             AND status IN ('DRAFT', 'PENDING', 'CONFIRMED')
         <if test="query.status != null and query.status != ''">AND status = #{query.status}</if>
         <if test="query.keyword != null and query.keyword != ''">
-            AND (order_no ILIKE CONCAT('%', #{query.keyword}, '%')
-                OR customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (order_no ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         ORDER BY created_at DESC, id DESC
     </select>
+
     <update id="assignUnassignedMallOrder">
-        UPDATE xsy_sales_order SET seller_id = #{sellerId}, version = version + 1,
-            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE id = #{orderId} AND version = #{version} AND seller_id IS NULL
-            AND order_source = 'MALL' AND status IN ('DRAFT', 'PENDING', 'CONFIRMED') AND deleted = FALSE
+        UPDATE xsy_sales_order
+        SET seller_id = #{sellerId}, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{orderId}
+            AND version = #{version}
+            AND seller_id IS NULL
+            AND order_source = 'MALL'
+            AND status IN ('DRAFT', 'PENDING', 'CONFIRMED')
+            AND deleted = FALSE
     </update>
-    <select id="customerReferences" resultType="long">SELECT count(*)
-                                                      FROM xsy_sales_order
-                                                      WHERE customer_id = #{id}
-                                                        AND deleted = FALSE</select>
-    <update id="softDelete">UPDATE xsy_sales_order
-                            SET deleted= TRUE,
-                                version=version + 1,
-                                updated_at=CURRENT_TIMESTAMP,
-                                updated_by=#{operator}
-                            WHERE id = #{id}
-                              AND version = #{version}
-                              AND deleted = FALSE</update>
+
+    <select id="customerReferences" resultType="long">
+        SELECT count(*)
+        FROM xsy_sales_order
+        WHERE customer_id = #{id}
+            AND deleted = FALSE
+    </select>
+
+    <update id="softDelete">
+        UPDATE xsy_sales_order
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id}
+            AND version = #{version}
+            AND deleted = FALSE
+    </update>
+
     <resultMap id="row" type="com.xsy.scm.order.domain.entity.SalesOrderEntity">
         <result column="id" property="id"/>
         <result column="order_no" property="orderNo"/>
@@ -65,69 +79,89 @@
         <result column="created_by" property="createdBy"/>
         <result column="updated_by" property="updatedBy"/>
     </resultMap>
-    <select id="lock" resultMap="row">SELECT *
-                                      FROM xsy_sales_order
-                                      WHERE id = #{id}
-                                        AND deleted = FALSE FOR UPDATE</select>
-    <select id="query" resultMap="row">SELECT * FROM xsy_sales_order WHERE deleted=FALSE
-        <!-- 数据范围（裁决「P0 基线收口裁决」第 2、6 条）：scope 缺省即失败关闭，绝不允许「不传 = 全量」。
-             scope.all 时不拼任何谓词，因此 seller_id IS NULL 的未分配单对持全量范围者可见，这是有意口径。 -->
+
+    <select id="lock" resultMap="row">
+        SELECT *
+        FROM xsy_sales_order
+        WHERE id = #{id}
+            AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="query" resultMap="row">
+        SELECT *
+        FROM xsy_sales_order
+        WHERE deleted = FALSE
+        <!--
+          数据范围（裁决「P0 基线收口裁决」第 2、6 条）：scope 缺省即失败关闭，绝不允许「不传 = 全量」。
+          scope.all 时不拼任何谓词，因此 seller_id IS NULL 的未分配单对持全量范围者可见，这是有意口径。
+        -->
         <if test="scope != null and scope.all == false">
             AND seller_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
-        <if test="query.customerId != null and query.customerId != ''">AND customer_id=#{query.customerId}</if>
+        <if test="scope == null">AND FALSE</if>
+        <if test="query.customerId != null and query.customerId != ''">AND customer_id = #{query.customerId}</if>
         <!-- 用户自选的业务员筛选只能进一步缩小范围：范围谓词已在上面无条件 AND 过 -->
-        <if test="query.sellerId != null">AND seller_id=#{query.sellerId}</if>
-        <if test="query.status != null and query.status != ''">AND status=#{query.status}</if>
-        <if test="query.orderSource != null and query.orderSource != ''">AND order_source=#{query.orderSource}</if>
-        <if test="query.orderId != null">AND id=#{query.orderId}</if>
+        <if test="query.sellerId != null">AND seller_id = #{query.sellerId}</if>
+        <if test="query.status != null and query.status != ''">AND status = #{query.status}</if>
+        <if test="query.orderSource != null and query.orderSource != ''">AND order_source = #{query.orderSource}</if>
+        <if test="query.orderId != null">AND id = #{query.orderId}</if>
         <!-- 标签筛选只能进一步收窄已生效的业务员范围。 -->
         <if test="query.tagId != null">
-            AND EXISTS (SELECT 1 FROM xsy_order_tag_link ol WHERE ol.order_id = xsy_sales_order.id
-                        AND ol.tag_id = #{query.tagId})
+            AND EXISTS (SELECT 1 FROM xsy_order_tag_link ol WHERE ol.order_id = xsy_sales_order.id AND
+                ol.tag_id = #{query.tagId})
         </if>
-        <if test="query.keyword != null and query.keyword != ''">AND (order_no ILIKE '%' || #{query.keyword} || '%' OR
-            customer_name_snapshot ILIKE '%' || #{query.keyword} || '%')
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (order_no ILIKE '%' || #{query.keyword} || '%' OR
+                customer_name_snapshot ILIKE '%' || #{query.keyword} || '%')
         </if>
         <if test="query.startTime != null">AND created_at &gt;= #{query.startTime}</if>
         <if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if>
-        ORDER BY created_at DESC,id DESC
+        ORDER BY created_at DESC, id DESC
     </select>
+
     <select id="listByCustomer" resultMap="row">
-        SELECT o.* FROM xsy_sales_order o
-        LEFT JOIN LATERAL (
-            SELECT r.fulfillment_status FROM xsy_delivery_route_order r
-            WHERE r.order_id = o.id AND r.deleted = FALSE AND r.assignment_status = 'ACTIVE'
-            ORDER BY r.id DESC LIMIT 1
-        ) f ON TRUE
-        WHERE o.customer_id = #{customerId} AND o.order_source = 'MALL' AND o.deleted = FALSE
-        <if test="displayStatus == 'PENDING'">
-            AND o.status IN ('DRAFT','PENDING')
-        </if>
+        SELECT o.*
+        FROM xsy_sales_order o
+        LEFT JOIN LATERAL (SELECT r.fulfillment_status FROM xsy_delivery_route_order r WHERE r.order_id = o.id AND
+            r.deleted = FALSE AND r.assignment_status = 'ACTIVE' ORDER BY r.id DESC LIMIT 1) f ON TRUE
+        WHERE o.customer_id = #{customerId}
+            AND o.order_source = 'MALL'
+            AND o.deleted = FALSE
+        <if test="displayStatus == 'PENDING'">AND o.status IN( 'DRAFT', 'PENDING')</if>
         <if test="displayStatus == 'PREPARING'">
             AND o.status = 'CONFIRMED'
-            AND COALESCE(f.fulfillment_status, 'PENDING') NOT IN ('IN_TRANSIT','SIGNED','EXCEPTION')
+                AND COALESCE(f.fulfillment_status, 'PENDING') NOT IN ('IN_TRANSIT', 'SIGNED', 'EXCEPTION')
         </if>
-        <if test="displayStatus == 'DELIVERING'">
-            AND o.status = 'CONFIRMED' AND f.fulfillment_status = 'IN_TRANSIT'
-        </if>
+        <if test="displayStatus == 'DELIVERING'">AND o.status = 'CONFIRMED' AND f.fulfillment_status = 'IN_TRANSIT'</if>
         <if test="displayStatus == 'COMPLETED'">
-            AND o.status = 'CONFIRMED' AND f.fulfillment_status IN ('SIGNED','EXCEPTION')
+            AND o.status = 'CONFIRMED'
+                AND f.fulfillment_status IN ('SIGNED', 'EXCEPTION')
         </if>
-        <if test="displayStatus == 'CANCELLED'">
-            AND o.status = 'CANCELLED'
-        </if>
+        <if test="displayStatus == 'CANCELLED'">AND o.status = 'CANCELLED'</if>
         ORDER BY o.created_at DESC, o.id DESC
     </select>
+
     <select id="selectByIdAndCustomer" resultMap="row">
-        SELECT * FROM xsy_sales_order
-        WHERE id = #{orderId} AND customer_id = #{customerId} AND order_source = 'MALL' AND deleted = FALSE
+        SELECT *
+        FROM xsy_sales_order
+        WHERE id = #{orderId}
+            AND customer_id = #{customerId}
+            AND order_source = 'MALL'
+            AND deleted = FALSE
     </select>
-    <select id="nextOrder" resultType="long">SELECT nextval('sales_order_no_seq')</select>
-    <select id="nextReturn" resultType="long">SELECT nextval('order_return_no_seq')</select>
-    <select id="nextRefund" resultType="long">SELECT nextval('order_refund_no_seq')</select>
+
+    <select id="nextOrder" resultType="long">
+        SELECT nextval('sales_order_no_seq')
+    </select>
+
+    <select id="nextReturn" resultType="long">
+        SELECT nextval('order_return_no_seq')
+    </select>
+
+    <select id="nextRefund" resultType="long">
+        SELECT nextval('order_refund_no_seq')
+    </select>
+
 </mapper>

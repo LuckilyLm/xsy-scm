@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.order.dao.OrderReturnItemDao">
+
     <resultMap id="row" type="com.xsy.scm.order.domain.entity.OrderReturnItemEntity">
         <result column="id" property="id"/>
         <result column="return_id" property="returnId"/>
@@ -16,30 +17,41 @@
         <result column="created_by" property="createdBy"/>
         <result column="updated_by" property="updatedBy"/>
     </resultMap>
-    <select id="lock" resultMap="row">SELECT *
-                                      FROM xsy_order_return_item
-                                      WHERE id = #{id}
-                                        AND deleted = FALSE FOR UPDATE</select>
-    <select id="list" resultMap="row">SELECT *
-                                      FROM xsy_order_return_item
-                                      WHERE return_id = #{id}
-                                        AND deleted = FALSE
-                                      ORDER BY id</select>
+
+    <select id="lock" resultMap="row">
+        SELECT *
+        FROM xsy_order_return_item
+        WHERE id = #{id}
+            AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="list" resultMap="row">
+        SELECT *
+        FROM xsy_order_return_item
+        WHERE return_id = #{id}
+            AND deleted = FALSE
+        ORDER BY id
+    </select>
+
     <!-- 归属由调用方判定（商城按退货单客户），本查询只按 return_id 过滤。 -->
-    <select id="listByReturnIds" resultMap="row">SELECT *
-                                      FROM xsy_order_return_item
-                                      WHERE return_id IN
-                                      <foreach collection="returnIds" item="returnId" open="(" separator="," close=")">#{returnId}</foreach>
-                                        AND deleted = FALSE
-                                      ORDER BY id</select>
-    <select id="reserved" resultType="java.math.BigDecimal">SELECT COALESCE(SUM(CASE
-                                                                                    WHEN r.status = 'PENDING'
-                                                                                        THEN i.requested_quantity
-                                                                                    ELSE i.approved_quantity END), 0)
-                                                            FROM xsy_order_return_item i
-                                                                     JOIN xsy_order_return r ON r.id = i.return_id
-                                                            WHERE i.order_item_id = #{id}
-                                                              AND i.deleted = FALSE
-                                                              AND r.deleted = FALSE
-                                                              AND r.status IN ('PENDING', 'APPROVED')</select>
+    <select id="listByReturnIds" resultMap="row">
+        SELECT *
+        FROM xsy_order_return_item
+        WHERE return_id IN
+        <foreach collection="returnIds" item="returnId" open="(" separator="," close=")">#{returnId}</foreach>
+        AND deleted = FALSE
+        ORDER BY id
+    </select>
+
+    <select id="reserved" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(CASE WHEN r.status = 'PENDING' THEN i.requested_quantity ELSE i.approved_quantity END), 0)
+        FROM xsy_order_return_item i
+        JOIN xsy_order_return r ON r.id = i.return_id
+        WHERE i.order_item_id = #{id}
+            AND i.deleted = FALSE
+            AND r.deleted = FALSE
+            AND r.status IN ('PENDING', 'APPROVED')
+    </select>
+
 </mapper>

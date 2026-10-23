@@ -3,19 +3,21 @@
 <mapper namespace="com.xsy.scm.device.dao.ScaleJobLeaseDao">
 
     <sql id="columns">
-        id, device_id, session_id, employee_id, task_id, task_version, leased_at, expires_at,
-        released_at, release_reason
+        id, device_id, session_id, employee_id, task_id, task_version, leased_at, expires_at, released_at,
+            release_reason
     </sql>
 
-    <!-- 有效租约 = 未释放且未过期。过期但未释放的行仍占用部分唯一索引，
-         所以领取前由调用方先释放过期租约，再尝试插入。 -->
+    <!--
+      有效租约 = 未释放且未过期。过期但未释放的行仍占用部分唯一索引，
+      所以领取前由调用方先释放过期租约，再尝试插入。
+    -->
     <select id="selectActiveByTask" resultType="com.xsy.scm.device.domain.entity.ScaleJobLeaseEntity">
         SELECT
         <include refid="columns"/>
         FROM xsy_scale_job_lease
         WHERE task_id = #{taskId}
-          AND released_at IS NULL
-          AND expires_at &gt; #{now}
+            AND released_at IS NULL
+            AND expires_at &gt; #{now}
     </select>
 
     <select id="selectActiveByTaskAndDevice" resultType="com.xsy.scm.device.domain.entity.ScaleJobLeaseEntity">
@@ -23,28 +25,26 @@
         <include refid="columns"/>
         FROM xsy_scale_job_lease
         WHERE task_id = #{taskId}
-          AND device_id = #{deviceId}
-          AND released_at IS NULL
-          AND expires_at &gt; #{now}
+            AND device_id = #{deviceId}
+            AND released_at IS NULL
+            AND expires_at &gt; #{now}
     </select>
 
     <!-- 释放带 released_at IS NULL：重复释放影响 0 行，不覆盖首次释放原因。 -->
     <update id="release">
         UPDATE xsy_scale_job_lease
-        SET released_at    = #{releasedAt},
-            release_reason = #{reason}
+        SET released_at = #{releasedAt}, release_reason = #{reason}
         WHERE id = #{id}
-          AND released_at IS NULL
+            AND released_at IS NULL
     </update>
 
     <!-- 过期未释放的行仍占住 uk_scale_job_lease_active_task，领取前必须收掉。 -->
     <update id="releaseExpired">
         UPDATE xsy_scale_job_lease
-        SET released_at    = expires_at,
-            release_reason = '租约到期自动释放'
+        SET released_at = expires_at, release_reason = '租约到期自动释放'
         WHERE task_id = #{taskId}
-          AND released_at IS NULL
-          AND expires_at &lt;= #{now}
+            AND released_at IS NULL
+            AND expires_at &lt;= #{now}
     </update>
 
 </mapper>

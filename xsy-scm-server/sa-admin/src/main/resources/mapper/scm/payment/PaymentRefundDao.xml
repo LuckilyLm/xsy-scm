@@ -1,52 +1,78 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.payment.dao.PaymentRefundDao">
+
     <select id="recoveryLogs" resultType="com.xsy.scm.payment.domain.vo.PaymentRefundRecoveryLogVO">
-        SELECT * FROM xsy_payment_refund_recovery_log WHERE refund_id = #{refundId} ORDER BY id DESC LIMIT 100
+        SELECT *
+        FROM xsy_payment_refund_recovery_log
+        WHERE refund_id = #{refundId}
+        ORDER BY id DESC
+        LIMIT 100
     </select>
+
     <select id="recoveryCandidates" resultType="java.lang.Long">
-        SELECT r.id FROM xsy_payment_refund r
+        SELECT r.id
+        FROM xsy_payment_refund r
         LEFT JOIN xsy_refund_funding_allocation a ON r.source_type = 'REFUND_FUNDING_ALLOCATION'
-            AND a.id = r.source_id AND a.deleted = FALSE
-        WHERE r.deleted = FALSE AND r.next_recovery_at &lt;= CURRENT_TIMESTAMP
+            AND a.id = r.source_id
+            AND a.deleted = FALSE
+        WHERE r.deleted = FALSE
+            AND r.next_recovery_at &lt;= CURRENT_TIMESTAMP
             AND (r.recovery_lease_until IS NULL OR r.recovery_lease_until &lt; CURRENT_TIMESTAMP)
-            AND (r.status IN ('CREATED', 'PROCESSING') OR (r.status = 'SUCCEEDED'
-                AND NOT EXISTS (SELECT 1 FROM xsy_finance_payment p
-                    WHERE p.source_type = 'ORDER_REFUND' AND p.entry_type = 'NORMAL' AND p.deleted = FALSE
-                    AND p.source_id = CASE WHEN r.source_type = 'ORDER_REFUND' THEN r.source_id
-                        ELSE a.order_refund_id END)))
-        ORDER BY r.next_recovery_at, r.id LIMIT #{limit}
+            AND (r.status IN ('CREATED', 'PROCESSING') OR
+            (r.status = 'SUCCEEDED' AND
+            NOT EXISTS (SELECT 1 FROM xsy_finance_payment p WHERE p.source_type = 'ORDER_REFUND' AND
+            p.entry_type = 'NORMAL' AND p.deleted = FALSE AND
+            p.source_id = CASE WHEN r.source_type = 'ORDER_REFUND' THEN r.source_id ELSE a.order_refund_id END)))
+        ORDER BY r.next_recovery_at, r.id
+        LIMIT #{limit}
     </select>
+
     <update id="claimRecovery">
-        UPDATE xsy_payment_refund SET recovery_lease_until = CURRENT_TIMESTAMP + INTERVAL '10 minutes',
-            recovery_attempts = recovery_attempts + 1
-        WHERE id = #{id} AND deleted = FALSE AND status IN ('CREATED', 'PROCESSING', 'SUCCEEDED', 'FAILED')
+        UPDATE xsy_payment_refund
+        SET recovery_lease_until = CURRENT_TIMESTAMP + INTERVAL '10 minutes', recovery_attempts = recovery_attempts + 1
+        WHERE id = #{id}
+            AND deleted = FALSE
+            AND status IN ('CREATED', 'PROCESSING', 'SUCCEEDED', 'FAILED')
             AND (recovery_lease_until IS NULL OR recovery_lease_until &lt; CURRENT_TIMESTAMP)
             AND (#{force} OR next_recovery_at &lt;= CURRENT_TIMESTAMP)
     </update>
+
     <update id="finishRecovery">
-        UPDATE xsy_payment_refund SET recovery_lease_until = NULL, recovery_status = #{result},
-            recovery_message = #{detail}, next_recovery_at = CURRENT_TIMESTAMP + (#{delaySeconds} * INTERVAL '1 second')
-        WHERE id = #{id} AND deleted = FALSE AND recovery_attempts = #{attempt}
+        UPDATE xsy_payment_refund
+        SET recovery_lease_until = NULL, recovery_status = #{result}, recovery_message = #{detail},
+            next_recovery_at = CURRENT_TIMESTAMP + (#{delaySeconds} * INTERVAL '1 second')
+        WHERE id = #{id}
+            AND deleted = FALSE
+            AND recovery_attempts = #{attempt}
     </update>
+
     <insert id="appendRecoveryLog">
-        INSERT INTO xsy_payment_refund_recovery_log(refund_id, operator, reason, result, provider_amount, detail)
+        INSERT INTO xsy_payment_refund_recovery_log (refund_id, operator, reason, result, provider_amount, detail)
         VALUES (#{id}, #{operator}, #{reason}, #{result}, #{amount}, #{detail})
     </insert>
+
     <update id="updateProviderReference">
-        UPDATE xsy_payment_refund SET provider_refund_no = #{providerRefundNo}, updated_by = #{operator}
-        WHERE id = #{id} AND deleted = FALSE
+        UPDATE xsy_payment_refund
+        SET provider_refund_no = #{providerRefundNo}, updated_by = #{operator}
+        WHERE id = #{id}
+            AND deleted = FALSE
             AND (provider_refund_no IS NULL OR provider_refund_no = #{providerRefundNo})
     </update>
+
     <select id="sumReservedByTransaction" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(CASE WHEN status = 'SUCCEEDED' THEN provider_amount ELSE amount END), 0)
-        FROM xsy_payment_refund WHERE transaction_id = #{transactionId} AND deleted = FALSE
+        FROM xsy_payment_refund
+        WHERE transaction_id = #{transactionId}
+            AND deleted = FALSE
             AND status IN ('CREATED', 'PROCESSING', 'SUCCEEDED')
     </select>
 
     <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
-        SELECT r.* FROM xsy_payment_refund r
-        JOIN xsy_payment_intent i ON i.id = r.intent_id AND i.deleted = FALSE
+        SELECT r.*
+        FROM xsy_payment_refund r
+        JOIN xsy_payment_intent i ON i.id = r.intent_id
+            AND i.deleted = FALSE
         WHERE r.deleted = FALSE
         <include refid="com.xsy.scm.payment.dao.PaymentIntentDao.visibleIntent"/>
         <if test="query.transactionId != null">AND r.transaction_id = #{query.transactionId}</if>
@@ -56,30 +82,43 @@
         <if test="query.sourceType != null and query.sourceType != ''">AND r.source_type = #{query.sourceType}</if>
         <if test="query.sourceId != null">AND r.source_id = #{query.sourceId}</if>
         <if test="query.keyword != null and query.keyword != ''">
-            AND (r.refund_no ILIKE CONCAT('%', #{query.keyword}, '%')
-             OR r.provider_refund_no ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (r.refund_no ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                r.provider_refund_no ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         ORDER BY r.created_at DESC, r.id DESC
     </select>
 
     <select id="lockById" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
-        SELECT * FROM xsy_payment_refund WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM xsy_payment_refund
+        WHERE id = #{id}
+            AND deleted = FALSE
+        FOR UPDATE
     </select>
 
     <select id="selectByRefundNo" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
-        SELECT * FROM xsy_payment_refund WHERE refund_no = #{refundNo} AND deleted = FALSE
+        SELECT *
+        FROM xsy_payment_refund
+        WHERE refund_no = #{refundNo}
+            AND deleted = FALSE
     </select>
 
     <select id="selectBySource" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
-        SELECT * FROM xsy_payment_refund
-        WHERE source_type = #{sourceType} AND source_id = #{sourceId} AND deleted = FALSE
+        SELECT *
+        FROM xsy_payment_refund
+        WHERE source_type = #{sourceType}
+            AND source_id = #{sourceId}
+            AND deleted = FALSE
         ORDER BY id
         LIMIT 1
     </select>
 
     <select id="selectByProviderRefundNo" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
-        SELECT * FROM xsy_payment_refund
-        WHERE provider = #{provider} AND provider_refund_no = #{providerRefundNo} AND deleted = FALSE
+        SELECT *
+        FROM xsy_payment_refund
+        WHERE provider = #{provider}
+            AND provider_refund_no = #{providerRefundNo}
+            AND deleted = FALSE
     </select>
 
     <!--
@@ -91,58 +130,48 @@
     <select id="sumSucceededByTransaction" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(provider_amount), 0)
         FROM xsy_payment_refund
-        WHERE transaction_id = #{transactionId} AND status = 'SUCCEEDED' AND deleted = FALSE
+        WHERE transaction_id = #{transactionId}
+            AND status = 'SUCCEEDED'
+            AND deleted = FALSE
     </select>
 
     <update id="markSucceeded">
         UPDATE xsy_payment_refund
-        SET status             = 'SUCCEEDED',
-            provider_refund_no = #{providerRefundNo},
-            provider_amount    = #{providerAmount},
-            refunded_at        = CURRENT_TIMESTAMP,
-            failure_code       = NULL,
-            failure_message    = NULL,
-            version            = version + 1,
-            updated_at         = CURRENT_TIMESTAMP,
-            updated_by         = #{operator}
+        SET status = 'SUCCEEDED', provider_refund_no = #{providerRefundNo}, provider_amount = #{providerAmount},
+            refunded_at = CURRENT_TIMESTAMP, failure_code = NULL, failure_message = NULL, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND status IN ('CREATED', 'PROCESSING')
-          AND deleted = FALSE
+            AND status IN ('CREATED', 'PROCESSING')
+            AND deleted = FALSE
     </update>
 
     <update id="markFailed">
         UPDATE xsy_payment_refund
-        SET status          = 'FAILED',
-            failure_code    = #{failureCode},
-            failure_message = #{failureMessage},
-            version         = version + 1,
-            updated_at      = CURRENT_TIMESTAMP,
-            updated_by      = #{operator}
+        SET status = 'FAILED', failure_code = #{failureCode}, failure_message = #{failureMessage},
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND status IN ('CREATED', 'PROCESSING')
-          AND deleted = FALSE
+            AND status IN ('CREATED', 'PROCESSING')
+            AND deleted = FALSE
     </update>
 
     <update id="markProcessing">
         UPDATE xsy_payment_refund
-        SET status             = 'PROCESSING',
-            provider_refund_no = #{providerRefundNo},
-            version            = version + 1,
-            updated_at         = CURRENT_TIMESTAMP,
-            updated_by         = #{operator}
+        SET status = 'PROCESSING', provider_refund_no = #{providerRefundNo}, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND status = 'CREATED'
-          AND deleted = FALSE
+            AND status = 'CREATED'
+            AND deleted = FALSE
     </update>
 
     <update id="resetFailed">
         UPDATE xsy_payment_refund
-        SET status = 'CREATED', provider_refund_no = NULL, provider_amount = NULL,
-            refunded_at = NULL, failure_code = NULL, failure_message = NULL,
-            mock_scenario = #{mockScenario}, next_recovery_at = CURRENT_TIMESTAMP,
-            recovery_status = NULL, recovery_message = NULL,
+        SET status = 'CREATED', provider_refund_no = NULL, provider_amount = NULL, refunded_at = NULL,
+            failure_code = NULL, failure_message = NULL, mock_scenario = #{mockScenario},
+            next_recovery_at = CURRENT_TIMESTAMP, recovery_status = NULL, recovery_message = NULL,
             version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE id = #{id} AND status = 'FAILED' AND deleted = FALSE
+        WHERE id = #{id}
+            AND status = 'FAILED'
+            AND deleted = FALSE
     </update>
 
 </mapper>

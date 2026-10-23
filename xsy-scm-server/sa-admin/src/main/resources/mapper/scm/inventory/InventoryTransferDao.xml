@@ -2,87 +2,70 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.inventory.dao.InventoryTransferDao">
 
-    <resultMap id="transferVoMap"
-               type="com.xsy.scm.inventory.domain.vo.InventoryTransferVO"/>
+    <resultMap id="transferVoMap" type="com.xsy.scm.inventory.domain.vo.InventoryTransferVO"/>
 
     <select id="countByTransferNo" resultType="int">
         SELECT COUNT(*)
         FROM xsy_inventory_transfer
         WHERE transfer_no = #{transferNo}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </select>
 
     <select id="nextTransferNo" resultType="long">
         SELECT nextval('inventory_transfer_no_seq')
     </select>
 
-    <select id="selectById"
-            resultType="com.xsy.scm.inventory.domain.entity.InventoryTransferEntity">
+    <select id="selectById" resultType="com.xsy.scm.inventory.domain.entity.InventoryTransferEntity">
         SELECT *
         FROM xsy_inventory_transfer
         WHERE id = #{id}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </select>
 
     <!-- 锁序：单据锁先于余额锁（与收货 / 出库 / 盘点 / 报损报溢同一顺序，避免反向拿锁） -->
-    <select id="lockById"
-            resultType="com.xsy.scm.inventory.domain.entity.InventoryTransferEntity">
+    <select id="lockById" resultType="com.xsy.scm.inventory.domain.entity.InventoryTransferEntity">
         SELECT *
         FROM xsy_inventory_transfer
         WHERE id = #{id}
-          AND deleted = FALSE FOR UPDATE
+            AND deleted = FALSE
+        FOR UPDATE
     </select>
 
     <!-- 带状态条件：并发重复发出时只有一次能成功（影响行数 = 1） -->
     <update id="markShipped">
         UPDATE xsy_inventory_transfer
-        SET status     = 'SHIPPED',
-            shipped_at = #{shippedAt},
-            shipped_by = #{shippedBy},
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{shippedBy}
+        SET status = 'SHIPPED', shipped_at = #{shippedAt}, shipped_by = #{shippedBy}, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{shippedBy}
         WHERE id = #{id}
-          AND deleted = FALSE
-          AND status = 'DRAFT'
+            AND deleted = FALSE
+            AND status = 'DRAFT'
     </update>
 
     <!-- 收货只允许从「在途」推进，因此已收货的单再收货影响行数为 0 -->
     <update id="markReceived">
         UPDATE xsy_inventory_transfer
-        SET status      = 'RECEIVED',
-            received_at = #{receivedAt},
-            received_by = #{receivedBy},
-            version     = version + 1,
-            updated_at  = CURRENT_TIMESTAMP,
-            updated_by  = #{receivedBy}
+        SET status = 'RECEIVED', received_at = #{receivedAt}, received_by = #{receivedBy}, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{receivedBy}
         WHERE id = #{id}
-          AND deleted = FALSE
-          AND status = 'SHIPPED'
+            AND deleted = FALSE
+            AND status = 'SHIPPED'
     </update>
 
     <update id="markCancelled">
         UPDATE xsy_inventory_transfer
-        SET status     = 'CANCELLED',
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+        SET status = 'CANCELLED', version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND deleted = FALSE
-          AND status = 'DRAFT'
+            AND deleted = FALSE
+            AND status = 'DRAFT'
     </update>
 
     <update id="updateDraft">
         UPDATE xsy_inventory_transfer
-        SET from_warehouse_id = #{fromWarehouseId},
-            to_warehouse_id   = #{toWarehouseId},
-            remark            = #{remark},
-            version           = version + 1,
-            updated_at        = CURRENT_TIMESTAMP,
-            updated_by        = #{operator}
+        SET from_warehouse_id = #{fromWarehouseId}, to_warehouse_id = #{toWarehouseId}, remark = #{remark},
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND deleted = FALSE
-          AND status = 'DRAFT'
+            AND deleted = FALSE
+            AND status = 'DRAFT'
     </update>
 
     <!--
@@ -91,30 +74,19 @@
       排序写死，不接受客户端排序（联表列名会歧义）。
     -->
     <select id="queryPage" resultMap="transferVoMap">
-        SELECT t.id,
-        t.transfer_no,
-        t.from_warehouse_id,
-        t.to_warehouse_id,
-        t.status,
-        t.remark,
-        t.shipped_at,
-        t.shipped_by,
-        t.received_at,
-        t.received_by,
-        t.version,
-        t.created_at,
-        t.updated_at,
-        fw.warehouse_code AS from_warehouse_code,
-        fw.name AS from_warehouse_name,
-        tw.warehouse_code AS to_warehouse_code,
-        tw.name AS to_warehouse_name
+        SELECT t.id, t.transfer_no, t.from_warehouse_id, t.to_warehouse_id, t.status, t.remark, t.shipped_at,
+            t.shipped_by, t.received_at, t.received_by, t.version, t.created_at, t.updated_at,
+            fw.warehouse_code AS from_warehouse_code, fw.name AS from_warehouse_name,
+            tw.warehouse_code AS to_warehouse_code, tw.name AS to_warehouse_name
         FROM xsy_inventory_transfer t
         LEFT JOIN xsy_warehouse fw ON fw.id = t.from_warehouse_id
         LEFT JOIN xsy_warehouse tw ON tw.id = t.to_warehouse_id
         WHERE t.deleted = FALSE
-        <!-- 调拨的可见口径是「任一端授权即可见」：只授权源仓或只授权目标仓的人都需要看见这张单，
-             否则在途期间的单据对其中一方完全消失。发出/收货的动作口径不在此处（写路径另行判权限）。
-             scope 缺失时恒假。 -->
+        <!--
+          调拨的可见口径是「任一端授权即可见」：只授权源仓或只授权目标仓的人都需要看见这张单，
+          否则在途期间的单据对其中一方完全消失。发出/收货的动作口径不在此处（写路径另行判权限）。
+          scope 缺失时恒假。
+        -->
         <if test="scope != null and scope.all == false">
             AND (t.from_warehouse_id IN
             <foreach collection="scope.ids" item="fromScopeId" open="(" separator="," close=")">#{fromScopeId}</foreach>
@@ -122,72 +94,46 @@
             <foreach collection="scope.ids" item="toScopeId" open="(" separator="," close=")">#{toScopeId}</foreach>
             )
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
+        <if test="scope == null">AND FALSE</if>
         <if test="query.transferNo != null and query.transferNo != ''">
             AND t.transfer_no ILIKE CONCAT('%', #{query.transferNo}, '%')
         </if>
-        <if test="query.fromWarehouseId != null">
-            AND t.from_warehouse_id = #{query.fromWarehouseId}
-        </if>
-        <if test="query.toWarehouseId != null">
-            AND t.to_warehouse_id = #{query.toWarehouseId}
-        </if>
-        <if test="query.status != null and query.status != ''">
-            AND t.status = #{query.status}
-        </if>
+        <if test="query.fromWarehouseId != null">AND t.from_warehouse_id = #{query.fromWarehouseId}</if>
+        <if test="query.toWarehouseId != null">AND t.to_warehouse_id = #{query.toWarehouseId}</if>
+        <if test="query.status != null and query.status != ''">AND t.status = #{query.status}</if>
         ORDER BY t.created_at DESC, t.id DESC
     </select>
 
     <select id="detail" resultMap="transferVoMap">
-        SELECT t.id,
-               t.transfer_no,
-               t.from_warehouse_id,
-               t.to_warehouse_id,
-               t.status,
-               t.remark,
-               t.shipped_at,
-               t.shipped_by,
-               t.received_at,
-               t.received_by,
-               t.version,
-               t.created_at,
-               t.updated_at,
-               fw.warehouse_code AS from_warehouse_code,
-               fw.name           AS from_warehouse_name,
-               tw.warehouse_code AS to_warehouse_code,
-               tw.name           AS to_warehouse_name
+        SELECT t.id, t.transfer_no, t.from_warehouse_id, t.to_warehouse_id, t.status, t.remark, t.shipped_at,
+            t.shipped_by, t.received_at, t.received_by, t.version, t.created_at, t.updated_at,
+            fw.warehouse_code AS from_warehouse_code, fw.name AS from_warehouse_name,
+            tw.warehouse_code AS to_warehouse_code, tw.name AS to_warehouse_name
         FROM xsy_inventory_transfer t
-                 LEFT JOIN xsy_warehouse fw ON fw.id = t.from_warehouse_id
-                 LEFT JOIN xsy_warehouse tw ON tw.id = t.to_warehouse_id
+        LEFT JOIN xsy_warehouse fw ON fw.id = t.from_warehouse_id
+        LEFT JOIN xsy_warehouse tw ON tw.id = t.to_warehouse_id
         WHERE t.deleted = FALSE
-          AND t.id = #{id}
+            AND t.id = #{id}
     </select>
 
     <!-- 在途库存：把 SHIPPED 调拨单展开成 (单号, SKU) 粒度，供对账与库存查询页使用 -->
-    <select id="queryInTransit"
-            resultType="com.xsy.scm.inventory.domain.vo.InventoryInTransitVO">
-        SELECT t.transfer_no,
-               t.from_warehouse_id,
-               fw.name            AS from_warehouse_name,
-               t.to_warehouse_id,
-               tw.name            AS to_warehouse_name,
-               item.sku_id,
-               sku.sku_code,
-               spu.name           AS sku_name,
-               item.quantity,
-               item.unit_snapshot AS unit
+    <select id="queryInTransit" resultType="com.xsy.scm.inventory.domain.vo.InventoryInTransitVO">
+        SELECT t.transfer_no, t.from_warehouse_id, fw.name AS from_warehouse_name, t.to_warehouse_id,
+            tw.name AS to_warehouse_name, item.sku_id, sku.sku_code, spu.name AS sku_name, item.quantity,
+            item.unit_snapshot AS unit
         FROM xsy_inventory_transfer t
-                 JOIN xsy_inventory_transfer_item item ON item.transfer_id = t.id AND item.deleted = FALSE
-                 LEFT JOIN xsy_warehouse fw ON fw.id = t.from_warehouse_id
-                 LEFT JOIN xsy_warehouse tw ON tw.id = t.to_warehouse_id
-                 LEFT JOIN xsy_product_sku sku ON sku.id = item.sku_id
-                 LEFT JOIN xsy_product_spu spu ON spu.id = sku.spu_id
+        JOIN xsy_inventory_transfer_item item ON item.transfer_id = t.id
+            AND item.deleted = FALSE
+        LEFT JOIN xsy_warehouse fw ON fw.id = t.from_warehouse_id
+        LEFT JOIN xsy_warehouse tw ON tw.id = t.to_warehouse_id
+        LEFT JOIN xsy_product_sku sku ON sku.id = item.sku_id
+        LEFT JOIN xsy_product_spu spu ON spu.id = sku.spu_id
         WHERE t.deleted = FALSE
-          AND t.status = 'SHIPPED'
-        <!-- 在途口径与调拨列表一致：任一端授权即可见，否则对只授权目标仓的一方，
-             「货已在路上」这件事完全不可见，而它正是目标仓最需要知道的。scope 缺失时恒假。 -->
+            AND t.status = 'SHIPPED'
+        <!--
+          在途口径与调拨列表一致：任一端授权即可见，否则对只授权目标仓的一方，
+          「货已在路上」这件事完全不可见，而它正是目标仓最需要知道的。scope 缺失时恒假。
+        -->
         <if test="scope != null and scope.all == false">
             AND (t.from_warehouse_id IN
             <foreach collection="scope.ids" item="fromScopeId" open="(" separator="," close=")">#{fromScopeId}</foreach>
@@ -195,9 +141,7 @@
             <foreach collection="scope.ids" item="toScopeId" open="(" separator="," close=")">#{toScopeId}</foreach>
             )
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
+        <if test="scope == null">AND FALSE</if>
         ORDER BY t.transfer_no DESC, item.sku_id
     </select>
 

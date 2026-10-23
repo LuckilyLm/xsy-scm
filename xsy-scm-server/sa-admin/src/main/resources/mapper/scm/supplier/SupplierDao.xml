@@ -3,57 +3,35 @@
 <mapper namespace="com.xsy.scm.supplier.dao.SupplierDao">
 
     <select id="queryPage" resultType="com.xsy.scm.supplier.domain.entity.SupplierEntity">
-        SELECT s.id, s.version, s.supplier_code, s.name, s.status,
-        s.contact_name, s.contact_phone, s.address, s.remark,
-        s.longitude, s.latitude, s.geom_crs,
-        s.created_at, s.updated_at, s.created_by, s.updated_by
+        SELECT s.id, s.version, s.supplier_code, s.name, s.status, s.contact_name, s.contact_phone, s.address, s.remark,
+            s.longitude, s.latitude, s.geom_crs, s.created_at, s.updated_at, s.created_by, s.updated_by
         FROM xsy_supplier s
         WHERE s.deleted = FALSE
         <if test="query.keyword != null and query.keyword != ''">
-            AND (s.supplier_code ILIKE CONCAT('%', #{query.keyword}, '%')
-            OR s.name ILIKE CONCAT('%', #{query.keyword}, '%')
-            OR s.contact_name ILIKE CONCAT('%', #{query.keyword}, '%')
-            OR s.contact_phone ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (s.supplier_code ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                s.name ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                s.contact_name ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                s.contact_phone ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
-        <if test="query.status != null and query.status != ''">
-            AND s.status = #{query.status}
-        </if>
+        <if test="query.status != null and query.status != ''">AND s.status = #{query.status}</if>
     </select>
 
     <!-- 写入路径的第一把锁：先锁 xsy_supplier，再锁 xsy_supplier_sku（锁序固定） -->
-    <select id="selectActiveByIdForUpdate"
-            resultType="com.xsy.scm.supplier.domain.entity.SupplierEntity">
-        SELECT s.id,
-               s.version,
-               s.supplier_code,
-               s.name,
-               s.status,
-               s.contact_name,
-               s.contact_phone,
-               s.address,
-               s.remark,
-               s.longitude,
-               s.latitude,
-               s.geom_crs,
-               s.created_at,
-               s.updated_at,
-               s.created_by,
-               s.updated_by
+    <select id="selectActiveByIdForUpdate" resultType="com.xsy.scm.supplier.domain.entity.SupplierEntity">
+        SELECT s.id, s.version, s.supplier_code, s.name, s.status, s.contact_name, s.contact_phone, s.address, s.remark,
+            s.longitude, s.latitude, s.geom_crs, s.created_at, s.updated_at, s.created_by, s.updated_by
         FROM xsy_supplier s
         WHERE s.id = #{supplierId}
-          AND s.deleted = FALSE
-            FOR UPDATE
+            AND s.deleted = FALSE
+        FOR UPDATE
     </select>
 
     <update id="softDelete">
         UPDATE xsy_supplier
-        SET deleted    = TRUE,
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{supplierId}
-          AND version = #{version}
-          AND deleted = FALSE
+            AND version = #{version}
+            AND deleted = FALSE
     </update>
 
 </mapper>

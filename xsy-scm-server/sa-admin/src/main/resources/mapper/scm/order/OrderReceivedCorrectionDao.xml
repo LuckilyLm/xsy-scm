@@ -1,49 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.order.dao.OrderReceivedCorrectionDao">
+
     <select id="shippedQuantity" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(sale_quantity), 0)
-        FROM (
-            SELECT i.outbound_id, SUM(i.quantity) AS sale_quantity
-            FROM xsy_inventory_outbound_item i
-            JOIN xsy_inventory_outbound o ON o.id = i.outbound_id AND o.deleted = FALSE AND o.status = 'CONFIRMED'
-            WHERE i.deleted = FALSE AND i.sales_order_item_id = #{orderItemId}
-              AND i.bundle_component_id IS NULL
-            GROUP BY i.outbound_id
-            UNION ALL
-            SELECT i.outbound_id, MAX(i.bundle_sale_quantity) AS sale_quantity
-            FROM xsy_inventory_outbound_item i
-            JOIN xsy_inventory_outbound o ON o.id = i.outbound_id AND o.deleted = FALSE AND o.status = 'CONFIRMED'
-            WHERE i.deleted = FALSE AND i.sales_order_item_id = #{orderItemId}
-              AND i.bundle_component_id IS NOT NULL
-            GROUP BY i.outbound_id
-        ) shipped
+        FROM (SELECT i.outbound_id,
+            SUM(i.quantity) AS sale_quantity FROM xsy_inventory_outbound_item i JOIN xsy_inventory_outbound o ON o.id =
+            i.outbound_id AND o.deleted = FALSE AND o.status = 'CONFIRMED' WHERE i.deleted = FALSE AND
+            i.sales_order_item_id = #{orderItemId} AND
+            i.bundle_component_id IS NULL GROUP BY i.outbound_id UNION ALL SELECT i.outbound_id,
+            MAX(i.bundle_sale_quantity) AS sale_quantity FROM xsy_inventory_outbound_item i JOIN xsy_inventory_outbound
+            o ON o.id = i.outbound_id AND o.deleted = FALSE AND o.status = 'CONFIRMED' WHERE i.deleted = FALSE AND
+            i.sales_order_item_id = #{orderItemId} AND i.bundle_component_id IS NOT NULL GROUP BY i.outbound_id) shipped
     </select>
 
     <select id="signedAssignmentCount" resultType="long">
-        SELECT COUNT(*) FROM xsy_delivery_route_order a
-        JOIN xsy_delivery_route d ON d.id = a.route_id AND d.deleted = FALSE
-        WHERE a.order_id = #{orderId} AND a.deleted = FALSE AND a.assignment_status = 'ACTIVE'
-          AND a.fulfillment_status IN ('SIGNED', 'EXCEPTION')
+        SELECT COUNT(*)
+        FROM xsy_delivery_route_order a
+        JOIN xsy_delivery_route d ON d.id = a.route_id
+            AND d.deleted = FALSE
+        WHERE a.order_id = #{orderId}
+            AND a.deleted = FALSE
+            AND a.assignment_status = 'ACTIVE'
+            AND a.fulfillment_status IN ('SIGNED', 'EXCEPTION')
     </select>
 
     <select id="latest" resultType="com.xsy.scm.order.domain.vo.OrderReceivedCorrectionVO">
-        SELECT * FROM xsy_order_received_quantity_correction
-        WHERE order_item_id = #{orderItemId} ORDER BY id DESC LIMIT 1
+        SELECT *
+        FROM xsy_order_received_quantity_correction
+        WHERE order_item_id = #{orderItemId}
+        ORDER BY id DESC
+        LIMIT 1
     </select>
 
     <select id="list" resultType="com.xsy.scm.order.domain.vo.OrderReceivedCorrectionVO">
-        SELECT * FROM xsy_order_received_quantity_correction
-        WHERE order_id = #{orderId} ORDER BY id DESC
+        SELECT *
+        FROM xsy_order_received_quantity_correction
+        WHERE order_id = #{orderId}
+        ORDER BY id DESC
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="correction.id">
-        INSERT INTO xsy_order_received_quantity_correction
-        (order_id, order_item_id, sale_unit_snapshot, shipped_quantity, previous_received_quantity,
-         received_quantity, reason, created_by, created_at)
+        INSERT INTO xsy_order_received_quantity_correction (order_id, order_item_id, sale_unit_snapshot,
+            shipped_quantity, previous_received_quantity, received_quantity, reason, created_by, created_at)
         VALUES (#{correction.orderId}, #{correction.orderItemId}, #{correction.saleUnitSnapshot},
-                #{correction.shippedQuantity}, #{correction.previousReceivedQuantity},
-                #{correction.receivedQuantity}, #{correction.reason}, #{correction.createdBy},
-                #{correction.createdAt})
+            #{correction.shippedQuantity}, #{correction.previousReceivedQuantity}, #{correction.receivedQuantity},
+            #{correction.reason}, #{correction.createdBy}, #{correction.createdAt})
     </insert>
+
 </mapper>

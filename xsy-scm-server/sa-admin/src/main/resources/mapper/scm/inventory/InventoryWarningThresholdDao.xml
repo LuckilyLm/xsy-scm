@@ -2,15 +2,15 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.inventory.dao.InventoryWarningThresholdDao">
 
-    <resultMap id="thresholdVoMap"
-               type="com.xsy.scm.inventory.domain.vo.InventoryWarningThresholdVO">
-        <result column="spec_values" property="specValues"
+    <resultMap id="thresholdVoMap" type="com.xsy.scm.inventory.domain.vo.InventoryWarningThresholdVO">
+        <result column="spec_values"
+                property="specValues"
                 typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
     </resultMap>
 
-    <resultMap id="warningVoMap"
-               type="com.xsy.scm.inventory.domain.vo.InventoryWarningVO">
-        <result column="spec_values" property="specValues"
+    <resultMap id="warningVoMap" type="com.xsy.scm.inventory.domain.vo.InventoryWarningVO">
+        <result column="spec_values"
+                property="specValues"
                 typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
     </resultMap>
 
@@ -27,21 +27,18 @@
       两者的等价性由 ScmInventoryWarningIT 交叉验证。
     -->
     <sql id="warningStatusExpr">
-        CASE
-            WHEN t.warn_min IS NOT NULL
-                 AND COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) &lt; t.warn_min THEN 'LOW'
-            WHEN t.warn_max IS NOT NULL
-                 AND COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) &gt; t.warn_max THEN 'HIGH'
-            ELSE 'NORMAL'
-        END
+        CASE WHEN t.warn_min IS NOT NULL
+            AND COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity,
+            0) &lt; t.warn_min THEN 'LOW' WHEN t.warn_max IS NOT NULL
+            AND COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) &gt; t.warn_max THEN 'HIGH' ELSE 'NORMAL' END
     </sql>
 
     <select id="countByWarehouseAndSku" resultType="int">
         SELECT COUNT(*)
         FROM xsy_inventory_warning_threshold
         WHERE warehouse_id = #{warehouseId}
-          AND sku_id = #{skuId}
-          AND deleted = FALSE
+            AND sku_id = #{skuId}
+            AND deleted = FALSE
     </select>
 
     <!--
@@ -54,36 +51,18 @@
     -->
     <update id="updateThreshold">
         UPDATE xsy_inventory_warning_threshold
-        SET warehouse_id = #{warehouseId},
-            sku_id       = #{skuId},
-            warn_min     = #{warnMin},
-            warn_max     = #{warnMax},
-            remark       = #{remark},
-            version      = version + 1,
-            updated_at   = CURRENT_TIMESTAMP,
-            updated_by   = #{operator}
+        SET warehouse_id = #{warehouseId}, sku_id = #{skuId}, warn_min = #{warnMin}, warn_max = #{warnMax},
+            remark = #{remark}, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND deleted = FALSE
-          AND version = #{version}
+            AND deleted = FALSE
+            AND version = #{version}
     </update>
 
     <!-- 展示字段实时联表；排序写死，不接受客户端排序（联表列名会歧义） -->
     <select id="queryPage" resultMap="thresholdVoMap">
-        SELECT t.id,
-        t.warehouse_id,
-        t.sku_id,
-        t.warn_min,
-        t.warn_max,
-        t.remark,
-        t.version,
-        t.created_at,
-        t.updated_at,
-        w.warehouse_code,
-        w.name AS warehouse_name,
-        k.sku_code,
-        k.spec_name AS sku_name,
-        k.spec_values,
-        p.name AS product_name
+        SELECT t.id, t.warehouse_id, t.sku_id, t.warn_min, t.warn_max, t.remark, t.version, t.created_at, t.updated_at,
+            w.warehouse_code, w.name AS warehouse_name, k.sku_code, k.spec_name AS sku_name, k.spec_values,
+            p.name AS product_name
         FROM xsy_inventory_warning_threshold t
         LEFT JOIN xsy_warehouse w ON w.id = t.warehouse_id
         LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
@@ -94,15 +73,9 @@
             AND t.warehouse_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
-        <if test="query.warehouseId != null">
-            AND t.warehouse_id = #{query.warehouseId}
-        </if>
-        <if test="query.skuId != null">
-            AND t.sku_id = #{query.skuId}
-        </if>
+        <if test="scope == null">AND FALSE</if>
+        <if test="query.warehouseId != null">AND t.warehouse_id = #{query.warehouseId}</if>
+        <if test="query.skuId != null">AND t.sku_id = #{query.skuId}</if>
         <if test="query.skuCode != null and query.skuCode != ''">
             AND k.sku_code ILIKE CONCAT('%', #{query.skuCode}, '%')
         </if>
@@ -110,27 +83,15 @@
     </select>
 
     <select id="detail" resultMap="thresholdVoMap">
-        SELECT t.id,
-               t.warehouse_id,
-               t.sku_id,
-               t.warn_min,
-               t.warn_max,
-               t.remark,
-               t.version,
-               t.created_at,
-               t.updated_at,
-               w.warehouse_code,
-               w.name      AS warehouse_name,
-               k.sku_code,
-               k.spec_name AS sku_name,
-               k.spec_values,
-               p.name      AS product_name
+        SELECT t.id, t.warehouse_id, t.sku_id, t.warn_min, t.warn_max, t.remark, t.version, t.created_at, t.updated_at,
+            w.warehouse_code, w.name AS warehouse_name, k.sku_code, k.spec_name AS sku_name, k.spec_values,
+            p.name AS product_name
         FROM xsy_inventory_warning_threshold t
-                 LEFT JOIN xsy_warehouse w ON w.id = t.warehouse_id
-                 LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
-                 LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
+        LEFT JOIN xsy_warehouse w ON w.id = t.warehouse_id
+        LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
+        LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE t.deleted = FALSE
-          AND t.id = #{id}
+            AND t.id = #{id}
     </select>
 
     <!--
@@ -140,54 +101,38 @@
       LEFT JOIN 余额而不是 JOIN：配置了阈值却没有余额行的行必须出现。
     -->
     <select id="queryWarningPage" resultMap="warningVoMap">
-        SELECT t.id AS threshold_id,
-        t.warehouse_id,
-        t.sku_id,
-        t.warn_min,
-        t.warn_max,
-        w.warehouse_code,
-        w.name AS warehouse_name,
-        k.sku_code,
-        k.spec_name AS sku_name,
-        k.spec_values,
-        p.name AS product_name,
-        b.unit,
-        COALESCE(b.quantity, 0) AS quantity,
-        COALESCE(b.reserved_quantity, 0) AS reserved_quantity,
-        COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) AS available_quantity
+        SELECT t.id AS threshold_id, t.warehouse_id, t.sku_id, t.warn_min, t.warn_max, w.warehouse_code,
+            w.name AS warehouse_name, k.sku_code, k.spec_name AS sku_name, k.spec_values, p.name AS product_name,
+            b.unit, COALESCE(b.quantity, 0) AS quantity, COALESCE(b.reserved_quantity, 0) AS reserved_quantity,
+            COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) AS available_quantity
         FROM xsy_inventory_warning_threshold t
-        LEFT JOIN xsy_inventory_balance b
-        ON b.warehouse_id = t.warehouse_id
-        AND b.sku_id = t.sku_id
-        AND b.deleted = FALSE
+        LEFT JOIN xsy_inventory_balance b ON b.warehouse_id = t.warehouse_id
+            AND b.sku_id = t.sku_id
+            AND b.deleted = FALSE
         LEFT JOIN xsy_warehouse w ON w.id = t.warehouse_id
         LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
         LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE t.deleted = FALSE
-        <!-- 预警列表按阈值配置所在仓判定：余额列是 LEFT JOIN 进来的，未授权仓的配置
-             即使有余额也不出现。scope 缺失时恒假。 -->
+        <!--
+          预警列表按阈值配置所在仓判定：余额列是 LEFT JOIN 进来的，未授权仓的配置
+          即使有余额也不出现。scope 缺失时恒假。
+        -->
         <if test="scope != null and scope.all == false">
             AND t.warehouse_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
-        <if test="query.warehouseId != null">
-            AND t.warehouse_id = #{query.warehouseId}
-        </if>
-        <if test="query.skuId != null">
-            AND t.sku_id = #{query.skuId}
-        </if>
+        <if test="scope == null">AND FALSE</if>
+        <if test="query.warehouseId != null">AND t.warehouse_id = #{query.warehouseId}</if>
+        <if test="query.skuId != null">AND t.sku_id = #{query.skuId}</if>
         <if test="query.skuCode != null and query.skuCode != ''">
             AND k.sku_code ILIKE CONCAT('%', #{query.skuCode}, '%')
         </if>
-        <!-- 消息跳转锚点：站内信携带的 dataId 就是阈值配置 id，这里按它精确定位那一条预警。
-             不加这个过滤的话，从「库存低于下限」消息点进来只会落到整个预警列表，
-             用户还得自己再找一遍 —— 那不算闭环。 -->
-        <if test="query.thresholdId != null">
-            AND t.id = #{query.thresholdId}
-        </if>
+        <!--
+          消息跳转锚点：站内信携带的 dataId 就是阈值配置 id，这里按它精确定位那一条预警。
+          不加这个过滤的话，从「库存低于下限」消息点进来只会落到整个预警列表，
+          用户还得自己再找一遍 —— 那不算闭环。
+        -->
+        <if test="query.thresholdId != null">AND t.id = #{query.thresholdId}</if>
         <!-- status 有值 → 精确过滤；为空 → 只看异常（预警列表的默认语义） -->
         <choose>
             <when test="query.status != null and query.status != ''">
@@ -197,16 +142,14 @@
             </when>
             <otherwise>
                 AND
-                <include refid="warningStatusExpr"/> &lt;&gt; 'NORMAL'
+                <include refid="warningStatusExpr"/>
+                &lt;&gt; 'NORMAL'
             </otherwise>
         </choose>
         <!-- 严重度排序：低于下限（要补货）最急 → 高于上限（积压）次之 → 正常最后 -->
         ORDER BY CASE
         <include refid="warningStatusExpr"/>
-        WHEN 'LOW' THEN 0 WHEN 'HIGH' THEN 1 ELSE 2
-        END,
-        t.warehouse_id ASC,
-        t.id ASC
+        WHEN 'LOW' THEN 0 WHEN 'HIGH' THEN 1 ELSE 2 END, t.warehouse_id ASC, t.id ASC
     </select>
 
     <!--
@@ -218,26 +161,14 @@
       定时任务用 all() 调用（它没有登录人范围），手动检查用调用者的仓库范围收窄。
     -->
     <select id="listScanRows" resultMap="warningVoMap">
-        SELECT t.id AS threshold_id,
-        t.warehouse_id,
-        t.sku_id,
-        t.warn_min,
-        t.warn_max,
-        w.warehouse_code,
-        w.name AS warehouse_name,
-        k.sku_code,
-        k.spec_name AS sku_name,
-        k.spec_values,
-        p.name AS product_name,
-        b.unit,
-        COALESCE(b.quantity, 0) AS quantity,
-        COALESCE(b.reserved_quantity, 0) AS reserved_quantity,
-        COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) AS available_quantity
+        SELECT t.id AS threshold_id, t.warehouse_id, t.sku_id, t.warn_min, t.warn_max, w.warehouse_code,
+            w.name AS warehouse_name, k.sku_code, k.spec_name AS sku_name, k.spec_values, p.name AS product_name,
+            b.unit, COALESCE(b.quantity, 0) AS quantity, COALESCE(b.reserved_quantity, 0) AS reserved_quantity,
+            COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) AS available_quantity
         FROM xsy_inventory_warning_threshold t
-        LEFT JOIN xsy_inventory_balance b
-        ON b.warehouse_id = t.warehouse_id
-        AND b.sku_id = t.sku_id
-        AND b.deleted = FALSE
+        LEFT JOIN xsy_inventory_balance b ON b.warehouse_id = t.warehouse_id
+            AND b.sku_id = t.sku_id
+            AND b.deleted = FALSE
         LEFT JOIN xsy_warehouse w ON w.id = t.warehouse_id
         LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
         LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
@@ -246,9 +177,7 @@
             AND t.warehouse_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
+        <if test="scope == null">AND FALSE</if>
         ORDER BY t.warehouse_id ASC, t.sku_id ASC
         LIMIT #{limit}
     </select>

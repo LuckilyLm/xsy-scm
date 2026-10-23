@@ -6,17 +6,13 @@
       财务域对采购表只读：本文件只有 SELECT。
       读取一律显式写 deleted = FALSE，与 uk_finance_payable_source_active 的谓词同口径。
     -->
-    <select id="selectConfirmedReceipt"
-            resultType="com.xsy.scm.finance.domain.dto.FinancePayableSourceDto">
-        SELECT r.id                     AS purchaseReceiptId,
-               r.purchase_order_id      AS purchaseOrderId,
-               r.supplier_id            AS supplierId,
-               r.supplier_name_snapshot AS supplierNameSnapshot,
-               r.confirmed_at           AS confirmedAt
+    <select id="selectConfirmedReceipt" resultType="com.xsy.scm.finance.domain.dto.FinancePayableSourceDto">
+        SELECT r.id AS purchaseReceiptId, r.purchase_order_id AS purchaseOrderId, r.supplier_id AS supplierId,
+            r.supplier_name_snapshot AS supplierNameSnapshot, r.confirmed_at AS confirmedAt
         FROM xsy_purchase_receipt r
         WHERE r.id = #{purchaseReceiptId}
-          AND r.deleted = FALSE
-          AND r.status = 'CONFIRMED'
+            AND r.deleted = FALSE
+            AND r.status = 'CONFIRMED'
     </select>
 
     <!--
@@ -27,28 +23,25 @@
       静默漏账 —— 加与不加在缺行时结果相同，但不加就不会把「主档被软删」这种运维动作算成免税。
       全部行都取不到时金额为 0，由服务侧「不产生 0 元财务事实」的判据跳过，不会留一张空单头。
     -->
-    <select id="selectConfirmedReceiptLines"
-            resultType="com.xsy.scm.finance.domain.dto.FinancePayableSourceLineDto">
-        SELECT ri.id                     AS purchaseReceiptItemId,
-               ri.purchase_order_item_id AS purchaseOrderItemId,
-               ri.sku_id                 AS skuId,
-               ri.sku_name_snapshot      AS skuNameSnapshot,
-               ri.purchase_unit_snapshot AS unitSnapshot,
-               ri.received_quantity      AS quantity,
-               oi.purchase_price         AS unitPrice
+    <select id="selectConfirmedReceiptLines" resultType="com.xsy.scm.finance.domain.dto.FinancePayableSourceLineDto">
+        SELECT ri.id AS purchaseReceiptItemId, ri.purchase_order_item_id AS purchaseOrderItemId, ri.sku_id AS skuId,
+            ri.sku_name_snapshot AS skuNameSnapshot, ri.purchase_unit_snapshot AS unitSnapshot,
+            ri.received_quantity AS quantity, oi.purchase_price AS unitPrice
         FROM xsy_purchase_receipt_item ri
-                 JOIN xsy_purchase_order_item oi ON oi.id = ri.purchase_order_item_id
+        JOIN xsy_purchase_order_item oi ON oi.id = ri.purchase_order_item_id
         WHERE ri.purchase_receipt_id = #{purchaseReceiptId}
-          AND ri.deleted = FALSE
-          AND ri.received_quantity > 0
+            AND ri.deleted = FALSE
+            AND ri.received_quantity > 0
         ORDER BY ri.sort_order, ri.id
     </select>
 
     <select id="selectPurchaserId" resultType="long">
         SELECT po.purchaser_id
         FROM xsy_purchase_receipt pr
-        JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+        JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id
+            AND po.deleted = FALSE
         WHERE pr.id = #{purchaseReceiptId}
-          AND pr.deleted = FALSE
+            AND pr.deleted = FALSE
     </select>
+
 </mapper>

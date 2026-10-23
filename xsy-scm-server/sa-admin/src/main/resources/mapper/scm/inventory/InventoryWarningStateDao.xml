@@ -12,27 +12,22 @@
         SELECT warehouse_id, sku_id, status, epoch, updated_at, updated_by
         FROM xsy_inventory_warning_state
         WHERE warehouse_id = #{warehouseId}
-          AND sku_id = #{skuId}
-            FOR UPDATE
+            AND sku_id = #{skuId}
+        FOR UPDATE
     </select>
 
     <!-- 首次落状态：冲突即「并发对手已经写过」，返回 0 由调用方重读，不做「先查后插」。 -->
     <insert id="insertIfAbsent">
-        INSERT INTO xsy_inventory_warning_state
-            (warehouse_id, sku_id, status, epoch, updated_at, updated_by)
-        VALUES
-            (#{warehouseId}, #{skuId}, #{status}, #{epoch}, CURRENT_TIMESTAMP, #{operator})
+        INSERT INTO xsy_inventory_warning_state (warehouse_id, sku_id, status, epoch, updated_at, updated_by)
+        VALUES (#{warehouseId}, #{skuId}, #{status}, #{epoch}, CURRENT_TIMESTAMP, #{operator})
         ON CONFLICT (warehouse_id, sku_id) DO NOTHING
     </insert>
 
     <update id="updateState">
         UPDATE xsy_inventory_warning_state
-        SET status     = #{status},
-            epoch      = #{epoch},
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+        SET status = #{status}, epoch = #{epoch}, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE warehouse_id = #{warehouseId}
-          AND sku_id = #{skuId}
+            AND sku_id = #{skuId}
     </update>
 
 </mapper>

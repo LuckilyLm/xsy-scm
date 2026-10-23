@@ -5,12 +5,11 @@
     <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式契约） -->
     <sql id="customerColumns">
         c.id, c.version, c.visibility_policy, c.customer_code, c.name, c.customer_type_id, c.status, c.settle_mode,
-        c.cod_allowed, c.shared_settlement_enabled, c.mall_delivery_warehouse_id,
-        c.credit_limit, c.parent_customer_id, c.settlement_customer_id, c.mall_delivery_warehouse_id,
-        c.seller_id, c.supplier_id,
-        c.contact_name, c.contact_phone, c.address,
-        c.credit_period_type, c.credit_amount_threshold, c.credit_period_value, c.credit_period_unit,
-        c.settle_day, c.remark, c.created_at, c.updated_at, c.created_by, c.updated_by
+            c.cod_allowed, c.shared_settlement_enabled, c.mall_delivery_warehouse_id, c.credit_limit,
+            c.parent_customer_id, c.settlement_customer_id, c.mall_delivery_warehouse_id, c.seller_id, c.supplier_id,
+            c.contact_name, c.contact_phone, c.address, c.credit_period_type, c.credit_amount_threshold,
+            c.credit_period_value, c.credit_period_unit, c.settle_day, c.remark, c.created_at, c.updated_at,
+            c.created_by, c.updated_by
     </sql>
 
     <select id="queryPage" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
@@ -18,44 +17,38 @@
         <include refid="customerColumns"/>
         FROM xsy_customer c
         WHERE c.deleted = FALSE
-        <!-- 数据范围（裁决「P0 基线收口裁决」第 2、6 条）：scope 缺省即失败关闭。
-             scope.all 时不拼谓词，因此 seller_id IS NULL 的未分配客户只对持全量/分配权者可见。 -->
+        <!--
+          数据范围（裁决「P0 基线收口裁决」第 2、6 条）：scope 缺省即失败关闭。
+          scope.all 时不拼谓词，因此 seller_id IS NULL 的未分配客户只对持全量/分配权者可见。
+        -->
         <if test="scope != null and scope.all == false">
             AND c.seller_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
+        <if test="scope == null">AND FALSE</if>
         <if test="query.keyword != null and query.keyword != ''">
             <!-- 增强：legacy 只搜编码 + 名称，这里追加联系人 / 联系电话 -->
-            AND (c.customer_code ILIKE CONCAT('%', #{query.keyword}, '%')
-            OR c.name ILIKE CONCAT('%', #{query.keyword}, '%')
-            OR c.contact_name ILIKE CONCAT('%', #{query.keyword}, '%')
-            OR c.contact_phone ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (c.customer_code ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                c.name ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                c.contact_name ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                c.contact_phone ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
-        <if test="query.customerTypeId != null">
-            AND c.customer_type_id = #{query.customerTypeId}
-        </if>
-        <if test="query.status != null and query.status != ''">
-            AND c.status = #{query.status}
-        </if>
-        <if test="query.settleMode != null and query.settleMode != ''">
-            AND c.settle_mode = #{query.settleMode}
-        </if>
-        <if test="query.parentCustomerId != null">
-            AND c.parent_customer_id = #{query.parentCustomerId}
-        </if>
+        <if test="query.customerTypeId != null">AND c.customer_type_id = #{query.customerTypeId}</if>
+        <if test="query.status != null and query.status != ''">AND c.status = #{query.status}</if>
+        <if test="query.settleMode != null and query.settleMode != ''">AND c.settle_mode = #{query.settleMode}</if>
+        <if test="query.parentCustomerId != null">AND c.parent_customer_id = #{query.parentCustomerId}</if>
     </select>
 
     <select id="selectOptions" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
-        SELECT <include refid="customerColumns"/>
+        SELECT
+        <include refid="customerColumns"/>
         FROM xsy_customer c
         WHERE c.deleted = FALSE
         <choose>
             <when test="scope == null or scope.empty">AND FALSE</when>
             <when test="scope.all"></when>
-            <otherwise>AND c.seller_id IN
+            <otherwise>
+                AND c.seller_id IN
                 <foreach collection="scope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
             </otherwise>
         </choose>
@@ -64,33 +57,34 @@
 
     <update id="softDelete">
         UPDATE xsy_customer
-        SET deleted    = TRUE,
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{customerId}
-          AND version = #{version}
-          AND deleted = FALSE
+            AND version = #{version}
+            AND deleted = FALSE
     </update>
 
     <update id="updateMallDeliveryWarehouse">
         UPDATE xsy_customer
-        SET mall_delivery_warehouse_id = #{warehouseId}, version = version + 1,
-            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE id = #{customerId} AND version = #{version} AND deleted = FALSE
+        SET mall_delivery_warehouse_id = #{warehouseId}, version = version + 1, updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{customerId}
+            AND version = #{version}
+            AND deleted = FALSE
     </update>
 
     <select id="countActiveByTypeId" resultType="long">
         SELECT COUNT(*)
         FROM xsy_customer
         WHERE customer_type_id = #{typeId}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </select>
 
     <select id="lock" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
-        SELECT <include refid="customerColumns"/>
+        SELECT
+        <include refid="customerColumns"/>
         FROM xsy_customer c
-        WHERE c.id = #{customerId} AND c.deleted = FALSE
+        WHERE c.id = #{customerId}
+            AND c.deleted = FALSE
         FOR UPDATE
     </select>
 
@@ -98,7 +92,8 @@
         SELECT
         <include refid="customerColumns"/>
         FROM xsy_customer c
-        WHERE c.deleted = FALSE AND c.customer_code IN
+        WHERE c.deleted = FALSE
+            AND c.customer_code IN
         <foreach collection="codes" item="code" open="(" separator="," close=")">#{code}</foreach>
     </select>
 

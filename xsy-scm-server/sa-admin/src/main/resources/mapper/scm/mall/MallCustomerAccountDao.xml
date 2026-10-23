@@ -1,27 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.mall.account.dao.MallCustomerAccountDao">
+
     <select id="selectByPhone" resultType="com.xsy.scm.mall.account.domain.entity.MallCustomerAccountEntity">
-        SELECT * FROM xsy_mall_customer_account WHERE login_phone = #{phone} AND deleted = FALSE
+        SELECT *
+        FROM xsy_mall_customer_account
+        WHERE login_phone = #{phone}
+            AND deleted = FALSE
     </select>
+
     <select id="selectByIdForUpdate" resultType="com.xsy.scm.mall.account.domain.entity.MallCustomerAccountEntity">
-        SELECT * FROM xsy_mall_customer_account WHERE id = #{accountId} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM xsy_mall_customer_account
+        WHERE id = #{accountId}
+            AND deleted = FALSE
+        FOR UPDATE
     </select>
+
     <select id="listByCustomerId" resultType="com.xsy.scm.mall.account.domain.vo.MallAccountVO">
         SELECT a.id AS account_id, a.customer_id, c.name AS customer_name, a.login_phone, a.status,
-               a.first_password_change, a.last_login_at, a.version
+            a.first_password_change, a.last_login_at, a.version
         FROM xsy_mall_customer_account a
-        JOIN xsy_customer c ON c.id = a.customer_id AND c.deleted = FALSE
-        WHERE a.customer_id = #{customerId} AND a.deleted = FALSE
+        JOIN xsy_customer c ON c.id = a.customer_id
+            AND c.deleted = FALSE
+        WHERE a.customer_id = #{customerId}
+            AND a.deleted = FALSE
         ORDER BY a.id
     </select>
+
     <select id="detailById" resultType="com.xsy.scm.mall.account.domain.vo.MallAccountVO">
         SELECT a.id AS account_id, a.customer_id, c.name AS customer_name, a.login_phone, a.status,
-               a.first_password_change, a.last_login_at, a.version
+            a.first_password_change, a.last_login_at, a.version
         FROM xsy_mall_customer_account a
-        JOIN xsy_customer c ON c.id = a.customer_id AND c.deleted = FALSE
-        WHERE a.id = #{accountId} AND a.deleted = FALSE
+        JOIN xsy_customer c ON c.id = a.customer_id
+            AND c.deleted = FALSE
+        WHERE a.id = #{accountId}
+            AND a.deleted = FALSE
     </select>
+
     <select id="listNamesByIds" resultType="com.xsy.scm.mall.account.domain.vo.MallAccountVO">
         SELECT a.id AS account_id, a.customer_id, c.name AS customer_name
         FROM xsy_mall_customer_account a
@@ -29,27 +45,36 @@
         WHERE a.id IN
         <foreach collection="accountIds" item="accountId" open="(" separator="," close=")">#{accountId}</foreach>
     </select>
+
     <update id="updateStatus">
         UPDATE xsy_mall_customer_account
         SET status = #{status}, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE id = #{accountId} AND deleted = FALSE
+        WHERE id = #{accountId}
+            AND deleted = FALSE
     </update>
+
     <update id="resetPassword">
         UPDATE xsy_mall_customer_account
-        SET password_hash = #{passwordHash}, first_password_change = TRUE, login_failed_count = 0,
-            locked_until = NULL, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE id = #{accountId} AND deleted = FALSE
+        SET password_hash = #{passwordHash}, first_password_change = TRUE, login_failed_count = 0, locked_until = NULL,
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{accountId}
+            AND deleted = FALSE
     </update>
+
     <update id="changePassword">
         UPDATE xsy_mall_customer_account
-        SET password_hash = #{passwordHash}, first_password_change = FALSE,
-            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = CONCAT('2:', id::text)
-        WHERE id = #{accountId} AND deleted = FALSE
+        SET password_hash = #{passwordHash}, first_password_change = FALSE, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = CONCAT('2:', id::text)
+        WHERE id = #{accountId}
+            AND deleted = FALSE
     </update>
+
     <update id="recordLogin">
         UPDATE xsy_mall_customer_account
         SET last_login_at = CURRENT_TIMESTAMP, last_login_ip = #{ip}, login_failed_count = 0, locked_until = NULL,
             updated_at = CURRENT_TIMESTAMP, updated_by = CONCAT('2:', id::text)
-        WHERE id = #{accountId} AND deleted = FALSE
+        WHERE id = #{accountId}
+            AND deleted = FALSE
     </update>
+
 </mapper>

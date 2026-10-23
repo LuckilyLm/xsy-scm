@@ -15,29 +15,25 @@
       NOT NULL、写进历史事实不可改。缺结算行时两列一并留空，由登记收款处拒绝写入；
       行本身仍然返回，收款列表/详情与审计日志只要 seller_id 判范围，不被主档悬空连带变成读不出来。
     -->
-    <select id="selectCustomer"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceCustomerFactDto">
-        SELECT c.id         AS customerId,
-               c.name       AS customerName,
-               c.seller_id  AS sellerId,
-               sc.id        AS settlementCustomerId,
-               sc.name      AS settlementCustomerName
+    <select id="selectCustomer" resultType="com.xsy.scm.finance.domain.dto.FinanceCustomerFactDto">
+        SELECT c.id AS customerId, c.name AS customerName, c.seller_id AS sellerId, sc.id AS settlementCustomerId,
+            sc.name AS settlementCustomerName
         FROM xsy_customer c
-        LEFT JOIN xsy_customer sc ON sc.id = c.settlement_customer_id AND sc.deleted = FALSE
+        LEFT JOIN xsy_customer sc ON sc.id = c.settlement_customer_id
+            AND sc.deleted = FALSE
         WHERE c.id = #{customerId}
-          AND c.deleted = FALSE
+            AND c.deleted = FALSE
     </select>
 
     <!--
       供应商只读存在性与名称：D-5 不为此新增 xsy_supplier 范围维度（P0 裁决 7 共享读取），
       status 也不作为付款前置条件 —— 已停用供应商结清历史债务没有被裁决禁止。
     -->
-    <select id="selectSupplier"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceSupplierFactDto">
-        SELECT s.id   AS supplierId,
-               s.name AS supplierName
+    <select id="selectSupplier" resultType="com.xsy.scm.finance.domain.dto.FinanceSupplierFactDto">
+        SELECT s.id AS supplierId, s.name AS supplierName
         FROM xsy_supplier s
         WHERE s.id = #{supplierId}
-          AND s.deleted = FALSE
+            AND s.deleted = FALSE
     </select>
+
 </mapper>

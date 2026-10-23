@@ -7,28 +7,25 @@
       返回 0 不是重放：单头只在「本收货单还没有应付」时才会走到这里，因此明细撞键
       意味着同一张收货行被挂到了两张应付单上，属于数据异常，由服务侧失败并整体回滚。
     -->
-    <insert id="insertOnConflictDoNothing"
-            parameterType="com.xsy.scm.finance.domain.entity.FinancePayableItemEntity">
-        INSERT INTO xsy_finance_payable_item (payable_id, source_type, source_id, purchase_order_item_id,
-                                          sku_id, sku_name_snapshot, unit_snapshot,
-                                          quantity, unit_price, amount,
-                                          version, deleted, created_at, updated_at, created_by, updated_by)
-        VALUES (#{payableId}, #{sourceType}, #{sourceId}, #{purchaseOrderItemId},
-                #{skuId}, #{skuNameSnapshot}, #{unitSnapshot},
-                #{quantity}, #{unitPrice}, #{amount},
-                0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+    <insert id="insertOnConflictDoNothing" parameterType="com.xsy.scm.finance.domain.entity.FinancePayableItemEntity">
+        INSERT INTO xsy_finance_payable_item (payable_id, source_type, source_id, purchase_order_item_id, sku_id,
+            sku_name_snapshot, unit_snapshot, quantity, unit_price, amount, version, deleted, created_at, updated_at,
+            created_by, updated_by)
+        VALUES (#{payableId}, #{sourceType}, #{sourceId}, #{purchaseOrderItemId}, #{skuId}, #{skuNameSnapshot},
+            #{unitSnapshot}, #{quantity}, #{unitPrice}, #{amount}, 0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy},
+            #{updatedBy})
         ON CONFLICT (source_type, source_id)
-            WHERE deleted = FALSE AND source_id IS NOT NULL DO NOTHING
+        WHERE deleted = FALSE
+            AND source_id IS NOT NULL DO NOTHING
     </insert>
 
-    <select id="selectOriginalItem"
-            resultType="com.xsy.scm.finance.domain.entity.FinancePayableItemEntity">
+    <select id="selectOriginalItem" resultType="com.xsy.scm.finance.domain.entity.FinancePayableItemEntity">
         SELECT *
         FROM xsy_finance_payable_item
         WHERE payable_id = #{payableId}
-          AND purchase_order_item_id = #{purchaseOrderItemId}
-          AND source_type = 'PURCHASE_RECEIPT_ITEM'
-          AND deleted = FALSE
+            AND purchase_order_item_id = #{purchaseOrderItemId}
+            AND source_type = 'PURCHASE_RECEIPT_ITEM'
+            AND deleted = FALSE
         ORDER BY id
         LIMIT 1
     </select>
@@ -37,7 +34,8 @@
         SELECT *
         FROM xsy_finance_payable_item
         WHERE payable_id = #{payableId}
-          AND deleted = FALSE
+            AND deleted = FALSE
         ORDER BY id
     </select>
+
 </mapper>

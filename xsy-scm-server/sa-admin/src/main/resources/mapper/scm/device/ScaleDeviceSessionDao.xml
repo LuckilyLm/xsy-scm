@@ -16,10 +16,9 @@
     <!-- 只结束仍然有效的会话：已经结束的会话保留原结束原因，不被后续操作覆盖。 -->
     <update id="endActiveSessions">
         UPDATE xsy_scale_device_session
-        SET ended_at   = #{endedAt},
-            end_reason = #{reason}
+        SET ended_at = #{endedAt}, end_reason = #{reason}
         WHERE device_id = #{deviceId}
-          AND ended_at IS NULL
+            AND ended_at IS NULL
     </update>
 
 </mapper>

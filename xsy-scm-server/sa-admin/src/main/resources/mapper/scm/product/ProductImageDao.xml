@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.product.dao.ProductImageDao">
+
     <!--
       降级旧主图：只改 is_primary。V49 之后 image_type 表达内容角色（图集 / 详情图），
       不再随主图状态改写——顺带置成 DETAIL 会把一张图集图静默降级成详情图。
@@ -9,8 +10,8 @@
         UPDATE xsy_product_image
         SET is_primary = FALSE
         WHERE spu_id = #{spuId}
-          AND deleted = FALSE
-          AND is_primary = TRUE
+            AND deleted = FALSE
+            AND is_primary = TRUE
     </update>
 
     <!--
@@ -18,17 +19,12 @@
       只读文件表，不写；folderType 由 FileFolderTypeEnum.PUBLIC_IMAGE 传入，避免在 SQL 里写死目录编号。
     -->
     <select id="selectUnboundPublicImages" resultType="com.xsy.scm.product.domain.vo.ProductUnboundImageVO">
-        SELECT f.file_key    AS fileKey,
-               f.file_name   AS fileName,
-               f.file_size   AS fileSize,
-               f.create_time AS createTime
+        SELECT f.file_key AS fileKey, f.file_name AS fileName, f.file_size AS fileSize, f.create_time AS createTime
         FROM t_file f
         WHERE f.folder_type = #{folderType}
-          AND NOT EXISTS (SELECT 1
-                          FROM xsy_product_image i
-                          WHERE i.file_key = f.file_key
-                            AND i.deleted = FALSE)
+            AND NOT EXISTS (SELECT 1 FROM xsy_product_image i WHERE i.file_key = f.file_key AND i.deleted = FALSE)
         ORDER BY f.create_time DESC, f.file_id DESC
         LIMIT #{limit}
     </select>
+
 </mapper>

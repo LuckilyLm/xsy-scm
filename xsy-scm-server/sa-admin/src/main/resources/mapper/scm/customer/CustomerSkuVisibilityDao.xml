@@ -1,64 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.customer.dao.CustomerSkuVisibilityDao">
-    <select id="policy" resultType="string">SELECT visibility_policy
-                                            FROM xsy_customer
-                                            WHERE id = #{customerId}
-                                              AND deleted = FALSE</select>
-    <select id="visibleIds" resultType="long">SELECT sku_id FROM xsy_customer_sku_visibility WHERE customer_id=#{customerId}
-        AND deleted=FALSE AND sku_id IN
-        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+
+    <select id="policy" resultType="string">
+        SELECT visibility_policy
+        FROM xsy_customer
+        WHERE id = #{customerId}
+            AND deleted = FALSE
     </select>
-    <select id="lockCustomer" resultType="long">SELECT id
-                                                FROM xsy_customer
-                                                WHERE id = #{id}
-                                                  AND deleted = FALSE FOR UPDATE</select>
-    <update id="softDelete">UPDATE xsy_customer_sku_visibility
-                            SET deleted= TRUE,
-                                version=version + 1,
-                                updated_at=CURRENT_TIMESTAMP,
-                                updated_by=#{operator}
-                            WHERE id = #{id}
-                              AND version = #{version}
-                              AND customer_id = #{customerId}
-                              AND deleted = FALSE</update>
+
+    <select id="visibleIds" resultType="long">
+        SELECT sku_id
+        FROM xsy_customer_sku_visibility
+        WHERE customer_id = #{customerId}
+            AND deleted = FALSE
+            AND sku_id IN <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+    <select id="lockCustomer" resultType="long">
+        SELECT id
+        FROM xsy_customer
+        WHERE id = #{id}
+            AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <update id="softDelete">
+        UPDATE xsy_customer_sku_visibility
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id}
+            AND version = #{version}
+            AND customer_id = #{customerId}
+            AND deleted = FALSE
+    </update>
+
     <!--
       客户自身的业务引用：客户协议价与商品可见性白名单。
       刻意不含「客户类型价」——它属于客户类型这一层、被该类型下所有客户共享，
       删掉一个客户不会让它失效；类型删除时的类型价引用由 typeReferences 单独检查。
     -->
-    <select id="customerReferences" resultType="long">SELECT (SELECT count(*)
-                                                              FROM xsy_customer_agreement_price
-                                                              WHERE customer_id = #{id} AND deleted = FALSE) +
-                                                             (SELECT count(*)
-                                                              FROM xsy_customer_sku_visibility
-                                                             WHERE customer_id = #{id} AND deleted = FALSE) +
-                                                             (SELECT count(*) FROM xsy_customer_sku_alias
-                                                              WHERE customer_id = #{id} AND deleted = FALSE)
+    <select id="customerReferences" resultType="long">
+        SELECT (SELECT count(*) FROM xsy_customer_agreement_price WHERE customer_id = #{id} AND
+            deleted = FALSE) + (SELECT count(*) FROM xsy_customer_sku_visibility WHERE customer_id = #{id} AND
+            deleted = FALSE) + (SELECT count(*) FROM xsy_customer_sku_alias WHERE customer_id = #{id} AND
+            deleted = FALSE)
     </select>
-    <select id="typeReferences" resultType="long">SELECT count(*)
-                                                  FROM xsy_customer_type_price
-                                                  WHERE customer_type_id = #{id}
-                                                    AND deleted = FALSE</select>
+
+    <select id="typeReferences" resultType="long">
+        SELECT count(*)
+        FROM xsy_customer_type_price
+        WHERE customer_type_id = #{id}
+            AND deleted = FALSE
+    </select>
+
     <select id="reverse" resultType="com.xsy.scm.customer.domain.vo.CustomerSkuVisibilityReverseVO">
-        SELECT c.id customer_id,c.customer_code,c.name customer_name,t.name
-        customer_type_name,c.visibility_policy,v.sku_id,s.sku_code,p.name product_name,s.spec_name,s.status
-        sku_status,p.status spu_status,v.created_at,v.created_by
-        FROM xsy_customer c LEFT JOIN xsy_customer_type t ON t.id=c.customer_type_id
-        LEFT JOIN xsy_customer_sku_visibility v ON v.customer_id=c.id AND v.deleted=FALSE
-        LEFT JOIN xsy_product_sku s ON s.id=v.sku_id LEFT JOIN xsy_product_spu p ON p.id=s.spu_id WHERE c.deleted=FALSE
-        <!-- 反向可见性列表的主体是客户，因此按客户归属收窄：读不到客户的人也不该看到它的商品白名单。
-             谓词落在驱动表 c 上，后面的 LEFT JOIN 不因范围条件放大或丢行。 -->
+        SELECT c.id customer_id, c.customer_code, c.name customer_name, t.name customer_type_name, c.visibility_policy,
+            v.sku_id, s.sku_code, p.name product_name, s.spec_name, s.status sku_status, p.status spu_status,
+            v.created_at, v.created_by
+        FROM xsy_customer c
+        LEFT JOIN xsy_customer_type t ON t.id = c.customer_type_id
+        LEFT JOIN xsy_customer_sku_visibility v ON v.customer_id = c.id
+            AND v.deleted = FALSE
+        LEFT JOIN xsy_product_sku s ON s.id = v.sku_id
+        LEFT JOIN xsy_product_spu p ON p.id = s.spu_id
+        WHERE c.deleted = FALSE
+        <!--
+          反向可见性列表的主体是客户，因此按客户归属收窄：读不到客户的人也不该看到它的商品白名单。
+          谓词落在驱动表 c 上，后面的 LEFT JOIN 不因范围条件放大或丢行。
+        -->
         <if test="scope != null and scope.all == false">
             AND c.seller_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
-        <if test="query.customerId != null">AND c.id=#{query.customerId}</if>
-        <if test="query.skuId != null">AND v.sku_id=#{query.skuId}</if>
-        <if test="query.visibilityPolicy != null">AND c.visibility_policy=#{query.visibilityPolicy}</if>
-        ORDER BY c.customer_code,v.id
+        <if test="scope == null">AND FALSE</if>
+        <if test="query.customerId != null">AND c.id = #{query.customerId}</if>
+        <if test="query.skuId != null">AND v.sku_id = #{query.skuId}</if>
+        <if test="query.visibilityPolicy != null">AND c.visibility_policy = #{query.visibilityPolicy}</if>
+        ORDER BY c.customer_code, v.id
     </select>
+
 </mapper>

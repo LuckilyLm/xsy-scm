@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.metrics.dao.ScmBusinessMetricsDao">
 
     <!--
@@ -21,9 +19,10 @@
         <choose>
             <when test="scope == null or scope.orderSellerScope.empty">AND FALSE</when>
             <when test="scope.orderSellerScope.all"></when>
-            <otherwise>AND so.seller_id IN
-                <foreach collection="scope.orderSellerScope.ids" item="orderSellerId" open="(" separator=","
-                         close=")">#{orderSellerId}
+            <otherwise>
+                AND so.seller_id IN
+                <foreach collection="scope.orderSellerScope.ids" item="orderSellerId" open="(" separator="," close=")">
+                    #{orderSellerId}
                 </foreach>
             </otherwise>
         </choose>
@@ -33,9 +32,14 @@
         <choose>
             <when test="scope == null or scope.customerSellerScope.empty">AND FALSE</when>
             <when test="scope.customerSellerScope.all"></when>
-            <otherwise>AND c.seller_id IN
-                <foreach collection="scope.customerSellerScope.ids" item="customerSellerId" open="(" separator=","
-                         close=")">#{customerSellerId}
+            <otherwise>
+                AND c.seller_id IN
+                <foreach collection="scope.customerSellerScope.ids"
+                         item="customerSellerId"
+                         open="("
+                         separator=","
+                         close=")">
+                    #{customerSellerId}
                 </foreach>
             </otherwise>
         </choose>
@@ -46,14 +50,24 @@
         <choose>
             <when test="scope == null or scope.purchaserScope.empty or scope.warehouseScope.empty">AND FALSE</when>
             <otherwise>
-                <if test="scope.purchaserScope.all == false">AND po.purchaser_id IN
-                    <foreach collection="scope.purchaserScope.ids" item="purchaserScopeId" open="(" separator=","
-                             close=")">#{purchaserScopeId}
+                <if test="scope.purchaserScope.all == false">
+                    AND po.purchaser_id IN
+                    <foreach collection="scope.purchaserScope.ids"
+                             item="purchaserScopeId"
+                             open="("
+                             separator=","
+                             close=")">
+                        #{purchaserScopeId}
                     </foreach>
                 </if>
-                <if test="scope.warehouseScope.all == false">AND po.warehouse_id IN
-                    <foreach collection="scope.warehouseScope.ids" item="purchaseWarehouseId" open="(" separator=","
-                             close=")">#{purchaseWarehouseId}
+                <if test="scope.warehouseScope.all == false">
+                    AND po.warehouse_id IN
+                    <foreach collection="scope.warehouseScope.ids"
+                             item="purchaseWarehouseId"
+                             open="("
+                             separator=","
+                             close=")">
+                        #{purchaseWarehouseId}
                     </foreach>
                 </if>
             </otherwise>
@@ -64,9 +78,14 @@
         <choose>
             <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
             <when test="scope.warehouseScope.all"></when>
-            <otherwise>AND pr.warehouse_id IN
-                <foreach collection="scope.warehouseScope.ids" item="receiptWarehouseId" open="(" separator=","
-                         close=")">#{receiptWarehouseId}
+            <otherwise>
+                AND pr.warehouse_id IN
+                <foreach collection="scope.warehouseScope.ids"
+                         item="receiptWarehouseId"
+                         open="("
+                         separator=","
+                         close=")">
+                    #{receiptWarehouseId}
                 </foreach>
             </otherwise>
         </choose>
@@ -76,9 +95,14 @@
         <choose>
             <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
             <when test="scope.warehouseScope.all"></when>
-            <otherwise>AND b.warehouse_id IN
-                <foreach collection="scope.warehouseScope.ids" item="balanceWarehouseId" open="(" separator=","
-                         close=")">#{balanceWarehouseId}
+            <otherwise>
+                AND b.warehouse_id IN
+                <foreach collection="scope.warehouseScope.ids"
+                         item="balanceWarehouseId"
+                         open="("
+                         separator=","
+                         close=")">
+                    #{balanceWarehouseId}
                 </foreach>
             </otherwise>
         </choose>
@@ -88,9 +112,14 @@
         <choose>
             <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
             <when test="scope.warehouseScope.all"></when>
-            <otherwise>AND m.warehouse_id IN
-                <foreach collection="scope.warehouseScope.ids" item="movementWarehouseId" open="(" separator=","
-                         close=")">#{movementWarehouseId}
+            <otherwise>
+                AND m.warehouse_id IN
+                <foreach collection="scope.warehouseScope.ids"
+                         item="movementWarehouseId"
+                         open="("
+                         separator=","
+                         close=")">
+                    #{movementWarehouseId}
                 </foreach>
             </otherwise>
         </choose>
@@ -100,9 +129,14 @@
         <choose>
             <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
             <when test="scope.warehouseScope.all"></when>
-            <otherwise>AND t.warehouse_id IN
-                <foreach collection="scope.warehouseScope.ids" item="thresholdWarehouseId" open="(" separator=","
-                         close=")">#{thresholdWarehouseId}
+            <otherwise>
+                AND t.warehouse_id IN
+                <foreach collection="scope.warehouseScope.ids"
+                         item="thresholdWarehouseId"
+                         open="("
+                         separator=","
+                         close=")">
+                    #{thresholdWarehouseId}
                 </foreach>
             </otherwise>
         </choose>
@@ -113,9 +147,10 @@
         <choose>
             <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
             <when test="scope.warehouseScope.all"></when>
-            <otherwise>AND w.id IN
-                <foreach collection="scope.warehouseScope.ids" item="warehouseNodeId" open="(" separator=","
-                         close=")">#{warehouseNodeId}
+            <otherwise>
+                AND w.id IN
+                <foreach collection="scope.warehouseScope.ids" item="warehouseNodeId" open="(" separator="," close=")">
+                    #{warehouseNodeId}
                 </foreach>
             </otherwise>
         </choose>
@@ -144,9 +179,9 @@
         SELECT COUNT(*)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-        AND so.status = 'CONFIRMED'
-        AND so.confirmed_at &gt;= #{startTime}
-        AND so.confirmed_at &lt; #{endTime}
+            AND so.status = 'CONFIRMED'
+            AND so.confirmed_at &gt;= #{startTime}
+            AND so.confirmed_at &lt; #{endTime}
         <include refid="salesFilter"/>
         <include refid="scopeSo"/>
     </select>
@@ -155,9 +190,9 @@
         SELECT COALESCE(SUM(so.settlement_total_amount), 0)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-        AND so.status = 'CONFIRMED'
-        AND so.confirmed_at &gt;= #{startTime}
-        AND so.confirmed_at &lt; #{endTime}
+            AND so.status = 'CONFIRMED'
+            AND so.confirmed_at &gt;= #{startTime}
+            AND so.confirmed_at &lt; #{endTime}
         <include refid="salesFilter"/>
         <include refid="scopeSo"/>
     </select>
@@ -167,9 +202,9 @@
         SELECT COALESCE(SUM(so.ordered_total_amount), 0)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-        AND so.status = 'CONFIRMED'
-        AND so.created_at &gt;= #{startTime}
-        AND so.created_at &lt; #{endTime}
+            AND so.status = 'CONFIRMED'
+            AND so.created_at &gt;= #{startTime}
+            AND so.created_at &lt; #{endTime}
         <include refid="scopeSo"/>
     </select>
 
@@ -177,7 +212,7 @@
         SELECT COUNT(*)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-        AND so.status = 'CONFIRMED'
+            AND so.status = 'CONFIRMED'
         <include refid="scopeSo"/>
     </select>
 
@@ -185,7 +220,7 @@
         SELECT COALESCE(SUM(so.settlement_total_amount), 0)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-        AND so.status = 'CONFIRMED'
+            AND so.status = 'CONFIRMED'
         <include refid="scopeSo"/>
     </select>
 
@@ -193,26 +228,22 @@
         SELECT COUNT(DISTINCT so.customer_id)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-        AND so.status = 'CONFIRMED'
-        AND so.confirmed_at &gt;= #{startTime}
-        AND so.confirmed_at &lt; #{endTime}
+            AND so.status = 'CONFIRMED'
+            AND so.confirmed_at &gt;= #{startTime}
+            AND so.confirmed_at &lt; #{endTime}
         <include refid="salesFilter"/>
         <include refid="scopeSo"/>
     </select>
 
     <select id="topCustomersByConfirmedAt" resultType="com.xsy.scm.metrics.domain.RankItem">
         SELECT COALESCE(c.name, '客户 #' || ranked.customer_id) AS name, ranked.amount
-        FROM (
-            SELECT so.customer_id, COALESCE(SUM(so.settlement_total_amount), 0) AS amount
-            FROM xsy_sales_order so
-            WHERE so.deleted = FALSE
-            AND so.status = 'CONFIRMED'
-            AND so.confirmed_at &gt;= #{startTime}
-            AND so.confirmed_at &lt; #{endTime}
-            <include refid="scopeSo"/>
-            GROUP BY so.customer_id
-        ) ranked
-        LEFT JOIN xsy_customer c ON c.id = ranked.customer_id AND c.deleted = FALSE
+        FROM (SELECT so.customer_id,
+            COALESCE(SUM(so.settlement_total_amount), 0) AS amount FROM xsy_sales_order so WHERE so.deleted = FALSE AND
+            so.status = 'CONFIRMED' AND so.confirmed_at &gt;= #{startTime} AND so.confirmed_at &lt; #{endTime}
+        <include refid="scopeSo"/>
+        GROUP BY so.customer_id) ranked
+        LEFT JOIN xsy_customer c ON c.id = ranked.customer_id
+            AND c.deleted = FALSE
         ORDER BY ranked.amount DESC, ranked.customer_id
         LIMIT #{limit}
     </select>
@@ -227,35 +258,37 @@
     -->
     <select id="topProductsByConfirmedAt" resultType="com.xsy.scm.metrics.domain.RankItem">
         SELECT COALESCE(p.name, '商品 #' || ranked.spu_id) AS name, ranked.amount
-        FROM (
-            SELECT item.spu_id, COALESCE(SUM(item.settlement_line_amount), 0) AS amount
-            FROM xsy_sales_order_item item
-            JOIN xsy_sales_order so ON so.id = item.order_id
-            WHERE item.deleted = FALSE
-            AND so.deleted = FALSE
-            AND so.status = 'CONFIRMED'
-            AND so.confirmed_at &gt;= #{startTime}
-            AND so.confirmed_at &lt; #{endTime}
-            <include refid="scopeSo"/>
-            GROUP BY item.spu_id
-        ) ranked
-        LEFT JOIN xsy_product_spu p ON p.id = ranked.spu_id AND p.deleted = FALSE
+        FROM (SELECT item.spu_id,
+            COALESCE(SUM(item.settlement_line_amount),
+            0) AS amount FROM xsy_sales_order_item item JOIN xsy_sales_order so ON so.id = item.order_id WHERE
+            item.deleted = FALSE AND so.deleted = FALSE AND so.status = 'CONFIRMED' AND
+            so.confirmed_at &gt;= #{startTime} AND so.confirmed_at &lt; #{endTime}
+        <include refid="scopeSo"/>
+        GROUP BY item.spu_id) ranked
+        LEFT JOIN xsy_product_spu p ON p.id = ranked.spu_id
+            AND p.deleted = FALSE
         ORDER BY ranked.amount DESC, ranked.spu_id
         LIMIT #{limit}
     </select>
 
     <!-- ================= 主档 ================= -->
     <select id="countCustomers" resultType="long">
-        SELECT COUNT(*) FROM xsy_customer c WHERE c.deleted = FALSE
+        SELECT COUNT(*)
+        FROM xsy_customer c
+        WHERE c.deleted = FALSE
         <include refid="scopeC"/>
     </select>
 
     <select id="countSuppliers" resultType="long">
-        SELECT COUNT(*) FROM xsy_supplier WHERE deleted = FALSE
+        SELECT COUNT(*)
+        FROM xsy_supplier
+        WHERE deleted = FALSE
     </select>
 
     <select id="countSkus" resultType="long">
-        SELECT COUNT(*) FROM xsy_product_sku WHERE deleted = FALSE
+        SELECT COUNT(*)
+        FROM xsy_product_sku
+        WHERE deleted = FALSE
     </select>
 
     <!-- ================= 库存 ================= -->
@@ -277,7 +310,7 @@
         SELECT COUNT(*)
         FROM xsy_warehouse w
         WHERE w.deleted = FALSE
-        AND w.status = 'ENABLED'
+            AND w.status = 'ENABLED'
         <include refid="scopeW"/>
     </select>
 
@@ -285,10 +318,10 @@
         SELECT COUNT(*)
         FROM xsy_inventory_movement m
         WHERE m.deleted = FALSE
-        AND m.movement_type IN
+            AND m.movement_type IN
         <foreach collection="movementTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
         AND m.occurred_at &gt;= #{startTime}
-        AND m.occurred_at &lt; #{endTime}
+            AND m.occurred_at &lt; #{endTime}
         <include refid="scopeM"/>
     </select>
 
@@ -303,30 +336,21 @@
       于是第一支把授权外仓库的阈值也算进健康度，各档之和不再等于展示的 SKU 总数。
     -->
     <select id="inventoryHealthRows" resultType="com.xsy.scm.metrics.domain.InventoryHealthRow">
-        SELECT (b.quantity - b.reserved_quantity) AS availableQuantity,
-        t.warn_min AS warnMin,
-        t.warn_max AS warnMax
+        SELECT (b.quantity - b.reserved_quantity) AS availableQuantity, t.warn_min AS warnMin, t.warn_max AS warnMax
         FROM xsy_inventory_warning_threshold t
-        LEFT JOIN xsy_inventory_balance b
-        ON b.warehouse_id = t.warehouse_id
-        AND b.sku_id = t.sku_id
-        AND b.deleted = FALSE
+        LEFT JOIN xsy_inventory_balance b ON b.warehouse_id = t.warehouse_id
+            AND b.sku_id = t.sku_id
+            AND b.deleted = FALSE
         WHERE t.deleted = FALSE
         <include refid="scopeT"/>
         UNION ALL
-        SELECT (b.quantity - b.reserved_quantity) AS availableQuantity,
-        CAST(NULL AS numeric) AS warnMin,
-        CAST(NULL AS numeric) AS warnMax
+        SELECT (b.quantity - b.reserved_quantity) AS availableQuantity, CAST(NULL AS numeric) AS warnMin,
+            CAST(NULL AS numeric) AS warnMax
         FROM xsy_inventory_balance b
         WHERE b.deleted = FALSE
         <include refid="scopeB"/>
-        AND NOT EXISTS (
-        SELECT 1
-        FROM xsy_inventory_warning_threshold t
-        WHERE t.deleted = FALSE
-        AND t.warehouse_id = b.warehouse_id
-        AND t.sku_id = b.sku_id
-        )
+        AND NOT EXISTS (SELECT 1 FROM xsy_inventory_warning_threshold t WHERE t.deleted = FALSE AND
+            t.warehouse_id = b.warehouse_id AND t.sku_id = b.sku_id)
     </select>
 
     <!--
@@ -358,7 +382,7 @@
         WHERE po.deleted = FALSE
         <include refid="committedPoStatus"/>
         AND po.submitted_at &gt;= #{startTime}
-        AND po.submitted_at &lt; #{endTime}
+            AND po.submitted_at &lt; #{endTime}
         <include refid="purchaseFilter"/>
         <include refid="scopePo"/>
     </select>
@@ -369,7 +393,7 @@
         WHERE po.deleted = FALSE
         <include refid="committedPoStatus"/>
         AND po.submitted_at &gt;= #{startTime}
-        AND po.submitted_at &lt; #{endTime}
+            AND po.submitted_at &lt; #{endTime}
         <include refid="purchaseFilter"/>
         <include refid="scopePo"/>
     </select>
@@ -395,9 +419,9 @@
         SELECT COUNT(*)
         FROM xsy_purchase_receipt pr
         WHERE pr.deleted = FALSE
-        AND pr.status = 'CONFIRMED'
-        AND pr.confirmed_at &gt;= #{startTime}
-        AND pr.confirmed_at &lt; #{endTime}
+            AND pr.status = 'CONFIRMED'
+            AND pr.confirmed_at &gt;= #{startTime}
+            AND pr.confirmed_at &lt; #{endTime}
         <include refid="scopePr"/>
     </select>
 
@@ -407,94 +431,84 @@
         WHERE po.deleted = FALSE
         <include refid="committedPoStatus"/>
         AND po.submitted_at &gt;= #{startTime}
-        AND po.submitted_at &lt; #{endTime}
+            AND po.submitted_at &lt; #{endTime}
         <include refid="scopePo"/>
     </select>
 
     <!-- 各指标只扫描所需事实；时间范围比较原始时间列，日期转换只用于分组。 -->
     <sql id="trendQuery">
-        WITH dates AS (
-            SELECT d::date AS day
-            FROM generate_series(#{startDate}::date, #{endDate}::date, INTERVAL '1 day') AS gs(d)
-        )
+        WITH dates AS(SELECT d::date AS day FROM generate_series(#{startDate}::date, #{endDate}::date,
+            INTERVAL '1 day') AS gs(d))
         <if test="selection.sales">
-            , sales_daily AS (
-                SELECT (so.confirmed_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
-                       COUNT(*) AS orders, SUM(so.settlement_total_amount) AS sales
-                FROM xsy_sales_order so
-                WHERE so.deleted = FALSE AND so.status = 'CONFIRMED'
-                AND so.confirmed_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
-                AND so.confirmed_at &lt; ((#{endDate}::date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai')
-                <include refid="scopeSo"/>
-                GROUP BY 1
-            )
+            , sales_daily AS(SELECT (so.confirmed_at AT TIME ZONE 'Asia/Shanghai')::date AS day, COUNT(*) AS orders,
+                SUM(so.settlement_total_amount) AS sales FROM xsy_sales_order so WHERE so.deleted = FALSE AND
+                so.status = 'CONFIRMED' AND
+                so.confirmed_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai') AND
+                so.confirmed_at &lt; ((#{endDate}::date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai')
+            <include refid="scopeSo"/>
+            GROUP BY 1)
         </if>
         <if test="selection.purchase">
-            , purchase_daily AS (
-                SELECT (po.submitted_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
-                       COUNT(*) AS orders, SUM(po.total_amount) AS amount
-                FROM xsy_purchase_order po
-                WHERE po.deleted = FALSE
-                <include refid="committedPoStatus"/>
-                AND po.submitted_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
+            , purchase_daily AS(SELECT (po.submitted_at AT TIME ZONE 'Asia/Shanghai')::date AS day, COUNT(*) AS orders,
+                SUM(po.total_amount) AS amount FROM xsy_purchase_order po WHERE po.deleted = FALSE
+            <include refid="committedPoStatus"/>
+            AND po.submitted_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
                 AND po.submitted_at &lt; ((#{endDate}::date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai')
-                <include refid="scopePo"/>
-                GROUP BY 1
-            )
+            <include refid="scopePo"/>
+            GROUP BY 1)
         </if>
         <if test="selection.inventory or selection.closingInventory">
-            , inventory_daily AS (
-                SELECT (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
-                       SUM(CASE WHEN m.movement_type IN
-                           <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-                           THEN m.quantity ELSE 0 END) AS inbound,
-                       SUM(CASE WHEN m.movement_type IN
-                           <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-                           THEN m.quantity ELSE 0 END) AS outbound
-                <if test="selection.closingInventory">
-                       , SUM(CASE WHEN m.movement_type IN
-                           <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-                           THEN m.quantity ELSE -m.quantity END) AS delta
-                </if>
-                FROM xsy_inventory_movement m
-                WHERE m.deleted = FALSE
+            , inventory_daily AS(SELECT (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
+                SUM(CASE WHEN m.movement_type IN
+            <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+            THEN m.quantity ELSE 0 END) AS inbound, SUM(CASE WHEN m.movement_type IN
+            <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+            THEN m.quantity ELSE 0 END) AS outbound
+            <if test="selection.closingInventory">
+                , SUM(CASE WHEN m.movement_type IN
+                <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+                THEN m.quantity ELSE -m.quantity END) AS delta
+            </if>
+            FROM xsy_inventory_movement m
+            WHERE m.deleted = FALSE
                 AND m.occurred_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
                 AND m.occurred_at &lt; ((#{endDate}::date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai')
-                <include refid="scopeM"/>
-                GROUP BY 1
-            )
+            <include refid="scopeM"/>
+            GROUP BY 1)
         </if>
         <if test="selection.closingInventory">
-            , opening_inventory AS (
-                SELECT COALESCE(SUM(CASE WHEN m.movement_type IN
-                    <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-                    THEN m.quantity ELSE -m.quantity END), 0) AS quantity
-                FROM xsy_inventory_movement m
-                WHERE m.deleted = FALSE
+            , opening_inventory AS(SELECT COALESCE(SUM(CASE WHEN m.movement_type IN
+            <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+            THEN m.quantity ELSE -m.quantity END), 0) AS quantity
+            FROM xsy_inventory_movement m
+            WHERE m.deleted = FALSE
                 AND m.occurred_at &lt; (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
-                <include refid="scopeM"/>
+            <include refid="scopeM"/>
             )
         </if>
         SELECT to_char(d.day, 'YYYY-MM-DD') AS date, to_char(d.day, 'MM-DD') AS label,
         <choose>
-            <when test="selection.sales">COALESCE(s.orders, 0) AS orders, COALESCE(s.sales, 0) AS sales,</when>
-            <otherwise>0::bigint AS orders, 0::numeric AS sales,</otherwise>
+            <when test="selection.sales">COALESCE( s.orders, 0) AS orders, COALESCE( s.sales, 0) AS sales,</when>
+            <otherwise>0:: bigint AS orders, 0:: numeric AS sales,</otherwise>
         </choose>
         <choose>
-            <when test="selection.purchase">COALESCE(p.orders, 0) AS purchaseOrders, COALESCE(p.amount, 0) AS purchaseAmounts,</when>
-            <otherwise>0::bigint AS purchaseOrders, 0::numeric AS purchaseAmounts,</otherwise>
+            <when test="selection.purchase">
+                COALESCE(p.orders, 0) AS purchaseOrders, COALESCE(p.amount, 0) AS purchaseAmounts,
+            </when>
+            <otherwise>0:: bigint AS purchaseOrders, 0:: numeric AS purchaseAmounts,</otherwise>
         </choose>
         <choose>
             <when test="selection.closingInventory">
-                opening.quantity + SUM(COALESCE(i.delta, 0)) OVER (ORDER BY d.day ROWS UNBOUNDED PRECEDING) AS inventoryQuantity,
+                opening.quantity + SUM(COALESCE(i.delta,
+                    0)) OVER (ORDER BY d.day ROWS UNBOUNDED PRECEDING) AS inventoryQuantity,
             </when>
-            <otherwise>0::numeric AS inventoryQuantity,</otherwise>
+            <otherwise>0:: numeric AS inventoryQuantity,</otherwise>
         </choose>
         <choose>
             <when test="selection.inventory">
                 COALESCE(i.inbound, 0) AS inboundQuantity, COALESCE(i.outbound, 0) AS outboundQuantity
             </when>
-            <otherwise>0::numeric AS inboundQuantity, 0::numeric AS outboundQuantity</otherwise>
+            <otherwise>0:: numeric AS inboundQuantity, 0:: numeric AS outboundQuantity</otherwise>
         </choose>
         FROM dates d
         <if test="selection.sales">LEFT JOIN sales_daily s ON s.day = d.day</if>

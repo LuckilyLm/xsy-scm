@@ -7,144 +7,156 @@
     </select>
 
     <select id="selectSourceUsedAmount" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(CASE
-            WHEN entry_type = 'NORMAL' THEN amount
-            WHEN entry_type = 'REVERSE' THEN -amount
-            ELSE 0
-        END), 0)
+        SELECT COALESCE(SUM(CASE WHEN entry_type = 'NORMAL' THEN amount WHEN entry_type = 'REVERSE' THEN -amount ELSE 0
+            END), 0)
         FROM xsy_finance_write_off
         WHERE source_type = #{sourceType}
-          AND source_id = #{sourceId}
-          AND deleted = FALSE
+            AND source_id = #{sourceId}
+            AND deleted = FALSE
     </select>
 
     <select id="selectTargetWrittenOffAmount" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(CASE
-            WHEN entry_type = 'NORMAL' THEN amount
-            WHEN entry_type = 'REVERSE' THEN -amount
-            ELSE 0
-        END), 0)
+        SELECT COALESCE(SUM(CASE WHEN entry_type = 'NORMAL' THEN amount WHEN entry_type = 'REVERSE' THEN -amount ELSE 0
+            END), 0)
         FROM xsy_finance_write_off
         WHERE target_type = #{targetType}
-          AND target_id = #{targetId}
-          AND deleted = FALSE
+            AND target_id = #{targetId}
+            AND deleted = FALSE
     </select>
 
     <select id="selectActiveById" resultType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity">
         SELECT *
         FROM xsy_finance_write_off
         WHERE id = #{writeOffId}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </select>
 
     <select id="selectByIdForUpdate" resultType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity">
         SELECT *
         FROM xsy_finance_write_off
         WHERE id = #{writeOffId}
-          AND deleted = FALSE
+            AND deleted = FALSE
         FOR UPDATE
     </select>
 
     <insert id="insertReverseOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity"
-            useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type, target_id,
-                                       amount, entry_type, reverse_of_id, reason, written_off_at,
-                                       operator, version, deleted, created_at, updated_at, created_by, updated_by)
-        VALUES (#{writeOffNo}, #{sourceType}, #{sourceId}, #{targetType}, #{targetId},
-                #{amount}, #{entryType}, #{reverseOfId}, #{reason}, #{writtenOffAt},
-                #{operator}, 0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type, target_id, amount,
+            entry_type, reverse_of_id, reason, written_off_at, operator, version, deleted, created_at, updated_at,
+            created_by, updated_by)
+        VALUES (#{writeOffNo}, #{sourceType}, #{sourceId}, #{targetType}, #{targetId}, #{amount}, #{entryType},
+            #{reverseOfId}, #{reason}, #{writtenOffAt}, #{operator}, 0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy},
+            #{updatedBy})
         ON CONFLICT (reverse_of_id)
-            WHERE deleted = FALSE AND entry_type = 'REVERSE' DO NOTHING
+        WHERE deleted = FALSE
+            AND entry_type = 'REVERSE' DO NOTHING
     </insert>
 
     <insert id="insertBalanceOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity"
-            useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type, target_id,
-                                       amount, entry_type, reverse_of_id, reason, written_off_at,
-                                       operator, version, deleted, created_at, updated_at, created_by, updated_by)
-        VALUES (#{writeOffNo}, #{sourceType}, #{sourceId}, #{targetType}, #{targetId},
-                #{amount}, #{entryType}, #{reverseOfId}, #{reason}, #{writtenOffAt},
-                #{operator}, 0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type, target_id, amount,
+            entry_type, reverse_of_id, reason, written_off_at, operator, version, deleted, created_at, updated_at,
+            created_by, updated_by)
+        VALUES (#{writeOffNo}, #{sourceType}, #{sourceId}, #{targetType}, #{targetId}, #{amount}, #{entryType},
+            #{reverseOfId}, #{reason}, #{writtenOffAt}, #{operator}, 0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy},
+            #{updatedBy})
         ON CONFLICT (source_type, source_id)
-            WHERE entry_type = 'NORMAL' AND source_type = 'BALANCE_MOVEMENT' DO NOTHING
+        WHERE entry_type = 'NORMAL'
+            AND source_type = 'BALANCE_MOVEMENT' DO NOTHING
     </insert>
 
     <select id="selectNormalAllocation" resultType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity">
-        SELECT * FROM xsy_finance_write_off WHERE source_type = #{sourceType} AND source_id = #{sourceId}
-            AND entry_type = 'NORMAL' AND deleted = FALSE
+        SELECT *
+        FROM xsy_finance_write_off
+        WHERE source_type = #{sourceType}
+            AND source_id = #{sourceId}
+            AND entry_type = 'NORMAL'
+            AND deleted = FALSE
         <if test="targetId != null">AND target_type = 'RECEIVABLE' AND target_id = #{targetId}</if>
-        ORDER BY id LIMIT 1
+        ORDER BY id
+        LIMIT 1
     </select>
+
     <select id="hasReversal" resultType="boolean">
-        SELECT EXISTS (SELECT 1 FROM xsy_finance_write_off WHERE reverse_of_id = #{writeOffId}
-            AND entry_type = 'REVERSE' AND deleted = FALSE)
+        SELECT EXISTS (SELECT 1 FROM xsy_finance_write_off WHERE reverse_of_id = #{writeOffId} AND
+            entry_type = 'REVERSE' AND deleted = FALSE)
     </select>
 
     <sql id="writeOffProjectionFrom">
-        SELECT wo.id AS writeOffId,
-               wo.write_off_no AS writeOffNo,
-               wo.source_type AS sourceType,
-               wo.source_id AS sourceId,
-               COALESCE(r.receipt_no, p.payment_no, m.movement_no) AS sourceNo,
-               COALESCE(r.customer_name_snapshot, p.counterparty_name_snapshot, mc.name) AS sourceName,
-               wo.target_type AS targetType,
-               wo.target_id AS targetId,
-               COALESCE(ar.receivable_no, ap.payable_no) AS targetNo,
-               COALESCE(ar.customer_name_snapshot, ap.supplier_name_snapshot) AS targetName,
-               wo.amount,
-               wo.entry_type AS entryType,
-               wo.reverse_of_id AS reverseOfId,
-               wo.reason,
-               wo.written_off_at AS writtenOffAt,
-               wo.operator
+        SELECT wo.id AS writeOffId, wo.write_off_no AS writeOffNo, wo.source_type AS sourceType,
+            wo.source_id AS sourceId, COALESCE(r.receipt_no, p.payment_no, m.movement_no) AS sourceNo,
+            COALESCE(r.customer_name_snapshot, p.counterparty_name_snapshot, mc.name) AS sourceName,
+            wo.target_type AS targetType, wo.target_id AS targetId,
+            COALESCE(ar.receivable_no, ap.payable_no) AS targetNo,
+            COALESCE(ar.customer_name_snapshot, ap.supplier_name_snapshot) AS targetName, wo.amount,
+            wo.entry_type AS entryType, wo.reverse_of_id AS reverseOfId, wo.reason, wo.written_off_at AS writtenOffAt,
+            wo.operator
         FROM xsy_finance_write_off wo
         LEFT JOIN xsy_finance_receipt r ON wo.source_type = 'RECEIPT'
-            AND r.id = wo.source_id AND r.deleted = FALSE
+            AND r.id = wo.source_id
+            AND r.deleted = FALSE
         LEFT JOIN xsy_finance_payment p ON wo.source_type = 'PAYMENT'
-            AND p.id = wo.source_id AND p.deleted = FALSE
+            AND p.id = wo.source_id
+            AND p.deleted = FALSE
         LEFT JOIN xsy_customer_balance_movement m ON wo.source_type = 'BALANCE_MOVEMENT'
-            AND m.id = wo.source_id AND m.deleted = FALSE
-        LEFT JOIN xsy_customer mc ON mc.id = m.customer_id AND mc.deleted = FALSE
+            AND m.id = wo.source_id
+            AND m.deleted = FALSE
+        LEFT JOIN xsy_customer mc ON mc.id = m.customer_id
+            AND mc.deleted = FALSE
         LEFT JOIN xsy_finance_receivable ar ON wo.target_type = 'RECEIVABLE'
-            AND ar.id = wo.target_id AND ar.deleted = FALSE
-        LEFT JOIN xsy_sales_order so ON ar.order_id = so.id AND so.deleted = FALSE
+            AND ar.id = wo.target_id
+            AND ar.deleted = FALSE
+        LEFT JOIN xsy_sales_order so ON ar.order_id = so.id
+            AND so.deleted = FALSE
         LEFT JOIN xsy_finance_payable ap ON wo.target_type = 'PAYABLE'
-            AND ap.id = wo.target_id AND ap.deleted = FALSE
-        LEFT JOIN xsy_purchase_receipt pr ON pr.id = ap.source_id AND pr.deleted = FALSE
-        LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+            AND ap.id = wo.target_id
+            AND ap.deleted = FALSE
+        LEFT JOIN xsy_purchase_receipt pr ON pr.id = ap.source_id
+            AND pr.deleted = FALSE
+        LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id
+            AND po.deleted = FALSE
     </sql>
 
     <sql id="targetScopePredicate">
         <choose>
-            <when test="scope == null">
-                AND FALSE
-            </when>
+            <when test="scope == null">AND FALSE</when>
             <otherwise>
-                AND (
-                    (wo.target_type = 'RECEIVABLE'
-                    <choose>
-                        <when test="scope.orderSellerScope.empty">AND FALSE</when>
-                        <when test="scope.orderSellerScope.all"></when>
-                        <otherwise>
-                            AND so.seller_id IN
-                            <foreach collection="scope.orderSellerScope.ids" item="sellerId"
-                                     open="(" separator="," close=")">#{sellerId}</foreach>
-                        </otherwise>
-                    </choose>)
-                    OR
-                    (wo.target_type = 'PAYABLE'
-                    <choose>
-                        <when test="scope.purchaserScope.empty">AND FALSE</when>
-                        <when test="scope.purchaserScope.all"></when>
-                        <otherwise>
-                            AND po.purchaser_id IN
-                            <foreach collection="scope.purchaserScope.ids" item="purchaserId"
-                                     open="(" separator="," close=")">#{purchaserId}</foreach>
-                        </otherwise>
-                    </choose>)
+                AND ((wo.target_type = 'RECEIVABLE'
+                <choose>
+                    <when test="scope.orderSellerScope.empty">AND FALSE</when>
+                    <when test="scope.orderSellerScope.all"></when>
+                    <otherwise>
+                        AND so.seller_id IN
+                        <foreach collection="scope.orderSellerScope.ids"
+                                 item="sellerId"
+                                 open="("
+                                 separator=","
+                                 close=")">
+                            #{sellerId}
+                        </foreach>
+                    </otherwise>
+                </choose>
                 )
+                    OR (wo.target_type = 'PAYABLE'
+                <choose>
+                    <when test="scope.purchaserScope.empty">AND FALSE</when>
+                    <when test="scope.purchaserScope.all"></when>
+                    <otherwise>
+                        AND po.purchaser_id IN
+                        <foreach collection="scope.purchaserScope.ids"
+                                 item="purchaserId"
+                                 open="("
+                                 separator=","
+                                 close=")">
+                            #{purchaserId}
+                        </foreach>
+                    </otherwise>
+                </choose>
+                ))
             </otherwise>
         </choose>
     </sql>
@@ -158,23 +170,15 @@
             <if test="query.sourceNo != null and query.sourceNo != ''">
                 AND COALESCE(r.receipt_no, p.payment_no, m.movement_no) ILIKE CONCAT('%', #{query.sourceNo}, '%')
             </if>
-            <if test="query.writeOffId != null">
-                AND wo.id = #{query.writeOffId}
-            </if>
-            <if test="query.sourceId != null">
-                AND wo.source_id = #{query.sourceId}
-            </if>
+            <if test="query.writeOffId != null">AND wo.id = #{query.writeOffId}</if>
+            <if test="query.sourceId != null">AND wo.source_id = #{query.sourceId}</if>
             <if test="query.targetNo != null and query.targetNo != ''">
                 AND COALESCE(ar.receivable_no, ap.payable_no) ILIKE CONCAT('%', #{query.targetNo}, '%')
             </if>
-            <if test="query.targetId != null">
-                AND wo.target_id = #{query.targetId}
-            </if>
-            <if test="query.entryType != null and query.entryType != ''">
-                AND wo.entry_type = #{query.entryType}
-            </if>
+            <if test="query.targetId != null">AND wo.target_id = #{query.targetId}</if>
+            <if test="query.entryType != null and query.entryType != ''">AND wo.entry_type = #{query.entryType}</if>
             AND wo.written_off_at &gt;= #{timeRange.startAt}
-            AND wo.written_off_at &lt; #{timeRange.endAt}
+                AND wo.written_off_at &lt; #{timeRange.endAt}
         </where>
         ORDER BY wo.written_off_at DESC, wo.id DESC
     </select>
@@ -183,8 +187,8 @@
         <include refid="writeOffProjectionFrom"/>
         <where>
             wo.deleted = FALSE
-            AND wo.target_type = #{targetType}
-            AND wo.target_id = #{targetId}
+                AND wo.target_type = #{targetType}
+                AND wo.target_id = #{targetId}
             <include refid="targetScopePredicate"/>
         </where>
         ORDER BY wo.written_off_at DESC, wo.id DESC
@@ -194,10 +198,11 @@
         <include refid="writeOffProjectionFrom"/>
         <where>
             wo.deleted = FALSE
-            AND wo.source_type = #{sourceType}
-            AND wo.source_id = #{sourceId}
+                AND wo.source_type = #{sourceType}
+                AND wo.source_id = #{sourceId}
             <include refid="targetScopePredicate"/>
         </where>
         ORDER BY wo.written_off_at DESC, wo.id DESC
     </select>
+
 </mapper>

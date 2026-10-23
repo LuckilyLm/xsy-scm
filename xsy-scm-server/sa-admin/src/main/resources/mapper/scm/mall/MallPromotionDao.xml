@@ -3,19 +3,18 @@
 <mapper namespace="com.xsy.scm.mall.promotion.dao.MallPromotionDao">
 
     <resultMap id="activityMap" type="com.xsy.scm.mall.promotion.domain.vo.MallPromotionActivityVO">
-        <result column="rule" property="rule"
-                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+        <result column="rule" property="rule" typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
     </resultMap>
 
     <!-- 进行中的活动：状态 + 时间窗口。互斥组取舍与优惠计算都在营销域，这里只做展示投影。 -->
     <select id="listActiveActivities" resultMap="activityMap">
-        SELECT id, activity_name AS activityName, activity_type AS activityType,
-               valid_from AS validFrom, valid_to AS validTo, rule
+        SELECT id, activity_name AS activityName, activity_type AS activityType, valid_from AS validFrom,
+            valid_to AS validTo, rule
         FROM xsy_promotion_activity
         WHERE deleted = FALSE
-          AND status = 'ACTIVE'
-          AND valid_from &lt;= #{at}
-          AND valid_to &gt; #{at}
+            AND status = 'ACTIVE'
+            AND valid_from &lt;= #{at}
+            AND valid_to &gt; #{at}
         ORDER BY priority DESC, id ASC
         LIMIT 30
     </select>
@@ -23,53 +22,56 @@
     <!-- 开放自助领取且在有效期内的券模板；已领数量在 SQL 内聚齐，能否再领由服务层判定。 -->
     <select id="listClaimableCoupons" resultType="com.xsy.scm.mall.promotion.domain.vo.MallClaimableCouponVO">
         SELECT c.id AS couponId, c.coupon_name AS couponName, c.discount_type AS discountType,
-               c.discount_value AS discountValue, c.min_order_amount AS minOrderAmount,
-               c.valid_from AS validFrom, c.valid_to AS validTo,
-               c.per_customer_limit AS perCustomerLimit,
-               (SELECT COUNT(*) FROM xsy_promotion_coupon_instance i
-                 WHERE i.coupon_id = c.id AND i.customer_id = #{customerId}
-                   AND i.issue_source = #{claimSource}) AS claimedByCustomer,
-               (SELECT COUNT(*) FROM xsy_promotion_coupon_instance i
-                 WHERE i.coupon_id = c.id AND i.issue_source = #{claimSource}) AS claimedTotal
+            c.discount_value AS discountValue, c.min_order_amount AS minOrderAmount, c.valid_from AS validFrom,
+            c.valid_to AS validTo, c.per_customer_limit AS perCustomerLimit,
+            (SELECT COUNT(*) FROM xsy_promotion_coupon_instance i WHERE i.coupon_id = c.id AND
+            i.customer_id = #{customerId} AND i.issue_source = #{claimSource}) AS claimedByCustomer,
+            (SELECT COUNT(*) FROM xsy_promotion_coupon_instance i WHERE i.coupon_id = c.id AND
+            i.issue_source = #{claimSource}) AS claimedTotal
         FROM xsy_promotion_coupon c
         WHERE c.deleted = FALSE
-          AND c.status = 'ACTIVE'
-          AND c.claimable = TRUE
-          AND c.valid_from &lt;= #{at}
-          AND c.valid_to &gt; #{at}
+            AND c.status = 'ACTIVE'
+            AND c.claimable = TRUE
+            AND c.valid_from &lt;= #{at}
+            AND c.valid_to &gt; #{at}
         ORDER BY c.id DESC
     </select>
 
     <sql id="effectiveCouponStatus">
-        CASE WHEN i.status = 'AVAILABLE' AND c.valid_to &lt;= #{at} THEN 'EXPIRED'
-             WHEN i.status = 'AVAILABLE' AND (c.deleted = TRUE OR c.status &lt;&gt; 'ACTIVE'
-                  OR c.valid_from &gt; #{at}) THEN 'UNAVAILABLE'
-             ELSE i.status END
+        CASE WHEN i.status = 'AVAILABLE'
+            AND c.valid_to &lt;= #{at} THEN 'EXPIRED' WHEN i.status = 'AVAILABLE'
+            AND (c.deleted = TRUE OR c.status &lt;&gt; 'ACTIVE' OR
+            c.valid_from &gt; #{at}) THEN 'UNAVAILABLE' ELSE i.status END
     </sql>
 
     <!-- 当前客户的券先在 SQL 内按状态过滤，再分页；停用/删除的模板仍保留客户历史券。 -->
     <select id="listMyInstances" resultType="com.xsy.scm.mall.promotion.domain.vo.MallCouponInstanceVO">
         SELECT i.id, i.coupon_id AS couponId, i.status, i.used_order_id AS usedOrderId, i.used_at AS usedAt,
-               c.coupon_name AS couponName, c.discount_type AS discountType,
-               c.discount_value AS discountValue, c.min_order_amount AS minOrderAmount, c.valid_to AS validTo,
-               <include refid="effectiveCouponStatus"/> AS effectiveStatus
+            c.coupon_name AS couponName, c.discount_type AS discountType, c.discount_value AS discountValue,
+            c.min_order_amount AS minOrderAmount, c.valid_to AS validTo,
+        <include refid="effectiveCouponStatus"/>
+        AS effectiveStatus
         FROM xsy_promotion_coupon_instance i
         JOIN xsy_promotion_coupon c ON c.id = i.coupon_id
         WHERE i.customer_id = #{customerId}
         <if test="tab != null and tab != ''">
             <choose>
                 <when test="tab == 'AVAILABLE'">
-                    AND i.status = 'AVAILABLE' AND c.deleted = FALSE AND c.status = 'ACTIVE'
-                    AND c.valid_from &lt;= #{at} AND c.valid_to &gt; #{at}
+                    AND i.status = 'AVAILABLE'
+                        AND c.deleted = FALSE
+                        AND c.status = 'ACTIVE'
+                        AND c.valid_from &lt;= #{at}
+                        AND c.valid_to &gt; #{at}
                 </when>
                 <when test="tab == 'USED'">AND i.status = 'USED'</when>
                 <when test="tab == 'INVALID'">
                     AND i.status &lt;&gt; 'USED'
-                    AND NOT (i.status = 'AVAILABLE' AND c.deleted = FALSE AND c.status = 'ACTIVE'
-                        AND c.valid_from &lt;= #{at} AND c.valid_to &gt; #{at})
+                        AND NOT (i.status = 'AVAILABLE' AND c.deleted = FALSE AND c.status = 'ACTIVE' AND
+                        c.valid_from &lt;= #{at} AND c.valid_to &gt; #{at})
                 </when>
             </choose>
         </if>
         ORDER BY i.id DESC
     </select>
+
 </mapper>

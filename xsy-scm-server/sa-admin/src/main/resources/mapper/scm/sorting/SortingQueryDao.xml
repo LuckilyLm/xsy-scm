@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.sorting.dao.SortingQueryDao">
+
     <!--
       分拣范围（裁决第 7 条与补充第 15 条）：授权仓 ∩ 可见指派人，两维取交集、失败关闭。
       * scope 为 null 渲染 AND FALSE：漏传范围必须是「查不到」，不能是「查全部」。
@@ -14,75 +15,94 @@
             <otherwise>
                 <if test="scope.warehouseScope.all == false">
                     AND t.warehouse_id IN
-                    <foreach collection="scope.warehouseScope.ids" item="scopeWarehouseId" open="(" separator=","
-                             close=")">#{scopeWarehouseId}</foreach>
+                    <foreach collection="scope.warehouseScope.ids"
+                             item="scopeWarehouseId"
+                             open="("
+                             separator=","
+                             close=")">
+                        #{scopeWarehouseId}
+                    </foreach>
                 </if>
-                <if test="crossAssignee == false">AND t.assignee_employee_id=#{scope.employeeId}</if>
+                <if test="crossAssignee == false">AND t.assignee_employee_id = #{scope.employeeId}</if>
             </otherwise>
         </choose>
     </sql>
+
     <sql id="taskColumns">
-        t.*,
-        e.actual_name AS assignee_name,
-        (SELECT count(*) FROM xsy_sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE) AS item_count,
-        (SELECT count(*) FROM xsy_sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE
-        AND i.occupation_status='ACTIVE' AND i.result IS NOT NULL) AS processed_count
+        t.*, e.actual_name AS assignee_name,
+            (SELECT count(*) FROM xsy_sorting_task_item i WHERE i.task_id = t.id AND i.deleted = FALSE) AS item_count,
+            (SELECT count(*) FROM xsy_sorting_task_item i WHERE i.task_id = t.id AND i.deleted = FALSE AND
+            i.occupation_status = 'ACTIVE' AND i.result IS NOT NULL) AS processed_count
     </sql>
+
     <select id="lockTask" resultType="com.xsy.scm.sorting.domain.entity.SortingTaskEntity">
         SELECT *
         FROM xsy_sorting_task
         WHERE id = #{id}
-          AND deleted = FALSE FOR UPDATE
+            AND deleted = FALSE
+        FOR UPDATE
     </select>
+
     <select id="nextNumber" resultType="long">
         SELECT nextval('sorting_task_no_seq')
     </select>
+
     <select id="tasks" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskVO">
         SELECT
         <include refid="taskColumns"/>
         FROM xsy_sorting_task t
-        LEFT JOIN t_employee e ON e.employee_id=t.assignee_employee_id AND e.deleted_flag=FALSE
-        WHERE t.deleted=FALSE
+        LEFT JOIN t_employee e ON e.employee_id = t.assignee_employee_id
+            AND e.deleted_flag = FALSE
+        WHERE t.deleted = FALSE
         <if test="q.statusList != null and q.statusList.size() > 0">
             AND t.status IN
-            <foreach collection="q.statusList" item="taskStatus" open="(" separator="," close=")">#{taskStatus}</foreach>
+            <foreach collection="q.statusList" item="taskStatus" open="(" separator="," close=")">
+                #{taskStatus}
+            </foreach>
         </if>
         <if test="(q.statusList == null or q.statusList.size() == 0) and q.status != null and q.status != ''">
-            AND t.status=#{q.status}
+            AND t.status = #{q.status}
         </if>
-        <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
-        <if test="q.assigneeEmployeeId != null">AND t.assignee_employee_id=#{q.assigneeEmployeeId}</if>
+        <if test="q.warehouseId != null">AND t.warehouse_id = #{q.warehouseId}</if>
+        <if test="q.assigneeEmployeeId != null">AND t.assignee_employee_id = #{q.assigneeEmployeeId}</if>
         <if test="q.unassignedOnly != null and q.unassignedOnly">AND t.assignee_employee_id IS NULL</if>
-        <!-- ADM-11 冻结维度筛选：送货时间 / 波次 / 供应商来源全部按建单时冻结的快照过滤，
-             不联订单或线路回查 —— 任务建出来之后，它的作业口径就不该跟着主档变。 -->
+        <!--
+          ADM-11 冻结维度筛选：送货时间 / 波次 / 供应商来源全部按建单时冻结的快照过滤，
+          不联订单或线路回查 —— 任务建出来之后，它的作业口径就不该跟着主档变。
+        -->
         <if test="q.deliveryTimeFrom != null">AND t.delivery_time_snapshot &gt;= #{q.deliveryTimeFrom}</if>
         <if test="q.deliveryTimeTo != null">AND t.delivery_time_snapshot &lt; #{q.deliveryTimeTo}</if>
-        <if test="q.deliveryWave != null and q.deliveryWave != ''">AND t.delivery_wave=#{q.deliveryWave}</if>
-        <if test="q.supplierId != null">AND t.supplier_id=#{q.supplierId}</if>
+        <if test="q.deliveryWave != null and q.deliveryWave != ''">AND t.delivery_wave = #{q.deliveryWave}</if>
+        <if test="q.supplierId != null">AND t.supplier_id = #{q.supplierId}</if>
         <if test="q.keyword != null and q.keyword != ''">
-            AND (t.task_no ILIKE concat('%',#{q.keyword},'%')
-            OR t.warehouse_name_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR e.actual_name ILIKE concat('%',#{q.keyword},'%')
-            OR EXISTS (SELECT 1 FROM xsy_sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE
-            AND (i.order_no_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.customer_name_snapshot ILIKE concat('%',#{q.keyword},'%'))))
+            AND (t.task_no ILIKE concat('%', #{q.keyword}, '%') OR
+                t.warehouse_name_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                e.actual_name ILIKE concat('%', #{q.keyword}, '%') OR
+                EXISTS (SELECT 1 FROM xsy_sorting_task_item i WHERE i.task_id = t.id AND i.deleted = FALSE AND
+                (i.order_no_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.product_name_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.customer_name_snapshot ILIKE concat('%', #{q.keyword}, '%'))))
         </if>
         <include refid="taskScopeGuard"/>
-        ORDER BY t.created_at DESC,t.id DESC    </select>
+        ORDER BY t.created_at DESC, t.id DESC
+    </select>
+
     <select id="task" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskVO">
         SELECT
         <include refid="taskColumns"/>
         FROM xsy_sorting_task t
-        LEFT JOIN t_employee e ON e.employee_id=t.assignee_employee_id AND e.deleted_flag=FALSE
-        WHERE t.id=#{id} AND t.deleted=FALSE
+        LEFT JOIN t_employee e ON e.employee_id = t.assignee_employee_id
+            AND e.deleted_flag = FALSE
+        WHERE t.id = #{id}
+            AND t.deleted = FALSE
         <include refid="taskScopeGuard"/>
     </select>
+
     <select id="items" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskItemVO">
         SELECT i.*, 'ORDER_ITEM' AS source_type
         FROM xsy_sorting_task_item i
         WHERE i.task_id = #{taskId}
-          AND i.deleted = FALSE
+            AND i.deleted = FALSE
         ORDER BY i.id
     </select>
 
@@ -93,145 +113,126 @@
       赠品行刻意不填 sorted_quantity / result：分拣只拣货，不写回赠品事实。
     -->
     <select id="giftItems" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskItemVO">
-        WITH task_orders AS (
-            SELECT i.sales_order_id,
-                   MAX(i.order_no_snapshot)      AS order_no_snapshot,
-                   MAX(i.customer_id)            AS customer_id,
-                   MAX(i.customer_name_snapshot) AS customer_name_snapshot
-            FROM xsy_sorting_task_item i
-            WHERE i.task_id = #{taskId}
-              AND i.deleted = FALSE
-            GROUP BY i.sales_order_id
-        )
-        SELECT g.id                       AS id,
-               #{taskId}                  AS task_id,
-               g.sales_order_id           AS sales_order_id,
-               NULL::BIGINT               AS sales_order_item_id,
-               o.order_no_snapshot        AS order_no_snapshot,
-               o.customer_id              AS customer_id,
-               o.customer_name_snapshot   AS customer_name_snapshot,
-               spu.id                     AS spu_id,
-               g.sku_id                   AS sku_id,
-               spu.spu_code               AS spu_code_snapshot,
-               spu.name                   AS product_name_snapshot,
-               sku.sku_code               AS sku_code_snapshot,
-               sku.spec_name              AS spec_name_snapshot,
-               sku.sale_unit              AS sale_unit_snapshot,
-               'STANDARD'                 AS product_type_snapshot,
-               g.quantity                 AS planned_quantity_snapshot,
-               NULL::NUMERIC              AS sorted_quantity,
-               NULL::VARCHAR              AS result,
-               NULL::VARCHAR              AS reason,
-               NULL::VARCHAR              AS sorted_by,
-               NULL::TIMESTAMPTZ          AS sorted_at,
-               'ACTIVE'                   AS occupation_status,
-               0                          AS version,
-               'PROMOTION_GIFT'           AS source_type
+        WITH task_orders AS(SELECT i.sales_order_id, MAX(i.order_no_snapshot) AS order_no_snapshot,
+            MAX(i.customer_id) AS customer_id,
+            MAX(i.customer_name_snapshot) AS customer_name_snapshot FROM xsy_sorting_task_item i WHERE i.task_id =
+            #{taskId} AND i.deleted = FALSE GROUP BY i.sales_order_id)
+        SELECT g.id AS id, #{taskId} AS task_id, g.sales_order_id AS sales_order_id,
+            NULL::BIGINT AS sales_order_item_id, o.order_no_snapshot AS order_no_snapshot, o.customer_id AS customer_id,
+            o.customer_name_snapshot AS customer_name_snapshot, spu.id AS spu_id, g.sku_id AS sku_id,
+            spu.spu_code AS spu_code_snapshot, spu.name AS product_name_snapshot, sku.sku_code AS sku_code_snapshot,
+            sku.spec_name AS spec_name_snapshot, sku.sale_unit AS sale_unit_snapshot,
+            'STANDARD' AS product_type_snapshot, g.quantity AS planned_quantity_snapshot,
+            NULL::NUMERIC AS sorted_quantity, NULL::VARCHAR AS result, NULL::VARCHAR AS reason,
+            NULL::VARCHAR AS sorted_by, NULL::TIMESTAMPTZ AS sorted_at, 'ACTIVE' AS occupation_status, 0 AS version,
+            'PROMOTION_GIFT' AS source_type
         FROM xsy_order_promotion_gift g
-                 JOIN task_orders o ON o.sales_order_id = g.sales_order_id
-                 JOIN xsy_product_sku sku ON sku.id = g.sku_id
-                 JOIN xsy_product_spu spu ON spu.id = sku.spu_id
+        JOIN task_orders o ON o.sales_order_id = g.sales_order_id
+        JOIN xsy_product_sku sku ON sku.id = g.sku_id
+        JOIN xsy_product_spu spu ON spu.id = sku.spu_id
         ORDER BY g.sales_order_id, g.id
     </select>
+
     <!--
       按商品汇总（只读视角，裁决补充第 19 条）：分组键含销售单位，量只在同单位内相加。
       occupation_status='ACTIVE' 把已取消任务的历史行排除在汇总之外——它们不再代表待办或已发量。
     -->
     <select id="skuSummary" resultType="com.xsy.scm.sorting.domain.vo.SortingSkuSummaryVO">
-        SELECT i.sku_id,
-        i.spu_code_snapshot,
-        i.product_name_snapshot,
-        i.sku_code_snapshot,
-        i.spec_name_snapshot,
-        i.sale_unit_snapshot,
-        count(*) AS line_count,
-        count(DISTINCT i.sales_order_id) AS order_count,
-        count(DISTINCT t.id) AS task_count,
-        sum(i.planned_quantity_snapshot) AS planned_quantity,
-        sum(i.sorted_quantity) AS sorted_quantity,
-        sum(CASE WHEN i.result IS NULL THEN 1 ELSE 0 END) AS unprocessed_count
+        SELECT i.sku_id, i.spu_code_snapshot, i.product_name_snapshot, i.sku_code_snapshot, i.spec_name_snapshot,
+            i.sale_unit_snapshot, count(*) AS line_count, count(DISTINCT i.sales_order_id) AS order_count,
+            count(DISTINCT t.id) AS task_count, sum(i.planned_quantity_snapshot) AS planned_quantity,
+            sum(i.sorted_quantity) AS sorted_quantity,
+            sum(CASE WHEN i.result IS NULL THEN 1 ELSE 0 END) AS unprocessed_count
         FROM xsy_sorting_task_item i
-        JOIN xsy_sorting_task t ON t.id=i.task_id AND t.deleted=FALSE
-        WHERE i.deleted=FALSE AND i.occupation_status='ACTIVE'
-        <if test="q.taskStatus != null and q.taskStatus != ''">AND t.status=#{q.taskStatus}</if>
-        <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
+        JOIN xsy_sorting_task t ON t.id = i.task_id
+            AND t.deleted = FALSE
+        WHERE i.deleted = FALSE
+            AND i.occupation_status = 'ACTIVE'
+        <if test="q.taskStatus != null and q.taskStatus != ''">AND t.status = #{q.taskStatus}</if>
+        <if test="q.warehouseId != null">AND t.warehouse_id = #{q.warehouseId}</if>
         <if test="q.deliveryDate != null">
             AND t.delivery_time_snapshot &gt;= (#{q.deliveryDate}::date AT TIME ZONE 'Asia/Shanghai')
-            AND t.delivery_time_snapshot &lt; ((#{q.deliveryDate}::date + INTERVAL '1 day') AT TIME ZONE 'Asia/Shanghai')
+                AND t.delivery_time_snapshot &lt; ((#{q.deliveryDate}::date + INTERVAL '1 day') AT TIME ZONE
+                'Asia/Shanghai')
         </if>
         <if test="q.keyword != null and q.keyword != ''">
-            AND (i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.spec_name_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.sku_code_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.spu_code_snapshot ILIKE concat('%',#{q.keyword},'%'))
+            AND (i.product_name_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.spec_name_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.sku_code_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.spu_code_snapshot ILIKE concat('%', #{q.keyword}, '%'))
         </if>
         <include refid="taskScopeGuard"/>
-        GROUP BY i.sku_id,i.spu_code_snapshot,i.product_name_snapshot,i.sku_code_snapshot,i.spec_name_snapshot,
-        i.sale_unit_snapshot
-        ORDER BY i.product_name_snapshot,i.sale_unit_snapshot,i.sku_code_snapshot
+        GROUP BY i.sku_id, i.spu_code_snapshot, i.product_name_snapshot, i.sku_code_snapshot, i.spec_name_snapshot,
+            i.sale_unit_snapshot
+        ORDER BY i.product_name_snapshot, i.sale_unit_snapshot, i.sku_code_snapshot
     </select>
-    <!-- 客户视角逐条订单行；与按商品视角使用相同任务范围、状态及送货日期口径。
-         不跨单位汇总，不将只读视图当作分拣写命令；赠品另按原任务详情展示。 -->
+
+    <!--
+      客户视角逐条订单行；与按商品视角使用相同任务范围、状态及送货日期口径。
+      不跨单位汇总，不将只读视图当作分拣写命令；赠品另按原任务详情展示。
+    -->
     <select id="customerLines" resultType="com.xsy.scm.sorting.domain.vo.SortingCustomerLineVO">
-        SELECT i.*,
-               t.task_no AS task_no,
-               t.status AS task_status,
-               t.warehouse_name_snapshot AS warehouse_name_snapshot,
-               t.delivery_time_snapshot AS delivery_time_snapshot,
-               'ORDER_ITEM' AS source_type
+        SELECT i.*, t.task_no AS task_no, t.status AS task_status, t.warehouse_name_snapshot AS warehouse_name_snapshot,
+            t.delivery_time_snapshot AS delivery_time_snapshot, 'ORDER_ITEM' AS source_type
         FROM xsy_sorting_task_item i
-        JOIN xsy_sorting_task t ON t.id=i.task_id AND t.deleted=FALSE
-        WHERE i.deleted=FALSE AND i.occupation_status='ACTIVE'
-        <if test="q.taskStatus != null and q.taskStatus != ''">AND t.status=#{q.taskStatus}</if>
-        <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
+        JOIN xsy_sorting_task t ON t.id = i.task_id
+            AND t.deleted = FALSE
+        WHERE i.deleted = FALSE
+            AND i.occupation_status = 'ACTIVE'
+        <if test="q.taskStatus != null and q.taskStatus != ''">AND t.status = #{q.taskStatus}</if>
+        <if test="q.warehouseId != null">AND t.warehouse_id = #{q.warehouseId}</if>
         <if test="q.deliveryDate != null">
             AND t.delivery_time_snapshot &gt;= (#{q.deliveryDate}::date AT TIME ZONE 'Asia/Shanghai')
-            AND t.delivery_time_snapshot &lt; ((#{q.deliveryDate}::date + INTERVAL '1 day') AT TIME ZONE 'Asia/Shanghai')
+                AND t.delivery_time_snapshot &lt; ((#{q.deliveryDate}::date + INTERVAL '1 day') AT TIME ZONE
+                'Asia/Shanghai')
         </if>
         <if test="q.keyword != null and q.keyword != ''">
-            AND (i.customer_name_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.order_no_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.spec_name_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.sku_code_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.spu_code_snapshot ILIKE concat('%',#{q.keyword},'%'))
+            AND (i.customer_name_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.order_no_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.product_name_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.spec_name_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.sku_code_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.spu_code_snapshot ILIKE concat('%', #{q.keyword}, '%'))
         </if>
         <include refid="taskScopeGuard"/>
-        ORDER BY t.delivery_time_snapshot NULLS LAST,
-                 i.customer_name_snapshot,i.order_no_snapshot,i.id
+        ORDER BY t.delivery_time_snapshot NULLS LAST, i.customer_name_snapshot, i.order_no_snapshot, i.id
     </select>
-    <!-- 绩效视角只统计已完成任务的最终确认行，不把待确认分次、赠品或不同单位混合计量。
-         confirmed_by 是当前最终确认人，不能据此推断所有参与者的劳动贡献或绩效工资。 -->
+
+    <!--
+      绩效视角只统计已完成任务的最终确认行，不把待确认分次、赠品或不同单位混合计量。
+      confirmed_by 是当前最终确认人，不能据此推断所有参与者的劳动贡献或绩效工资。
+    -->
     <select id="confirmedPerformance" resultType="com.xsy.scm.sorting.domain.vo.SortingPerformanceVO">
-        SELECT t.warehouse_id,
-               t.warehouse_name_snapshot,
-               i.sorted_by AS confirmed_by,
-               i.sale_unit_snapshot,
-               count(DISTINCT t.id) AS task_count,
-               count(*) AS line_count,
-               sum(i.sorted_quantity) AS confirmed_quantity,
-               max(i.sorted_at) AS last_confirmed_at
+        SELECT t.warehouse_id, t.warehouse_name_snapshot, i.sorted_by AS confirmed_by, i.sale_unit_snapshot,
+            count(DISTINCT t.id) AS task_count, count(*) AS line_count, sum(i.sorted_quantity) AS confirmed_quantity,
+            max(i.sorted_at) AS last_confirmed_at
         FROM xsy_sorting_task_item i
-        JOIN xsy_sorting_task t ON t.id=i.task_id AND t.deleted=FALSE
-        WHERE i.deleted=FALSE AND i.occupation_status='ACTIVE'
-          AND t.status='COMPLETED' AND i.result IS NOT NULL AND i.sorted_quantity IS NOT NULL
-          AND i.sorted_by IS NOT NULL
-        <if test="q.taskStatus != null and q.taskStatus != ''">AND t.status=#{q.taskStatus}</if>
-        <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
+        JOIN xsy_sorting_task t ON t.id = i.task_id
+            AND t.deleted = FALSE
+        WHERE i.deleted = FALSE
+            AND i.occupation_status = 'ACTIVE'
+            AND t.status = 'COMPLETED'
+            AND i.result IS NOT NULL
+            AND i.sorted_quantity IS NOT NULL
+            AND i.sorted_by IS NOT NULL
+        <if test="q.taskStatus != null and q.taskStatus != ''">AND t.status = #{q.taskStatus}</if>
+        <if test="q.warehouseId != null">AND t.warehouse_id = #{q.warehouseId}</if>
         <if test="q.deliveryDate != null">
             AND t.delivery_time_snapshot &gt;= (#{q.deliveryDate}::date AT TIME ZONE 'Asia/Shanghai')
-            AND t.delivery_time_snapshot &lt; ((#{q.deliveryDate}::date + INTERVAL '1 day') AT TIME ZONE 'Asia/Shanghai')
+                AND t.delivery_time_snapshot &lt; ((#{q.deliveryDate}::date + INTERVAL '1 day') AT TIME ZONE
+                'Asia/Shanghai')
         </if>
         <if test="q.keyword != null and q.keyword != ''">
-            AND (i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.customer_name_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.sorted_by ILIKE concat('%',#{q.keyword},'%')
-            OR i.sku_code_snapshot ILIKE concat('%',#{q.keyword},'%'))
+            AND (i.product_name_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.customer_name_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.sorted_by ILIKE concat('%', #{q.keyword}, '%') OR
+                i.sku_code_snapshot ILIKE concat('%', #{q.keyword}, '%'))
         </if>
         <include refid="taskScopeGuard"/>
-        GROUP BY t.warehouse_id,t.warehouse_name_snapshot,i.sorted_by,i.sale_unit_snapshot
-        ORDER BY confirmed_quantity DESC,i.sorted_by,t.warehouse_id,i.sale_unit_snapshot
+        GROUP BY t.warehouse_id, t.warehouse_name_snapshot, i.sorted_by, i.sale_unit_snapshot
+        ORDER BY confirmed_quantity DESC, i.sorted_by, t.warehouse_id, i.sale_unit_snapshot
     </select>
+
     <!--
       候选订单行（裁决补充第 22 条）：这是分拣队列视图，不按订单业务员维度收窄 ——
       仓库岗位默认不持任何订单范围，若沿用 seller_id 收窄会一个也选不到，建单根本无法发生。
@@ -242,60 +243,38 @@
       因此 CONFIRMED 的行必然有值；写下这条是为了让「计划量快照 > 0」的前提在 SQL 里也看得出来。
     -->
     <select id="candidateLines" resultType="com.xsy.scm.sorting.domain.vo.SortingCandidateLineVO">
-        SELECT i.id AS sales_order_item_id,
-        o.id AS sales_order_id,
-        o.order_no,
-        o.customer_id,
-        o.customer_name_snapshot AS customer_name,
-        i.spu_id,
-        i.sku_id,
-        i.spu_code_snapshot,
-        i.product_name_snapshot,
-        i.sku_code_snapshot,
-        i.spec_name_snapshot,
-        i.sale_unit_snapshot,
-        i.product_type_snapshot,
-        i.ordered_quantity,
-        i.actual_quantity,
-        o.confirmed_at,
-        o.expect_delivery_time
+        SELECT i.id AS sales_order_item_id, o.id AS sales_order_id, o.order_no, o.customer_id,
+            o.customer_name_snapshot AS customer_name, i.spu_id, i.sku_id, i.spu_code_snapshot, i.product_name_snapshot,
+            i.sku_code_snapshot, i.spec_name_snapshot, i.sale_unit_snapshot, i.product_type_snapshot,
+            i.ordered_quantity, i.actual_quantity, o.confirmed_at, o.expect_delivery_time
         FROM xsy_sales_order o
-        JOIN xsy_sales_order_item i ON i.order_id=o.id AND i.deleted=FALSE
-        WHERE o.deleted=FALSE AND o.status='CONFIRMED' AND i.actual_quantity IS NOT NULL
-        AND NOT EXISTS (SELECT 1 FROM xsy_sorting_task_item si WHERE si.sales_order_item_id=i.id AND si.deleted=FALSE
-        AND si.occupation_status='ACTIVE')
-        <if test="q.customerId != null">AND o.customer_id=#{q.customerId}</if>
-        <if test="q.orderId != null">AND o.id=#{q.orderId}</if>
+        JOIN xsy_sales_order_item i ON i.order_id = o.id
+            AND i.deleted = FALSE
+        WHERE o.deleted = FALSE
+            AND o.status = 'CONFIRMED'
+            AND i.actual_quantity IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM xsy_sorting_task_item si WHERE si.sales_order_item_id = i.id AND
+            si.deleted = FALSE AND si.occupation_status = 'ACTIVE')
+        <if test="q.customerId != null">AND o.customer_id = #{q.customerId}</if>
+        <if test="q.orderId != null">AND o.id = #{q.orderId}</if>
         <if test="q.keyword != null and q.keyword != ''">
-            AND (o.order_no ILIKE concat('%',#{q.keyword},'%')
-            OR o.customer_name_snapshot ILIKE concat('%',#{q.keyword},'%')
-            OR i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%'))
+            AND (o.order_no ILIKE concat('%', #{q.keyword}, '%') OR
+                o.customer_name_snapshot ILIKE concat('%', #{q.keyword}, '%') OR
+                i.product_name_snapshot ILIKE concat('%', #{q.keyword}, '%'))
         </if>
-        ORDER BY o.expect_delivery_time NULLS LAST,o.id DESC,i.sort_order,i.id
+        ORDER BY o.expect_delivery_time NULLS LAST, o.id DESC, i.sort_order, i.id
     </select>
+
     <select id="orderLines" resultType="com.xsy.scm.sorting.domain.dto.SortingOrderLineSnapshot">
-        SELECT i.id AS sales_order_item_id,
-        o.id AS sales_order_id,
-        o.status AS order_status,
-        o.deleted AS order_deleted,
-        i.deleted AS item_deleted,
-        o.order_no,
-        o.customer_id,
-        o.customer_name_snapshot AS customer_name,
-        i.spu_id,
-        i.sku_id,
-        i.spu_code_snapshot,
-        i.product_name_snapshot,
-        i.sku_code_snapshot,
-        i.spec_name_snapshot,
-        i.sale_unit_snapshot,
-        i.product_type_snapshot,
-        i.actual_quantity
+        SELECT i.id AS sales_order_item_id, o.id AS sales_order_id, o.status AS order_status,
+            o.deleted AS order_deleted, i.deleted AS item_deleted, o.order_no, o.customer_id,
+            o.customer_name_snapshot AS customer_name, i.spu_id, i.sku_id, i.spu_code_snapshot, i.product_name_snapshot,
+            i.sku_code_snapshot, i.spec_name_snapshot, i.sale_unit_snapshot, i.product_type_snapshot, i.actual_quantity
         FROM xsy_sales_order_item i
-        JOIN xsy_sales_order o ON o.id=i.order_id
-        WHERE i.id IN
-        <foreach collection="ids" item="lineId" open="(" separator="," close=")">#{lineId}</foreach>
+        JOIN xsy_sales_order o ON o.id = i.order_id
+        WHERE i.id IN <foreach collection="ids" item="lineId" open="(" separator="," close=")">#{lineId}</foreach>
     </select>
+
     <!--
       打印只登记计次：不改状态、不动明细、也不 bump version ——
       打印不代表内容变了，让计次把别人的编辑顶成版本冲突是假冲突。
@@ -303,16 +282,18 @@
     -->
     <update id="markPrinted">
         UPDATE xsy_sorting_task
-        SET print_count=print_count + 1, last_printed_at=now(), last_printed_by=#{operator},
-            updated_at=now(), updated_by=#{operator}
+        SET print_count = print_count + 1, last_printed_at = now(), last_printed_by = #{operator}, updated_at = now(),
+            updated_by = #{operator}
         WHERE id = #{id}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </update>
+
     <update id="releaseItems">
         UPDATE xsy_sorting_task_item
-        SET occupation_status='RELEASED', version=version + 1, updated_at=now(), updated_by=#{operator}
+        SET occupation_status = 'RELEASED', version = version + 1, updated_at = now(), updated_by = #{operator}
         WHERE task_id = #{taskId}
-          AND deleted = FALSE
-          AND occupation_status = 'ACTIVE'
+            AND deleted = FALSE
+            AND occupation_status = 'ACTIVE'
     </update>
+
 </mapper>

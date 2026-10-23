@@ -1,51 +1,81 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.mall.cart.dao.MallCartDao">
+
     <select id="listByAccount" resultType="com.xsy.scm.mall.cart.domain.entity.MallCartItemEntity">
-        SELECT * FROM xsy_mall_cart_item WHERE account_id = #{accountId} AND deleted = FALSE ORDER BY id
+        SELECT *
+        FROM xsy_mall_cart_item
+        WHERE account_id = #{accountId}
+            AND deleted = FALSE
+        ORDER BY id
     </select>
+
     <select id="selectByAccountAndSku" resultType="com.xsy.scm.mall.cart.domain.entity.MallCartItemEntity">
-        SELECT * FROM xsy_mall_cart_item WHERE account_id = #{accountId} AND sku_id = #{skuId} AND deleted = FALSE
+        SELECT *
+        FROM xsy_mall_cart_item
+        WHERE account_id = #{accountId}
+            AND sku_id = #{skuId}
+            AND deleted = FALSE
     </select>
+
     <!-- 并发加购在行锁上排队：后到的读到前者已提交的数量再累加，不会互相覆盖 -->
     <select id="lockByAccountAndSku" resultType="com.xsy.scm.mall.cart.domain.entity.MallCartItemEntity">
-        SELECT * FROM xsy_mall_cart_item WHERE account_id = #{accountId} AND sku_id = #{skuId} AND deleted = FALSE
+        SELECT *
+        FROM xsy_mall_cart_item
+        WHERE account_id = #{accountId}
+            AND sku_id = #{skuId}
+            AND deleted = FALSE
         FOR UPDATE
     </select>
-    <insert id="insert" parameterType="com.xsy.scm.mall.cart.domain.entity.MallCartItemEntity"
-            useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_mall_cart_item(account_id, customer_id, sku_id, quantity, version, deleted,
-                                   created_at, updated_at, created_by, updated_by)
-        VALUES (#{accountId}, #{customerId}, #{skuId}, #{quantity}, 0, FALSE,
-                #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+
+    <insert id="insert"
+            parameterType="com.xsy.scm.mall.cart.domain.entity.MallCartItemEntity"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO xsy_mall_cart_item (account_id, customer_id, sku_id, quantity, version, deleted, created_at,
+            updated_at, created_by, updated_by)
+        VALUES (#{accountId}, #{customerId}, #{skuId}, #{quantity}, 0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy},
+            #{updatedBy})
     </insert>
+
     <!-- 部分唯一索引 uk_mall_cart_item_account_sku 兜底并发首插；冲突即「别人已建行」，返回 0 走累加 -->
     <insert id="insertOnConflictDoNothing" parameterType="com.xsy.scm.mall.cart.domain.entity.MallCartItemEntity">
-        INSERT INTO xsy_mall_cart_item(account_id, customer_id, sku_id, quantity, version, deleted,
-                                   created_at, updated_at, created_by, updated_by)
-        VALUES (#{accountId}, #{customerId}, #{skuId}, #{quantity}, 0, FALSE,
-                #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+        INSERT INTO xsy_mall_cart_item (account_id, customer_id, sku_id, quantity, version, deleted, created_at,
+            updated_at, created_by, updated_by)
+        VALUES (#{accountId}, #{customerId}, #{skuId}, #{quantity}, 0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy},
+            #{updatedBy})
         ON CONFLICT DO NOTHING
     </insert>
+
     <update id="updateQuantity">
         UPDATE xsy_mall_cart_item
         SET quantity = #{quantity}, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE account_id = #{accountId} AND sku_id = #{skuId} AND deleted = FALSE
+        WHERE account_id = #{accountId}
+            AND sku_id = #{skuId}
+            AND deleted = FALSE
     </update>
+
     <update id="removeBySku">
         UPDATE xsy_mall_cart_item
         SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE account_id = #{accountId} AND sku_id = #{skuId} AND deleted = FALSE
+        WHERE account_id = #{accountId}
+            AND sku_id = #{skuId}
+            AND deleted = FALSE
     </update>
+
     <update id="removeBySkus">
         UPDATE xsy_mall_cart_item
         SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE account_id = #{accountId} AND deleted = FALSE AND sku_id IN
-        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
+        WHERE account_id = #{accountId}
+            AND deleted = FALSE
+            AND sku_id IN <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
     </update>
+
     <update id="clear">
         UPDATE xsy_mall_cart_item
         SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE account_id = #{accountId} AND deleted = FALSE
+        WHERE account_id = #{accountId}
+            AND deleted = FALSE
     </update>
+
 </mapper>

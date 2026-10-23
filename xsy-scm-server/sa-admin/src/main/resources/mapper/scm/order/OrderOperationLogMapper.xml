@@ -1,50 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.order.dao.OrderOperationLogDao">
+
     <resultMap id="row" type="com.xsy.scm.order.domain.entity.OrderOperationLogEntity">
         <result column="id" property="id"/>
         <result column="order_id" property="orderId"/>
         <result column="operation_type" property="operationType"/>
         <result column="operator" property="operator"/>
         <result column="reason" property="reason"/>
-        <result column="before_data" property="beforeData"
+        <result column="before_data"
+                property="beforeData"
                 typeHandler="com.xsy.scm.order.support.OrderJsonbTypeHandler"/>
-        <result column="after_data" property="afterData"
-                typeHandler="com.xsy.scm.order.support.OrderJsonbTypeHandler"/>
+        <result column="after_data" property="afterData" typeHandler="com.xsy.scm.order.support.OrderJsonbTypeHandler"/>
         <result column="created_at" property="createdAt"/>
         <result column="created_by" property="createdBy"/>
     </resultMap>
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id">INSERT INTO xsy_order_operation_log(order_id,
-                                                                                                 operation_type,
-                                                                                                 operator, reason,
-                                                                                                 before_data,
-                                                                                                 after_data, created_by)
-                                                                 VALUES (#{orderId}, #{operationType}, #{operator},
-                                                                         #{reason},
-                                                                         #{beforeData,typeHandler=com.xsy.scm.order.support.OrderJsonbTypeHandler},
-                                                                         #{afterData,typeHandler=com.xsy.scm.order.support.OrderJsonbTypeHandler},
-                                                                         #{createdBy})</insert>
-    <!-- 操作日志行没有 owner 列（operator/created_by 只回答「谁按的按钮」，不是归属），
-         因此可见性一律跟随父订单：order_id IN (范围内的订单)。日志表与 xsy_sales_order 是
-         多对一，用子查询而不是 JOIN，行数不会被放大、也不会因为订单被删而丢日志副本。 -->
-    <select id="query" resultMap="row">SELECT * FROM xsy_order_operation_log WHERE TRUE
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO xsy_order_operation_log (order_id, operation_type, operator, reason, before_data, after_data,
+            created_by)
+        VALUES (#{orderId}, #{operationType}, #{operator}, #{reason},
+            #{beforeData,typeHandler=com.xsy.scm.order.support.OrderJsonbTypeHandler},
+            #{afterData,typeHandler=com.xsy.scm.order.support.OrderJsonbTypeHandler}, #{createdBy})
+    </insert>
+
+    <!--
+      操作日志行没有 owner 列（operator/created_by 只回答「谁按的按钮」，不是归属），
+      因此可见性一律跟随父订单：order_id IN (范围内的订单)。日志表与 xsy_sales_order 是
+      多对一，用子查询而不是 JOIN，行数不会被放大、也不会因为订单被删而丢日志副本。
+    -->
+    <select id="query" resultMap="row">
+        SELECT *
+        FROM xsy_order_operation_log
+        WHERE TRUE
         <if test="scope != null and scope.all == false">
             AND order_id IN (SELECT so.id FROM xsy_sales_order so WHERE so.deleted = FALSE AND so.seller_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
             )
         </if>
-        <if test="scope == null">
-            AND FALSE
+        <if test="scope == null">AND FALSE</if>
+        <if test="query.operationType != null and query.operationType != ''">
+            AND operation_type = #{query.operationType}
         </if>
-        <if test="query.operationType != null and query.operationType != ''">AND operation_type=#{query.operationType}
-        </if>
-        <if test="query.orderId != null">AND order_id=#{query.orderId}</if>
+        <if test="query.orderId != null">AND order_id = #{query.orderId}</if>
         <if test="query.startTime != null">AND created_at &gt;= #{query.startTime}</if>
         <if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if>
-        ORDER BY created_at DESC,id DESC
+        ORDER BY created_at DESC, id DESC
     </select>
+
     <!-- 按订单读全部记录，不拼范围：调用方必须先按归属校验订单（商城走 selectByIdAndCustomer）。 -->
     <select id="listByOrderId" resultMap="row">
-        SELECT * FROM xsy_order_operation_log WHERE order_id = #{orderId} ORDER BY created_at, id
+        SELECT *
+        FROM xsy_order_operation_log
+        WHERE order_id = #{orderId}
+        ORDER BY created_at, id
     </select>
+
 </mapper>

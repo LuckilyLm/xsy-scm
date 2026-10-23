@@ -2,28 +2,20 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.inventory.dao.InventoryOutboundItemDao">
 
-    <resultMap id="itemVoMap"
-               type="com.xsy.scm.inventory.domain.vo.InventoryOutboundItemVO">
-        <result column="spec_values" property="specValues"
+    <resultMap id="itemVoMap" type="com.xsy.scm.inventory.domain.vo.InventoryOutboundItemVO">
+        <result column="spec_values"
+                property="specValues"
                 typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
     </resultMap>
 
     <select id="listByOutboundId" resultMap="itemVoMap">
-        SELECT i.id,
-               i.outbound_id,
-               i.sku_id,
-               i.quantity,
-               i.unit_snapshot,
-               i.remark,
-               k.sku_code,
-               k.spec_name AS sku_name,
-               k.spec_values,
-               p.name      AS product_name
+        SELECT i.id, i.outbound_id, i.sku_id, i.quantity, i.unit_snapshot, i.remark, k.sku_code,
+            k.spec_name AS sku_name, k.spec_values, p.name AS product_name
         FROM xsy_inventory_outbound_item i
-                 LEFT JOIN xsy_product_sku k ON k.id = i.sku_id
-                 LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
+        LEFT JOIN xsy_product_sku k ON k.id = i.sku_id
+        LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE i.deleted = FALSE
-          AND i.outbound_id = #{outboundId}
+            AND i.outbound_id = #{outboundId}
         ORDER BY i.id ASC
     </select>
 
@@ -34,33 +26,29 @@
     <select id="listOrderLinesWithConfirmedOutbound" resultType="java.lang.Long">
         SELECT DISTINCT i.sales_order_item_id
         FROM xsy_inventory_outbound_item i
-                 JOIN xsy_inventory_outbound o ON o.id = i.outbound_id AND o.deleted = FALSE
+        JOIN xsy_inventory_outbound o ON o.id = i.outbound_id
+            AND o.deleted = FALSE
         WHERE i.deleted = FALSE
-          AND o.status = 'CONFIRMED'
-          AND i.sales_order_item_id IN
+            AND o.status = 'CONFIRMED'
+            AND i.sales_order_item_id IN
         <foreach collection="salesOrderItemIds" item="orderItemId" open="(" separator="," close=")">
             #{orderItemId}
         </foreach>
     </select>
 
     <!-- 草稿重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删口径一致） -->
-    <update id="deleteByOutboundId">        UPDATE xsy_inventory_outbound_item
-        SET deleted    = TRUE,
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+    <update id="deleteByOutboundId">
+        UPDATE xsy_inventory_outbound_item
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE outbound_id = #{outboundId}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </update>
 
     <update id="updateUnitSnapshot">
         UPDATE xsy_inventory_outbound_item
-        SET unit_snapshot = #{unit},
-            version       = version + 1,
-            updated_at    = CURRENT_TIMESTAMP,
-            updated_by    = #{operator}
+        SET unit_snapshot = #{unit}, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </update>
 
 </mapper>

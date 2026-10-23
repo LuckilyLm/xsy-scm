@@ -4,28 +4,29 @@
 
     <resultMap id="recordMap" type="com.xsy.scm.print.domain.entity.ScmPrintRecordEntity">
         <id column="id" property="id"/>
-        <result column="model_snapshot" property="modelSnapshot"
+        <result column="model_snapshot"
+                property="modelSnapshot"
                 typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
-        <result column="data_snapshot" property="dataSnapshot"
+        <result column="data_snapshot"
+                property="dataSnapshot"
                 typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
     </resultMap>
 
     <select id="selectRecord" resultMap="recordMap">
-        SELECT id, document_type, business_id, business_no, template_id, template_code, template_name,
-               template_version, model_snapshot, data_snapshot, printed_at, printed_by
+        SELECT id, document_type, business_id, business_no, template_id, template_code, template_name, template_version,
+            model_snapshot, data_snapshot, printed_at, printed_by
         FROM xsy_print_record
         WHERE id = #{id}
     </select>
 
     <insert id="insertRecord" useGeneratedKeys="true" keyProperty="row.id">
         INSERT INTO xsy_print_record (document_type, business_id, business_no, template_id, template_code,
-                                      template_name, template_version, model_snapshot, data_snapshot,
-                                      printed_at, printed_by)
+            template_name, template_version, model_snapshot, data_snapshot, printed_at, printed_by)
         VALUES (#{row.documentType}, #{row.businessId}, #{row.businessNo}, #{row.templateId}, #{row.templateCode},
-                #{row.templateName}, #{row.templateVersion},
-                #{row.modelSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
-                #{row.dataSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
-                #{row.printedAt}, #{row.printedBy})
+            #{row.templateName}, #{row.templateVersion},
+            #{row.modelSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
+            #{row.dataSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler}, #{row.printedAt},
+            #{row.printedBy})
     </insert>
 
 </mapper>

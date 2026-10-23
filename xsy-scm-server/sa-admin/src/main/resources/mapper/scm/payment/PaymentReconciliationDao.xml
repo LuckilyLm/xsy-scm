@@ -3,7 +3,8 @@
 <mapper namespace="com.xsy.scm.payment.dao.PaymentReconciliationDao">
 
     <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentReconciliationEntity">
-        SELECT * FROM xsy_payment_reconciliation
+        SELECT *
+        FROM xsy_payment_reconciliation
         WHERE deleted = FALSE
         <if test="query.provider != null and query.provider != ''">AND provider = #{query.provider}</if>
         <if test="query.status != null and query.status != ''">AND status = #{query.status}</if>
@@ -12,14 +13,20 @@
         ORDER BY biz_date DESC, id DESC
     </select>
 
-    <select id="selectByProviderAndDate"
-            resultType="com.xsy.scm.payment.domain.entity.PaymentReconciliationEntity">
-        SELECT * FROM xsy_payment_reconciliation
-        WHERE provider = #{provider} AND biz_date = #{bizDate} AND deleted = FALSE
+    <select id="selectByProviderAndDate" resultType="com.xsy.scm.payment.domain.entity.PaymentReconciliationEntity">
+        SELECT *
+        FROM xsy_payment_reconciliation
+        WHERE provider = #{provider}
+            AND biz_date = #{bizDate}
+            AND deleted = FALSE
     </select>
 
     <select id="lockById" resultType="com.xsy.scm.payment.domain.entity.PaymentReconciliationEntity">
-        SELECT * FROM xsy_payment_reconciliation WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM xsy_payment_reconciliation
+        WHERE id = #{id}
+            AND deleted = FALSE
+        FOR UPDATE
     </select>
 
 </mapper>

@@ -4,20 +4,9 @@
 
     <!-- 只列出仍有数量的批次，零余额批次留给流水回看 -->
     <select id="queryBalancePage" resultType="com.xsy.scm.inventory.domain.vo.InventoryLotBalanceVO">
-        SELECT b.id,
-               b.warehouse_id AS warehouseId,
-               w.warehouse_code AS warehouseCode,
-               w.name AS warehouseName,
-               b.sku_id AS skuId,
-               k.sku_code AS skuCode,
-               k.spec_name AS skuName,
-               p.name AS productName,
-               b.lot_id AS lotId,
-               t.lot_no AS lotNo,
-               t.source_lot_no AS sourceLotNo,
-               b.unit,
-               b.quantity,
-               b.updated_at AS updatedAt
+        SELECT b.id, b.warehouse_id AS warehouseId, w.warehouse_code AS warehouseCode, w.name AS warehouseName,
+            b.sku_id AS skuId, k.sku_code AS skuCode, k.spec_name AS skuName, p.name AS productName, b.lot_id AS lotId,
+            t.lot_no AS lotNo, t.source_lot_no AS sourceLotNo, b.unit, b.quantity, b.updated_at AS updatedAt
         FROM xsy_inventory_lot_balance b
         LEFT JOIN xsy_warehouse w ON w.id = b.warehouse_id
         LEFT JOIN xsy_product_sku k ON k.id = b.sku_id
@@ -31,9 +20,7 @@
         </if>
         <if test="query.warehouseId != null">AND b.warehouse_id = #{query.warehouseId}</if>
         <if test="query.skuId != null">AND b.sku_id = #{query.skuId}</if>
-        <if test="query.lotNo != null and query.lotNo != ''">
-            AND t.lot_no ILIKE CONCAT('%', #{query.lotNo}, '%')
-        </if>
+        <if test="query.lotNo != null and query.lotNo != ''">AND t.lot_no ILIKE CONCAT( '%', #{query.lotNo}, '%')</if>
         <if test="query.sourceLotNo != null and query.sourceLotNo != ''">
             AND t.source_lot_no ILIKE CONCAT('%', #{query.sourceLotNo}, '%')
         </if>
@@ -45,24 +32,12 @@
 
     <!-- 按发生时刻倒序，保留有符号数量 -->
     <select id="queryMovementPage" resultType="com.xsy.scm.inventory.domain.vo.InventoryLotMovementVO">
-        SELECT m.id,
-               m.warehouse_id AS warehouseId,
-               w.name AS warehouseName,
-               m.sku_id AS skuId,
-               k.sku_code AS skuCode,
-               k.spec_name AS skuName,
-               m.lot_id AS lotId,
-               t.lot_no AS lotNo,
-               m.movement_type AS movementType,
-               m.source_document_type AS sourceDocumentType,
-               m.source_document_id AS sourceDocumentId,
-               m.source_document_item_id AS sourceDocumentItemId,
-               m.quantity,
-               m.unit_snapshot AS unitSnapshot,
-               m.before_quantity AS beforeQuantity,
-               m.after_quantity AS afterQuantity,
-               m.occurred_at AS occurredAt,
-               m.operator
+        SELECT m.id, m.warehouse_id AS warehouseId, w.name AS warehouseName, m.sku_id AS skuId, k.sku_code AS skuCode,
+            k.spec_name AS skuName, m.lot_id AS lotId, t.lot_no AS lotNo, m.movement_type AS movementType,
+            m.source_document_type AS sourceDocumentType, m.source_document_id AS sourceDocumentId,
+            m.source_document_item_id AS sourceDocumentItemId, m.quantity, m.unit_snapshot AS unitSnapshot,
+            m.before_quantity AS beforeQuantity, m.after_quantity AS afterQuantity, m.occurred_at AS occurredAt,
+            m.operator
         FROM xsy_inventory_lot_movement m
         LEFT JOIN xsy_warehouse w ON w.id = m.warehouse_id
         LEFT JOIN xsy_product_sku k ON k.id = m.sku_id
@@ -75,9 +50,7 @@
         </if>
         <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
         <if test="query.skuId != null">AND m.sku_id = #{query.skuId}</if>
-        <if test="query.lotNo != null and query.lotNo != ''">
-            AND t.lot_no ILIKE CONCAT('%', #{query.lotNo}, '%')
-        </if>
+        <if test="query.lotNo != null and query.lotNo != ''">AND t.lot_no ILIKE CONCAT( '%', #{query.lotNo}, '%')</if>
         <if test="query.movementType != null and query.movementType != ''">
             AND m.movement_type = #{query.movementType}
         </if>

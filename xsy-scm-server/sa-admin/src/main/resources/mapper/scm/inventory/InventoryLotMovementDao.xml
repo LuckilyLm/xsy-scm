@@ -3,14 +3,12 @@
 <mapper namespace="com.xsy.scm.inventory.dao.InventoryLotMovementDao">
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_inventory_lot_movement
-          (warehouse_id, sku_id, lot_id, movement_type, source_document_type, source_document_id,
-           source_document_item_id, quantity, unit_snapshot, before_quantity, after_quantity,
-           occurred_at, operator, created_by)
-        VALUES
-          (#{warehouseId}, #{skuId}, #{lotId}, #{movementType}, #{sourceDocumentType}, #{sourceDocumentId},
-           #{sourceDocumentItemId}, #{quantity}, #{unitSnapshot}, #{beforeQuantity}, #{afterQuantity},
-           #{occurredAt}, #{operator}, #{createdBy})
+        INSERT INTO xsy_inventory_lot_movement (warehouse_id, sku_id, lot_id, movement_type, source_document_type,
+            source_document_id, source_document_item_id, quantity, unit_snapshot, before_quantity, after_quantity,
+            occurred_at, operator, created_by)
+        VALUES (#{warehouseId}, #{skuId}, #{lotId}, #{movementType}, #{sourceDocumentType}, #{sourceDocumentId},
+            #{sourceDocumentItemId}, #{quantity}, #{unitSnapshot}, #{beforeQuantity}, #{afterQuantity}, #{occurredAt},
+            #{operator}, #{createdBy})
     </insert>
 
     <!--
@@ -21,10 +19,11 @@
     <select id="sumByLotForSource" resultType="com.xsy.scm.inventory.dao.InventoryLotMovementDao$LotSourceNet">
         SELECT lot_id AS lotId, SUM(quantity) AS netQuantity
         FROM xsy_inventory_lot_movement
-        WHERE warehouse_id = #{warehouseId} AND sku_id = #{skuId}
-          AND source_document_item_id = #{sourceDocumentItemId}
-          AND source_document_type IN
-          <foreach collection="sourceDocumentTypes" item="type" open="(" separator="," close=")">#{type}</foreach>
+        WHERE warehouse_id = #{warehouseId}
+            AND sku_id = #{skuId}
+            AND source_document_item_id = #{sourceDocumentItemId}
+            AND source_document_type IN
+        <foreach collection="sourceDocumentTypes" item="type" open="(" separator="," close=")">#{type}</foreach>
         GROUP BY lot_id
         ORDER BY lot_id
     </select>

@@ -4,14 +4,14 @@
 
     <resultMap id="giftMap" type="com.xsy.scm.promotion.domain.entity.OrderPromotionGiftEntity">
         <id column="id" property="id"/>
-        <result column="rule_snapshot" property="ruleSnapshot"
+        <result column="rule_snapshot"
+                property="ruleSnapshot"
                 typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
     </resultMap>
 
     <sql id="columns">
-        id, sales_order_id, activity_id, activity_version, sku_id, sku_code_snapshot,
-        product_name_snapshot, spec_name_snapshot, sale_unit_snapshot, quantity, rule_snapshot,
-        version, created_at, created_by
+        id, sales_order_id, activity_id, activity_version, sku_id, sku_code_snapshot, product_name_snapshot,
+            spec_name_snapshot, sale_unit_snapshot, quantity, rule_snapshot, version, created_at, created_by
     </sql>
 
     <select id="listByOrder" resultMap="giftMap">
@@ -23,15 +23,13 @@
     </select>
 
     <insert id="insertGift" useGeneratedKeys="true" keyProperty="row.id">
-        INSERT INTO xsy_order_promotion_gift (sales_order_id, activity_id, activity_version, sku_id,
-                                          sku_code_snapshot, product_name_snapshot, spec_name_snapshot,
-                                          sale_unit_snapshot, quantity, rule_snapshot, version,
-                                          created_at, created_by)
-        VALUES (#{row.salesOrderId}, #{row.activityId}, #{row.activityVersion}, #{row.skuId},
-                #{row.skuCodeSnapshot}, #{row.productNameSnapshot}, #{row.specNameSnapshot},
-                #{row.saleUnitSnapshot}, #{row.quantity},
-                #{row.ruleSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
-                0, CURRENT_TIMESTAMP, #{row.createdBy})
+        INSERT INTO xsy_order_promotion_gift (sales_order_id, activity_id, activity_version, sku_id, sku_code_snapshot,
+            product_name_snapshot, spec_name_snapshot, sale_unit_snapshot, quantity, rule_snapshot, version, created_at,
+            created_by)
+        VALUES (#{row.salesOrderId}, #{row.activityId}, #{row.activityVersion}, #{row.skuId}, #{row.skuCodeSnapshot},
+            #{row.productNameSnapshot}, #{row.specNameSnapshot}, #{row.saleUnitSnapshot}, #{row.quantity},
+            #{row.ruleSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler}, 0, CURRENT_TIMESTAMP,
+            #{row.createdBy})
     </insert>
 
 </mapper>

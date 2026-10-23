@@ -1,26 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.mall.order.dao.MallWarehouseDao">
+
     <select id="byDistrict" resultType="com.xsy.scm.mall.order.domain.vo.MallWarehouseOptionVO">
-        SELECT w.id AS warehouseId, w.name AS warehouseName,
-               'DISTRICT' AS source, rule.priority
+        SELECT w.id AS warehouseId, w.name AS warehouseName, 'DISTRICT' AS source, rule.priority
         FROM xsy_mall_district_warehouse rule
-                 JOIN xsy_warehouse w ON w.id = rule.warehouse_id
-                     AND w.deleted = FALSE AND w.status = 'ENABLED'
-        WHERE rule.deleted = FALSE AND rule.district_code = #{districtCode}
+        JOIN xsy_warehouse w ON w.id = rule.warehouse_id
+            AND w.deleted = FALSE
+            AND w.status = 'ENABLED'
+        WHERE rule.deleted = FALSE
+            AND rule.district_code = #{districtCode}
         ORDER BY rule.priority, rule.id
     </select>
+
     <insert id="insertDistrictMapping">
-        INSERT INTO xsy_mall_district_warehouse(district_code, warehouse_id, priority, deleted,
-                                                created_at, updated_at, created_by, updated_by)
-        VALUES(#{districtCode}, #{warehouseId}, #{priority}, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
-               #{operator}, #{operator})
-        ON CONFLICT (district_code, warehouse_id) WHERE deleted = FALSE
-        DO UPDATE SET priority = EXCLUDED.priority, updated_at = CURRENT_TIMESTAMP, updated_by = EXCLUDED.updated_by
+        INSERT INTO xsy_mall_district_warehouse (district_code, warehouse_id, priority, deleted, created_at, updated_at,
+            created_by, updated_by)
+        VALUES (#{districtCode}, #{warehouseId}, #{priority}, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, #{operator},
+            #{operator})
+        ON CONFLICT (district_code, warehouse_id)
+        WHERE deleted = FALSE DO UPDATE
+        SET priority = EXCLUDED.priority, updated_at = CURRENT_TIMESTAMP, updated_by = EXCLUDED.updated_by
     </insert>
+
     <update id="deleteDistrictMapping">
         UPDATE xsy_mall_district_warehouse
         SET deleted = TRUE, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE district_code = #{districtCode} AND warehouse_id = #{warehouseId} AND deleted = FALSE
+        WHERE district_code = #{districtCode}
+            AND warehouse_id = #{warehouseId}
+            AND deleted = FALSE
     </update>
+
 </mapper>

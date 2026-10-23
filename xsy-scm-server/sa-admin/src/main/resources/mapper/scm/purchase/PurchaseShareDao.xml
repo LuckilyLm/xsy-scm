@@ -4,38 +4,40 @@
 
     <sql id="tokenColumns">
         id, purchase_order_id AS purchaseOrderId, token_hash AS tokenHash, token_prefix AS tokenPrefix,
-        expires_at AS expiresAt, revoked_at AS revokedAt, last_used_at AS lastUsedAt,
-        use_count AS useCount, created_by AS createdBy, created_at AS createdAt
+            expires_at AS expiresAt, revoked_at AS revokedAt, last_used_at AS lastUsedAt, use_count AS useCount,
+            created_by AS createdBy, created_at AS createdAt
     </sql>
 
     <update id="revokeActiveByOrder">
         UPDATE xsy_purchase_share_token
         SET revoked_at = #{revokedAt}, updated_at = CURRENT_TIMESTAMP
-        WHERE purchase_order_id = #{purchaseOrderId} AND revoked_at IS NULL
+        WHERE purchase_order_id = #{purchaseOrderId}
+            AND revoked_at IS NULL
     </update>
 
     <insert id="insertToken" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_purchase_share_token
-          (token_hash, token_prefix, purchase_order_id, expires_at, created_by)
-        VALUES
-          (#{tokenHash}, #{tokenPrefix}, #{purchaseOrderId}, #{expiresAt}, #{createdBy})
+        INSERT INTO xsy_purchase_share_token (token_hash, token_prefix, purchase_order_id, expires_at, created_by)
+        VALUES (#{tokenHash}, #{tokenPrefix}, #{purchaseOrderId}, #{expiresAt}, #{createdBy})
     </insert>
 
     <!-- 已撤销的也要查出来：撤销与过期要给不同的提示，否则现场只会看到「链接无效」 -->
     <select id="findByHash" resultType="com.xsy.scm.purchase.domain.vo.PurchaseShareVO">
-        SELECT <include refid="tokenColumns"/>
+        SELECT
+        <include refid="tokenColumns"/>
         FROM xsy_purchase_share_token
         WHERE token_hash = #{tokenHash}
     </select>
 
     <select id="findById" resultType="com.xsy.scm.purchase.domain.vo.PurchaseShareVO">
-        SELECT <include refid="tokenColumns"/>
+        SELECT
+        <include refid="tokenColumns"/>
         FROM xsy_purchase_share_token
         WHERE id = #{id}
     </select>
 
     <select id="listByOrder" resultType="com.xsy.scm.purchase.domain.vo.PurchaseShareVO">
-        SELECT <include refid="tokenColumns"/>
+        SELECT
+        <include refid="tokenColumns"/>
         FROM xsy_purchase_share_token
         WHERE purchase_order_id = #{purchaseOrderId}
         ORDER BY id DESC
@@ -48,21 +50,20 @@
     </update>
 
     <insert id="insertFeedback">
-        INSERT INTO xsy_purchase_share_feedback
-          (share_token_id, purchase_order_id, purchase_order_item_id, unit_price, received_quantity,
-           remark, operator_ip, created_by)
-        VALUES
-          (#{shareTokenId}, #{purchaseOrderId}, #{purchaseOrderItemId}, #{unitPrice}, #{receivedQuantity},
-           #{remark}, #{operatorIp}, #{createdBy})
+        INSERT INTO xsy_purchase_share_feedback (share_token_id, purchase_order_id, purchase_order_item_id, unit_price,
+            received_quantity, remark, operator_ip, created_by)
+        VALUES (#{shareTokenId}, #{purchaseOrderId}, #{purchaseOrderItemId}, #{unitPrice}, #{receivedQuantity},
+            #{remark}, #{operatorIp}, #{createdBy})
     </insert>
 
     <select id="header" resultType="com.xsy.scm.purchase.domain.vo.PurchaseSharePublicVO">
-        SELECT o.order_no AS orderNo, o.supplier_name_snapshot AS supplierName,
-               e.actual_name AS purchaserName, o.warehouse_name_snapshot AS warehouseName,
-               o.planned_arrival_date AS plannedArrivalDate, o.status AS status
+        SELECT o.order_no AS orderNo, o.supplier_name_snapshot AS supplierName, e.actual_name AS purchaserName,
+            o.warehouse_name_snapshot AS warehouseName, o.planned_arrival_date AS plannedArrivalDate, o.status AS status
         FROM xsy_purchase_order o
-        LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id AND e.deleted_flag = FALSE
-        WHERE o.id = #{purchaseOrderId} AND o.deleted = FALSE
+        LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id
+            AND e.deleted_flag = FALSE
+        WHERE o.id = #{purchaseOrderId}
+            AND o.deleted = FALSE
     </select>
 
     <!--
@@ -71,23 +72,23 @@
     -->
     <select id="lines" resultType="com.xsy.scm.purchase.domain.vo.PurchaseSharePublicVO$Line">
         SELECT i.id AS itemId, i.product_name_snapshot AS productName, i.sku_name_snapshot AS skuName,
-               i.purchase_unit_snapshot AS purchaseUnit, i.planned_quantity AS plannedQuantity,
-               i.received_quantity AS receivedQuantity, i.purchase_price AS purchasePrice,
-               f.unit_price AS lastUnitPrice, f.received_quantity AS lastReceivedQuantity,
-               f.remark AS lastRemark, f.submitted_at AS lastSubmittedAt
+            i.purchase_unit_snapshot AS purchaseUnit, i.planned_quantity AS plannedQuantity,
+            i.received_quantity AS receivedQuantity, i.purchase_price AS purchasePrice, f.unit_price AS lastUnitPrice,
+            f.received_quantity AS lastReceivedQuantity, f.remark AS lastRemark, f.submitted_at AS lastSubmittedAt
         FROM xsy_purchase_order_item i
-        LEFT JOIN LATERAL (
-            SELECT unit_price, received_quantity, remark, submitted_at
-            FROM xsy_purchase_share_feedback
-            WHERE purchase_order_item_id = i.id
-            ORDER BY id DESC LIMIT 1
-        ) f ON TRUE
-        WHERE i.purchase_order_id = #{purchaseOrderId} AND i.deleted = FALSE
+        LEFT JOIN LATERAL (SELECT unit_price, received_quantity, remark,
+            submitted_at FROM xsy_purchase_share_feedback WHERE purchase_order_item_id = i.id ORDER BY id DESC LIMIT 1)
+            f ON TRUE
+        WHERE i.purchase_order_id = #{purchaseOrderId}
+            AND i.deleted = FALSE
         ORDER BY i.sort_order, i.id
     </select>
 
     <select id="itemIdsOfOrder" resultType="long">
-        SELECT id FROM xsy_purchase_order_item
-        WHERE purchase_order_id = #{purchaseOrderId} AND deleted = FALSE
+        SELECT id
+        FROM xsy_purchase_order_item
+        WHERE purchase_order_id = #{purchaseOrderId}
+            AND deleted = FALSE
     </select>
+
 </mapper>

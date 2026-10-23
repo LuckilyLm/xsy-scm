@@ -1,51 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.payment.dao.RefundFundingAllocationDao">
+
     <select id="existsByOrder" resultType="boolean">
-        SELECT EXISTS (SELECT 1 FROM xsy_refund_funding_allocation
-            WHERE order_id = #{orderId} AND deleted = FALSE)
+        SELECT EXISTS (SELECT 1 FROM xsy_refund_funding_allocation WHERE order_id = #{orderId} AND deleted = FALSE)
     </select>
+
     <insert id="insertIgnoreDuplicate" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_refund_funding_allocation(order_refund_id, order_id, customer_id, settlement_customer_id,
+        INSERT INTO xsy_refund_funding_allocation (order_refund_id, order_id, customer_id, settlement_customer_id,
             source_method, source_id, source_principal, allocated_amount, status, source_succeeded_at, sort_order,
             created_at, updated_at, created_by, updated_by)
         VALUES (#{orderRefundId}, #{orderId}, #{customerId}, #{settlementCustomerId}, #{sourceMethod}, #{sourceId},
-            #{sourcePrincipal}, #{allocatedAmount}, #{status}, #{sourceSucceededAt}, #{sortOrder},
-            #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
-        ON CONFLICT (order_refund_id, source_method, source_id) WHERE deleted = FALSE DO NOTHING
+            #{sourcePrincipal}, #{allocatedAmount}, #{status}, #{sourceSucceededAt}, #{sortOrder}, #{createdAt},
+            #{updatedAt}, #{createdBy}, #{updatedBy})
+        ON CONFLICT (order_refund_id, source_method, source_id)
+        WHERE deleted = FALSE DO NOTHING
     </insert>
+
     <select id="lockByRefund" resultType="com.xsy.scm.payment.domain.entity.RefundFundingAllocationEntity">
-        SELECT * FROM xsy_refund_funding_allocation
-        WHERE order_refund_id = #{refundId} AND deleted = FALSE ORDER BY sort_order, id FOR UPDATE
+        SELECT *
+        FROM xsy_refund_funding_allocation
+        WHERE order_refund_id = #{refundId}
+            AND deleted = FALSE
+        ORDER BY sort_order, id
+        FOR UPDATE
     </select>
+
     <select id="listByRefund" resultType="com.xsy.scm.payment.domain.entity.RefundFundingAllocationEntity">
-        SELECT * FROM xsy_refund_funding_allocation
-        WHERE order_refund_id = #{refundId} AND deleted = FALSE ORDER BY sort_order, id
+        SELECT *
+        FROM xsy_refund_funding_allocation
+        WHERE order_refund_id = #{refundId}
+            AND deleted = FALSE
+        ORDER BY sort_order, id
     </select>
+
     <select id="sumAllocatedBySource" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(allocated_amount), 0) FROM xsy_refund_funding_allocation
-        WHERE source_method = #{sourceMethod} AND source_id = #{sourceId} AND deleted = FALSE
+        SELECT COALESCE(SUM(allocated_amount), 0)
+        FROM xsy_refund_funding_allocation
+        WHERE source_method = #{sourceMethod}
+            AND source_id = #{sourceId}
+            AND deleted = FALSE
     </select>
+
     <update id="markProcessing">
-        UPDATE xsy_refund_funding_allocation SET status = 'PROCESSING', version = version + 1,
-            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE id = #{id} AND status IN ('PENDING', 'FAILED') AND deleted = FALSE
+        UPDATE xsy_refund_funding_allocation
+        SET status = 'PROCESSING', version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id}
+            AND status IN ('PENDING', 'FAILED')
+            AND deleted = FALSE
     </update>
+
     <update id="markSucceeded">
-        UPDATE xsy_refund_funding_allocation SET status = 'SUCCEEDED', result_source_id = #{resultSourceId},
-            failure_code = NULL, failure_message = NULL, version = version + 1,
-            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE id = #{id} AND status IN ('PENDING', 'PROCESSING', 'FAILED') AND deleted = FALSE
-    </update>
-    <update id="markFailed">
-        UPDATE xsy_refund_funding_allocation SET status = 'FAILED', failure_code = #{failureCode},
-            failure_message = #{failureMessage}, version = version + 1,
-            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE id = #{id} AND status IN ('PENDING', 'PROCESSING') AND deleted = FALSE
-    </update>
-    <update id="resetFailed">
-        UPDATE xsy_refund_funding_allocation SET status = 'PENDING', failure_code = NULL, failure_message = NULL,
+        UPDATE xsy_refund_funding_allocation
+        SET status = 'SUCCEEDED', result_source_id = #{resultSourceId}, failure_code = NULL, failure_message = NULL,
             version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
-        WHERE id = #{id} AND status = 'FAILED' AND deleted = FALSE
+        WHERE id = #{id}
+            AND status IN ('PENDING', 'PROCESSING', 'FAILED')
+            AND deleted = FALSE
     </update>
+
+    <update id="markFailed">
+        UPDATE xsy_refund_funding_allocation
+        SET status = 'FAILED', failure_code = #{failureCode}, failure_message = #{failureMessage},
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id}
+            AND status IN ('PENDING', 'PROCESSING')
+            AND deleted = FALSE
+    </update>
+
+    <update id="resetFailed">
+        UPDATE xsy_refund_funding_allocation
+        SET status = 'PENDING', failure_code = NULL, failure_message = NULL, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id}
+            AND status = 'FAILED'
+            AND deleted = FALSE
+    </update>
+
 </mapper>

@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.inventory.dao.InventoryReservationDao">
 
-    <resultMap id="reservationVoMap"
-               type="com.xsy.scm.inventory.domain.vo.InventoryReservationVO">
+    <resultMap id="reservationVoMap" type="com.xsy.scm.inventory.domain.vo.InventoryReservationVO">
         <id column="id" property="id"/>
-        <result column="spec_values" property="specValues"
+        <result column="spec_values"
+                property="specValues"
                 typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
     </resultMap>
 
@@ -15,117 +15,90 @@
     -->
     <insert id="insertOnConflictDoNothing"
             parameterType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity"
-            useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_inventory_reservation (warehouse_id, sku_id,
-                                           source_document_type, source_document_id, source_document_item_id,
-                                           quantity, unit_snapshot, status, occurred_at, operator,
-                                           version, deleted, created_at, updated_at, created_by, updated_by)
-        VALUES (#{warehouseId}, #{skuId},
-                #{sourceDocumentType}, #{sourceDocumentId}, #{sourceDocumentItemId},
-                #{quantity}, #{unitSnapshot}, #{status}, #{occurredAt}, #{operator},
-                0, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, #{createdBy}, #{updatedBy})
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO xsy_inventory_reservation (warehouse_id, sku_id, source_document_type, source_document_id,
+            source_document_item_id, quantity, unit_snapshot, status, occurred_at, operator, version, deleted,
+            created_at, updated_at, created_by, updated_by)
+        VALUES (#{warehouseId}, #{skuId}, #{sourceDocumentType}, #{sourceDocumentId}, #{sourceDocumentItemId},
+            #{quantity}, #{unitSnapshot}, #{status}, #{occurredAt}, #{operator}, 0, FALSE, CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP, #{createdBy}, #{updatedBy})
         ON CONFLICT (source_document_type, source_document_item_id)
         WHERE deleted = FALSE
-          AND source_document_item_id IS NOT NULL
-            DO NOTHING
+            AND source_document_item_id IS NOT NULL DO NOTHING
     </insert>
 
-    <select id="selectById"
-            resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
+    <select id="selectById" resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
         SELECT *
         FROM xsy_inventory_reservation
         WHERE id = #{id}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </select>
 
-    <select id="selectActiveBySource"
-            resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
+    <select id="selectActiveBySource" resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
         SELECT *
         FROM xsy_inventory_reservation
         WHERE source_document_type = #{sourceDocumentType}
-          AND source_document_item_id = #{sourceDocumentItemId}
-          AND status = 'ACTIVE'
-          AND deleted = FALSE
+            AND source_document_item_id = #{sourceDocumentItemId}
+            AND status = 'ACTIVE'
+            AND deleted = FALSE
     </select>
 
-    <select id="listActiveBySourceDocument"
-            resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
+    <select id="listActiveBySourceDocument" resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
         SELECT *
         FROM xsy_inventory_reservation
         WHERE source_document_type = #{sourceDocumentType}
-          AND source_document_id = #{sourceDocumentId}
-          AND status = 'ACTIVE'
-          AND deleted = FALSE
+            AND source_document_id = #{sourceDocumentId}
+            AND status = 'ACTIVE'
+            AND deleted = FALSE
         -- 释放要按 (warehouse_id, sku_id) 升序拿余额锁，这里先排好，调用方不必再排一次
         ORDER BY warehouse_id ASC, sku_id ASC
     </select>
 
     <!-- 发车一次性取整条线路的预留；排序同上，为的是与余额锁序对齐 -->
-    <select id="listActiveBySourceItemIds"
-            resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
+    <select id="listActiveBySourceItemIds" resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
         SELECT *
         FROM xsy_inventory_reservation
         WHERE source_document_type = #{sourceDocumentType}
-          AND source_document_item_id IN
+            AND source_document_item_id IN
         <foreach collection="sourceDocumentItemIds" item="sourceItemId" open="(" separator="," close=")">
             #{sourceItemId}
         </foreach>
-          AND status = 'ACTIVE'
-          AND deleted = FALSE
+        AND status = 'ACTIVE'
+            AND deleted = FALSE
         ORDER BY warehouse_id ASC, sku_id ASC, id ASC
     </select>
 
-    <select id="lockById"
-            resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
+    <select id="lockById" resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
         SELECT *
         FROM xsy_inventory_reservation
         WHERE id = #{id}
-          AND deleted = FALSE FOR UPDATE
+            AND deleted = FALSE
+        FOR UPDATE
     </select>
 
     <!-- 带状态条件：重复释放只有一次能成功 -->
     <update id="markReleased">
         UPDATE xsy_inventory_reservation
-        SET status     = 'RELEASED',
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+        SET status = 'RELEASED', version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND deleted = FALSE
-          AND status = 'ACTIVE'
+            AND deleted = FALSE
+            AND status = 'ACTIVE'
     </update>
 
     <update id="markConsumed">
         UPDATE xsy_inventory_reservation
-        SET status     = 'CONSUMED',
-            version    = version + 1,
-            updated_at = CURRENT_TIMESTAMP,
-            updated_by = #{operator}
+        SET status = 'CONSUMED', version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND deleted = FALSE
-          AND status = 'ACTIVE'
+            AND deleted = FALSE
+            AND status = 'ACTIVE'
     </update>
 
     <select id="queryPage" resultMap="reservationVoMap">
-        SELECT r.id,
-        r.warehouse_id,
-        r.sku_id,
-        r.source_document_type,
-        r.source_document_id,
-        r.source_document_item_id,
-        r.quantity,
-        r.unit_snapshot,
-        r.status,
-        r.occurred_at,
-        r.operator,
-        r.created_at,
-        w.warehouse_code,
-        w.name AS warehouse_name,
-        k.sku_code,
-        k.spec_name AS sku_name,
-        k.spec_values,
-        p.name AS product_name,
-        s.order_no AS source_document_no
+        SELECT r.id, r.warehouse_id, r.sku_id, r.source_document_type, r.source_document_id, r.source_document_item_id,
+            r.quantity, r.unit_snapshot, r.status, r.occurred_at, r.operator, r.created_at, w.warehouse_code,
+            w.name AS warehouse_name, k.sku_code, k.spec_name AS sku_name, k.spec_values, p.name AS product_name,
+            s.order_no AS source_document_no
         FROM xsy_inventory_reservation r
         LEFT JOIN xsy_warehouse w ON w.id = r.warehouse_id
         LEFT JOIN xsy_product_sku k ON k.id = r.sku_id
@@ -137,21 +110,11 @@
             AND r.warehouse_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
-        <if test="query.warehouseId != null">
-            AND r.warehouse_id = #{query.warehouseId}
-        </if>
-        <if test="query.skuId != null">
-            AND r.sku_id = #{query.skuId}
-        </if>
-        <if test="query.status != null and query.status != ''">
-            AND r.status = #{query.status}
-        </if>
-        <if test="query.sourceDocumentId != null">
-            AND r.source_document_id = #{query.sourceDocumentId}
-        </if>
+        <if test="scope == null">AND FALSE</if>
+        <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+        <if test="query.skuId != null">AND r.sku_id = #{query.skuId}</if>
+        <if test="query.status != null and query.status != ''">AND r.status = #{query.status}</if>
+        <if test="query.sourceDocumentId != null">AND r.source_document_id = #{query.sourceDocumentId}</if>
         ORDER BY r.created_at DESC, r.id DESC
     </select>
 

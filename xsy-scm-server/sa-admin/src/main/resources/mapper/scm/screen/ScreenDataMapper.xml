@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.screen.dao.ScreenDataDao">
 
     <!--
@@ -20,9 +18,14 @@
         <choose>
             <when test="scope == null or scope.customerSellerScope.empty">AND FALSE</when>
             <when test="scope.customerSellerScope.all"></when>
-            <otherwise>AND c.seller_id IN
-                <foreach collection="scope.customerSellerScope.ids" item="customerSellerId" open="(" separator=","
-                         close=")">#{customerSellerId}
+            <otherwise>
+                AND c.seller_id IN
+                <foreach collection="scope.customerSellerScope.ids"
+                         item="customerSellerId"
+                         open="("
+                         separator=","
+                         close=")">
+                    #{customerSellerId}
                 </foreach>
             </otherwise>
         </choose>
@@ -32,9 +35,14 @@
         <choose>
             <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
             <when test="scope.warehouseScope.all"></when>
-            <otherwise>AND b.warehouse_id IN
-                <foreach collection="scope.warehouseScope.ids" item="balanceWarehouseId" open="(" separator=","
-                         close=")">#{balanceWarehouseId}
+            <otherwise>
+                AND b.warehouse_id IN
+                <foreach collection="scope.warehouseScope.ids"
+                         item="balanceWarehouseId"
+                         open="("
+                         separator=","
+                         close=")">
+                    #{balanceWarehouseId}
                 </foreach>
             </otherwise>
         </choose>
@@ -45,24 +53,23 @@
         <choose>
             <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
             <when test="scope.warehouseScope.all"></when>
-            <otherwise>AND w.id IN
-                <foreach collection="scope.warehouseScope.ids" item="warehouseNodeId" open="(" separator=","
-                         close=")">#{warehouseNodeId}
+            <otherwise>
+                AND w.id IN
+                <foreach collection="scope.warehouseScope.ids" item="warehouseNodeId" open="(" separator="," close=")">
+                    #{warehouseNodeId}
                 </foreach>
             </otherwise>
         </choose>
     </sql>
 
     <!-- ================= 库存：仅大屏的仓库分布与网络节点 ================= -->
-
     <select id="inventoryDistributionByWarehouse"
             resultType="com.xsy.scm.screen.domain.vo.ScreenInventoryVO$WarehouseDistribution">
-        SELECT w.name AS warehouseName,
-        COALESCE(SUM(b.quantity), 0) AS quantity
+        SELECT w.name AS warehouseName, COALESCE(SUM(b.quantity), 0) AS quantity
         FROM xsy_inventory_balance b
         JOIN xsy_warehouse w ON w.id = b.warehouse_id
         WHERE b.deleted = FALSE
-        AND w.deleted = FALSE
+            AND w.deleted = FALSE
         <include refid="scopeB"/>
         GROUP BY b.warehouse_id, w.name
         ORDER BY quantity DESC
@@ -73,24 +80,18 @@
       谓词落在 w.id 而不是余额的 join 条件里：只收窄 b 会让授权外的仓以「0 库存节点」继续画在图上，
       看起来像那个仓真的没有货。
     -->
-    <select id="warehouseNetworkNodes"
-            resultType="com.xsy.scm.screen.domain.vo.ScreenInventoryVO$WarehouseNode">
-        SELECT w.name AS warehouseName,
-        COALESCE(SUM(b.quantity), 0) AS quantity,
-        COALESCE((SELECT SUM(m.quantity)
-        FROM xsy_inventory_movement m
-        WHERE m.deleted = FALSE
-        AND m.warehouse_id = w.id
-        AND m.movement_type IN
+    <select id="warehouseNetworkNodes" resultType="com.xsy.scm.screen.domain.vo.ScreenInventoryVO$WarehouseNode">
+        SELECT w.name AS warehouseName, COALESCE(SUM(b.quantity), 0) AS quantity,
+            COALESCE((SELECT SUM(m.quantity) FROM xsy_inventory_movement m WHERE m.deleted = FALSE AND
+            m.warehouse_id = w.id AND m.movement_type IN
         <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
         AND m.occurred_at &gt;= #{startTime}
-        AND m.occurred_at &lt; #{endTime}), 0) AS todayOutboundQuantity
+            AND m.occurred_at &lt; #{endTime}), 0) AS todayOutboundQuantity
         FROM xsy_warehouse w
-        LEFT JOIN xsy_inventory_balance b
-        ON b.warehouse_id = w.id
-        AND b.deleted = FALSE
+        LEFT JOIN xsy_inventory_balance b ON b.warehouse_id = w.id
+            AND b.deleted = FALSE
         WHERE w.deleted = FALSE
-        AND w.status = 'ENABLED'
+            AND w.status = 'ENABLED'
         <include refid="scopeW"/>
         GROUP BY w.id, w.name
         ORDER BY quantity DESC
@@ -122,7 +123,7 @@
         SELECT w.city_code IS NOT NULL AS located, w.city_code AS city_code
         FROM xsy_warehouse w
         WHERE w.deleted = FALSE
-        AND w.status = 'ENABLED'
+            AND w.status = 'ENABLED'
         <include refid="scopeW"/>
     </sql>
 
@@ -132,54 +133,51 @@
       区划字典本身按 (region_code) 唯一（uk_scm_region_code_active），JOIN 不会放大计数。
     -->
     <select id="geoCityRows" resultType="com.xsy.scm.screen.domain.vo.ScreenGeoVO$CityNode">
-        SELECT city.region_code AS cityCode,
-        city.region_name AS cityName,
-        city.parent_code AS provinceCode,
-        province.region_name AS provinceName,
-        city.center_lng AS centerLng,
-        city.center_lat AS centerLat,
-        COUNT(*) FILTER (WHERE src.kind = 'CUSTOMER') AS customerCount,
-        COUNT(*) FILTER (WHERE src.kind = 'SUPPLIER') AS supplierCount,
-        COUNT(*) FILTER (WHERE src.kind = 'WAREHOUSE') AS warehouseCount
+        SELECT city.region_code AS cityCode, city.region_name AS cityName, city.parent_code AS provinceCode,
+            province.region_name AS provinceName, city.center_lng AS centerLng, city.center_lat AS centerLat,
+            COUNT(*) FILTER (WHERE src.kind = 'CUSTOMER') AS customerCount,
+            COUNT(*) FILTER (WHERE src.kind = 'SUPPLIER') AS supplierCount,
+            COUNT(*) FILTER (WHERE src.kind = 'WAREHOUSE') AS warehouseCount
+        FROM (SELECT city_code, 'CUSTOMER'::text AS kind FROM (
+        <include refid="geoCustomerPopulation"/>
+        ) t
+        WHERE t.located
+        UNION ALL
+        SELECT city_code, 'SUPPLIER'::text
         FROM (
-        SELECT city_code, 'CUSTOMER'::text AS kind FROM (<include refid="geoCustomerPopulation"/>) t WHERE t.located
+        <include refid="geoSupplierPopulation"/>
+        ) t
+        WHERE t.located
         UNION ALL
-        SELECT city_code, 'SUPPLIER'::text FROM (<include refid="geoSupplierPopulation"/>) t WHERE t.located
-        UNION ALL
-        SELECT city_code, 'WAREHOUSE'::text FROM (<include refid="geoWarehousePopulation"/>) t WHERE t.located
-        ) src
-        JOIN xsy_region city
-        ON city.deleted = FALSE
-        AND city.region_level = 2
-        AND city.region_code = src.city_code
-        JOIN xsy_region province
-        ON province.deleted = FALSE
-        AND province.region_level = 1
-        AND province.region_code = city.parent_code
-        GROUP BY city.region_code, city.region_name, city.parent_code, province.region_name,
-        city.center_lng, city.center_lat
+        SELECT city_code, 'WAREHOUSE'::text
+        FROM (
+        <include refid="geoWarehousePopulation"/>
+        ) t
+        WHERE t.located) src
+        JOIN xsy_region city ON city.deleted = FALSE
+            AND city.region_level = 2
+            AND city.region_code = src.city_code
+        JOIN xsy_region province ON province.deleted = FALSE
+            AND province.region_level = 1
+            AND province.region_code = city.parent_code
+        GROUP BY city.region_code, city.region_name, city.parent_code, province.region_name, city.center_lng,
+            city.center_lat
         ORDER BY customerCount DESC, cityCode
     </select>
 
     <!-- 覆盖度：一次返回三张主档的「总数 / 已归属数」，与气泡共用上面三段口径。 -->
     <select id="geoCoverage" resultType="com.xsy.scm.screen.domain.vo.ScreenGeoVO$Coverage">
-        SELECT c.total AS customerTotal,
-        c.located AS customerLocated,
-        s.total AS supplierTotal,
-        s.located AS supplierLocated,
-        w.total AS warehouseTotal,
-        w.located AS warehouseLocated
-        FROM (SELECT COUNT(*) AS total,
-        COUNT(*) FILTER (WHERE located) AS located
-        FROM (<include refid="geoCustomerPopulation"/>) t) c
-        CROSS JOIN
-        (SELECT COUNT(*) AS total,
-        COUNT(*) FILTER (WHERE located) AS located
-        FROM (<include refid="geoSupplierPopulation"/>) t) s
-        CROSS JOIN
-        (SELECT COUNT(*) AS total,
-        COUNT(*) FILTER (WHERE located) AS located
-        FROM (<include refid="geoWarehousePopulation"/>) t) w
+        SELECT c.total AS customerTotal, c.located AS customerLocated, s.total AS supplierTotal,
+            s.located AS supplierLocated, w.total AS warehouseTotal, w.located AS warehouseLocated
+        FROM (SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE located) AS located FROM (
+        <include refid="geoCustomerPopulation"/>
+        ) t) c
+        CROSS JOIN (SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE located) AS located FROM (
+        <include refid="geoSupplierPopulation"/>
+        ) t) s
+        CROSS JOIN (SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE located) AS located FROM (
+        <include refid="geoWarehousePopulation"/>
+        ) t) w
     </select>
 
 </mapper>

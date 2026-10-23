@@ -10,32 +10,27 @@
         FROM xsy_sales_order_item i
         JOIN xsy_sales_order o ON o.id = i.order_id
         WHERE o.customer_id = #{customerId}
-          AND o.order_source = 'MALL'
-          AND o.deleted = FALSE
-          AND i.deleted = FALSE
-          AND o.status IN ('PENDING', 'CONFIRMED')
+            AND o.order_source = 'MALL'
+            AND o.deleted = FALSE
+            AND i.deleted = FALSE
+            AND o.status IN ('PENDING', 'CONFIRMED')
         <if test="startAt != null">AND o.created_at &gt;= #{startAt}</if>
         <if test="endAt != null">AND o.created_at &lt; #{endAt}</if>
     </sql>
 
     <select id="summaryPage" resultType="com.xsy.scm.mall.order.domain.vo.MallOrderSummaryVO$Item">
-        SELECT i.sku_id AS skuId,
-               MAX(i.product_name_snapshot) AS productName,
-               MAX(i.spec_name_snapshot) AS specName,
-               MAX(i.sale_unit_snapshot) AS saleUnit,
-               SUM(i.ordered_quantity) AS quantity,
-               SUM(i.ordered_line_amount) AS amount,
-               COUNT(DISTINCT i.order_id) AS orderCount
+        SELECT i.sku_id AS skuId, MAX(i.product_name_snapshot) AS productName, MAX(i.spec_name_snapshot) AS specName,
+            MAX(i.sale_unit_snapshot) AS saleUnit, SUM(i.ordered_quantity) AS quantity,
+            SUM(i.ordered_line_amount) AS amount, COUNT(DISTINCT i.order_id) AS orderCount
         <include refid="summaryFilter"/>
         GROUP BY i.sku_id
         ORDER BY SUM(i.ordered_line_amount) DESC, i.sku_id
     </select>
 
     <select id="summaryTotals" resultType="com.xsy.scm.mall.order.domain.vo.MallOrderSummaryVO$Totals">
-        SELECT COALESCE(SUM(i.ordered_quantity), 0) AS quantity,
-               COALESCE(SUM(i.ordered_line_amount), 0) AS amount,
-               COUNT(DISTINCT i.order_id) AS orderCount,
-               COUNT(DISTINCT i.sku_id) AS skuCount
+        SELECT COALESCE(SUM(i.ordered_quantity), 0) AS quantity, COALESCE(SUM(i.ordered_line_amount), 0) AS amount,
+            COUNT(DISTINCT i.order_id) AS orderCount, COUNT(DISTINCT i.sku_id) AS skuCount
         <include refid="summaryFilter"/>
     </select>
+
 </mapper>

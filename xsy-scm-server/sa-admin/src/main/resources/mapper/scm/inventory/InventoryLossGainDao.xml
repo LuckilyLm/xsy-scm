@@ -2,35 +2,33 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.inventory.dao.InventoryLossGainDao">
 
-    <resultMap id="lossGainVoMap"
-               type="com.xsy.scm.inventory.domain.vo.InventoryLossGainVO"/>
+    <resultMap id="lossGainVoMap" type="com.xsy.scm.inventory.domain.vo.InventoryLossGainVO"/>
 
     <select id="countByLossGainNo" resultType="int">
         SELECT COUNT(*)
         FROM xsy_inventory_loss_gain
         WHERE loss_gain_no = #{lossGainNo}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </select>
 
     <select id="nextLossGainNo" resultType="long">
         SELECT nextval('inventory_loss_gain_no_seq')
     </select>
 
-    <select id="selectById"
-            resultType="com.xsy.scm.inventory.domain.entity.InventoryLossGainEntity">
+    <select id="selectById" resultType="com.xsy.scm.inventory.domain.entity.InventoryLossGainEntity">
         SELECT *
         FROM xsy_inventory_loss_gain
         WHERE id = #{id}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </select>
 
     <!-- 锁序：单据锁先于余额锁（与收货/出库/盘点确认同一顺序，避免反向拿锁） -->
-    <select id="lockById"
-            resultType="com.xsy.scm.inventory.domain.entity.InventoryLossGainEntity">
+    <select id="lockById" resultType="com.xsy.scm.inventory.domain.entity.InventoryLossGainEntity">
         SELECT *
         FROM xsy_inventory_loss_gain
         WHERE id = #{id}
-          AND deleted = FALSE FOR UPDATE
+            AND deleted = FALSE
+        FOR UPDATE
     </select>
 
     <!--
@@ -41,66 +39,39 @@
     -->
     <update id="markCompleted">
         UPDATE xsy_inventory_loss_gain
-        SET status        = 'COMPLETED',
-            audited_at    = #{auditedAt},
-            auditor       = #{auditor},
-            audit_opinion = #{auditOpinion},
-            version       = version + 1,
-            updated_at    = CURRENT_TIMESTAMP,
-            updated_by    = #{auditor}
+        SET status = 'COMPLETED', audited_at = #{auditedAt}, auditor = #{auditor}, audit_opinion = #{auditOpinion},
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{auditor}
         WHERE id = #{id}
-          AND deleted = FALSE
-          AND status = 'PENDING'
-          AND version = #{version}
+            AND deleted = FALSE
+            AND status = 'PENDING'
+            AND version = #{version}
     </update>
 
     <update id="markRejected">
         UPDATE xsy_inventory_loss_gain
-        SET status        = 'REJECTED',
-            audited_at    = #{auditedAt},
-            auditor       = #{auditor},
-            audit_opinion = #{auditOpinion},
-            version       = version + 1,
-            updated_at    = CURRENT_TIMESTAMP,
-            updated_by    = #{auditor}
+        SET status = 'REJECTED', audited_at = #{auditedAt}, auditor = #{auditor}, audit_opinion = #{auditOpinion},
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{auditor}
         WHERE id = #{id}
-          AND deleted = FALSE
-          AND status = 'PENDING'
-          AND version = #{version}
+            AND deleted = FALSE
+            AND status = 'PENDING'
+            AND version = #{version}
     </update>
 
     <!-- 回写待审核单据的头；状态守卫保证已完成/已驳回的单据改不动 -->
     <update id="updatePending">
         UPDATE xsy_inventory_loss_gain
-        SET adjust_type  = #{adjustType},
-            warehouse_id = #{warehouseId},
-            reason       = #{reason},
-            remark       = #{remark},
-            version      = version + 1,
-            updated_at   = CURRENT_TIMESTAMP,
-            updated_by   = #{operator}
+        SET adjust_type = #{adjustType}, warehouse_id = #{warehouseId}, reason = #{reason}, remark = #{remark},
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
-          AND deleted = FALSE
-          AND status = 'PENDING'
+            AND deleted = FALSE
+            AND status = 'PENDING'
     </update>
 
     <!-- 展示字段实时联表；排序写死，不接受客户端排序（联表列名会歧义） -->
     <select id="queryPage" resultMap="lossGainVoMap">
-        SELECT g.id,
-        g.loss_gain_no,
-        g.warehouse_id,
-        g.adjust_type,
-        g.status,
-        g.reason,
-        g.remark,
-        g.audited_at,
-        g.auditor,
-        g.audit_opinion,
-        g.version,
-        g.created_at,
-        g.updated_at,
-        w.warehouse_code,
-        w.name AS warehouse_name
+        SELECT g.id, g.loss_gain_no, g.warehouse_id, g.adjust_type, g.status, g.reason, g.remark, g.audited_at,
+            g.auditor, g.audit_opinion, g.version, g.created_at, g.updated_at, w.warehouse_code,
+            w.name AS warehouse_name
         FROM xsy_inventory_loss_gain g
         LEFT JOIN xsy_warehouse w ON w.id = g.warehouse_id
         WHERE g.deleted = FALSE
@@ -109,44 +80,24 @@
             AND g.warehouse_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
+        <if test="scope == null">AND FALSE</if>
         <if test="query.lossGainNo != null and query.lossGainNo != ''">
             AND g.loss_gain_no ILIKE CONCAT('%', #{query.lossGainNo}, '%')
         </if>
-        <if test="query.warehouseId != null">
-            AND g.warehouse_id = #{query.warehouseId}
-        </if>
-        <if test="query.adjustType != null and query.adjustType != ''">
-            AND g.adjust_type = #{query.adjustType}
-        </if>
-        <if test="query.status != null and query.status != ''">
-            AND g.status = #{query.status}
-        </if>
+        <if test="query.warehouseId != null">AND g.warehouse_id = #{query.warehouseId}</if>
+        <if test="query.adjustType != null and query.adjustType != ''">AND g.adjust_type = #{query.adjustType}</if>
+        <if test="query.status != null and query.status != ''">AND g.status = #{query.status}</if>
         ORDER BY g.created_at DESC, g.id DESC
     </select>
 
     <select id="detail" resultMap="lossGainVoMap">
-        SELECT g.id,
-               g.loss_gain_no,
-               g.warehouse_id,
-               g.adjust_type,
-               g.status,
-               g.reason,
-               g.remark,
-               g.audited_at,
-               g.auditor,
-               g.audit_opinion,
-               g.version,
-               g.created_at,
-               g.updated_at,
-               w.warehouse_code,
-               w.name AS warehouse_name
+        SELECT g.id, g.loss_gain_no, g.warehouse_id, g.adjust_type, g.status, g.reason, g.remark, g.audited_at,
+            g.auditor, g.audit_opinion, g.version, g.created_at, g.updated_at, w.warehouse_code,
+            w.name AS warehouse_name
         FROM xsy_inventory_loss_gain g
-                 LEFT JOIN xsy_warehouse w ON w.id = g.warehouse_id
+        LEFT JOIN xsy_warehouse w ON w.id = g.warehouse_id
         WHERE g.deleted = FALSE
-          AND g.id = #{id}
+            AND g.id = #{id}
     </select>
 
 </mapper>

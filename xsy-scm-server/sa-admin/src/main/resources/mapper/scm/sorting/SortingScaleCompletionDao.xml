@@ -3,9 +3,8 @@
 <mapper namespace="com.xsy.scm.sorting.dao.SortingScaleCompletionDao">
 
     <sql id="columns">
-        id, operation_id, task_id, task_item_id, device_id, device_session_id, employee_id,
-        basket_count, total_quantity, business_unit, manifest_hash, result, reason,
-        quantity_before, created_at, created_by
+        id, operation_id, task_id, task_item_id, device_id, device_session_id, employee_id, basket_count,
+            total_quantity, business_unit, manifest_hash, result, reason, quantity_before, created_at, created_by
     </sql>
 
     <select id="selectByOperationId" resultType="com.xsy.scm.sorting.domain.entity.SortingScaleCompletionEntity">

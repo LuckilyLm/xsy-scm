@@ -2,35 +2,37 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.purchase.dao.PurchaseOperationLogDao">
 
-    <resultMap id="logRowMap"
-               type="com.xsy.scm.purchase.domain.entity.PurchaseOperationLogEntity">
+    <resultMap id="logRowMap" type="com.xsy.scm.purchase.domain.entity.PurchaseOperationLogEntity">
         <id column="id" property="id"/>
-        <result column="before_data" property="beforeData"
+        <result column="before_data"
+                property="beforeData"
                 typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
-        <result column="after_data" property="afterData"
+        <result column="after_data"
+                property="afterData"
                 typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
-    <resultMap id="logVoMap"
-               type="com.xsy.scm.purchase.domain.vo.PurchaseOperationLogVO">
+    <resultMap id="logVoMap" type="com.xsy.scm.purchase.domain.vo.PurchaseOperationLogVO">
         <id column="id" property="id"/>
-        <result column="before_data" property="beforeData"
+        <result column="before_data"
+                property="beforeData"
                 typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
-        <result column="after_data" property="afterData"
+        <result column="after_data"
+                property="afterData"
                 typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
-    <!-- 归属由 ck_purchase_operation_log_owner 在 DB 层强制：
-         DEMAND_GENERATE 双 id 为 NULL；DEMAND_ALLOCATE 只有采购单 id；RECEIPT_* 双 id 非空。
-         本 Dao 不做任何归属推断，只把调用方算好的 id 原样写入。 -->
+    <!--
+      归属由 ck_purchase_operation_log_owner 在 DB 层强制：
+      DEMAND_GENERATE 双 id 为 NULL；DEMAND_ALLOCATE 只有采购单 id；RECEIPT_* 双 id 非空。
+      本 Dao 不做任何归属推断，只把调用方算好的 id 原样写入。
+    -->
     <insert id="append">
-        INSERT INTO xsy_purchase_operation_log (purchase_order_id, purchase_receipt_id, operation_type, operator, reason,
-                                            before_data, after_data, created_by)
-        VALUES (#{row.purchaseOrderId}, #{row.purchaseReceiptId}, #{row.operationType},
-                #{row.operator}, #{row.reason},
-                #{row.beforeData,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
-                #{row.afterData,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
-                #{row.createdBy})
+        INSERT INTO xsy_purchase_operation_log (purchase_order_id, purchase_receipt_id, operation_type, operator,
+            reason, before_data, after_data, created_by)
+        VALUES (#{row.purchaseOrderId}, #{row.purchaseReceiptId}, #{row.operationType}, #{row.operator}, #{row.reason},
+            #{row.beforeData,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
+            #{row.afterData,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler}, #{row.createdBy})
     </insert>
 
     <!-- 日志表没有 deleted 列，因此不写 WHERE deleted = FALSE -->

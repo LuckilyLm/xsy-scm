@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.finance.dao.FinanceReceivableDao">
-    <resultMap id="receivableEntity" type="com.xsy.scm.finance.domain.entity.FinanceReceivableEntity" autoMapping="true">
-        <result column="credit_rule_snapshot" property="creditRuleSnapshot" typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+
+    <resultMap id="receivableEntity"
+               type="com.xsy.scm.finance.domain.entity.FinanceReceivableEntity"
+               autoMapping="true">
+        <result column="credit_rule_snapshot"
+                property="creditRuleSnapshot"
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
     </resultMap>
 
     <select id="nextReceivableNo" resultType="long">
@@ -20,75 +25,61 @@
     -->
     <insert id="insertOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinanceReceivableEntity"
-            useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id,
-                                        customer_id, customer_name_snapshot, settlement_customer_id,
-                                        settlement_customer_name_snapshot, entry_type,
-                                        original_receivable_id, amount, event_at, reason, due_date, credit_rule_snapshot,
-                                        version, deleted, created_at, updated_at, created_by, updated_by)
-        VALUES (#{receivableNo}, #{sourceType}, #{sourceId}, #{orderId},
-                #{customerId}, #{customerNameSnapshot}, #{settlementCustomerId},
-                #{settlementCustomerNameSnapshot}, #{entryType},
-                #{originalReceivableId}, #{amount}, #{eventAt}, #{reason}, #{dueDate},
-                #{creditRuleSnapshot, typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
-                0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, customer_id,
+            customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type,
+            original_receivable_id, amount, event_at, reason, due_date, credit_rule_snapshot, version, deleted,
+            created_at, updated_at, created_by, updated_by)
+        VALUES (#{receivableNo}, #{sourceType}, #{sourceId}, #{orderId}, #{customerId}, #{customerNameSnapshot},
+            #{settlementCustomerId}, #{settlementCustomerNameSnapshot}, #{entryType}, #{originalReceivableId},
+            #{amount}, #{eventAt}, #{reason}, #{dueDate},
+            #{creditRuleSnapshot, typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler}, 0, FALSE,
+            #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
         ON CONFLICT (source_type, source_id)
-            WHERE deleted = FALSE DO NOTHING
+        WHERE deleted = FALSE DO NOTHING
     </insert>
 
     <!-- 一订单的正常应收最多一张（uk_finance_receivable_source_active 的同一口径）。 -->
-    <select id="selectNormalByOrder"
-            resultMap="receivableEntity">
-        SELECT id, receivable_no, source_type, source_id, order_id, customer_id,
-               settlement_customer_id, settlement_customer_name_snapshot, due_date, credit_rule_snapshot,
-               customer_name_snapshot, entry_type, original_receivable_id, amount, event_at,
-               reason, version, deleted, created_at, updated_at, created_by, updated_by
+    <select id="selectNormalByOrder" resultMap="receivableEntity">
+        SELECT id, receivable_no, source_type, source_id, order_id, customer_id, settlement_customer_id,
+            settlement_customer_name_snapshot, due_date, credit_rule_snapshot, customer_name_snapshot, entry_type,
+            original_receivable_id, amount, event_at, reason, version, deleted, created_at, updated_at, created_by,
+            updated_by
         FROM xsy_finance_receivable
         WHERE source_type = 'SALES_ORDER'
-          AND source_id = #{salesOrderId}
-          AND entry_type = 'NORMAL'
-          AND deleted = FALSE
+            AND source_id = #{salesOrderId}
+            AND entry_type = 'NORMAL'
+            AND deleted = FALSE
     </select>
 
-    <select id="selectNormalTargetsForUpdate"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto">
-        SELECT r.id AS receivableId,
-               r.receivable_no AS receivableNo,
-               r.order_id AS orderId,
-               r.customer_id AS customerId,
-               r.settlement_customer_id AS settlementCustomerId,
-               r.customer_name_snapshot AS customerNameSnapshot,
-               r.entry_type AS entryType,
-               r.amount,
-               so.seller_id AS sellerId
+    <select id="selectNormalTargetsForUpdate" resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto">
+        SELECT r.id AS receivableId, r.receivable_no AS receivableNo, r.order_id AS orderId,
+            r.customer_id AS customerId, r.settlement_customer_id AS settlementCustomerId,
+            r.customer_name_snapshot AS customerNameSnapshot, r.entry_type AS entryType, r.amount,
+            so.seller_id AS sellerId
         FROM xsy_finance_receivable r
-        LEFT JOIN xsy_sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        LEFT JOIN xsy_sales_order so ON so.id = r.order_id
+            AND so.deleted = FALSE
         WHERE r.id IN
-        <foreach collection="targetIds" item="targetId" open="(" separator="," close=")">
-            #{targetId}
-        </foreach>
-          AND r.entry_type = 'NORMAL'
-          AND r.deleted = FALSE
+        <foreach collection="targetIds" item="targetId" open="(" separator="," close=")">#{targetId}</foreach>
+        AND r.entry_type = 'NORMAL'
+            AND r.deleted = FALSE
         ORDER BY r.id
         FOR UPDATE OF r
     </select>
 
-    <select id="selectNormalTargetForUpdate"
-            resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto">
-        SELECT r.id AS receivableId,
-               r.receivable_no AS receivableNo,
-               r.order_id AS orderId,
-               r.customer_id AS customerId,
-               r.settlement_customer_id AS settlementCustomerId,
-               r.customer_name_snapshot AS customerNameSnapshot,
-               r.entry_type AS entryType,
-               r.amount,
-               so.seller_id AS sellerId
+    <select id="selectNormalTargetForUpdate" resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto">
+        SELECT r.id AS receivableId, r.receivable_no AS receivableNo, r.order_id AS orderId,
+            r.customer_id AS customerId, r.settlement_customer_id AS settlementCustomerId,
+            r.customer_name_snapshot AS customerNameSnapshot, r.entry_type AS entryType, r.amount,
+            so.seller_id AS sellerId
         FROM xsy_finance_receivable r
-        LEFT JOIN xsy_sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        LEFT JOIN xsy_sales_order so ON so.id = r.order_id
+            AND so.deleted = FALSE
         WHERE r.id = #{targetId}
-          AND r.entry_type = 'NORMAL'
-          AND r.deleted = FALSE
+            AND r.entry_type = 'NORMAL'
+            AND r.deleted = FALSE
         FOR UPDATE OF r
     </select>
 
@@ -96,87 +87,64 @@
         SELECT COALESCE(SUM(amount), 0)
         FROM xsy_finance_receivable
         WHERE original_receivable_id = #{originalReceivableId}
-          AND entry_type = 'RED'
-          AND deleted = FALSE
+            AND entry_type = 'RED'
+            AND deleted = FALSE
     </select>
 
     <select id="selectActiveById" resultMap="receivableEntity">
         SELECT *
         FROM xsy_finance_receivable
         WHERE id = #{receivableId}
-          AND deleted = FALSE
+            AND deleted = FALSE
     </select>
 
     <sql id="receivableSummarySelect">
-        SELECT r.id AS receivableId,
-               r.created_at AS createdAt, r.updated_at AS updatedAt,
-               r.created_by AS createdBy, r.updated_by AS updatedBy,
-               r.receivable_no AS receivableNo,
-               r.order_id AS orderId,
-               so.order_no AS orderNo,
-               r.customer_id AS customerId,
-               r.customer_name_snapshot AS customerName,
-               r.settlement_customer_id AS settlementCustomerId,
-               r.settlement_customer_name_snapshot AS settlementCustomerName,
-               r.source_type AS sourceType,
-               r.source_id AS sourceId,
-               r.entry_type AS entryType,
-               r.original_receivable_id AS originalReceivableId,
-               original.receivable_no AS originalReceivableNo,
-               r.amount,
-               CASE WHEN r.entry_type = 'NORMAL' THEN r.amount - red.redAmount ELSE 0 END AS netAmount,
-               CASE WHEN r.entry_type = 'NORMAL' THEN written.writtenOffAmount ELSE 0 END AS writtenOffAmount,
-               CASE WHEN r.entry_type = 'NORMAL'
-                    THEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0)
-                    ELSE 0 END AS openAmount,
-               CASE WHEN r.entry_type = 'NORMAL'
-                    THEN GREATEST(written.writtenOffAmount - (r.amount - red.redAmount), 0)
-                    ELSE 0 END AS overAppliedAmount,
-               -- 分支顺序即语义：先判「无未结净额且无超额核销」= 已结清（覆盖核销额恰等于净额、
-               -- 以及全额红冲后净额为零两种关闭形态），再判未核销，其余为部分结清。
-               -- 全额红冲的单据没有任何待收金额，判 OPEN 会让它永远挂在未结清列表里。
-               CASE WHEN r.entry_type &lt;&gt; 'NORMAL' THEN NULL
-                    WHEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0) = 0
-                         AND GREATEST(written.writtenOffAmount - (r.amount - red.redAmount), 0) = 0 THEN 'SETTLED'
-                    WHEN written.writtenOffAmount = 0 THEN 'OPEN'
-                    ELSE 'PARTIAL' END AS settleState,
-               r.event_at AS eventAt, r.due_date AS dueDate,
-               r.reason
+        SELECT r.id AS receivableId, r.created_at AS createdAt, r.updated_at AS updatedAt, r.created_by AS createdBy,
+            r.updated_by AS updatedBy, r.receivable_no AS receivableNo, r.order_id AS orderId, so.order_no AS orderNo,
+            r.customer_id AS customerId, r.customer_name_snapshot AS customerName,
+            r.settlement_customer_id AS settlementCustomerId,
+            r.settlement_customer_name_snapshot AS settlementCustomerName, r.source_type AS sourceType,
+            r.source_id AS sourceId, r.entry_type AS entryType, r.original_receivable_id AS originalReceivableId,
+            original.receivable_no AS originalReceivableNo, r.amount,
+            CASE WHEN r.entry_type = 'NORMAL' THEN r.amount - red.redAmount ELSE 0 END AS netAmount,
+            CASE WHEN r.entry_type = 'NORMAL' THEN written.writtenOffAmount ELSE 0 END AS writtenOffAmount,
+            CASE WHEN r.entry_type = 'NORMAL' THEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount,
+            0) ELSE 0 END AS openAmount,
+            CASE WHEN r.entry_type = 'NORMAL' THEN GREATEST(written.writtenOffAmount - (r.amount - red.redAmount),
+            0) ELSE 0 END AS overAppliedAmount,
+        -- 分支顺序即语义：先判「无未结净额且无超额核销」= 已结清（覆盖核销额恰等于净额、
+        -- 以及全额红冲后净额为零两种关闭形态），再判未核销，其余为部分结清。
+        -- 全额红冲的单据没有任何待收金额，判 OPEN 会让它永远挂在未结清列表里。
+        CASE WHEN r.entry_type &lt;&gt; 'NORMAL' THEN NULL WHEN GREATEST(r.amount - red.redAmount -
+            written.writtenOffAmount, 0) = 0
+            AND GREATEST(written.writtenOffAmount - (r.amount - red.redAmount),
+            0) = 0 THEN 'SETTLED' WHEN written.writtenOffAmount = 0 THEN 'OPEN' ELSE 'PARTIAL' END AS settleState,
+            r.event_at AS eventAt, r.due_date AS dueDate, r.reason
         FROM xsy_finance_receivable r
-        JOIN xsy_sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        JOIN xsy_sales_order so ON so.id = r.order_id
+            AND so.deleted = FALSE
         LEFT JOIN xsy_finance_receivable original ON original.id = r.original_receivable_id
             AND original.deleted = FALSE
-        LEFT JOIN LATERAL (
-            SELECT COALESCE(SUM(red.amount), 0) AS redAmount
-            FROM xsy_finance_receivable red
-            WHERE red.original_receivable_id = r.id
-              AND red.entry_type = 'RED'
-              AND red.deleted = FALSE
-        ) red ON TRUE
-        LEFT JOIN LATERAL (
-            SELECT COALESCE(SUM(CASE
-                WHEN wo.entry_type = 'NORMAL' THEN wo.amount
-                WHEN wo.entry_type = 'REVERSE' THEN -wo.amount
-                ELSE 0
-            END), 0) AS writtenOffAmount
-            FROM xsy_finance_write_off wo
-            WHERE wo.target_type = 'RECEIVABLE'
-              AND wo.target_id = r.id
-              AND wo.deleted = FALSE
-        ) written ON TRUE
+        LEFT JOIN LATERAL (SELECT COALESCE(SUM(red.amount),
+            0) AS redAmount FROM xsy_finance_receivable red WHERE red.original_receivable_id = r.id AND
+            red.entry_type = 'RED' AND red.deleted = FALSE) red ON TRUE
+        LEFT JOIN LATERAL (SELECT COALESCE(SUM(CASE WHEN wo.entry_type = 'NORMAL' THEN wo.amount WHEN wo.entry_type =
+            'REVERSE' THEN -wo.amount ELSE 0 END),
+            0) AS writtenOffAmount FROM xsy_finance_write_off wo WHERE wo.target_type = 'RECEIVABLE' AND
+            wo.target_id = r.id AND wo.deleted = FALSE) written ON TRUE
     </sql>
 
     <select id="selectSummaryById" resultType="com.xsy.scm.finance.domain.vo.FinanceReceivableVO">
         <include refid="receivableSummarySelect"/>
         WHERE r.id = #{receivableId}
-          AND r.deleted = FALSE
+            AND r.deleted = FALSE
     </select>
 
     <select id="selectRedEntriesByOriginal" resultType="com.xsy.scm.finance.domain.vo.FinanceReceivableVO">
         <include refid="receivableSummarySelect"/>
         WHERE r.original_receivable_id = #{originalReceivableId}
-          AND r.entry_type = 'RED'
-          AND r.deleted = FALSE
+            AND r.entry_type = 'RED'
+            AND r.deleted = FALSE
         ORDER BY r.event_at, r.id
     </select>
 
@@ -184,15 +152,16 @@
         <include refid="receivableSummarySelect"/>
         <where>
             r.deleted = FALSE
-            AND r.event_at &gt;= #{timeRange.startAt}
-            AND r.event_at &lt; #{timeRange.endAt}
+                AND r.event_at &gt;= #{timeRange.startAt}
+                AND r.event_at &lt; #{timeRange.endAt}
             <choose>
                 <when test="scope == null or scope.orderSellerScope.empty">AND FALSE</when>
                 <when test="scope.orderSellerScope.all"></when>
                 <otherwise>
                     AND so.seller_id IN
-                    <foreach collection="scope.orderSellerScope.ids" item="sellerId"
-                             open="(" separator="," close=")">#{sellerId}</foreach>
+                    <foreach collection="scope.orderSellerScope.ids" item="sellerId" open="(" separator="," close=")">
+                        #{sellerId}
+                    </foreach>
                 </otherwise>
             </choose>
             <if test="query.receivableId != null">AND r.id = #{query.receivableId}</if>
@@ -200,17 +169,16 @@
             <if test="query.orderNo != null and query.orderNo != ''">
                 AND so.order_no ILIKE CONCAT('%', #{query.orderNo}, '%')
             </if>
-            <if test="query.entryType != null and query.entryType != ''">
-                AND r.entry_type = #{query.entryType}
-            </if>
+            <if test="query.entryType != null and query.entryType != ''">AND r.entry_type = #{query.entryType}</if>
             <if test="query.settleState != null and query.settleState != ''">
                 AND r.entry_type = 'NORMAL'
-                AND CASE WHEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0) = 0
-                              AND GREATEST(written.writtenOffAmount - (r.amount - red.redAmount), 0) = 0 THEN 'SETTLED'
-                         WHEN written.writtenOffAmount = 0 THEN 'OPEN'
-                         ELSE 'PARTIAL' END = #{query.settleState}
+                    AND CASE WHEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0) = 0
+                    AND GREATEST(written.writtenOffAmount - (r.amount - red.redAmount),
+                    0) = 0 THEN 'SETTLED' WHEN written.writtenOffAmount = 0 THEN 'OPEN' ELSE 'PARTIAL' END =
+                    #{query.settleState}
             </if>
         </where>
         ORDER BY r.event_at DESC, r.id DESC
     </select>
+
 </mapper>
