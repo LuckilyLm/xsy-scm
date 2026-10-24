@@ -129,6 +129,7 @@ docker compose ps -a
 - `.env` 已忽略；`docker compose config` 会展开密码，只在本机检查，不要分享输出。Windows 可用 `Copy-Item .env.example .env`。
 - `MINIO_IMAGE` 与 `MINIO_MC_IMAGE` 必须替换为经过安全审查的固定镜像，示例占位值不能直接拉取。
 - `MINIO_PUBLIC_ENDPOINT` 必须是浏览器和 backend 容器都能访问的地址（如 `https://files.example.com`），不带末尾斜线；不能用 `minio:9000`、`localhost` 或 `127.0.0.1`。S3 Client 与 Presigner 共用该地址。
+- 本机试用若 MinIO 走 HTTP，`.env` 的 `MAVEN_PROFILE` 必须改为 `test`（或 `dev`）；`prod` profile 会强制对象存储的公开地址与签名地址都是 HTTPS，HTTP 端点会导致后端拒绝启动。
 - MinIO API 默认只绑定 `127.0.0.1`；直连时通过 `MINIO_BIND_ADDRESS` 指定内网网卡并用网络 ACL 限制来源，生产入口优先使用 HTTPS 反向代理或托管对象存储，不要默认绑定 `0.0.0.0`。
 - 其余必填项、盘点快照签名密钥和邮件占位配置见 [.env.example](.env.example) 与 [deploy/README.md](deploy/README.md)。
 

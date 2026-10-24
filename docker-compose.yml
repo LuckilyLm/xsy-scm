@@ -43,9 +43,13 @@ services:
       TZ: Asia/Shanghai
       SERVER_PORT: 1024
       PROJECT_LOG_DIRECTORY: /app/logs
+      # dev/test profile 读取 XSY_V2_LOG_DIRECTORY；与 prod 的 PROJECT_LOG_DIRECTORY 指到同一个卷。
+      XSY_V2_LOG_DIRECTORY: /app/logs
       XSY_V2_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-xsy_scm}?currentSchema=xsy_v2&ApplicationName=xsy-scm-v2
       XSY_V2_DB_USERNAME: ${POSTGRES_USER:-xsy_scm_app}
       XSY_V2_DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      # dev/test profile 默认 p6spy 驱动，只接受 jdbc:p6spy: 前缀；compose 用的是原生 JDBC URL。
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_DATABASE: ${REDIS_DATABASE:-1}
