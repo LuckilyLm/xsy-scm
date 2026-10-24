@@ -139,3 +139,33 @@ import {readFileSync} from 'node:fs';
     assert.match(migration, /traceUrl/, '迁移必须补扫码地址');
   });
 }
+
+// ---------------------------------------------------------------- 来源：print-noise.test.mjs
+{
+  const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
+  const render = read('../src/views/business/scm/print/print-render.ts');
+  const printText = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/support/ScmPrintText.java');
+  const salesProvider = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/support/SalesOrderPrintSourceProvider.java');
+  const migration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V178__scm_print_template_remove_noise.sql');
+
+  test('纸面不印模板名与版本，只有正式打印才标打印时间', () => {
+    assert.doesNotMatch(render, /模板 \$\{/, '页脚又把模板名/版本印到纸上了');
+    assert.doesNotMatch(render, /templateVersion/, '模板版本属于打印记录，不该占纸面');
+    assert.match(render, /render\.frozen && render\.printedAt/, '正式打印没有标注打印时间');
+  });
+
+  test('期望配送时间按北京时间输出，不出现 ISO 毫秒与时区', () => {
+    assert.match(printText, /dateTime\(OffsetDateTime value\)/, '缺少日期时间格式化入口');
+    assert.match(printText, /DISPLAY_ZONE/, '日期时间没有转成北京时间');
+    assert.match(salesProvider, /ScmPrintText\.dateTime\(order\.getExpectDeliveryTime\(\)\)/, '销售订单打印仍直接输出原始时间');
+    assert.doesNotMatch(salesProvider, /ScmPrintText\.text\(order\.getExpectDeliveryTime\(\)\)/, '销售订单打印仍用 String.valueOf 输出时间');
+  });
+
+  test('默认打印模板移除内部编码和解释性页脚，用户改过的模板不动', () => {
+    assert.match(migration, /\(model -> 'headerFields'\) - 'customerCode'/, '客户编码仍留在默认模板');
+    assert.match(migration, /\(model -> 'columns'\) - 'skuCode'/, '商品规格编码仍留在默认模板');
+    assert.match(migration, /version = 0/, '销售订单模板没有按未编辑状态判断，可能覆盖用户配置');
+    assert.match(migration, /model - 'footerNote'/, '解释性页脚没有移除');
+    assert.doesNotMatch(migration, /PURCHASE_ORDER/, '采购单的联次说明属于操作信息，不应删除');
+  });
+}

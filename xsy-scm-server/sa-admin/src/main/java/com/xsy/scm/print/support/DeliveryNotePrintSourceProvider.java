@@ -68,7 +68,7 @@ public class DeliveryNotePrintSourceProvider implements ScmPrintSourceProvider {
                     row.put("receiverPhone", ScmPrintText.text(stop.getReceiverPhoneSnapshot()));
                     row.put("stopRemark", ScmPrintText.text(stop.getRemark()));
                     row.put("orderNo", ScmPrintText.text(order.getOrderNoSnapshot()));
-                    row.put("expectDeliveryTime", ScmPrintText.text(order.getExpectDeliveryTimeSnapshot()));
+                    row.put("expectDeliveryTime", ScmPrintText.dateTime(order.getExpectDeliveryTimeSnapshot()));
                     row.put("productName", ScmPrintText.text(item.getProductNameSnapshot()));
                     row.put("specName", ScmPrintText.text(item.getSpecNameSnapshot()));
                     row.put("saleUnit", ScmPrintText.text(item.getSaleUnitSnapshot()));

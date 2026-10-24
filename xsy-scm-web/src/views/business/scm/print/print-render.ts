@@ -24,14 +24,9 @@ function bodyClass(render: PrintRender): string {
   return render.paper === 'TICKET_80' ? 'ticket' : 'a4';
 }
 
-/** 页脚标注模板名称、版本和打印时间，便于识别历史重印。 */
+/** 只有正式打印才标注打印时间，便于区分重印；模板名与版本留在打印记录里，不占纸面。 */
 function traceLine(render: PrintRender): string {
-  const template = render.templateName || render.templateCode;
-  const parts = [`模板 ${template ?? '—'} v${render.templateVersion ?? '—'}`];
-  if (render.frozen && render.printedAt) {
-    parts.push(`打印于 ${render.printedAt}`);
-  }
-  return `<p class="trace">${esc(parts.join('　'))}</p>`;
+  return render.frozen && render.printedAt ? `<p class="trace">打印于 ${esc(render.printedAt)}</p>` : '';
 }
 
 /** 一张单据的打印片段。 */

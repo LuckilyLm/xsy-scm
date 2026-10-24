@@ -47,7 +47,7 @@ public class SalesOrderPrintSourceProvider implements ScmPrintSourceProvider {
         header.put("customerCode", ScmPrintText.text(order.getCustomerCodeSnapshot()));
         header.put("orderStatus", statusLabel(order.getStatus()));
         header.put("orderSource", sourceLabel(order.getOrderSource()));
-        header.put("expectDeliveryTime", ScmPrintText.text(order.getExpectDeliveryTime()));
+        header.put("expectDeliveryTime", ScmPrintText.dateTime(order.getExpectDeliveryTime()));
         header.put("remark", ScmPrintText.text(order.getRemark()));
         var address = order.getAddress();
         if (address != null) {
