@@ -100,7 +100,7 @@
           <span class="scm-money">{{ moneyText(record.submittedPurchaseAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'purchaseInCostAmount'">
-          <span class="scm-money">{{ costText(record.purchaseInCostAmount, canViewCost) }}</span>
+          <span class="scm-money">{{ costText(record.purchaseInCostAmount, canViewCost, 'amount') }}</span>
           <a-tooltip
             v-if="incompleteCostHint(record.purchaseInCostMissingCount, '采购入库成本金额')"
             :title="incompleteCostHint(record.purchaseInCostMissingCount, '采购入库成本金额')"
@@ -249,13 +249,13 @@ const kpiCards = computed(() => {
     },
     {
       label: '采购入库成本金额',
-      value: costText(data.purchaseInCostAmount, canViewCost.value),
+      value: costText(data.purchaseInCostAmount, canViewCost.value, 'amount'),
       warning: incompleteCostHint(data.purchaseInCostMissingCount, '采购入库成本金额'),
       cost: true,
     },
     {
       label: '当前库存账面金额',
-      value: costText(data.inventoryBookValue, canViewCost.value),
+      value: costText(data.inventoryBookValue, canViewCost.value, 'amount'),
       sub: `截至 ${datetime(data.snapshotAt)}｜有账面库存 ${countText(data.stockedSkuCount)} 行`,
       point: true,
       cost: true,

@@ -131,7 +131,7 @@ import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-co
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import {buildReportQuery, defaultDateRange, rangeOverLimitError} from './report-model';
 import type {DateRange} from './report-model';
-import {moneyText} from '../inventory/inventory-model';
+import {moneyText} from '../finance/finance-form-model';
 import {reportError} from './report-errors';
 
 const dimensionOptions: Array<{value: FinanceProfitDimension; label: string}> = [

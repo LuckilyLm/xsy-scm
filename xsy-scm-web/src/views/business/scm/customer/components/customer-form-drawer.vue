@@ -142,7 +142,7 @@
             <h3 class="scm-form-section__title">授信与账期</h3>
           </div>
           <a-row :gutter="20">
-            <!-- 金额字段用 string-mode 保留 4 位小数 -->
+            <!-- 销售侧金额按元展示两位；字符串模型避免浮点误差 -->
             <a-col :xs="24" :sm="12">
               <a-form-item name="creditLimit">
                 <template #label>
@@ -153,9 +153,11 @@
                   v-model:value="form.creditLimit"
                   string-mode
                   :min="0"
-                  :max="'99999999999999.9999'"
-                  :precision="4"
+                  :max="'99999999999999.99'"
+                  :precision="2"
+                  :step="'0.01'"
                   addon-before="¥"
+                  placeholder="0.00"
                   style="width: 100%"
                 />
               </a-form-item>
@@ -180,11 +182,12 @@
                   v-model:value="form.creditAmountThreshold"
                   string-mode
                   :min="0"
-                  :max="'99999999999999.9999'"
-                  :precision="4"
+                  :max="'99999999999999.99'"
+                  :precision="2"
+                  :step="'0.01'"
                   addon-before="¥"
                   style="width: 100%"
-                  placeholder="例如 5000.0000"
+                  placeholder="例如 5000.00"
                 />
               </a-form-item>
             </a-col>
@@ -253,6 +256,7 @@ import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import {normalizeMoneyInput} from '/@/utils/scm-amount';
 import {applyCreditPeriodType, applyCreditPeriodUnit, emptyCustomer, toCustomerPayload, validateCustomer} from '../customer-form-model';
 import {customerError} from '../customer-errors';
 import {hasPermission} from '../../common/scm-permission';
@@ -366,9 +370,9 @@ async function open(customerId?: ScmId) {
       settleMode: detail.settleMode,
       sharedSettlementEnabled: detail.sharedSettlementEnabled === true,
       codAllowed: detail.codAllowed === true,
-      creditLimit: detail.creditLimit ?? '0.0000',
+      creditLimit: detail.creditLimit == null ? '0.0000' : normalizeMoneyInput(detail.creditLimit),
       creditPeriodType: detail.creditPeriodType ?? undefined,
-      creditAmountThreshold: detail.creditAmountThreshold ?? undefined,
+      creditAmountThreshold: detail.creditAmountThreshold == null ? undefined : normalizeMoneyInput(detail.creditAmountThreshold),
       creditPeriodValue: detail.creditPeriodValue ?? undefined,
       creditPeriodUnit: detail.creditPeriodUnit ?? undefined,
       settleDay: detail.settleDay ?? undefined,

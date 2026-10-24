@@ -76,7 +76,7 @@
         <SkuSelect v-model:value="form.skuId" width="100%" :disabled="form.id != null" :disabled-statuses="[]" />
       </a-form-item>
       <a-form-item label="时价" required>
-        <a-input-number v-model:value="form.unitPrice" string-mode :min="'0'" :precision="4" style="width: 100%" aria-label="时价" />
+        <a-input-number v-model:value="form.unitPrice" string-mode :min="'0'" :precision="2" :step="'0.01'" style="width: 100%" aria-label="时价" />
       </a-form-item>
       <a-form-item label="生效时间" required>
         <a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" aria-label="生效时间" />
@@ -94,6 +94,7 @@ import dayjs from 'dayjs';
 import {Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {formatAmount, moneyPayload, normalizeMoneyInput} from '/@/utils/scm-amount';
 import {timePriceApi, type TimePrice} from '/@/api/business/scm/time-price-api';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
@@ -167,7 +168,7 @@ function openDrawer(record?: TimePrice) {
   form.id = record?.id;
   form.version = record?.version;
   form.skuId = record?.skuId;
-  form.unitPrice = record?.unitPrice;
+  form.unitPrice = record?.unitPrice == null ? undefined : normalizeMoneyInput(record.unitPrice);
   form.remark = record?.remark ?? '';
   range.value = record ? [toInput(record.startAt), toInput(record.endAt)] : null;
   drawerOpen.value = true;
@@ -185,7 +186,7 @@ async function save() {
       id: form.id,
       version: form.version,
       skuId: form.skuId,
-      unitPrice: form.unitPrice,
+      unitPrice: moneyPayload(form.unitPrice),
       // 后端要带时区偏移的时间，不能只传日期时间
       startAt: dayjs(range.value[0]).format('YYYY-MM-DDTHH:mm:ssZ'),
       endAt: dayjs(range.value[1]).format('YYYY-MM-DDTHH:mm:ssZ'),
@@ -214,10 +215,6 @@ function remove(record: TimePrice) {
     cancelText: '取消',
     onOk: () => timePriceApi.remove(record.id, record.version).then(load),
   });
-}
-
-function formatAmount(value?: string | null) {
-  return value == null ? '—' : String(value);
 }
 
 function formatDateTime(value?: string | null) {

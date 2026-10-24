@@ -33,7 +33,16 @@
         <template v-if="column.dataIndex === 'customerTypeId'"><CustomerTypeSelect v-model:value="record.customerTypeId" width="180px" /></template>
         <template v-else-if="column.dataIndex === 'skuId'"><SkuSelect v-model:value="record.skuId" width="260px" /></template>
         <template v-else-if="column.dataIndex === 'unitPrice'"
-          ><a-input v-model:value="record.unitPrice" aria-label="单价" inputmode="decimal"
+          ><a-input-number
+            v-model:value="record.unitPrice"
+            string-mode
+            :min="'0'"
+            :precision="2"
+            :step="'0.01'"
+            :controls="false"
+            aria-label="单价"
+            placeholder="0.00"
+            style="width: 100%"
         /></template>
         <template v-else-if="column.dataIndex === 'effectiveFrom'"
           ><a-range-picker
@@ -70,6 +79,7 @@ import dayjs from 'dayjs';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
+import {moneyPayload} from '/@/utils/scm-amount';
 import type {BatchRow} from '/@/types/business/scm/pricing';
 import {emptyPrice, validateBatch} from './pricing-form-model';
 import {pricingError} from './pricing-errors';
@@ -135,7 +145,8 @@ async function submit() {
   }
   saving.value = true;
   try {
-    const r = await pricingApi.batch({batchKey: batchKey.value, rows: rows.value});
+    const payloadRows = rows.value.map((row) => ({...row, unitPrice: moneyPayload(row.unitPrice)}));
+    const r = await pricingApi.batch({batchKey: batchKey.value, rows: payloadRows});
     if (!r.data.committed) {
       failures.value = r.data.failures;
       error.value = `${r.data.failures.length} 项错误，整批未写入`;

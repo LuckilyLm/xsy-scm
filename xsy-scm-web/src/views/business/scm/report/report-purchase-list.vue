@@ -187,13 +187,13 @@
         <span class="scm-money">{{ moneyText(record.orderAmount) }}</span>
       </template>
       <template v-else-if="column.dataIndex === 'avgPurchasePrice'">
-        <span class="scm-money">{{ moneyText(record.avgPurchasePrice) }}</span>
+        <span class="scm-money">{{ formatPrice(record.avgPurchasePrice, 'purchase') }}</span>
       </template>
       <template v-else-if="column.dataIndex === 'inboundQuantityText'">
         {{ textOrDash(record.inboundQuantityText) }}
       </template>
       <template v-else-if="column.dataIndex === 'inboundCostAmount'">
-        <span class="scm-money">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
+        <span class="scm-money">{{ costText(record.inboundCostAmount, canViewCost, 'amount') }}</span>
       </template>
       <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
     </template>
@@ -228,6 +228,7 @@ import PurchaseSupplierTab from './report-components/purchase-supplier-tab.vue';
 import {reportPurchaseApi, type ScmExportColumn} from '/@/api/business/scm/report-api';
 import {useScmExport} from '../common/use-scm-export';
 import {SCM_REPORT_PERMISSION} from '/@/constants/business/scm/report-const';
+import {formatPrice} from '/@/utils/scm-amount';
 import type {
   PurchaseItemRow,
   PurchaseOverview,
@@ -374,7 +375,7 @@ const overviewCards = computed(() => {
     },
     {
       label: '采购入库成本金额',
-      value: costText(data.purchaseInCostAmount, canViewCost.value),
+      value: costText(data.purchaseInCostAmount, canViewCost.value, 'amount'),
       warning: incompleteCostHint(data.purchaseInCostMissingCount, '采购入库成本金额'),
       cost: true,
     },

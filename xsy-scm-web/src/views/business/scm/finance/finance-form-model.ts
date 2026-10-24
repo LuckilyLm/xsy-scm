@@ -13,6 +13,7 @@ export function initialFinanceDateRange() {
   };
 }
 
+/** 财务账本金额固定四位：核销、退款、余额存在四位精确相等校验，不能按销售金额收敛到两位。 */
 export function moneyText(value: string | null | undefined): string {
   if (value == null || value === '') return '—';
   try {

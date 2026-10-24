@@ -42,7 +42,7 @@
           <span class="scm-money">{{ moneyText(record.receiptReferenceAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'inboundCostAmount'">
-          <span class="scm-money">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
+          <span class="scm-money">{{ costText(record.inboundCostAmount, canViewCost, 'amount') }}</span>
           <a-tooltip
             v-if="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"
             :title="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"

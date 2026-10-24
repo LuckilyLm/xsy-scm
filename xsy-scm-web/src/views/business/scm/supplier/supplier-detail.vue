@@ -81,7 +81,7 @@
             <template #bodyCell="{column, record}">
               <span v-if="column.dataIndex === 'skuNameSnapshot'">{{ record.skuNameSnapshot }}</span>
               <span v-else-if="column.dataIndex === 'spec'">{{ specText(record.specValuesSnapshot) }}</span>
-              <span v-else-if="column.dataIndex === 'referencePrice'" class="scm-money">{{ record.referencePrice ?? '—' }}</span>
+              <span v-else-if="column.dataIndex === 'referencePrice'" class="scm-money">{{ formatPrice(record.referencePrice, 'purchase') }}</span>
               <span v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</span>
               <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">
                 {{ record.defaultFlag ? '优先采购' : '—' }}
@@ -139,6 +139,7 @@ import {SUPPLIER_SKU_STATUS_ENUM, SUPPLIER_STATUS_ENUM} from '/@/constants/busin
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {supplierError} from './supplier-errors';
 import {datetime} from '../common/scm-display';
+import {formatPrice} from '/@/utils/scm-amount';
 import {isLocated} from '/@/components/business/scm/map/types';
 
 const route = useRoute();

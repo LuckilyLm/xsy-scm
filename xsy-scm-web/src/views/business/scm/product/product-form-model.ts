@@ -1,4 +1,17 @@
+import Decimal from 'decimal.js';
 import type {ProductForm, ProductRow, ProductSku} from '/@/types/business/scm/product';
+
+/** 市场价允许两位新录入值，也放行历史四位值；三位和五位以上都拒绝。 */
+function isMarketPrice(value: string | null | undefined): boolean {
+  if (value === null || value === undefined || value === '') return false;
+  try {
+    const parsed = new Decimal(value);
+    const places = parsed.decimalPlaces();
+    return parsed.isFinite() && !parsed.isNegative() && (places <= 2 || places === 4);
+  } catch {
+    return false;
+  }
+}
 
 export function emptySku(sortOrder = 0, defaultFlag = false): ProductSku {
   return {
@@ -93,7 +106,7 @@ export function validateProduct(form: ProductForm): string | undefined {
   for (const [index, sku] of form.skuList.entries()) {
     const label = `第 ${index + 1} 个商品规格：`;
     if (!sku.specName.trim() || !sku.saleUnit.trim()) return label + '请填写商品规格名称和单位';
-    if (!/^\d+(\.\d{1,4})?$/.test(sku.marketPrice)) return label + '市场价须为非负数，最多四位小数';
+    if (!isMarketPrice(sku.marketPrice)) return label + '市场价须为非负数，最多两位小数';
     const barcode = sku.barcode?.trim();
     if (barcode && barcodes.has(barcode)) return label + '条码重复';
     if (barcode) barcodes.add(barcode);

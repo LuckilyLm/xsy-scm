@@ -1,6 +1,44 @@
 import Decimal from 'decimal.js';
 import type {Address, Id, Item, Order, RecentPrice} from './order-types.ts';
 
+/** 本模块会被 node 直接加载，不能使用相对路径的值导入，精度归一在这里就地实现。 */
+function roundScale(value: string | number | null | undefined, scale: number): string {
+  if (value === null || value === undefined || value === '') return '';
+  try {
+    return new Decimal(value).toDecimalPlaces(scale, Decimal.ROUND_HALF_UP).toFixed(scale);
+  } catch {
+    return '';
+  }
+}
+
+function normalizeMoneyInput(value: string | number | null | undefined): string {
+  return roundScale(value, 2);
+}
+
+/** 人工售价允许两位新录入值，也放行历史四位值；三位和五位以上都拒绝。 */
+function isSalesMoney(value: string | null | undefined): boolean {
+  if (value === null || value === undefined || value === '') return false;
+  try {
+    const parsed = new Decimal(value);
+    const places = parsed.decimalPlaces();
+    return parsed.isFinite() && !parsed.isNegative() && (places <= 2 || places === 4);
+  } catch {
+    return false;
+  }
+}
+
+function moneyPayload(value: string | number | null | undefined): string {
+  const normalized = normalizeMoneyInput(value);
+  return normalized === '' ? '' : roundScale(normalized, 4);
+}
+
+function groupMoney(value: string): string {
+  const negative = value.startsWith('-');
+  const unsigned = negative ? value.slice(1) : value;
+  const [whole, fraction] = unsigned.split('.');
+  return `${negative ? '-' : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
+}
+
 export function newOrder(): Order {
   return {orderSource: 'ADMIN', deliveryWarehouseId: null, items: [], address: {receiverName: '', receiverPhone: '', address: ''}};
 }
@@ -123,8 +161,9 @@ export function validateOrder(f: Order): string | undefined {
     if (seen.has(String(i.skuId))) return '同一商品规格不能重复';
     seen.add(String(i.skuId));
     if (!/^\d{1,14}\.\d{4}$/.test(i.orderedQuantity) || new Decimal(i.orderedQuantity).lte(0)) return '数量必须为正的四位定点数';
-    if (i.manualPriceOverride && (!i.overrideReason?.trim() || i.unitPrice == null || !/^\d{1,14}\.\d{4}$/.test(i.unitPrice)))
-      return '人工改价需要有效价格和原因';
+    if (i.manualPriceOverride && (!i.overrideReason?.trim() || !isSalesMoney(i.unitPrice))) {
+      return '人工改价需要非负价格和原因';
+    }
   }
   return undefined;
 }
@@ -138,7 +177,7 @@ export function payload(f: Order): Order {
       skuId: i.skuId,
       orderedQuantity: fixed(i.orderedQuantity),
       manualPriceOverride: i.manualPriceOverride,
-      unitPrice: i.manualPriceOverride && i.unitPrice != null ? fixed(i.unitPrice) : null,
+      unitPrice: i.manualPriceOverride && i.unitPrice != null ? moneyPayload(i.unitPrice) : null,
       overrideReason: i.manualPriceOverride ? i.overrideReason : null,
       sortOrder: index,
     })),
@@ -146,7 +185,9 @@ export function payload(f: Order): Order {
 }
 
 export function amount(value: string | null | undefined, unpriced = false): string {
-  return value == null ? (unpriced ? '未定价' : '—') : '¥ ' + fixed(value);
+  if (value == null || value === '') return unpriced ? '未定价' : '—';
+  const fixed = roundScale(value, 2);
+  return fixed === '' ? '—' : `¥ ${groupMoney(fixed)}`;
 }
 
 /** 历史价缓存。缓存键只用客户 + 规格，不能带行号，否则换商品或删行后会显示错价格。 */

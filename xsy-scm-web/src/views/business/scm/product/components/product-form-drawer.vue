@@ -194,6 +194,7 @@ import CategorySelect from '/@/components/business/scm/product-category-tree-sel
 import ImageUpload from './product-image-upload.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import SkuEditor from './product-sku-editable-table.vue';
+import {moneyPayload} from '/@/utils/scm-amount';
 import {emptyProduct, productFormOf, validateProduct} from '../product-form-model';
 import {productError} from '../product-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -327,6 +328,7 @@ async function save() {
     delete payload.spuCode;
     payload.skuList.forEach((sku) => {
       delete sku.skuCode;
+      sku.marketPrice = moneyPayload(sku.marketPrice);
     });
     await (payload.spuId ? productApi.update(payload) : productApi.add(payload));
     message.success('商品已保存');

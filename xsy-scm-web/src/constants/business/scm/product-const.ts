@@ -1,3 +1,16 @@
+import Decimal from 'decimal.js';
+
+/** 本模块会被 node 直接加载，不能使用相对路径的值导入。 */
+function formatSalesPrice(value: string): string {
+  try {
+    const fixedValue = new Decimal(value).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2);
+    const [whole, fraction] = fixedValue.split('.');
+    return `¥ ${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
+  } catch {
+    return '—';
+  }
+}
+
 export const SHELF_STATUS_ENUM = [
   {value: 'ON_SHELF', label: '上架'},
   {value: 'OFF_SHELF', label: '下架'},
@@ -81,5 +94,8 @@ export const shelfStatusLabel = (value?: string | null): string => {
   }
   return '未知状态';
 };
-export const priceRange = (min: string | null, max: string | null) =>
-  min === null ? '未定价' : min === max || max === null ? `¥ ${min}` : `¥ ${min} ～ ${max}`;
+export const priceRange = (min: string | null, max: string | null) => {
+  if (min === null) return '未定价';
+  const minText = formatSalesPrice(min);
+  return min === max || max === null ? minText : `${minText} ～ ${formatSalesPrice(max)}`;
+};

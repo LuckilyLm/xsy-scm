@@ -43,16 +43,26 @@
                 <a-input-number
                   v-model:value="form.unitPriceInput"
                   :min="0"
-                  :precision="4"
+                  :precision="2"
                   :step="0.01"
                   addon-before="¥"
-                  placeholder="0.0000"
+                  placeholder="0.00"
                   aria-label="单价"
                   style="width: 100%"
                 />
               </a-form-item>
               <a-form-item v-else name="formulaParameter" :label="form.formulaType === 'MARKET_PLUS_AMOUNT' ? '固定加价金额' : '加价率'">
-                <a-input v-model:value="form.formulaParameter" placeholder="输入非负四位定点数；0.1000 表示 10%" />
+                <a-input-number
+                  v-model:value="form.formulaParameter"
+                  string-mode
+                  :min="'0'"
+                  :precision="form.formulaType === 'MARKET_PLUS_AMOUNT' ? 2 : 4"
+                  :step="form.formulaType === 'MARKET_PLUS_AMOUNT' ? '0.01' : '0.0001'"
+                  :controls="false"
+                  :placeholder="form.formulaType === 'MARKET_PLUS_AMOUNT' ? '0.00' : '0.0000；0.1000 表示 10%'"
+                  aria-label="公式参数"
+                  style="width: 100%"
+                />
               </a-form-item>
             </a-col>
           </a-row>
@@ -102,7 +112,7 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {emptyPrice, validatePrice} from '../pricing-form-model';
 import {pricingError} from '../pricing-errors';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
-import {fixed4} from '../../common/scm-fixed';
+import {moneyPayload, normalizeMoneyInput, toScale} from '/@/utils/scm-amount';
 
 /** 表单模型：单价输入和有效期是本地字段，提交时再写进 PriceForm（后端要定点数字符串）。 */
 type AgreementPriceModel = PriceForm & {
@@ -141,7 +151,7 @@ const formRules = {
     {
       validator: () =>
         form.formulaType !== 'FIXED' && !/^\d{1,14}(\.\d{1,4})?$/.test(form.formulaParameter || '')
-          ? Promise.reject(new Error('请填写非负四位定点公式参数'))
+          ? Promise.reject(new Error('请填写非负的公式参数（加价金额最多两位小数，加价率最多四位小数）'))
           : Promise.resolve(),
       trigger: 'blur',
     },
@@ -177,7 +187,10 @@ async function open(id?: ScmId) {
       Object.assign(form, r.data);
       form.effectiveRange = [r.data.effectiveFrom, r.data.effectiveTo || ''];
       form.formulaType = r.data.formulaType || 'FIXED';
-      form.unitPriceInput = r.data.unitPrice == null || r.data.unitPrice === '' ? null : Number(r.data.unitPrice);
+      form.unitPriceInput = r.data.unitPrice == null || r.data.unitPrice === '' ? null : Number(normalizeMoneyInput(r.data.unitPrice));
+      if (form.formulaType === 'MARKET_PLUS_AMOUNT') {
+        form.formulaParameter = normalizeMoneyInput(r.data.formulaParameter);
+      }
     }
   } catch (e) {
     error.value = pricingError(e);
@@ -197,8 +210,13 @@ async function submit() {
   } catch {
     return;
   }
-  form.unitPrice = form.formulaType === 'FIXED' ? (fixed4(form.unitPriceInput) as string) : null;
-  form.formulaParameter = form.formulaType === 'FIXED' ? null : form.formulaParameter?.trim();
+  form.unitPrice = form.formulaType === 'FIXED' ? moneyPayload(form.unitPriceInput) : null;
+  form.formulaParameter =
+    form.formulaType === 'FIXED'
+      ? null
+      : form.formulaType === 'MARKET_PLUS_AMOUNT'
+      ? moneyPayload(form.formulaParameter)
+      : toScale(form.formulaParameter, 4);
   form.effectiveFrom = form.effectiveRange?.[0] || '';
   form.effectiveTo = form.effectiveRange?.[1] || null;
   // 结束时间必须晚于开始时间这类跨字段规则，用 toast 提示

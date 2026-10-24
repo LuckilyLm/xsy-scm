@@ -436,7 +436,6 @@ async function save(draft = false, continueCreating = false) {
   try {
     form.value.items.forEach((i) => {
       i.orderedQuantity = fixed(i.orderedQuantity);
-      if (i.unitPrice != null) i.unitPrice = fixed(i.unitPrice);
     });
     // 必填项走表单校验：错误显示在对应输入框下方
     try {

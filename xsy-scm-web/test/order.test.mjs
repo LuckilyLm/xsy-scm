@@ -733,7 +733,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   test('null, zero and not-yet-settled amounts remain distinguishable', () => {
     assert.equal(amount(null, true), '未定价');
     assert.equal(amount(null), '—');
-    assert.equal(amount('0.0000', true), '¥ 0.0000');
+    assert.equal(amount('0.0000', true), '¥ 0.00');
     assert.equal(fixed('1.00005'), '1.0001');
   });
   test('valid draft and supplement validation', () => {

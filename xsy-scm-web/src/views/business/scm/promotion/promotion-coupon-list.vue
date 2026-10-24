@@ -53,7 +53,7 @@
         <template v-else-if="column.dataIndex === 'minOrderAmount'">
           <!-- 0 表示无门槛，显示成「无门槛」而不是 ¥ 0 -->
           <span v-if="isNoThreshold(record.minOrderAmount)" class="scm-cell-hint">无门槛</span>
-          <span v-else class="scm-money">¥ {{ record.minOrderAmount }}</span>
+          <span v-else class="scm-money">{{ formatAmount(record.minOrderAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'validFrom'">{{ datetime(record.validFrom) }}</template>
         <template v-else-if="column.dataIndex === 'validTo'">{{ datetime(record.validTo) }}</template>
@@ -175,10 +175,10 @@
                 v-else
                 v-model:value="form.discountValueInput"
                 :min="0"
-                :precision="4"
-                :step="1"
+                :precision="2"
+                :step="0.01"
                 addon-before="¥"
-                placeholder="0.0000"
+                placeholder="0.00"
                 style="width: 100%"
               />
             </a-form-item>
@@ -188,8 +188,8 @@
               <a-input-number
                 v-model:value="minOrderAmount"
                 :min="0"
-                :precision="4"
-                :step="1"
+                :precision="2"
+                :step="0.01"
                 addon-before="¥"
                 placeholder="0 表示无门槛"
                 style="width: 100%"
@@ -271,7 +271,7 @@ import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
-import {fixed4} from '../common/scm-fixed';
+import {formatAmount, moneyPayload, normalizeMoneyInput} from '/@/utils/scm-amount';
 import {datetime} from '../common/scm-display';
 import {promotionApi} from '/@/api/business/scm/promotion-api';
 import {
@@ -389,7 +389,7 @@ function discountText(record: PromotionCoupon): string {
     const percent = rateToPercent(record.discountValue);
     return percent === null ? '—' : `折扣率 ${percent}%`;
   }
-  return `减 ¥ ${record.discountValue ?? '—'}`;
+  return `减 ${record.discountValue == null ? '—' : formatAmount(record.discountValue)}`;
 }
 
 /** 切换优惠类型后清空数值，避免按新类型解释旧值。 */
@@ -467,14 +467,14 @@ function openEdit(record: PromotionCoupon) {
       ? null
       : record.discountType === 'RATE'
       ? rateToPercent(record.discountValue)
-      : Number(record.discountValue);
-  minOrderAmount.value = record.minOrderAmount == null ? null : Number(record.minOrderAmount);
+      : Number(normalizeMoneyInput(record.discountValue));
+  minOrderAmount.value = record.minOrderAmount == null ? null : Number(normalizeMoneyInput(record.minOrderAmount));
   editOpen.value = true;
 }
 
 async function submit() {
-  form.discountValue = form.discountType === 'RATE' ? percentToRate(form.discountValueInput) ?? '' : fixed4(form.discountValueInput) ?? '';
-  form.minOrderAmount = fixed4(minOrderAmount.value) ?? '0';
+  form.discountValue = form.discountType === 'RATE' ? percentToRate(form.discountValueInput) ?? '' : moneyPayload(form.discountValueInput);
+  form.minOrderAmount = moneyPayload(minOrderAmount.value) || '0';
   // 必填项由表单校验
   try {
     await formRef.value?.validate();

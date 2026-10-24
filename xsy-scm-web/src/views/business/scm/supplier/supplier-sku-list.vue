@@ -83,7 +83,7 @@
       >
         <template #bodyCell="{column, record}">
           <span v-if="column.dataIndex === 'spec'">{{ specText(record.specValuesSnapshot) }}</span>
-          <span v-else-if="column.dataIndex === 'referencePrice'" class="amount">{{ record.referencePrice ?? '—' }}</span>
+          <span v-else-if="column.dataIndex === 'referencePrice'" class="amount">{{ formatPrice(record.referencePrice, 'purchase') }}</span>
           <span v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</span>
           <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">
             {{ record.defaultFlag ? '优先采购' : '—' }}
@@ -117,11 +117,10 @@
         :scroll="{x: scmColumnsWidth(compareColumns)}"
       >
         <template #bodyCell="{column, record}">
-          <span
-            v-if="column.dataIndex === 'referencePrice' || column.dataIndex === 'lowestReferencePrice' || column.dataIndex === 'priceGapAmount'"
-            class="amount"
-            >{{ record[column.dataIndex] ?? '—' }}</span
-          >
+          <span v-if="column.dataIndex === 'referencePrice' || column.dataIndex === 'lowestReferencePrice'" class="amount">{{
+            formatPrice(record[column.dataIndex], 'purchase')
+          }}</span>
+          <span v-else-if="column.dataIndex === 'priceGapAmount'" class="amount">{{ formatAmountOrDash(record.priceGapAmount) }}</span>
           <span v-else-if="column.dataIndex === 'priceGapPercent'" class="amount">{{
             record.priceGapPercent == null ? '—' : `${record.priceGapPercent}%`
           }}</span>
@@ -155,6 +154,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {supplierError} from './supplier-errors';
 import {datetime} from '../common/scm-display';
+import {formatAmountOrDash, formatPrice} from '/@/utils/scm-amount';
 
 // 公司卡片
 

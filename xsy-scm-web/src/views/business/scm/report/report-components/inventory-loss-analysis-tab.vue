@@ -56,7 +56,7 @@
           <span class="scm-money">{{ costText(record.unitCost, canViewCost) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'costAmount'">
-          <span class="scm-money">{{ costText(record.costAmount, canViewCost) }}</span>
+          <span class="scm-money">{{ costText(record.costAmount, canViewCost, 'amount') }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'occurredAt'">
           {{ datetime(record.occurredAt) }}
@@ -136,7 +136,7 @@ const lossCards = computed(() => {
     },
     {
       label: '盘亏成本金额',
-      value: costText(data.stocktakeLossCostAmount, props.canViewCost),
+      value: costText(data.stocktakeLossCostAmount, props.canViewCost, 'amount'),
       cost: true,
     },
     {
@@ -145,12 +145,12 @@ const lossCards = computed(() => {
     },
     {
       label: '报损成本金额',
-      value: costText(data.lossReportCostAmount, props.canViewCost),
+      value: costText(data.lossReportCostAmount, props.canViewCost, 'amount'),
       cost: true,
     },
     {
       label: '损耗总成本金额',
-      value: costText(data.totalLossCostAmount, props.canViewCost),
+      value: costText(data.totalLossCostAmount, props.canViewCost, 'amount'),
       warning: incompleteCostHint(data.costMissingCount, '损耗成本金额'),
       cost: true,
     },

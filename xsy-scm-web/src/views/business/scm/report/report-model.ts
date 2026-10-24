@@ -1,5 +1,29 @@
 /** 报表的日期筛选、金额显示和成本权限处理。纯函数，不请求接口。 */
+import Decimal from 'decimal.js';
 import dayjs from 'dayjs';
+
+/** 本模块会被 node 直接加载，不能使用相对路径的值导入。 */
+function formatScaled(value: string | null | undefined, scale: number): string {
+  if (value === null || value === undefined || value === '') return '';
+  try {
+    const fixedValue = new Decimal(value).toDecimalPlaces(scale, Decimal.ROUND_HALF_UP).toFixed(scale);
+    const negative = fixedValue.startsWith('-');
+    const unsigned = negative ? fixedValue.slice(1) : fixedValue;
+    const [whole, fraction] = unsigned.split('.');
+    return `${negative ? '-' : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
+  } catch {
+    return '';
+  }
+}
+
+function formatAmountOrDash(value: string | null | undefined): string {
+  const formatted = formatScaled(value, 2);
+  return formatted === '' ? '—' : `¥ ${formatted}`;
+}
+
+function formatQuantity(value: string | null | undefined): string {
+  return formatScaled(value, 4) || '—';
+}
 
 /** 闭区间日期 [开始, 结束]，格式 yyyy-MM-dd。 */
 export type DateRange = [string, string];
@@ -112,12 +136,15 @@ export function chartValue(value: string | number | null | undefined): number | 
   return Number.isFinite(num) ? num : null;
 }
 
-/** 成本列文本：没有成本权限时显示 —。后端也会把成本字段置空，这里再拦一道。 */
-export function costText(value: string | null | undefined, canSeeCost: boolean): string {
+/** 成本列文本：单位成本四位，成本金额两位；没有成本权限时显示 —。 */
+export function costText(value: string | null | undefined, canSeeCost: boolean, kind: 'unit' | 'amount' = 'unit'): string {
   if (!canSeeCost) {
     return '—';
   }
-  return textOrDash(value);
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+  return kind === 'amount' ? formatAmountOrDash(value) : formatQuantity(value);
 }
 
 /** 有成本流水被跳过时，合计只是部分和，需要提示。 */

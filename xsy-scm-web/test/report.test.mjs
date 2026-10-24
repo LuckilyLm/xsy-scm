@@ -676,6 +676,7 @@ import {
     assert.equal(costText('88.0000', false), '—');
     assert.equal(costText('0.0000', false), '—');
     assert.equal(costText('88.0000', true), '88.0000');
+    assert.equal(costText('88.0000', true, 'amount'), '¥ 88.00');
     assert.equal(costText(null, true), '—');
   });
 

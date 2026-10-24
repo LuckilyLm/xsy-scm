@@ -252,7 +252,7 @@ import type {
 } from './report-types';
 import {buildReportQuery, createTabView, defaultDateRange, rangeOverLimitError, type DateRange, type TabView} from './report-model';
 import {createGuardedLoader, createTabLoader} from './use-report-query';
-import {moneyText} from '../inventory/inventory-model';
+import {moneyText} from '../finance/finance-form-model';
 import {datetime} from '../common/scm-display';
 
 const dateRange = ref<DateRange>(defaultDateRange());

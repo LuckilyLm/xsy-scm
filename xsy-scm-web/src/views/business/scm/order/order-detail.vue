@@ -147,12 +147,12 @@
     <OrderPaymentDrawer ref="paymentDrawer" />
     <ReturnForm ref="returnForm" @saved="load" />
     <a-modal :open="actualOpen" title="录入实际数量" :confirm-loading="saving" @ok="saveActual" @cancel="actualOpen = false">
-      <a-form layout="vertical" class="app-drawer-form">
-        <a-form-item label="实际数量" name="actualQuantity" required>
-          <a-input-number v-model:value="actualQuantity" string-mode :precision="4" :min="'0.0001'" />
+      <a-form :model="actualForm" layout="vertical" class="app-drawer-form">
+        <a-form-item label="实际数量" name="actualQuantity" :rules="[{required: true, message: '请输入实际数量', trigger: 'change'}]">
+          <a-input-number v-model:value="actualForm.actualQuantity" string-mode :precision="4" :min="'0.0001'" style="width: 100%" />
         </a-form-item>
-        <a-form-item label="修改原因" name="actualQuantityReason" required>
-          <a-input v-model:value="actualReason" maxlength="500" />
+        <a-form-item label="修改原因" name="actualQuantityReason" :rules="[{required: true, message: '请填写修改原因', trigger: 'change'}]">
+          <a-input v-model:value="actualForm.actualQuantityReason" maxlength="500" />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -229,7 +229,7 @@
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, ref, watch} from 'vue';
+import {computed, reactive, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import {SETTLE_MODE_ENUM} from '/@/constants/business/scm/customer-const';
 import {message} from 'ant-design-vue';
@@ -268,9 +268,9 @@ const visible = ref(false),
   logs = ref<LogRow[]>([]),
   returnForm = ref<InstanceType<typeof ReturnForm>>();
 const actualOpen = ref(false),
+  /** 表单项以 name 读取同一个模型对象；拆成多个 ref 会让校验始终读到空值。 */
+  actualForm = reactive({actualQuantity: '1.0000', actualQuantityReason: ''}),
   cancelOpen = ref(false),
-  actualQuantity = ref('1.0000'),
-  actualReason = ref(''),
   cancelReason = ref(''),
   activeItem = ref<Item>();
 const repriceOpen = ref(false),
@@ -520,13 +520,13 @@ async function confirmWithCredit() {
 
 function editActual(i: Item) {
   activeItem.value = i;
-  actualQuantity.value = i.actualQuantity ?? i.orderedQuantity;
-  actualReason.value = '';
+  actualForm.actualQuantity = i.actualQuantity ?? i.orderedQuantity;
+  actualForm.actualQuantityReason = '';
   actualOpen.value = true;
 }
 
 async function saveActual() {
-  if (!actualReason.value.trim()) {
+  if (!actualForm.actualQuantityReason.trim()) {
     message.error('请输入实重修改原因');
     return;
   }
@@ -536,8 +536,8 @@ async function saveActual() {
       orderId: order.value!.orderId,
       itemId: activeItem.value!.itemId,
       version: activeItem.value!.version,
-      actualQuantity: fixed(actualQuantity.value),
-      reason: actualReason.value,
+      actualQuantity: fixed(actualForm.actualQuantity),
+      reason: actualForm.actualQuantityReason,
     });
     actualOpen.value = false;
     await load();

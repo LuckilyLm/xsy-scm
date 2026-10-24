@@ -76,9 +76,9 @@
           }}</template>
           <template v-else-if="column.dataIndex === 'formula'">{{ formulaLabel(record.calculationBasis?.formulaType) }}</template>
           <template v-else-if="column.dataIndex === 'source'">{{ basisSourceLabel(record.calculationBasis?.basisSource) }}</template>
-          <template v-else-if="column.dataIndex === 'basis'">{{ record.calculationBasis?.basisUnitPrice || '—' }}</template>
-          <template v-else-if="column.dataIndex === 'parameter'">{{ record.calculationBasis?.formulaParameter || '—' }}</template>
-          <template v-else-if="column.dataIndex === 'unitPrice'">{{ record.unitPrice || '—' }}</template>
+          <template v-else-if="column.dataIndex === 'basis'">{{ basisPriceText(record) }}</template>
+          <template v-else-if="column.dataIndex === 'parameter'">{{ parameterText(record) }}</template>
+          <template v-else-if="column.dataIndex === 'unitPrice'">{{ resultPriceText(record) }}</template>
           <template v-else-if="column.dataIndex === 'reason'">{{
             record.unpricedReason ? UNPRICED_REASON_ENUM[record.unpricedReason]?.desc || record.unpricedReason : '—'
           }}</template>
@@ -98,7 +98,7 @@ import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
-import {formatAmount} from '/@/utils/scm-amount';
+import {formatAmount, formatPrice, formatQuantity} from '/@/utils/scm-amount';
 import {UNAVAILABLE_REASON_ENUM, UNPRICED_REASON_ENUM, SCM_PRICE_SOURCE_ENUM} from '/@/constants/business/scm/pricing-const';
 import type {ScmId} from '/@/types/business/scm/customer';
 import type {ResolveResult, ResolvedPrice} from '/@/types/business/scm/pricing';
@@ -138,6 +138,22 @@ function formulaLabel(value: unknown): string {
     )[String(value)] || '未命中协议价'
   );
 }
+function basisPriceText(row: TrialRow): string {
+  const value = row.calculationBasis?.basisUnitPrice;
+  return value ? formatPrice(String(value), 'sales') : '—';
+}
+
+function parameterText(row: TrialRow): string {
+  const basis = row.calculationBasis;
+  const value = basis?.formulaParameter;
+  if (!value) return '—';
+  return basis.formulaType === 'MARKET_PLUS_AMOUNT' ? formatAmount(String(value)) : formatQuantity(String(value));
+}
+
+function resultPriceText(row: TrialRow): string {
+  return row.unitPrice ? formatPrice(row.unitPrice, 'sales') : '—';
+}
+
 function basisSourceLabel(value: unknown): string {
   return (
     ({FIXED: '固定单价', MARKET_PRICE: '商品市场价', WAREHOUSE_WEIGHTED_AVG_COST: '配送仓移动加权成本'} as Record<string, string>)[String(value)] ||

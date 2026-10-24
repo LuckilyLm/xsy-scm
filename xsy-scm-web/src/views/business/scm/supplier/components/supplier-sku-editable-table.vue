@@ -32,7 +32,18 @@
               <a-input v-model:value="draft.purchaseUnit" :maxlength="32" :disabled="readonly" :aria-label="`第 ${index + 1} 行采购单位`" />
             </td>
             <td>
-              <a-input v-model:value="draft.referencePrice" placeholder="例如 3.5000" :disabled="readonly" :aria-label="`第 ${index + 1} 行参考价`" />
+              <a-input-number
+                v-model:value="draft.referencePrice"
+                string-mode
+                :min="'0'"
+                :precision="4"
+                :step="'0.0001'"
+                :controls="false"
+                :disabled="readonly"
+                placeholder="例如 3.5000"
+                :aria-label="`第 ${index + 1} 行参考价`"
+                style="width: 100%"
+              />
             </td>
             <td class="center">
               <a-checkbox v-model:checked="draft.defaultFlag" :disabled="readonly" :aria-label="`第 ${index + 1} 行设为优先采购`" />

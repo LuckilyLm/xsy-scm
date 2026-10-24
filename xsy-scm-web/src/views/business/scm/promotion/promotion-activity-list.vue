@@ -152,10 +152,10 @@
                 <a-input-number
                   v-model:value="rule.specialPrice"
                   :min="0"
-                  :precision="4"
-                  :step="0.1"
+                  :precision="2"
+                  :step="0.01"
                   addon-before="¥"
-                  placeholder="0.0000"
+                  placeholder="0.00"
                   style="width: 100%"
                 />
               </a-form-item>
@@ -167,10 +167,10 @@
                 <a-input-number
                   v-model:value="rule.thresholdAmount"
                   :min="0"
-                  :precision="4"
-                  :step="1"
+                  :precision="2"
+                  :step="0.01"
                   addon-before="¥"
-                  placeholder="0.0000"
+                  placeholder="0.00"
                   style="width: 100%"
                 />
               </a-form-item>
@@ -180,10 +180,10 @@
                 <a-input-number
                   v-model:value="rule.reduceAmount"
                   :min="0"
-                  :precision="4"
-                  :step="1"
+                  :precision="2"
+                  :step="0.01"
                   addon-before="¥"
-                  placeholder="0.0000"
+                  placeholder="0.00"
                   style="width: 100%"
                 />
               </a-form-item>
@@ -266,6 +266,7 @@ import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {fixed4} from '../common/scm-fixed';
+import {formatAmount, formatAmountOrDash, moneyPayload, normalizeMoneyInput} from '/@/utils/scm-amount';
 import {datetime} from '../common/scm-display';
 import type {ScmId} from '/@/types/business/scm/customer';
 import {promotionApi} from '/@/api/business/scm/promotion-api';
@@ -389,9 +390,9 @@ const RULE_FIELDS = Object.keys(emptyRule());
 function ruleText(source?: PromotionRule): string {
   if (!source) return '—';
   if (source.discountRate) return `折扣率 ${rateToPercent(source.discountRate) ?? source.discountRate}%`;
-  if (source.specialPrice) return `指定商品规格限时特价 ¥ ${source.specialPrice}`;
-  if (source.reduceAmount) return `满 ¥ ${source.thresholdAmount ?? '—'} 减 ¥ ${source.reduceAmount}`;
-  if (source.giftSkuId) return `满 ¥ ${source.thresholdAmount ?? '—'} 赠送指定商品规格 × ${source.giftQuantity ?? '—'}`;
+  if (source.specialPrice) return `指定商品规格限时特价 ${formatAmount(source.specialPrice)}`;
+  if (source.reduceAmount) return `满 ${formatAmountOrDash(source.thresholdAmount)} 减 ${formatAmount(source.reduceAmount)}`;
+  if (source.giftSkuId) return `满 ${formatAmountOrDash(source.thresholdAmount)} 赠送指定商品规格 × ${source.giftQuantity ?? '—'}`;
   return '—';
 }
 
@@ -402,9 +403,9 @@ function ruleToForm(source?: PromotionRule) {
   rule.skuId = source.skuId;
   rule.giftSkuId = source.giftSkuId;
   rule.discountPercent = rateToPercent(source.discountRate);
-  rule.specialPrice = source.specialPrice == null ? null : Number(source.specialPrice);
-  rule.thresholdAmount = source.thresholdAmount == null ? null : Number(source.thresholdAmount);
-  rule.reduceAmount = source.reduceAmount == null ? null : Number(source.reduceAmount);
+  rule.specialPrice = source.specialPrice == null ? null : Number(normalizeMoneyInput(source.specialPrice));
+  rule.thresholdAmount = source.thresholdAmount == null ? null : Number(normalizeMoneyInput(source.thresholdAmount));
+  rule.reduceAmount = source.reduceAmount == null ? null : Number(normalizeMoneyInput(source.reduceAmount));
   rule.giftQuantity = source.giftQuantity == null ? null : Number(source.giftQuantity);
 }
 
@@ -412,14 +413,14 @@ function ruleToForm(source?: PromotionRule) {
 function formToRule(source: RuleForm): PromotionRule {
   const out: Record<string, string> = {};
   const put = (key: string, value: string | undefined) => {
-    if (value !== undefined) out[key] = value;
+    if (value !== undefined && value !== '') out[key] = value;
   };
   put('skuId', source.skuId);
   put('giftSkuId', source.giftSkuId);
   put('discountRate', percentToRate(source.discountPercent));
-  put('specialPrice', fixed4(source.specialPrice));
-  put('thresholdAmount', fixed4(source.thresholdAmount));
-  put('reduceAmount', fixed4(source.reduceAmount));
+  put('specialPrice', moneyPayload(source.specialPrice));
+  put('thresholdAmount', moneyPayload(source.thresholdAmount));
+  put('reduceAmount', moneyPayload(source.reduceAmount));
   put('giftQuantity', fixed4(source.giftQuantity));
   return out as PromotionRule;
 }

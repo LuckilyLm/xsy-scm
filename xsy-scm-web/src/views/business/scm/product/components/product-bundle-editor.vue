@@ -19,7 +19,17 @@
     <a-modal :open="visible" title="组合商品组成" :confirm-loading="saving" @ok="save" @cancel="visible = false">
       <div v-for="(row, index) in draft" :key="index" class="bundle-editor__line">
         <SkuSelect v-model:value="row.skuId" :disabled-statuses="[]" />
-        <a-input v-model:value="row.quantityPerBundleSaleUnit" placeholder="每套用量，如 1.0000" />
+        <a-input-number
+          v-model:value="row.quantityPerBundleSaleUnit"
+          string-mode
+          :min="'0.0001'"
+          :precision="4"
+          :step="'0.0001'"
+          :controls="false"
+          placeholder="每套用量"
+          aria-label="每套用量"
+          style="width: 100%"
+        />
         <a-button danger @click="draft.splice(index, 1)">移除</a-button>
       </div>
       <a-button style="margin-top: 12px" @click="draft.push({skuId: undefined, quantityPerBundleSaleUnit: '1.0000'})">添加组成规格</a-button>

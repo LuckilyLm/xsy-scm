@@ -64,10 +64,10 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
   }
 
   test('amount contract keeps zero distinct from missing price', () => {
-    assert.equal(formatAmount('0.0000'), '¥ 0.0000');
+    assert.equal(formatAmount('0.0000'), '¥ 0.00');
     assert.equal(formatAmount(null), '未定价');
     assert.equal(formatAmount(undefined), '未定价');
-    assert.equal(formatAmount('1234567.5'), '¥ 1,234,567.5000');
+    assert.equal(formatAmount('1234567.5'), '¥ 1,234,567.50');
     assert.equal(formatAmountOrDash(null), '—');
   });
 
@@ -103,21 +103,20 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     const drawer = code('../src/views/business/scm/pricing/components/agreement-price-form-drawer.vue');
     assert.match(drawer, /<a-input-number[\s\S]{0,240}unitPrice/);
     assert.match(drawer, /addon-before="¥"/);
-    assert.match(drawer, /:precision="4"/);
+    // 销售侧单价按两位小数；加价金额两位，加价率仍保留四位
+    assert.match(drawer, /v-model:value="form\.unitPriceInput"[\s\S]{0,200}:precision="2"/);
+    assert.match(drawer, /v-model:value="form\.formulaParameter"[\s\S]{0,300}MARKET_PLUS_AMOUNT' \? 2 : 4/);
     assert.match(drawer, /:min="0"/);
     // 提交前必须收口回 4 位定点字符串：后端拒绝 JSON 数字，也拒绝空串
-    assert.match(
-      drawer,
-      /form\.unitPrice\s*=\s*form\.formulaType\s*===\s*'FIXED'\s*\?\s*\(?\s*fixed4\(form\.unitPriceInput\)\s*as string\s*\)?\s*:\s*null/
-    );
+    assert.match(drawer, /form\.unitPrice\s*=\s*form\.formulaType\s*===\s*'FIXED'\s*\?\s*moneyPayload\(form\.unitPriceInput\)\s*:\s*null/);
     // 模型必须是稳定对象：`:model="{...form, ...}"` 每次渲染新建对象，change 校验读到的是上一份快照，
     // 表现为「选了客户仍提示请选择客户」「填了单价仍提示请填写单价」
     assert.doesNotMatch(drawer, /:model="\{\.\.\./);
     assert.match(drawer, /:model="form"/);
-    assert.match(drawer, /form\.formulaParameter = form\.formulaType === 'FIXED' \? null/);
+    assert.match(drawer, /form\.formulaParameter\s*=\s*form\.formulaType === 'FIXED'\s*\?\s*null/);
     assert.match(drawer, /'COST_MARKUP_RATE'/);
     assert.match(drawer, /'MARKET_MARKUP_RATE'/);
-    assert.match(drawer, /fixed4.*from '\.\.\/\.\.\/common\/scm-fixed'/);
+    assert.match(drawer, /moneyPayload.*from '\/@\/utils\/scm-amount'/);
     // 宽度走分级，不写死像素（foundation 的 s 档注释里就写着「协议价」）
     assert.match(drawer, /scmDrawerWidth\('s'\)/);
     for (const title of ['定价对象', '价格', '有效期']) {

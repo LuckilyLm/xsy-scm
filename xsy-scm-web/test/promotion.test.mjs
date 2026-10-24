@@ -97,11 +97,11 @@ import {rateToPercent, percentToRate} from '../src/views/business/scm/promotion/
     // 赠品与特价的 SKU 用选择器，不是裸输入框
     assert.match(activity, /<SkuSelect[\s\S]{0,200}onSpecialSkuChange/);
     assert.match(activity, /<SkuSelect[\s\S]{0,200}onGiftSkuChange/);
-    // 提交收口：比率走 percentToRate，金额 / 数量走 fixed4
+    // 提交收口：比率走 percentToRate，金额走 moneyPayload，数量走 fixed4
     assert.match(activity, /put\('discountRate', percentToRate\(source\.discountPercent\)\)/);
-    assert.match(activity, /put\('specialPrice', fixed4\(source\.specialPrice\)\)/);
+    assert.match(activity, /put\('specialPrice', moneyPayload\(source\.specialPrice\)\)/);
     assert.match(activity, /put\('giftQuantity', fixed4\(source\.giftQuantity\)\)/);
-    assert.doesNotMatch(activity, /toFixed\(/, '定点转换应统一走 fixed4 / percentToRate');
+    assert.doesNotMatch(activity, /toFixed\(/, '定点转换应统一走 moneyPayload / fixed4 / percentToRate');
     // 分区：基础 / 规则 / 有效期 / 叠加互斥 / 备注
     for (const title of ['活动基础', '活动规则', '有效期', '叠加与互斥', '备注']) {
       assert.match(activity, new RegExp(`scm-form-section__title">${title}<`), '活动表单缺少分区：' + title);
@@ -112,7 +112,7 @@ import {rateToPercent, percentToRate} from '../src/views/business/scm/promotion/
     assert.match(activity, /function onTypeChange\(\)[\s\S]{0,200}Object\.assign\(rule, emptyRule\(\)\)/);
     assert.match(activity, /form\.rule = \{\}/);
     // 空值不进载荷：未知键会被服务端拒收（41324）
-    assert.match(activity, /if \(value !== undefined\) out\[key\] = value/);
+    assert.match(activity, /if \(value !== undefined && value !== ''\) out\[key\] = value/);
   });
 
   // ------------------------------------------------------------------
@@ -145,7 +145,7 @@ import {rateToPercent, percentToRate} from '../src/views/business/scm/promotion/
     assert.match(coupon, /function onDiscountTypeChange\(\)[\s\S]{0,200}form\.discountValueInput = null/);
     // 提交收口
     assert.match(coupon, /percentToRate\(form\.discountValueInput\) \?\? ''/);
-    assert.match(coupon, /fixed4\(minOrderAmount\.value\) \?\? '0'/);
+    assert.match(coupon, /moneyPayload\(minOrderAmount\.value\) \|\| '0'/);
     assert.doesNotMatch(coupon, /toFixed\(/, '定点转换应统一走 fixed4 / percentToRate');
     // 发券张数本来就是 InputNumber，别在重构里退回裸输入框
     assert.match(coupon, /<a-input-number[\s\S]{0,120}issueForm\.quantity/);

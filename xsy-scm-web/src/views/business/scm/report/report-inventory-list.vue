@@ -99,7 +99,7 @@
               <span class="scm-money">{{ costText(record.unitCost, canViewCost) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'costAmount'">
-              <span class="scm-money">{{ costText(record.costAmount, canViewCost) }}</span>
+              <span class="scm-money">{{ costText(record.costAmount, canViewCost, 'amount') }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'beforeQuantity'">
               <span class="scm-quantity">{{ quantityText(record.beforeQuantity) }}</span>
@@ -185,7 +185,7 @@
               <span class="scm-quantity">{{ quantityText(record.availableQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'avgCost'">
-              <span class="scm-money">{{ moneyText(record.avgCost) }}</span>
+              <span class="scm-money">{{ formatPrice(record.avgCost, 'cost') }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'amount'">
               <span class="scm-money">{{ moneyText(record.amount) }}</span>
@@ -301,6 +301,7 @@ import {
   rangeOverLimitError,
 } from './report-model';
 import {moneyText, quantityText} from '../inventory/inventory-model';
+import {formatPrice} from '/@/utils/scm-amount';
 import {datetime} from '../common/scm-display';
 import {useReportPermission} from './use-report-permission';
 import {createGuardedLoader, createTabLoader} from './use-report-query';
@@ -413,7 +414,7 @@ const valueCards = computed(() => {
   return [
     {
       label: '当前库存账面金额',
-      value: costText(data.bookValue, canViewCost.value),
+      value: costText(data.bookValue, canViewCost.value, 'amount'),
       sub: data.snapshotAt ? `截至 ${datetime(data.snapshotAt)}` : undefined,
     },
     {label: '有库存商品规格数', value: countText(data.stockedSkuCount)},

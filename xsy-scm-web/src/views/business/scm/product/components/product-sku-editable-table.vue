@@ -44,7 +44,8 @@
               :value="sku.marketPrice"
               string-mode
               :min="0"
-              step="0.0001"
+              :precision="2"
+              step="0.01"
               :controls="false"
               addon-before="¥"
               style="width: 100%"

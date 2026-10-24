@@ -1,8 +1,33 @@
-/** 客户表单模型：纯函数，可直接单测。账期三形态互斥，金额用 4 位定点字符串。 */
+/** 客户表单模型：纯函数，可直接单测。账期三形态互斥，销售金额按两位录入、提交转四位。 */
+import Decimal from 'decimal.js';
 import type {CreditPeriodType, CustomerFormModel, CustomerPayload} from '/@/types/business/scm/customer';
 
-/** 非负定点数，最多 4 位小数，与后端一致。 */
-const DECIMAL = /^\d{1,14}(\.\d{1,4})?$/;
+/** 销售金额允许两位新录入值，也放行历史四位值；三位和五位以上都拒绝。 */
+function isSalesMoney(value: string | number | null | undefined): boolean {
+  if (value === null || value === undefined || value === '') return false;
+  try {
+    const parsed = new Decimal(value);
+    const places = parsed.decimalPlaces();
+    return parsed.isFinite() && !parsed.isNegative() && (places <= 2 || places === 4);
+  } catch {
+    return false;
+  }
+}
+
+/** 本模块会被 node 直接加载，不能使用相对路径的值导入。 */
+function roundScale(value: string | number | null | undefined, scale: number): string {
+  if (value === null || value === undefined || value === '') return '';
+  try {
+    return new Decimal(value).toDecimalPlaces(scale, Decimal.ROUND_HALF_UP).toFixed(scale);
+  } catch {
+    return '';
+  }
+}
+
+function moneyPayload(value: string | number | null | undefined): string {
+  const normalized = roundScale(value, 2);
+  return normalized === '' ? '' : roundScale(normalized, 4);
+}
 
 /** 宽松手机号 / 固话校验。 */
 const PHONE = /^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$/;
@@ -82,17 +107,15 @@ export function validateCustomer(form: CustomerFormModel): string | undefined {
   if (phone && !PHONE.test(phone)) {
     return '联系电话格式不正确';
   }
-  const creditLimit = form.creditLimit?.trim();
-  if (creditLimit && !DECIMAL.test(creditLimit)) {
-    return '授信额度须为非负数，最多四位小数';
+  if (form.creditLimit?.trim() && !isSalesMoney(form.creditLimit)) {
+    return '授信额度须为非负数，最多两位小数';
   }
   if (form.creditPeriodType === 'BY_AMOUNT') {
-    const threshold = form.creditAmountThreshold?.trim();
-    if (!threshold) {
+    if (!form.creditAmountThreshold?.trim()) {
       return '按金额账期必须填写金额阈值';
     }
-    if (!DECIMAL.test(threshold)) {
-      return '金额阈值须为非负数，最多四位小数';
+    if (!isSalesMoney(form.creditAmountThreshold)) {
+      return '金额阈值须为非负数，最多两位小数';
     }
   }
   if (form.creditPeriodType === 'BY_TIME') {
@@ -126,12 +149,12 @@ export function toCustomerPayload(form: CustomerFormModel): CustomerPayload {
     contactPhone: blankToNull(form.contactPhone),
     address: blankToNull(form.address),
     remark: blankToNull(form.remark),
-    creditLimit: blankToNull(form.creditLimit),
+    creditLimit: blankToNull(moneyPayload(form.creditLimit)),
     codAllowed: form.codAllowed === true,
     // 只有集团结算才可能共享结算，其余情况置假
     sharedSettlementEnabled: form.settleMode === 'GROUP' && form.sharedSettlementEnabled === true,
     creditPeriodType: form.creditPeriodType ?? null,
-    creditAmountThreshold: blankToNull(form.creditAmountThreshold),
+    creditAmountThreshold: blankToNull(moneyPayload(form.creditAmountThreshold)),
     creditPeriodValue: form.creditPeriodValue ?? null,
     creditPeriodUnit: form.creditPeriodUnit ?? null,
     settleDay: form.settleDay ?? null,

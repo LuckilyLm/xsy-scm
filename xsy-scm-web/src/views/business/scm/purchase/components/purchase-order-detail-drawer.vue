@@ -68,7 +68,7 @@
               <span class="scm-quantity">{{ quantity(record.overReceiptQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'purchasePrice'">
-              <span class="scm-money">{{ amount(record.purchasePrice) }}</span>
+              <span class="scm-money">{{ price(record.purchasePrice) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'lineAmount'">
               <span class="scm-money">{{ amount(record.lineAmount) }}</span>
@@ -142,7 +142,7 @@ import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import {SCM_DEMAND_STATUS_ENUM, SCM_PURCHASE_OPERATION_ENUM, SCM_PURCHASE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import type {Allocation, Id, LogRow, Order, OrderItem} from '../purchase-types';
-import {amount, progress, quantity} from '../purchase-form-model';
+import {amount, price, progress, quantity} from '../purchase-form-model';
 import {datetime} from '../../common/scm-display';
 import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';

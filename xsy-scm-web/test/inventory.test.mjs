@@ -320,25 +320,25 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
   // 移动加权成本
   // ------------------------------------------------------------------
 
-  test('money text passes the server-formatted value through unchanged', () => {
+  test('money text uses two decimals and keeps missing distinct from zero', () => {
     // 「没有这个事实」与「真的是零」不得合并 —— 与 quantityText 同一口径
     assert.equal(moneyText(null), '—');
     assert.equal(moneyText(undefined), '—');
     assert.equal(moneyText(''), '—');
 
-    // 均价 4 位、金额 2 位，都由源头定好；前端再加千分位/补零就会与后端口径分叉
-    assert.equal(moneyText('7.0000'), '7.0000');
-    assert.equal(moneyText('112.00'), '112.00');
-    assert.equal(moneyText('0.0000'), '0.0000');
-    assert.equal(moneyText('12345678.9000'), '12345678.9000');
+    // 业务金额按两位展示；成本单价仍由 formatPrice(..., 'cost') 保留四位
+    assert.equal(moneyText('7.0000'), '¥ 7.00');
+    assert.equal(moneyText('112.00'), '¥ 112.00');
+    assert.equal(moneyText('0.0000'), '¥ 0.00');
+    assert.equal(moneyText('12345678.9000'), '¥ 12,345,678.90');
   });
 
   test('the balance page shows the moving-average cost and the derived amount', () => {
     const page = code('../src/views/business/scm/inventory/inventory-balance-list.vue');
     assert.match(page, /dataIndex: 'avgCost'/, '余额页必须有均价列');
     assert.match(page, /dataIndex: 'amount'/, '余额页必须有金额列');
-    // 两列都要走 moneyText，不能落到「原样 {{ record[column.dataIndex] }}」的兜底分支
-    assert.match(page, /column\.dataIndex === 'avgCost'[\s\S]{0,120}moneyText\(record\.avgCost\)/);
+    // 均价是成本单价，必须四位；金额是业务金额，按两位
+    assert.match(page, /column\.dataIndex === 'avgCost'[\s\S]{0,120}formatPrice\(record\.avgCost, 'cost'\)/);
     assert.match(page, /column\.dataIndex === 'amount'[\s\S]{0,120}moneyText\(record\.amount\)/);
 
     const types = code('../src/views/business/scm/inventory/inventory-types.ts');

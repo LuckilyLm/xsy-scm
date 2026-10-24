@@ -16,16 +16,17 @@
         <a-form-item name="unitPrice">
           <template #label>
             单价
-            <ScmFieldHelp label="单价" text="0 元也是有效价格；最多四位小数" />
+            <ScmFieldHelp label="单价" text="0 元也是有效价格；最多两位小数" />
           </template>
           <a-input-number
             v-model:value="form.unitPrice"
             string-mode
             :min="0"
-            :max="'99999999999999.9999'"
-            :precision="4"
+            :max="'99999999999999.99'"
+            :precision="2"
             :step="'0.01'"
             addon-before="¥"
+            placeholder="0.00"
             style="width: 100%"
           />
         </a-form-item>
@@ -63,6 +64,7 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {emptyPrice, validatePrice} from '../pricing-form-model';
 import {pricingError} from '../pricing-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {moneyPayload, normalizeMoneyInput} from '/@/utils/scm-amount';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
 /** 表单模型：有效期是本地字段，提交时再写进 PriceForm。 */
@@ -106,6 +108,7 @@ async function open(id?: ScmId) {
     const r = await api.detail(id, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       Object.assign(form, r.data);
+      form.unitPrice = normalizeMoneyInput(r.data.unitPrice);
       form.effectiveRange = [r.data.effectiveFrom, r.data.effectiveTo || ''];
     }
   } catch (e) {
@@ -128,6 +131,7 @@ async function submit() {
   }
   form.effectiveFrom = form.effectiveRange?.[0] || '';
   form.effectiveTo = form.effectiveRange?.[1] || null;
+  form.unitPrice = moneyPayload(form.unitPrice);
   // 结束时间必须晚于开始时间这类跨字段规则，用 toast 提示
   const problems = validatePrice(form, 'customerTypeId');
   if (problems.length) {

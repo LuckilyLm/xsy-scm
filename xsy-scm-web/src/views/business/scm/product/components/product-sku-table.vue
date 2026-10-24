@@ -2,7 +2,7 @@
   <a-table :columns="columns" :data-source="rows" row-key="skuId" :pagination="false" size="small" :scroll="{x: scmColumnsWidth(columns)}">
     <template #bodyCell="{column, record}">
       <span v-if="column.dataIndex === 'marketPrice'" class="scm-money">{{
-        record.marketPrice === null ? '未定价' : `¥ ${record.marketPrice}`
+        record.marketPrice === null ? '未定价' : formatPrice(record.marketPrice, 'sales')
       }}</span>
       <ScmStatusTag
         v-else-if="column.dataIndex === 'status'"
@@ -21,6 +21,7 @@
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {formatPrice} from '/@/utils/scm-amount';
 import type {TableColumnsType} from 'ant-design-vue';
 import type {ProductSku} from '/@/types/business/scm/product';
 import {enumLabel, SHELF_STATUS_ENUM} from '/@/constants/business/scm/product-const';

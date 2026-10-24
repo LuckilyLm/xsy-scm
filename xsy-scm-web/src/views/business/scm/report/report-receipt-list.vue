@@ -114,7 +114,7 @@
               <span class="scm-quantity">{{ quantityText(record.receiptDifference) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'purchasePrice'">
-              <span class="scm-money">{{ moneyText(record.purchasePrice) }}</span>
+              <span class="scm-money">{{ formatPrice(record.purchasePrice, 'purchase') }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'receiptReferenceAmount'">
               <span class="scm-money">{{ moneyText(record.receiptReferenceAmount) }}</span>
@@ -337,6 +337,7 @@ import {
   textOrDash,
 } from './report-model';
 import {moneyText, quantityText} from '../inventory/inventory-model';
+import {formatPrice} from '/@/utils/scm-amount';
 import {datetime} from '../common/scm-display';
 import {useReportPermission} from './use-report-permission';
 import {createGuardedLoader, createTabLoader} from './use-report-query';

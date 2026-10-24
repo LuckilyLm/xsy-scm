@@ -2,6 +2,7 @@
  * 库存展示和表单处理的公共函数。
  * 不依赖 Vue 或接口调用，方便单独测试。
  */
+import Decimal from 'decimal.js';
 import type {Id} from './inventory-types.ts';
 
 /** 只用到仓库 id。 */
@@ -30,12 +31,20 @@ export function quantityText(value: string | null | undefined): string {
   return value;
 }
 
-/** 金额为空显示“—”，0 仍显示 0。 */
+/** 金额为空显示“—”，0 仍显示 0；业务金额统一按两位展示。 */
 export function moneyText(value: string | null | undefined): string {
   if (value === null || value === undefined || value === '') {
     return '—';
   }
-  return value;
+  try {
+    const fixedValue = new Decimal(value).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2);
+    const negative = fixedValue.startsWith('-');
+    const unsigned = negative ? fixedValue.slice(1) : fixedValue;
+    const [whole, fraction] = unsigned.split('.');
+    return `¥ ${negative ? '-' : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
+  } catch {
+    return '—';
+  }
 }
 
 /** 规格值转成可读文本；无值或空对象显示“—”。规格损坏时不报错，避免整页崩溃。 */

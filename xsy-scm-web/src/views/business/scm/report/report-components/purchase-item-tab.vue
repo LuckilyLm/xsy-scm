@@ -46,7 +46,7 @@
           <span class="scm-quantity">{{ quantityText(record.receivedQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'purchasePrice'">
-          <span class="scm-money">{{ moneyText(record.purchasePrice) }}</span>
+          <span class="scm-money">{{ formatPrice(record.purchasePrice, 'purchase') }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'lineAmount'">
           <span class="scm-money">{{ moneyText(record.lineAmount) }}</span>
@@ -79,6 +79,7 @@ import {SCM_PURCHASE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {dateOnly, datetime} from '../../common/scm-display';
 import {moneyText, quantityText} from '../../inventory/inventory-model';
+import {formatPrice} from '/@/utils/scm-amount';
 import {enumDescText} from '../report-model';
 import type {PurchaseItemRow} from '../report-types';
 

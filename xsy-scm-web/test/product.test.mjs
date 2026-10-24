@@ -235,7 +235,7 @@ import {groupErrorsByRow, hasBlockingErrors, matchFilesBySpuCode} from '../src/v
     Object.assign(form.skuList[0], {skuCode: 'A', specName: '大', saleUnit: 'kg', specValues: {Size: ' Large '}});
     assert.equal(validateProduct(form), undefined);
     form.skuList[0].marketPrice = '1.23456';
-    assert.match(validateProduct(form), /四位/);
+    assert.match(validateProduct(form), /两位/);
     form.skuList[0].marketPrice = '0.0000';
     form.skuList.push({...form.skuList[0], skuCode: 'B', defaultFlag: false, specValues: {size: 'large'}});
     assert.match(validateProduct(form), /规格组合重复/);

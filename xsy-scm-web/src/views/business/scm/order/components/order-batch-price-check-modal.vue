@@ -72,6 +72,7 @@ import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref} from 'vue';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
+import {formatAmount} from '/@/utils/scm-amount';
 import {hasPermission} from '../../common/scm-permission';
 import {orderError} from '../order-errors';
 import {canApplyPriceCheck, compareOrderPrices} from '../order-batch-price-check';
@@ -104,7 +105,7 @@ const columns: TableColumnsType<PriceCheckLine> = [
   {title: '比较结果', dataIndex: 'state', align: 'center', width: 120},
   {title: '说明', dataIndex: 'reason', width: 180},
 ];
-const money = (value: string | null) => (value == null ? '未定价' : '¥ ' + value);
+const money = (value: string | null) => formatAmount(value);
 const stateLabel = (state: PriceCheckState) =>
   ({
     UP: '涨价',

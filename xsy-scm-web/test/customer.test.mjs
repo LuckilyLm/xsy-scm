@@ -303,8 +303,8 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     assert.match(validateCustomer({...ok, name: ''}), /客户名称/);
     assert.match(validateCustomer({...ok, customerTypeId: undefined}), /客户类型/);
     assert.match(validateCustomer({...ok, contactPhone: '12345'}), /联系电话/);
-    assert.match(validateCustomer({...ok, creditLimit: '1.23456'}), /四位小数/);
-    assert.match(validateCustomer({...ok, creditLimit: '-1'}), /四位小数/);
+    assert.match(validateCustomer({...ok, creditLimit: '1.23456'}), /两位小数/);
+    assert.match(validateCustomer({...ok, creditLimit: '-1'}), /两位小数/);
     // 合法的 4 位定点数必须放行。
     assert.equal(validateCustomer({...ok, creditLimit: '1234.5000'}), undefined);
     assert.equal(validateCustomer({...ok, contactPhone: '13800138000'}), undefined);
@@ -314,7 +314,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     const ok = {...emptyCustomer(), name: '客户甲', customerTypeId: 1};
 
     assert.match(validateCustomer({...ok, creditPeriodType: 'BY_AMOUNT'}), /金额阈值/);
-    assert.match(validateCustomer({...ok, creditPeriodType: 'BY_AMOUNT', creditAmountThreshold: '1.23456'}), /四位小数/);
+    assert.match(validateCustomer({...ok, creditPeriodType: 'BY_AMOUNT', creditAmountThreshold: '1.23456'}), /两位小数/);
     assert.equal(validateCustomer({...ok, creditPeriodType: 'BY_AMOUNT', creditAmountThreshold: '5000.0000'}), undefined);
 
     assert.match(validateCustomer({...ok, creditPeriodType: 'BY_TIME'}), /账期值/);

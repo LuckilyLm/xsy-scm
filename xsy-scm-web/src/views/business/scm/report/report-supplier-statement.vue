@@ -71,7 +71,7 @@ import {message, type TableColumnsType} from 'ant-design-vue';
 import {supplierStatementApi, type SupplierStatement, type SupplierStatementLine} from '/@/api/business/scm/supplier-statement-api';
 import type {ReportId} from './report-types';
 import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-model';
-import {moneyText} from '../inventory/inventory-model';
+import {moneyText} from '../finance/finance-form-model';
 import {reportError} from './report-errors';
 import {useScmExport} from '../common/use-scm-export';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';

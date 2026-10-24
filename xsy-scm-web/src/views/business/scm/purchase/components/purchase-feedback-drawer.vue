@@ -16,7 +16,7 @@
     <a-alert v-if="error" type="error" show-icon :message="error" />
     <a-table :columns="columns" :data-source="rows" row-key="id" :loading="loading" :pagination="false" :scroll="{x: 1060}">
       <template #bodyCell="{column, record}">
-        <span v-if="column.dataIndex === 'unitPrice'" class="scm-money">{{ record.unitPrice ?? '—' }}</span>
+        <span v-if="column.dataIndex === 'unitPrice'" class="scm-money">{{ formatPrice(record.unitPrice, 'purchase') }}</span>
         <span v-else-if="column.dataIndex === 'receivedQuantity'" class="scm-quantity">{{ record.receivedQuantity ?? '—' }}</span>
       </template>
     </a-table>
@@ -27,6 +27,7 @@
 </template>
 <script setup lang="ts">
 import {ref} from 'vue';
+import {formatPrice} from '/@/utils/scm-amount';
 import {purchaseShareApi, type PurchaseShareFeedback} from '/@/api/business/scm/purchase-share-api';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';

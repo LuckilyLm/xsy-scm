@@ -37,7 +37,7 @@
           {{ dateOnly(record.bizDate) }}
         </template>
         <template v-else-if="column.dataIndex === 'weightedAvgPrice'">
-          <span class="scm-money">{{ moneyText(record.weightedAvgPrice) }}</span>
+          <span class="scm-money">{{ formatPrice(record.weightedAvgPrice, 'purchase') }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'previousWeightedAvgPrice' || column.dataIndex === 'priceChangeAmount'">
           <span class="scm-money">{{ changeMoneyText(record[column.dataIndex]) }}</span>
@@ -63,7 +63,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {dateOnly} from '../../common/scm-display';
-import {moneyText} from '../../inventory/inventory-model';
+import {formatPrice} from '/@/utils/scm-amount';
 import {chartValue, countText} from '../report-model';
 import type {ReportChartLine, PurchasePriceTrendPoint} from '../report-types';
 
@@ -113,14 +113,14 @@ const trendSeries = computed<ReportChartLine[]>(() => {
     return {
       name: `${label}（${rows[0]?.purchaseUnit ?? '无单位'}）`,
       data: axis.map((date) => chartValue(byDate.get(date)?.weightedAvgPrice)),
-      texts: axis.map((date) => moneyText(byDate.get(date)?.weightedAvgPrice)),
+      texts: axis.map((date) => formatPrice(byDate.get(date)?.weightedAvgPrice, 'purchase')),
     };
   });
 });
 
 function changeMoneyText(value: string | null | undefined): string {
   if (value == null) return '—';
-  return (Number(value) > 0 ? '+' : '') + moneyText(value);
+  return (Number(value) > 0 ? '+' : '') + formatPrice(value, 'purchase');
 }
 
 function percentText(value: string | null | undefined): string {

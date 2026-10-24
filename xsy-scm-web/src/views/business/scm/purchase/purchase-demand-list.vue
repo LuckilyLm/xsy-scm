@@ -142,8 +142,8 @@
     @cancel="alloc.open = false"
   >
     <a-alert v-if="alloc.error" :message="alloc.error" type="error" show-icon />
-    <a-form layout="vertical">
-      <a-form-item label="采购单（仅已提交 / 部分收货）" name="orderId" required>
+    <a-form ref="allocateFormRef" :model="alloc" :rules="allocateRules" layout="vertical">
+      <a-form-item label="采购单（仅已提交 / 部分收货）" name="orderId">
         <a-select
           v-model:value="alloc.orderId"
           show-search
@@ -156,10 +156,10 @@
           @change="orderChanged"
         />
       </a-form-item>
-      <a-form-item label="采购行（同一商品规格）" name="purchaseOrderItemId" required>
+      <a-form-item label="采购行（同一商品规格）" name="purchaseOrderItemId">
         <a-select v-model:value="alloc.purchaseOrderItemId" :options="alloc.itemOptions" :loading="alloc.itemLoading" placeholder="请选择采购行" />
       </a-form-item>
-      <a-form-item label="分配数量" name="quantity" required>
+      <a-form-item label="分配数量" name="quantity">
         <a-input-number string-mode :precision="4" :min="'0.0001'" v-model:value="alloc.quantity" style="width: 100%" />
         <span class="hint">该需求剩余可分配 {{ quantity(alloc.demand?.unallocatedQuantity) }}</span>
       </a-form-item>
@@ -169,7 +169,7 @@
 
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue';
-import {message} from 'ant-design-vue';
+import {message, type FormInstance} from 'ant-design-vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -226,6 +226,14 @@ const alloc = reactive({
   supplierId: undefined as Id | undefined,
   warehouseId: undefined as Id | undefined,
 });
+
+/** 表单项的 name 必须能在 :model 里取到值，否则选择后仍会保留必填错误。 */
+const allocateFormRef = ref<FormInstance>();
+const allocateRules = {
+  orderId: [{required: true, message: '请选择采购单', trigger: 'change'}],
+  purchaseOrderItemId: [{required: true, message: '请选择采购行', trigger: 'change'}],
+  quantity: [{required: true, message: '请输入分配数量', trigger: 'change'}],
+};
 
 /** 常用列放在前面，其余可通过列设置打开。 */
 type DemandListColumn = ScmListColumn;
@@ -348,11 +356,18 @@ async function submitAllocate() {
   if (!demand) {
     return;
   }
+  try {
+    await allocateFormRef.value?.validate();
+  } catch {
+    return;
+  }
   if (!alloc.purchaseOrderItemId) {
     alloc.error = '请选择采购行';
     return;
   }
-  if (!/^\d{1,14}\.\d{4}$/.test(alloc.quantity) || Number(alloc.quantity) <= 0) {
+  // 输入框在未失焦时可能还是「1」这种中间态，先按四位定点归一化再校验
+  const quantityValue = fixed(alloc.quantity);
+  if (!/^\d{1,14}\.\d{4}$/.test(quantityValue) || Number(quantityValue) <= 0) {
     alloc.error = '分配数量必须为大于零的四位定点数';
     return;
   }
@@ -362,7 +377,7 @@ async function submitAllocate() {
     await purchaseDemandApi.allocate({
       demandId: demand.id,
       purchaseOrderItemId: alloc.purchaseOrderItemId,
-      quantity: fixed(alloc.quantity),
+      quantity: quantityValue,
       supplierId: alloc.supplierId!,
       warehouseId: alloc.warehouseId!,
       version: demand.version ?? 0,

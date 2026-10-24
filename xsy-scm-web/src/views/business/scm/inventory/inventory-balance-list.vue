@@ -63,7 +63,7 @@
           <span class="scm-quantity">{{ quantityText(record.availableQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'avgCost'">
-          <span class="scm-money">{{ moneyText(record.avgCost) }}</span>
+          <span class="scm-money">{{ formatPrice(record.avgCost, 'cost') }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'amount'">
           <span class="scm-money">{{ moneyText(record.amount) }}</span>
@@ -99,6 +99,7 @@ import {SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const'
 import type {InventoryBalance, InventoryBalanceQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {moneyText, quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
+import {formatPrice} from '/@/utils/scm-amount';
 import {inventoryError} from './inventory-errors';
 
 const queryForm = reactive<InventoryBalanceQuery>({pageNum: 1, pageSize: 20});

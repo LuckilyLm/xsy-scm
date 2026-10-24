@@ -67,7 +67,7 @@
         <a-space direction="vertical">
           <a-checkbox v-privilege="'scm:order:price-override'" v-model:checked="record.manualPriceOverride">人工改价 </a-checkbox>
           <template v-if="record.manualPriceOverride">
-            <a-input-number string-mode :precision="4" :min="'0'" v-model:value="record.unitPrice" aria-label="人工单价" />
+            <a-input-number string-mode :precision="2" :min="'0'" :step="'0.01'" v-model:value="record.unitPrice" aria-label="人工单价" />
             <a-input v-model:value="record.overrideReason" placeholder="改价原因（必填）" aria-label="改价原因" maxlength="500" />
           </template>
         </a-space>

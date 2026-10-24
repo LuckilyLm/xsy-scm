@@ -91,7 +91,7 @@
           >
             <template #bodyCell="{record, column}">
               <template v-if="column.dataIndex === 'unitPrice'">
-                <span class="scm-amount">{{ record.unitPrice }}</span> / {{ record.purchaseUnit }}
+                <span class="scm-amount">{{ formatPrice(record.unitPrice, 'purchase') }}</span> / {{ record.purchaseUnit }}
               </template>
               <template v-else-if="column.dataIndex === 'revision'">第 {{ record.revision }} 版</template>
               <template v-else-if="column.dataIndex === 'validUntil'">
@@ -147,6 +147,7 @@
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {formatPrice} from '/@/utils/scm-amount';
 import {computed, onMounted, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';

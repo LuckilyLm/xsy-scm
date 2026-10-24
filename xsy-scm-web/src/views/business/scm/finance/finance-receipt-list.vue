@@ -169,7 +169,17 @@
     <a-alert v-if="codError" class="form-error" type="error" show-icon :message="codError" />
     <a-form layout="vertical">
       <a-form-item label="销售订单 ID" required>
-        <a-input v-model:value="codForm.orderId" :disabled="codSaving" placeholder="输入订单 ID 后查询待收金额" @change="clearCodPreview" />
+        <a-input-number
+          v-model:value="codOrderIdInput"
+          string-mode
+          :precision="0"
+          :min="'1'"
+          :controls="false"
+          :disabled="codSaving"
+          placeholder="输入订单 ID 后查询待收金额"
+          style="width: 100%"
+          @change="clearCodPreview"
+        />
         <a-button :loading="codLoading" :disabled="codSaving" style="margin-top: 8px" @click="() => loadCodPreview()">查询订单</a-button>
       </a-form-item>
       <a-alert v-if="codPreview" type="info" show-icon>
@@ -219,7 +229,7 @@
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {onMounted, reactive, ref, watch} from 'vue';
+import {computed, onMounted, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
@@ -275,6 +285,7 @@ const codOpen = ref(false),
   codError = ref('');
 const codPreview = ref<FinanceCodCollectionPreview>();
 let codPreviewGeneration = 0;
+/** 订单 ID 是数字，但模型保持字符串：避免大整数精度问题，也兼容路由里带来的 query 值。 */
 const codForm = reactive({
   orderId: '',
   amount: '',
@@ -282,6 +293,12 @@ const codForm = reactive({
   receivedAt: nowDateTimeValue(),
   externalReference: '',
   remark: '',
+});
+const codOrderIdInput = computed({
+  get: () => (codForm.orderId === '' ? null : codForm.orderId),
+  set: (value: string | number | null | undefined) => {
+    codForm.orderId = value == null ? '' : String(value);
+  },
 });
 const reverseOpen = ref(false),
   reverseSaving = ref(false),

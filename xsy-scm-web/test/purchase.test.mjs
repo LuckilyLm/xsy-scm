@@ -25,6 +25,7 @@ import {
   validateOrder,
   unitMismatch,
   amount,
+  price,
   allocatedOnItem,
   validateConfirm,
   hasAllocation,
@@ -457,8 +458,9 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
   test('null, zero and missing amounts stay distinguishable in three states', () => {
     assert.equal(amount(null, true), '未定价');
     assert.equal(amount(null), '—');
-    assert.equal(amount('0.0000', true), '¥ 0.0000');
-    assert.equal(amount('0.0000'), '¥ 0.0000');
+    assert.equal(amount('0.0000', true), '¥ 0.00');
+    assert.equal(amount('0.0000'), '¥ 0.00');
+    assert.equal(price('12.3456'), '¥ 12.3456');
     assert.equal(quantity(null), '—');
     assert.equal(quantity('0.0000'), '0.0000');
     assert.equal(quantity(''), '—');

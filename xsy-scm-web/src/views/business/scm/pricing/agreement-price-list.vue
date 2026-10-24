@@ -91,7 +91,7 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {formatAmount} from '/@/utils/scm-amount';
+import {formatAmount, formatQuantity, normalizeMoneyInput} from '/@/utils/scm-amount';
 import {pricingError} from './pricing-errors';
 import {effectiveRangeText, PRICE_EFFECTIVENESS, priceEffectiveness} from './pricing-display';
 import PriceDrawer from './components/agreement-price-form-drawer.vue';
@@ -121,7 +121,8 @@ const columns = ref<AgreementPriceColumn[]>([
 ]);
 
 function formulaText(row: PriceRow): string {
-  const value = row.formulaParameter || '0.0000';
+  const value =
+    row.formulaType === 'MARKET_PLUS_AMOUNT' ? normalizeMoneyInput(row.formulaParameter) || '0.00' : formatQuantity(row.formulaParameter || '0');
   switch (row.formulaType) {
     case 'MARKET_PLUS_AMOUNT':
       return `市场价 + ${value}`;

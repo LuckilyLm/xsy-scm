@@ -44,13 +44,13 @@
           <span class="scm-money">{{ moneyText(record.orderAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'avgPurchasePrice'">
-          <span class="scm-money">{{ moneyText(record.avgPurchasePrice) }}</span>
+          <span class="scm-money">{{ formatPrice(record.avgPurchasePrice, 'purchase') }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'inboundQuantityText'">
           {{ textOrDash(record.inboundQuantityText) }}
         </template>
         <template v-else-if="column.dataIndex === 'inboundCostAmount'">
-          <span class="scm-money">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
+          <span class="scm-money">{{ costText(record.inboundCostAmount, canViewCost, 'amount') }}</span>
           <a-tooltip
             v-if="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"
             :title="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"
@@ -86,6 +86,7 @@ import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {costText, countText, filterCostColumns, incompleteCostHint, textOrDash} from '../report-model';
 import {moneyText, quantityText} from '../../inventory/inventory-model';
+import {formatPrice} from '/@/utils/scm-amount';
 import type {PurchaseProductRow} from '../report-types';
 
 const props = defineProps<{

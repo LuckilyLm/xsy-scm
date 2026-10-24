@@ -77,7 +77,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'unitSnapshot'">{{ record.unitSnapshot || '—' }}</template>
         <template v-else-if="column.dataIndex === 'unitCost'">
-          <span class="scm-money">{{ moneyText(record.unitCost) }}</span>
+          <span class="scm-money">{{ formatPrice(record.unitCost, 'cost') }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'beforeQuantity'">
           <span class="scm-quantity">{{ quantityText(record.beforeQuantity) }}</span>
@@ -120,7 +120,8 @@ import {
   SCM_INVENTORY_TABLE_ID,
 } from '/@/constants/business/scm/inventory-const';
 import type {InventoryMovement, InventoryMovementQuery} from './inventory-types';
-import {moneyText, movementTypeText, quantityText, skuMainText} from './inventory-model';
+import {movementTypeText, quantityText, skuMainText} from './inventory-model';
+import {formatPrice} from '/@/utils/scm-amount';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';

@@ -25,6 +25,20 @@ export function fixed(value: string | number | null | undefined): string {
   return new Decimal(value).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
 }
 
+/** 金额两位、千分位；本模块被 node 直接加载，不能依赖外部展示工具。 */
+function moneyText(value: string | null | undefined, scale: number): string {
+  if (value === null || value === undefined || value === '') return '';
+  try {
+    const fixedValue = new Decimal(value).toDecimalPlaces(scale, Decimal.ROUND_HALF_UP).toFixed(scale);
+    const negative = fixedValue.startsWith('-');
+    const unsigned = negative ? fixedValue.slice(1) : fixedValue;
+    const [whole, fraction] = unsigned.split('.');
+    return `${negative ? '-' : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
+  } catch {
+    return '';
+  }
+}
+
 /**
  * 金额渲染。`unpriced=true` 时 `null` 显示「未定价」，否则显示 `—`。
  */
@@ -32,15 +46,20 @@ export function amount(value: string | null | undefined, unpriced = false): stri
   if (value === null || value === undefined || value === '') {
     return unpriced ? '未定价' : '—';
   }
-  return '¥ ' + fixed(value);
+  const formatted = moneyText(value, 2);
+  return formatted === '' ? (unpriced ? '未定价' : '—') : `¥ ${formatted}`;
+}
+
+/** 采购单价渲染：始终四位，保留采购侧精度。 */
+export function price(value: string | null | undefined): string {
+  const formatted = moneyText(value, 4);
+  return formatted === '' ? '—' : `¥ ${formatted}`;
 }
 
 /** 数量渲染：`null` → `—`，`"0.0000"` → `0.0000`。 */
 export function quantity(value: string | null | undefined): string {
-  if (value === null || value === undefined || value === '') {
-    return '—';
-  }
-  return fixed(value);
+  const formatted = moneyText(value, 4);
+  return formatted === '' ? '—' : formatted;
 }
 
 /** 收货进度转百分比；无数据时显示“—”。 */

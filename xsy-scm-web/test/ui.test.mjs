@@ -1211,6 +1211,71 @@ import ts from 'typescript';
     }
     assert.deepEqual([...new Set(offenders)], [], '无 model 的表单不会 emit finish，处理函数变成死代码');
   });
+
+  test('表单项声明 name 时，所在 a-form 必须声明 :model', () => {
+    // FormItem 通过 name 从 formContext.model 读字段值；没有 model 时永远读到 undefined，
+    // 于是用户已经输入或选择，required 规则仍会报「请输入 / 请选择」。
+    const offenders = [];
+    for (const [name, code] of files) {
+      for (const match of code.matchAll(/<a-form\b([^>]*)>([\s\S]*?)<\/a-form>/g)) {
+        if (/:model=/.test(match[1])) continue;
+        if (/<a-form-item\b[^>]*\bname=/.test(match[2])) offenders.push(name);
+      }
+    }
+    assert.deepEqual([...new Set(offenders)], [], '没有 :model 时表单项校验读不到用户输入');
+  });
+
+  test('数量、金额、价格与订单 ID 使用数值输入框', () => {
+    const expected = {
+      'pricing/components/agreement-price-form-drawer.vue': 'form.formulaParameter',
+      'pricing/customer-type-price-batch.vue': 'record.unitPrice',
+      'product/components/product-bundle-editor.vue': 'row.quantityPerBundleSaleUnit',
+      'supplier/components/supplier-sku-editable-table.vue': 'draft.referencePrice',
+      'finance/finance-receipt-list.vue': 'codOrderIdInput',
+    };
+    const byName = new Map(files);
+    for (const [name, binding] of Object.entries(expected)) {
+      const source = byName.get(name);
+      assert.ok(source, `缺少页面：${name}`);
+      const input = (source.match(/<a-input-number\b[\s\S]*?\/>/g) ?? []).find((tag) => tag.includes(binding));
+      assert.ok(input, `${name} 的 ${binding} 仍在用文本输入框`);
+      assert.match(input, /string-mode/, `${name} 的 ${binding} 需保留定点字符串精度`);
+    }
+  });
+
+  test('销售侧金额用两位小数，采购侧价格保留四位', () => {
+    // 负责人口径：商城 / 销售金额按元展示两位；只有采购价格需要四位小数。
+    const byName = new Map(files);
+    const inputTag = (name, binding) => {
+      const source = byName.get(name);
+      assert.ok(source, `缺少页面：${name}`);
+      const tag = (source.match(/<a-input-number\b[\s\S]*?\/>/g) ?? []).find((item) => item.includes(binding));
+      assert.ok(tag, `${name} 缺少 ${binding} 的数值输入框`);
+      return tag;
+    };
+    const sales = {
+      'pricing/customer-type-price-batch.vue': 'record.unitPrice',
+      'pricing/components/customer-type-price-form-drawer.vue': 'form.unitPrice',
+      'pricing/time-price-list.vue': 'form.unitPrice',
+      'pricing/components/agreement-price-form-drawer.vue': 'form.unitPriceInput',
+      'product/components/product-sku-editable-table.vue': 'sku.marketPrice',
+      'order/components/order-item-editable-table.vue': 'record.unitPrice',
+      'promotion/promotion-activity-list.vue': 'rule.specialPrice',
+      'promotion/promotion-coupon-list.vue': 'form.discountValueInput',
+    };
+    for (const [name, binding] of Object.entries(sales)) {
+      assert.match(inputTag(name, binding), /:precision="2"/, `${name} 的销售金额应为两位小数`);
+    }
+    // 加价金额两位，加价率仍可四位
+    assert.match(inputTag('pricing/components/agreement-price-form-drawer.vue', 'form.formulaParameter'), /MARKET_PLUS_AMOUNT' \? 2 : 4/);
+    const procurement = {
+      'supplier/components/supplier-sku-editable-table.vue': 'draft.referencePrice',
+      'purchase/components/purchase-order-item-editable-table.vue': 'record.purchasePrice',
+    };
+    for (const [name, binding] of Object.entries(procurement)) {
+      assert.match(inputTag(name, binding), /:precision="4"/, `${name} 的采购价格应保留四位小数`);
+    }
+  });
 }
 
 // ---------------------------------------------------------------- 来源：scm-table-alignment-contract.test.mjs
