@@ -126,7 +126,8 @@
     -->
     <select id="overviewKpi" resultType="com.xsy.scm.report.domain.vo.ReportOverviewVO">
         SELECT ord.confirmedOrderCount, ord.customerCount, ord.confirmedOrderAmount, rf.completedRefundAmount,
-            po.submittedOrderCount, po.submittedAmount AS submittedPurchaseAmount, mv.purchaseInCostAmount,
+            po.submittedOrderCount AS submittedPurchaseOrderCount, po.submittedAmount AS submittedPurchaseAmount,
+            mv.purchaseInCostAmount,
             mv.purchaseInCostMissingCount, bal.inventoryBookValue, bal.stockedSkuCount, CURRENT_TIMESTAMP AS snapshotAt
         FROM (SELECT COUNT(*) AS confirmedOrderCount, COUNT(DISTINCT o.customer_id) AS customerCount,
             COALESCE(SUM(o.settlement_total_amount),

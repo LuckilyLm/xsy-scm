@@ -43,13 +43,23 @@
     </template>
   </a-alert>
 
-  <!-- 区间指标和当前时点指标分开排，避免两种数字混在一起 -->
-  <section v-for="band in kpiBands" :key="band.key" class="report-kpi-band">
-    <h3 class="report-kpi-band__title">{{ band.title }}</h3>
-    <div class="report-kpi-grid" :class="`report-kpi-grid--${band.key}`">
-      <ReportKpiCard v-for="card in band.cards" :key="card.label" :label="card.label" :value="card.value" :sub="card.sub" :warning="card.warning" />
-    </div>
-  </section>
+  <!-- 区间指标和当前时点指标分开排，避免两种数字混在一起；两组共用一块底板，不再是散落的卡片 -->
+  <div class="report-kpi-panel">
+    <section v-for="band in kpiBands" :key="band.key" class="report-kpi-band">
+      <h3 class="report-kpi-band__title">{{ band.title }}</h3>
+      <div class="report-kpi-grid" :class="`report-kpi-grid--${band.key}`">
+        <ReportKpiCard
+          v-for="card in band.cards"
+          :key="card.label"
+          :label="card.label"
+          :value="card.value"
+          :sub="card.sub"
+          :warning="card.warning"
+          :layout="band.key === 'point' ? 'strip' : 'tile'"
+        />
+      </div>
+    </section>
+  </div>
 
   <ReportLineChart class="smart-margin-top10" title="每日金额趋势" :x-axis="trendAxis" :series="trendSeries" />
 
@@ -243,9 +253,12 @@ const kpiCards = computed(() => {
       value: moneyText(data.completedRefundAmount),
     },
     {
+      label: '已提交采购单数',
+      value: countText(data.submittedPurchaseOrderCount),
+    },
+    {
       label: '已提交采购金额',
       value: moneyText(data.submittedPurchaseAmount),
-      sub: data.submittedPurchaseOrderCount === undefined ? undefined : `已提交采购单 ${countText(data.submittedPurchaseOrderCount)} 张`,
     },
     {
       label: '采购入库成本金额',
@@ -379,29 +392,64 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* KPI 分段：段标题说明这组数字是区间统计还是当前时点 */
-.report-kpi-band {
+/* KPI 底板：区间统计与当前时点共用一块白底，卡片不再散落在页面上 */
+.report-kpi-panel {
   margin-top: 12px;
+  padding: 16px;
+  border: 1px solid var(--scm-line);
+  border-radius: 12px;
+  background: var(--scm-surface, #fff);
 }
 
+.report-kpi-band + .report-kpi-band {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--scm-line);
+}
+
+/* 段标题说明这组数字是区间统计还是当前时点 */
 .report-kpi-band__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 8px;
-  color: var(--scm-text-secondary);
-  font-size: 13px;
+  color: var(--scm-ink-soft);
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.04em;
   line-height: 20px;
+}
+
+.report-kpi-band__title::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--scm-primary);
 }
 
 .report-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
 }
 
-/* 时点指标通常只有一张，固定宽度 */
+/* 中等屏宽按 4 列断行，避免出现 7 张卡排成「6 + 1」的孤行 */
+@media (max-width: 1500px) {
+  .report-kpi-grid--range {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .report-kpi-grid--range {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 时点指标只有一条，横条独占整行 */
 .report-kpi-grid--point {
-  grid-template-columns: minmax(0, 320px);
-  justify-content: start;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .report-warn-icon {
