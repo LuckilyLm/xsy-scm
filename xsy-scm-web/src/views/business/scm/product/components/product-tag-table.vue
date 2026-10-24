@@ -3,7 +3,7 @@
   <a-form class="smart-query-form" layout="inline">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item"
-        ><a-input v-model:value="query.keyword" allow-clear placeholder="编码 / 名称" style="width: 200px"
+        ><a-input v-model:value="query.keyword" allow-clear placeholder="标签名称" style="width: 200px"
       /></a-form-item>
       <a-form-item label="状态" class="smart-query-form-item"
         ><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px"
@@ -57,11 +57,6 @@ const query = reactive<AssistantQuery>({}),
 const modal = ref<InstanceType<typeof TagModal>>();
 const columns: TableColumnsType<ProductTag> = [
   {title: '排序', dataIndex: 'sortOrder', width: 70},
-  {
-    title: '标签编码',
-    dataIndex: 'tagCode',
-    width: 170,
-  },
   {title: '标签名称', dataIndex: 'name', width: 170},
   {
     title: '已打标商品',

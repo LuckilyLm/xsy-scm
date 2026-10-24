@@ -6,7 +6,7 @@
           ><CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px"
         /></a-form-item>
         <a-form-item label="关键字" class="smart-query-form-item"
-          ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称 / 商品编码 / 条码 / 助记码" style="width: 260px"
+          ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称 / 条码" style="width: 260px"
         /></a-form-item>
         <a-form-item label="商品状态" class="smart-query-form-item"
           ><a-select v-model:value="filters.status" allow-clear :options="SHELF_STATUS_ENUM" style="width: 110px"
@@ -148,7 +148,6 @@
           <a-tag v-else-if="column.dataIndex === 'masterStatus'" :color="MASTER_STATUS_COLOR[record.masterStatus]">
             {{ enumText(MASTER_STATUS_ENUM, record.masterStatus) }}
           </a-tag>
-          <span v-else-if="column.dataIndex === 'spuCode'" class="scm-mono">{{ record.spuCode }}</span>
           <span v-else-if="column.dataIndex === 'storageMethod'">{{ enumText(STORAGE_METHOD_ENUM, record.storageMethod) }}</span>
           <span v-else-if="column.dataIndex === 'shelfLifeDays'">{{ days(record.shelfLifeDays) }}</span>
           <span v-else-if="column.dataIndex === 'lossRate'">{{ percent(record.lossRate) }}</span>
@@ -263,10 +262,8 @@ const canBatch = computed(
 // 默认摊开全部字段，便于核对；列太多可横向滚动或在「设置列」里隐藏。
 const columns = ref<TableColumnsType<ProductRow>>([
   {title: '主图', dataIndex: 'primaryImageUrl', width: SCM_COLUMN_WIDTH.image},
-  {title: '商品编码', dataIndex: 'spuCode', width: 150},
   {title: '商品名称', dataIndex: 'name', width: 200, sorter: true, ellipsis: true},
   {title: '别名', dataIndex: 'alias', width: 130, ellipsis: true},
-  {title: '助记码', dataIndex: 'mnemonicCode', width: 110},
   {title: '分类', dataIndex: 'categoryPath', align: 'center', width: SCM_COLUMN_WIDTH.name, ellipsis: true},
   {title: '品牌', dataIndex: 'brandName', width: 110, ellipsis: true},
   {title: '产地', dataIndex: 'origin', width: 110, ellipsis: true},

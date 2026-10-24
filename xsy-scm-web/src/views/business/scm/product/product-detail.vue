@@ -9,16 +9,8 @@
         </a-button>
         <div class="scm-detail-header__title-row">
           <h1 class="scm-detail-header__title">{{ product?.name || '商品详情' }}</h1>
-          <ScmStatusTag
-            v-if="product"
-            :tone="product.status === 'ON_SHELF' ? 'success' : 'neutral'"
-            :label="enumLabel(SHELF_STATUS_ENUM, product.status)"
-          />
         </div>
-        <p v-if="product" class="scm-detail-header__meta">
-          <span class="scm-mono">{{ product.spuCode }}</span>
-          <span v-if="product.categoryPath"> · {{ product.categoryPath }}</span>
-        </p>
+        <p v-if="product?.categoryPath" class="scm-detail-header__meta">{{ product.categoryPath }}</p>
       </div>
     </header>
 
@@ -34,10 +26,6 @@
             <h3 class="scm-detail-card__title">基础信息</h3>
             <dl class="scm-field-list scm-field-list--2">
               <div class="scm-field">
-                <dt class="scm-field__label">商品编码</dt>
-                <dd class="scm-field__value scm-mono">{{ product.spuCode }}</dd>
-              </div>
-              <div class="scm-field">
                 <dt class="scm-field__label">分类</dt>
                 <dd class="scm-field__value">{{ product.categoryPath || '—' }}</dd>
               </div>
@@ -48,6 +36,10 @@
               <div class="scm-field">
                 <dt class="scm-field__label">市场价</dt>
                 <dd class="scm-field__value scm-money">{{ priceRange(product.minMarketPrice, product.maxMarketPrice) }}</dd>
+              </div>
+              <div class="scm-field">
+                <dt class="scm-field__label">在售状态</dt>
+                <dd class="scm-field__value">{{ enumLabel(SHELF_STATUS_ENUM, product.status) }}</dd>
               </div>
               <div class="scm-field">
                 <dt class="scm-field__label">主档状态</dt>
@@ -64,10 +56,6 @@
           <section class="scm-detail-card">
             <h3 class="scm-detail-card__title">主档扩展</h3>
             <dl class="scm-field-list scm-field-list--2">
-              <div class="scm-field">
-                <dt class="scm-field__label">助记码</dt>
-                <dd class="scm-field__value">{{ product.mnemonicCode || '—' }}</dd>
-              </div>
               <div class="scm-field">
                 <dt class="scm-field__label">品牌</dt>
                 <dd class="scm-field__value">{{ product.brandName || '—' }}</dd>
@@ -169,10 +157,6 @@
           <section class="scm-detail-card scm-detail-card--muted scm-detail-card--full">
             <h3 class="scm-detail-card__title">系统信息</h3>
             <dl class="scm-field-list scm-field-list--3">
-              <div class="scm-field">
-                <dt class="scm-field__label">商品编码</dt>
-                <dd class="scm-field__value scm-mono">{{ product.spuCode }}</dd>
-              </div>
               <div class="scm-field">
                 <dt class="scm-field__label">创建时间</dt>
                 <dd class="scm-field__value">{{ datetime(product.createdAt) }}</dd>

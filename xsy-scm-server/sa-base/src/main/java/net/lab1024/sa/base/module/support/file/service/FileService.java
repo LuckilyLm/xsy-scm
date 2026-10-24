@@ -88,8 +88,10 @@ public class FileService {
             return ResponseDTO.userErrorParam("文件名称最大长度为：" + FILE_NAME_MAX_LENGTH);
         }
 
-        // 校验文件大小以及安全性
-        ResponseDTO<String> validateFile = securityFileService.checkFile(file);
+        // 校验文件大小以及安全性；公开图片目录无论全局检测开关如何，都必须是真实图片
+        ResponseDTO<String> validateFile = folderTypeEnum == FileFolderTypeEnum.PUBLIC_IMAGE
+                ? securityFileService.checkImageFile(file)
+                : securityFileService.checkFile(file);
         if (!validateFile.getOk()) {
             return ResponseDTO.error(validateFile);
         }

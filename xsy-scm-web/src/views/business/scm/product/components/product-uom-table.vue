@@ -3,7 +3,7 @@
   <a-form class="smart-query-form" layout="inline">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item"
-        ><a-input v-model:value="query.keyword" allow-clear placeholder="编码 / 名称" style="width: 200px"
+        ><a-input v-model:value="query.keyword" allow-clear placeholder="单位名称" style="width: 200px"
       /></a-form-item>
       <a-form-item label="状态" class="smart-query-form-item"
         ><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px"
@@ -58,11 +58,6 @@ const query = reactive<AssistantQuery>({}),
 const modal = ref<InstanceType<typeof UomModal>>();
 const columns: TableColumnsType<ProductUom> = [
   {title: '排序', dataIndex: 'sortOrder', width: 70},
-  {
-    title: '单位编码',
-    dataIndex: 'uomCode',
-    width: 150,
-  },
   {title: '单位名称', dataIndex: 'name', width: 120},
   {title: '量纲', dataIndex: 'category', align: 'center', width: 90},
   {title: '小数位', dataIndex: 'precisionScale', width: 80},

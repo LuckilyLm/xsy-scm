@@ -98,26 +98,78 @@ public class ProductImageCenterService {
             Collectors.groupingBy(ProductImageCenterForms.BindItem::getSpuId, LinkedHashMap::new, Collectors.toList()));
         for (var entry : bySpu.entrySet()) {
             Long spuId = entry.getKey();
-            requireSpu(spuId);
-            productImageSyncManager.sync(spuId, ProductImageChangeSet.between(productImageSyncManager.existing(spuId),
-                requestedWithBinds(spuId, entry.getValue())));
+            ProductSpuEntity spu = requireSpu(spuId);
+            List<ProductImageEntity> existing = productImageSyncManager.existing(spuId);
+            productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing,
+                requestedWithBinds(existing, spu.getSpuCode(), entry.getValue())));
         }
     }
 
     /**
      * 图片重新绑定前先汇总现有及新增图片，检查数量上限、文件键重复和主图唯一性，避免直接触发数据库唯一约束。
+     *
+     * <p>
+     * 新增图片的展示名由服务端统一生成（商品编码 + 递增序号），上传文件的原始名称不参与绑定，也不再要求文件名等于商品编码。
      */
-    private List<ProductImageForm> requestedWithBinds(Long spuId, List<ProductImageCenterForms.BindItem> binds) {
-        List<ProductImageForm> requested = formsOf(spuId);
-        for (var item : binds) {
+    private List<ProductImageForm> requestedWithBinds(List<ProductImageEntity> existing, String spuCode,
+        List<ProductImageCenterForms.BindItem> binds) {
+        List<ProductImageForm> requested = new ArrayList<>(existing.stream().map(this::toForm).toList());
+        List<String> names = generatedFileNames(spuCode, existing, binds);
+        for (int i = 0; i < binds.size(); i++) {
+            var item = binds.get(i);
             ProductImageForm add = new ProductImageForm();
             add.setFileKey(item.getFileKey());
+            add.setFileName(names.get(i));
             add.setPrimaryFlag(Boolean.TRUE.equals(item.getPrimaryFlag()));
             add.setSortOrder(item.getSortOrder() == null ? 0 : item.getSortOrder());
             requested.add(add);
         }
         productAggregateValidator.validateImages(requested);
         return requested;
+    }
+
+    /**
+     * 生成「商品编码.jpg / 商品编码-2.jpg / 商品编码-3.jpg」形式的展示名。
+     *
+     * <p>
+     * 只影响商品图片记录里的 fileName，存储 key 仍是上传时的不可变文件名；序号会跳过该商品已占用的名称。
+     */
+    private List<String> generatedFileNames(String spuCode, List<ProductImageEntity> existing,
+        List<ProductImageCenterForms.BindItem> binds) {
+        String base = safeImageBaseName(spuCode);
+        Set<String> used = existing.stream().map(ProductImageEntity::getFileName)
+            .filter(name -> name != null && !name.isBlank()).map(name -> name.toLowerCase(Locale.ROOT))
+            .collect(Collectors.toCollection(HashSet::new));
+        List<String> names = new ArrayList<>(binds.size());
+        int sequence = 1;
+        for (var item : binds) {
+            String extension = imageExtension(item.getFileKey());
+            String candidate;
+            do {
+                candidate = sequence == 1 ? base + extension : base + "-" + sequence + extension;
+                sequence++;
+            } while (!used.add(candidate.toLowerCase(Locale.ROOT)));
+            names.add(candidate);
+        }
+        return names;
+    }
+
+    private static String safeImageBaseName(String spuCode) {
+        String base = spuCode == null ? "" : spuCode.trim().replaceAll("[\\\\/:*?\"<>|\\s]", "_");
+        return base.isEmpty() ? "image" : base;
+    }
+
+    /** 扩展名取自上传 key（存储侧保留原始扩展名），未知类型按 .jpg 处理。 */
+    private static String imageExtension(String fileKey) {
+        if (fileKey == null) {
+            return ".jpg";
+        }
+        int dot = fileKey.lastIndexOf('.');
+        if (dot < 0 || dot == fileKey.length() - 1) {
+            return ".jpg";
+        }
+        String extension = fileKey.substring(dot).toLowerCase(Locale.ROOT);
+        return extension.matches("\\.(jpg|jpeg|png|webp|gif|bmp)") ? extension : ".jpg";
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -166,10 +218,6 @@ public class ProductImageCenterService {
             forms.get(ordered.get(i)).setSortOrder(i);
         }
         productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing, new ArrayList<>(forms.values())));
-    }
-
-    private List<ProductImageForm> formsOf(Long spuId) {
-        return productImageSyncManager.existing(spuId).stream().map(this::toForm).collect(Collectors.toList());
     }
 
     /**

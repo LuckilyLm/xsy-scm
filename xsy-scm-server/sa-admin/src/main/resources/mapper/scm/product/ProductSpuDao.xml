@@ -148,7 +148,7 @@
       这里对库内编码做 lower(trim()) 兜底，已删除商品不参与匹配。
     -->
     <select id="findByNormalizedCodes" resultType="com.xsy.scm.product.domain.vo.ProductImageMatchTargetVO">
-        SELECT p.id AS spu_id, p.spu_code
+        SELECT p.id AS spu_id, p.spu_code, p.name
         FROM xsy_product_spu p
         WHERE p.deleted = FALSE
             AND lower(trim(p.spu_code)) IN

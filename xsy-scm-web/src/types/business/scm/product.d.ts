@@ -290,6 +290,7 @@ export interface ImageReorderForm {
 export interface ImageMatchTarget {
   spuId: ProductId;
   spuCode: string;
+  name?: string;
 }
 
 /** 已上传但还没挂到任何商品的公开图片；来自文件表，不是商品图片表。 */

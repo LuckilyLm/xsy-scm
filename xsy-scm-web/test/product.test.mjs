@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {emptyProduct, emptySku, removeSku, productFormOf, validateProduct} from '../src/views/business/scm/product/product-form-model.ts';
 import {groupErrorsByRow, hasBlockingErrors, matchFilesBySpuCode} from '../src/views/business/scm/product/product-import-model.ts';
+import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/image-const.ts';
 
 // ---------------------------------------------------------------- 来源：image-center-pick-columns-contract.test.mjs
 {
@@ -49,22 +50,20 @@ import {groupErrorsByRow, hasBlockingErrors, matchFilesBySpuCode} from '../src/v
     return match[1];
   }
 
-  test('左侧选择区把商品编码独立成列', () => {
+  test('左侧选择区只展示商品名称，不展示商品编码', () => {
     const block = pickColumnsBlock();
-    assert.match(block, /dataIndex:\s*'spuCode'/, '选择区缺少独立的 spuCode 列，编码又会被并回名称格里');
+    assert.doesNotMatch(block, /dataIndex:\s*'spuCode'/, '选择区仍在展示 spuCode 列');
     assert.match(block, /dataIndex:\s*'name'/, '选择区缺少名称列');
   });
 
-  test('名称与编码各自成列，单元格不再叠行', () => {
-    // 名称列与编码列各走自己的 bodyCell 分支，且都不使用双行复合单元
-    assert.match(code, /column\.dataIndex === 'spuCode'/, '编码列未走自定义渲染');
+  test('名称列使用普通单元格，不叠行', () => {
+    assert.doesNotMatch(code, /column\.dataIndex === 'spuCode'/, '编码列仍存在');
     assert.match(code, /column\.dataIndex === 'name'/, '名称列未走自定义渲染');
-    assert.ok(!/scm-cell-stack/.test(code), '名称格里仍在叠副行，应各自成列');
+    assert.ok(!/scm-cell-stack/.test(code), '名称格里仍在叠副行');
   });
 
-  test('编码文本仍在 DOM 中可见（E2E 按编码定位行）', () => {
-    // E2E 用 hasText 按 spuCode 找行，因此编码必须真实渲染，不能被删掉
-    assert.match(code, /record\.spuCode/, '编码已从渲染中消失，会破坏按编码定位的 E2E');
+  test('商品编码只用于后端定位，不在选择区渲染', () => {
+    assert.doesNotMatch(code, /record\.spuCode/, '选择区仍在渲染商品编码');
   });
 
   test('主图状态列保留', () => {
@@ -134,12 +133,11 @@ import {groupErrorsByRow, hasBlockingErrors, matchFilesBySpuCode} from '../src/v
     assert.match(category, /return segments\.length > 1 \? segments\.slice\(0, -1\)\.join\(' \/ '\) : '—'/);
   });
 
-  test('单位表与标签表保留字典编码、不展示时间列', () => {
-    // 单位编码可保留（维护型字典）
-    assert.match(uom, /title: '单位编码'/);
+  test('单位表与标签表不展示编码和时间列', () => {
+    assert.doesNotMatch(uom, /title: '单位编码'/);
     assert.match(uom, /title: '单位名称'/);
     assert.match(uom, /title: '状态'/);
-    assert.match(tag, /title: '标签编码'/);
+    assert.doesNotMatch(tag, /title: '标签编码'/);
     assert.match(tag, /title: '标签名称'/);
     // 隐藏创建 / 更新时间
     for (const [name, source] of [
@@ -310,7 +308,63 @@ import {groupErrorsByRow, hasBlockingErrors, matchFilesBySpuCode} from '../src/v
     const source = readFileSync(new URL('../src/views/business/scm/product/image-center.vue', import.meta.url), 'utf8');
     assert.match(source, /productImageApi\.matchTargets\(/, '批量导入未请求后端匹配接口');
     assert.match(source, /matchCache/, '批量导入没有编码缓存');
-    assert.match(source, /matchFilesBySpuCode\(stagedFiles\.value, \[\.\.\.matchCache\.values\(\)\]\.flat\(\)\)/, '匹配目标未来自编码缓存');
+    assert.match(source, /matchFilesBySpuCode\([\s\S]{0,120}\.\.\.matchCache\.values\(\)\]\.flat\(\)/, '匹配目标未来自编码缓存');
     assert.doesNotMatch(source, /products\.value\.map\(\(row\) => \(\{spuId: row\.spuId, spuCode: row\.spuCode\}\)\)/, '匹配目标仍取当前页商品');
+  });
+
+  test('批量导入允许任意文件名，目标商品可逐张修改', () => {
+    const source = readFileSync(new URL('../src/views/business/scm/product/image-center.vue', import.meta.url), 'utf8');
+    // 不再要求「文件名=商品编码」，文件名只用于自动预选
+    assert.doesNotMatch(source, /文件名（不含扩展名）需与商品编码一致/, '批量导入仍在要求文件名等于商品编码');
+    assert.match(source, /文件名不限/, '缺少「文件名不限」的说明');
+    // 每行都能手动指定目标商品，并支持批量指定
+    assert.match(source, /@change="onRowTargetChange\(record\)"/, '目标商品不能逐张修改');
+    assert.match(source, /applyBulkTarget/, '缺少批量指定商品');
+    // 上传前做格式校验，accept 与后端白名单共用一份常量
+    assert.match(source, /:accept="IMAGE_ACCEPT"/);
+    assert.match(source, /imageFileError\(file\)/);
+  });
+}
+
+// ---------------------------------------------------------------- 来源：image-upload-format-contract.test.mjs
+{
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+  const fakeFile = (name, type, size = 1024) => ({name, type, size});
+
+  test('图片上传放行主流格式，拒绝 SVG、伪装内容和超大文件', () => {
+    for (const [name, type] of [
+      ['a.jpg', 'image/jpeg'],
+      ['a.jpeg', 'image/jpeg'],
+      ['a.png', 'image/png'],
+      ['a.webp', 'image/webp'],
+      ['a.gif', 'image/gif'],
+      ['a.bmp', 'image/bmp'],
+    ]) {
+      assert.equal(imageFileError(fakeFile(name, type)), null, `${name} 应允许上传`);
+    }
+    assert.match(imageFileError(fakeFile('a.svg', 'image/svg+xml')), /仅支持/);
+    assert.match(imageFileError(fakeFile('a.jpg', 'application/pdf')), /不是受支持/);
+    assert.match(imageFileError(fakeFile('a.jpg', 'image/jpeg', 21 * 1024 * 1024)), /20 MB/);
+  });
+
+  test('前后端图片白名单一致，公开图片目录强制按内容校验', () => {
+    const backend = read(
+      '../../xsy-scm-server/sa-base/src/main/java/net/lab1024/sa/base/module/support/securityprotect/service/SecurityFileService.java'
+    );
+    const fileService = read('../../xsy-scm-server/sa-base/src/main/java/net/lab1024/sa/base/module/support/file/service/FileService.java');
+    for (const mime of IMAGE_MIME_TYPES) {
+      assert.ok(backend.includes(mime), `后端白名单缺 ${mime}`);
+    }
+    assert.match(backend, /checkImageFile/);
+    assert.match(fileService, /folderTypeEnum == FileFolderTypeEnum\.PUBLIC_IMAGE[\s\S]{0,80}checkImageFile/);
+    assert.ok(!backend.includes('image/svg+xml'), 'SVG 有脚本风险，不应加入白名单');
+  });
+
+  test('图片绑定后由服务端按商品编码重命名并递增', () => {
+    const service = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImageCenterService.java');
+    assert.match(service, /generatedFileNames\(/, '缺少按商品编码生成展示名的逻辑');
+    assert.match(service, /base \+ "-" \+ sequence \+ extension/, '多张图片没有递增命名');
+    const sync = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/manager/ProductImageSyncManager.java');
+    assert.match(sync, /form\.getFileName\(\)[\s\S]{0,100}file\.getFileName\(\)/, '同步时仍只使用原始文件名');
   });
 }

@@ -108,7 +108,9 @@ public class ProductImageSyncManager {
         var entity = new ProductImageEntity();
         entity.setSpuId(spuId);
         entity.setFileKey(file.getFileKey());
-        entity.setFileName(file.getFileName());
+        // 图片中心允许服务端按商品编码重命名展示名；未指定时沿用上传时的原始文件名
+        entity.setFileName(
+            form.getFileName() != null && !form.getFileName().isBlank() ? form.getFileName() : file.getFileName());
         entity.setFileSize(file.getFileSize() == null ? null : file.getFileSize().longValue());
         entity.setPrimaryFlag(form.getPrimaryFlag());
         entity.setSortOrder(form.getSortOrder());

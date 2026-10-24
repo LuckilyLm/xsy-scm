@@ -34,7 +34,14 @@ public class SecurityFileService {
     // 定义白名单MIME类型
     private static final List<String> ALLOWED_MIME_TYPES = Arrays.asList("application/json", "application/zip", "application/x-7z-compressed", "application/pdf", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-works", "text/csv", "audio/*", "video/*",
             // 图片类型 svg有安全隐患，所以不使用"image/*"
-            "image/jpeg", "image/png", "image/gif", "image/bmp");
+            "image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp");
+
+    /**
+     * 公开图片目录的专用白名单：与前端 image-const 保持一致。
+     *
+     * <p>公共图片会直接进商品、商城等展示位，不能依赖「文件安全检测」开关；即使全局检测关闭，也必须按文件内容确认是图片。
+     */
+    private static final List<String> IMAGE_MIME_TYPES = Arrays.asList("image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp");
 
     /**
      * 检测文件安全类型
@@ -42,11 +49,9 @@ public class SecurityFileService {
     public ResponseDTO<String> checkFile(MultipartFile file) {
 
         // 检验文件大小
-        if (level3ProtectConfigService.getMaxUploadFileSizeMb() > 0) {
-            long maxSize = level3ProtectConfigService.getMaxUploadFileSizeMb() * 1024 * 1024;
-            if (file.getSize() > maxSize) {
-                return ResponseDTO.userErrorParam("上传文件最大为:" + level3ProtectConfigService.getMaxUploadFileSizeMb() + " mb");
-            }
+        ResponseDTO<String> sizeCheck = checkFileSize(file);
+        if (!sizeCheck.getOk()) {
+            return sizeCheck;
         }
 
         // 文件类型安全检测
@@ -57,6 +62,33 @@ public class SecurityFileService {
             }
         }
 
+        return ResponseDTO.ok();
+    }
+
+    /**
+     * 图片目录专用校验：大小 + 文件内容必须是受支持的图片。
+     *
+     * <p>SVG 能内嵌脚本，不纳入白名单；扩展名不可信，统一用 Tika 识别真实 MIME。
+     */
+    public ResponseDTO<String> checkImageFile(MultipartFile file) {
+        ResponseDTO<String> sizeCheck = checkFileSize(file);
+        if (!sizeCheck.getOk()) {
+            return sizeCheck;
+        }
+        String fileType = getFileMimeType(file);
+        if (IMAGE_MIME_TYPES.stream().noneMatch(allowedType -> matchesMimeType(fileType, allowedType))) {
+            return ResponseDTO.userErrorParam("仅支持 JPG、PNG、WebP、GIF、BMP 图片");
+        }
+        return ResponseDTO.ok();
+    }
+
+    private ResponseDTO<String> checkFileSize(MultipartFile file) {
+        if (level3ProtectConfigService.getMaxUploadFileSizeMb() > 0) {
+            long maxSize = level3ProtectConfigService.getMaxUploadFileSizeMb() * 1024 * 1024;
+            if (file.getSize() > maxSize) {
+                return ResponseDTO.userErrorParam("上传文件最大为:" + level3ProtectConfigService.getMaxUploadFileSizeMb() + " mb");
+            }
+        }
         return ResponseDTO.ok();
     }
 

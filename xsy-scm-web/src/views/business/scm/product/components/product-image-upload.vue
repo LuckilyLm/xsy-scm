@@ -5,7 +5,7 @@
       <div class="image-upload__actions">
         <a-upload
           v-if="canEdit"
-          accept="image/png,image/jpeg,image/webp,image/gif"
+          :accept="IMAGE_ACCEPT"
           :show-upload-list="false"
           :custom-request="upload"
           :disabled="uploading || modelValue.length >= 20"
@@ -75,6 +75,7 @@ import type {UploadProps} from 'ant-design-vue';
 import {ArrowLeftOutlined, ArrowRightOutlined, DeleteOutlined} from '@ant-design/icons-vue';
 import {fileApi} from '/@/api/support/file-api';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
+import {IMAGE_ACCEPT, imageFileError} from '/@/constants/business/scm/image-const';
 import type {ProductImage} from '/@/types/business/scm/product';
 import {productError} from '../product-errors';
 const props = defineProps<{modelValue: ProductImage[]; canEdit: boolean}>();
@@ -89,6 +90,13 @@ function markPreviewFailed(fileKey: string) {
 }
 const upload: UploadProps['customRequest'] = async (options) => {
   if (!props.canEdit || !(options.file instanceof File)) return;
+  const invalid = imageFileError(options.file);
+  if (invalid) {
+    uploadError.value = invalid;
+    message.error(invalid);
+    options.onError?.(new Error(invalid));
+    return;
+  }
   uploading.value = true;
   uploadError.value = '';
   emit('uploading', true);

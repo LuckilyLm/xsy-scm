@@ -162,6 +162,22 @@ class ProductImageCenterPgIT {
     }
 
     @Test
+    void batchBindNamesImagesBySpuCodeAndIncrementsDuplicates() {
+        Long spuId = newSpu();
+        String spuCode = jdbc.queryForObject("SELECT spu_code FROM xsy_product_spu WHERE id = ?", String.class, spuId);
+        var bind = new ProductImageCenterForms.BatchBindForm();
+        bind.setItems(new ArrayList<>(
+                List.of(bindItem(spuId, key("rename-a"), false), bindItem(spuId, key("rename-b"), false))));
+        service.batchBind(bind);
+
+        List<String> names = jdbc.queryForList(
+                "SELECT file_name FROM xsy_product_image WHERE spu_id=? AND deleted=FALSE ORDER BY id", String.class, spuId);
+        // 新绑定的图片不再沿用上传文件名，而是按商品编码生成；同商品多张依次递增
+        assertThat(names).contains(spuCode + ".png", spuCode + "-2.png");
+        assertThat(names).as("夹具主图保持上传时的原始名称").contains("ic-a.png");
+    }
+
+    @Test
     void setPrimaryDemotesPreviousAndKeepsTieConstraint() {
         Long spuId = newSpu();
         var bind = new ProductImageCenterForms.BatchBindForm();
