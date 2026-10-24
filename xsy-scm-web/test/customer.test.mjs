@@ -54,19 +54,19 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     const titles = [...LIST.matchAll(/\{\s*title:\s*'([^']+)',\s*dataIndex:\s*'([^']+)'/g)].map((m) => m[1]);
     assert.deepEqual(
       titles,
-      ['客户名称', '客户编码', '客户类型', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
+      ['客户名称', '客户类型', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
       '客户列表列结构被改动'
     );
-    assert.match(LIST, /title: '客户编码', dataIndex: 'customerCode', width: 160, showFlag: false/);
+    assert.doesNotMatch(LIST, /dataIndex: 'customerCode'/);
     assert.doesNotMatch(LIST, /title:\s*'上级集团'/);
     assert.doesNotMatch(LIST, /title:\s*'更新时间'/);
   });
 
-  test('列表金额走统一 formatter，客户编码独立列默认收起', () => {
+  test('列表金额走统一 formatter，客户编码不再展示', () => {
     // 授信额度：千分位 + ¥ + 当前业务精度（formatAmountOrDash 内部调 formatAmount）
     assert.match(LIST, /dataIndex === 'creditLimit'[^>]*class="scm-money">\{\{\s*formatAmountOrDash\(record\.creditLimit\)\s*\}\}/);
-    // 客户编码有独立列，默认收起；显示时使用等宽字形，不做胶囊标签。
-    assert.match(LIST, /dataIndex === 'customerCode'[^>]*class="scm-mono">\{\{\s*record\.customerCode/);
+    // 客户编码只用于后端传值和搜索，不在列表出现。
+    assert.doesNotMatch(LIST, /record\.customerCode/);
     assert.match(LIST, /dataIndex === 'contactPhone'[^>]*class="scm-mono">\{\{\s*record\.contactPhone/);
     assert.doesNotMatch(LIST, /<a-(tag|badge)[\s\S]{0,120}?record\.customerCode/);
     // 操作列仍是 编辑 / 状态 / 更多，宽度不扩大
@@ -116,10 +116,10 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
 
   test('客户与供应商的独立字段各自成列，不再叠进同一个单元格', () => {
     // 客户和供应商名称、编码、联系人和电话应各有数据列
-    for (const title of ['供应商名称', '供应商编码', '联系人', '联系电话']) {
+    for (const title of ['供应商名称', '联系人', '联系电话']) {
       assert.match(SUPPLIER, new RegExp(`title:\\s*'${title}'`));
     }
-    for (const title of ['客户名称', '客户编码', '联系人', '联系电话']) {
+    for (const title of ['客户名称', '联系人', '联系电话']) {
       assert.match(LIST, new RegExp(`title:\\s*'${title}'`));
     }
     assert.doesNotMatch(LIST, /class="scm-cell-stack/);
@@ -136,7 +136,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
       width: Number(m[1]),
       hiddenByDefault: /showFlag:\s*false/.test(m[2]),
     }));
-    assert.equal(columns.length, 10, '客户列表列数被改动');
+    assert.equal(columns.length, 9, '客户列表列数被改动');
     const visibleWidth = columns.filter((column) => !column.hiddenByDefault).reduce((sum, column) => sum + column.width, 0);
     assert.ok(visibleWidth > 0);
     // 列宽与铺满统一走 useScmTableFill：scrollX 由它算出
@@ -203,7 +203,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     // 只在 frequentCols 块内取列（商品 / 商品规格在协议价与可售商品里也有）
     const freqBlock = DETAIL.slice(DETAIL.indexOf('const frequentCols'), DETAIL.indexOf('const agreementCols'));
     const frequentTitles = [...freqBlock.matchAll(/\{\s*title:\s*'([^']+)'/g)].map((m) => m[1]);
-    assert.deepEqual(frequentTitles, ['商品', '商品规格', '商品规格编码', '单位', '订购次数', '订购量', '最近成交价', '最近购买']);
+    assert.deepEqual(frequentTitles, ['商品', '商品规格', '单位', '订购次数', '订购量', '最近成交价', '最近购买']);
 
     assert.match(DETAIL, /\{\s*title:\s*'有效期',\s*dataIndex:\s*'effectivePeriod'/);
     assert.match(DETAIL, /长期有效/);
@@ -214,8 +214,8 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     const visTitles = [...visBlock.matchAll(/\{\s*title:\s*'([^']+)'/g)].map((m) => m[1]);
     assert.deepEqual(visTitles, ['商品', '商品规格', '状态', '加入时间']);
 
-    // 常购商品与协议价的「商品规格编码」都独立成列（一格一值）
-    assert.match(DETAIL, /title:\s*'商品规格编码'/);
+    // 规格编码不展示，只保留可读的商品与规格名称
+    assert.doesNotMatch(DETAIL, /title:\s*'商品规格编码'/);
     assert.doesNotMatch(DETAIL, /title:\s*'商品规格状态'/);
   });
 }
@@ -417,8 +417,8 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     assert.match(tail, />创建时间</);
     assert.match(tail, />更新时间</);
     assert.match(tail, />备注</);
-    // 客户编码仍在系统信息段保留完整值（页头只是 secondary 呈现，不等于下沉掉）
-    assert.match(tail, />客户编码</);
+    // 客户编码不再展示；系统信息只保留时间与备注。
+    assert.doesNotMatch(customer, />客户编码</);
   });
 
   test('供应商详情按「联系与地址 / 采购与账期 / 已关联商品 / 系统信息」分区', () => {
@@ -433,14 +433,15 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     );
     const sysIndex = posOf(supplier, '系统信息');
     const tail = supplier.slice(sysIndex);
-    // 时间、编码与备注落在系统信息段内（label/value 结构用 dt）
+    // 时间与备注落在系统信息段内（label/value 结构用 dt）；编码不展示
     assert.match(tail, />创建时间</);
     assert.match(tail, />更新时间</);
-    assert.match(tail, />供应商编码</);
+    assert.doesNotMatch(supplier, />供应商编码</);
     assert.match(tail, />备注</);
-    // 页头承担身份识别：名称、状态、编码
+    // 页头只承担名称与编码；状态下沉为系统信息里的普通字段，不在标题旁挂标签
     assert.match(supplier, /scm-detail-header__title/);
-    assert.match(supplier, /ScmStatusTag/);
+    assert.match(tail, />状态</);
+    assert.doesNotMatch(supplier, /ScmStatusTag/);
   });
 
   test('订单详情按「摘要 / 客户配送 / 金额 / 商品 / 操作记录 / 系统信息」分区', () => {

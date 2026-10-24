@@ -60,7 +60,6 @@
               {{ record.name }}
             </a-button>
           </template>
-          <span v-else-if="column.dataIndex === 'customerCode'" class="scm-mono">{{ record.customerCode || '—' }}</span>
           <span v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'sellerName'">{{ record.sellerName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'contactName'">{{ record.contactName || '—' }}</span>
@@ -112,8 +111,7 @@
       @ok="submitReassign"
     >
       <p>
-        客户：<strong>{{ reassignTarget?.name }}</strong
-        >（{{ reassignTarget?.customerCode }}）
+        客户：<strong>{{ reassignTarget?.name }}</strong>
       </p>
       <p class="reassign-current">当前负责人：{{ reassignTarget?.sellerName || '未分配' }}</p>
       <a-form layout="vertical">
@@ -219,11 +217,10 @@ const statusColor = (value: CustomerStatus): string => {
   return 'default';
 };
 
-// 客户编码默认收起，可通过列设置打开。
+// 客户编码属于内部标识，不上列表。
 type CustomerListColumn = TableColumnsType<CustomerRow>[number] & {showFlag?: boolean};
 const columns = ref<CustomerListColumn[]>([
   {title: '客户名称', dataIndex: 'name', width: 200, sorter: true, ellipsis: true},
-  {title: '客户编码', dataIndex: 'customerCode', width: 160, showFlag: false},
   {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
   {title: '业务员', dataIndex: 'sellerName', width: 110},
   {title: '联系人', dataIndex: 'contactName', width: 120},
@@ -347,7 +344,7 @@ function onRowAction(key: string, row: CustomerRow) {
     // 菜单项不能挂 a-popconfirm，改用 Modal 确认。
     Modal.confirm({
       title: '删除客户',
-      content: `确认删除「${row.name}」（${row.customerCode}）？`,
+      content: `确认删除「${row.name}」？`,
       okText: '删除',
       okType: 'danger',
       cancelText: '取消',

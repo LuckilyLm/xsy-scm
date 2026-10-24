@@ -63,9 +63,9 @@
     <div class="smart-query-table-page">
       <a-pagination v-model:current="query.pageNum" v-model:page-size="query.pageSize" :total="total" show-size-changer @change="load" />
     </div>
-    <a-form ref="formRef" :model="{reason}" :rules="formRules" layout="vertical">
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="组单原因" name="reason">
-        <a-input v-model:value="reason" :maxlength="500" placeholder="例如：本次城区配送安排" />
+        <a-input v-model:value="form.reason" :maxlength="500" placeholder="例如：本次城区配送安排" />
       </a-form-item>
     </a-form>
     <p>同一客户、相同地址的订单会合并为一个停靠点；仅展示已确认且尚未分配的订单。</p>
@@ -97,8 +97,9 @@ const rows = ref<CandidateOrder[]>([]),
   total = ref(0),
   area = ref<AreaNode[]>([]),
   timeRange = ref<[string, string]>();
-const route = ref<DeliveryRoute>(),
-  reason = ref('');
+const route = ref<DeliveryRoute>();
+// 表单项的 name 必须能稳定读到同一个模型对象，不能每次渲染新建快照
+const form = reactive({reason: ''});
 let generation = 0;
 const formRef = ref<FormInstance>();
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
@@ -146,7 +147,7 @@ function open(value: DeliveryRoute) {
   route.value = value;
   visible.value = true;
   selected.value = [];
-  reason.value = '';
+  form.reason = '';
   reset(false);
   query.deliveryDate = value.deliveryDate;
   load();
@@ -184,7 +185,7 @@ async function save() {
   saving.value = true;
   error.value = '';
   try {
-    await deliveryApi.addOrders(route.value.id, route.value.version, selected.value, reason.value);
+    await deliveryApi.addOrders(route.value.id, route.value.version, selected.value, form.reason);
     visible.value = false;
     emit('saved');
   } catch {

@@ -8,7 +8,7 @@
         <WarehouseSelect v-model:value="queryForm.warehouseId" width="180px" />
       </a-form-item>
       <a-form-item label="商品">
-        <a-input v-model:value="queryForm.keyword" placeholder="商品名称 / 商品编码 / 商品规格编码" allow-clear :maxlength="100" />
+        <a-input v-model:value="queryForm.keyword" placeholder="商品名称 / 商品规格" allow-clear :maxlength="100" />
       </a-form-item>
       <a-form-item>
         <a-space wrap>

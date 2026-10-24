@@ -12,7 +12,6 @@
   >
     <a-select-option v-for="item in typeList" :key="item.typeId" :value="item.typeId" :label="item.name">
       {{ item.name }}
-      <template v-if="item.typeCode"> （{{ item.typeCode }}）</template>
     </a-select-option>
   </a-select>
 </template>

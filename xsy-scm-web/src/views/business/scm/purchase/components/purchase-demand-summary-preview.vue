@@ -9,7 +9,7 @@
         <WarehouseSelect v-model:value="warehouseId" width="200px" placeholder="请选择仓库" />
       </a-form-item>
       <a-form-item label="商品关键字" class="smart-query-form-item">
-        <a-input v-model:value="keyword" placeholder="商品编码 / 名称 / 商品规格编码" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -109,7 +109,6 @@ const error = ref('');
 let requestId = 0;
 
 const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 130},
   {title: '分类', dataIndex: 'categoryName', align: 'center', width: 130},

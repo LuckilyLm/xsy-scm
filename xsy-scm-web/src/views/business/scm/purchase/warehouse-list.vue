@@ -2,9 +2,6 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
-      <a-form-item label="仓库编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.warehouseCode" placeholder="仓库编码" allow-clear @pressEnter="onSearch" />
-      </a-form-item>
       <a-form-item label="仓库名称" class="smart-query-form-item">
         <a-input v-model:value="queryForm.name" placeholder="仓库名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
@@ -182,7 +179,6 @@ let requestId = 0;
 
 /** 列表列。编码单独一列；“未定位”用图标提示，未定位不能参与路线规划。 */
 const columns = ref<TableColumnsType<Warehouse>>([
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 160},
   {title: '仓库名称', dataIndex: 'name', width: 200},
   {title: '所在地区', dataIndex: 'areaText', width: 190},
   {title: '详细地址', dataIndex: 'address', width: 240},
@@ -247,7 +243,6 @@ function onSearch() {
 }
 
 function resetQuery() {
-  queryForm.warehouseCode = undefined;
   queryForm.name = undefined;
   queryForm.status = undefined;
   onSearch();

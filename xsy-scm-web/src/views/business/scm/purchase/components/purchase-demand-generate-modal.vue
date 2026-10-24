@@ -83,7 +83,7 @@ const batch = ref<DemandCalculationBatch>();
 const warehouseLoading = ref(false);
 const warehouses = ref<{id: Id; warehouseCode?: string; name?: string}[]>([]);
 
-const warehouseOptions = computed(() => warehouses.value.map((w) => ({value: w.id, label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）`})));
+const warehouseOptions = computed(() => warehouses.value.map((w) => ({value: w.id, label: w.name ?? ''})));
 
 /** 员工选择器的 value 只接受数字，这里把 id 转成 number；清空时回写 undefined。 */
 const purchaserValue = computed<number | undefined>({

@@ -48,13 +48,7 @@
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'sourceDocumentNo'">{{ record.sourceDocumentNo || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouseCode'">
-          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'skuName'">{{ skuMainText(record.specValues, record.skuName) }}</template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
@@ -132,10 +126,8 @@ type InventoryReservationColumn = ScmListColumn;
 const columns = ref<InventoryReservationColumn[]>([
   {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 180},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 150},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '预留数量', dataIndex: 'quantity', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', width: 80},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},

@@ -94,7 +94,7 @@ let requestId = 0;
 const warehouseOptions = computed(() =>
   warehouses.value.map((w) => ({
     value: w.id,
-    label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）`,
+    label: w.name ?? '',
   }))
 );
 

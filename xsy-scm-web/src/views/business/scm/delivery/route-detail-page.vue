@@ -12,7 +12,6 @@
           <div class="scm-detail-header__main">
             <div class="scm-detail-header__title-row">
               <h2 class="scm-detail-header__title">{{ detail.route.routeName }}</h2>
-              <ScmStatusTag :tone="ROUTE_STATUS_TONE[detail.route.status as RouteStatus]" :label="routeStatuses[detail.route.status].label" />
             </div>
             <p class="scm-detail-header__meta">{{ detail.route.routeNo }} · {{ detail.route.deliveryDate }}</p>
           </div>
@@ -216,8 +215,6 @@ import {Modal, message} from 'ant-design-vue';
 import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
-import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
-import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {isLocated, locationError, type MapPoint} from '/@/components/business/scm/map/types';
 import CandidateOrderModal from './components/candidate-order-modal.vue';
 import RoutePlanningSuggestionPanel from './components/route-planning-suggestion-panel.vue';
@@ -231,7 +228,6 @@ import {money} from './delivery-display';
 import {DELIVERY_PERM, useDeliveryPermission} from './use-delivery-permission';
 import {
   deliveryError,
-  routeStatuses,
   SIGNABLE_FULFILLMENT,
   signResults,
   type DeliveryPlanProposal,
@@ -241,19 +237,9 @@ import {
   type RouteDetail,
   type RouteOrder,
   type RouteOrderView,
-  type RouteStatus,
   type SignResult,
 } from './delivery-types';
 import {deliveryPlanApi} from '/@/api/business/scm/delivery-plan-api';
-
-/** 状态配色与列表页一致。 */
-const ROUTE_STATUS_TONE: Record<RouteStatus, ScmStatusTone> = {
-  DRAFT: 'warning',
-  PLANNED: 'processing',
-  DISPATCHED: 'processing',
-  COMPLETED: 'success',
-  CANCELLED: 'neutral',
-};
 
 /** Tab 与 URL 的 `?tab=` 一一对应；未知取值回落到基础信息。 */
 const TAB_KEYS = ['base', 'orders', 'map', 'print', 'fulfillment', 'plan'];

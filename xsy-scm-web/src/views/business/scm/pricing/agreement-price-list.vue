@@ -2,7 +2,7 @@
   <a-form class="smart-query-form" layout="inline">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item"
-        ><a-input v-model:value="query.keyword" placeholder="名称或编码" allow-clear
+        ><a-input v-model:value="query.keyword" placeholder="客户或商品名称" allow-clear
       /></a-form-item>
       <a-form-item label="客户" class="smart-query-form-item"><CustomerSelect v-model:value="query.customerId" width="190px" /></a-form-item>
       <a-form-item label="商品规格" class="smart-query-form-item"
@@ -40,12 +40,6 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'customerName'">{{ record.customerName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'customerCode'"
-          ><span class="scm-mono">{{ record.customerCode || '—' }}</span></template
-        >
-        <template v-else-if="column.dataIndex === 'skuCode'"
-          ><span class="scm-mono">{{ record.skuCode || '—' }}</span></template
-        >
         <template v-else-if="column.dataIndex === 'unitPrice'"
           ><span class="scm-money">{{
             record.formulaType && record.formulaType !== 'FIXED' ? '按公式计算' : formatAmount(record.unitPrice)
@@ -105,14 +99,12 @@ const rows = ref<PriceRow[]>([]),
   error = ref('');
 const drawer = ref<InstanceType<typeof PriceDrawer>>();
 let requestId = 0;
-// 编码列默认收起，关键字可以搜名称和编码；更新时间看价格变更历史。
+// 编码属于内部标识，不上列表，关键字仍可按名称和编码搜索；更新时间看价格变更历史。
 type AgreementPriceColumn = TableColumnsType<PriceRow>[number] & {showFlag?: boolean};
 const columns = ref<AgreementPriceColumn[]>([
   {title: '客户', dataIndex: 'customerName', width: 180},
-  {title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'specName', width: 200},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '协议价', dataIndex: 'unitPrice', width: 130},
   {title: '计算方式', dataIndex: 'formulaType', align: 'center', width: 190},
   {title: '有效期', dataIndex: 'effectiveRange', width: 340},

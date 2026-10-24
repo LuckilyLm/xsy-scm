@@ -4,7 +4,7 @@
     <a-form class="smart-query-form" layout="inline">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input v-model:value="filters.keyword" allow-clear placeholder="类型编码 / 名称" style="width: 220px" />
+          <a-input v-model:value="filters.keyword" allow-clear placeholder="类型名称" style="width: 220px" />
         </a-form-item>
         <a-form-item label="状态" class="smart-query-form-item">
           <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_TYPE_STATUS_ENUM" width="120px" />
@@ -93,7 +93,6 @@ const statusText = (value: string): string => CUSTOMER_TYPE_STATUS_ENUM[value]?.
 
 // 只保留编码、名称、状态、操作四列。
 const columns = ref<TableColumnsType<CustomerType>>([
-  {title: '类型编码', dataIndex: 'typeCode', width: 200, sorter: true},
   {title: '类型名称', dataIndex: 'name', width: 220, sorter: true},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
   {title: '操作', dataIndex: 'action', width: 140, align: 'center', fixed: 'right'},

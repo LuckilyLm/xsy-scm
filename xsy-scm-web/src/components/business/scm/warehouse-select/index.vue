@@ -11,9 +11,8 @@
     option-filter-prop="label"
     @change="onChange"
   >
-    <a-select-option v-for="item in list" :key="item.id" :value="item.id" :label="`${item.name}（${item.warehouseCode}）`">
+    <a-select-option v-for="item in list" :key="item.id" :value="item.id" :label="item.name">
       {{ item.name }}
-      <template v-if="item.warehouseCode"> （{{ item.warehouseCode }}）</template>
     </a-select-option>
   </a-select>
 </template>

@@ -60,9 +60,7 @@
       <a-spin :spinning="detailLoading">
         <template v-if="detail">
           <a-descriptions :column="3" bordered size="small">
-            <a-descriptions-item label="商品规格"
-              >{{ detail.inquiry.productNameSnapshot }}（{{ detail.inquiry.skuCodeSnapshot }}）</a-descriptions-item
-            >
+            <a-descriptions-item label="商品规格">{{ detail.inquiry.productNameSnapshot }}</a-descriptions-item>
             <a-descriptions-item label="需求量">{{ detail.inquiry.requiredQuantity }} {{ detail.inquiry.demandUnit }}</a-descriptions-item>
             <a-descriptions-item label="报价截止">{{ detail.inquiry.deadlineAt }}</a-descriptions-item>
             <a-descriptions-item label="状态">{{ detail.inquiry.status === 'ACCEPTED' ? '已确认报价' : '未确认' }}</a-descriptions-item>
@@ -185,7 +183,6 @@ const quoteRemark = ref('');
 const columns: TableColumnsType<PurchaseInquiry> = [
   {title: '询价编号', dataIndex: 'id', width: 115},
   {title: '商品', dataIndex: 'productNameSnapshot', width: 210},
-  {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 165},
   {title: '需求量', dataIndex: 'requiredQuantity', width: 150},
   {title: '截止时间', dataIndex: 'deadlineAt', width: 180},
   {title: '状态', dataIndex: 'status', align: 'center', width: 96},

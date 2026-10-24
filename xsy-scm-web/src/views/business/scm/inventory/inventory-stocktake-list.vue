@@ -56,9 +56,6 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouseCode'">
-          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status" />
         </template>
@@ -219,7 +216,6 @@ type InventoryStocktakeColumn = ScmListColumn;
 const columns = ref<InventoryStocktakeColumn[]>([
   {title: '盘点单号', dataIndex: 'stocktakeNo', width: 200},
   {title: '仓库', dataIndex: 'warehouseName', width: 140},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '确认人', dataIndex: 'operator', width: 130},
   {title: '确认时间', dataIndex: 'confirmedAt', width: 170},
@@ -420,7 +416,7 @@ async function openCopy(record: InventoryStocktake) {
     for (const i of sourceItems) {
       const key = String(i.skuId);
       if (!unitBySku.has(key)) {
-        message.error(`商品规格「${i.skuCode ?? i.skuName ?? key}」在仓库「${d.warehouseName ?? whId}」已无库存余额，无法复制，请改用新建`);
+        message.error(`商品规格「${i.skuName || '所选商品规格'}」在仓库「${d.warehouseName ?? whId}」已无库存余额，无法复制，请改用新建`);
         return;
       }
       items.push({
@@ -452,7 +448,6 @@ const importResult = ref<StocktakeImportResult | null>(null);
 
 const importErrorColumns: TableColumnsType = [
   {title: '行', dataIndex: 'row', width: 60},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '列', dataIndex: 'column', width: 120},
   {title: '原因', dataIndex: 'message'},
 ];

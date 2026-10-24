@@ -66,7 +66,7 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 const options = computed(() =>
   rows.value.map((s) => ({
     value: s.skuId,
-    label: `${s.productName} / ${s.specName}（${s.skuCode}）`,
+    label: `${s.productName} / ${s.specName}`,
     disabled:
       props.disabledStatuses.length > 0 &&
       (props.disabledStatuses.includes(s.status) || s.spuStatus !== 'ON_SHELF' || s.categoryStatus !== 'ENABLED'),

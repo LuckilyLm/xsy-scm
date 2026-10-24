@@ -6,7 +6,7 @@
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
         <p class="scm-note scm-note--block">按客户查看可见的商品规格；点卡片看明细。</p>
         <a-space>
-          <a-input-search v-model:value="keyword" placeholder="搜索客户名称或编码" allow-clear style="width: 240px" />
+          <a-input-search v-model:value="keyword" placeholder="搜索客户名称" allow-clear style="width: 240px" />
           <a-select v-model:value="policyFilter" allow-clear placeholder="全部策略" style="width: 150px">
             <a-select-option value="ALLOWLIST">指定可售规格</a-select-option>
             <a-select-option value="ALL_ENABLED">全部可售</a-select-option>
@@ -26,10 +26,7 @@
             <span class="customer-card__head">
               <span class="customer-card__name" :title="item.customerName">{{ item.customerName }}</span>
             </span>
-            <span class="customer-card__meta">
-              {{ item.customerCode }}
-              <template v-if="item.customerTypeName"> · {{ item.customerTypeName }}</template>
-            </span>
+            <span v-if="item.customerTypeName" class="customer-card__meta">{{ item.customerTypeName }}</span>
             <span class="customer-card__stats">
               <span class="customer-card__stat">{{ visibilityPolicyLabel(item.visibilityPolicy) }}</span>
               <template v-if="item.visibilityPolicy === 'ALLOWLIST'">
@@ -99,7 +96,6 @@
           <template #bodyCell="{column, record}">
             <span v-if="column.dataIndex === 'productName'">{{ record.productName || '—' }}</span>
             <span v-else-if="column.dataIndex === 'specName'">{{ record.specName || '—' }}</span>
-            <span v-else-if="column.dataIndex === 'skuCode'" class="scm-mono">{{ record.skuCode || '—' }}</span>
             <template v-else-if="column.dataIndex === 'status'">
               <a-space size="small">
                 <ScmStatusTag :tone="shelfStatusTone(record.spuStatus)" :label="`商品${shelfStatusLabel(record.spuStatus)}`" />
@@ -210,15 +206,13 @@ let requestId = 0;
 
 const shelfStatusTone = (value?: string | null): ScmStatusTone => (value === 'ON_SHELF' ? 'success' : value === 'OFF_SHELF' ? 'neutral' : 'warning');
 
-// 两个编码列默认收起，可通过列设置打开；客户相关列只在卡片上展示，明细里由 detailColumns 过滤。
+// 客户相关列只在卡片上展示，明细里由 detailColumns 过滤；编码属于内部标识，不上列表。
 type VisibilityListColumn = TableColumnsType<VisibilityRow>[number] & {showFlag?: boolean};
 const columns = ref<VisibilityListColumn[]>([
   {title: '客户名称', dataIndex: 'customerName', width: 180},
-  {title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false},
   {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
   {title: '商品名称', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'specName', width: 150},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 135, showFlag: false},
   {title: '可见策略', dataIndex: 'visibilityPolicy', width: 125, align: 'center'},
   {title: '商品状态', dataIndex: 'status', width: 190, align: 'center'},
   {title: '加入时间', dataIndex: 'createdAt', width: 170},

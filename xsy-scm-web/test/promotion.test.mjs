@@ -70,10 +70,10 @@ import {rateToPercent, percentToRate} from '../src/views/business/scm/promotion/
   // 活动
   // ------------------------------------------------------------------
 
-  test('活动列表把编码、生效与失效时间各自成列', () => {
-    assert.match(activity, /title: '活动编码', dataIndex: 'activityCode'/);
+  test('活动列表展示名称与生效/失效时间，不展示活动编码', () => {
+    assert.doesNotMatch(activity, /title: '活动编码'/);
     assert.match(activity, /title: '活动名称', dataIndex: 'activityName'/);
-    assert.match(activity, /column\.dataIndex === 'activityCode'[\s\S]{0,160}record\.activityCode/);
+    assert.doesNotMatch(activity, /column\.dataIndex === 'activityCode'/);
     assert.match(activity, /title: '生效时间', dataIndex: 'validFrom'/);
     assert.match(activity, /title: '失效时间', dataIndex: 'validTo'/);
     assert.match(activity, /column\.dataIndex === 'validFrom'[\s\S]{0,120}record\.validFrom/);
@@ -119,10 +119,10 @@ import {rateToPercent, percentToRate} from '../src/views/business/scm/promotion/
   // 优惠券
   // ------------------------------------------------------------------
 
-  test('优惠券列表把券编码独立成列，并把「无门槛」与「门槛 0」讲清楚', () => {
-    assert.match(coupon, /title: '券编码', dataIndex: 'couponCode'/);
+  test('优惠券列表不展示券编码，并把「无门槛」与「门槛 0」讲清楚', () => {
+    assert.doesNotMatch(coupon, /title: '券编码'/);
     assert.match(coupon, /title: '券名称', dataIndex: 'couponName'/);
-    assert.match(coupon, /column\.dataIndex === 'couponCode'[\s\S]{0,160}record\.couponCode/);
+    assert.doesNotMatch(coupon, /column\.dataIndex === 'couponCode'/);
     // 券类型独立成列（原来只混在「优惠」文字里）
     assert.match(coupon, /title: '券类型', dataIndex: 'discountType'/);
     // 门槛 0 = 无门槛，是业务事实而不是缺值

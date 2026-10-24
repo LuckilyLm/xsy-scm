@@ -15,3 +15,143 @@
   border-radius: 50%;
   background: currentColor;
 }
+
+/*
+ * 表格里的标签：去掉描边，只保留淡色底和同色文字。
+ * 一列状态原本是「一排小按钮」，边框去掉后更像数据而不是操作入口。
+ */
+.ant-table-tbody .ant-tag {
+  margin-inline-end: 0;
+  padding-inline: 6px;
+  border: 0;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 20px;
+  background: var(--scm-fill, rgba(0, 0, 0, 0.04));
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.65));
+}
+
+/* 预设色只做浅底深字，不加深色描边 */
+.ant-table-tbody .ant-tag-green {
+  background: #f2fbf4;
+  color: #3f8f58;
+}
+
+.ant-table-tbody .ant-tag-blue {
+  background: #f0f6ff;
+  color: #4a6fa5;
+}
+
+.ant-table-tbody .ant-tag-orange {
+  background: #fff8ee;
+  color: #b5792c;
+}
+
+.ant-table-tbody .ant-tag-red {
+  background: #fff3f2;
+  color: #c25a56;
+}
+
+.ant-table-tbody .ant-tag-purple {
+  background: #f7f2ff;
+  color: #7a5aa8;
+}
+
+.ant-table-tbody .ant-tag-cyan {
+  background: #effafa;
+  color: #3d8b8b;
+}
+
+.ant-table-tbody .ant-tag-magenta {
+  background: #fff2f7;
+  color: #b25c8a;
+}
+
+.ant-table-tbody .ant-tag-gold {
+  background: #fffbea;
+  color: #9c841f;
+}
+
+.ant-table-tbody .ant-tag-lime {
+  background: #f8fbeb;
+  color: #6f8f2a;
+}
+
+.ant-table-tbody .ant-tag-geekblue {
+  background: #f2f6ff;
+  color: #4a66ab;
+}
+
+.ant-table-tbody .ant-tag-volcano {
+  background: #fff4ec;
+  color: #b96434;
+}
+
+/* 多个标签并排时保持紧凑，且不把行高撑开 */
+.ant-table-tbody .ant-tag + .ant-tag {
+  margin-inline-start: 4px;
+}
+
+/*
+ * 夜间模式：浅色底在深色表格里会变成一排白胶囊，抢过数据本身。
+ * 改成低透明度底 + 提亮的同色文字，保留「淡色标签」的观感。
+ */
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag {
+  background: var(--scm-fill, rgba(255, 255, 255, 0.08));
+  color: var(--scm-text-secondary, rgba(255, 255, 255, 0.65));
+}
+
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag-green {
+  background: rgba(126, 217, 155, 0.14);
+  color: #7ed99b;
+}
+
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag-blue {
+  background: rgba(122, 167, 224, 0.14);
+  color: #7aa7e0;
+}
+
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag-orange {
+  background: rgba(224, 176, 114, 0.14);
+  color: #e0b072;
+}
+
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag-red {
+  background: rgba(224, 138, 134, 0.14);
+  color: #e08a86;
+}
+
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag-purple {
+  background: rgba(183, 154, 224, 0.14);
+  color: #b79ae0;
+}
+
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag-cyan {
+  background: rgba(127, 208, 207, 0.14);
+  color: #7fd0cf;
+}
+
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag-magenta {
+  background: rgba(224, 138, 180, 0.14);
+  color: #e08ab4;
+}
+
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag-gold {
+  background: rgba(217, 196, 106, 0.14);
+  color: #d9c46a;
+}
+
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag-lime {
+  background: rgba(183, 212, 122, 0.14);
+  color: #b7d47a;
+}
+
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag-geekblue {
+  background: rgba(142, 165, 224, 0.14);
+  color: #8ea5e0;
+}
+
+html[data-scm-theme='dark'] .ant-table-tbody .ant-tag-volcano {
+  background: rgba(224, 154, 114, 0.14);
+  color: #e09a72;
+}

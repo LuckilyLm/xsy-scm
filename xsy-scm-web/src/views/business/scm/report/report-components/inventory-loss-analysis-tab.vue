@@ -114,7 +114,6 @@ const emit = defineEmits<{
 
 const columns = ref<TableColumnsType<InventoryLossRow>>([
   {title: '商品', dataIndex: 'productName', width: 180},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
   {title: '损耗类型', dataIndex: 'lossType', width: 110, align: 'center'},
   {title: '数量', dataIndex: 'quantity', width: 120},

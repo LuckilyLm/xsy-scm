@@ -3,7 +3,7 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="关键词" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" placeholder="活动名称 / 编码" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.keyword" placeholder="活动名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="类型" class="smart-query-form-item">
         <a-select v-model:value="queryForm.activityType" :options="typeOptions" allow-clear style="width: 140px" />
@@ -42,10 +42,7 @@
       :scroll="{x: scmColumnsWidth(columns)}"
     >
       <template #bodyCell="{record, column}">
-        <template v-if="column.dataIndex === 'activityCode'">
-          <span class="scm-mono">{{ record.activityCode || '—' }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'activityName'">{{ record.activityName || '—' }}</template>
+        <template v-if="column.dataIndex === 'activityName'">{{ record.activityName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'activityType'">
           <ScmStatusTag :color="typeColorOf(record.activityType)" :label="typeLabelOf(record.activityType)" />
         </template>
@@ -319,7 +316,6 @@ function statusLabelOf(value: string): string {
 
 // 活动列表的列定义
 const columns: TableColumnsType<PromotionActivity> = [
-  {title: '活动编码', dataIndex: 'activityCode', width: 130},
   {title: '活动名称', dataIndex: 'activityName', width: 200},
   {title: '类型', dataIndex: 'activityType', align: 'center', width: 110},
   {title: '规则摘要', dataIndex: 'ruleText', width: 260},

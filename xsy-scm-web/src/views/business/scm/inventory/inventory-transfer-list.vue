@@ -172,9 +172,6 @@
           </span>
         </template>
         <template v-else-if="column.dataIndex === 'sku'">{{ record.skuName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
@@ -565,7 +562,6 @@ const inTransitColumns: TableColumnsType = [
   {title: '调拨单号', dataIndex: 'transferNo', width: 190},
   {title: '调拨方向', dataIndex: 'direction', width: 240, align: 'center'},
   {title: '商品规格', dataIndex: 'sku', width: 200},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '在途数量', dataIndex: 'quantity', width: 120},
   {title: '单位', dataIndex: 'unit', width: 76},
 ];

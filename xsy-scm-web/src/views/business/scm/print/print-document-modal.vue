@@ -98,7 +98,7 @@ const hiddenFields = computed(() => {
 
 /** 打印完成的说明：模板名、版本、打印时间。用模板名而不是编码，用户认的是名字。 */
 function snapshotHint(render: PrintRender): string {
-  const template = render.templateName || render.templateCode;
+  const template = render.templateName || '打印模板';
   return `模板 ${template ?? '—'} v${render.templateVersion ?? '—'}，打印时间 ${
     render.printedAt ?? '—'
   }。再次打印使用这次保存的内容，不会随单据后续修改而变化。`;

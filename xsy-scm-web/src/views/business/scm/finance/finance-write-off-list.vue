@@ -116,7 +116,7 @@
 
   <a-drawer v-model:open="addOpen" title="登记多目标核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError" />
-    <a-form ref="addFormRef" :model="{sourceType, source}" :rules="addRules" layout="vertical" class="app-drawer-form">
+    <a-form ref="addFormRef" :model="addModel" :rules="addRules" layout="vertical" class="app-drawer-form">
       <a-form-item name="sourceType">
         <template #label>
           资金类型
@@ -170,7 +170,7 @@
   <a-modal v-model:open="reverseOpen" title="撤销核销" :confirm-loading="reverseSaving" @ok="submitReverse">
     <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一条反向核销，金额 ${moneyText(reverseRow.amount)}。`" />
     <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError" />
-    <a-form ref="reverseFormRef" :model="{reverseReason}" :rules="reverseRules" layout="vertical"
+    <a-form ref="reverseFormRef" :model="reverseModel" :rules="reverseRules" layout="vertical"
       ><a-form-item label="撤销原因" name="reverseReason"
         ><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count /></a-form-item
     ></a-form>
@@ -238,6 +238,9 @@ const addRules = {
   ],
 };
 const reverseRules = {reverseReason: [{required: true, message: '请填写撤销原因', trigger: 'blur'}]};
+/** 校验模型必须是稳定对象；reactive 会解包内部 ref，值仍是响应式的。 */
+const addModel = reactive({sourceType, source});
+const reverseModel = reactive({reverseReason});
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const sourceOptions = Object.values(SCM_FINANCE_SOURCE_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';

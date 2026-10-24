@@ -50,9 +50,6 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouseCode'">
-          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status" />
         </template>
@@ -156,9 +153,6 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'sku'">{{ skuMainText(record.specValues, record.skuName) }}</template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
@@ -216,7 +210,6 @@ type InventoryOutboundColumn = ScmListColumn;
 const columns = ref<InventoryOutboundColumn[]>([
   {title: '出库单号', dataIndex: 'outboundNo', width: 200},
   {title: '仓库', dataIndex: 'warehouseName', width: 140},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '确认人', dataIndex: 'operator', width: 120},
   {title: '出库时间', dataIndex: 'confirmedAt', width: 170},
@@ -244,7 +237,6 @@ const itemColumns: TableColumnsType = [
 const detailItemColumns: TableColumnsType = [
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'sku', width: 170},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '数量', dataIndex: 'quantity', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', width: 110},
 ];

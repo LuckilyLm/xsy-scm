@@ -8,14 +8,9 @@
         </a-button>
         <div class="scm-detail-header__title-row">
           <h1 class="scm-detail-header__title">{{ order?.orderNo || '销售订单详情' }}</h1>
-          <ScmStatusTag v-if="order" :tone="orderStatusTone(order.status)" :label="SCM_ORDER_STATUS_ENUM[order.status ?? '']?.desc ?? order.status" />
-          <a-tag v-for="tag in order?.tags ?? []" :key="String(tag.tagId)" :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
         </div>
         <p v-if="order" class="scm-detail-header__meta">
           <span>{{ order.customerNameSnapshot || '—' }}</span>
-          <template v-if="order.customerCodeSnapshot">
-            · <span class="scm-mono">{{ order.customerCodeSnapshot }}</span></template
-          >
           <template v-if="order.orderSource"> · {{ SCM_ORDER_SOURCE_ENUM[order.orderSource]?.desc ?? order.orderSource }}</template>
         </p>
       </div>
@@ -25,10 +20,15 @@
       </div>
     </header>
 
-    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
-      <template #action><a-button @click="load">重试</a-button></template>
-    </a-alert>
-    <a-spin :spinning="loading">
+    <a-result v-if="error" class="scm-detail-error" status="error" title="订单加载失败" :sub-title="error">
+      <template #extra>
+        <a-space>
+          <a-button type="primary" :loading="loading" @click="load">重新加载</a-button>
+          <a-button @click="router.push('/order/order-list')">返回订单列表</a-button>
+        </a-space>
+      </template>
+    </a-result>
+    <a-spin v-else :spinning="loading">
       <template v-if="order">
         <div class="scm-detail-read">
           <section class="scm-summary-section">
@@ -61,8 +61,12 @@
                   <dd class="scm-field__value">{{ order.customerNameSnapshot || '—' }}</dd>
                 </div>
                 <div class="scm-field">
-                  <dt class="scm-field__label">客户编码</dt>
-                  <dd class="scm-field__value scm-mono">{{ order.customerCodeSnapshot || '—' }}</dd>
+                  <dt class="scm-field__label">订单状态</dt>
+                  <dd class="scm-field__value">{{ SCM_ORDER_STATUS_ENUM[order.status ?? '']?.desc ?? order.status }}</dd>
+                </div>
+                <div v-if="order.tags?.length" class="scm-field">
+                  <dt class="scm-field__label">标签</dt>
+                  <dd class="scm-field__value">{{ order.tags.map((tag) => tag.name).join('、') }}</dd>
                 </div>
                 <div class="scm-field">
                   <dt class="scm-field__label">订单来源</dt>
@@ -165,14 +169,11 @@ import {useRoute, useRouter} from 'vue-router';
 import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
-import {tagColor} from '/@/api/business/scm/order-tag-api';
 import {SCM_ORDER_SOURCE_ENUM, SCM_ORDER_STATUS_ENUM} from '/@/constants/business/scm/order-const';
-import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {datetime} from '../common/scm-display';
 import {hasPermission} from '../common/scm-permission';
 import {amount} from './order-form-model';
 import {orderError} from './order-errors';
-import {orderStatusTone} from './order-status-tone';
 import type {Item, Order} from './order-types';
 import OrderDetail from './order-detail.vue';
 import OrderFacts from './components/order-facts.vue';
@@ -259,5 +260,10 @@ watch(
 <style scoped>
 .order-gift {
   margin-top: 8px;
+}
+
+/* 整页加载失败用居中的结果态，不要用活动/警告横幅 */
+.scm-detail-error {
+  padding: 48px 0 32px;
 }
 </style>

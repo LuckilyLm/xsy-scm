@@ -7,15 +7,10 @@
     </a-alert>
     <a-spin :spinning="loading">
       <template v-if="order">
+        <!-- 当前状态下真正要做的动作留在外面，其余收进「更多」，避免一排同权重按钮 -->
         <a-space class="actions scm-detail-actions">
-          <a-tag>{{ SCM_ORDER_STATUS_ENUM[order.status!]?.desc }}</a-tag>
-          <a-button v-if="['DRAFT', 'PENDING'].includes(order.status!)" v-privilege="'scm:order:update'" @click="repriceOpen = true"
-            >手动重算价格</a-button
-          >
+          <span class="order-status-text">{{ SCM_ORDER_STATUS_ENUM[order.status!]?.desc }}</span>
           <a-button v-if="order.status === 'PENDING'" type="primary" v-privilege="'scm:order:confirm'" @click="confirm"> 确认订单 </a-button>
-          <a-button v-if="['DRAFT', 'PENDING'].includes(order.status!)" danger v-privilege="'scm:order:cancel'" @click="cancelOpen = true"
-            >取消订单
-          </a-button>
           <a-button v-if="order.status === 'CONFIRMED'" v-privilege="'scm:order:return:add'" @click="returnForm?.open(order)">申请退货 </a-button>
           <a-button
             v-if="order.status === 'CONFIRMED' && (!order.settlementMethod || order.settlementMethod === 'WALLET')"
@@ -29,7 +24,14 @@
             @click="openCodCollection"
             >货到付款收款</a-button
           >
-          <a-button v-privilege="'scm:payment:transaction:query'" @click="paymentDrawer?.open(order)">支付记录</a-button>
+          <a-dropdown v-if="moreActions.length">
+            <a-button>更多<DownOutlined /></a-button>
+            <template #overlay>
+              <a-menu @click="onMoreAction">
+                <a-menu-item v-for="action in moreActions" :key="action.key" :danger="action.danger">{{ action.label }}</a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
         </a-space>
 
         <section class="detail-section">
@@ -46,7 +48,7 @@
 
           <h3 class="detail-section--nested">客户与配送</h3>
           <a-descriptions bordered size="small" :column="2">
-            <a-descriptions-item label="客户">{{ order.customerNameSnapshot }}（{{ order.customerCodeSnapshot }}） </a-descriptions-item>
+            <a-descriptions-item label="客户">{{ order.customerNameSnapshot }}</a-descriptions-item>
             <a-descriptions-item label="下单时结算方式">
               {{ SETTLE_MODE_ENUM[order.settleModeSnapshot ?? '']?.desc || '—' }}
             </a-descriptions-item>
@@ -66,14 +68,12 @@
             <a-descriptions-item label="用券">
               <template v-if="order.discount.couponSnapshot">
                 {{ order.discount.couponSnapshot.couponName || '—' }}
-                <span v-if="order.discount.couponSnapshot.couponCode">（{{ order.discount.couponSnapshot.couponCode }}）</span>
               </template>
               <template v-else>未用券</template>
             </a-descriptions-item>
             <a-descriptions-item label="生效活动" :span="2">
               <div v-for="activity in appliedActivities" :key="activity.activityId">
-                {{ activity.activityName || '—' }}（{{ activity.activityCode }} v{{ activity.version }}）：
-                {{ amount(activity.discountAmount) }}
+                {{ activity.activityName || '—' }}：{{ amount(activity.discountAmount) }}
               </div>
               <span v-if="appliedActivities.length === 0">无活动优惠</span>
               <div v-if="(order.discount.activitySnapshot?.suppressed?.length ?? 0) > 0" class="discount-suppressed">
@@ -84,8 +84,8 @@
           <a-descriptions v-if="(order.gifts?.length ?? 0) > 0" bordered size="small" :column="1">
             <a-descriptions-item label="赠品">
               <div v-for="gift in order.gifts ?? []" :key="`${gift.activityId}-${gift.skuId}`">
-                {{ gift.productName }}（{{ gift.skuCode }} / {{ gift.specName }}） × {{ gift.quantity }} {{ gift.saleUnit }}
-                <span class="gift-source">— 来自活动「{{ gift.activityName || gift.activityCode }}」v{{ gift.version }}</span>
+                {{ gift.productName }}（{{ gift.specName }}） × {{ gift.quantity }} {{ gift.saleUnit }}
+                <span class="gift-source">— 来自活动「{{ gift.activityName || '活动优惠' }}」</span>
               </div>
               <div class="gift-note">赠品金额恒为 0，不计入订单金额；出库成本单独计入本单履约成本。</div>
             </a-descriptions-item>
@@ -165,7 +165,7 @@
       :ok-button-props="{disabled: !usesMallSettlement && !creditCheck?.allowed && !creditOverride}"
     >
       <a-alert v-if="error" :message="error" type="error" show-icon />
-      <a-alert v-if="usesMallSettlement" type="info" show-icon message="确认时将按订单的结算方式、实际数量和优惠重新校验，确认订单不会自动扣款。" />
+      <p v-if="usesMallSettlement" class="scm-note">确认时将按订单的结算方式、实际数量和优惠重新校验，确认订单不会自动扣款。</p>
       <template v-if="creditCheck">
         <a-alert
           :type="creditCheck.allowed ? 'success' : 'warning'"
@@ -220,7 +220,7 @@
       </a-form-item>
     </a-modal>
     <a-modal :open="repriceOpen" title="手动重算订单价格" :confirm-loading="saving" @ok="reprice" @cancel="repriceOpen = false">
-      <a-alert type="warning" show-icon message="仅草稿和待确认订单可重算；已有资金或履约记录时会被拒绝。" />
+      <p class="scm-note">仅草稿和待确认订单可重算；已有资金或履约记录时会被拒绝。</p>
       <a-form-item label="重算原因" required style="margin-top: 16px">
         <a-textarea v-model:value="repriceReason" :maxlength="500" :rows="3" />
       </a-form-item>
@@ -231,6 +231,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, reactive, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
+import {DownOutlined} from '@ant-design/icons-vue';
 import {SETTLE_MODE_ENUM} from '/@/constants/business/scm/customer-const';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -245,6 +246,7 @@ import {amount, fixed} from './order-form-model';
 import {datetime} from '../common/scm-display';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import {orderError} from './order-errors';
+import {hasPermission} from '../common/scm-permission';
 import ReturnForm from './components/order-return-form-modal.vue';
 import OrderPaymentDrawer from './components/order-payment-drawer.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -275,6 +277,25 @@ const actualOpen = ref(false),
   activeItem = ref<Item>();
 const repriceOpen = ref(false),
   repriceReason = ref('');
+
+/** 次要动作按状态与权限出现；主按钮只保留当前状态下真正要做的一件事。 */
+const moreActions = computed(() => {
+  const current = order.value;
+  if (!current) return [];
+  const list: {key: string; label: string; danger?: boolean}[] = [];
+  const editable = current.status === 'DRAFT' || current.status === 'PENDING';
+  if (editable && hasPermission('scm:order:update')) list.push({key: 'reprice', label: '手动重算价格'});
+  if (hasPermission('scm:payment:transaction:query')) list.push({key: 'payments', label: '支付记录'});
+  if (editable && hasPermission('scm:order:cancel')) list.push({key: 'cancel', label: '取消订单', danger: true});
+  return list;
+});
+
+function onMoreAction(info: {key?: string | number}) {
+  const key = String(info.key);
+  if (key === 'reprice') repriceOpen.value = true;
+  else if (key === 'cancel') cancelOpen.value = true;
+  else if (key === 'payments' && order.value) paymentDrawer.value?.open(order.value);
+}
 
 async function reprice() {
   if (!order.value?.orderId || order.value.version == null || !repriceReason.value.trim()) {
@@ -410,7 +431,7 @@ async function loadCoupons() {
       (await promotionApi.couponInstances(customerId, 'AVAILABLE', {suppressGlobalErrorMessage: true})).data ?? [];
     couponOptions.value = rows.map((row) => ({
       value: row.id,
-      label: `${row.couponName ?? row.couponCode ?? '优惠券'}（${row.instanceNo}）`,
+      label: `${row.couponName ?? '优惠券'}（${row.instanceNo}）`,
     }));
     if (couponInstanceId.value && !couponOptions.value.some((option) => option.value === couponInstanceId.value)) {
       couponOptions.value.unshift({value: couponInstanceId.value, label: '商城预选券（当前不可用）'});
@@ -573,6 +594,12 @@ defineExpose({open});
 .actions,
 .items {
   margin: 16px 0;
+}
+
+/* 状态用文字，不再做成标题旁的彩色标签 */
+.order-status-text {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
 }
 
 /* 详情按业务分区，不堆成一长串描述列表 */

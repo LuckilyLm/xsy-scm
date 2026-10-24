@@ -33,21 +33,22 @@ import {readFileSync} from 'node:fs';
   const templateList = code('../src/views/business/scm/print/print-template-list.vue');
   const recordList = code('../src/views/business/scm/print/print-record-list.vue');
 
-  test('打印记录把模板名称 / 编码 / 版本与打印人各自成列', () => {
-    // 审计场景要能逐项核对：模板名、编码、版本、打印时间、打印人各自成列
+  test('打印记录把模板名称 / 版本与打印人各自成列，不展示模板编码', () => {
+    // 审计场景要能逐项核对：模板名、版本、打印时间、打印人各自成列
     assert.match(recordList, /title: '模板名称', dataIndex: 'templateName'/);
-    assert.match(recordList, /title: '模板编码', dataIndex: 'templateCode'/);
+    assert.doesNotMatch(recordList, /title: '模板编码'/);
     assert.match(recordList, /title: '模板版本', dataIndex: 'templateVersion'/);
     assert.match(recordList, /title: '打印时间', dataIndex: 'printedAt'/);
     assert.match(recordList, /title: '打印人', dataIndex: 'printedBy'/);
-    assert.match(recordList, /record\.templateCode/);
+    assert.doesNotMatch(recordList, /record\.templateCode/);
     assert.match(recordList, /record\.templateVersion/);
     assert.match(recordList, /record\.printedAt/);
     assert.match(recordList, /record\.printedBy/);
   });
 
-  test('打印模板配置页保留模板编码（与普通主数据的口径不同）', () => {
-    assert.match(templateList, /title: '模板编码', dataIndex: 'templateCode'/);
+  test('打印模板配置页不在列表展示模板编码，表单仍保留该配置键', () => {
+    assert.doesNotMatch(templateList, /title: '模板编码'/);
+    assert.match(templateList, /name="templateCode"/);
     assert.match(templateList, /title: '模板名称', dataIndex: 'templateName'/);
     assert.match(templateList, /title: '更新时间'/);
     // 明细列数是模板内部实现细节，不属于配置页要回答的问题

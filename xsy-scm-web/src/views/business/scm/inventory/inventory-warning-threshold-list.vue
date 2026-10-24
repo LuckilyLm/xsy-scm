@@ -5,9 +5,6 @@
       <a-form-item label="仓库">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
       </a-form-item>
-      <a-form-item label="商品规格编码">
-        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch" />
-      </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-space>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
@@ -46,14 +43,8 @@
       :scroll="{x: scmColumnsWidth(columns)}"
     >
       <template #bodyCell="{record, column}">
-        <template v-if="column.dataIndex === 'warehouseCode'">
-          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'skuName'">
+        <template v-if="column.dataIndex === 'skuName'">
           {{ skuMainText(record.specValues, record.skuName) }}
-        </template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'productName'">
           {{ record.productName || '—' }}
@@ -143,13 +134,11 @@ const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
-// 配置页将仓库、商品、规格和编码分列；更新时间不上列。
+// 配置页按仓库、商品、规格分列；编码属于内部标识，不上列表，更新时间也不上列。
 const columns = ref<TableColumnsType<InventoryWarningThreshold>>([
   {title: '仓库', dataIndex: 'warehouseName', width: 150, ellipsis: true},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120},
   {title: '商品', dataIndex: 'productName', width: 160, ellipsis: true},
   {title: '商品规格', dataIndex: 'skuName', width: 170, ellipsis: true},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 135},
   {title: '预警下限', dataIndex: 'warnMin', width: 120},
   {title: '预警上限', dataIndex: 'warnMax', width: 120},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
@@ -200,7 +189,6 @@ function onSearch() {
 
 function resetQuery() {
   queryForm.warehouseId = undefined;
-  queryForm.skuCode = undefined;
   onSearch();
 }
 
@@ -305,7 +293,9 @@ async function onSubmit() {
 function onDelete(record: InventoryWarningThreshold) {
   Modal.confirm({
     title: '删除阈值配置',
-    content: `确认删除「${record.warehouseName || ''} / ${record.skuCode || ''}」的预警阈值？删除后该仓库与商品规格不再产生预警。`,
+    content: `确认删除「${record.warehouseName || ''} / ${
+      record.productName || record.skuName || ''
+    }」的预警阈值？删除后该仓库与商品规格不再产生预警。`,
     okText: '删除',
     okType: 'danger',
     cancelText: '返回',

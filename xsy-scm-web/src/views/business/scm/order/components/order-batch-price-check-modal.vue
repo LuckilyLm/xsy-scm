@@ -1,6 +1,6 @@
 <template>
   <a-modal :open="visible" title="草稿订单批量核价" :width="1120" :footer="null" @cancel="close">
-    <a-alert type="info" show-icon class="smart-margin-bottom10" message="仅比较当前价格，不修改订单。" />
+    <p class="scm-note smart-margin-bottom10">仅比较当前价格，不修改订单。</p>
     <a-space class="smart-margin-bottom10" wrap>
       <span>已选 {{ entries.length }} 单，最多 8 单</span>
       <a-button size="small" :loading="loading" @click="reload">重新核价</a-button>
@@ -98,7 +98,6 @@ let generation = 0;
 const canUpdate = computed(() => hasPermission('scm:order:update') && hasPermission('scm:pricing:resolve:query'));
 const columns: TableColumnsType<PriceCheckLine> = [
   {title: '商品', dataIndex: 'productName', width: 180},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 130},
   {title: '下单量', dataIndex: 'quantity', width: 100},
   {title: '原草稿价', dataIndex: 'oldPrice', width: 120},
   {title: '当前解析价', dataIndex: 'currentPrice', width: 120},

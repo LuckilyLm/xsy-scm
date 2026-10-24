@@ -50,14 +50,8 @@
       :scroll="{x: scmColumnsWidth(columns)}"
     >
       <template #bodyCell="{record, column}">
-        <template v-if="column.dataIndex === 'warehouseCode'">
-          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'skuName'">
+        <template v-if="column.dataIndex === 'skuName'">
           {{ skuMainText(record.specValues, record.skuName) }}
-        </template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'lotNo'">
           <span class="scm-mono">{{ record.lotNo }}</span>
@@ -125,10 +119,8 @@ type InventoryLotBalanceColumn = TableColumnsType<InventoryLotBalance>[number] &
 
 const columns = ref<InventoryLotBalanceColumn[]>([
   {title: '仓库', dataIndex: 'warehouseName', width: 140, ellipsis: true},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, ellipsis: true, showFlag: false},
   {title: '商品名称', dataIndex: 'productName', width: 180, ellipsis: true},
   {title: '商品规格', dataIndex: 'skuName', width: 150, ellipsis: true},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 130, ellipsis: true, showFlag: false},
   {title: '批次号', dataIndex: 'lotNo', width: 190, ellipsis: true},
   {title: '来源生产批号', dataIndex: 'sourceLotNo', width: 160, ellipsis: true},
   {title: '数量', dataIndex: 'quantity', width: 110},

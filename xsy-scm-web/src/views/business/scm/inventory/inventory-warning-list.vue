@@ -5,9 +5,6 @@
       <a-form-item label="仓库" class="smart-query-form-item">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
       </a-form-item>
-      <a-form-item label="商品规格编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch" />
-      </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
         <a-select v-model:value="queryForm.status" :options="statusOptions" style="width: 150px" />
       </a-form-item>
@@ -51,13 +48,7 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouseCode'">
-          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'skuName'">{{ skuMainText(record.specValues, record.skuName) }}</template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
@@ -137,14 +128,12 @@ const statusOptions = [
   })),
 ];
 
-// 三个数量都保留，便于解释预警为什么触发；编码列默认收起。
+// 三个数量都保留，便于解释预警为什么触发；编码属于内部标识，不上列表。
 type InventoryWarningColumn = ScmListColumn;
 const columns = ref<InventoryWarningColumn[]>([
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'skuName', width: 150},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '单位', dataIndex: 'unit', width: 80},
   {title: '现有量', dataIndex: 'quantity', width: 100},
   {title: '已预留', dataIndex: 'reservedQuantity', width: 100},
@@ -225,7 +214,6 @@ function onSearch() {
 
 function resetQuery() {
   queryForm.warehouseId = undefined;
-  queryForm.skuCode = undefined;
   queryForm.thresholdId = undefined;
   // 重置回“仅异常”
   queryForm.status = undefined;
@@ -238,7 +226,6 @@ async function enterPage() {
   const anchor = deepLinkId(route.query, 'thresholdId');
   anchorThresholdId.value = anchor;
   queryForm.thresholdId = anchor;
-  queryForm.skuCode = undefined;
   queryForm.status = undefined;
   queryForm.pageNum = 1;
   // 有锚点时不再默认选中单仓，否则会把锚点所在的仓筛掉

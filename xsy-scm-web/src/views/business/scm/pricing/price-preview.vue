@@ -41,9 +41,6 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'specName'">{{ record.specName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'unitPrice'">
           <!-- 最终价格是全表最重的数字 -->
           <span :class="record.priceStatus === 'PRICED' ? 'final-price' : 'final-price final-price--muted'">
@@ -71,10 +68,7 @@
     <a-modal :open="trialOpen" title="协议价计算依据" :footer="null" width="760px" @cancel="trialOpen = false">
       <a-table :data-source="trialRows" :columns="trialColumns" row-key="skuId" size="small" :pagination="false" style="margin-top: 12px">
         <template #bodyCell="{record, column}">
-          <template v-if="column.dataIndex === 'skuId'">{{
-            result?.items.find((item) => String(item.skuId) === String(record.skuId))?.skuCode || '—'
-          }}</template>
-          <template v-else-if="column.dataIndex === 'formula'">{{ formulaLabel(record.calculationBasis?.formulaType) }}</template>
+          <template v-if="column.dataIndex === 'formula'">{{ formulaLabel(record.calculationBasis?.formulaType) }}</template>
           <template v-else-if="column.dataIndex === 'source'">{{ basisSourceLabel(record.calculationBasis?.basisSource) }}</template>
           <template v-else-if="column.dataIndex === 'basis'">{{ basisPriceText(record) }}</template>
           <template v-else-if="column.dataIndex === 'parameter'">{{ parameterText(record) }}</template>
@@ -118,7 +112,6 @@ const trialOpen = ref(false),
   trialLoading = ref(false),
   trialRows = ref<TrialRow[]>([]);
 const trialColumns: TableColumnsType<TrialRow> = [
-  {title: '商品规格编码', dataIndex: 'skuId', width: 140},
   {title: '公式', dataIndex: 'formula', width: 150},
   {title: '基准来源', dataIndex: 'source', width: 150},
   {title: '基准单价', dataIndex: 'basis', width: 130},
@@ -195,7 +188,6 @@ const PRICE_SOURCE_TONE: Record<string, ScmStatusTone> = {
 const columns: TableColumnsType<ResolvedPrice> = [
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'specName', width: 170},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '最终价格', dataIndex: 'unitPrice', width: 148},
   {title: '价格来源', dataIndex: 'priceSource', width: 150},
   {title: '价格状态', dataIndex: 'priceStatus', align: 'center', width: 96},

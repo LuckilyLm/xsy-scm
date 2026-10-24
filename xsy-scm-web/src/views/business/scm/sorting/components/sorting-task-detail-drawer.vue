@@ -11,10 +11,12 @@
         <div class="task-heading">
           <div>
             <h2>{{ detail.task.taskNo }}</h2>
-            <span>{{ detail.task.warehouseNameSnapshot }} · 创建于 {{ datetime(detail.task.createdAt) }}</span>
+            <span>
+              {{ detail.task.warehouseNameSnapshot }} · 创建于 {{ datetime(detail.task.createdAt) }} ·
+              {{ statusDesc(detail.task.status) }}
+            </span>
           </div>
           <a-space wrap>
-            <a-tag :color="SCM_SORTING_TASK_STATUS_COLOR[detail.task.status]">{{ statusDesc(detail.task.status) }}</a-tag>
             <a-button
               v-if="SCM_SORTING_PRINTABLE_STATUS.includes(detail.task.status)"
               v-privilege="'scm:sorting:task:query'"
@@ -206,7 +208,6 @@ import {
   SCM_SORTING_RESULT_COLOR,
   SCM_SORTING_RESULT_ENUM,
   SCM_SORTING_TABLE_ID,
-  SCM_SORTING_TASK_STATUS_COLOR,
 } from '/@/constants/business/scm/sorting-const';
 import {quantityText} from '../sorting-types';
 import type {Id, SortingTask, SortingTaskDetail, SortingTaskItem} from '../sorting-types';

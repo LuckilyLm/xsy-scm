@@ -14,7 +14,7 @@
         <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
       </a-form-item>
       <a-form-item label="商品 / 单号"
-        ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称、商品规格编码或订单号" @pressEnter="search"
+        ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称或订单号" @pressEnter="search"
       /></a-form-item>
       <!-- 按钮放在表单最后一项之后，窄屏换行时不会被夹在字段中间 -->
       <a-form-item>
@@ -159,7 +159,6 @@ let requestId = 0;
 const columns: TableColumnsType<FinanceProfitRow> = [
   {title: '日期', dataIndex: 'bizDate', width: 120},
   {title: '分析对象', dataIndex: 'dimensionName', width: 210},
-  {title: '编码', dataIndex: 'dimensionCode', width: 170},
   {title: '销售收入', dataIndex: 'revenueAmount', width: 150},
   {title: '商品销售成本（净额）', dataIndex: 'salesCostAmount', width: 148},
   {title: '促销赠品成本', dataIndex: 'giftCostAmount', width: 150},

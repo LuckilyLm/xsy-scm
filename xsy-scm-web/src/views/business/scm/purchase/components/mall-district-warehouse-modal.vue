@@ -1,6 +1,6 @@
 <template>
   <a-modal v-model:open="visible" title="商城区县配送仓配置" :footer="null" width="740px">
-    <a-alert type="info" show-icon message="客户未绑定配送仓时，按收货地址区县匹配。" />
+    <p class="scm-note">客户未绑定配送仓时，按收货地址区县匹配。</p>
     <a-form layout="vertical" class="district-form">
       <a-form-item label="配送区县" required>
         <AreaCascader type="province_city_district" v-model:value="area" placeholder="选择省 / 市 / 区县" @change="onAreaChange" />
@@ -35,7 +35,7 @@
           <a-button type="primary" :loading="saving" v-privilege="'scm:warehouse:update'" @click="save">保存规则</a-button>
         </a-col>
       </a-row>
-      <a-alert type="warning" show-icon style="margin-top: 12px" message="同一区县可配置多个仓库，但下单只选择一个配送仓，不合并其他仓库的库存。" />
+      <p class="scm-note" style="margin-top: 12px">同一区县可配置多个仓库，但下单只选择一个配送仓，不合并其他仓库的库存。</p>
     </div>
   </a-modal>
 </template>

@@ -12,7 +12,7 @@
         <a-input v-model:value="orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="商品关键字" class="smart-query-form-item">
-        <a-input v-model:value="keyword" placeholder="商品编码 / 名称 / 商品规格编码" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -100,7 +100,6 @@ function rowKey(row: ReceiptItemWorkbenchRow) {
 }
 
 const columns = computed<TableColumnsType<ReceiptItemWorkbenchRow>>(() => [
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 130},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},

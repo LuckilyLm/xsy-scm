@@ -37,9 +37,6 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'templateName'">{{ record.templateName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'templateCode'">
-          <span class="scm-mono">{{ record.templateCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'templateVersion'">{{ record.templateVersion ?? '—' }}</template>
         <template v-else-if="column.dataIndex === 'printedAt'">{{ record.printedAt || '—' }}</template>
         <template v-else-if="column.dataIndex === 'printedBy'">{{ record.printedBy || '—' }}</template>
@@ -90,7 +87,6 @@ const columns: TableColumnsType<PrintRecord> = [
   {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130, align: 'center'},
   {title: '业务单号', dataIndex: 'businessNo', width: 190},
   {title: '模板名称', dataIndex: 'templateName', width: 170},
-  {title: '模板编码', dataIndex: 'templateCode', width: 150},
   {title: '模板版本', dataIndex: 'templateVersion', width: 90},
   {title: '打印时间', dataIndex: 'printedAt', width: 165},
   {title: '打印人', dataIndex: 'printedBy', width: 110},

@@ -1,6 +1,8 @@
 <template>
-  <h2>订单异常工作台</h2>
-  <p class="scm-note">汇总已有异常记录；请进入来源单据处理。</p>
+  <div class="report-header">
+    <h2>订单异常工作台</h2>
+    <span class="scm-note">汇总已有异常记录；请进入来源单据处理。</span>
+  </div>
   <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
     <a-form-item label="发生日期" required>
       <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD" />
@@ -24,8 +26,6 @@
   </a-alert>
   <a-card size="small" :bordered="false">
     <div class="report-toolbar">
-      <a-typography-text v-if="applied">{{ applied.startDate }} 至 {{ applied.endDate }} · 仅显示有源单据查看权限的数据</a-typography-text>
-      <a-typography-text v-else type="secondary">请选择日期后查询</a-typography-text>
       <a-button v-privilege="'scm:report:export'" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
         >导出当前结果</a-button
       >
@@ -276,10 +276,20 @@ onMounted(search);
 </script>
 
 <style scoped>
-h2 {
-  margin: 0 0 8px;
+.report-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.report-header h2 {
+  margin: 0;
   font-size: 20px;
   line-height: 28px;
+}
+.report-header .scm-note {
+  margin: 0;
 }
 .report-note,
 .report-summary {
@@ -288,7 +298,7 @@ h2 {
 .report-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 14px;

@@ -770,13 +770,12 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     assert.match(page, /ScmActionMore/);
     assert.match(page, /key: 'cancel', label: '取消单据'/);
 
-    // 明细数量是 InputNumber，提交走 fixed4；在途报表的规格编码作 secondary text
+    // 明细数量是 InputNumber，提交走 fixed4；在途报表不展示规格编码
     assert.match(page, /<a-input-number[\s\S]{0,120}record\.quantity/);
     assert.match(page, /quantity: fixed4\(i\.quantity\) as string/);
     assert.doesNotMatch(page, /toFixed\(/);
-    // 在途报表：商品规格与规格编码各自成列
-    assert.match(page, /title: '商品规格编码', dataIndex: 'skuCode'/);
-    assert.match(page, /column\.dataIndex === 'skuCode'[\s\S]{0,120}record\.skuCode/);
+    assert.doesNotMatch(page, /title: '商品规格编码'/);
+    assert.doesNotMatch(page, /class="scm-mono">\{\{ record\.skuCode/);
   });
 
   test('transfer error codes all have actionable Chinese text', () => {
@@ -885,9 +884,10 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     assert.match(page, /CONSUMED: 'success'/);
     assert.doesNotMatch(page, /'orange'|'green'|'red'/, '状态色应由 tone 档位给出');
 
-    // 数量与规格编码分列，编码可用等宽字形逐位核对
+    // 数量用公共等宽数字类；规格编码不展示
     assert.match(page, /class="scm-quantity"/);
-    assert.match(page, /dataIndex === 'skuCode'[\s\S]{0,120}class="scm-mono"/);
+    assert.doesNotMatch(page, /dataIndex === 'skuCode'/);
+    assert.doesNotMatch(page, /record\.skuCode/);
   });
 
   test('the warning page keeps all three quantities and colours the level, not the row', () => {

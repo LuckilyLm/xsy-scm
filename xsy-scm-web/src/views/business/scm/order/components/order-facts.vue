@@ -108,8 +108,10 @@
   </section>
 
   <section v-if="order.refundFactsVisible" class="order-fact-section">
-    <h3>退款与资金返还</h3>
-    <a-alert message="退款单完成和资金到账分开记录，以实际返还结果为准。" type="info" show-icon class="order-fact-note" />
+    <div class="order-fact-head">
+      <h3>退款与资金返还</h3>
+      <span class="order-fact-desc">退款单完成与资金到账分开记录，以实际返还结果为准</span>
+    </div>
     <a-table
       :data-source="order.refunds ?? []"
       :columns="refundColumns"
@@ -197,7 +199,19 @@ function fundingLabel(status?: OrderRefundFact['fundingStatus']): string {
 .order-fact-section h3 {
   margin-bottom: 12px;
 }
-.order-fact-note {
+/* 说明文字跟在标题后，不用整行 Alert 占一层 */
+.order-fact-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
   margin-bottom: 12px;
+}
+.order-fact-head h3 {
+  margin: 0;
+}
+.order-fact-desc {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
 }
 </style>

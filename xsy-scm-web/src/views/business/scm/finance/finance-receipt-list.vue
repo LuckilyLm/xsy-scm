@@ -529,7 +529,7 @@ async function loadCustomerOptions() {
   customerOptionsError.value = '';
   try {
     const response = await customerApi.optionList({suppressGlobalErrorMessage: true});
-    customerOptions.value = response.data.map((item: CustomerOption) => ({label: `${item.customerCode} · ${item.name}`, value: item.customerId}));
+    customerOptions.value = response.data.map((item: CustomerOption) => ({label: item.name, value: item.customerId}));
   } catch {
     customerOptionsError.value = '客户选项暂不可用，请稍后重试。';
   }

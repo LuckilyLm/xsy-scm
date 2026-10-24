@@ -79,9 +79,6 @@
           ><a @click="openDetail(record.orderId)">{{ record.orderNo }}</a>
         </template>
         <template v-else-if="column.dataIndex === 'customerNameSnapshot'">{{ record.customerNameSnapshot || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'customerCodeSnapshot'">
-          <span class="scm-mono">{{ record.customerCodeSnapshot || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'tags'">
           <a-space :size="4" wrap>
             <a-tag v-for="tag in record.tags ?? []" :key="String(tag.tagId)" :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
@@ -223,7 +220,6 @@ type OrderListColumn = TableColumnsType<Order>[number] & {showFlag?: boolean};
 const columns = ref<OrderListColumn[]>([
   {title: '订单号', dataIndex: 'orderNo', width: 190},
   {title: '客户名称', dataIndex: 'customerNameSnapshot', width: 200},
-  {title: '客户编码', dataIndex: 'customerCodeSnapshot', width: 125, showFlag: false},
   {title: '来源', dataIndex: 'orderSource', align: 'center', width: 100},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '标签', dataIndex: 'tags', width: 180},

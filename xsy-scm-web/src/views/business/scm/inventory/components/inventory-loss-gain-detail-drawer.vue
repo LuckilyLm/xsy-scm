@@ -47,7 +47,6 @@ const emit = defineEmits<{
 }>();
 
 const itemColumns: TableColumnsType = [
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
   {title: '商品规格名称', dataIndex: 'skuName', width: 150},
   {title: '商品名称', dataIndex: 'productName', width: 150},
   {title: '数量', dataIndex: 'quantity', width: 110},

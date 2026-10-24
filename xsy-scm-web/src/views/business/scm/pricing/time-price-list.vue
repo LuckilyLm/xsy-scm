@@ -2,7 +2,7 @@
   <a-form class="smart-query-form" layout="inline">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input v-model:value="query.keyword" placeholder="商品名称或商品规格编码" allow-clear />
+        <a-input v-model:value="query.keyword" placeholder="商品名称或规格" allow-clear />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-space>

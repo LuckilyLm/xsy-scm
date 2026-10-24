@@ -24,9 +24,9 @@
         </div>
 
         <a-descriptions bordered size="small" :column="2">
-          <a-descriptions-item label="供应商"> {{ order.supplierName }}（{{ order.supplierCode }}） </a-descriptions-item>
+          <a-descriptions-item label="供应商">{{ order.supplierName }}</a-descriptions-item>
           <a-descriptions-item label="采购员">{{ order.purchaserName || '—' }}</a-descriptions-item>
-          <a-descriptions-item label="收货仓库"> {{ order.warehouseName }}（{{ order.warehouseCode }}） </a-descriptions-item>
+          <a-descriptions-item label="收货仓库">{{ order.warehouseName }}</a-descriptions-item>
           <a-descriptions-item label="计划到货日期">{{ order.plannedArrivalDate || '—' }}</a-descriptions-item>
           <a-descriptions-item label="采购金额">
             <span class="scm-money">{{ amount(order.totalAmount) }}</span>

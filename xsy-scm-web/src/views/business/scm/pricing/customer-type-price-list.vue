@@ -2,7 +2,7 @@
   <a-form class="smart-query-form" layout="inline">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item"
-        ><a-input v-model:value="query.keyword" placeholder="名称或编码" allow-clear
+        ><a-input v-model:value="query.keyword" placeholder="客户类型或商品名称" allow-clear
       /></a-form-item>
       <a-form-item label="客户类型" class="smart-query-form-item"
         ><CustomerTypeSelect v-model:value="query.customerTypeId" width="190px"
@@ -43,12 +43,6 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'customerTypeCode'"
-          ><span class="scm-mono">{{ record.customerTypeCode || '—' }}</span></template
-        >
-        <template v-else-if="column.dataIndex === 'skuCode'"
-          ><span class="scm-mono">{{ record.skuCode || '—' }}</span></template
-        >
         <template v-else-if="column.dataIndex === 'unitPrice'"
           ><span class="scm-money">{{ formatAmount(record.unitPrice) }}</span></template
         >
@@ -110,10 +104,8 @@ let requestId = 0;
 type CustomerTypePriceColumn = TableColumnsType<PriceRow>[number] & {showFlag?: boolean};
 const columns = ref<CustomerTypePriceColumn[]>([
   {title: '客户类型', dataIndex: 'customerTypeName', width: 160},
-  {title: '客户类型编码', dataIndex: 'customerTypeCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'specName', width: 200},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '单价', dataIndex: 'unitPrice', width: 120},
   {title: '有效期', dataIndex: 'effectiveRange', width: 340},
   {title: '状态', dataIndex: 'effectiveness', align: 'center', width: 100},

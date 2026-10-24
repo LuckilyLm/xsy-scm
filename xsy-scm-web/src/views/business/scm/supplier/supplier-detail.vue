@@ -9,11 +9,7 @@
         </a-button>
         <div class="scm-detail-header__title-row">
           <h1 class="scm-detail-header__title">{{ supplier?.name || '供应商详情' }}</h1>
-          <ScmStatusTag v-if="supplier" :tone="supplier.status === 'ENABLED' ? 'success' : 'neutral'" :label="statusText(supplier.status)" />
         </div>
-        <p v-if="supplier" class="scm-detail-header__meta">
-          <span class="scm-mono">{{ supplier.supplierCode }}</span>
-        </p>
       </div>
     </header>
 
@@ -104,8 +100,8 @@
           <h3 class="scm-detail-card__title">系统信息</h3>
           <dl class="scm-field-list scm-field-list--3">
             <div class="scm-field">
-              <dt class="scm-field__label">供应商编码</dt>
-              <dd class="scm-field__value scm-mono">{{ supplier.supplierCode }}</dd>
+              <dt class="scm-field__label">状态</dt>
+              <dd class="scm-field__value">{{ statusText(supplier.status) }}</dd>
             </div>
             <div class="scm-field">
               <dt class="scm-field__label">创建时间</dt>
@@ -136,7 +132,6 @@ import {supplierApi} from '/@/api/business/scm/supplier-api';
 import {supplierSkuApi} from '/@/api/business/scm/supplier-sku-api';
 import type {EnableStatus, ScmId, SupplierDetail, SupplierSkuRow} from '/@/types/business/scm/supplier';
 import {SUPPLIER_SKU_STATUS_ENUM, SUPPLIER_STATUS_ENUM} from '/@/constants/business/scm/supplier-const';
-import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {supplierError} from './supplier-errors';
 import {datetime} from '../common/scm-display';
 import {formatPrice} from '/@/utils/scm-amount';
@@ -160,7 +155,6 @@ const specText = (spec: Record<string, string> | undefined): string => {
 const relationColumns: TableColumnsType<SupplierSkuRow> = [
   {title: '商品名称', dataIndex: 'skuNameSnapshot', width: 220},
   {title: '商品规格', dataIndex: 'spec', width: 160},
-  {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 170},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
   {title: '参考价', dataIndex: 'referencePrice', width: 120},
   {title: '采购员', dataIndex: 'purchaserName', width: 110},

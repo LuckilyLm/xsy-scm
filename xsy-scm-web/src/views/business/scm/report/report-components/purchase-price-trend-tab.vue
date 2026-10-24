@@ -82,7 +82,6 @@ const emit = defineEmits<{
 const columns = ref<TableColumnsType<PurchasePriceTrendPoint>>([
   {title: '业务日期', dataIndex: 'bizDate', width: 130},
   {title: '商品', dataIndex: 'productName', width: 200},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
   {title: '加权平均成交价', dataIndex: 'weightedAvgPrice', width: 148},
   {title: '上次有效均价', dataIndex: 'previousWeightedAvgPrice', width: 150},

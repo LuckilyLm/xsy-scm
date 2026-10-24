@@ -82,16 +82,16 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     return Number(matched[1]);
   }
 
-  test('采购需求：来源、批次、商品和编码分列，常用列前置', () => {
+  test('采购需求：来源、批次、商品分列，常用列前置', () => {
     assert.match(demand, /title: '来源单号', dataIndex: 'salesOrderNoSnapshot'/);
     assert.match(demand, /title: '需求来源 \/ 批次', dataIndex: 'calculationBatchId'/);
     assert.match(demand, /title: '商品名称', dataIndex: 'productName'/);
-    assert.match(demand, /title: '商品规格编码', dataIndex: 'skuCode'[\s\S]{0,80}showFlag: false/);
+    assert.doesNotMatch(demand, /title: '商品规格编码'/);
     assert.ok(!demand.includes(`title: '需求单位'`), '采购需求仍有独立的需求单位列');
     // 单位跟在每个数量后面（量纲注脚），三个数量列都要有
     assert.match(demand, /dataIndex === 'requiredQuantity'[\s\S]{0,200}record\.demandUnit/);
     assert.match(demand, /dataIndex === 'unallocatedQuantity'[\s\S]{0,200}record\.demandUnit/);
-    assert.match(demand, /dataIndex === 'skuCode'[\s\S]{0,100}record\.skuCode/);
+    assert.doesNotMatch(demand, /dataIndex === 'skuCode'/);
     assert.match(demand, /const columns = ref<DemandListColumn\[\]>\(/);
     // scrollX 必须由列宽派生，不能写死数字；列宽与铺满统一由 useScmTableFill 计算。
     assert.match(demand, /useScmTableFill\(columns\)/);
@@ -127,8 +127,8 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.ok(!warehouse.includes(`title: '创建时间'`), '仓库列表仍默认展示创建时间');
     const width = actionWidth(warehouse, '仓库');
     assert.ok(width <= 160, `仓库操作列 ${width}px 超出 160px`);
-    // 仓库编码是运营配置识别字段，保留
-    assert.match(warehouse, /title: '仓库编码'/);
+    // 仓库编码是系统生成的内部标识，不展示
+    assert.doesNotMatch(warehouse, /title: '仓库编码'/);
     // 所在地区与详细地址各自成列：地址是库管实际找货的凭据
     assert.match(warehouse, /title: '所在地区', dataIndex: 'areaText'/);
     assert.match(warehouse, /title: '详细地址', dataIndex: 'address'/);

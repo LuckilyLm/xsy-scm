@@ -60,13 +60,7 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'product'">{{ record.productNameSnapshot || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'spuCodeSnapshot'">
-          <span class="scm-mono">{{ record.spuCodeSnapshot || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'sku'">{{ record.specNameSnapshot || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'skuCodeSnapshot'">
-          <span class="scm-mono">{{ record.skuCodeSnapshot || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'plannedQuantity'">
           <span class="scm-quantity">{{ quantityText(record.plannedQuantity) }}</span>
         </template>
@@ -194,9 +188,7 @@ const emptyText = computed(() =>
 /** 数量只在同一销售单位内合计，不出现跨单位的合计列。 */
 const columns = ref<TableColumnsType<SortingSkuSummary>>([
   {title: '商品', dataIndex: 'product', width: 170},
-  {title: '商品编码', dataIndex: 'spuCodeSnapshot', width: 140},
   {title: '商品规格', dataIndex: 'sku', width: 150},
-  {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 150},
   {title: '单位', dataIndex: 'saleUnitSnapshot', width: 90},
   {title: '涉及订单数', dataIndex: 'orderCount', width: 92},
   {title: '任务数', dataIndex: 'taskCount', width: 90},

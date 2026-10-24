@@ -56,9 +56,6 @@
           <ScmStatusTag :tone="typeTone(record.adjustType)" :label="record.adjustTypeDesc || record.adjustType" />
         </template>
         <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouseCode'">
-          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status" />
         </template>
@@ -253,7 +250,6 @@ const columns = ref<InventoryLossGainColumn[]>([
   {title: '单据号', dataIndex: 'lossGainNo', width: 200},
   {title: '类型', dataIndex: 'adjustType', align: 'center', width: 100},
   {title: '仓库', dataIndex: 'warehouseName', width: 140},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '原因', dataIndex: 'reason', width: 240, ellipsis: true},
   {title: '审核时间', dataIndex: 'auditedAt', width: 170},

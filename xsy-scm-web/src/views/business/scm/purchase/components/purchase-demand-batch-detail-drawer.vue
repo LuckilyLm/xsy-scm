@@ -122,7 +122,6 @@ const error = ref('');
 let requestId = 0;
 
 const summaryColumns: TableColumnsType<DemandBatchSummaryRow> = [
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 130},
   {title: '需求单位', dataIndex: 'demandUnit', width: 95},
@@ -144,7 +143,6 @@ const itemColumns: TableColumnsType<DemandBatchItem> = [
   {title: '行号', dataIndex: 'lineNo', width: 70},
   {title: '来源销售单号', dataIndex: 'salesOrderNo', width: 190},
   {title: '确认时间', dataIndex: 'sourceConfirmedAt', width: 180},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 130},
   {title: '需求单位', dataIndex: 'demandUnit', width: 95},

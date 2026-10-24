@@ -168,13 +168,13 @@
           <a-textarea v-model:value="acceptReason" :maxlength="500" :rows="3" placeholder="例如：实重较计划量少，或现场复核说明" />
         </a-form-item>
       </a-form>
-      <a-alert v-else type="info" show-icon class="accept-form" message="标准品将按照当前读数登记为正常分拣结果。" />
+      <p v-else class="scm-note accept-form">标准品将按照当前读数登记为正常分拣结果。</p>
       <a-alert v-if="scaleError" :message="scaleError" type="error" show-icon class="accept-form" />
     </template>
   </a-modal>
 
   <a-modal v-model:open="rejectOpen" title="驳回电子秤读数" :confirm-loading="scaleBusy" @ok="submitReject">
-    <a-form ref="rejectFormRef" :model="{rejectReason}" :rules="rejectRules" layout="vertical">
+    <a-form ref="rejectFormRef" :model="rejectModel" :rules="rejectRules" layout="vertical">
       <a-form-item label="驳回原因" name="rejectReason">
         <a-textarea v-model:value="rejectReason" :maxlength="200" :rows="3" placeholder="例如：称重物品不匹配、秤未校准、读数跳动" />
       </a-form-item>
@@ -185,7 +185,7 @@
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, ref, watch} from 'vue';
+import {computed, reactive, ref, watch} from 'vue';
 import {message, type TableColumnsType, type FormInstance} from 'ant-design-vue';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
 import {datetime} from '../../common/scm-display';
@@ -214,6 +214,8 @@ const rejectTarget = ref<SortingScaleEvent>();
 const rejectReason = ref('');
 const rejectFormRef = ref<FormInstance>();
 const rejectRules = {rejectReason: [{required: true, message: '请填写驳回原因', trigger: 'blur'}]};
+/** 校验模型必须是稳定对象；reactive 会解包内部 ref，值仍是响应式的。 */
+const rejectModel = reactive({rejectReason});
 const resultOptions = Object.values(SCM_SORTING_RESULT_ENUM).map((x) => ({value: x.value, label: x.desc}));
 let requestGeneration = 0;
 

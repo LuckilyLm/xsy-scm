@@ -10,12 +10,10 @@
         </a-button>
         <div class="scm-detail-header__title-row">
           <h1 class="scm-detail-header__title">{{ customer?.name || '客户详情' }}</h1>
-          <ScmStatusTag v-if="customer" :color="statusColor(customer.status)" :label="statusText(customer.status)" />
         </div>
         <p v-if="customer" class="scm-detail-header__meta">
-          <span class="scm-mono">{{ customer.customerCode }}</span>
-          <span v-if="customer.customerTypeName"> · {{ customer.customerTypeName }}</span>
-          <span v-if="customer.sellerName"> · {{ customer.sellerName }}</span>
+          <span v-if="customer.customerTypeName">{{ customer.customerTypeName }}</span>
+          <span v-if="customer.sellerName">{{ customer.customerTypeName ? ' · ' : '' }}{{ customer.sellerName }}</span>
         </p>
       </div>
     </header>
@@ -189,10 +187,6 @@
                 <h3 class="scm-detail-card__title">系统信息</h3>
                 <dl class="scm-field-list scm-field-list--3">
                   <div class="scm-field">
-                    <dt class="scm-field__label">客户编码</dt>
-                    <dd class="scm-field__value scm-mono">{{ customer.customerCode }}</dd>
-                  </div>
-                  <div class="scm-field">
                     <dt class="scm-field__label">创建时间</dt>
                     <dd class="scm-field__value">{{ datetime(customer.createdAt) }}</dd>
                   </div>
@@ -286,9 +280,6 @@
             <template v-if="column.dataIndex === 'productName'">
               <span>{{ record.productName || '—' }}</span>
             </template>
-            <template v-else-if="column.dataIndex === 'skuCode'">
-              <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-            </template>
             <template v-else-if="column.dataIndex === 'orderedQuantity'"
               ><span class="scm-quantity">{{ record.orderedQuantity }}</span></template
             >
@@ -321,9 +312,6 @@
           <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'productName'">
               <span>{{ record.productName || '—' }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'skuCode'">
-              <span class="scm-mono">{{ record.skuCode || '—' }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'unitPrice'"
               ><span class="scm-money">{{ formatAmount(record.unitPrice) }}</span></template
@@ -367,9 +355,6 @@
             <template #bodyCell="{record, column}">
               <template v-if="column.dataIndex === 'productName'">
                 <span>{{ record.productName || '—' }}</span>
-              </template>
-              <template v-else-if="column.dataIndex === 'skuCode'">
-                <span class="scm-mono">{{ record.skuCode || '—' }}</span>
               </template>
               <template v-else-if="column.dataIndex === 'skuStatus'">
                 <ScmStatusTag :tone="shelfStatusTone(record.skuStatus)" :label="shelfStatusLabel(record.skuStatus)" />
@@ -500,7 +485,6 @@ let aliasRequest = 0;
 const aliasCols: TableColumnsType<CustomerSkuAlias> = [
   {title: '商品', dataIndex: 'productName', width: 190},
   {title: '商品规格', dataIndex: 'specName', width: 140},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
   {title: '客户商品别名', dataIndex: 'alias', width: 190},
   {title: '操作', dataIndex: 'action', width: 120, align: 'center'},
 ];
@@ -839,7 +823,6 @@ const orderCols: TableColumnsType<Order> = [
 const frequentCols: TableColumnsType<CustomerFrequentSku> = [
   {title: '商品', dataIndex: 'productName', width: 220},
   {title: '商品规格', dataIndex: 'specName', width: 140},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '单位', dataIndex: 'unit', width: 80},
   {title: '订购次数', dataIndex: 'orderCount', width: 92},
   {title: '订购量', dataIndex: 'orderedQuantity', width: 110},
@@ -849,7 +832,6 @@ const frequentCols: TableColumnsType<CustomerFrequentSku> = [
 const agreementCols: TableColumnsType<PriceRow> = [
   {title: '商品', dataIndex: 'productName', width: 220},
   {title: '商品规格', dataIndex: 'specName', width: 140},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '协议单价', dataIndex: 'unitPrice', width: 130},
   {title: '有效期', dataIndex: 'effectivePeriod', width: 300},
 ];

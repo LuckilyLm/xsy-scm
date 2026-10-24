@@ -60,9 +60,6 @@
             <template v-else-if="column.dataIndex === 'productName'">
               {{ record.productName || '—' }}
             </template>
-            <template v-else-if="column.dataIndex === 'skuCode'">
-              <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-            </template>
             <template v-else-if="column.dataIndex === 'calculationBatchId'">
               <a-button
                 v-if="record.calculationBatchId"
@@ -242,7 +239,6 @@ const columns = ref<DemandListColumn[]>([
   {title: '需求来源 / 批次', dataIndex: 'calculationBatchId', width: 145},
   {title: '商品名称', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'skuName', width: 150},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 135, showFlag: false},
   {title: '需求量', dataIndex: 'requiredQuantity', width: 120},
   {title: '已分配', dataIndex: 'allocatedQuantity', width: 120, showFlag: false},
   {title: '未分配', dataIndex: 'unallocatedQuantity', width: 120},

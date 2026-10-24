@@ -141,7 +141,7 @@
         <a-select v-model:value="addForm.counterpartyType" :options="partyTypeOptions" @change="onPartyTypeChange" />
       </a-form-item>
       <a-form-item v-if="addForm.counterpartyType === 'SUPPLIER'" label="供应商" name="supplierId">
-        <SupplierSelect v-model:value="addForm.supplierId" placeholder="搜索供应商名称或编码" width="100%" />
+        <SupplierSelect v-model:value="addForm.supplierId" placeholder="搜索供应商名称" width="100%" />
       </a-form-item>
       <a-form-item v-if="addForm.counterpartyType === 'CUSTOMER'" label="已完成退款来源" name="selectedRefund">
         <a-input

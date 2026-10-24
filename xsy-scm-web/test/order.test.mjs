@@ -798,3 +798,17 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     );
   });
 }
+
+// ---------------------------------------------------------------- 来源：order-detail-error-state-contract.test.mjs
+{
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+
+  test('订单详情整页加载失败用结果态，不用警告横幅', () => {
+    const page = read('../src/views/business/scm/order/order-detail-page.vue');
+    // 整页失败是页面级空态：居中的结果块 + 重新加载/返回列表，比一行 alert 更像错误页
+    assert.match(page, /<a-result v-if="error"[\s\S]{0,120}status="error"/);
+    assert.match(page, /@click="load">重新加载/);
+    assert.match(page, /返回订单列表/);
+    assert.doesNotMatch(page, /<a-alert v-if="error"/, '整页加载失败仍在用横幅样式');
+  });
+}

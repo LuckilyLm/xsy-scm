@@ -1,11 +1,15 @@
 <template>
   <section>
-    <h3 class="order-section-title">客户实收更正</h3>
-    <p class="scm-note">客户实收更正只作记录；补偿需走正式流程。</p>
+    <div class="order-section-head">
+      <div class="order-section-head__main">
+        <h3 class="order-section-title">客户实收更正</h3>
+        <span class="order-section-desc">只作记录；补偿需走正式流程</span>
+      </div>
+      <a-button v-if="canCorrect" v-privilege="'scm:order:update'" :disabled="loading" @click="open">记录实收更正</a-button>
+    </div>
     <a-alert v-if="error" type="error" show-icon :message="error">
       <template #action><a-button size="small" @click="load">重试</a-button></template>
     </a-alert>
-    <a-button v-if="canCorrect" v-privilege="'scm:order:update'" :disabled="loading" @click="open"> 记录实收更正 </a-button>
     <a-table
       :data-source="rows"
       :columns="columns"
@@ -175,8 +179,27 @@ watch(
 </script>
 
 <style scoped>
-.order-section-title {
+/* 标题、说明和操作收在一行：说明不再占一条提示条，按钮也不再漂在表格上方 */
+.order-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin: 24px 0 12px;
+}
+.order-section-head__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+.order-section-title {
+  margin: 0;
+}
+.order-section-desc {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
 }
 .correction-table {
   margin-top: 10px;

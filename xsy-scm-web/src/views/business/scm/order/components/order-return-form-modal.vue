@@ -1,7 +1,7 @@
 <template>
   <a-modal :open="visible" title="申请退货" :confirm-loading="saving" @ok="save" @cancel="visible = false" width="760px">
     <a-alert v-if="error" :message="error" type="error" />
-    <a-form ref="formRef" :model="{reason}" :rules="formRules" layout="vertical">
+    <a-form ref="formRef" :model="formModel" :rules="formRules" layout="vertical">
       <a-form-item label="退货原因" name="reason">
         <a-input v-model:value="reason" maxlength="500" />
       </a-form-item>
@@ -23,7 +23,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import {ref} from 'vue';
+import {reactive, ref} from 'vue';
 import type {FormInstance} from 'ant-design-vue';
 import {orderReturnApi} from '/@/api/business/scm/order-return-api';
 import type {Order, Item, Id} from '../order-types';
@@ -37,6 +37,8 @@ const visible = ref(false),
   orderId = ref<Id>(),
   rows = ref<(Item & {quantity: string})[]>([]);
 const formRef = ref<FormInstance>();
+/** 校验模型必须是稳定对象；reactive 会解包内部 ref，值仍是响应式的。 */
+const formModel = reactive({reason});
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {reason: [{required: true, message: '请输入退货原因', trigger: 'blur'}]};
 const columns = [

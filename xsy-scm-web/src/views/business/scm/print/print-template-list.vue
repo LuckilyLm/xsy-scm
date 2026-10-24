@@ -6,7 +6,7 @@
         <a-select v-model:value="queryForm.documentType" :options="typeOptions" style="width: 180px" placeholder="全部类型" />
       </a-form-item>
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" placeholder="模板编码 / 名称" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.keyword" placeholder="模板名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -220,7 +220,6 @@ function toOptions(fields?: {key: string; label: string; money: boolean}[]) {
 
 const columns: TableColumnsType<PrintTemplate> = [
   {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130, align: 'center'},
-  {title: '模板编码', dataIndex: 'templateCode', width: 200},
   {title: '模板名称', dataIndex: 'templateName', width: 180},
   {title: '默认', dataIndex: 'defaultFlag', align: 'center', width: 90},
   {title: '状态', dataIndex: 'enabledFlag', align: 'center', width: 90},

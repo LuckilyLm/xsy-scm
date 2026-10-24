@@ -5,9 +5,6 @@
       <a-form-item label="仓库" class="smart-query-form-item">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px" />
       </a-form-item>
-      <a-form-item label="商品规格编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch" />
-      </a-form-item>
       <a-form-item label="商品名称" class="smart-query-form-item">
         <a-input v-model:value="queryForm.productName" placeholder="商品名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
@@ -45,13 +42,7 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouseCode'">
-          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'skuName'">{{ skuMainText(record.specValues, record.skuName) }}</template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'unit'">{{ record.unit || '—' }}</template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -111,14 +102,12 @@ const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
-// 余额按仓库 + 商品规格定位；低频编码默认收起，数量列统一右对齐。
+// 余额按仓库 + 商品规格定位；编码属于内部标识，不上列表，数量列统一右对齐。
 type InventoryBalanceColumn = TableColumnsType<InventoryBalance>[number] & {showFlag?: boolean};
 const columns = ref<InventoryBalanceColumn[]>([
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 200, ellipsis: true},
   {title: '商品规格', dataIndex: 'skuName', width: 180, ellipsis: true},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '单位', dataIndex: 'unit', width: 80},
   {title: '库存', dataIndex: 'quantity', width: 110},
   {title: '预留', dataIndex: 'reservedQuantity', width: 100},
@@ -174,7 +163,6 @@ function onSearch() {
 function resetQuery() {
   // 重置表示查看全部仓库，不重新应用默认值。
   queryForm.warehouseId = undefined;
-  queryForm.skuCode = undefined;
   queryForm.productName = undefined;
   onSearch();
 }

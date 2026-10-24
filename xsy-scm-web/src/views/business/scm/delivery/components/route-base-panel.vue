@@ -3,6 +3,10 @@
     <div class="scm-detail-card">
       <h3 class="scm-detail-card__title">基本信息</h3>
       <dl class="scm-field-list scm-field-list--2">
+        <div class="scm-field">
+          <dt class="scm-field__label">线路状态</dt>
+          <dd class="scm-field__value">{{ routeStatuses[route.status]?.label ?? route.status }}</dd>
+        </div>
         <div class="scm-field scm-field--wide">
           <dt class="scm-field__label">仓库</dt>
           <dd class="scm-field__value">
@@ -66,7 +70,7 @@
 import {computed} from 'vue';
 import {isLocated, type MapPoint} from '/@/components/business/scm/map/types';
 import {datetime} from '../../common/scm-display';
-import type {DeliveryRoute} from '../delivery-types';
+import {routeStatuses, type DeliveryRoute} from '../delivery-types';
 
 const props = defineProps<{
   route: DeliveryRoute;

@@ -143,8 +143,8 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     assert.match(page, /title: '变更时间', dataIndex: 'operatedAt'/);
     assert.match(page, /datetime\(record\.currentEffectiveFrom\)/);
     assert.match(page, /datetime\(record\.operatedAt\)/);
-    // 商品规格编码与操作人各自成列（一格一值）
-    assert.match(page, /title: '商品规格编码', dataIndex: 'skuCode'/);
+    // 操作人独立成列；规格编码不展示
+    assert.doesNotMatch(page, /title: '商品规格编码'/);
     assert.match(page, /title: '操作人', dataIndex: 'operator'/);
   });
 
@@ -160,7 +160,8 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     // 需要追溯时走价格历史页
     assert.doesNotMatch(page, /sourceRecordId/);
     assert.doesNotMatch(page, /title: '来源记录'/);
-    // 规格编码下沉为规格名的次要行
-    assert.match(page, /title: '商品规格编码', dataIndex: 'skuCode'/);
+    // 规格编码不展示，只保留规格名称
+    assert.doesNotMatch(page, /title: '商品规格编码'/);
+    assert.doesNotMatch(page, /record\.skuCode/);
   });
 }

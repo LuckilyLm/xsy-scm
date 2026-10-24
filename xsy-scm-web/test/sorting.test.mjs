@@ -328,7 +328,7 @@ import {
 
   // ------------------------------------------------------------------ 列表与汇总的展示收敛
 
-  test('分拣列表与汇总页按「少列」收敛，编码各自成列', () => {
+  test('分拣列表与汇总页按「少列」收敛，不展示编码', () => {
     // 任务列表：打印次数与创建时间下沉详情；「明细行数 + 已处理」合成一格进度
     // （两列分开读起来要来回对照，而它们回答的是同一个问题：这单做到哪了）
     assert.doesNotMatch(taskList, /title: '打印次数'/);
@@ -347,13 +347,13 @@ import {
     assert.match(taskList, /dataIndex: 'action', fixed: 'right', align: 'center', width: 150/);
     assert.match(taskList, /ScmActionMore/);
 
-    // 汇总页：商品编码与商品规格编码各自成列，未处理行数走 tag 档位
-    assert.match(summary, /title: '商品编码', dataIndex: 'spuCodeSnapshot'/);
-    assert.match(summary, /title: '商品规格编码', dataIndex: 'skuCodeSnapshot'/);
+    // 汇总页：只保留商品与规格名称，未处理行数走 tag 档位
+    assert.doesNotMatch(summary, /title: '商品编码'/);
+    assert.doesNotMatch(summary, /title: '商品规格编码'/);
     assert.match(summary, /title: '商品', dataIndex: 'product'/);
     assert.match(summary, /title: '商品规格', dataIndex: 'sku'/);
-    assert.match(summary, /record\.spuCodeSnapshot/);
-    assert.match(summary, /record\.skuCodeSnapshot/);
+    assert.doesNotMatch(summary, /record\.spuCodeSnapshot/);
+    assert.doesNotMatch(summary, /record\.skuCodeSnapshot/);
     assert.match(summary, /record\.unprocessedCount \? 'warning' : 'neutral'/);
   });
 

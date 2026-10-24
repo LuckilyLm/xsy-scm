@@ -7,7 +7,7 @@
         <p class="scm-note">任一行失败则整批不写入；最多 500 行。</p>
       </div>
     </template>
-    <a-form ref="formRef" :model="{batchKey}" :rules="formRules" layout="inline" class="smart-query-form">
+    <a-form ref="formRef" :model="formModel" :rules="formRules" layout="inline" class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="批次号" name="batchKey" class="smart-query-form-item"
           ><a-input v-model:value="batchKey" aria-label="批次号" :maxlength="100" style="width: 320px"
@@ -71,7 +71,7 @@
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {ref} from 'vue';
+import {reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import {useRouter} from 'vue-router';
@@ -94,6 +94,8 @@ let number = 0;
 const formRef = ref<FormInstance>();
 /** 必填项逐项校验，错误显示在输入框下方。 */
 const formRules = {batchKey: [{required: true, message: '请填写批次号', trigger: 'blur'}]};
+/** 校验模型必须是稳定对象；reactive 会解包内部 ref，值仍是响应式的。 */
+const formModel = reactive({batchKey});
 const columns: TableColumnsType<BatchRow> = [
   {title: '行号', dataIndex: 'rowNumber', width: 65},
   {
@@ -171,13 +173,10 @@ add();
   gap: 12px;
 }
 
-/* 标题行的提示去掉底色，用主题色 */
+/* 标题行的说明与标题同一基线，不再单独着色 */
 .batch-title .scm-note {
-  background: none;
   margin: 0;
-  padding: 0;
   font-weight: 400;
-  color: var(--scm-primary, #00b96b);
 }
 
 .row-error {

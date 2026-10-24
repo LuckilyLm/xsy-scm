@@ -716,19 +716,19 @@ import ts from 'typescript';
     code('../src/views/business/scm/inventory/inventory-conversion-list.vue'),
   ];
 
-  test('库存阈值将仓库、商品、规格和编码放入独立列', () => {
+  test('库存阈值将仓库、商品、规格放入独立列，不展示编码', () => {
     for (const [title, dataIndex] of [
       ['仓库', 'warehouseName'],
-      ['仓库编码', 'warehouseCode'],
       ['商品', 'productName'],
       ['商品规格', 'skuName'],
-      ['商品规格编码', 'skuCode'],
     ]) {
       assert.match(THRESHOLD, new RegExp(`title: '${title}', dataIndex: '${dataIndex}'`));
     }
+    assert.doesNotMatch(THRESHOLD, /title: '仓库编码'/);
+    assert.doesNotMatch(THRESHOLD, /title: '商品规格编码'/);
+    assert.doesNotMatch(THRESHOLD, /dataIndex === 'warehouseCode'/);
+    assert.doesNotMatch(THRESHOLD, /dataIndex === 'skuCode'/);
     assert.doesNotMatch(THRESHOLD, /class="scm-cell-stack/);
-    assert.match(THRESHOLD, /dataIndex === 'warehouseCode'[\s\S]{0,120}class="scm-mono"/);
-    assert.match(THRESHOLD, /dataIndex === 'skuCode'[\s\S]{0,120}class="scm-mono"/);
   });
 
   test('TableOperator respects default hidden columns and keeps new fields visible in older configurations', () => {
@@ -827,51 +827,30 @@ import ts from 'typescript';
     assert.match(THRESHOLD, /throw new Error\('预警下限和上限至少填写一个'\)/);
   });
 
-  test('customer lists expose split code columns through TableOperator', () => {
+  test('customer lists hide code columns through TableOperator defaults', () => {
     for (const [page, titles] of [
       [CUSTOMER_LIST, ['客户编码']],
       [VISIBILITY, ['客户编码', '商品规格编码']],
     ]) {
       for (const title of titles) {
-        assert.match(page, new RegExp(`title: '${title}', dataIndex:`));
+        assert.doesNotMatch(page, new RegExp(`title: '${title}', dataIndex:`));
       }
     }
-    assert.match(CUSTOMER_LIST, /title: '客户编码',[\s\S]{0,100}showFlag: false/);
-    assert.match(VISIBILITY, /title: '客户编码',[\s\S]{0,100}showFlag: false/);
-    assert.match(VISIBILITY, /title: '商品规格编码',[\s\S]{0,100}showFlag: false/);
     assert.match(VISIBILITY, /<TableOperator[\s\S]{0,220}SCM_CUSTOMER_SKU_VISIBILITY/);
     assert.doesNotMatch(CUSTOMER_LIST, /class="scm-cell-stack/);
     assert.doesNotMatch(VISIBILITY, /class="scm-cell-stack/);
   });
 
-  test('inventory, order and pricing lists keep identity codes in separate optional columns', () => {
+  test('inventory, order and pricing lists do not expose identity codes', () => {
     for (const [page, fields] of [
-      [
-        INVENTORY_BALANCE,
-        [
-          ['仓库编码', 'warehouseCode'],
-          ['商品规格编码', 'skuCode'],
-        ],
-      ],
-      [ORDER_LIST, [['客户编码', 'customerCodeSnapshot']]],
-      [
-        AGREEMENT_PRICE,
-        [
-          ['客户编码', 'customerCode'],
-          ['商品规格编码', 'skuCode'],
-        ],
-      ],
-      [
-        CUSTOMER_TYPE_PRICE,
-        [
-          ['客户类型编码', 'customerTypeCode'],
-          ['商品规格编码', 'skuCode'],
-        ],
-      ],
+      [INVENTORY_BALANCE, ['warehouseCode', 'skuCode']],
+      [ORDER_LIST, ['customerCodeSnapshot']],
+      [AGREEMENT_PRICE, ['customerCode', 'skuCode']],
+      [CUSTOMER_TYPE_PRICE, ['customerTypeCode', 'skuCode']],
     ]) {
-      for (const [title, dataIndex] of fields) {
-        assert.match(page, new RegExp(`title: '${title}', dataIndex: '${dataIndex}'`));
-        assert.match(page, new RegExp(`dataIndex: '${dataIndex}'[\\s\\S]{0,100}showFlag: false`));
+      for (const dataIndex of fields) {
+        assert.doesNotMatch(page, new RegExp(`dataIndex: '${dataIndex}'`));
+        assert.doesNotMatch(page, new RegExp(`dataIndex === '${dataIndex}'`));
       }
       assert.doesNotMatch(page, /class="scm-cell-stack/);
       assert.match(page, /TableOperator/);
@@ -885,18 +864,18 @@ import ts from 'typescript';
     assert.match(ROUTE_LIST, /:scroll="\{\s*x:\s*tableScrollX\s*\}"/);
   });
 
-  test('inventory lists expose warehouse and spec codes separately with dynamic TableOperator widths', () => {
+  test('inventory lists hide warehouse and spec codes and keep dynamic TableOperator widths', () => {
     for (const page of INVENTORY_CODE_LISTS) {
-      assert.match(page, /dataIndex: 'warehouseCode'[\s\S]{0,100}showFlag: false/);
+      assert.doesNotMatch(page, /dataIndex: 'warehouseCode'/);
+      assert.doesNotMatch(page, /dataIndex === 'warehouseCode'/);
       assert.match(page, /dataIndex: 'warehouseName'/);
-      assert.match(page, /dataIndex === 'warehouseCode'[\s\S]{0,120}class="scm-mono"/);
       assert.match(page, /const scrollX = computed\(/);
       assert.match(page, /:scroll="\{\s*x:\s*scrollX\s*\}"/);
       assert.match(page, /TableOperator/);
     }
     for (const page of INVENTORY_CODE_LISTS.slice(0, 3)) {
-      assert.match(page, /dataIndex: 'skuCode'[\s\S]{0,100}showFlag: false/);
-      assert.match(page, /dataIndex === 'skuCode'[\s\S]{0,120}class="scm-mono"/);
+      assert.doesNotMatch(page, /dataIndex: 'skuCode'/);
+      assert.doesNotMatch(page, /dataIndex === 'skuCode'/);
       assert.match(page, /dataIndex: 'skuName'/);
     }
   });
@@ -1075,6 +1054,42 @@ import ts from 'typescript';
   });
 
   // ------------------------------------------------------------------
+  // 0. 详情页标题只放名称：状态与标签下沉到内容区
+  // ------------------------------------------------------------------
+
+  test('SCM 页面不再展示实体编码列（税收分类编码除外）', () => {
+    const allowed = new Set(['税收分类编码']);
+    const offenders = [];
+    for (const file of SCM_VUE) {
+      const source = stripComments(readFileSync(file, 'utf8'));
+      for (const match of source.matchAll(/title:\s*'([^']*编码[^']*)'/g)) {
+        if (!allowed.has(match[1])) offenders.push(`${file.slice(SCM_VIEWS.length)}: ${match[1]}`);
+      }
+    }
+    assert.deepEqual(offenders, [], '客户/供应商/仓库/商品等实体编码不进入表格，只保留必要的外部编码');
+  });
+
+  test('实体选择器不把编码拼进选项文案', () => {
+    const components = `${SRC}components/business/scm/`;
+    const offenders = [];
+    for (const name of ['customer-select', 'supplier-select', 'sku-select', 'warehouse-select', 'customer-type-select']) {
+      const template = readFileSync(`${components}${name}/index.vue`, 'utf8').split('<script')[0];
+      if (/Code/.test(template)) offenders.push(name);
+    }
+    assert.deepEqual(offenders, [], '选择器只展示名称，编码仍可用于后端传值和搜索');
+  });
+
+  test('详情页标题行不挂状态标签', () => {
+    const offenders = [];
+    for (const file of SCM_VUE) {
+      const source = stripComments(readFileSync(file, 'utf8'));
+      const titleRow = source.match(/<div[^>]*class="[^"]*title-row[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+      if (titleRow && /<(a-tag|ScmStatusTag)\b/.test(titleRow[1])) offenders.push(file.slice(SCM_VIEWS.length));
+    }
+    assert.deepEqual(offenders, [], '状态应作为内容字段展示，不要做成标题旁的标签');
+  });
+
+  // ------------------------------------------------------------------
   // 1 / 4. 不得再定义局部 .num
   // ------------------------------------------------------------------
 
@@ -1131,6 +1146,14 @@ import ts from 'typescript';
     // 等宽类：必须是等宽字体，而不是只把数字拉齐 —— 这是它区别于 scm-quantity 的全部意义
     assert.match(table, /\.scm-mono\s*\{[\s\S]{0,240}font-family:[\s\S]{0,160}ui-monospace/, '.scm-mono 缺少 ui-monospace 等宽字族');
     assert.match(table, /\.scm-mono\s*\{[\s\S]{0,320}font-variant-numeric: tabular-nums/, '.scm-mono 缺少 tabular-nums');
+  });
+
+  test('表格标签去边框、只保留淡色底', () => {
+    const status = readFileSync(new URL('../src/theme/scm/status.less', import.meta.url), 'utf8');
+    const index = readFileSync(new URL(THEME_INDEX, import.meta.url), 'utf8');
+    assert.match(index, /@import '\.\/status\.less';/, 'theme/scm/index.less 未引入 status.less');
+    assert.match(status, /\.ant-table-tbody \.ant-tag\s*\{[\s\S]{0,240}border: 0;/, '表格标签必须去掉描边');
+    assert.match(status, /\.ant-table-tbody \.ant-tag\s*\{[\s\S]{0,320}background: var\(--scm-fill/, '表格标签必须使用淡色底');
   });
 
   test('迁移结果仍然存在：SCM 视图里确实在用公共数值类', () => {

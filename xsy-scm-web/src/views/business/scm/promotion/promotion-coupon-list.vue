@@ -3,7 +3,7 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="关键词" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" placeholder="券编码 / 名称" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.keyword" placeholder="优惠券名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
         <a-select v-model:value="queryForm.status" :options="statusOptions" style="width: 140px" placeholder="全部" allow-clear />
@@ -42,10 +42,7 @@
       :scroll="{x: scmColumnsWidth(columns)}"
     >
       <template #bodyCell="{record, column}">
-        <template v-if="column.dataIndex === 'couponCode'">
-          <span class="scm-mono">{{ record.couponCode || '—' }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'couponName'">{{ record.couponName || '—' }}</template>
+        <template v-if="column.dataIndex === 'couponName'">{{ record.couponName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'discountType'">
           <ScmStatusTag tone="processing" :label="discountTypeLabel(record.discountType)" />
         </template>
@@ -323,7 +320,6 @@ function discountTypeLabel(value: PromotionCouponDiscountType): string {
 
 // 优惠券列表的列定义
 const columns: TableColumnsType<PromotionCoupon> = [
-  {title: '券编码', dataIndex: 'couponCode', width: 130},
   {title: '券名称', dataIndex: 'couponName', width: 180},
   {title: '券类型', dataIndex: 'discountType', width: 130, align: 'center'},
   {title: '优惠规则', dataIndex: 'discountText', width: 180},

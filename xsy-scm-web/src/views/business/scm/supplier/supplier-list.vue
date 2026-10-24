@@ -44,9 +44,6 @@
           <template v-if="column.dataIndex === 'name'">
             <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.supplierId)">{{ record.name }}</a-button>
           </template>
-          <template v-else-if="column.dataIndex === 'supplierCode'">
-            <span class="scm-mono">{{ record.supplierCode || '—' }}</span>
-          </template>
           <template v-else-if="column.dataIndex === 'contactName'">
             {{ record.contactName || '—' }}
           </template>
@@ -124,7 +121,6 @@ const statusTone = (value: EnableStatus): ScmStatusTone => (value === 'ENABLED' 
 // 更新时间不上列表，可在详情里查看。
 const columns = ref<TableColumnsType<SupplierRow>>([
   {title: '供应商名称', dataIndex: 'name', width: 190, sorter: true, ellipsis: true},
-  {title: '供应商编码', dataIndex: 'supplierCode', width: 140},
   {title: '联系人', dataIndex: 'contactName', width: 130, ellipsis: true},
   {title: '联系电话', dataIndex: 'contactPhone', width: 140},
   {title: '关联商品数', dataIndex: 'skuCount', width: 92},

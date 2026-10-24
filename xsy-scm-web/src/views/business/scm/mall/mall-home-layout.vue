@@ -5,31 +5,41 @@
         <div>
           <h2>商城首页装修</h2>
           <p class="scm-note">按顺序配置轮播、入口、商品推荐、活动专题和公告。保存草稿后再预览与发布。</p>
+          <p class="mall-home-editor__versions">
+            当前草稿版本 {{ draftVersion }}<template v-if="currentReleaseId">，已发布版本 {{ currentReleaseId }}</template
+            ><template v-else>，尚未发布</template>
+          </p>
         </div>
-        <a-space wrap>
-          <a-tag color="blue">草稿版本 {{ draftVersion }}</a-tag>
-          <a-tag :color="currentReleaseId ? 'green' : 'default'">
-            {{ currentReleaseId ? `已发布版本 ${currentReleaseId}` : '尚未发布' }}
-          </a-tag>
-        </a-space>
       </div>
       <a-alert v-if="error" type="error" :message="error" show-icon class="mall-home-editor__alert">
         <template #action><a-button size="small" @click="load">重新加载</a-button></template>
       </a-alert>
-      <a-space wrap class="mall-home-editor__toolbar">
-        <a-select
-          v-model:value="themeCode"
-          :options="themeOptions"
-          style="width: 140px"
-          @change="dirty = true"
-          aria-label="首页主题"
-          title="主题只作用于商城首页的配色，其他页面沿用系统配色"
-        />
-        <a-select v-model:value="newType" :options="blockTypeOptions" style="width: 170px" />
-        <a-button v-privilege="'scm:mall:home:edit'" :disabled="blocks.length >= 30" @click="addBlock">添加组件</a-button>
-        <a-button v-privilege="'scm:mall:home:edit'" type="primary" :loading="saving" :disabled="!dirty" @click="saveDraft">保存草稿</a-button>
-        <a-button v-privilege="'scm:mall:home:publish'" :loading="publishing" :disabled="dirty || !blocks.length" @click="publish">发布草稿</a-button>
-      </a-space>
+      <div class="mall-home-editor__toolbar">
+        <div class="mall-home-editor__controls">
+          <div class="mall-home-editor__control">
+            <span class="mall-home-editor__label">首页主题</span>
+            <a-select
+              v-model:value="themeCode"
+              :options="themeOptions"
+              style="width: 140px"
+              @change="dirty = true"
+              aria-label="首页主题"
+              title="主题只作用于商城首页的配色，其他页面沿用系统配色"
+            />
+          </div>
+          <div class="mall-home-editor__control">
+            <span class="mall-home-editor__label">新组件</span>
+            <a-select v-model:value="newType" :options="blockTypeOptions" style="width: 150px" />
+            <a-button v-privilege="'scm:mall:home:edit'" :disabled="blocks.length >= 30" @click="addBlock">添加</a-button>
+          </div>
+        </div>
+        <a-space>
+          <a-button v-privilege="'scm:mall:home:edit'" :loading="saving" :disabled="!dirty" @click="saveDraft">保存草稿</a-button>
+          <a-button v-privilege="'scm:mall:home:publish'" type="primary" :loading="publishing" :disabled="dirty || !blocks.length" @click="publish"
+            >发布草稿</a-button
+          >
+        </a-space>
+      </div>
       <a-table
         :data-source="blocks"
         :columns="columns"
@@ -39,7 +49,7 @@
         :loading="loading"
         :pagination="false"
         :scroll="{x: scmColumnsWidth(columns)}"
-        :locale="{emptyText: '草稿还没有组件。选择类型后点击“添加组件”。'}"
+        :locale="{emptyText: '草稿还没有组件。选择「新组件」后点击「添加」。'}"
       >
         <template #bodyCell="{record, column, index}">
           <template v-if="column.dataIndex === 'type'">{{ blockTypeLabel(record.type) }}</template>
@@ -63,12 +73,18 @@
     <a-row :gutter="16" class="mall-home-editor__lower">
       <a-col :xs="24" :lg="14">
         <a-card title="客户内容预览" :bordered="false" size="small">
-          <a-space wrap class="mall-home-editor__toolbar">
-            <CustomerSelect v-model:value="previewCustomerId" width="200px" />
-            <WarehouseSelect v-model:value="previewWarehouseId" width="180px" />
-            <a-button :loading="previewLoading" :disabled="dirty" v-privilege="'scm:mall:home:query'" @click="preview">按已保存草稿预览</a-button>
-          </a-space>
-          <a-alert v-if="dirty" type="info" show-icon message="有未保存修改；预览使用最近一次保存的草稿。" />
+          <div class="mall-home-editor__preview-controls">
+            <div class="mall-home-editor__control">
+              <span class="mall-home-editor__label">预览客户</span>
+              <CustomerSelect v-model:value="previewCustomerId" width="200px" />
+            </div>
+            <div class="mall-home-editor__control">
+              <span class="mall-home-editor__label">配送仓</span>
+              <WarehouseSelect v-model:value="previewWarehouseId" width="180px" />
+            </div>
+            <a-button :loading="previewLoading" :disabled="dirty" v-privilege="'scm:mall:home:query'" @click="preview">预览</a-button>
+          </div>
+          <p v-if="dirty" class="scm-note mall-home-editor__preview-hint">有未保存修改，预览使用最近一次保存的草稿。</p>
           <a-alert v-if="previewError" type="error" show-icon :message="previewError" />
           <div v-if="previewPage" class="mall-home-editor__preview">
             <div v-for="block in previewPage.blocks" :key="block.key" class="mall-home-editor__preview-block">
@@ -82,7 +98,7 @@
             </div>
             <a-empty v-if="!previewPage.blocks.length" description="该客户当前没有可展示的装修内容" />
           </div>
-          <a-empty v-else description="选择客户与配送仓后预览" />
+          <a-empty v-else class="mall-home-editor__preview-empty" description="选择客户与配送仓后预览" />
         </a-card>
       </a-col>
       <a-col :xs="24" :lg="10">
@@ -124,7 +140,7 @@
           <a-textarea v-model:value="editing.text" :maxlength="600" :rows="4" />
         </a-form-item>
         <a-form-item v-if="['BANNER', 'SHORTCUT', 'ACTIVITY_TOPIC'].includes(editing.type)" label="展示图片">
-          <a-upload accept="image/png,image/jpeg,image/webp,image/gif" :show-upload-list="false" :custom-request="uploadImage">
+          <a-upload :accept="IMAGE_ACCEPT" :show-upload-list="false" :custom-request="uploadImage">
             <a-button :loading="uploading">上传公开图片</a-button>
           </a-upload>
           <span v-if="editing.imageFileKey" class="scm-note">已选图片，保存后可预览。</span>
@@ -177,6 +193,7 @@ import {onMounted, ref} from 'vue';
 import {message, Modal, type TableColumnsType, type UploadProps} from 'ant-design-vue';
 import {fileApi} from '/@/api/support/file-api';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
+import {IMAGE_ACCEPT, imageFileError} from '/@/constants/business/scm/image-const';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {promotionApi} from '/@/api/business/scm/promotion-api';
@@ -376,6 +393,12 @@ function onRowAction(action: string, block: HomeBlock, index: number): void {
 
 const uploadImage: UploadProps['customRequest'] = async (options) => {
   if (!editing.value || !(options.file instanceof File)) return;
+  const invalid = imageFileError(options.file);
+  if (invalid) {
+    options.onError?.(new Error(invalid));
+    void message.error(invalid);
+    return;
+  }
   const editingKey = editing.value.key;
   uploading.value = true;
   try {
@@ -469,18 +492,61 @@ onMounted(load);
   display: grid;
   gap: 16px;
 }
-.mall-home-editor__heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-}
 .mall-home-editor__heading h2 {
   margin: 0 0 6px;
   font-size: 18px;
 }
+.mall-home-editor__heading .scm-note {
+  margin-bottom: 2px;
+}
+/* 版本信息是说明文字，不做成标题旁的标签 */
+.mall-home-editor__versions {
+  margin: 0;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
+  line-height: 20px;
+}
 .mall-home-editor__toolbar {
-  margin: 16px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin: 16px 0 12px;
+}
+.mall-home-editor__controls,
+.mall-home-editor__preview-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+/* 控件前的说明文字：给下拉框和按钮一个明确的对象，避免一排无标题控件 */
+.mall-home-editor__control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mall-home-editor__control .mall-home-editor__label {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mall-home-editor__preview-controls {
+  padding-bottom: 4px;
+}
+.mall-home-editor__preview-hint {
+  margin: 12px 0 0;
+}
+.mall-home-editor__preview-empty {
+  margin-top: 12px;
+}
+.mall-home-editor__preview-empty :deep(.ant-empty-image) {
+  height: 48px;
+  margin-bottom: 8px;
+}
+.mall-home-editor__preview-empty :deep(.ant-empty-image svg) {
+  height: 100%;
 }
 .mall-home-editor__alert {
   margin-top: 12px;
@@ -519,10 +585,5 @@ onMounted(load);
   padding: 4px 8px;
   background: var(--scm-fill, #fafafa);
   border-radius: 6px;
-}
-@media (max-width: 720px) {
-  .mall-home-editor__heading {
-    display: block;
-  }
 }
 </style>

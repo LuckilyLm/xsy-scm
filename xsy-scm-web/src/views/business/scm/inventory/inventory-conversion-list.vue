@@ -56,9 +56,6 @@
           <ScmStatusTag tone="processing" :label="record.convertTypeDesc || record.convertType" />
         </template>
         <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouseCode'">
-          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status" />
         </template>
@@ -281,7 +278,6 @@ const statusOptions = Object.values(SCM_INVENTORY_CONVERSION_STATUS_ENUM).map((i
 const columns = ref<ScmListColumn[]>([
   {title: '转换单号', dataIndex: 'conversionNo', width: 200},
   {title: '仓库', dataIndex: 'warehouseName', width: 140},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '类型', dataIndex: 'convertType', align: 'center', width: 110},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '原因', dataIndex: 'reason', width: 220, ellipsis: true},

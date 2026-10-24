@@ -13,7 +13,7 @@
         <WarehouseSelect v-model:value="filters.warehouseId" width="180px" />
       </a-form-item>
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格编码" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>

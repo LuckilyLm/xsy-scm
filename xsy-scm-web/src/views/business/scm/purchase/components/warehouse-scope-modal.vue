@@ -33,7 +33,7 @@
       </a-table>
     </template>
 
-    <a-form ref="formRef" v-else :model="{employeeId}" :rules="formRules" layout="vertical">
+    <a-form ref="formRef" v-else :model="formModel" :rules="formRules" layout="vertical">
       <a-form-item name="employeeId">
         <template #label>
           员工
@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from 'vue';
+import {computed, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
@@ -85,6 +85,8 @@ const employeeId = ref<number | undefined>(undefined);
 const formRef = ref<FormInstance>();
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {employeeId: [{required: true, message: '请先选择员工', trigger: 'change'}]};
+/** 校验模型必须是稳定对象；reactive 会解包内部 ref，值仍是响应式的。 */
+const formModel = reactive({employeeId});
 const warehouseIds = ref<Id[]>([]);
 const warehouses = ref<Warehouse[]>([]);
 const warehouseLoading = ref(false);
@@ -98,7 +100,7 @@ const viewColumns: TableColumnsType = [
 const warehouseOptions = computed(() =>
   warehouses.value.map((w) => ({
     value: w.id,
-    label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）${w.status === 'DISABLED' ? '（已停用）' : ''}`,
+    label: `${w.name ?? ''}${w.status === 'DISABLED' ? '（已停用）' : ''}`,
   }))
 );
 

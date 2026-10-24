@@ -50,9 +50,6 @@
         <template v-else-if="column.dataIndex === 'customerName'">{{ record.customerName || record.customerTypeName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'specName'">{{ record.specName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'operationType'">
           <ScmStatusTag
             :tone="HISTORY_OPERATION_TONE[record.operationType] ?? 'neutral'"
@@ -125,7 +122,6 @@ const columns = ref<TableColumnsType<HistoryRow>>([
   {title: '客户类型', dataIndex: 'customerTypeName', width: 150},
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'specName', width: 170},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '变更', dataIndex: 'operationType', align: 'center', width: 100},
   {title: '当前价格', dataIndex: 'currentUnitPrice', width: 120},
   {title: '当前生效时间', dataIndex: 'currentEffectiveFrom', width: 170},

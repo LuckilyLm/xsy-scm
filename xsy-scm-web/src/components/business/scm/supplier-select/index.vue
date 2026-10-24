@@ -9,9 +9,9 @@
     :filter-option="filterOption"
     @change="onChange"
   >
+    <!-- 编码只用于后端传值与搜索，不展示给用户。 -->
     <a-select-option v-for="item in supplierList" :key="item.supplierId" :value="item.supplierId" :label="item.name">
       {{ item.name }}
-      <template v-if="item.supplierCode"> （{{ item.supplierCode }}）</template>
     </a-select-option>
   </a-select>
 </template>

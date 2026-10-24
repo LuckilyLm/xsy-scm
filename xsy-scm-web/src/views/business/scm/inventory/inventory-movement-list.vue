@@ -5,9 +5,6 @@
       <a-form-item label="仓库" class="smart-query-form-item">
         <WarehouseSelect v-model:value="queryForm.warehouseId" width="200px" />
       </a-form-item>
-      <a-form-item label="商品规格编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch" />
-      </a-form-item>
       <a-form-item label="流水类型" class="smart-query-form-item">
         <SmartEnumSelect enum-name="SCM_INVENTORY_MOVEMENT_TYPE_ENUM" v-model:value="queryForm.movementType" width="140px" />
       </a-form-item>
@@ -65,13 +62,7 @@
           <span v-else>—</span>
         </template>
         <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouseCode'">
-          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'skuName'">{{ skuMainText(record.specValues, record.skuName) }}</template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
@@ -135,16 +126,14 @@ const loading = ref(false);
 const error = ref('');
 let requestId = 0;
 
-// 一行就是一次库存变动；仓库和规格编码默认收起。
+// 一行就是一次库存变动；编码属于内部标识，不上列表。
 type InventoryMovementColumn = ScmListColumn;
 const columns = ref<InventoryMovementColumn[]>([
   {title: '发生时间', dataIndex: 'occurredAt', width: 170},
   {title: '类型', dataIndex: 'movementType', width: 150, align: 'center'},
   {title: '业务单号', dataIndex: 'receiptNo', width: 170},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '商品规格', dataIndex: 'skuName', width: 150},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '数量', dataIndex: 'quantity', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', width: 80},
   {title: '单位成本', dataIndex: 'unitCost', width: 120},
@@ -207,7 +196,6 @@ function onSearch() {
 function resetQuery() {
   queryForm.warehouseId = undefined;
   queryForm.skuId = undefined;
-  queryForm.skuCode = undefined;
   queryForm.movementType = undefined;
   queryForm.sourceDocumentType = undefined;
   queryForm.sourceDocumentId = undefined;

@@ -13,7 +13,7 @@
       ref="formRef"
       v-if="order?.status === 'CONFIRMED' && (!order.settlementMethod || order.settlementMethod === 'WALLET')"
       v-privilege="'scm:payment:intent:create'"
-      :model="{amount}"
+      :model="formModel"
       :rules="formRules"
       layout="vertical"
       class="app-drawer-form"
@@ -83,7 +83,7 @@
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {ref} from 'vue';
+import {reactive, ref} from 'vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import {paymentApi, type PaymentIntent, type PaymentCreate} from '/@/api/business/scm/payment-api';
 import type {Order} from '../order-types';
@@ -100,6 +100,8 @@ const order = ref<Order>(),
   amount = ref(''),
   method = ref<'BALANCE' | 'ONLINE'>('BALANCE');
 const formRef = ref<FormInstance>();
+/** 校验模型必须是稳定对象；reactive 会解包内部 ref，值仍是响应式的。 */
+const formModel = reactive({amount});
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
   amount: [
