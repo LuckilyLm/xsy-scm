@@ -1,7 +1,6 @@
 <template>
   <div class="scm-inquiry">
     <a-card title="采购询价" :bordered="false" size="small">
-      <p class="scm-note">从净需求批次发起询价，登记并比较供应商报价。</p>
       <a-form layout="inline" class="scm-inquiry__toolbar" @submit.prevent="loadBatch(1)">
         <a-form-item label="净需求批次">
           <a-input v-model:value="batchInput" placeholder="输入已冻结的批次编号" style="width: 220px" />

@@ -25,9 +25,6 @@
 
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-        <p class="scm-note scm-note--block">预留占用「可用量」但不改变物理库存；可用量 = 现有量 − 预留量。</p>
-      </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_RESERVATION" :refresh="queryData" />
       </div>

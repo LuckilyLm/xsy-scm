@@ -20,11 +20,6 @@
     <template #action><a-button @click="load">重试</a-button></template>
   </a-alert>
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-        <span>未分配的商城订单</span>
-      </div>
-    </a-row>
     <a-table
       size="small"
       :data-source="rows"

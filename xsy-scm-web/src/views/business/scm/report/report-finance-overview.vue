@@ -308,7 +308,7 @@ const kpiCards = computed(() => [
 ]);
 
 const receivableColumns = ref<TableColumnsType<FinanceReceivableDetailRow>>([
-  {title: '应收单号', dataIndex: 'receivableNo', fixed: 'left', width: 190, ellipsis: true},
+  {title: '应收单号', dataIndex: 'receivableNo', width: 190, ellipsis: true},
   {title: '订单号', dataIndex: 'orderNo', width: 160},
   {title: '客户', dataIndex: 'customerName', width: 180},
   {title: '原应收金额', dataIndex: 'amount', width: 125},
@@ -320,7 +320,7 @@ const receivableColumns = ref<TableColumnsType<FinanceReceivableDetailRow>>([
   {title: '事件时点', dataIndex: 'eventAt', width: 170},
 ]);
 const payableColumns = ref<TableColumnsType<FinancePayableDetailRow>>([
-  {title: '应付单号', dataIndex: 'payableNo', fixed: 'left', width: 190, ellipsis: true},
+  {title: '应付单号', dataIndex: 'payableNo', width: 190, ellipsis: true},
   {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 160},
   {title: '供应商', dataIndex: 'supplierName', width: 180},
   {title: '原应付金额', dataIndex: 'amount', width: 125},

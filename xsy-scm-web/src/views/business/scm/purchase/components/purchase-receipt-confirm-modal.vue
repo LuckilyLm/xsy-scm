@@ -92,7 +92,6 @@
   </a-modal>
 
   <a-modal v-model:open="lotOpen" title="登记批次" width="560px" ok-text="确定" @ok="saveLots">
-    <p class="scm-note">数量之和必须等于本次收货量；来源生产批号可以不填。</p>
     <div class="lot-rows">
       <div v-for="(lot, index) in lotDraft" :key="index" class="lot-row">
         <a-input v-model:value="lot.sourceLotNo" placeholder="来源生产批号" allow-clear style="width: 220px" />

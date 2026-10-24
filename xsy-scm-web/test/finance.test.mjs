@@ -138,11 +138,11 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.equal(new Set(financeIds).size, 5);
   });
 
-  test('未核销余额固定在首屏，不再挂常驻的横向滚动提示', () => {
-    assert.match(pageCode.receivable, /dataIndex: 'openAmount', fixed: 'left'/);
-    assert.match(pageCode.payable, /dataIndex: 'openAmount', fixed: 'left'/);
-    assert.match(pageCode.receipt, /dataIndex: 'pendingWriteOffAmount', fixed: 'left'/);
-    assert.match(pageCode.payment, /dataIndex: 'pendingWriteOffAmount', fixed: 'left'/);
+  test('表格只固定操作列，单号与未核销余额随表横向滚动', () => {
+    for (const [name, source] of Object.entries(pageCode)) {
+      assert.doesNotMatch(source, /fixed: 'left'/, `${name} 仍有左侧固定列，只有操作列可以固定在右侧`);
+      assert.match(source, /title: '操作', dataIndex: 'action', fixed: actionColumnFixed/, `${name} 的操作列没有固定`);
+    }
     assert.match(pageCode.receivable, /finance-mobile-balance-list[\s\S]*record\.openAmount/);
     assert.match(pageCode.payable, /finance-mobile-balance-list[\s\S]*record\.openAmount/);
     assert.match(pageCode.receipt, /finance-mobile-balance-list[\s\S]*record\.pendingWriteOffAmount/);

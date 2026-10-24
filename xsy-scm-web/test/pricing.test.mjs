@@ -165,3 +165,17 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     assert.doesNotMatch(page, /record\.skuCode/);
   });
 }
+
+// ---------------------------------------------------------------- 来源：pricing-batch-error-column.test.mjs
+{
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+  const page = read('../src/views/business/scm/pricing/customer-type-price-batch.vue');
+
+  test('批量调价的错误列只在整批失败后出现，平时不占一列空白', () => {
+    const base = page.match(/const BASE_COLUMNS[\s\S]*?\n\];/)?.[0] ?? '';
+    assert.ok(base, '基础列没有独立出来，错误列无法按需插入');
+    assert.doesNotMatch(base, /title: '错误'/, '错误列仍常驻在基础列里');
+    assert.match(page, /if \(!failures\.value\.length\) \{\s*return BASE_COLUMNS;/, '没有失败时仍渲染错误列');
+    assert.match(page, /list\.splice\(5, 0, \{title: '错误'/, '有失败时错误列没有插回表格');
+  });
+}

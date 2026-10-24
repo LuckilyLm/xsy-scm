@@ -25,9 +25,7 @@
                   客户状态
                   <ScmFieldHelp label="客户状态" text="请在客户列表中变更状态" />
                 </template>
-                <div class="scm-form-readonly">
-                  <ScmStatusTag :color="STATUS_COLOR[status]" :label="statusText" />
-                </div>
+                <div class="scm-form-readonly">{{ statusText }}</div>
               </a-form-item>
             </a-col>
           </a-row>
@@ -255,7 +253,6 @@ import CustomerSelect from '/@/components/business/scm/customer-select/index.vue
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
-import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {normalizeMoneyInput} from '/@/utils/scm-amount';
 import {applyCreditPeriodType, applyCreditPeriodUnit, emptyCustomer, toCustomerPayload, validateCustomer} from '../customer-form-model';
 import {customerError} from '../customer-errors';
@@ -271,13 +268,6 @@ const formRef = ref<FormInstance>();
 
 /** 状态只读展示；新建时固定为「潜在」。 */
 const status = ref<CustomerStatus>('POTENTIAL');
-/** 状态配色，与客户列表一致。 */
-const STATUS_COLOR: Record<CustomerStatus, string> = {
-  POTENTIAL: 'default',
-  COOPERATING: 'green',
-  SUSPENDED: 'orange',
-  BLACKLIST: 'red',
-};
 /** 负责人姓名只读；改派在列表里操作。 */
 const sellerName = ref('');
 

@@ -1,7 +1,6 @@
 <template>
   <div class="report-header">
     <h2>订单异常工作台</h2>
-    <span class="scm-note">汇总已有异常记录；请进入来源单据处理。</span>
   </div>
   <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
     <a-form-item label="发生日期" required>
@@ -287,9 +286,6 @@ onMounted(search);
   margin: 0;
   font-size: 20px;
   line-height: 28px;
-}
-.report-header .scm-note {
-  margin: 0;
 }
 .report-note,
 .report-summary {

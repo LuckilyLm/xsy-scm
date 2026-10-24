@@ -4,7 +4,6 @@
     <!-- 公司卡片 -->
     <a-card v-if="!selected" size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
-        <p class="scm-note scm-note--block">按公司查看可供货的商品；点卡片看明细。</p>
         <a-input-search v-model:value="keyword" placeholder="搜索公司名称或编码" allow-clear style="width: 260px" />
       </a-row>
 
@@ -129,7 +128,6 @@
           }}</a-tag>
         </template>
       </a-table>
-      <p class="scm-note" style="margin-top: 8px">不足两家有效报价或最低参考价为 0 时不计算涨幅；缺少参考价不会视作零报价。</p>
     </a-modal>
   </section>
 </template>

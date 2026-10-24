@@ -1,5 +1,9 @@
 <template>
-  <a-dropdown v-if="visibleActions.length > 0" :trigger="['click']">
+  <!-- 只剩一个普通动作时直接放在行内，别让用户点开只有一项的「更多」 -->
+  <a-button v-if="inlineAction" type="link" size="small" :disabled="inlineAction.disabled" @click="emit('select', inlineAction.key)">
+    {{ inlineAction.label }}
+  </a-button>
+  <a-dropdown v-else-if="visibleActions.length > 0" :trigger="['click']">
     <a-button type="link" size="small" :aria-label="label">
       {{ label }}
       <DownOutlined />
@@ -27,6 +31,15 @@ const props = withDefaults(defineProps<{actions: ScmActionItem[]; label?: string
 const emit = defineEmits<{select: [key: string]}>();
 
 const visibleActions = computed(() => props.actions.filter((action) => !action.hidden));
+
+/**
+ * 危险动作仍留在「更多」里：避免和普通动作同排常驻时被误点。
+ * 其余唯一动作直接外露，减少一次点击。
+ */
+const inlineAction = computed(() => {
+  const actions = visibleActions.value;
+  return actions.length === 1 && !actions[0].danger ? actions[0] : undefined;
+});
 
 const onSelect: MenuProps['onClick'] = (info) => emit('select', String(info.key));
 </script>

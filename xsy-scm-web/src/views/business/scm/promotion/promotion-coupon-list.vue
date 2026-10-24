@@ -29,7 +29,6 @@
         <a-button type="primary" v-privilege="'scm:promotion:coupon:edit'" @click="openCreate">新建券</a-button>
       </div>
     </a-row>
-    <p class="hint">累计数据按发放、领取及实际使用记录统计。</p>
 
     <a-table
       size="small"
@@ -532,12 +531,6 @@ onMounted(queryData);
 </script>
 
 <style scoped>
-.hint {
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-  font-size: 12px;
-  margin-left: 8px;
-}
-
 .banner {
   margin-bottom: 12px;
 }

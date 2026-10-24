@@ -133,9 +133,7 @@
   <a-drawer :open="detailOpen" title="出库单详情" :width="scmDrawerWidth('l')" @close="detailOpen = false">
     <a-descriptions :column="2" bordered size="small">
       <a-descriptions-item label="出库单号">{{ detail.outboundNo }}</a-descriptions-item>
-      <a-descriptions-item label="状态">
-        <ScmStatusTag :tone="statusTone(detail.status)" :label="detail.statusDesc || detail.status" />
-      </a-descriptions-item>
+      <a-descriptions-item label="状态">{{ detail.statusDesc || detail.status }}</a-descriptions-item>
       <a-descriptions-item label="仓库">{{ detail.warehouseName || '—' }}</a-descriptions-item>
       <a-descriptions-item label="确认人">{{ detail.operator || '—' }}</a-descriptions-item>
       <a-descriptions-item label="确认时间">{{ datetime(detail.confirmedAt) }}</a-descriptions-item>

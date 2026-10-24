@@ -1,12 +1,6 @@
 <template>
   <ReportBarChart class="smart-margin-bottom10" title="商品确认订单金额 TOP5" :items="items" series-name="确认订单金额" />
   <a-card size="small" :bordered="false">
-    <p class="scm-note">
-      按已确认订单金额分析商品销售贡献。<a-tooltip
-        title="金额占比和累计占比基于当前筛选范围内全部匹配商品行计算，不受分页影响；金额总计为 0 时显示未知。"
-        ><a class="scm-cell-link">说明</a></a-tooltip
-      >
-    </p>
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')">导出</a-button>

@@ -335,8 +335,8 @@ const pendingOptions = [
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
 const columns = ref<TableColumnsType<FinanceReceipt>>([
-  {title: '收款单号', dataIndex: 'receiptNo', fixed: 'left', width: 170, ellipsis: true},
-  {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', width: 148},
+  {title: '收款单号', dataIndex: 'receiptNo', width: 170, ellipsis: true},
+  {title: '待核销', dataIndex: 'pendingWriteOffAmount', width: 148},
   {title: '客户', dataIndex: 'customerName', width: 190},
   {title: '方向', dataIndex: 'entryType', width: 80, align: 'center'},
   {title: '来源订单', dataIndex: 'codOrderNo', width: 170, ellipsis: true},

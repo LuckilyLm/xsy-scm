@@ -36,9 +36,7 @@
                 <div class="scm-summary">
                   <div class="scm-summary__item">
                     <span class="scm-summary__label">客户状态</span>
-                    <span class="scm-summary__value">
-                      <ScmStatusTag :color="statusColor(customer.status)" :label="statusText(customer.status)" />
-                    </span>
+                    <span class="scm-summary__value">{{ statusText(customer.status) }}</span>
                   </div>
                   <div class="scm-summary__item">
                     <span class="scm-summary__label">结算方式</span>
@@ -573,12 +571,6 @@ const mallAccountCols: TableColumnsType<MallAccount> = [
 
 const statusText = (value: CustomerStatus): string => CUSTOMER_STATUS_ENUM[value]?.desc || value;
 const settleModeText = (value: string): string => SETTLE_MODE_ENUM[value]?.desc || value;
-const statusColor = (value: CustomerStatus): string => {
-  if (value === 'COOPERATING') return 'green';
-  if (value === 'SUSPENDED') return 'orange';
-  if (value === 'BLACKLIST') return 'red';
-  return 'default';
-};
 const creditPeriodTypeText = computed(() => {
   const type = customer.value?.creditPeriodType;
   return type ? CREDIT_PERIOD_TYPE_ENUM[type]?.desc || type : '未设置账期';

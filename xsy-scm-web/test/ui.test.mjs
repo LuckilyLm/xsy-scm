@@ -277,6 +277,26 @@ import ts from 'typescript';
     }
   });
 
+  test('SCM 表格只固定右侧操作列，首屏字段不冻结', () => {
+    const offenders = [];
+    for (const file of files) {
+      const lines = file.source.split('\n');
+      lines.forEach((line, index) => {
+        if (/fixed:\s*'left'|fixed:\s*'left' as const/.test(line)) {
+          offenders.push(`${file.rel}:${index + 1} 仍有左侧固定列`);
+        }
+        if (/fixed:\s*'right'|fixed:\s*actionColumnFixed/.test(line)) {
+          const context = lines.slice(Math.max(0, index - 8), index + 1).join('\n');
+          // 操作列可以叫「操作 / 详情 / 下钻 / 处理」，但 dataIndex 都是 action
+          if (!/dataIndex:\s*'action'/.test(context)) {
+            offenders.push(`${file.rel}:${index + 1} 固定了非操作列`);
+          }
+        }
+      });
+    }
+    assert.deepEqual(offenders, [], `表格只允许固定右侧操作列：\n${offenders.join('\n')}`);
+  });
+
   test('已修复的子组件不得回退', () => {
     const fixed = [
       'delivery/components/route-fulfillment-panel.vue',
@@ -315,6 +335,62 @@ import ts from 'typescript';
     assert.match(source, /hidden\?:/, 'action-item 丢了 hidden 字段');
     assert.match(source, /danger\?:/, 'action-item 丢了 danger 字段');
     assert.match(source, /label:/, 'action-item 丢了 label 字段');
+  });
+
+  test('只有一个普通动作时直接外露，不再渲染单项「更多」', () => {
+    const source = readFileSync(ACTION_MORE, 'utf8');
+    // 单个非危险动作走行内按钮；危险动作仍留在菜单里，避免和普通动作同排常驻
+    assert.match(source, /inlineAction/, 'ScmActionMore 丢了单项外露逻辑');
+    assert.match(source, /!actions\[0\]\.danger/, '单个危险动作也被外露了');
+    assert.match(source, /v-if="inlineAction"/, '单项动作没有渲染成行内按钮');
+  });
+
+  test('订单详情动作条不再重复显示状态，单项次要动作直接显示', () => {
+    const source = readFileSync(fileURLToPath(new URL('../src/views/business/scm/order/order-detail.vue', import.meta.url)), 'utf8');
+    const actions = source.slice(source.indexOf('scm-detail-actions'), source.indexOf('</a-space>'));
+    assert.doesNotMatch(actions, /order-status-text|SCM_ORDER_STATUS_ENUM/, '动作条又贴了状态，详情正文已有「订单状态」字段');
+    assert.match(source, /moreActions\.length === 1/, '只剩一个次要动作时仍收在「更多」里');
+    assert.match(source, /moreActions\.length > 1/, '多个次要动作没有收进「更多」');
+  });
+
+  /** 按缩进切出动作条源码：动作条里的状态既不能点也不能筛，只是重复。 */
+  function actionBars(source) {
+    const lines = source.split('\n');
+    const bars = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (!/class="[^"]*(?:scm-detail-actions|plan-actions)/.test(lines[i])) continue;
+      const indent = lines[i].length - lines[i].trimStart().length;
+      const block = [lines[i]];
+      for (let j = i + 1; j < Math.min(i + 80, lines.length); j++) {
+        const line = lines[j];
+        if (line.trim() && line.length - line.trimStart().length <= indent) break;
+        block.push(line);
+      }
+      bars.push({line: i + 1, text: block.join('\n')});
+    }
+    return bars;
+  }
+
+  test('SCM 详情动作条只放动作，状态留在信息区', () => {
+    const offenders = [];
+    for (const file of files) {
+      for (const bar of actionBars(file.source)) {
+        if (/ScmStatusTag|_STATUS_ENUM\[|statusText\(|statusDesc\(|statusLabel\(/.test(bar.text)) {
+          offenders.push(`${file.rel}:${bar.line}`);
+        }
+      }
+    }
+    assert.deepEqual(offenders, [], `以下动作条又贴了状态，状态应留在信息区：\n${offenders.join('\n')}`);
+  });
+
+  test('采购单详情动作条只放动作，状态回落到信息区', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('../src/views/business/scm/purchase/components/purchase-order-detail-drawer.vue', import.meta.url)),
+      'utf8'
+    );
+    const actions = source.slice(source.indexOf('scm-detail-actions'), source.indexOf('</div>'));
+    assert.doesNotMatch(actions, /SCM_PURCHASE_STATUS_ENUM|<a-tag/, '动作条又贴了状态标签，应作为普通字段下沉到信息区');
+    assert.match(source, /<a-descriptions-item label="采购单状态">/, '信息区没有展示采购单状态');
   });
 
   /**
@@ -1690,6 +1766,26 @@ import ts from 'typescript';
     assert.equal(logoBox, collapsedWidth, '收起态 logo 容器宽度必须等于收起态栏宽');
     // 步长要能整除区间，否则拖到最后一位会跳
     assert.equal((maxWidth - minWidth) % step, 0, '区间长度应能被步长整除');
+  });
+
+  test('侧栏 logo 区必须继承侧栏实底，滚动菜单不能从下面透出来', () => {
+    const menu = code('../src/layout/components/side-menu/index.vue');
+    const ruleOf = (name) => menu.match(new RegExp(`\\.${name}\\s*\\{[\\s\\S]*?\\n  \\}`))?.[0] ?? '';
+    // logo 区是 fixed 的：底色从侧栏继承，浅色 / 暗色、SCM 页 / 首页都成立。
+    // 曾经写死 transparent，菜单滚动时会从 logo 下面穿过去。
+    for (const name of ['logo', 'min-logo']) {
+      const rule = ruleOf(name);
+      assert.ok(rule, `没有找到 .${name} 样式块`);
+      assert.match(rule, /background-color:\s*inherit/, `.${name} 没有继承侧栏底色`);
+      assert.doesNotMatch(rule, /background(-color)?:\s*transparent|v-bind\('color\.background'\)/, `.${name} 底色是透明的`);
+    }
+    // antd 侧栏内部还有一层透明的 .ant-layout-sider-children，
+    // 不把它接上，logo 的 inherit 只会继承到透明
+    assert.match(
+      menu,
+      /:global\(\.side-menu \.ant-layout-sider-children\)[\s\S]{0,80}background-color:\s*inherit/,
+      '侧栏 children 包装层没有承接底色'
+    );
   });
 
   test('改默认侧栏宽度必须同时升级 configVersion', () => {

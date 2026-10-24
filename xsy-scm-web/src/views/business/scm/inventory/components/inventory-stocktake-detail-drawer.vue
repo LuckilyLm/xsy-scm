@@ -2,9 +2,7 @@
   <a-drawer :open="open" title="盘点单详情" :width="scmDrawerWidth('l')" @close="emit('update:open', false)">
     <a-descriptions :column="2" bordered size="small">
       <a-descriptions-item label="盘点单号">{{ detail.stocktakeNo }}</a-descriptions-item>
-      <a-descriptions-item label="状态">
-        <a-tag :color="statusColor(detail.status)">{{ detail.statusDesc || detail.status }}</a-tag>
-      </a-descriptions-item>
+      <a-descriptions-item label="状态">{{ detail.statusDesc || detail.status }}</a-descriptions-item>
       <a-descriptions-item label="仓库">{{ detail.warehouseName || '—' }}</a-descriptions-item>
       <a-descriptions-item label="确认人">{{ detail.operator || '—' }}</a-descriptions-item>
       <a-descriptions-item label="确认时间">{{ datetime(detail.confirmedAt) }}</a-descriptions-item>
@@ -82,12 +80,6 @@ function deltaClass(value?: string | null) {
   const n = Number(value);
   if (!Number.isFinite(n) || n === 0) return '';
   return n > 0 ? 'delta-up' : 'delta-down';
-}
-
-function statusColor(status?: string) {
-  if (status === 'CONFIRMED') return 'green';
-  if (status === 'CANCELLED') return 'default';
-  return 'orange';
 }
 </script>
 

@@ -30,7 +30,6 @@
           <a-button type="primary" :loading="busy" @click="appendPart">登记本次分量</a-button>
         </a-form-item>
       </a-form>
-      <p class="scm-note">分次登记不会确认最终分拣量。请在任务明细核对并提交。</p>
       <a-button v-if="canAppend && totalQuantity != null" size="small" style="margin-bottom: 12px" @click="useTotal"
         >将当前累计量填入最终分拣草稿</a-button
       >

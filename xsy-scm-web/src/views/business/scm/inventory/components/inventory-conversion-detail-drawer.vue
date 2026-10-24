@@ -2,12 +2,8 @@
   <a-drawer :open="open" title="转换单详情" :width="scmDrawerWidth('xl')" @close="emit('update:open', false)">
     <a-descriptions :column="2" bordered size="small">
       <a-descriptions-item label="转换单号">{{ detail.conversionNo }}</a-descriptions-item>
-      <a-descriptions-item label="类型">
-        <a-tag color="blue">{{ detail.convertTypeDesc || detail.convertType }}</a-tag>
-      </a-descriptions-item>
-      <a-descriptions-item label="状态">
-        <a-tag :color="statusColor(detail.status)">{{ detail.statusDesc || detail.status }}</a-tag>
-      </a-descriptions-item>
+      <a-descriptions-item label="类型">{{ detail.convertTypeDesc || detail.convertType }}</a-descriptions-item>
+      <a-descriptions-item label="状态">{{ detail.statusDesc || detail.status }}</a-descriptions-item>
       <a-descriptions-item label="仓库">{{ detail.warehouseName || '—' }}</a-descriptions-item>
       <a-descriptions-item label="原因" :span="2">{{ detail.reason || '—' }}</a-descriptions-item>
       <a-descriptions-item label="审核人">{{ detail.auditor || '—' }}</a-descriptions-item>
@@ -69,10 +65,4 @@ const itemColumns: TableColumnsType = [
   {title: '目标数量', dataIndex: 'targetQuantity', width: 110},
   {title: '目标单位', dataIndex: 'targetUnit', width: 90},
 ];
-
-function statusColor(status?: string) {
-  if (status === 'COMPLETED') return 'green';
-  if (status === 'REJECTED') return 'red';
-  return 'orange';
-}
 </script>

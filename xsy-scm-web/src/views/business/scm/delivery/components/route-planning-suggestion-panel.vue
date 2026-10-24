@@ -1,5 +1,4 @@
 <template>
-  <p class="scm-note scm-note--block">建议仅覆盖当前线路停靠点；应用前请核对。</p>
   <a-space class="plan-actions">
     <a-button
       type="primary"
@@ -75,7 +74,6 @@
         <a-radio-button value="current">当前线路顺序</a-radio-button>
         <a-radio-button value="suggested">建议生成时顺序</a-radio-button>
       </a-radio-group>
-      <p class="plan-note">地图显示当前道路，仅供位置参考；建议距离以生成时为准。</p>
       <ScmMap v-if="mapReady" :points="previewMapPoints" route />
       <a-alert v-else message="该视角缺少完整、同坐标系的起点或停靠点；历史顺序表仍可查看。" show-icon type="warning" />
     </div>

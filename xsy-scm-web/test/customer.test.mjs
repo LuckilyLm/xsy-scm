@@ -445,7 +445,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
   });
 
   test('订单详情按「摘要 / 客户配送 / 金额 / 商品 / 操作记录 / 系统信息」分区', () => {
-    const sections = ['状态与核心摘要', '客户与配送', '金额结算', '商品明细', '操作记录', '系统信息'];
+    const sections = ['核心摘要', '客户与配送', '金额结算', '商品明细', '操作记录', '系统信息'];
     const positions = sections.map((title) => posOf(order, title));
     assert.deepEqual(
       positions,

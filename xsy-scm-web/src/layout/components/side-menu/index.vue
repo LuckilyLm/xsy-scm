@@ -56,18 +56,16 @@ const router = useRouter();
 function onGoHome() {
   router.push({name: HOME_PAGE_NAME});
 }
-
-const color = computed(() => {
-  let isLight = useAppConfigStore().$state.sideMenuTheme === 'light';
-  return {
-    background: isLight ? 'transparent' : '#001529',
-  };
-});
 </script>
 
 <style lang="less" scoped>
 .shadow {
   box-shadow: 2px 0 6px rgba(0, 21, 41, 0.35);
+}
+
+/* antd 在侧栏里垫了一层透明的 children，logo 的实底从这里承接，浅色 / 暗色都跟侧栏一致 */
+:global(.side-menu .ant-layout-sider-children) {
+  background-color: inherit;
 }
 
 .side-menu {
@@ -79,7 +77,8 @@ const color = computed(() => {
     height: @header-user-height;
     line-height: @header-user-height;
     padding: 0px 15px 0px 15px;
-    background-color: v-bind('color.background');
+    /* logo 是 fixed 的，必须继承侧栏实底；透明 / 写死颜色都会让滚动菜单从下面透出来 */
+    background-color: inherit;
     position: fixed;
     /* 必须等于 side-layout.vue 的 COLLAPSED_MENU_WIDTH */
     width: 64px;
@@ -98,7 +97,8 @@ const color = computed(() => {
   .logo {
     height: @header-user-height;
     line-height: @header-user-height;
-    background-color: v-bind('color.background');
+    /* 同上：fixed 的 logo 区要和侧栏同底，滚动菜单才藏得下去 */
+    background-color: inherit;
     border-bottom: 1px solid var(--scm-line, rgba(0, 0, 0, 0.06));
     padding: 0 16px;
     position: fixed;

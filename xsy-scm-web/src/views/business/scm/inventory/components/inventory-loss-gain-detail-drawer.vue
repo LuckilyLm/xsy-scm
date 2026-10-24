@@ -2,12 +2,8 @@
   <a-drawer :open="open" title="报损报溢单详情" :width="scmDrawerWidth('l')" @close="emit('update:open', false)">
     <a-descriptions :column="2" bordered size="small">
       <a-descriptions-item label="单据号">{{ detail.lossGainNo }}</a-descriptions-item>
-      <a-descriptions-item label="类型">
-        <a-tag :color="typeColor(detail.adjustType)">{{ detail.adjustTypeDesc || detail.adjustType }}</a-tag>
-      </a-descriptions-item>
-      <a-descriptions-item label="状态">
-        <a-tag :color="statusColor(detail.status)">{{ detail.statusDesc || detail.status }}</a-tag>
-      </a-descriptions-item>
+      <a-descriptions-item label="类型">{{ detail.adjustTypeDesc || detail.adjustType }}</a-descriptions-item>
+      <a-descriptions-item label="状态">{{ detail.statusDesc || detail.status }}</a-descriptions-item>
       <a-descriptions-item label="仓库">{{ detail.warehouseName || '—' }}</a-descriptions-item>
       <a-descriptions-item label="原因" :span="2">{{ detail.reason || '—' }}</a-descriptions-item>
       <a-descriptions-item label="审核人">{{ detail.auditor || '—' }}</a-descriptions-item>
@@ -52,16 +48,4 @@ const itemColumns: TableColumnsType = [
   {title: '数量', dataIndex: 'quantity', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', width: 130},
 ];
-
-function typeColor(adjustType?: string) {
-  if (adjustType === 'LOSS') return 'red';
-  if (adjustType === 'OVERFLOW') return 'green';
-  return 'default';
-}
-
-function statusColor(status?: string) {
-  if (status === 'COMPLETED') return 'green';
-  if (status === 'REJECTED') return 'red';
-  return 'orange';
-}
 </script>

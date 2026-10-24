@@ -1,6 +1,5 @@
 <template>
   <a-modal :open="visible" title="草稿订单批量核价" :width="1120" :footer="null" @cancel="close">
-    <p class="scm-note smart-margin-bottom10">仅比较当前价格，不修改订单。</p>
     <a-space class="smart-margin-bottom10" wrap>
       <span>已选 {{ entries.length }} 单，最多 8 单</span>
       <a-button size="small" :loading="loading" @click="reload">重新核价</a-button>

@@ -2,10 +2,7 @@
 <template>
   <a-card size="small" :bordered="false">
     <template #title>
-      <div class="batch-title">
-        <span>客户类型价批量调价</span>
-        <p class="scm-note">任一行失败则整批不写入；最多 500 行。</p>
-      </div>
+      <span>客户类型价批量调价</span>
     </template>
     <a-form ref="formRef" :model="formModel" :rules="formRules" layout="inline" class="smart-query-form">
       <a-row class="smart-query-form-row">
@@ -71,7 +68,7 @@
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {reactive, ref} from 'vue';
+import {computed, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import {useRouter} from 'vue-router';
@@ -96,7 +93,8 @@ const formRef = ref<FormInstance>();
 const formRules = {batchKey: [{required: true, message: '请填写批次号', trigger: 'blur'}]};
 /** 校验模型必须是稳定对象；reactive 会解包内部 ref，值仍是响应式的。 */
 const formModel = reactive({batchKey});
-const columns: TableColumnsType<BatchRow> = [
+/** 错误列只在整批校验失败后出现，空表时不占一列位置。 */
+const BASE_COLUMNS: TableColumnsType<BatchRow> = [
   {title: '行号', dataIndex: 'rowNumber', width: 65},
   {
     title: '客户类型',
@@ -110,13 +108,16 @@ const columns: TableColumnsType<BatchRow> = [
     width: 140,
   },
   {title: '有效区间', dataIndex: 'effectiveFrom', width: 400},
-  {
-    title: '错误',
-    dataIndex: 'error',
-    width: 230,
-  },
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
+const columns = computed<TableColumnsType<BatchRow>>(() => {
+  if (!failures.value.length) {
+    return BASE_COLUMNS;
+  }
+  const list = [...BASE_COLUMNS];
+  list.splice(5, 0, {title: '错误', dataIndex: 'error', width: 230});
+  return list;
+});
 
 function add() {
   rows.value.push({...emptyPrice(), rowNumber: ++number});
@@ -166,19 +167,6 @@ async function submit() {
 add();
 </script>
 <style scoped>
-/* 规则提示与标题同一行 */
-.batch-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* 标题行的说明与标题同一基线，不再单独着色 */
-.batch-title .scm-note {
-  margin: 0;
-  font-weight: 400;
-}
-
 .row-error {
   color: var(--scm-error);
 }

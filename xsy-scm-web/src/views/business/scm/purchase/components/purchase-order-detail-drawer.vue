@@ -9,9 +9,6 @@
     <a-spin :spinning="loading">
       <template v-if="order">
         <div class="actions scm-detail-actions">
-          <a-tag :color="STATUS_COLOR[order.status ?? '']">
-            {{ SCM_PURCHASE_STATUS_ENUM[order.status ?? '']?.desc }}
-          </a-tag>
           <template v-if="order.status === 'DRAFT'">
             <a-button type="primary" :loading="submitting" v-privilege="'scm:purchase:submit'" @click="submit"> 提交 </a-button>
           </template>
@@ -24,6 +21,7 @@
         </div>
 
         <a-descriptions bordered size="small" :column="2">
+          <a-descriptions-item label="采购单状态">{{ SCM_PURCHASE_STATUS_ENUM[order.status ?? '']?.desc ?? order.status }}</a-descriptions-item>
           <a-descriptions-item label="供应商">{{ order.supplierName }}</a-descriptions-item>
           <a-descriptions-item label="采购员">{{ order.purchaserName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="收货仓库">{{ order.warehouseName }}</a-descriptions-item>
@@ -148,16 +146,6 @@ import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{saved: []}>();
-
-/** 状态标签配色。共享枚举只放 value/desc，颜色留在页面里。 */
-const STATUS_COLOR: Record<string, string> = {
-  DRAFT: 'default',
-  SUBMITTED: 'blue',
-  PARTIALLY_RECEIVED: 'orange',
-  RECEIVED: 'green',
-  SHORT_CLOSED: 'purple',
-  CANCELLED: 'red',
-};
 
 /** 操作类型配色：终态动作（取消）用红，推进类动作用蓝，其余中性。 */
 const OPERATION_COLOR: Record<string, string> = {
@@ -322,7 +310,7 @@ defineExpose({open});
   margin: 16px 0;
 }
 
-/* 动作条：状态标签与动作按钮对齐，并在窄屏下自然换行。 */
+/* 动作条：按钮对齐，并在窄屏下自然换行。 */
 .actions {
   display: flex;
   align-items: center;

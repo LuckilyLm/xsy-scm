@@ -8,12 +8,7 @@
     @cancel="emit('update:open', false)"
     @ok="emit('create')"
   >
-    <template #title>
-      <div class="create-title">
-        <span>新建分拣任务</span>
-        <p class="scm-note">候选行是已确认订单上未被占用的明细。</p>
-      </div>
-    </template>
+    <template #title>新建分拣任务</template>
     <a-alert v-if="error" type="error" show-icon :message="error" />
     <a-form layout="inline" class="create-form" @submit.prevent="emit('search')">
       <a-form-item label="仓库" required>
@@ -145,17 +140,6 @@ function onPageChange(pageNum: number, pageSize: number) {
 
 <style scoped>
 /* 说明紧跟标题同一行、左对齐，不另起一行 */
-.create-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.create-title .scm-note {
-  margin: 0;
-  font-weight: 400;
-}
-
 .create-form {
   gap: 12px 0;
   margin: 16px 0;

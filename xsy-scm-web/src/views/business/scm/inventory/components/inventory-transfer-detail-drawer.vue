@@ -2,9 +2,7 @@
   <a-drawer :open="open" title="调拨单详情" :width="scmDrawerWidth('l')" @close="emit('update:open', false)">
     <a-descriptions :column="2" bordered size="small">
       <a-descriptions-item label="调拨单号">{{ detail.transferNo }}</a-descriptions-item>
-      <a-descriptions-item label="状态">
-        <a-tag :color="statusColor(detail.status)">{{ detail.statusDesc || detail.status }}</a-tag>
-      </a-descriptions-item>
+      <a-descriptions-item label="状态">{{ detail.statusDesc || detail.status }}</a-descriptions-item>
       <a-descriptions-item label="源仓库">{{ detail.fromWarehouseName || '—' }}</a-descriptions-item>
       <a-descriptions-item label="目标仓库">{{ detail.toWarehouseName || '—' }}</a-descriptions-item>
       <a-descriptions-item label="发出人">{{ detail.shippedBy || '—' }}</a-descriptions-item>
@@ -52,11 +50,4 @@ const itemColumns: TableColumnsType = [
   {title: '数量', dataIndex: 'quantity', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', width: 130},
 ];
-
-function statusColor(status?: string) {
-  if (status === 'RECEIVED') return 'green';
-  if (status === 'CANCELLED') return 'default';
-  if (status === 'SHIPPED') return 'orange';
-  return 'blue';
-}
 </script>

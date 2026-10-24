@@ -33,7 +33,9 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:transfer:add'"> 新建调拨单 </a-button>
-        <a-button style="margin-left: 8px" @click="openInTransit" v-privilege="'scm:inventory:transfer:query'"> 在途库存 </a-button>
+        <a-tooltip title="在途商品已从源仓扣减、目标仓尚未增加，不在任何仓库的余额里；目标仓收货后落地。">
+          <a-button style="margin-left: 8px" @click="openInTransit" v-privilege="'scm:inventory:transfer:query'"> 在途库存 </a-button>
+        </a-tooltip>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRANSFER" :refresh="queryData" />
@@ -151,7 +153,6 @@
   <InventoryTransferDetailDrawer v-model:open="detailOpen" :detail="detail" />
   <!-- 在途库存报表（只读） -->
   <a-modal :open="inTransitOpen" title="在途库存" width="1000" :footer="null" @cancel="inTransitOpen = false">
-    <p class="scm-note scm-note--block">在途量不在任何仓库的余额里，对账时需单独计入。</p>
     <a-table
       size="small"
       :data-source="inTransitRows"

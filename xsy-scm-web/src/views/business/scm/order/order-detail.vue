@@ -7,9 +7,8 @@
     </a-alert>
     <a-spin :spinning="loading">
       <template v-if="order">
-        <!-- 当前状态下真正要做的动作留在外面，其余收进「更多」，避免一排同权重按钮 -->
+        <!-- 当前状态下真正要做的动作留在外面；只有一个次要动作时直接显示，多个才收进「更多」 -->
         <a-space class="actions scm-detail-actions">
-          <span class="order-status-text">{{ SCM_ORDER_STATUS_ENUM[order.status!]?.desc }}</span>
           <a-button v-if="order.status === 'PENDING'" type="primary" v-privilege="'scm:order:confirm'" @click="confirm"> 确认订单 </a-button>
           <a-button v-if="order.status === 'CONFIRMED'" v-privilege="'scm:order:return:add'" @click="returnForm?.open(order)">申请退货 </a-button>
           <a-button
@@ -24,7 +23,10 @@
             @click="openCodCollection"
             >货到付款收款</a-button
           >
-          <a-dropdown v-if="moreActions.length">
+          <a-button v-if="moreActions.length === 1" :danger="moreActions[0].danger" @click="onMoreAction({key: moreActions[0].key})">
+            {{ moreActions[0].label }}
+          </a-button>
+          <a-dropdown v-else-if="moreActions.length > 1">
             <a-button>更多<DownOutlined /></a-button>
             <template #overlay>
               <a-menu @click="onMoreAction">
@@ -35,7 +37,7 @@
         </a-space>
 
         <section class="detail-section">
-          <h3>状态与核心摘要</h3>
+          <h3>核心摘要</h3>
           <a-space :size="4" wrap class="smart-margin-bottom10">
             <a-tag v-for="tag in order.tags ?? []" :key="String(tag.tagId)" :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
           </a-space>
@@ -87,7 +89,6 @@
                 {{ gift.productName }}（{{ gift.specName }}） × {{ gift.quantity }} {{ gift.saleUnit }}
                 <span class="gift-source">— 来自活动「{{ gift.activityName || '活动优惠' }}」</span>
               </div>
-              <div class="gift-note">赠品金额恒为 0，不计入订单金额；出库成本单独计入本单履约成本。</div>
             </a-descriptions-item>
           </a-descriptions>
 
@@ -240,7 +241,7 @@ import {tagColor} from '/@/api/business/scm/order-tag-api';
 import {orderLogApi} from '/@/api/business/scm/order-log-api';
 import {promotionApi} from '/@/api/business/scm/promotion-api';
 import type {OrderDiscountAppliedActivity, PromotionCouponInstance, PromotionDiscount} from '/@/views/business/scm/promotion/promotion-types';
-import {SCM_ORDER_STATUS_ENUM, SCM_ORDER_OPERATION_ENUM} from '/@/constants/business/scm/order-const';
+import {SCM_ORDER_OPERATION_ENUM} from '/@/constants/business/scm/order-const';
 import type {Order, Item, Id, LogRow} from './order-types';
 import {amount, fixed} from './order-form-model';
 import {datetime} from '../common/scm-display';
@@ -596,12 +597,6 @@ defineExpose({open});
   margin: 16px 0;
 }
 
-/* 状态用文字，不再做成标题旁的彩色标签 */
-.order-status-text {
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-  font-size: 12px;
-}
-
 /* 详情按业务分区，不堆成一长串描述列表 */
 .detail-section h3 {
   margin: 0 0 12px;
@@ -641,10 +636,5 @@ pre {
 
 .gift-source {
   color: var(--scm-text-secondary);
-}
-
-.gift-note {
-  color: var(--scm-text-secondary);
-  font-size: 12px;
 }
 </style>

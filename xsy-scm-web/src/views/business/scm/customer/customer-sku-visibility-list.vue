@@ -4,7 +4,6 @@
     <!-- 客户卡片 -->
     <a-card v-if="!selected" size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
-        <p class="scm-note scm-note--block">按客户查看可见的商品规格；点卡片看明细。</p>
         <a-space>
           <a-input-search v-model:value="keyword" placeholder="搜索客户名称" allow-clear style="width: 240px" />
           <a-select v-model:value="policyFilter" allow-clear placeholder="全部策略" style="width: 150px">

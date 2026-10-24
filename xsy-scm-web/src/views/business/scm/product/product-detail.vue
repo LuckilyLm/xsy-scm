@@ -43,12 +43,7 @@
               </div>
               <div class="scm-field">
                 <dt class="scm-field__label">主档状态</dt>
-                <dd class="scm-field__value">
-                  <ScmStatusTag
-                    :tone="MASTER_STATUS_TONE[product.masterStatus] || 'neutral'"
-                    :label="enumLabel(MASTER_STATUS_ENUM, product.masterStatus)"
-                  />
-                </dd>
+                <dd class="scm-field__value">{{ enumLabel(MASTER_STATUS_ENUM, product.masterStatus) }}</dd>
               </div>
             </dl>
           </section>
@@ -179,7 +174,6 @@ import {Empty} from 'ant-design-vue';
 import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import {productApi} from '/@/api/business/scm/product-api';
 import type {ProductRow} from '/@/types/business/scm/product';
-import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {enumLabel, MASTER_STATUS_ENUM, priceRange, SHELF_STATUS_ENUM, STORAGE_METHOD_ENUM} from '/@/constants/business/scm/product-const';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import SkuTable from './components/product-sku-table.vue';
@@ -191,9 +185,6 @@ import {productError} from './product-errors';
 import {datetime} from '../common/scm-display';
 
 const canManageAttachment = hasPermission('scm:trace:file:manage');
-
-/** 主档生命周期与在售状态正交，配色沿用 SCM 状态档位。 */
-const MASTER_STATUS_TONE: Record<string, ScmStatusTone> = {ENABLED: 'success', DISABLED: 'warning', ARCHIVED: 'neutral'};
 
 const route = useRoute(),
   router = useRouter();
