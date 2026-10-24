@@ -21,9 +21,17 @@ public class FinanceOrderPayableLineDto {
     private Long orderItemId;
 
     /**
-     * 实重数量（确认前已录齐，已确认订单没有空值行）。
+     * 实重数量。
+     *
+     * <p>
+     * 非标品在确认时录入，标准品可以为空（按整单数量履约）；为空时应付按下单量估算，不能直接把空值当成异常。
      */
     private BigDecimal actualQuantity;
+
+    /**
+     * 下单数量；实重为空时的兜底计价数量。
+     */
+    private BigDecimal orderedQuantity;
 
     /**
      * 订单行保存的售价。

@@ -100,13 +100,22 @@ public class FinanceOrderPayableQueryService {
     }
 
     /**
-     * 逐行计算 {@code 实重 × 锁定价 − 该行承担的优惠}，行先舍入再汇总。
+     * 逐行计算 {@code 计价数量 × 锁定价 − 该行承担的优惠}，行先舍入再汇总。
+     *
+     * <p>
+     * 标准品确认时实重可以为空，此时按下单量估算；只有两者都缺失才说明数据异常。
      */
     private static BigDecimal net(List<FinanceOrderPayableLineDto> lines, Map<Long, BigDecimal> discounts) {
         BigDecimal payable = BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE);
         for (FinanceOrderPayableLineDto line : lines) {
-            BigDecimal gross = line.getActualQuantity().multiply(line.getLockedUnitPrice())
-                .setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
+            BigDecimal quantity = line.getActualQuantity() != null
+                ? line.getActualQuantity()
+                : line.getOrderedQuantity();
+            if (quantity == null || line.getLockedUnitPrice() == null) {
+                throw new IllegalStateException("订单行缺少计价数量或锁定价: " + line.getOrderItemId());
+            }
+            BigDecimal gross = quantity.multiply(line.getLockedUnitPrice()).setScale(FinanceConstant.AMOUNT_SCALE,
+                RoundingMode.HALF_UP);
             payable = payable.add(gross.subtract(FinanceReceivableService.discountShare(line.getOrderItemId(), gross,
                 line.getOrderedLineAmount(), discounts)));
         }

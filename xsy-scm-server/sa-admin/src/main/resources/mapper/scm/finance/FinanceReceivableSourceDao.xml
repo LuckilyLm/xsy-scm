@@ -141,8 +141,8 @@
 
     <!-- 与签收应收同一组列：量取实重、价取冻结售价；应付净额由同一段 discountShare 算出，不另起口径。 -->
     <select id="selectOrderPayableLines" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto">
-        SELECT id AS orderItemId, actual_quantity AS actualQuantity, locked_unit_price AS lockedUnitPrice,
-            ordered_line_amount AS orderedLineAmount
+        SELECT id AS orderItemId, actual_quantity AS actualQuantity, ordered_quantity AS orderedQuantity,
+            locked_unit_price AS lockedUnitPrice, ordered_line_amount AS orderedLineAmount
         FROM xsy_sales_order_item
         WHERE order_id = #{salesOrderId}
             AND deleted = FALSE
@@ -152,7 +152,8 @@
     <!-- 批量版：与单订单取数读同一组列，只是把订单条件换成 IN，供一次算完一批订单的应付净额。 -->
     <select id="selectPayableLinesByOrders" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto">
         SELECT order_id AS salesOrderId, id AS orderItemId, actual_quantity AS actualQuantity,
-            locked_unit_price AS lockedUnitPrice, ordered_line_amount AS orderedLineAmount
+            ordered_quantity AS orderedQuantity, locked_unit_price AS lockedUnitPrice,
+            ordered_line_amount AS orderedLineAmount
         FROM xsy_sales_order_item
         WHERE deleted = FALSE
             AND order_id IN

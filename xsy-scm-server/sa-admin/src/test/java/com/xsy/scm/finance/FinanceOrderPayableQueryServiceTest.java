@@ -64,6 +64,16 @@ class FinanceOrderPayableQueryServiceTest {
     }
 
     @Test
+    void standardItemWithoutActualWeightFallsBackToOrderedQuantity() {
+        // 标准品确认时实重可以为空，应付必须按下单量估算；否则订单详情会因空值直接 500
+        when(sourceDao.selectOrderPayableLines(ORDER_ID)).thenReturn(
+                List.of(payableLineWithoutActual(1L, "4.0000", "5.5000", "22.0000")));
+        when(sourceDao.selectOrderDiscountLines(ORDER_ID)).thenReturn(List.of());
+
+        assertThat(service.payableOfConfirmedOrder(ORDER_ID)).isEqualByComparingTo("22.0000");
+    }
+
+    @Test
     void signedOrderUsesTheActualReceivableWhenOutboundIsLessThanConfirmedWeight() {
         FinanceReceivableEntity receivable = new FinanceReceivableEntity();
         receivable.setId(31L);
@@ -112,8 +122,16 @@ class FinanceOrderPayableQueryServiceTest {
         FinanceOrderPayableLineDto line = new FinanceOrderPayableLineDto();
         line.setOrderItemId(orderItemId);
         line.setActualQuantity(new BigDecimal(actualQuantity));
+        line.setOrderedQuantity(new BigDecimal(actualQuantity));
         line.setLockedUnitPrice(new BigDecimal(price));
         line.setOrderedLineAmount(new BigDecimal(orderedLineAmount));
+        return line;
+    }
+
+    private static FinanceOrderPayableLineDto payableLineWithoutActual(Long orderItemId, String orderedQuantity,
+            String price, String orderedLineAmount) {
+        FinanceOrderPayableLineDto line = payableLine(orderItemId, orderedQuantity, price, orderedLineAmount);
+        line.setActualQuantity(null);
         return line;
     }
 
