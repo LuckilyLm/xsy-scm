@@ -74,6 +74,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="queryForm.pageNum"
         v-model:page-size="queryForm.pageSize"
@@ -245,6 +246,7 @@ import {orderError} from './order-errors';
 import {hasPermission} from '../common/scm-permission';
 import {orderApi} from '/@/api/business/scm/order-api';
 import OrderFormDrawer from './components/order-form-drawer.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}),
   tableData = ref<ReturnRow[]>([]),

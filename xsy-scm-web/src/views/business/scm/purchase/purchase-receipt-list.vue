@@ -103,6 +103,7 @@
         <div class="smart-query-table-page">
           <a-pagination
             show-size-changer
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS"
             show-quick-jumper
             v-model:current="queryForm.pageNum"
             v-model:page-size="queryForm.pageSize"
@@ -149,6 +150,7 @@ import {deepLinkFilters} from '/@/lib/query-deep-link';
 import PurchaseReceiptForm from './components/purchase-receipt-form-drawer.vue';
 import PurchaseReceiptConfirm from './components/purchase-receipt-confirm-modal.vue';
 import PurchaseReceiptItemWorkbench from './components/purchase-receipt-item-workbench.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<ReceiptQuery>({pageNum: 1, pageSize: 20});
 const receiptModeOptions = Object.values(SCM_RECEIPT_MODE_ENUM).map((i) => ({value: i.value, label: i.desc}));

@@ -59,6 +59,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="pageNum"
         v-model:page-size="pageSize"
@@ -81,6 +82,7 @@ import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/
 import type {DemandSummaryRow, Id} from '../purchase-types';
 import {quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 /** 数量列统一按四位小数显示，空值显示“—”。 */
 const numericColumns = [

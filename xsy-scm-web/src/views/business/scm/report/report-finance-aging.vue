@@ -86,6 +86,7 @@
         v-model:page-size="query.pageSize"
         :total="total"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         show-quick-jumper
         :show-total="(n: number) => `共 ${n} 张单据`"
         @change="changePage"
@@ -123,6 +124,7 @@ import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.v
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import {moneyText} from '../finance/finance-form-model';
 import {reportError} from './report-errors';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 const bucketOptions: {value: AgingBucket; label: string}[] = [
   {value: 'NOT_DUE', label: '未逾期'},

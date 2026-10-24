@@ -46,6 +46,7 @@
       <a-pagination
         :disabled="exporting"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         show-quick-jumper
         :current="pageNum"
         :page-size="pageSize"
@@ -68,6 +69,7 @@ import ReportBarChart from './report-bar-chart.vue';
 import {countText} from '../report-model';
 import {moneyText} from '../../inventory/inventory-model';
 import type {ReportChartBar, SalesCategoryRow} from '../report-types';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 defineProps<{
   items: ReportChartBar[];

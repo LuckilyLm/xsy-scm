@@ -1176,6 +1176,30 @@ import ts from 'typescript';
   });
 
   // ------------------------------------------------------------------
+  // 0.05 每页条数：默认最多 20，只有逐行核对的明细列表放宽到 50
+  // ------------------------------------------------------------------
+
+  test('SCM 列表每页条数统一走常量，不再提供 50 以上选项', () => {
+    const offenders = [];
+    for (const file of SCM_VUE) {
+      const source = stripComments(readFileSync(file, 'utf8'));
+      if (!/show-size-changer/.test(source)) continue;
+      if (!/:page-size-options="SCM_PAGE_SIZE_OPTIONS(_WIDE)?"/.test(source)) offenders.push(file.slice(SCM_VIEWS.length));
+      for (const literal of source.matchAll(/:page-size-options="(\[[^"]*\])"/g)) offenders.push(`${file.slice(SCM_VIEWS.length)}: ${literal[1]}`);
+    }
+    assert.deepEqual(offenders, [], '每页条数下拉仍写死选项或没走公共常量');
+
+    const constant = stripComments(readFileSync(`${SRC}constants/business/scm/pagination-const.ts`, 'utf8'));
+    assert.match(constant, /SCM_PAGE_SIZE_OPTIONS = \['10', '20'\]/, '默认每页条数不是 10/20');
+    assert.match(constant, /SCM_PAGE_SIZE_OPTIONS_WIDE = \['20', '50'\]/, '放宽列表不是 20/50');
+    assert.doesNotMatch(constant, /\b(100|200|500)\b/, '每页条数上限超过 50');
+
+    // 默认 80px 宽会把「20 条/页」截成「20 条/…」
+    const shell = stripComments(readFileSync(`${SRC}theme/scm/shell.less`, 'utf8'));
+    assert.match(shell, /ant-pagination-options[\s\S]{0,120}min-width:\s*104px/, '每页条数下拉没有加宽');
+  });
+
+  // ------------------------------------------------------------------
   // 0. 详情页标题只放名称：状态与标签下沉到内容区
   // ------------------------------------------------------------------
 

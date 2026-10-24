@@ -98,6 +98,7 @@
           v-model:page-size="filters.pageSize"
           :total="total"
           show-size-changer
+          :page-size-options="SCM_PAGE_SIZE_OPTIONS"
           :show-total="(n: number) => `共 ${n} 条`"
           @change="load"
         />
@@ -153,6 +154,7 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {supplierError} from './supplier-errors';
 import {datetime} from '../common/scm-display';
 import {formatAmountOrDash, formatPrice} from '/@/utils/scm-amount';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 // 公司卡片
 

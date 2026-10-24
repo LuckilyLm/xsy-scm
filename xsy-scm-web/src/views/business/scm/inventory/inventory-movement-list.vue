@@ -83,6 +83,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="queryForm.pageNum"
         v-model:page-size="queryForm.pageSize"
@@ -116,6 +117,7 @@ import {formatPrice} from '/@/utils/scm-amount';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const router = useRouter();
 const queryForm = reactive<InventoryMovementQuery>({pageNum: 1, pageSize: 20});

@@ -54,6 +54,7 @@
         v-model:page-size="query.pageSize"
         :total="total"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         :show-total="(n: number) => `共 ${n} 条`"
         @change="load"
       />
@@ -112,6 +113,7 @@ import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import {deliveryError, type Driver, type Vehicle, type Query} from '../delivery-types';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const props = defineProps<{kind: 'driver' | 'vehicle'}>();
 const isDriver = computed(() => props.kind === 'driver');

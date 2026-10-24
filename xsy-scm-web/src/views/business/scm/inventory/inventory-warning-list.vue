@@ -75,6 +75,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="queryForm.pageNum"
         v-model:page-size="queryForm.pageSize"
@@ -104,6 +105,7 @@ import type {Warehouse} from '../purchase/purchase-types';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<InventoryWarningQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryWarning[]>([]);

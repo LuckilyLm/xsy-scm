@@ -91,6 +91,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="query.pageNum"
         v-model:page-size="query.pageSize"
@@ -221,6 +222,7 @@ import {useFinancePage} from './use-finance-page';
 import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 interface RedDraft extends FinancePayableItem {
   redQuantity: string;

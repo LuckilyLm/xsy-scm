@@ -65,6 +65,7 @@
         v-model:page-size="query.pageSize"
         :total="total"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         @change="load"
         :show-total="(n: number) => `共 ${n} 条`"
@@ -90,6 +91,7 @@ import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {pricingError} from './pricing-errors';
 import PriceDrawer from './components/customer-type-price-form-drawer.vue';
 import {effectiveRangeText, PRICE_EFFECTIVENESS, priceEffectiveness} from './pricing-display';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const router = useRouter();
 const api = pricingApi.typePrice;

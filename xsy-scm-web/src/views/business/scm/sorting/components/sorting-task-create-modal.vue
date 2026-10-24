@@ -68,7 +68,7 @@
         :page-size="pageSize"
         :total="total"
         show-size-changer
-        :page-size-options="['10', '20', '50', '100']"
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         @change="onPageChange"
       />
     </div>
@@ -84,6 +84,7 @@ import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import {SCM_SORTING_PRODUCT_TYPE_ENUM, SCM_SORTING_TABLE_ID} from '/@/constants/business/scm/sorting-const';
 import {quantityText} from '../sorting-types';
 import type {Id, SortingCandidateLine} from '../sorting-types';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 defineProps<{
   open: boolean;

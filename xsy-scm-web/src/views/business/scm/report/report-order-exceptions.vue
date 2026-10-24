@@ -77,6 +77,7 @@
         v-model:page-size="pageSize"
         :total="total"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         show-quick-jumper
         :show-total="(n: number) => `共 ${n} 条异常`"
         @change="changePage"
@@ -105,6 +106,7 @@ import {SCM_SORTING_RESULT_ENUM} from '/@/constants/business/scm/sorting-const';
 import {SCM_ORDER_RETURN_STATUS_ENUM} from '/@/constants/business/scm/order-const';
 import {fulfillmentStatuses, type FulfillmentStatus} from '../delivery/delivery-types';
 import {hasPermission} from '../common/scm-permission';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 const QUERY_PERMISSION = SCM_REPORT_PERMISSION.ORDER_EXCEPTION_QUERY;
 const labels: Record<OrderExceptionType, string> = {

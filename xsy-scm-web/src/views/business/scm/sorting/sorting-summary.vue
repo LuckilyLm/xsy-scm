@@ -130,7 +130,7 @@
       <a-pagination
         show-size-changer
         show-quick-jumper
-        :page-size-options="['10', '20', '50', '100']"
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         v-model:current="queryForm.pageNum"
         v-model:page-size="queryForm.pageSize"
         :total="total"
@@ -162,6 +162,7 @@ import {hasPermission} from '../common/scm-permission';
 import type {SortingCustomerLine, SortingPerformance, SortingSkuSummary, SortingSummaryQuery} from './sorting-types';
 import {datetime} from '../common/scm-display';
 import {quantityText, sortingError} from './sorting-types';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<SortingSummaryQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<SortingSkuSummary[]>([]);

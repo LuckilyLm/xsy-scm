@@ -61,7 +61,14 @@
       </template>
     </a-table>
     <div class="smart-query-table-page">
-      <a-pagination v-model:current="query.pageNum" v-model:page-size="query.pageSize" :total="total" show-size-changer @change="load" />
+      <a-pagination
+        v-model:current="query.pageNum"
+        v-model:page-size="query.pageSize"
+        :total="total"
+        show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
+        @change="load"
+      />
     </div>
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="组单原因" name="reason">
@@ -85,6 +92,7 @@ import {money} from '../delivery-display';
 import {useDeliveryPermission} from '../use-delivery-permission';
 import {deliveryError, type CandidateOrder, type DeliveryRoute, type Id, type Query} from '../delivery-types';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const emit = defineEmits<{saved: []}>();
 const {canViewAmount} = useDeliveryPermission();

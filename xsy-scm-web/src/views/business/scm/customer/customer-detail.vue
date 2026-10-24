@@ -244,7 +244,7 @@
             :total="orders.total.value"
             size="small"
             show-size-changer
-            :page-size-options="['20', '50']"
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
             @change="orders.reload()"
             :show-total="(n: number) => `共 ${n} 条`"
           />
@@ -324,7 +324,7 @@
             :total="agreement.total.value"
             size="small"
             show-size-changer
-            :page-size-options="['20', '50']"
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
             @change="agreement.reload()"
             :show-total="(n: number) => `共 ${n} 条`"
           />
@@ -367,7 +367,7 @@
               :total="visibility.total.value"
               size="small"
               show-size-changer
-              :page-size-options="['20', '50']"
+              :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
               @change="visibility.reload()"
               :show-total="(n: number) => `共 ${n} 条`"
             />
@@ -460,6 +460,7 @@ import {pricingError} from '../pricing/pricing-errors';
 import {formatAmount, formatAmountOrDash} from '/@/utils/scm-amount';
 import {datetime} from '../common/scm-display';
 import {hasPermission} from '../common/scm-permission';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 const route = useRoute();
 const router = useRouter();

@@ -65,6 +65,7 @@
         v-model:page-size="query.pageSize"
         :total="total"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         @change="load"
         :show-total="(n: number) => `共 ${n} 条`"
@@ -89,6 +90,7 @@ import {formatAmount, formatQuantity, normalizeMoneyInput} from '/@/utils/scm-am
 import {pricingError} from './pricing-errors';
 import {effectiveRangeText, PRICE_EFFECTIVENESS, priceEffectiveness} from './pricing-display';
 import PriceDrawer from './components/agreement-price-form-drawer.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const api = pricingApi.agreement;
 const query = reactive<PriceQuery>({pageNum: 1, pageSize: 20});

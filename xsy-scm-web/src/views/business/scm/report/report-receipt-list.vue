@@ -125,6 +125,7 @@
         <div class="smart-query-table-page">
           <a-pagination
             show-size-changer
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
             show-quick-jumper
             v-model:current="receipt.pageNum"
             v-model:page-size="receipt.pageSize"
@@ -212,6 +213,7 @@
         <div class="smart-query-table-page">
           <a-pagination
             show-size-changer
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
             show-quick-jumper
             v-model:current="inbound.pageNum"
             v-model:page-size="inbound.pageSize"
@@ -286,6 +288,7 @@
         <div class="smart-query-table-page">
           <a-pagination
             show-size-changer
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
             show-quick-jumper
             v-model:current="pending.pageNum"
             v-model:page-size="pending.pageSize"
@@ -342,6 +345,7 @@ import {datetime} from '../common/scm-display';
 import {useReportPermission} from './use-report-permission';
 import {createGuardedLoader, createTabLoader} from './use-report-query';
 import type {DateRange} from './report-model';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 const PERM = SCM_REPORT_PERMISSION;
 const route = useRoute();

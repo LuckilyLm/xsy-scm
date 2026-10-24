@@ -60,7 +60,7 @@
         v-model:pageSize="pageSize"
         :total="report?.products.total ?? 0"
         :show-size-changer="true"
-        :page-size-options="['10', '20', '50', '100']"
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         :disabled="loading"
         @change="changePage"
       />
@@ -81,6 +81,7 @@ import type {PurchaseDailyProduct, PurchaseDailyQuery, PurchaseDailyReport} from
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import {quantityText, moneyText} from '../../inventory/inventory-model';
 import {datetime} from '../../common/scm-display';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 function todayInShanghai() {
   const parts = new Intl.DateTimeFormat('en-CA', {

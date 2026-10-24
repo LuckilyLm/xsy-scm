@@ -68,6 +68,7 @@
       <a-pagination
         :disabled="exporting"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         show-quick-jumper
         :current="pageNum"
         :page-size="pageSize"
@@ -93,6 +94,7 @@ import {datetime} from '../../common/scm-display';
 import {moneyText, quantityText} from '../../inventory/inventory-model';
 import {chartValue, costText, enumDescText, filterCostColumns, incompleteCostHint} from '../report-model';
 import type {InventoryLossRow, InventoryLossSummary, ReportChartLine, ReportChartSlice} from '../report-types';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 const props = defineProps<{
   summary?: InventoryLossSummary;

@@ -111,6 +111,7 @@
             v-model:page-size="filters.pageSize"
             :total="total"
             show-size-changer
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS"
             :show-total="(count: number) => `共 ${count} 条`"
             @change="load"
           />
@@ -136,6 +137,7 @@ import {shelfStatusLabel} from '/@/constants/business/scm/product-const';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {datetime} from '../common/scm-display';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 // 客户卡片
 

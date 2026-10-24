@@ -78,6 +78,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="queryForm.pageNum"
         v-model:page-size="queryForm.pageSize"
@@ -272,6 +273,7 @@ import type {TraceUnit, TraceUnitQuery, TraceUnitReplay} from './inventory-types
 import TraceAttachmentPanel from '/@/views/business/scm/trace/components/trace-attachment-panel.vue';
 import TraceInspectionPanel from '/@/views/business/scm/trace/components/trace-inspection-panel.vue';
 import {message} from 'ant-design-vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const canManageInspection = hasPermission('scm:trace:inspection:manage');
 

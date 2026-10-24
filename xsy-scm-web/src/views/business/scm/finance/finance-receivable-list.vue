@@ -94,6 +94,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="query.pageNum"
         v-model:page-size="query.pageSize"
@@ -131,6 +132,7 @@ import {useFinancePage} from './use-finance-page';
 import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
 import {SCM_FINANCE_PERMISSION as PERM} from '/@/constants/business/scm/finance-const';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const query = reactive<ReceivableQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinanceReceivable, ReceivableQuery>(financeApi.receivableQuery, financeApi.receivableExport);

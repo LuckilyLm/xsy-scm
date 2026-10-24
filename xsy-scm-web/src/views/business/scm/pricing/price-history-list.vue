@@ -77,7 +77,14 @@
       </template>
     </a-table>
     <div class="smart-query-table-page">
-      <a-pagination v-model:current="query.pageNum" v-model:page-size="query.pageSize" :total="total" show-size-changer @change="load" />
+      <a-pagination
+        v-model:current="query.pageNum"
+        v-model:page-size="query.pageSize"
+        :total="total"
+        show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
+        @change="load"
+      />
     </div>
   </a-card>
   <a-modal title="价格变更详情" :open="!!selected" :footer="null" :width="760" @cancel="selected = undefined">
@@ -101,6 +108,7 @@ import {pricingError} from './pricing-errors';
 import {HISTORY_OPERATION_LABEL, HISTORY_OPERATION_TONE, HISTORY_SOURCE_LABEL, historyLabel} from './pricing-display';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import {datetime} from '../common/scm-display';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const query = reactive<PriceQuery & {source?: string; operationType?: string}>({pageNum: 1, pageSize: 20}),
   effective = ref<[string, string]>(),

@@ -65,6 +65,7 @@
       <a-pagination
         :disabled="exporting"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         show-quick-jumper
         :current="pageNum"
         :page-size="pageSize"
@@ -88,6 +89,7 @@ import {costText, countText, filterCostColumns, incompleteCostHint, textOrDash} 
 import {moneyText, quantityText} from '../../inventory/inventory-model';
 import {formatPrice} from '/@/utils/scm-amount';
 import type {PurchaseProductRow} from '../report-types';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 const props = defineProps<{
   columns: TableColumnsType<PurchaseProductRow>;

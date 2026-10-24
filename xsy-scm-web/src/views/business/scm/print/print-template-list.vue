@@ -61,6 +61,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="queryForm.pageNum"
         v-model:page-size="queryForm.pageSize"
@@ -181,6 +182,7 @@ import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/act
 import {hasPermission} from '../common/scm-permission';
 import {printError} from './print-errors';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<PrintTemplateQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<PrintTemplate[]>([]);

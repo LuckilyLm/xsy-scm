@@ -76,6 +76,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="queryForm.pageNum"
         v-model:page-size="queryForm.pageSize"
@@ -113,6 +114,7 @@ import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const';
 import {inventoryError} from './inventory-errors';
 import type {TraceCorrection, TraceCorrectionQuery} from './inventory-types';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const STATUS_OPTIONS = [
   {value: 'PENDING', label: '待审批'},

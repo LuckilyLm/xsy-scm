@@ -120,6 +120,7 @@
           <div class="smart-query-table-page">
             <a-pagination
               show-size-changer
+              :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
               show-quick-jumper
               :current="receivableView.pageNum"
               :page-size="receivableView.pageSize"
@@ -218,6 +219,7 @@
           <div class="smart-query-table-page">
             <a-pagination
               show-size-changer
+              :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
               show-quick-jumper
               :current="payableView.pageNum"
               :page-size="payableView.pageSize"
@@ -254,6 +256,7 @@ import {buildReportQuery, createTabView, defaultDateRange, rangeOverLimitError, 
 import {createGuardedLoader, createTabLoader} from './use-report-query';
 import {moneyText} from '../finance/finance-form-model';
 import {datetime} from '../common/scm-display';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 const dateRange = ref<DateRange>(defaultDateRange());
 

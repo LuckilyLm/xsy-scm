@@ -313,16 +313,18 @@ import {
     }
   });
 
-  test('列表分页上限受后端约束（pageSize > 100 会被 30001 拒绝）', () => {
+  test('列表每页条数走公共常量，分拣属于放宽到 50 的明细列表', () => {
     for (const [name, source] of [
       ['任务页', taskList],
       ['汇总页', summary],
     ]) {
-      const options = source.match(/:page-size-options="(\[[^"]*\])"/);
-      assert.ok(options, `${name} 缺 page-size-options`);
-      const sizes = JSON.parse(options[1].replace(/'/g, '"')).map((v) => Number(v));
-      assert.ok(Math.max(...sizes) <= 100, `${name} 的 pageSize 选项超过后端上限 100`);
+      assert.match(source, /:page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"/, `${name} 没走公共的每页条数下限`);
     }
+    const constant = readFileSync(new URL('../src/constants/business/scm/pagination-const.ts', import.meta.url), 'utf8');
+    const wide = constant.match(/SCM_PAGE_SIZE_OPTIONS_WIDE = \[([^\]]*)\]/);
+    assert.ok(wide, '缺少放宽列表的每页条数常量');
+    const sizes = wide[1].split(',').map((value) => Number(value.replace(/\D/g, '')));
+    assert.ok(Math.max(...sizes) <= 50, `每页条数放宽列表也超过了 50：${sizes}`);
     assert.match(taskList, /salesOrderItemIds: \[\.\.\.candidateSelected\.value\]/);
   });
 

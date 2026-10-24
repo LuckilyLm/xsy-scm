@@ -38,6 +38,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="pageNum"
         v-model:page-size="pageSize"
@@ -60,6 +61,7 @@ import {SCM_FINANCE_SETTLE_STATE_ENUM} from '/@/constants/business/scm/finance-c
 import {financeError} from './finance-errors';
 import {entryTypeText, initialFinanceDateRange, moneyText} from './finance-form-model';
 import type {FinanceCandidate, FinancePayable, FinancePayment, FinanceReceivable, FinanceReceipt} from './finance-types';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 type PickKind = 'RECEIPT' | 'PAYMENT' | 'RECEIVABLE' | 'PAYABLE';
 

@@ -107,6 +107,7 @@
         v-model:page-size="pageSize"
         :total="total"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         show-quick-jumper
         :show-total="(n: number) => `共 ${n} 条`"
         @change="load"
@@ -133,6 +134,7 @@ import {buildReportQuery, defaultDateRange, rangeOverLimitError} from './report-
 import type {DateRange} from './report-model';
 import {moneyText} from '../finance/finance-form-model';
 import {reportError} from './report-errors';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 const dimensionOptions: Array<{value: FinanceProfitDimension; label: string}> = [
   {value: 'DAY', label: '按日期'},

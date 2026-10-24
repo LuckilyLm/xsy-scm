@@ -99,7 +99,7 @@
       <a-pagination
         show-size-changer
         show-quick-jumper
-        :page-size-options="['10', '20', '50', '100']"
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         v-model:current="queryForm.pageNum"
         v-model:page-size="queryForm.pageSize"
         :total="total"
@@ -232,6 +232,7 @@ import SortingTaskFilterForm from './components/sorting-task-filter-form.vue';
 import {useSortingTaskEntry} from './use-sorting-task-entry';
 import type {Id, SortingActionPayload, SortingCandidateLine, SortingPrint, SortingTask, SortingTaskQuery} from './sorting-types';
 import {sortingError} from './sorting-types';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 type ActionMode = 'assign' | 'cancel' | 'reopen';
 

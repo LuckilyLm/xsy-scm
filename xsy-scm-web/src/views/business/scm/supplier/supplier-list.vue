@@ -73,6 +73,7 @@
           v-model:page-size="filters.pageSize"
           :total="total"
           show-size-changer
+          :page-size-options="SCM_PAGE_SIZE_OPTIONS"
           :show-total="(n: number) => `共 ${n} 条`"
           @change="load"
         />
@@ -104,6 +105,7 @@ import SupplierDrawer from './components/supplier-form-drawer.vue';
 import SupplierSkuDrawer from './components/supplier-sku-drawer.vue';
 import {supplierError} from './supplier-errors';
 import {hasPermission} from '../common/scm-permission';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const router = useRouter();
 const filters = reactive<SupplierQuery>({pageNum: 1, pageSize: 20});

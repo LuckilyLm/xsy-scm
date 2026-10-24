@@ -174,6 +174,7 @@
           v-model:page-size="filters.pageSize"
           :total="total"
           show-size-changer
+          :page-size-options="SCM_PAGE_SIZE_OPTIONS"
           :show-total="(n: number) => `共 ${n} 条`"
           @change="load"
         />
@@ -217,6 +218,7 @@ import ProductImportModal from './components/product-import-modal.vue';
 import ProductExportModal from './components/product-export-modal.vue';
 import SkuTable from './components/product-sku-table.vue';
 import {productError} from './product-errors';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const router = useRouter();
 const filters = reactive<ProductQuery>({pageNum: 1, pageSize: 20});

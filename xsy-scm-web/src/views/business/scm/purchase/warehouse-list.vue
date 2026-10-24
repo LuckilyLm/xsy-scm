@@ -77,6 +77,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="queryForm.pageNum"
         v-model:page-size="queryForm.pageSize"
@@ -141,6 +142,7 @@ import {purchaseError} from './purchase-errors';
 import {hasPermission} from '../common/scm-permission';
 import {areaColumnsOf, areaNodesOf} from '../common/scm-area';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<WarehouseQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<Warehouse[]>([]);

@@ -32,6 +32,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="pageNum"
         v-model:page-size="pageSize"
@@ -51,6 +52,7 @@ import {financeApi} from '/@/api/business/scm/finance-api';
 import {financeError} from './finance-errors';
 import {dateTimeText, moneyText} from './finance-form-model';
 import type {FinanceRefundOption} from './finance-types';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const props = defineProps<{open: boolean}>();
 const emit = defineEmits<{(event: 'update:open', value: boolean): void; (event: 'select', value: FinanceRefundOption): void}>();

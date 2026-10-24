@@ -101,6 +101,7 @@
         v-model:page-size="query.pageSize"
         :total="total"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         :show-total="(n: number) => `共 ${n} 条线路`"
         @change="applyQuery"
@@ -130,6 +131,7 @@ import {money} from './delivery-display';
 import {DELIVERY_PERM, useDeliveryPermission} from './use-delivery-permission';
 import RouteFormDrawer from './components/route-form-drawer.vue';
 import RoutePrint from './route-print.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const query = reactive<Query>({pageNum: 1, pageSize: 20});
 const {canViewAmount, hasPerm} = useDeliveryPermission();

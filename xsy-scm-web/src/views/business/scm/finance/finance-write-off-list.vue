@@ -104,6 +104,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="query.pageNum"
         v-model:page-size="query.pageSize"
@@ -206,6 +207,7 @@ import type {FinanceCandidate, FinanceWriteOff, WriteOffQuery} from './finance-t
 import {useFinancePage} from './use-finance-page';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 interface AllocationDraft extends FinanceCandidate {
   amount: string;

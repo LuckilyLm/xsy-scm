@@ -58,6 +58,7 @@
       <a-pagination
         :disabled="exporting"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         show-quick-jumper
         :current="pageNum"
         :page-size="pageSize"
@@ -82,6 +83,7 @@ import {moneyText, quantityText} from '../../inventory/inventory-model';
 import {formatPrice} from '/@/utils/scm-amount';
 import {enumDescText} from '../report-model';
 import type {PurchaseItemRow} from '../report-types';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 defineProps<{
   rows: PurchaseItemRow[];

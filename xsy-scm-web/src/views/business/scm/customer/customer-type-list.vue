@@ -57,6 +57,7 @@
           v-model:page-size="filters.pageSize"
           :total="total"
           show-size-changer
+          :page-size-options="SCM_PAGE_SIZE_OPTIONS"
           :show-total="(n: number) => `共 ${n} 条`"
           @change="load"
         />
@@ -80,6 +81,7 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import CustomerTypeModal from './components/customer-type-form-modal.vue';
 import {customerError} from './customer-errors';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const filters = reactive<CustomerTypeQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<CustomerType[]>([]);

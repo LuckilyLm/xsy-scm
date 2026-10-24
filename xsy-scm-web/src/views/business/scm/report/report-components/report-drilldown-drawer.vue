@@ -30,6 +30,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         show-quick-jumper
         :current="pageNum"
         :page-size="pageSize"
@@ -54,6 +55,7 @@ import type {TableColumnsType} from 'ant-design-vue';
 import {SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import type {PurchaseProductRow} from '../report-types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 /** 采购下钻抽屉：右侧看供应商或采购员的商品明细。列和分页由调用方传入。 */
 defineProps<{

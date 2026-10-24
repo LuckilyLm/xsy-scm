@@ -83,6 +83,7 @@
     <div class="smart-query-table-page">
       <a-pagination
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         v-model:current="queryForm.pageNum"
         v-model:page-size="queryForm.pageSize"
@@ -197,6 +198,7 @@ import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<InventoryStocktakeQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryStocktake[]>([]);

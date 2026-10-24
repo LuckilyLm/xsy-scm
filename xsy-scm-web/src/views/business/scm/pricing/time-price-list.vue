@@ -62,6 +62,7 @@
         v-model:page-size="query.pageSize"
         :total="total"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
         :show-total="(n: number) => `共 ${n} 条`"
         @change="load"
@@ -102,6 +103,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const columns = ref<TableColumnsType>([
   {title: '商品', dataIndex: 'productName', width: 180, ellipsis: true},

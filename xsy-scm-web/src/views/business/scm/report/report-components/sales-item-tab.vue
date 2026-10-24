@@ -67,6 +67,7 @@
       <a-pagination
         :disabled="exporting"
         show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
         show-quick-jumper
         :current="pageNum"
         :page-size="pageSize"
@@ -92,6 +93,7 @@ import {enumDescText, optionLabel, yesNoText} from '../report-model';
 import {moneyText, quantityText} from '../../inventory/inventory-model';
 import {datetime} from '../../common/scm-display';
 import type {SalesItemRow} from '../report-types';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
 defineProps<{
   rows: SalesItemRow[];

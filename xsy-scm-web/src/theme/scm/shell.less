@@ -144,6 +144,11 @@
   box-shadow: none;
 }
 
+/* 每页条数下拉：默认宽度会把「20 条/页」截成「20 条/…」，放宽到刚好放得下中文单位 */
+.scm-module .admin-layout .ant-pagination-options .ant-select {
+  min-width: 104px;
+}
+
 /* ---------- 动效克制 ---------- */
 
 @media (prefers-reduced-motion: reduce) {
