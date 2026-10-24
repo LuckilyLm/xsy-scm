@@ -1838,3 +1838,34 @@ import ts from 'typescript';
     assert.equal(new Set(sorts).size, sorts.length, 'V110 出现了重复的 sort 值');
   });
 }
+
+// ---------------------------------------------------------------- SCM 外观作用域
+{
+  const read = (relative) => readFileSync(new URL(relative, import.meta.url), 'utf8');
+
+  test('SCM 外观只挂在 SCM 页面，OA 与系统页保持原貌', () => {
+    const shell = read('../src/theme/scm/shell.less').replace(/\/\*[\s\S]*?\*\//g, '');
+    const unscoped = [...shell.matchAll(/(?<!\.scm-module )\.admin-layout(?![\w-])/g)];
+    assert.deepEqual(
+      unscoped.map((match) => match.index),
+      [],
+      'theme/scm/shell.less 的选择器必须以 .scm-module 开头'
+    );
+
+    const index = read('../src/theme/scm/index.less');
+    assert.match(index, /@import '\.\/shell\.less';/, 'theme/scm/index.less 未引入 shell.less');
+
+    const router = read('../src/router/index.ts');
+    assert.match(router, /scmModule:[\s\S]{0,160}business\/scm\//, '动态路由未标记 SCM 页面');
+    const app = read('../src/App.vue');
+    assert.match(app, /classList\.toggle\('scm-module',\s*route\.meta\?\.scmModule === true\)/, 'App 未按当前路由切换 SCM 外观类');
+  });
+
+  test('默认主色使用园圃绿，满足白字对比度', () => {
+    const colors = read('../src/theme/color.ts');
+    assert.match(colors, /primaryColor: '#15803D'/);
+    assert.match(colors, /activeColor: '#14532D'/);
+    const config = read('../src/config/app-config.ts');
+    assert.match(config, /colorIndex: 7/);
+  });
+}

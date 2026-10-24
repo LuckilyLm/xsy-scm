@@ -113,7 +113,8 @@ export function buildRoutes(menuRouterList) {
     if (e.deletedFlag && e.deletedFlag === true) {
       continue;
     }
-    let route = {
+    // 动态菜单字段由后端决定，组件在下面按菜单配置补上，先保留可增补的对象结构
+    let route: any = {
       path: e.path.startsWith('/') ? e.path : `/${e.path}`,
       // 用 menuId 作唯一的 name
       name: e.menuId.toString(),
@@ -136,6 +137,10 @@ export function buildRoutes(menuRouterList) {
         frameUrl: e.frameUrl,
         // 是否已补组件 name
         renameComponentFlag: false,
+        // 页面属于 SCM 模块：布局层据此挂上 SCM 外观，OA / 系统页不受影响
+        scmModule: String(e.component ?? '')
+          .replace(/^\//, '')
+          .startsWith('business/scm/'),
       },
     };
 

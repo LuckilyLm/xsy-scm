@@ -60,7 +60,7 @@ function onGoHome() {
 const color = computed(() => {
   let isLight = useAppConfigStore().$state.sideMenuTheme === 'light';
   return {
-    background: isLight ? '#FFFFFF' : '#001529',
+    background: isLight ? 'transparent' : '#001529',
   };
 });
 </script>
@@ -99,7 +99,7 @@ const color = computed(() => {
     height: @header-user-height;
     line-height: @header-user-height;
     background-color: v-bind('color.background');
-    border-bottom: 1px solid var(--scm-border, rgba(0, 0, 0, 0.06));
+    border-bottom: 1px solid var(--scm-line, rgba(0, 0, 0, 0.06));
     padding: 0 16px;
     position: fixed;
     z-index: 21;

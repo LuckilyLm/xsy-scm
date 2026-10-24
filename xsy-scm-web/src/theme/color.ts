@@ -42,11 +42,11 @@ export const themeColors = [
     activeColor: '#531dab',
     hoverColor: '#9254de',
   },
-  // 极光绿
+  // 园圃绿：与客户侧商城同一支绿，白字对比度 5:1
   {
-    primaryColor: '#52c41a',
-    activeColor: '#389e0d',
-    hoverColor: '#73d13d',
+    primaryColor: '#15803D',
+    activeColor: '#14532D',
+    hoverColor: '#166534',
   },
   // 深绿
   {
@@ -61,3 +61,22 @@ export const themeColors = [
     hoverColor: '#ff7a45',
   },
 ];
+
+/**
+ * 把主色按比例混入底色，生成选中底、浅描边这类派生色。
+ *
+ * antd 默认算法从深色主色推导 `colorPrimaryBg` 时会得到偏灰的中间色
+ * （例如园圃绿会变成 #b4bfb6），菜单选中和选中项像蒙了一层灰。
+ * 这里统一按「主色占 amount」直接合成，任何主题色都能得到干净的浅色底。
+ */
+export function mixColor(color: string, base: string, amount: number): string {
+  const parse = (value: string) => {
+    const hex = value.replace('#', '');
+    const full = hex.length === 3 ? hex.replace(/./g, (ch) => ch + ch) : hex;
+    return [0, 2, 4].map((index) => parseInt(full.slice(index, index + 2), 16));
+  };
+  const [r1, g1, b1] = parse(color);
+  const [r2, g2, b2] = parse(base);
+  const channel = (from: number, to: number) => Math.round(from * amount + to * (1 - amount));
+  return `#${[channel(r1, r2), channel(g1, g2), channel(b1, b2)].map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+}

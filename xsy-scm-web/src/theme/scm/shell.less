@@ -1,0 +1,154 @@
+/*
+ * SCM 后台外观：鲜蔬账台。
+ *
+ * 底色是一层极浅的菜叶灰，数据面保持纯白；结构靠发丝线分隔，不靠卡片阴影。
+ * 绿色只出现在主操作、当前菜单和选中行，其余交给墨色与灰阶。
+ * 所有颜色走 `--scm-*` 变量，用户切换主题色 / 夜间模式时自动跟随。
+ */
+
+/* ---------- 页面底色与内容节奏 ---------- */
+
+.scm-module .admin-layout {
+  background: var(--scm-page-bg);
+}
+
+.scm-module .admin-layout .admin-layout-content {
+  background: transparent;
+}
+
+/* 筛选条不再是一张独立白卡：控件浮在页底上，和下方数据面拉开一层关系 */
+.scm-module .admin-layout .smart-query-form {
+  background: transparent;
+  padding: 0 0 2px;
+  margin-bottom: 14px;
+}
+
+/* ---------- 侧栏 ---------- */
+
+.scm-module .admin-layout .ant-layout-sider-light {
+  background: var(--scm-sider-bg);
+  border-right: 1px solid var(--scm-line);
+}
+
+.scm-module .admin-layout .ant-menu-light.smart-menu,
+.scm-module .admin-layout .ant-menu-light .ant-menu-sub {
+  background: transparent;
+}
+
+.scm-module .admin-layout .ant-menu-light .ant-menu-item,
+.scm-module .admin-layout .ant-menu-light .ant-menu-submenu-title {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.scm-module .admin-layout .ant-menu-light .ant-menu-item {
+  position: relative;
+  border-radius: 6px;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+/* 当前页左侧 3px 绿轨：不用整块深色底，菜单看起来仍是文字列表 */
+.scm-module .admin-layout .ant-menu-light .ant-menu-item-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--scm-primary);
+}
+
+.scm-module .admin-layout .ant-menu-light .ant-menu-item-selected {
+  color: var(--scm-primary);
+  font-weight: 500;
+}
+
+.scm-module .admin-layout .ant-menu-light .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  color: var(--scm-primary);
+}
+
+.scm-module .admin-layout .ant-menu-light .ant-menu-item:hover,
+.scm-module .admin-layout .ant-menu-light .ant-menu-submenu-title:hover {
+  background: var(--scm-fill);
+}
+
+/* ---------- 数据面：卡片、表格、按钮 ---------- */
+
+.scm-module .admin-layout .ant-card {
+  background: var(--scm-surface);
+  border: 1px solid var(--scm-line);
+  box-shadow: none;
+}
+
+.scm-module .admin-layout .ant-card .ant-card-head {
+  min-height: 44px;
+  border-bottom: 1px solid var(--scm-line);
+}
+
+.scm-module .admin-layout .ant-card .ant-card-head-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--scm-ink);
+}
+
+/* 表头不加底色：一条较深的发丝线就够区分，少一层灰色块 */
+.scm-module .admin-layout .ant-table-wrapper .ant-table-thead > tr > th {
+  background: transparent;
+  border-bottom: 1px solid var(--scm-line-strong);
+  color: var(--scm-ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.scm-module .admin-layout .ant-table-wrapper .ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--scm-line);
+}
+
+/* 注视行是淡绿而不是灰：和人眼在菜叶堆里找到目标的方式一致 */
+.scm-module .admin-layout .ant-table-wrapper .ant-table-tbody > tr.ant-table-row:hover > td {
+  background: var(--scm-accent-soft);
+}
+
+.scm-module .admin-layout .ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected > td {
+  background: var(--scm-accent-soft);
+}
+
+.scm-module .admin-layout .ant-table-wrapper .ant-table {
+  color: var(--scm-ink);
+}
+
+/* 数字列等宽，翻页或筛选时列宽不跳 */
+.scm-module .admin-layout .ant-table-tbody > tr > td {
+  font-variant-numeric: tabular-nums;
+}
+
+.scm-module .admin-layout .ant-btn {
+  font-weight: 500;
+  box-shadow: none;
+}
+
+.scm-module .admin-layout .ant-btn-default {
+  border-color: var(--scm-line-strong);
+}
+
+.scm-module .admin-layout .ant-btn-default:not(:disabled):hover {
+  border-color: var(--scm-primary);
+  color: var(--scm-primary);
+}
+
+.scm-module .admin-layout .ant-btn-primary {
+  box-shadow: none;
+}
+
+/* ---------- 动效克制 ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .scm-module .admin-layout .ant-menu-light .ant-menu-item,
+  .scm-module .admin-layout .ant-btn {
+    transition: none;
+  }
+}

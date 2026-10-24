@@ -23,7 +23,7 @@ export const appDefaultConfig: Omit<AppConfig, 'fullScreenFlag'> = {
   darkModeFlag: false,
   // 菜单主题
   sideMenuTheme: 'light',
-  // 主题颜色索引（themeColors 下标：7 = 极光绿 #52c41a）
+  // 主题颜色索引（themeColors 下标：7 = 园圃绿 #15803D，与客户侧商城同色系）
   colorIndex: 7,
   // 顶部菜单页面宽度
   pageWidth: '99%',

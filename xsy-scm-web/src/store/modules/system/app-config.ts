@@ -8,7 +8,7 @@ import {localRead} from '/@/utils/local-util';
 
 /** 各版本改过默认值的配置项；迁移时只重置这些键，其余保留用户设置。 */
 const CONFIG_MIGRATIONS: Record<number, string[]> = {
-  // 6：侧栏宽度 208 → 168、主题色改极光绿、标签页位置改顶部、默认隐藏水印与帮助文档。
+  // 6：侧栏宽度 208 → 168、主题色改绿色、标签页位置改顶部、默认隐藏水印与帮助文档。
   6: ['sideMenuWidth', 'colorIndex', 'pageTagLocation', 'watermarkFlag', 'helpDocFlag'],
   // 7：页脚默认关闭（页脚只有版权行，却每页占一行高度）。
   7: ['footerFlag'],

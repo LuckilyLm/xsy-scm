@@ -29,10 +29,11 @@
 
 .scm-detail-header__title {
   margin: 0;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
-  line-height: 28px;
-  color: var(--scm-text, rgba(0, 0, 0, 0.88));
+  line-height: 30px;
+  letter-spacing: -0.01em;
+  color: var(--scm-ink, rgba(0, 0, 0, 0.88));
 }
 
 .scm-detail-header__meta {
@@ -77,7 +78,8 @@
 .scm-summary__item {
   min-width: 0;
   padding: 12px 16px;
-  background: var(--scm-fill, rgba(0, 0, 0, 0.04));
+  /* 淡色底跟随主题色：概览块是详情页里唯一成组的有色区域 */
+  background: var(--scm-accent-soft, rgba(0, 0, 0, 0.04));
   border-radius: 8px;
 }
 
@@ -113,8 +115,8 @@
 .scm-detail-card {
   min-width: 0;
   padding: 16px 20px;
-  background: var(--scm-bg-container, #fff);
-  border: 1px solid var(--scm-border, #f0f0f0);
+  background: var(--scm-surface, #fff);
+  border: 1px solid var(--scm-line, #f0f0f0);
   border-radius: 8px;
 }
 
