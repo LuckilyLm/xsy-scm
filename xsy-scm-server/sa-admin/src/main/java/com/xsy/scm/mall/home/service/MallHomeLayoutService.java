@@ -52,13 +52,27 @@ public class MallHomeLayoutService {
         requireGlobalCustomerScope();
         MallHomeStorageVO draft = homeDao.draft();
         MallHomeStorageVO pointer = homeDao.pointer();
-        return new MallHomeDraftVO(draft.getVersion(), pointer.getVersion(), pointer.getCurrentReleaseId(),
-            draft.getThemeCode(), parse(draft.getContent()), draft.getUpdatedAt(), draft.getUpdatedBy());
+        // 存储行被清理过时按「空草稿 + 无发布版本」展示，页面仍可编辑；保存时会补齐行
+        return new MallHomeDraftVO(
+            draft == null ? 0 : draft.getVersion(),
+            pointer == null ? 0 : pointer.getVersion(),
+            pointer == null ? null : pointer.getCurrentReleaseId(),
+            draft == null ? DEFAULT_THEME : draft.getThemeCode(),
+            draft == null ? List.of() : parse(draft.getContent()),
+            draft == null ? null : draft.getUpdatedAt(),
+            draft == null ? null : draft.getUpdatedBy());
+    }
+
+    /** 草稿与指针是单行表，写操作前补齐，避免历史数据被清理后出现空指针。 */
+    private void ensureStorage() {
+        homeDao.ensureDraft();
+        homeDao.ensurePointer();
     }
 
     @Transactional(rollbackFor = Exception.class)
     public MallHomeDraftVO save(MallHomeDraftSaveForm form) {
         requireGlobalCustomerScope();
+        ensureStorage();
         MallHomeStorageVO draft = homeDao.lockDraft();
         if (!Objects.equals(draft.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -76,6 +90,7 @@ public class MallHomeLayoutService {
     @Transactional(rollbackFor = Exception.class)
     public Long publish(MallHomePublishForm form) {
         requireGlobalCustomerScope();
+        ensureStorage();
         MallHomeStorageVO draft = homeDao.lockDraft();
         MallHomeStorageVO pointer = homeDao.lockPointer();
         if (!Objects.equals(draft.getVersion(), form.getDraftVersion())
@@ -101,6 +116,7 @@ public class MallHomeLayoutService {
     @Transactional(rollbackFor = Exception.class)
     public Long rollback(MallHomeRollbackForm form) {
         requireGlobalCustomerScope();
+        ensureStorage();
         MallHomeStorageVO pointer = homeDao.lockPointer();
         if (!Objects.equals(pointer.getVersion(), form.getPointerVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);

@@ -5,6 +5,7 @@ import {localRead} from '/@/utils/local-util';
 import {useUserStore} from '/@/store/modules/system/user';
 import {decryptData, encryptData} from './encrypt';
 import {DATA_TYPE_ENUM} from '../constants/common-const';
+import {errorText} from '/@/utils/error-text';
 import _ from 'lodash';
 import LocalStorageKeyConst from '/@/constants/local-storage-key-const';
 
@@ -114,7 +115,7 @@ smartAxios.interceptors.response.use(
       }
       if (!response.config.suppressGlobalErrorMessage) {
         message.destroy();
-        message.error(res.msg);
+        message.error(errorText(res.msg));
       }
       return Promise.reject(response);
     } else {

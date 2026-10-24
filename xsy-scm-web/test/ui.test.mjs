@@ -12,6 +12,7 @@ import path from 'node:path';
 import {mergeColumn} from '../src/components/support/table-operator/smart-table-column-merge.ts';
 import {tableColumnsWidth} from '../src/components/support/table-operator/table-width.ts';
 import {splitDrivingBatches, planRoadRoute} from '../src/components/business/scm/map/amap-driving-provider.ts';
+import {errorText} from '../src/utils/error-text.ts';
 import ts from 'typescript';
 
 // ---------------------------------------------------------------- 来源：home-ui-contract.test.mjs
@@ -1152,6 +1153,14 @@ import ts from 'typescript';
     assert.match(helper, /message\.error\(/, '统一提示没有真正弹出 toast');
     assert.match(helper, /errorFields/, '统一提示没有读取未通过的字段');
     assert.match(helper, /scrollToField\(/, '统一提示没有把第一个错误字段带到可视区');
+  });
+
+  test('后端未处理异常的原文不直接弹给用户', () => {
+    assert.equal(errorText('java.lang.NullPointerException: Cannot invoke "X.getVersion()" because "x" is null'), '系统开小差了，请稍后重试');
+    assert.equal(errorText('org.springframework.dao.QueryTimeoutException'), '系统开小差了，请稍后重试');
+    assert.equal(errorText(''), '系统开小差了，请稍后重试');
+    assert.equal(errorText(undefined), '系统开小差了，请稍后重试');
+    assert.equal(errorText('库存不足，无法出库'), '库存不足，无法出库');
   });
 
   test('地图定位状态用图标 + 文字，不再套标签和按钮边框', () => {

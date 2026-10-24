@@ -107,7 +107,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Throwable.class)
     public ResponseDTO<?> errorHandler(Throwable e) {
         log.error("捕获全局异常,URL:{}", getCurrentRequestUrl(), e);
-        return ResponseDTO.error(SystemErrorCode.SYSTEM_ERROR, systemEnvironment.isProd() ? null : e.toString());
+        // 异常原文只进日志：堆栈和 Java 类名对用户没有意义，也不该出现在界面上
+        return ResponseDTO.error(SystemErrorCode.SYSTEM_ERROR);
     }
 
     /**

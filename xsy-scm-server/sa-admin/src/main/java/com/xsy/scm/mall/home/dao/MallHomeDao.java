@@ -10,6 +10,11 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface MallHomeDao {
+    /** 补齐单行草稿 / 指针记录；历史库被清理过也不会让页面 500。 */
+    int ensureDraft();
+
+    int ensurePointer();
+
     MallHomeStorageVO draft();
 
     MallHomeStorageVO lockDraft();

@@ -2,6 +2,14 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.mall.home.dao.MallHomeDao">
 
+    <insert id="ensureDraft">
+        INSERT INTO xsy_mall_home_draft(id) VALUES (1) ON CONFLICT (id) DO NOTHING
+    </insert>
+
+    <insert id="ensurePointer">
+        INSERT INTO xsy_mall_home_pointer(id) VALUES (1) ON CONFLICT (id) DO NOTHING
+    </insert>
+
     <select id="draft" resultType="com.xsy.scm.mall.home.domain.vo.MallHomeStorageVO">
         SELECT version, content::text AS content, theme_code AS themeCode, updated_at, updated_by
         FROM xsy_mall_home_draft
