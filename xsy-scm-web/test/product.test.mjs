@@ -7,7 +7,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {emptyProduct, emptySku, removeSku, productFormOf, validateProduct} from '../src/views/business/scm/product/product-form-model.ts';
+import {
+  emptyProduct,
+  emptySku,
+  removeSku,
+  productFormOf,
+  trimQuantity,
+  validateProduct,
+} from '../src/views/business/scm/product/product-form-model.ts';
 import {groupErrorsByRow, hasBlockingErrors, matchFilesBySpuCode} from '../src/views/business/scm/product/product-import-model.ts';
 import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/image-const.ts';
 
@@ -227,6 +234,64 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
         [9, false],
       ]
     );
+  });
+  test('数量录入去尾零：整数不再补成四位小数', () => {
+    assert.equal(trimQuantity('1.0000'), '1');
+    assert.equal(trimQuantity('10.0000'), '10');
+    assert.equal(trimQuantity('100.0000'), '100');
+    assert.equal(trimQuantity('0.0000'), '0');
+    assert.equal(trimQuantity('1.5000'), '1.5');
+    assert.equal(trimQuantity('0.2500'), '0.25');
+    assert.equal(trimQuantity('1'), '1');
+    assert.equal(trimQuantity(''), '');
+    assert.equal(trimQuantity(null), '');
+  });
+  test('商城起订量与递增量按整数展示，不补四位尾零', () => {
+    // 数量不是金额：新建规格默认 1，编辑历史 1.0000 也回填成 1
+    assert.equal(emptySku(0, true).mallMinQuantity, '1');
+    assert.equal(emptySku(0, true).mallQuantityStep, '1');
+    const detail = {...emptyProduct(), tags: [], skuList: [{...emptySku(0, true), mallMinQuantity: '1.0000', mallQuantityStep: '0.5000'}]};
+    const form = productFormOf(detail);
+    assert.equal(form.skuList[0].mallMinQuantity, '1');
+    assert.equal(form.skuList[0].mallQuantityStep, '0.5');
+
+    // 录入框不再强制四位；提交仍由后端按 @Digits(fraction = 4) 接收
+    const source = readFileSync(new URL('../src/views/business/scm/product/components/product-sku-editable-table.vue', import.meta.url), 'utf8');
+    const inputs = source
+      .split('<a-input-number')
+      .slice(1)
+      .map((chunk) => chunk.split('/>')[0]);
+    for (const field of ['mallMinQuantity', 'mallQuantityStep']) {
+      const input = inputs.find((chunk) => chunk.includes(`sku.${field}`)) ?? '';
+      assert.ok(input, `没有找到 ${field} 的输入框`);
+      assert.doesNotMatch(input, /:precision="4"/, `${field} 仍在强制四位小数`);
+      assert.match(input, /trimQuantity/, `${field} 失焦时没有去掉尾零`);
+    }
+  });
+  test('数量必须大于 0 且不超过四位小数', () => {
+    const form = emptyProduct();
+    Object.assign(form.skuList[0], {specName: '大', saleUnit: '份'});
+    form.skuList[0].mallMinQuantity = '0';
+    assert.match(validateProduct(form), /起订量须大于 0/);
+    form.skuList[0].mallMinQuantity = '1';
+    form.skuList[0].mallQuantityStep = '1.00001';
+    assert.match(validateProduct(form), /递增量须大于 0，最多四位小数/);
+    form.skuList[0].mallQuantityStep = '1.5';
+    assert.equal(validateProduct(form), undefined);
+  });
+  test('标签选择器的勾选框有可读名称，搜索框有 aria-label', () => {
+    const source = readFileSync(new URL('../src/views/business/scm/product/components/product-form-drawer.vue', import.meta.url), 'utf8');
+    assert.match(source, /aria-label="搜索标签"/);
+    // 文字放进 checkbox 插槽：勾选框不再是「无名」控件，点击文字也只切换一次
+    const option = source.match(/<a-checkbox :checked="form\.tagIds\.includes\(option\.value\)"[\s\S]{0,200}<\/a-checkbox>/)?.[0] ?? '';
+    assert.match(option, /tag-picker__option-text/, '勾选框没有可读名称');
+  });
+  test('必填项未填时保存要 toast 列出缺项，而不是只靠输入框下方提示', () => {
+    const source = readFileSync(new URL('../src/views/business/scm/product/components/product-form-drawer.vue', import.meta.url), 'utf8');
+    // 表单 rules 失败的 errorFields 交给统一 helper，toast 里带上字段的 rules 提示
+    assert.match(source, /catch \(err\) \{[\s\S]{0,160}notifyFormInvalid\(err, formRef\.value\)/);
+    // 规格行没挂 rules，validateProduct 的失败同样要 toast
+    assert.match(source, /if \(error\.value\) \{[\s\S]{0,160}message\.error\(error\.value\)/);
   });
   test('validates four decimal prices and normalized duplicate specifications', () => {
     const form = emptyProduct();

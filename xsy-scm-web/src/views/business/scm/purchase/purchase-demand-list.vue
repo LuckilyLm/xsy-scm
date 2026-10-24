@@ -182,6 +182,7 @@ import PurchaseDemandSummaryPreview from './components/purchase-demand-summary-p
 import PurchaseDemandBatchDetailDrawer from './components/purchase-demand-batch-detail-drawer.vue';
 import type {ScmListColumn} from '../common/scm-column';
 import {useScmTableFill} from '../common/use-scm-table-fill';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 
@@ -354,7 +355,8 @@ async function submitAllocate() {
   }
   try {
     await allocateFormRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, allocateFormRef.value);
     return;
   }
   if (!alloc.purchaseOrderItemId) {

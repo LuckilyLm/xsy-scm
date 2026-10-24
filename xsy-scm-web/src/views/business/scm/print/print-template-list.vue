@@ -180,6 +180,7 @@ import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue'
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import {hasPermission} from '../common/scm-permission';
 import {printError} from './print-errors';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const queryForm = reactive<PrintTemplateQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<PrintTemplate[]>([]);
@@ -368,7 +369,8 @@ async function submit() {
   // 必填项走表单校验，错误显示在输入框下方
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   // 明细列不是表单字段，用 toast 提示

@@ -29,6 +29,7 @@ import {message} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import {customerTypeApi} from '/@/api/business/scm/customer-type-api';
 import type {CustomerType, CustomerTypeForm} from '/@/types/business/scm/customer';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: []}>();
 
@@ -73,7 +74,8 @@ async function save() {
 async function submit() {
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   await save();

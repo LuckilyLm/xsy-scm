@@ -124,25 +124,36 @@
                       v-model:open="tagPickerOpen"
                       trigger="click"
                       placement="bottomLeft"
-                      :overlay-style="{width: '280px'}"
+                      :overlay-style="{width: '300px'}"
                       @open-change="onTagPickerToggle"
                     >
                       <template #content>
                         <div class="tag-picker__panel">
-                          <a-input v-model:value="tagKeyword" size="small" allow-clear placeholder="搜索标签" />
+                          <a-input
+                            v-model:value="tagKeyword"
+                            size="small"
+                            allow-clear
+                            placeholder="搜索标签"
+                            aria-label="搜索标签"
+                            class="tag-picker__search"
+                          />
                           <div class="tag-picker__list">
-                            <a-checkbox
+                            <div
                               v-for="option in filteredTagOptions"
                               :key="option.value"
-                              :checked="form.tagIds.includes(option.value)"
-                              @change="toggleTag(option.value)"
-                              >{{ option.label }}
-                            </a-checkbox>
+                              class="tag-picker__option"
+                              :class="{'tag-picker__option--checked': form.tagIds.includes(option.value)}"
+                            >
+                              <!-- 文字放进 checkbox 的插槽：勾选框有可读名称，点击文字与键盘操作都只触发一次切换 -->
+                              <a-checkbox :checked="form.tagIds.includes(option.value)" @change="toggleTag(option.value)">
+                                <span class="tag-picker__option-text">{{ option.label }}</span>
+                              </a-checkbox>
+                            </div>
                             <p v-if="!filteredTagOptions.length" class="tag-picker__empty">没有匹配的标签</p>
                           </div>
                         </div>
                       </template>
-                      <a-button size="small" type="dashed" class="scm-btn-secondary">
+                      <a-button size="small" class="tag-picker__add">
                         <PlusOutlined />
                         添加标签
                       </a-button>
@@ -198,6 +209,7 @@ import {moneyPayload} from '/@/utils/scm-amount';
 import {emptyProduct, productFormOf, validateProduct} from '../product-form-model';
 import {productError} from '../product-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: []}>();
 const form = ref<ProductForm>(emptyProduct()),
@@ -320,7 +332,11 @@ async function requestClose() {
 
 async function save() {
   error.value = validateProduct(form.value) || '';
-  if (error.value) return;
+  if (error.value) {
+    // 规格行没有挂到 a-form 的 rules 上，提示只会出现在抽屉顶部；再用 toast 保证看得见
+    message.error(error.value);
+    return;
+  }
   saving.value = true;
   try {
     const payload = JSON.parse(JSON.stringify(form.value)) as ProductForm;
@@ -346,7 +362,9 @@ defineExpose({open});
 async function submit() {
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    // 字段级提示留在输入框下方；抽屉可视区外的部分由 toast 补一句
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   await save();
@@ -420,27 +438,112 @@ async function submit() {
   gap: 8px;
 }
 
+/* 标签与「添加标签」同高同圆角：整行读起来是一组控件，而不是文字后面跟个按钮 */
 .tag-picker__tag {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
   margin: 0;
+  padding: 0 8px 0 12px;
+  border: 1px solid var(--scm-accent-line);
+  border-radius: 999px;
+  background: var(--scm-accent-soft);
+  color: var(--scm-primary);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+
+  :deep(.ant-tag-close-icon) {
+    margin-left: 6px;
+    color: inherit;
+    opacity: 0.55;
+    transition: opacity 0.15s;
+  }
+
+  &:hover :deep(.ant-tag-close-icon) {
+    opacity: 1;
+  }
+}
+
+.tag-picker__add {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px dashed var(--scm-line-strong);
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--scm-ink-soft);
+  font-size: 12px;
+
+  &:hover,
+  &:focus {
+    border-color: var(--scm-accent-line);
+    background: var(--scm-accent-soft);
+    color: var(--scm-primary);
+  }
 }
 
 .tag-picker__panel {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin: -2px 0;
 }
 
 .tag-picker__list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-height: 240px;
+  gap: 2px;
+  max-height: 260px;
+  margin: 0 -4px;
   overflow-y: auto;
+}
+
+.tag-picker__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+
+  &:hover {
+    background: var(--scm-fill);
+  }
+
+  /* 整行都是勾选区域，文字即 label，不用再单独挂点击事件 */
+  :deep(.ant-checkbox-wrapper) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+  }
+}
+
+.tag-picker__option--checked {
+  background: var(--scm-accent-soft);
+
+  .tag-picker__option-text {
+    color: var(--scm-primary);
+    font-weight: 500;
+  }
+}
+
+.tag-picker__option-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--scm-ink);
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
 }
 
 .tag-picker__empty {
   margin: 0;
-  font-size: 13px;
+  padding: 8px;
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 13px;
 }
 </style>

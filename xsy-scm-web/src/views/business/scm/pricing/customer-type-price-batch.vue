@@ -80,6 +80,7 @@ import {moneyPayload} from '/@/utils/scm-amount';
 import type {BatchRow} from '/@/types/business/scm/pricing';
 import {emptyPrice, validateBatch} from './pricing-form-model';
 import {pricingError} from './pricing-errors';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const router = useRouter(),
   batchKey = ref('PRICE-' + dayjs().format('YYYYMMDD-HHmmss')),
@@ -135,7 +136,8 @@ async function submit() {
   // 批次号走字段校验；至少一行用 toast 提示
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   if (!rows.value.length) {

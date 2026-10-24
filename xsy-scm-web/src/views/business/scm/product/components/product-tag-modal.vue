@@ -35,6 +35,7 @@ import type {FormInstance} from 'ant-design-vue';
 import {productTagApi} from '/@/api/business/scm/product-assistant-api';
 import type {AssistantStatus, ProductTag} from '/@/types/business/scm/product';
 import {ENABLE_STATUS_ENUM} from '/@/constants/business/scm/product-const';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: []}>();
 const visible = ref(false),
@@ -93,7 +94,8 @@ async function save() {
 async function submit() {
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   await save();

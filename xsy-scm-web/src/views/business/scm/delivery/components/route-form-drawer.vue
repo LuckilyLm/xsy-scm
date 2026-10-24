@@ -88,6 +88,7 @@ import {isLocated} from '/@/components/business/scm/map/types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import type {Warehouse} from '../../purchase/purchase-types';
 import {deliveryError, type Id, type RouteForm, type Driver, type Vehicle, type DeliveryRoute} from '../delivery-types';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: [Id]}>();
 const visible = ref(false),
@@ -151,7 +152,8 @@ async function save() {
   // 校验交给 antd 表单：缺哪个必填项就在哪个输入框下方提示
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   error.value = '';

@@ -70,6 +70,7 @@ import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import type {Id, Warehouse, WarehouseScopeEmployee} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const visible = ref(false);
 const saving = ref(false);
@@ -171,7 +172,8 @@ async function save() {
   // 必填项走表单校验：错误显示在输入框下方
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   const target = employeeId.value!;

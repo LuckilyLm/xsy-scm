@@ -126,6 +126,7 @@ import {
 import {fileApi} from '/@/api/support/file-api';
 import {traceInspectionApi} from '/@/api/business/scm/trace-inspection-api';
 import type {InspectionReport, InspectionReportSave} from '/@/api/business/scm/trace-inspection-api';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 dayjs.extend(utc);
 
@@ -212,7 +213,8 @@ async function submit() {
   if (busy.value) return;
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   await save();

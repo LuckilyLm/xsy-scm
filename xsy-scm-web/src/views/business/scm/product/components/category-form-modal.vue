@@ -35,6 +35,7 @@ import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {ENABLE_STATUS_ENUM} from '/@/constants/business/scm/product-const';
 import type {ProductCategory, ProductCategoryForm, ProductId} from '/@/types/business/scm/product';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 defineProps<{categories: ProductCategory[]}>();
 const emit = defineEmits<{saved: []}>();
@@ -78,7 +79,8 @@ async function save() {
 async function submit() {
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   await save();

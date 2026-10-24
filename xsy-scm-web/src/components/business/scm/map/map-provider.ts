@@ -4,9 +4,18 @@ import {planRoadRoute, type DrivingSdk} from './amap-driving-provider';
 
 const coordinate = (value: number) => value.toFixed(8);
 
-/** label.content 只收字符串且按 HTML 解析；标签文本来自业务数据，需要转义成文本再拼。 */
+/** 标记内容按 HTML 解析；标签文本来自业务数据，需要转义成文本再拼。 */
 const escapeHtml = (value: string) =>
   value.replace(/[&<>"]/g, (character) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[character] as string);
+
+/**
+ * 自定义标记：品牌绿图钉 + 上方胶囊标签。
+ *
+ * 不用 AMap 默认图标和 label —— 默认蓝钉与系统配色无关，label 自带硬边框，
+ * 和 SCM 的圆角卡片语言冲突。样式在 scm-map.vue 的全局块里。
+ */
+const markerContent = (label: string) =>
+  `<div class="scm-map-pin"><span class="scm-map-pin__label">${escapeHtml(label)}</span><span class="scm-map-pin__pin"></span></div>`;
 
 interface LngLat {
   getLng(): number;
@@ -257,14 +266,17 @@ export async function createMap(element: HTMLElement, onPick?: (location: ScmLoc
         const marker = new sdk.Marker({
           position: p,
           title: point.label,
-          label: {content: `<span class="scm-map-label">${escapeHtml(point.label)}</span>`, direction: 'top'},
+          content: markerContent(point.label),
+          // 内容整体以钉尖为锚点，坐标落点才不会被标签高度顶偏
+          anchor: 'bottom-center',
           draggable: Boolean(onPick),
         });
         marker.on('click', () => {
           const content = document.createElement('div');
           content.className = 'scm-map-info';
           content.textContent = `${point.label}\n${point.description ?? ''}`;
-          new sdk.InfoWindow({content, offset: new sdk.Pixel(0, -24)}).open(map, p);
+          // 自定义标记比默认图钉高：把信息窗抬到胶囊标签上方，避免压住文字
+          new sdk.InfoWindow({content, offset: new sdk.Pixel(0, -70)}).open(map, p);
         });
         if (onPick)
           marker.on('dragend', (event) =>

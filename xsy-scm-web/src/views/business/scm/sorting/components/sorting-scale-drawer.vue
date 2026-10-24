@@ -193,6 +193,7 @@ import {SCM_SORTING_RESULT_ENUM} from '/@/constants/business/scm/sorting-const';
 import {quantityText, sortingError, sortingScaleStatuses} from '../sorting-types';
 import type {Id, SortingScaleEvent, SortingScaleStatus, SortingTaskDetail, SortingTaskItem} from '../sorting-types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const props = defineProps<{open: boolean; taskId?: Id}>();
 const emit = defineEmits<{'update:open': [value: boolean]; updated: []}>();
@@ -356,7 +357,8 @@ async function submitReject() {
   if (!rejectTarget.value) return;
   try {
     await rejectFormRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, rejectFormRef.value);
     return;
   }
   scaleBusy.value = true;

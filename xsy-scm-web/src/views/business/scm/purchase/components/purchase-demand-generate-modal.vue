@@ -54,6 +54,7 @@ import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import type {DemandCalculationBatch, GenerateResult, Id} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
 import FormNote from '/@/components/framework/form-note/index.vue';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const props = defineProps<{open: boolean}>();
 const emit = defineEmits<{close: []; generated: []; viewBatch: [batchId: Id]}>();
@@ -129,7 +130,8 @@ async function generate() {
   // 必填项走表单校验：错误显示在对应输入框下方
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   if (!form.range || form.warehouseId === undefined) {

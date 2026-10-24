@@ -262,6 +262,7 @@ import type {CustomerOption} from '/@/types/business/scm/customer';
 import {useFinancePage} from './use-finance-page';
 import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const query = reactive<ReceiptQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const route = useRoute();
@@ -470,7 +471,8 @@ async function submitAdd() {
   // 必填项由表单校验，顶部 alert 只显示服务端错误
   try {
     await addFormRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, addFormRef.value);
     return;
   }
   if (addForm.customerId === undefined || addForm.method === undefined) {

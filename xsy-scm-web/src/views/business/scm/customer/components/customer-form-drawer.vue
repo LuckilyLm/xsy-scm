@@ -257,6 +257,7 @@ import {normalizeMoneyInput} from '/@/utils/scm-amount';
 import {applyCreditPeriodType, applyCreditPeriodUnit, emptyCustomer, toCustomerPayload, validateCustomer} from '../customer-form-model';
 import {customerError} from '../customer-errors';
 import {hasPermission} from '../../common/scm-permission';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: []}>();
 
@@ -404,7 +405,8 @@ function close() {
 async function submit() {
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   // 跨字段规则（账期互斥、金额格式）由纯函数校验。

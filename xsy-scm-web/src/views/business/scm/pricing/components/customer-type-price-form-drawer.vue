@@ -66,6 +66,7 @@ import {pricingError} from '../pricing-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {moneyPayload, normalizeMoneyInput} from '/@/utils/scm-amount';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 /** 表单模型：有效期是本地字段，提交时再写进 PriceForm。 */
 type CustomerTypePriceModel = PriceForm & {effectiveRange?: [string, string]};
@@ -126,7 +127,8 @@ async function submit() {
   // 必填项由表单校验
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   form.effectiveFrom = form.effectiveRange?.[0] || '';

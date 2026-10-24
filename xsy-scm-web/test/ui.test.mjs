@@ -1130,6 +1130,52 @@ import ts from 'typescript';
   });
 
   // ------------------------------------------------------------------
+  // 0.1 表单校验失败必须给 toast：字段级提示常在抽屉可视区外
+  // ------------------------------------------------------------------
+
+  test('SCM 表单校验失败统一走 notifyFormInvalid，不留静默 return', () => {
+    const offenders = [];
+    for (const file of SCM_VUE) {
+      const lines = stripComments(readFileSync(file, 'utf8')).split('\n');
+      lines.forEach((line, index) => {
+        if (!/catch\s*\{\s*$/.test(line)) return;
+        const nearby = lines.slice(Math.max(0, index - 5), index).join('\n');
+        if (!/\.validate\s*\(/.test(nearby)) return;
+        const body = lines.slice(index, index + 4).join('\n');
+        // 必须带上对应表单实例：失败后要能滚动到第一个错误字段
+        if (!/notifyFormInvalid\(err,\s*\w+\.value\)/.test(body)) offenders.push(file.slice(SCM_VIEWS.length));
+      });
+    }
+    assert.deepEqual(offenders, [], `以下表单校验失败只显示字段提示：${offenders.join('、')}`);
+
+    const helper = stripComments(readFileSync(`${SRC}views/business/scm/common/scm-form-feedback.ts`, 'utf8'));
+    assert.match(helper, /message\.error\(/, '统一提示没有真正弹出 toast');
+    assert.match(helper, /errorFields/, '统一提示没有读取未通过的字段');
+    assert.match(helper, /scrollToField\(/, '统一提示没有把第一个错误字段带到可视区');
+  });
+
+  test('地图定位状态用图标 + 文字，不再套标签和按钮边框', () => {
+    const source = stripComments(readFileSync(`${SRC}components/business/scm/map/scm-map-picker.vue`, 'utf8'));
+    assert.doesNotMatch(source, /<a-tag/, '定位状态又用标签承载了');
+    assert.match(source, /EnvironmentOutlined/, '定位状态没有定位图标');
+    assert.match(source, /location-status--located/, '已定位没有独立状态样式');
+    assert.match(source, /location-status--empty/, '未定位没有独立状态样式');
+    // 地图定位 / 清空定位收成文字链接，避免一行里堆两个按钮
+    assert.equal((source.match(/type="link"/g) ?? []).length, 2, '定位动作没有全部改成文字链接');
+  });
+
+  test('地图标记使用品牌图钉与胶囊标签，不再用 AMap 默认蓝钉和硬边框 label', () => {
+    const provider = stripComments(readFileSync(`${SRC}components/business/scm/map/map-provider.ts`, 'utf8'));
+    assert.match(provider, /content: markerContent\(point\.label\)/, '标记没有换成自定义内容');
+    assert.doesNotMatch(provider, /label:\s*\{content/, '标记仍在用 AMap 默认 label');
+
+    const map = stripComments(readFileSync(`${SRC}components/business/scm/map/scm-map.vue`, 'utf8'));
+    assert.match(map, /\.scm-map-pin__pin/, '图钉样式缺失');
+    assert.match(map, /%2315803D/, '图钉没有使用品牌绿');
+    assert.match(map, /\.scm-map-pin__label[\s\S]{0,200}border-radius:\s*999px/, '标签不是胶囊圆角');
+  });
+
+  // ------------------------------------------------------------------
   // 0. 详情页标题只放名称：状态与标签下沉到内容区
   // ------------------------------------------------------------------
 

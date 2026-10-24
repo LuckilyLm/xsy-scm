@@ -76,6 +76,7 @@ import type {Id, Receipt} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: []; created: [id: Id]}>();
 
@@ -142,7 +143,8 @@ async function save() {
   // 必填项走表单校验：错误显示在对应输入框下方
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   saving.value = true;

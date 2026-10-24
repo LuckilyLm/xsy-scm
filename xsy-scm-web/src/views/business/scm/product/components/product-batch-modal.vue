@@ -67,6 +67,7 @@ import type {
   TagMode,
 } from '/@/types/business/scm/product';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 type BatchCommand = 'STATUS' | 'CATEGORY' | 'TAG';
 const TITLES: Record<BatchCommand, string> = {STATUS: '批量维护状态', CATEGORY: '批量修改分类', TAG: '批量维护标签'};
@@ -102,7 +103,8 @@ function open(next: BatchCommand, rows: ProductBatchItem[]) {
 async function submit() {
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   // 两个状态都可留空（表示不改），「至少选一个」只能手写判断。

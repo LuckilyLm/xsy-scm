@@ -282,6 +282,7 @@ import {
   type PromotionCouponSave,
   type PromotionStatus,
 } from './promotion-types';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const queryForm = reactive<PromotionCouponQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<PromotionCoupon[]>([]);
@@ -473,7 +474,8 @@ async function submit() {
   // 必填项由表单校验
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   saving.value = true;

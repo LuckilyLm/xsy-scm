@@ -93,6 +93,7 @@ import {areaColumnsOf, areaNodesOf} from '../../common/scm-area';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {supplierError} from '../supplier-errors';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: []}>();
 
@@ -168,7 +169,8 @@ function close() {
 async function submit() {
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   // 点位要成组校验，半组坐标无法使用。

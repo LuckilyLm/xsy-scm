@@ -91,6 +91,7 @@ import {financeError} from '../../finance/finance-errors';
 import {isValidPositiveAmount} from '../../finance/finance-form-model';
 import BalanceMovementDetail from '../../finance/balance-movement-detail.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 const visible = ref(false),
   saving = ref(false),
   loading = ref(false),
@@ -153,7 +154,8 @@ async function submit() {
   if (order.value.settlementMethod && (order.value.settlementMethod !== 'WALLET' || method.value !== 'BALANCE')) return;
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   const data: PaymentCreate = {

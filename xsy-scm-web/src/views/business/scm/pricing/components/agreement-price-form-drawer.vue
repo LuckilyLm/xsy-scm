@@ -113,6 +113,7 @@ import {emptyPrice, validatePrice} from '../pricing-form-model';
 import {pricingError} from '../pricing-errors';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {moneyPayload, normalizeMoneyInput, toScale} from '/@/utils/scm-amount';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 /** 表单模型：单价输入和有效期是本地字段，提交时再写进 PriceForm（后端要定点数字符串）。 */
 type AgreementPriceModel = PriceForm & {
@@ -207,7 +208,8 @@ async function submit() {
   // 必填项由表单校验
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   form.unitPrice = form.formulaType === 'FIXED' ? moneyPayload(form.unitPriceInput) : null;

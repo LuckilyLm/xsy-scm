@@ -84,6 +84,7 @@ import {datetime} from '../../common/scm-display';
 import {money} from '../delivery-display';
 import {useDeliveryPermission} from '../use-delivery-permission';
 import {deliveryError, type CandidateOrder, type DeliveryRoute, type Id, type Query} from '../delivery-types';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: []}>();
 const {canViewAmount} = useDeliveryPermission();
@@ -175,7 +176,8 @@ async function save() {
   // 组单原因走字段校验；「至少选一单」是列表选择，用 toast
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   if (!route.value || !selected.value.length) {

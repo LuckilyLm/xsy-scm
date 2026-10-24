@@ -140,6 +140,7 @@ import {toWarehousePayload} from './warehouse-form-model';
 import {purchaseError} from './purchase-errors';
 import {hasPermission} from '../common/scm-permission';
 import {areaColumnsOf, areaNodesOf} from '../common/scm-area';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const queryForm = reactive<WarehouseQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<Warehouse[]>([]);
@@ -281,7 +282,8 @@ async function save() {
   // 必填项走表单校验（错误显示在字段下方）；定位是跨字段的业务前置条件，仍用顶部提示
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   formError.value = locationError(form.value) ?? '';

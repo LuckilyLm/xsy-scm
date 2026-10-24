@@ -205,6 +205,7 @@ import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyText, isValid
 import type {FinanceCandidate, FinanceWriteOff, WriteOffQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 interface AllocationDraft extends FinanceCandidate {
   amount: string;
@@ -359,7 +360,8 @@ async function submitAdd() {
   // 资金类型和资金单走字段校验；至少一条目标有正数金额用 toast 提示
   try {
     await addFormRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, addFormRef.value);
     return;
   }
   const items = targets.value.filter((item) => isValidPositiveAmount(item.amount)).map((item) => ({targetId: item.id, amount: item.amount}));
@@ -395,7 +397,8 @@ async function submitReverse() {
   // 必填项由表单校验
   try {
     await reverseFormRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, reverseFormRef.value);
     return;
   }
   reverseSaving.value = true;

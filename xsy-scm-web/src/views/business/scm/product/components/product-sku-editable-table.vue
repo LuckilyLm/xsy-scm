@@ -60,11 +60,11 @@
               :value="sku.mallMinQuantity"
               string-mode
               :min="'0.0001'"
-              step="0.0001"
-              :precision="4"
+              :step="'1'"
               :controls="false"
               style="width: 100%"
               @update:value="sku.mallMinQuantity = $event === null ? '' : String($event)"
+              @blur="sku.mallMinQuantity = trimQuantity(sku.mallMinQuantity)"
             />
           </a-form-item>
         </div>
@@ -74,11 +74,11 @@
               :value="sku.mallQuantityStep"
               string-mode
               :min="'0.0001'"
-              step="0.0001"
-              :precision="4"
+              :step="'1'"
               :controls="false"
               style="width: 100%"
               @update:value="sku.mallQuantityStep = $event === null ? '' : String($event)"
+              @blur="sku.mallQuantityStep = trimQuantity(sku.mallQuantityStep)"
             />
           </a-form-item>
         </div>
@@ -140,7 +140,7 @@ import {message} from 'ant-design-vue';
 import {DeleteOutlined, PlusOutlined} from '@ant-design/icons-vue';
 import type {ProductSku, ProductUom} from '/@/types/business/scm/product';
 import {PRODUCT_TYPE_ENUM, SHELF_STATUS_ENUM} from '/@/constants/business/scm/product-const';
-import {emptySku, removeSku} from '../product-form-model';
+import {emptySku, removeSku, trimQuantity} from '../product-form-model';
 
 const props = defineProps<{modelValue: ProductSku[]; units: ProductUom[]}>();
 const emit = defineEmits<{'update:modelValue': [rows: ProductSku[]]}>();

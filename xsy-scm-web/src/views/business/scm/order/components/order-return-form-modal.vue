@@ -28,6 +28,7 @@ import type {FormInstance} from 'ant-design-vue';
 import {orderReturnApi} from '/@/api/business/scm/order-return-api';
 import type {Order, Item, Id} from '../order-types';
 import {fixed} from '../order-form-model';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: []}>();
 const visible = ref(false),
@@ -62,7 +63,8 @@ async function save() {
   // 必填项走表单校验：错误显示在输入框下方
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   error.value = '';

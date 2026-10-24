@@ -126,6 +126,7 @@ import {orderError} from '../order-errors';
 import type {Order, Id} from '../order-types';
 import ItemTable from './order-item-editable-table.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: []}>();
 const form = ref<Order>(newOrder()),
@@ -437,10 +438,11 @@ async function save(draft = false, continueCreating = false) {
     form.value.items.forEach((i) => {
       i.orderedQuantity = fixed(i.orderedQuantity);
     });
-    // 必填项走表单校验：错误显示在对应输入框下方
+    // 必填项走表单校验：输入框下方提示 + toast，明细行问题在下面单独提示
     try {
       await formRef.value?.validate();
-    } catch {
+    } catch (err) {
+      notifyFormInvalid(err, formRef.value);
       return;
     }
     // 明细行（不是表单字段）与其余业务规则用 toast

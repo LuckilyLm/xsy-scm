@@ -1,9 +1,24 @@
 <template>
   <div class="location-field">
     <div class="location-field__status">
-      <a-tag :color="isLocated(value) ? 'green' : 'default'">{{ isLocated(value) ? '已定位' : '未定位' }}</a-tag>
-      <a-button @click="openPicker">地图定位</a-button>
-      <a-button v-if="value.longitude != null || value.latitude != null" @click="emit('change', emptyLocation())"> 清空定位 </a-button>
+      <!-- 状态用图标 + 文字，不再套一层标签边框：标签是分类语义，定位状态不是分类 -->
+      <span class="location-status" :class="isLocated(value) ? 'location-status--located' : 'location-status--empty'">
+        <EnvironmentOutlined aria-hidden="true" />
+        {{ isLocated(value) ? '已定位' : '未定位' }}
+      </span>
+      <a-button type="link" size="small" class="location-action" @click="openPicker">
+        <AimOutlined aria-hidden="true" />
+        {{ isLocated(value) ? '重新定位' : '地图定位' }}
+      </a-button>
+      <a-button
+        v-if="value.longitude != null || value.latitude != null"
+        type="link"
+        size="small"
+        class="location-clear"
+        @click="emit('change', emptyLocation())"
+      >
+        清空定位
+      </a-button>
     </div>
     <div class="location-field__inputs">
       <label class="location-input">
@@ -56,6 +71,7 @@
 </template>
 <script setup lang="ts">
 import {ref} from 'vue';
+import {AimOutlined, EnvironmentOutlined} from '@ant-design/icons-vue';
 import ScmMap from './scm-map.vue';
 import {geocode} from './map-provider';
 import {emptyLocation, isLocated, type ScmLocation} from './types';
@@ -120,7 +136,48 @@ function confirm() {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px 12px;
+}
+
+/* 定位状态是信息，不是标签：只保留图标与文字，靠颜色区分已定位/未定位 */
+.location-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 20px;
+
+  :deep(.anticon) {
+    font-size: 16px;
+  }
+}
+
+.location-status--located {
+  color: var(--scm-primary);
+}
+
+.location-status--empty {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+/* 动作收成文字链接，去掉按钮边框；锚点仍保留 24px 行高，键盘和指针都够点 */
+.location-action,
+.location-clear {
+  height: 24px;
+  padding: 0;
+  margin-inline-start: 0;
+}
+
+.location-action :deep(.anticon) {
+  margin-inline-end: 4px;
+}
+
+.location-clear {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+
+  &:hover {
+    color: var(--scm-error);
+  }
 }
 
 .location-field__inputs {

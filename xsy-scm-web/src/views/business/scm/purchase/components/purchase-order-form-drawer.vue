@@ -72,6 +72,7 @@ import {hasPermission} from '../../common/scm-permission';
 import ItemTable from './purchase-order-item-editable-table.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
+import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: []}>();
 
@@ -167,7 +168,8 @@ async function save() {
   // 必填项走表单校验：错误显示在对应输入框下方
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   // 明细行（不是表单字段）与其余业务规则用 toast
