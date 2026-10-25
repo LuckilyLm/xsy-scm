@@ -2,7 +2,14 @@
   <view v-if="visible && items.length" class="home-popup" @touchmove.stop.prevent>
     <view class="home-popup__mask" @click="close" />
     <view class="home-popup__panel">
-      <swiper class="home-popup__swiper" :indicator-dots="false" :autoplay="items.length > 1" :interval="4500" circular @change="onChange">
+      <swiper
+        class="home-popup__swiper"
+        :indicator-dots="false"
+        :autoplay="items.length > 1"
+        :interval="4500"
+        :circular="items.length > 1"
+        @change="onChange"
+      >
         <swiper-item v-for="(item, index) in items" :key="`${item.imageUrl}-${index}`">
           <image class="home-popup__image" :src="item.imageUrl" mode="aspectFill" :alt="item.title || `弹窗图片${index + 1}`" @click="select(item)" />
         </swiper-item>

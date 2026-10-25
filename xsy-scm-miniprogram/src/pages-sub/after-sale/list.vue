@@ -26,7 +26,7 @@
       </view>
       <view class="al-card__foot">
         <text class="al-card__label">{{ amountLabel(record) }}</text>
-        <text class="al-card__amount">¥{{ displayAmount(amountOf(record)) }}</text>
+        <text class="al-card__amount">¥{{ displayMoney(amountOf(record)) }}</text>
       </view>
       <text class="al-card__time">申请时间：{{ formatDateTime(record.createdAt) }}</text>
     </view>
@@ -44,7 +44,8 @@
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
-  import { displayAmount, formatDateTime } from '@/utils/order-display';
+  import { formatDateTime } from '@/utils/order-display';
+  import { displayMoney } from '@/utils/money-display';
   import { afterSaleStatusLevel, afterSaleStatusText } from '@/utils/after-sale-display';
 
   const { themeStyle } = useMallTheme();

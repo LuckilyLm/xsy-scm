@@ -52,7 +52,7 @@
 
       <view class="order-card__foot" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goDetail(order.orderId)">
         <text class="order-card__label">预计金额</text>
-        <text class="order-card__amount">¥{{ displayAmount(order.orderedTotalAmount) }}</text>
+        <text class="order-card__amount">¥{{ displayMoney(order.orderedTotalAmount) }}</text>
       </view>
 
       <view class="order-card__actions">
@@ -82,15 +82,8 @@
   import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
   import { useMallTheme } from '@/composables/use-mall-theme';
 
-  import {
-    CANCEL_REASONS,
-    ORDER_TABS,
-    displayAmount,
-    displayStatusLevel,
-    displayStatusText,
-    formatDateTime,
-    isAbnormalFulfillment,
-  } from '@/utils/order-display';
+  import { CANCEL_REASONS, ORDER_TABS, displayStatusLevel, displayStatusText, formatDateTime, isAbnormalFulfillment } from '@/utils/order-display';
+  import { displayMoney } from '@/utils/money-display';
 
   const { themeStyle } = useMallTheme();
 

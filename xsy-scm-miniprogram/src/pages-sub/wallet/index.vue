@@ -9,7 +9,7 @@
       <view v-if="stale" class="wallet__stale" @click="load"> 更新失败，当前为上次查询结果。点击重试 › </view>
       <view class="wallet__balance">
         <text class="wallet__label">{{ summary.balanceVisible ? '账户余额' : '共享结算账户' }}</text>
-        <text v-if="summary.balanceVisible" class="wallet__amount">¥{{ displayAmount(summary.availableBalance) }}</text>
+        <text v-if="summary.balanceVisible" class="wallet__amount">¥{{ displayMoney(summary.availableBalance) }}</text>
         <text v-else class="wallet__private">总余额暂不展示</text>
         <text class="wallet__hint">
           {{ summary.balanceVisible ? '余额根据实际收支流水计算' : '可查看本客户产生的收支记录' }}
@@ -24,7 +24,7 @@
             <text class="wallet__time">{{ formatDateTime(row.occurredAt) }}</text>
           </view>
           <text class="wallet__change" :class="{ 'wallet__change--in': row.direction === 'CREDIT' }">
-            {{ row.direction === 'CREDIT' ? '+' : '−' }}¥{{ displayAmount(row.amount) }}
+            {{ row.direction === 'CREDIT' ? '+' : '−' }}¥{{ displayMoney(row.amount) }}
           </text>
         </view>
       </view>
@@ -40,7 +40,8 @@
   import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { displayAmount, formatDateTime } from '@/utils/order-display';
+  import { formatDateTime } from '@/utils/order-display';
+  import { displayMoney } from '@/utils/money-display';
   import { movementTypeText } from '@/utils/funds-display';
 
   const { themeStyle } = useMallTheme();

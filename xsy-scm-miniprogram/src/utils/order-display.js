@@ -107,12 +107,6 @@ export function displayQuantity(quantity) {
   return frac ? `${int}.${frac}` : `${int}`;
 }
 
-/** 金额展示：服务端下发四位小数字符串，空值显示 —，不把 null 当 0 */
-export function displayAmount(amount) {
-  if (amount === null || amount === undefined || amount === '') return '—';
-  return String(amount);
-}
-
 export function formatDateTime(value) {
   // 一律换算到 Asia/Shanghai：后端时间字段的偏移不保证是 +08:00（PG 会话时区是 UTC 时就是 +00:00），
   // 直接截断字符串会让客户看到早 8 小时的时钟

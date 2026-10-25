@@ -15,7 +15,7 @@
             <text class="aa-item__name">{{ line.item.productName }}</text>
             <text class="aa__sub">{{ line.item.specName || '默认规格' }} · {{ line.item.saleUnit }}</text>
             <text class="aa__sub">
-              ¥{{ displayAmount(line.item.unitPrice) }} · 可申请
+              ¥{{ displayMoney(line.item.unitPrice) }} · 可申请
               {{ line.available === null ? '待称重后可申请' : `${displayQuantity(line.available)}${line.item.saleUnit}` }}
             </text>
             <view v-if="line.available !== null" class="aa-item__quantity">
@@ -33,7 +33,7 @@
             <text v-if="lineError(line)" class="aa-item__error">{{ lineError(line) }}</text>
           </view>
           <view class="aa-item__estimate">
-            <text v-if="lineEstimate(line)" class="aa-item__estimate-value">¥{{ lineEstimate(line) }}</text>
+            <text v-if="lineEstimate(line)" class="aa-item__estimate-value">¥{{ displayMoney(lineEstimate(line)) }}</text>
             <text v-if="lineEstimate(line)" class="aa-item__estimate-label">预估</text>
           </view>
         </view>
@@ -66,7 +66,7 @@
       <view class="aa-card">
         <view class="aa__row">
           <text class="aa__row-label">预估退款金额</text>
-          <text class="aa__row-value aa__row-value--strong">¥{{ estimatedTotal }}</text>
+          <text class="aa__row-value aa__row-value--strong">¥{{ displayMoney(estimatedTotal) }}</text>
         </view>
         <text class="aa__tip">预估金额按申请数量 × 成交单价计算，核定退款金额以平台审核为准</text>
       </view>
@@ -86,7 +86,8 @@
   import { mallOrderApi } from '@/api/mall/order-api';
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { displayAmount, displayQuantity } from '@/utils/order-display';
+  import { displayQuantity } from '@/utils/order-display';
+  import { displayMoney } from '@/utils/money-display';
   import { AFTERSALE_REASONS, estimateLineAmount, isValidApplyQuantity, sumAmounts } from '@/utils/after-sale-display';
   import { useKeyboardHeight } from '@/composables/use-keyboard-height';
 

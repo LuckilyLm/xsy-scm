@@ -8,7 +8,7 @@
     <template v-else>
       <view class="bill__hero">
         <text class="bill__hero-label">未结金额</text>
-        <text class="bill__hero-amount">¥{{ displayAmount(record.openAmount) }}</text>
+        <text class="bill__hero-amount">¥{{ displayMoney(record.openAmount) }}</text>
         <text class="bill__hero-state">{{ receivableStateText(record.settleState) }}<text v-if="record.overdue"> · 已逾期</text></text>
       </view>
       <view class="bill__card">
@@ -16,13 +16,13 @@
           ><text>账单编号</text><text>{{ record.receivableNo }}</text></view
         >
         <view class="bill__row"
-          ><text>原始应收</text><text>¥{{ displayAmount(record.amount) }}</text></view
+          ><text>原始应收</text><text>¥{{ displayMoney(record.amount) }}</text></view
         >
         <view class="bill__row"
-          ><text>退货红字冲减</text><text>¥{{ displayAmount(record.redAmount) }}</text></view
+          ><text>退货红字冲减</text><text>¥{{ displayMoney(record.redAmount) }}</text></view
         >
         <view class="bill__row"
-          ><text>有效核销</text><text>¥{{ displayAmount(record.writtenOffAmount) }}</text></view
+          ><text>有效核销</text><text>¥{{ displayMoney(record.writtenOffAmount) }}</text></view
         >
         <view class="bill__row"
           ><text>到期日</text><text>{{ formatDate(record.dueDate) || '未设置' }}</text></view
@@ -50,7 +50,8 @@
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { displayAmount, formatDate, formatDateTime } from '@/utils/order-display';
+  import { formatDate, formatDateTime } from '@/utils/order-display';
+  import { displayMoney } from '@/utils/money-display';
   import { receivableStateText } from '@/utils/funds-display';
   import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 

@@ -34,7 +34,7 @@
       <view class="movements__top">
         <text class="movements__type">{{ movementTypeText(row.movementType) }}</text>
         <text class="movements__amount" :class="{ 'movements__amount--in': row.direction === 'CREDIT' }">
-          {{ row.direction === 'CREDIT' ? '+' : '−' }}¥{{ displayAmount(row.amount) }}
+          {{ row.direction === 'CREDIT' ? '+' : '−' }}¥{{ displayMoney(row.amount) }}
         </text>
       </view>
       <text class="movements__meta">{{ formatDateTime(row.occurredAt) }}</text>
@@ -56,7 +56,8 @@
   import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { displayAmount, formatDateTime } from '@/utils/order-display';
+  import { formatDateTime } from '@/utils/order-display';
+  import { displayMoney } from '@/utils/money-display';
   import { MOVEMENT_FILTERS, movementTypeText } from '@/utils/funds-display';
 
   const { themeStyle } = useMallTheme();

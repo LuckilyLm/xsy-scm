@@ -42,7 +42,7 @@
         <!-- 无报价时展示「询价」，绝不显示 ¥0.00（规划 §11.3） -->
         <template v-if="priced">
           <text class="product-card__price-symbol">¥</text>
-          <text class="product-card__price">{{ product.price }}</text>
+          <text class="product-card__price">{{ displayMoney(product.price) }}</text>
           <text class="product-card__unit">/{{ product.unit }}</text>
         </template>
         <text v-else class="product-card__price--unpriced">询价</text>
@@ -62,6 +62,7 @@
 
 <script setup>
   import { computed, ref, watch } from 'vue';
+  import { displayMoney } from '@/utils/money-display';
   import {
     hasPrice,
     isNonStandard,
@@ -344,8 +345,8 @@
       flex-shrink: 0;
       margin-left: $space-3;
       padding: 0 $space-4;
-      /* 44px 触控下限；文字仍是小字号，只是可点区域变大 */
-      height: 72rpx;
+      /* 88rpx = 44px 触控下限；文字仍是小字号，只是可点区域变大 */
+      height: 88rpx;
       border-radius: $radius-pill;
       @include flex-center;
 

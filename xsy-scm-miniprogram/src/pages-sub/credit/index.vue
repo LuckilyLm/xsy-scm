@@ -12,7 +12,7 @@
       </view>
       <view class="credit__hero">
         <text class="credit__hero-label">本客户应收未结</text>
-        <text class="credit__hero-amount">¥{{ displayAmount(summary.openReceivableAmount) }}</text>
+        <text class="credit__hero-amount">¥{{ displayMoney(summary.openReceivableAmount) }}</text>
         <text class="credit__hero-hint">来自已生成的应收账单，不含尚未转应收的订单</text>
       </view>
       <view v-if="summary.earliestOverdueDate" class="credit__alert">
@@ -20,12 +20,12 @@
       </view>
       <view class="credit__card">
         <view class="credit__row"
-          ><text>已确认订单占用</text><text>¥{{ displayAmount(summary.confirmedOrderAmount) }}</text></view
+          ><text>已确认订单占用</text><text>¥{{ displayMoney(summary.confirmedOrderAmount) }}</text></view
         >
         <view class="credit__row">
           <text>授信额度</text>
           <text>{{
-            summary.sharedSettlement ? '共享额度暂不展示' : summary.creditLimitVisible ? `¥${displayAmount(summary.creditLimit)}` : '未设置明确额度'
+            summary.sharedSettlement ? '共享额度暂不展示' : summary.creditLimitVisible ? `¥${displayMoney(summary.creditLimit)}` : '未设置明确额度'
           }}</text>
         </view>
         <view v-if="!summary.sharedSettlement && summary.creditPeriodType" class="credit__row">
@@ -49,7 +49,7 @@
               ><text>{{ receivableStateText(row.settleState) }}</text
               ><uni-icons type="right" :size="12" :color="COLOR_SUCCESS" /></view
           ></view>
-          <text class="credit__bill-sub">未结 ¥{{ displayAmount(row.openAmount) }} · 到期 {{ formatDate(row.dueDate) || '未设置' }}</text>
+          <text class="credit__bill-sub">未结 ¥{{ displayMoney(row.openAmount) }} · 到期 {{ formatDate(row.dueDate) || '未设置' }}</text>
         </view>
       </view>
     </template>
@@ -63,7 +63,8 @@
   import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { displayAmount, formatDate } from '@/utils/order-display';
+  import { formatDate } from '@/utils/order-display';
+  import { displayMoney } from '@/utils/money-display';
   import { receivableStateText } from '@/utils/funds-display';
   import { COLOR_PRIMARY, COLOR_SUCCESS, COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 
@@ -111,7 +112,7 @@
   }
 
   function periodText(value) {
-    if (value.creditPeriodType === 'BY_AMOUNT') return `达到 ¥${displayAmount(value.creditAmountThreshold)} 结算`;
+    if (value.creditPeriodType === 'BY_AMOUNT') return `达到 ¥${displayMoney(value.creditAmountThreshold)} 结算`;
     if (value.creditPeriodType === 'BY_TIME' && value.creditPeriodUnit === 'DAY') return `${value.creditPeriodValue} 天`;
     if (value.creditPeriodType === 'BY_TIME' && value.creditPeriodUnit === 'MONTH') {
       return `${value.creditPeriodValue} 个月${value.settleDay ? ` · 每月 ${value.settleDay} 日` : ''}`;

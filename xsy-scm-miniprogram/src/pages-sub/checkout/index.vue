@@ -54,13 +54,13 @@
           <text class="co-item__name">{{ item.productName }}</text>
           <text class="co-item__spec">{{ item.specName }}<text v-if="item.nonStandard"> · 按实重</text></text>
           <view class="co-item__price-row">
-            <text v-if="isAvailable(item)" class="co-item__price">¥{{ item.unitPrice }}</text>
+            <text v-if="isAvailable(item)" class="co-item__price">¥{{ displayMoney(item.unitPrice) }}</text>
             <text v-else class="co-item__price co-item__price--off">不可售</text>
             <text class="co-item__unit">/{{ item.saleUnit }}</text>
             <text class="co-item__qty">×{{ displayQuantity(item.quantity) }}</text>
           </view>
         </view>
-        <text v-if="isAvailable(item)" class="co-item__amount">¥{{ item.lineAmount }}</text>
+        <text v-if="isAvailable(item)" class="co-item__amount">¥{{ displayMoney(item.lineAmount) }}</text>
       </view>
       <view v-if="nonStandardCount" class="co-tip"> 含 {{ nonStandardCount }} 项按实重结算，最终金额以出库实重为准 </view>
     </view>
@@ -80,10 +80,11 @@
 
     <view v-if="promotion && previewReady" class="co-card co-promotion">
       <view class="co-row"
-        ><text class="co-row__label">商品预估金额</text><text>¥{{ estimatedAmount }}</text></view
+        ><text class="co-row__label">商品预估金额</text><text>¥{{ displayMoney(estimatedAmount) }}</text></view
       >
       <view v-if="Number(promotion.discountAmount) > 0" class="co-row"
-        ><text class="co-row__label">活动及优惠券优惠</text><text class="co-promotion__discount">−¥{{ promotion.discountAmount }}</text></view
+        ><text class="co-row__label">活动及优惠券优惠</text
+        ><text class="co-promotion__discount">−¥{{ displayMoney(promotion.discountAmount) }}</text></view
       >
       <text v-for="name in promotion.appliedActivityNames || []" :key="name" class="co-promotion__detail">{{ name }}</text>
       <text v-for="gift in promotion.giftDescriptions || []" :key="gift" class="co-promotion__detail">赠品：{{ gift }}</text>
@@ -131,7 +132,7 @@
         <text class="co-bar__label">优惠后预估</text>
         <text v-if="previewing" class="co-bar__hint">计算中…</text>
         <text v-else-if="!previewReady" class="co-bar__error" @click="refreshPreview">{{ promotionError || '金额获取失败，点击重试' }}</text>
-        <text v-else class="co-bar__value">¥{{ promotion?.payableAmount || estimatedAmount }}</text>
+        <text v-else class="co-bar__value">¥{{ displayMoney(promotion?.payableAmount || estimatedAmount) }}</text>
       </view>
       <view
         class="co-bar__submit"
@@ -156,6 +157,7 @@
   import { mallOrderApi } from '@/api/mall/order-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { shanghaiDate } from '@/utils/mall-date';
+  import { displayMoney } from '@/utils/money-display';
   import { CHECKOUT_ADDRESS } from '@/constants/local-storage-key-const';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
   import { useKeyboardHeight } from '@/composables/use-keyboard-height';
@@ -394,7 +396,7 @@
     if (option.amountVisible !== true) return '';
     const amount = option.availableAmount;
     if (amount === null || amount === undefined || amount === '') return '';
-    return `${option.method === 'CREDIT' ? '剩余额度' : '可用余额'} ¥${amount}`;
+    return `${option.method === 'CREDIT' ? '剩余额度' : '可用余额'} ¥${displayMoney(amount)}`;
   }
 
   function chooseSettlement(option) {

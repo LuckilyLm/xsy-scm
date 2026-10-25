@@ -5,10 +5,10 @@
     </view>
     <text class="done__title">订单已提交</text>
     <text v-if="orderNo" class="done__no">订单号 {{ orderNo }}</text>
-    <text v-if="amount" class="done__amount">订货金额 ¥{{ amount }}</text>
+    <text v-if="amount" class="done__amount">订货金额 ¥{{ displayMoney(amount) }}</text>
     <template v-if="hasDiscount">
-      <text class="done__discount">预估优惠 −¥{{ discount }}</text>
-      <text class="done__payable">预估应付 ¥{{ payable }}</text>
+      <text class="done__discount">预估优惠 −¥{{ displayMoney(discount) }}</text>
+      <text class="done__payable">预估应付 ¥{{ displayMoney(payable) }}</text>
     </template>
     <text class="done__final">最终确认金额：待后台确认</text>
     <text class="done__discount-tip">优惠在后台确认订单时重新校验，确认结果请查看订单详情。</text>
@@ -25,6 +25,7 @@
   import { computed, ref } from 'vue';
   import { COLOR_SUCCESS } from '@/constants/theme-color-const';
   import { useMallTheme } from '@/composables/use-mall-theme';
+  import { displayMoney } from '@/utils/money-display';
 
   import { onLoad } from '@dcloudio/uni-app';
 

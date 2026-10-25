@@ -63,7 +63,8 @@ test('after-sale center exposes apply, list and detail pages', () => {
 test('after-sale apply submits items and reason with an idempotency key', () => {
   const page = read('../src/pages-sub/after-sale/apply.vue');
   // 幂等键与「订单 + 明细 + 原因」绑定，重复提交不重复建单
-  assert.match(page, /mallAfterSaleApi\.apply\(\{ orderId: orderId\.value, reason: reason\.value, items \}, key\)/);
+  assert.match(page, /const payload = \{ orderId: orderId\.value, reason: reason\.value, items \};/);
+  assert.match(page, /mallAfterSaleApi\.apply\(payload, key\)/);
   assert.match(page, /aftersale-\$\{orderId\.value\}/);
   // 预估金额只是展示，核定以服务端审核为准
   assert.match(page, /以平台审核为准/);
@@ -412,6 +413,13 @@ test('published mall home uses the customer endpoint and checks web links agains
   assert.match(home, /homeLayout\.value\?\.releaseId != null/);
   assert.match(home, /request !== homeRequest \|\| !userStore\.isLogin \|\| userStore\.customerId !== customerId/);
   assert.match(home, /v-if="!hasPublishedLayout"/);
+  // 后台可配置的公告与快捷入口必须在首页真正渲染，不能只存在草稿里
+  assert.match(home, /section\.type === 'ANNOUNCEMENT'/);
+  assert.match(home, /section\.type === 'SHORTCUT_GROUP'/);
+  assert.doesNotMatch(home, /section\.type !== 'ANNOUNCEMENT'/);
+  // 分类/领券入口跟在轮播之后，不再固定压在轮播上方
+  assert.match(home, /section\.type === 'RAIL'/);
+  assert.match(home, /bannerIndex \+ 1/);
   assert.match(web, /mallHomeApi\.published\(\)/);
   assert.match(web, /block\.linkType === 'EXTERNAL_URL' && block\.linkTarget === value/);
   assert.match(routes, /"root": "pages-sub\/mall"/);

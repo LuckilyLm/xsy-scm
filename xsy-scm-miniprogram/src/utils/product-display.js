@@ -54,9 +54,11 @@ export function showAvailableQty(product) {
   return !!product && product.stockStatus === STOCK_STATUS.AVAILABLE && product.availableQty != null;
 }
 
-/** 是否有客户价。null / undefined / '' 都视为无价 */
+/** 是否有客户价。null / undefined / '' / 0 都视为无价，避免把 ¥0.00 当报价展示 */
 export function hasPrice(product) {
-  return !!product && product.price !== null && product.price !== undefined && product.price !== '';
+  if (!product || product.price === null || product.price === undefined || product.price === '') return false;
+  const value = Number(product.price);
+  return Number.isFinite(value) && value > 0;
 }
 
 /**

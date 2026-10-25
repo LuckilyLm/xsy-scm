@@ -26,7 +26,7 @@
       >
       <text class="bills__order">订单 {{ row.orderNo || '—' }}</text>
       <view class="bills__amount"
-        ><text>未结金额</text><text>¥{{ displayAmount(row.openAmount) }}</text></view
+        ><text>未结金额</text><text>¥{{ displayMoney(row.openAmount) }}</text></view
       >
       <view class="bills__foot"
         ><text>到期日 {{ formatDate(row.dueDate) || '未设置' }}</text
@@ -47,7 +47,8 @@
   import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { displayAmount, formatDate } from '@/utils/order-display';
+  import { formatDate } from '@/utils/order-display';
+  import { displayMoney } from '@/utils/money-display';
   import { RECEIVABLE_FILTERS, receivableStateText } from '@/utils/funds-display';
   import { LOAD_MORE_TEXT } from '@/constants/load-more-const';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';

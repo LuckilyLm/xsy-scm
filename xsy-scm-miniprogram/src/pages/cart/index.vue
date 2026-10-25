@@ -56,7 +56,7 @@
 
             <view v-if="isSettleable(item)" class="cart-item__price-row">
               <text class="cart-item__price-symbol">¥</text>
-              <text class="cart-item__price">{{ item.unitPrice }}</text>
+              <text class="cart-item__price">{{ displayMoney(item.unitPrice) }}</text>
               <text class="cart-item__unit">/{{ item.saleUnit }}</text>
             </view>
             <text v-else class="cart-item__unavailable">{{ unavailableText(item) }}</text>
@@ -114,6 +114,7 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_SECONDARY, COLOR_WARNING } from '@/constants/theme-color-const';
   import { useMallTheme } from '@/composables/use-mall-theme';
+  import { displayMoney } from '@/utils/money-display';
 
   const { theme, themeStyle } = useMallTheme();
 
@@ -188,7 +189,7 @@
     try {
       const response = await mallCartApi.estimate(skuIds);
       if (seq !== estimateSeq) return;
-      selectedAmount.value = response.data?.estimatedAmount || '0.00';
+      selectedAmount.value = displayMoney(response.data?.estimatedAmount || '0.00');
       estimateState.value = 'idle';
     } catch (error) {
       if (seq !== estimateSeq) return;

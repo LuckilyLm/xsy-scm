@@ -14,7 +14,7 @@
     <view class="summary__totals">
       <view class="summary__total">
         <text class="summary__total-label">合计金额</text>
-        <text class="summary__total-value">¥{{ displayAmount(totals.amount) }}</text>
+        <text class="summary__total-value">¥{{ displayMoney(totals.amount) }}</text>
       </view>
       <view class="summary__total">
         <text class="summary__total-label">商品规格</text>
@@ -44,7 +44,7 @@
         <text class="summary__meta">出现在 {{ row.orderCount }} 张订单</text>
       </view>
       <view class="summary__figures">
-        <text class="summary__amount">¥{{ displayAmount(row.amount) }}</text>
+        <text class="summary__amount">¥{{ displayMoney(row.amount) }}</text>
         <text class="summary__qty">{{ displayQuantity(row.quantity) }}{{ row.saleUnit || '' }}</text>
       </view>
     </view>
@@ -63,7 +63,8 @@
   import { mallOrderApi } from '@/api/mall/order-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
-  import { displayAmount, displayQuantity } from '@/utils/order-display';
+  import { displayQuantity } from '@/utils/order-display';
+  import { displayMoney } from '@/utils/money-display';
 
   const { themeStyle } = useMallTheme();
 

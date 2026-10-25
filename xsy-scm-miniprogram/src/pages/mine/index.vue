@@ -9,48 +9,38 @@
       <text v-if="!userStore.isLogin" class="mine__login" @click="goLogin">登录</text>
     </view>
     <view class="mine__card">
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goCart"
-        ><text>购物车</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goAddress"
-        ><text>收货地址</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goAfterSales"
-        ><text>售后服务</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goWallet"
-        ><text>我的钱包</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goCredit"
-        ><text>账期与账单</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goMyCoupons"
-        ><text>我的优惠券</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goCoupons"
-        ><text>领券中心</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goPage('ANNOUNCEMENT')"
-        ><text>商城公告</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goPage('ABOUT')"
-        ><text>关于我们</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goPage('TERMS')"
-        ><text>服务条款</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goPage('AFTER_SALE')"
-        ><text>售后规则</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="changePassword"
-        ><text>修改登录密码</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goOrders"
-        ><text>我的订单</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
-      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="scanTrace"
-        ><text>扫码溯源</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
-      /></view>
+      <text class="mine__group-title">常用功能</text>
+      <view class="mine__grid">
+        <view
+          v-for="entry in primaryEntries"
+          :key="entry.key"
+          class="mine__entry"
+          hover-class="xsy-press--active"
+          :hover-stay-time="80"
+          @click="entry.onClick"
+        >
+          <view class="mine__entry-icon">
+            <uni-icons :type="entry.icon" :size="20" :color="theme.primary" />
+          </view>
+          <text class="mine__entry-text">{{ entry.label }}</text>
+        </view>
+      </view>
+      <text class="mine__group-title mine__group-title--divided">服务与帮助</text>
+      <view class="mine__grid">
+        <view
+          v-for="entry in serviceEntries"
+          :key="entry.key"
+          class="mine__entry"
+          hover-class="xsy-press--active"
+          :hover-stay-time="80"
+          @click="entry.onClick"
+        >
+          <view class="mine__entry-icon">
+            <uni-icons :type="entry.icon" :size="20" :color="theme.primary" />
+          </view>
+          <text class="mine__entry-text">{{ entry.label }}</text>
+        </view>
+      </view>
     </view>
     <view v-if="userStore.isLogin" class="mine__logout" hover-class="xsy-press--active" :hover-stay-time="80" @click="logout">退出登录</view>
     <XsyTabBar :active="4" />
@@ -62,10 +52,9 @@
   import { useSystemLayout } from '@/composables/use-system-layout';
   import { useMallTheme } from '@/composables/use-mall-theme';
   import { useUserStore } from '@/store/modules/system/user';
-  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
   import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
 
-  const { themeStyle } = useMallTheme();
+  const { theme, themeStyle } = useMallTheme();
 
   const { statusBarHeight, menuButtonRect } = useSystemLayout();
   /** 未登录时右侧有「登录」按钮，必须让开右上角胶囊 */
@@ -141,6 +130,30 @@
     });
   }
 
+  /*
+   * 「我的」入口按快捷入口的栅格排布：图标 + 文字、四列。原先的列表每行只放一个
+   * 入口，十四个入口要滑很久；栅格一屏能放下，和首页快捷入口的视觉语言也一致。
+   */
+  const primaryEntries = [
+    { key: 'orders', label: '我的订单', icon: 'list', onClick: goOrders },
+    { key: 'cart', label: '购物车', icon: 'cart', onClick: goCart },
+    { key: 'address', label: '收货地址', icon: 'location', onClick: goAddress },
+    { key: 'after-sale', label: '售后服务', icon: 'refresh', onClick: goAfterSales },
+    { key: 'wallet', label: '我的钱包', icon: 'wallet', onClick: goWallet },
+    { key: 'credit', label: '账期与账单', icon: 'calendar', onClick: goCredit },
+    { key: 'my-coupons', label: '我的优惠券', icon: 'vip', onClick: goMyCoupons },
+    { key: 'coupons', label: '领券中心', icon: 'gift', onClick: goCoupons },
+  ];
+
+  const serviceEntries = [
+    { key: 'trace', label: '扫码溯源', icon: 'scan', onClick: scanTrace },
+    { key: 'announcement', label: '商城公告', icon: 'sound', onClick: () => goPage('ANNOUNCEMENT') },
+    { key: 'about', label: '关于我们', icon: 'info', onClick: () => goPage('ABOUT') },
+    { key: 'terms', label: '服务条款', icon: 'compose', onClick: () => goPage('TERMS') },
+    { key: 'after-sale-rule', label: '售后规则', icon: 'help', onClick: () => goPage('AFTER_SALE') },
+    { key: 'password', label: '修改登录密码', icon: 'locked', onClick: changePassword },
+  ];
+
   function logout() {
     uni.showModal({
       title: '退出登录',
@@ -203,13 +216,48 @@
     @include card(0);
     overflow: hidden;
   }
-  .mine__row {
+  .mine__group-title {
+    display: block;
+    padding: $space-4 var(--xsy-page-x) $space-1;
+    color: $color-text-tertiary;
+    font-size: $font-size-sm;
+  }
+  /* 第二组标题上一道细分隔线，分组清楚但不抢眼 */
+  .mine__group-title--divided {
+    margin-top: $space-2;
+    padding-top: $space-4;
+    border-top: 1px solid $color-border;
+  }
+  .mine__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: $space-2;
+    padding: $space-1 var(--xsy-page-x) $space-3;
+  }
+  .mine__entry {
     @include pressable;
-    height: 100rpx;
-    padding: 0 var(--xsy-page-x);
-    @include flex-between;
-    @include hairline-bottom;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-1;
+    padding: $space-2 0;
+  }
+  .mine__entry-icon {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+    background: var(--mall-primary-light, #e8f5ec);
+    @include flex-center;
+  }
+  .mine__entry-text {
+    max-width: 100%;
     color: $color-text-primary;
+    /* 11px 中文在四列栅格里会糊成一团，12px 仍能放下最长的「修改登录密码」 */
+    font-size: $font-size-sm;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .mine__logout {
     @include pressable;

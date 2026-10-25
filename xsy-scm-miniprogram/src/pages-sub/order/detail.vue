@@ -115,7 +115,7 @@
             <text class="od-item__name">{{ item.productName }}</text>
             <text class="od__sub">{{ item.specName || '默认规格' }} · {{ item.saleUnit }}</text>
             <view class="od-item__prices">
-              <text class="od-item__price">¥{{ displayAmount(item.unitPrice) }}</text>
+              <text class="od-item__price">¥{{ displayMoney(item.unitPrice) }}</text>
               <text class="od__sub"> × {{ displayQuantity(item.orderedQuantity) }}</text>
             </view>
             <text v-if="item.nonStandard" class="od-item__actual">
@@ -123,7 +123,7 @@
             </text>
           </view>
           <view class="od-item__amount">
-            <text class="od-item__amount-value"> ¥{{ displayAmount(item.settlementLineAmount || item.orderedLineAmount) }} </text>
+            <text class="od-item__amount-value"> ¥{{ displayMoney(item.settlementLineAmount || item.orderedLineAmount) }} </text>
             <text class="od-item__amount-label">{{ item.settlementLineAmount ? '结算' : '预估' }}</text>
           </view>
         </view>
@@ -133,11 +133,11 @@
         <view class="od-card__title">金额</view>
         <view class="od__row">
           <text class="od__row-label">预计金额</text>
-          <text class="od__row-value">¥{{ displayAmount(order.orderedTotalAmount) }}</text>
+          <text class="od__row-value">¥{{ displayMoney(order.orderedTotalAmount) }}</text>
         </view>
         <view v-if="order.discount" class="od__row">
           <text class="od__row-label">已确认优惠</text>
-          <text class="od__row-value">−¥{{ displayAmount(order.discount.discountAmount) }}</text>
+          <text class="od__row-value">−¥{{ displayMoney(order.discount.discountAmount) }}</text>
         </view>
         <text v-if="order.discount?.couponName" class="od__sub">优惠券：{{ order.discount.couponName }}</text>
         <text v-for="name in order.discount?.activityNames || []" :key="name" class="od__sub">活动：{{ name }}</text>
@@ -145,7 +145,7 @@
         <view class="od__row">
           <text class="od__row-label">{{ order.discount ? '实重商品金额（优惠前）' : '最终结算金额' }}</text>
           <text class="od__row-value od__row-value--strong">
-            {{ order.settlementTotalAmount ? `¥${displayAmount(order.settlementTotalAmount)}` : '待结算' }}
+            {{ order.settlementTotalAmount ? `¥${displayMoney(order.settlementTotalAmount)}` : '待结算' }}
           </text>
         </view>
         <!-- 资金投影只读服务端算出的应付净额与已付（确认前不下发，页面不显示资金行；客户端不算钱） -->
@@ -156,19 +156,19 @@
         <template v-if="order.payableAmount">
           <view class="od__row">
             <text class="od__row-label">应付金额（优惠后）</text>
-            <text class="od__row-value od__row-value--strong">¥{{ displayAmount(order.payableAmount) }}</text>
+            <text class="od__row-value od__row-value--strong">¥{{ displayMoney(order.payableAmount) }}</text>
           </view>
           <view class="od__row">
             <text class="od__row-label">已付金额</text>
-            <text class="od__row-value">¥{{ displayAmount(order.paidAmount) }}</text>
+            <text class="od__row-value">¥{{ displayMoney(order.paidAmount) }}</text>
           </view>
           <view class="od__row">
             <text class="od__row-label">待付金额</text>
-            <text class="od__row-value">¥{{ displayAmount(dueAmount(order)) }}</text>
+            <text class="od__row-value">¥{{ displayMoney(dueAmount(order)) }}</text>
           </view>
           <view v-if="order.excessPaidAmount && order.excessPaidAmount !== '0.0000'" class="od__row">
             <text class="od__row-label">已付超出当前应付</text>
-            <text class="od__row-value">¥{{ displayAmount(order.excessPaidAmount) }}</text>
+            <text class="od__row-value">¥{{ displayMoney(order.excessPaidAmount) }}</text>
           </view>
           <text v-if="order.excessPaidAmount && order.excessPaidAmount !== '0.0000'" class="od__tip">
             差额不会自动返还，退款结果请查看售后记录。
@@ -245,7 +245,6 @@
   import {
     CANCEL_REASONS,
     canPayByWallet,
-    displayAmount,
     displayQuantity,
     displayStatusLevel,
     displayStatusText,
@@ -256,6 +255,7 @@
     settlementMethodText,
   } from '@/utils/order-display';
   import { afterSaleStatusLevel, afterSaleStatusText, canApplyAfterSale } from '@/utils/after-sale-display';
+  import { displayMoney } from '@/utils/money-display';
 
   const { themeStyle } = useMallTheme();
 
@@ -353,7 +353,7 @@
     const due = dueAmount(order.value);
     uni.showModal({
       title: '确认余额支付',
-      content: `将从结算主体钱包扣减 ¥${displayAmount(due)}，确认支付？`,
+      content: `将从结算主体钱包扣减 ¥${displayMoney(due)}，确认支付？`,
       success: ({ confirm }) => {
         if (confirm) doPay();
       },

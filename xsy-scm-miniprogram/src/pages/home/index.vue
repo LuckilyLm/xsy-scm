@@ -11,42 +11,21 @@
 
     <!-- 搜索框：公告之下，白底绿描边胶囊 -->
     <view class="home__search-wrap">
-      <view class="home__search" hover-class="xsy-press--active" :hover-stay-time="80" @click="goSearch">
+      <view class="home__search" hover-class="xsy-press--active" :hover-stay-time="80" aria-label="搜索商品名称或规格" @click="goSearch">
         <uni-icons type="search" :size="18" :color="theme.primary" />
         <text class="home__search-text">搜索商品名称或规格</text>
       </view>
     </view>
 
-    <!-- 分类横滑：取三级分类（蔬菜、水果、猪肉…），最后一个固定为领券中心 -->
-    <view v-if="categoryRail.length" class="home__rail">
-      <scroll-view class="home__rail-scroll" scroll-x :show-scrollbar="false">
-        <view class="home__rail-inner">
-          <view
-            v-for="item in categoryRail"
-            :key="item.categoryId"
-            class="home__rail-item"
-            hover-class="xsy-press--active"
-            :hover-stay-time="80"
-            @click="goCategory(item.categoryId)"
-          >
-            <view class="home__rail-icon">
-              <text class="home__rail-emoji" aria-hidden="true">{{ categoryEmoji(item.categoryName) }}</text>
-            </view>
-            <text class="home__rail-text">{{ item.categoryName }}</text>
-          </view>
-          <view v-if="userStore.isLogin" class="home__rail-item" hover-class="xsy-press--active" :hover-stay-time="80" @click="goCoupons">
-            <view class="home__rail-icon">
-              <uni-icons type="gift" :size="20" :color="theme.primary" />
-            </view>
-            <text class="home__rail-text">领券中心</text>
-          </view>
-        </view>
-      </scroll-view>
-    </view>
-
     <template v-for="section in contentSections" :key="section.key">
       <view v-if="section.type === 'BANNER_GROUP'" class="home__banner-wrap">
-        <swiper class="home__banner" :indicator-dots="section.items.length > 1" :autoplay="section.items.length > 1" :interval="4500" circular>
+        <swiper
+          class="home__banner"
+          :indicator-dots="section.items.length > 1"
+          :autoplay="section.items.length > 1 && bannerAutoplay"
+          :interval="4500"
+          :circular="section.items.length > 1"
+        >
           <swiper-item v-for="item in section.items" :key="item.key" class="home__banner-slide" @click="goHomeLink(item)">
             <image class="home__banner-image" :src="item.imageUrl" :alt="item.title || '商城活动'" mode="aspectFill" />
             <view v-if="item.title || item.subtitle" class="home__banner-caption">
@@ -56,8 +35,52 @@
           </swiper-item>
         </swiper>
       </view>
+      <!-- 分类横滑：跟在轮播之后，与公告条交换位置；没有分类时整行不出现 -->
+      <view v-else-if="section.type === 'RAIL'" class="home__rail">
+        <scroll-view class="home__rail-scroll" scroll-x :show-scrollbar="false">
+          <view class="home__rail-inner">
+            <view
+              v-for="item in categoryRail"
+              :key="item.categoryId"
+              class="home__rail-item"
+              hover-class="xsy-press--active"
+              :hover-stay-time="80"
+              @click="goCategory(item.categoryId)"
+            >
+              <view class="home__rail-icon">
+                <text class="home__rail-emoji" aria-hidden="true">{{ categoryEmoji(item.categoryName) }}</text>
+              </view>
+              <text class="home__rail-text">{{ item.categoryName }}</text>
+            </view>
+            <view v-if="userStore.isLogin" class="home__rail-item" hover-class="xsy-press--active" :hover-stay-time="80" @click="goCoupons">
+              <view class="home__rail-icon">
+                <uni-icons type="gift" :size="20" :color="theme.primary" />
+              </view>
+              <text class="home__rail-text">领券中心</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+      <view
+        v-else-if="section.type === 'ANNOUNCEMENT'"
+        class="home__notice"
+        :class="{ 'home__notice--link': hasLink(section) }"
+        @click="hasLink(section) && goHomeLink(section)"
+      >
+        <text class="home__notice-tag">公告</text>
+        <text class="home__notice-text">{{ section.text }}</text>
+        <!-- 只有配置了跳转才显示箭头，避免出现点了没反应的假入口 -->
+        <uni-icons v-if="hasLink(section)" type="right" :size="14" :color="COLOR_TEXT_TERTIARY" />
+      </view>
+      <view v-else-if="section.type === 'SHORTCUT_GROUP'" class="home__shortcuts">
+        <view v-for="item in section.items" :key="item.key" class="home__shortcut" @click="goHomeLink(item)">
+          <image v-if="item.imageUrl" class="home__shortcut-icon" :src="item.imageUrl" mode="aspectFill" lazy-load />
+          <view v-else class="home__shortcut-icon home__shortcut-icon--fallback">{{ (item.title || '入').slice(0, 1) }}</view>
+          <text class="home__shortcut-text">{{ item.title }}</text>
+        </view>
+      </view>
       <view v-else-if="section.type === 'ACTIVITY_TOPIC'" class="home__topic" @click="goHomeLink(section)">
-        <image v-if="section.imageUrl" :src="section.imageUrl" class="home__topic-image" mode="aspectFill" />
+        <image v-if="section.imageUrl" :src="section.imageUrl" class="home__topic-image" mode="aspectFill" lazy-load />
         <view class="home__topic-copy">
           <text class="home__section-title">{{ section.title }}</text>
           <text v-if="section.subtitle" class="home__topic-subtitle">{{ section.subtitle }}</text>
@@ -209,6 +232,8 @@
   let homeRequest = 0;
   const popup = ref(null);
   const popupVisible = ref(false);
+  /** 页面不可见时暂停轮播，避免后台继续计时和耗电 */
+  const bannerAutoplay = ref(true);
   /** EVERY_ENTRY：本次进入首页是否已经展示过；onHide 后重置 */
   const popupShownThisEntry = ref(false);
   let popupRequest = 0;
@@ -225,9 +250,17 @@
     }
     return result;
   });
-  const contentSections = computed(() =>
-    configuredSections.value.filter((section) => section.type !== 'ANNOUNCEMENT' && section.type !== 'SHORTCUT_GROUP')
-  );
+  /**
+   * 分类横滑不是后台组件，但它需要跟在轮播后面：把 RAIL 作为虚拟段插入轮播之后。
+   * 公告等后台组件仍按 sortOrder 渲染，所以公告排在轮播前时就会显示在轮播上方。
+   */
+  const contentSections = computed(() => {
+    const sections = configuredSections.value;
+    if (!categoryRail.value.length) return sections;
+    const bannerIndex = sections.findIndex((section) => section.type === 'BANNER_GROUP');
+    const railIndex = bannerIndex < 0 ? 0 : bannerIndex + 1;
+    return [...sections.slice(0, railIndex), { type: 'RAIL', key: 'rail' }, ...sections.slice(railIndex)];
+  });
   /** 分类横滑：服务端三级分类（蔬菜 / 水果 / 猪肉 …），比固定的快捷入口更贴近采购习惯 */
   const categoryRail = ref([]);
   async function loadCategoryRail() {
@@ -398,6 +431,11 @@
     }
   );
 
+  /** 是否配置了可跳转的链接；没有链接的公告/图片不接受点击 */
+  function hasLink(block) {
+    return Boolean(block && block.linkType && block.linkType !== 'NONE');
+  }
+
   function goHomeLink(block) {
     const target = block.linkTarget;
     switch (block.linkType) {
@@ -460,6 +498,7 @@
   });
   let showed = false;
   onShow(() => {
+    bannerAutoplay.value = true;
     if (showed) {
       loadProducts(true);
       loadHomeLayout();
@@ -469,6 +508,7 @@
   });
   onHide(() => {
     // 页面不可见即结束「本次进入」；再次进入时 EVERY_ENTRY 可重新展示
+    bannerAutoplay.value = false;
     popupShownThisEntry.value = false;
     popupVisible.value = false;
   });
@@ -516,7 +556,8 @@
   .home__search {
     @include pressable;
     @include flex-start;
-    height: 76rpx;
+    /* 88rpx = 44px，满足移动端最小触控高度 */
+    height: 88rpx;
     padding: 0 $space-3;
     border: 1px solid var(--mall-primary, #16a34a);
     border-radius: $radius-pill;
@@ -585,6 +626,8 @@
     display: block;
     width: 100%;
     height: 280rpx;
+    /* 图片未加载或加载失败时仍是主题色块，不出现白洞 */
+    background: linear-gradient(135deg, var(--mall-primary, #16a34a), var(--mall-primary-dark, #12833c));
   }
   .home__banner-slide {
     position: relative;
@@ -607,6 +650,69 @@
   }
   .home__banner-subtitle {
     font-size: $font-size-sm;
+  }
+  .home__notice {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    margin: $space-3 var(--xsy-page-x) 0;
+    padding: 0 $space-3;
+    /* 整行可点，高度按 44px 触控下限 */
+    min-height: 88rpx;
+    border-radius: $radius-md;
+    background: white;
+  }
+  .home__notice-tag {
+    flex-shrink: 0;
+    padding: 2rpx 10rpx;
+    border-radius: $radius-sm;
+    background: var(--mall-primary, #16a34a);
+    color: white;
+    font-size: $font-size-xs;
+  }
+  .home__notice-text {
+    flex: 1;
+    min-width: 0;
+    color: $color-text-primary;
+    font-size: $font-size-sm;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .home__shortcuts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: $space-2;
+    margin-top: $space-3;
+    padding: $space-3 var(--xsy-page-x);
+    background: white;
+  }
+  .home__shortcut {
+    @include pressable;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-1;
+    padding: $space-2 0;
+  }
+  .home__shortcut-icon {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: $radius-md;
+    background: $color-bg-hover;
+  }
+  .home__shortcut-icon--fallback {
+    @include flex-center;
+    color: var(--mall-primary, #16a34a);
+    font-size: $font-size-sm;
+  }
+  .home__shortcut-text {
+    max-width: 100%;
+    color: $color-text-secondary;
+    font-size: $font-size-xs;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .home__topic {
     margin-top: $space-3;
@@ -672,6 +778,9 @@
   }
   .home__section-link {
     @include pressable;
+    /* 负外边距抵消内边距，视觉位置不变但点击区域达到 44px */
+    padding: $space-3 0 $space-3 $space-4;
+    margin: -$space-3 0;
     color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
   }

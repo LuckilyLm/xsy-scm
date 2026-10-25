@@ -42,13 +42,11 @@
           <view class="ad-item__main">
             <text class="ad-item__name">{{ item.productName }}</text>
             <text class="ad__sub">{{ item.specName || '默认规格' }} · {{ item.unit }}</text>
-            <text class="ad__sub"
-              >申请 {{ displayQuantity(item.requestedQuantity) }}{{ item.unit }} × ¥{{ displayAmount(item.lockedUnitPrice) }}</text
-            >
+            <text class="ad__sub">申请 {{ displayQuantity(item.requestedQuantity) }}{{ item.unit }} × ¥{{ displayMoney(item.lockedUnitPrice) }}</text>
             <text v-if="item.approvedQuantity" class="ad-item__approved"> 核定 {{ displayQuantity(item.approvedQuantity) }}{{ item.unit }} </text>
           </view>
           <view class="ad-item__amount">
-            <text class="ad-item__amount-value"> ¥{{ displayAmount(item.approvedQuantity ? item.approvedAmount : item.estimatedAmount) }} </text>
+            <text class="ad-item__amount-value"> ¥{{ displayMoney(item.approvedQuantity ? item.approvedAmount : item.estimatedAmount) }} </text>
             <text class="ad-item__amount-label">{{ item.approvedQuantity ? '核定' : '预估' }}</text>
           </view>
         </view>
@@ -58,7 +56,7 @@
         <view class="ad-card__title">退款详情</view>
         <view class="ad__row">
           <text class="ad__row-label">退款金额</text>
-          <text class="ad__row-value ad__row-value--strong">¥{{ displayAmount(record.refund.refundAmount) }}</text>
+          <text class="ad__row-value ad__row-value--strong">¥{{ displayMoney(record.refund.refundAmount) }}</text>
         </view>
         <view class="ad__row">
           <text class="ad__row-label">退款状态</text>
@@ -73,7 +71,7 @@
           <view v-for="(allocation, index) in record.refund.allocations" :key="index" class="ad__row">
             <text class="ad__row-label">{{ refundMethodText(allocation.method) }}</text>
             <text class="ad__row-value">
-              ¥{{ displayAmount(allocation.allocatedAmount) }} · {{ allocationStatusText(allocation.status) }}
+              ¥{{ displayMoney(allocation.allocatedAmount) }} · {{ allocationStatusText(allocation.status) }}
               <text v-if="allocation.succeededAt"> · {{ formatDateTime(allocation.succeededAt) }}</text>
             </text>
           </view>
@@ -95,11 +93,11 @@
         </view>
         <view class="ad__row">
           <text class="ad__row-label">申请金额（预估）</text>
-          <text class="ad__row-value">¥{{ displayAmount(record.requestedAmount) }}</text>
+          <text class="ad__row-value">¥{{ displayMoney(record.requestedAmount) }}</text>
         </view>
         <view v-if="record.approvedAt" class="ad__row">
           <text class="ad__row-label">核定退款金额</text>
-          <text class="ad__row-value ad__row-value--strong">¥{{ displayAmount(record.approvedAmount) }}</text>
+          <text class="ad__row-value ad__row-value--strong">¥{{ displayMoney(record.approvedAmount) }}</text>
         </view>
         <view class="ad__row">
           <text class="ad__row-label">申请时间</text>
@@ -121,7 +119,8 @@
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { displayAmount, displayQuantity, formatDateTime } from '@/utils/order-display';
+  import { displayQuantity, formatDateTime } from '@/utils/order-display';
+  import { displayMoney } from '@/utils/money-display';
   import { afterSaleStatusLevel, afterSaleStatusText, allocationStatusText, refundMethodText } from '@/utils/after-sale-display';
   import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 

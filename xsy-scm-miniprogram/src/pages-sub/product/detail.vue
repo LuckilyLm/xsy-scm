@@ -25,7 +25,7 @@
             <!-- 无报价时展示「询价」，绝不显示 ¥0.00（规划 §11.3） -->
             <template v-if="priced">
               <text class="detail__price-symbol">¥</text>
-              <text class="detail__price">{{ product.price }}</text>
+              <text class="detail__price">{{ displayMoney(product.price) }}</text>
               <text class="detail__unit">/{{ product.unit }}</text>
             </template>
             <text v-else class="detail__price-unpriced">询价</text>
@@ -143,6 +143,7 @@ import {mallCatalogApi} from '@/api/mall';
 import {isApiError} from '@/lib/smart-request';
 import {smartSentry} from '@/lib/smart-sentry';
 import {useMallCart} from '@/composables/use-mall-cart';
+import {displayMoney} from '@/utils/money-display';
 import {PLATFORM_ERROR_CODE} from '@/constants/error-code-const';
 import {
   hasPrice,
