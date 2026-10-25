@@ -9,6 +9,8 @@ export interface MallPage {
   content: string;
   version: number;
   publishedContent?: string | null;
+  /** 与已发布正文同一次发布的标题；未发布过时为空。 */
+  publishedTitle?: string | null;
   publishedVersion?: number | null;
   publishedAt?: string | null;
   publishedBy?: string | null;

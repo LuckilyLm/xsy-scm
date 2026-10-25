@@ -19,7 +19,7 @@
     <sql id="productColumns">
         <!--
           库存可售状态暂不可判定：商城尚未确定「按哪个仓库取可售量」的产品口径，
-          这里显式返回 UNKNOWN，不用近似值冒充「有货/缺货」。库存充足性由结算与下单时服务端重验。
+          这里显式返回 UNKNOWN，不用近似值冒充「有货/缺货」。先接单后采购，库存量只用于展示；结算与下单重验可售、报价与数量规则。
         -->
         s.id AS sku_id, p.id AS spu_id, p.category_id, c.name AS category_name,
             COALESCE(customer_alias.alias, p.name) AS product_name, s.sku_code, s.spec_name, s.sale_unit,

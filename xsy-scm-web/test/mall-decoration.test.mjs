@@ -48,11 +48,18 @@ test('white text contrast uses WCAG luminance and rejects overly light brand col
 
 test('decoration console exposes all seven tabs and saves theme color with the draft', () => {
   const layout = source('../src/views/business/scm/mall/mall-home-layout.vue');
-  for (const tab of ['首页设置', '首页弹窗', '商城公告', '服务条款', '关于我们', '售后规则', '店铺']) {
+  for (const tab of ['首页设置', '首页弹窗', '商城公告', '服务条款', '关于我们', '售后规则', '店铺', '发布记录']) {
     assert.match(layout, new RegExp(`tab="${tab}"`), `缺少${tab}标签页`);
   }
   assert.match(layout, /mallHomeApi\.save\(draftVersion\.value, themeCode\.value, themeColor\.value, blocks\.value\)/);
   assert.match(layout, /contrastWarning/);
+  // 发布记录独立成页，不能继续堆在右侧预览列底部
+  assert.match(layout, /<a-tab-pane key="history" tab="发布记录">/);
+  assert.doesNotMatch(layout, /a-collapse/);
+  // 保存、预览、发布用直白动词；预览和发布会先静默保存未保存修改
+  assert.doesNotMatch(layout, /保存草稿|发布草稿/);
+  assert.match(layout, /prepareSavedChanges/);
+  assert.match(layout, /function openPreview/);
 });
 
 test('popup settings enforce the five-image limit and https external links', () => {
@@ -67,6 +74,19 @@ test('page editor uploads to the public image folder and never trusts unsaved dr
   assert.match(page, /FILE_FOLDER_TYPE_ENUM\.PUBLIC_IMAGE\.value/);
   assert.match(page, /previewOpen/);
   assert.match(page, /publishPage/);
+  // 预览必须使用同一次发布的标题，不能拿当前草稿标题拼已发布正文
+  assert.match(page, /page\.publishedTitle \|\| page\.title/);
+  // 保存期间继续编辑时，不能把新输入覆盖成服务端旧快照，也不能误清未保存标记
+  assert.match(page, /const snapshot = \{title: title\.value, content: content\.value\}/);
+  assert.match(page, /保存期间的新修改尚未保存/);
+});
+
+test('home draft save does not clear dirty when the draft changed during the request', () => {
+  const layout = source('../src/views/business/scm/mall/mall-home-layout.vue');
+  assert.match(layout, /function draftSignature\(\): string/);
+  assert.match(layout, /const signature = draftSignature\(\)/);
+  assert.match(layout, /draftSignature\(\) === signature/);
+  assert.match(layout, /保存期间的新修改尚未保存/);
 });
 
 test('store QR is generated from the saved link, not the edited input', () => {

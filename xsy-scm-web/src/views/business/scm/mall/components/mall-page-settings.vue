@@ -33,7 +33,7 @@
 
     <a-modal v-model:open="previewOpen" title="页面预览" :footer="null" :width="720">
       <div class="page-preview">
-        <h3>{{ page.title }}</h3>
+        <h3>{{ page.publishedTitle || page.title }}</h3>
         <div v-if="page.publishedContent" class="page-preview__content" v-html="page.publishedContent"></div>
         <a-empty v-else description="这个页面还没有发布过" />
       </div>
@@ -113,13 +113,26 @@ async function save(): Promise<void> {
     void message.warning('页面内容不能为空');
     return;
   }
+  const snapshot = {title: title.value, content: content.value};
   saving.value = true;
   try {
-    apply(
-      (await mallDecorationApi.savePage({pageCode: props.pageCode, version: page.value.version, title: title.value.trim(), content: content.value}))
-        .data
-    );
-    void message.success('草稿已保存');
+    const data = (
+      await mallDecorationApi.savePage({
+        pageCode: props.pageCode,
+        version: page.value.version,
+        title: snapshot.title.trim(),
+        content: snapshot.content,
+      })
+    ).data;
+    if (title.value === snapshot.title && content.value === snapshot.content) {
+      apply(data);
+      void message.success('草稿已保存');
+    } else {
+      // 请求期间的输入没有写入服务端；只同步版本与已发布快照，保留编辑框里的新内容并继续标记未保存。
+      page.value = data;
+      dirty.value = true;
+      void message.warning('草稿已保存，保存期间的新修改尚未保存，请再次保存');
+    }
   } catch (cause) {
     void message.error(String((cause as Error)?.message || '草稿保存失败'));
   } finally {

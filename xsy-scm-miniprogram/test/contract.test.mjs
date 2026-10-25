@@ -401,7 +401,7 @@ test('frequent products follow the backend array contract', () => {
   assert.match(mock, /MOCK_PRODUCTS\.filter\(\(p\) => p\.favorite\)\.slice\(0, limit\)/);
 });
 
-test('published mall home uses the customer endpoint and checks web links against visible blocks', () => {
+test('published mall home uses the customer endpoint and checks web links against blocks and the active popup', () => {
   const home = read('../src/pages/home/index.vue');
   const api = read('../src/api/mall/home-api.js');
   const web = read('../src/pages-sub/mall/web.vue');
@@ -421,7 +421,11 @@ test('published mall home uses the customer endpoint and checks web links agains
   assert.match(home, /section\.type === 'RAIL'/);
   assert.match(home, /bannerIndex \+ 1/);
   assert.match(web, /mallHomeApi\.published\(\)/);
-  assert.match(web, /block\.linkType === 'EXTERNAL_URL' && block\.linkTarget === value/);
+  assert.match(web, /mallHomeApi\.popup\(\)/);
+  // 只配置在生效弹窗里的外链也必须能打开，不能只认已发布首页组件
+  assert.match(web, /Promise\.allSettled\(\[mallHomeApi\.published\(\), mallHomeApi\.popup\(\)\]\)/);
+  assert.match(web, /popup\?\.active \? popup\.items \|\| \[\]/);
+  assert.match(web, /item\.linkType === 'EXTERNAL_URL' && item\.linkTarget === value/);
   assert.match(routes, /"root": "pages-sub\/mall"/);
 });
 

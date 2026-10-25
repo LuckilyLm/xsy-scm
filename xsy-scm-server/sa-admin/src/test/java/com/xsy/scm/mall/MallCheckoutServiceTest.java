@@ -19,9 +19,11 @@ import com.xsy.scm.mall.cart.dao.MallCartDao;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.service.MallCatalogService;
 import com.xsy.scm.mall.order.domain.form.MallCheckoutItemForm;
+import com.xsy.scm.mall.order.domain.form.MallCheckoutPreviewForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderSubmitForm;
 import com.xsy.scm.mall.order.domain.vo.MallOrderSubmitVO;
 import com.xsy.scm.mall.order.domain.vo.MallSettlementOptionVO;
+import com.xsy.scm.mall.order.domain.vo.MallWarehouseOptionVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
 import com.xsy.scm.mall.order.service.MallSettlementService;
 import com.xsy.scm.mall.order.service.MallWarehouseService;
@@ -30,6 +32,7 @@ import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
 import com.xsy.scm.order.service.SalesOrderService;
+import com.xsy.scm.promotion.domain.vo.PromotionDiscountVO;
 import com.xsy.scm.promotion.service.PromotionDiscountService;
 import java.math.BigDecimal;
 import java.util.List;
@@ -64,11 +67,95 @@ class MallCheckoutServiceTest {
         cod.setMethod("COD");
         cod.setEnabled(true);
         when(settlementService.options(any(), any())).thenReturn(List.of(cod));
+        PromotionDiscountVO discount = new PromotionDiscountVO();
+        discount.setSpecialDiscount(new BigDecimal("0.0000"));
+        discount.setActivityDiscount(new BigDecimal("0.0000"));
+        discount.setCouponDiscount(new BigDecimal("0.0000"));
+        discount.setDiscountAmount(new BigDecimal("0.0000"));
+        discount.setFinalAmount(new BigDecimal("10.0000"));
+        when(promotionDiscountService.preview(any())).thenReturn(discount);
     }
 
     @AfterEach
     void tearDown() {
         SmartRequestUtil.remove();
+    }
+
+    @Test
+    void outOfStockButSellableLineStillSubmits() {
+        // 先接单后采购：库存为 0 只影响展示（预订），不能把已经加入购物车的行拦在结算提交。
+        MallProductVO outOfStock = product("5.0000");
+        outOfStock.setStockStatus("OUT_OF_STOCK");
+        outOfStock.setAvailableQty(new BigDecimal("0.0000"));
+        when(catalogService.visibleProducts(eq(customer), any(), eq(3L), eq(8L)))
+                .thenReturn(List.of(outOfStock));
+        when(salesOrderService.createFromMall(any(), any(), eq("key")))
+                .thenReturn(new MallOrderCreationResult(order(), false));
+
+        service.submit(customer, form, "key");
+
+        verify(salesOrderService).createFromMall(any(), any(), eq("key"));
+    }
+
+    @Test
+    void zeroPricedLineIsRejectedInsteadOfBeingFree() {
+        // 商品页把 0 元显示为「询价」；提交也必须按未报价拒绝，不能生成 0 元订单。
+        when(catalogService.visibleProducts(eq(customer), any(), eq(3L), eq(8L)))
+                .thenReturn(List.of(product("0.0000")));
+
+        assertThatThrownBy(() -> service.submit(customer, form, "key"))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(MallErrorCode.CHECKOUT_ITEM_UNAVAILABLE));
+        verify(salesOrderService, never()).createFromMall(any(), any(), any());
+    }
+
+    @Test
+    void unsellableLineIsRejectedBeforeOrderCreation() {
+        MallProductVO unsellable = product("5.0000");
+        unsellable.setSellable(false);
+        when(catalogService.visibleProducts(eq(customer), any(), eq(3L), eq(8L)))
+                .thenReturn(List.of(unsellable));
+
+        assertThatThrownBy(() -> service.submit(customer, form, "key"))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(MallErrorCode.CHECKOUT_ITEM_UNAVAILABLE));
+        verify(salesOrderService, never()).createFromMall(any(), any(), any());
+    }
+
+    @Test
+    void previewShowsOutOfStockLineAsAvailableAndZeroPriceAsNoPrice() {
+        MallProductVO outOfStock = product("5.0000");
+        outOfStock.setStockStatus("OUT_OF_STOCK");
+        outOfStock.setAvailableQty(new BigDecimal("0.0000"));
+        MallProductVO zeroPrice = new MallProductVO();
+        zeroPrice.setSkuId(12L);
+        zeroPrice.setUnitPrice(new BigDecimal("0.0000"));
+        zeroPrice.setSellable(true);
+        zeroPrice.setStockStatus("AVAILABLE");
+        zeroPrice.setAvailableQty(new BigDecimal("10.0000"));
+        when(warehouseService.options(9L, 3L)).thenReturn(List.of(warehouseOption(8L)));
+        when(catalogService.visibleProducts(eq(customer), any(), eq(3L), eq(8L)))
+                .thenReturn(List.of(outOfStock, zeroPrice));
+
+        MallCheckoutPreviewForm previewForm = new MallCheckoutPreviewForm();
+        MallCheckoutItemForm first = new MallCheckoutItemForm();
+        first.setSkuId(11L);
+        first.setQuantity("2.0000");
+        MallCheckoutItemForm second = new MallCheckoutItemForm();
+        second.setSkuId(12L);
+        second.setQuantity("1.0000");
+        previewForm.setItems(List.of(first, second));
+        previewForm.setAddressId(3L);
+        previewForm.setWarehouseId(8L);
+
+        var preview = service.preview(customer, previewForm);
+
+        assertThat(preview.getItems()).extracting(item -> item.getSkuId() + ":" + item.getAvailability())
+                .containsExactly("11:AVAILABLE", "12:NO_PRICE");
+        assertThat(preview.getUnavailableSkuIds()).containsExactly(12L);
+        assertThat(preview.getEstimatedAmount()).isEqualByComparingTo("10.0000");
     }
 
     @Test
@@ -273,9 +360,17 @@ class MallCheckoutServiceTest {
         MallProductVO product = new MallProductVO();
         product.setSkuId(11L);
         product.setUnitPrice(new BigDecimal(unitPrice));
+        product.setSellable(true);
         product.setStockStatus("AVAILABLE");
         product.setAvailableQty(new BigDecimal("20.0000"));
         return product;
+    }
+
+    private static MallWarehouseOptionVO warehouseOption(Long warehouseId) {
+        MallWarehouseOptionVO option = new MallWarehouseOptionVO();
+        option.setWarehouseId(warehouseId);
+        option.setWarehouseName("测试仓");
+        return option;
     }
 
     private static SalesOrderDetailVO order() {

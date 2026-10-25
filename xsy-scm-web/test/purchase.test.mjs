@@ -106,10 +106,20 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     // 当前状态唯一的推进动作仍常驻行内
     assert.match(receipt, /record\.status === 'DRAFT'/);
     assert.match(receipt, /record\.putawayStatus === 'PENDING'/);
+    // 已确认的收货单没有推进动作，但必须保留只读详情入口，操作列不能整列空白
+    assert.match(receipt, /PurchaseReceiptDetailDrawer/);
+    assert.match(receipt, /detailDrawer\?\.open\(record\.id\)/);
     // 低频 / 危险动作收进「更多」，并走 hasPermission 裁剪（v-privilege 对菜单项不生效）
     assert.match(receipt, /ScmActionMore/);
     assert.match(receipt, /hasPermission\('scm:purchase:receipt:update'\)/);
     assert.match(receipt, /hasPermission\('scm:purchase:receipt:delete'\)/);
+
+    const detail = code('../src/views/business/scm/purchase/components/purchase-receipt-detail-drawer.vue');
+    assert.match(detail, /purchaseReceiptApi\.detail/);
+    assert.match(detail, /收货明细/);
+    assert.match(detail, /record\.lots/);
+    // 详情只读：状态推进仍留在列表，不在详情里给出第二个写入口
+    assert.doesNotMatch(detail, /确认收货|确认入库|保存/);
   });
 
   test('采购日志：时间必须保留，裸主键列必须移除或改名', () => {

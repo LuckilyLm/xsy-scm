@@ -94,6 +94,7 @@
                 >
                   确认入库
                 </a-button>
+                <a-button type="link" size="small" @click="detailDrawer?.open(record.id)">详情</a-button>
                 <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
               </a-space>
             </template>
@@ -122,6 +123,7 @@
 
   <PurchaseReceiptForm ref="form" @saved="queryData" />
   <PurchaseReceiptConfirm ref="confirmModal" @saved="queryData" />
+  <PurchaseReceiptDetailDrawer ref="detailDrawer" />
 </template>
 
 <script setup lang="ts">
@@ -149,6 +151,7 @@ import {hasPermission} from '../common/scm-permission';
 import {deepLinkFilters} from '/@/lib/query-deep-link';
 import PurchaseReceiptForm from './components/purchase-receipt-form-drawer.vue';
 import PurchaseReceiptConfirm from './components/purchase-receipt-confirm-modal.vue';
+import PurchaseReceiptDetailDrawer from './components/purchase-receipt-detail-drawer.vue';
 import PurchaseReceiptItemWorkbench from './components/purchase-receipt-item-workbench.vue';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
@@ -166,6 +169,7 @@ const error = ref('');
 const selected = ref<(string | number)[]>([]);
 const form = ref<InstanceType<typeof PurchaseReceiptForm>>();
 const confirmModal = ref<InstanceType<typeof PurchaseReceiptConfirm>>();
+const detailDrawer = ref<InstanceType<typeof PurchaseReceiptDetailDrawer>>();
 let requestId = 0;
 
 const columns = ref<TableColumnsType<Receipt>>([
@@ -179,7 +183,7 @@ const columns = ref<TableColumnsType<Receipt>>([
   {title: '确认时间', dataIndex: 'confirmedAt', width: 180},
   {title: '操作者', dataIndex: 'operator', width: 120},
   {title: '备注', dataIndex: 'remark', width: 180},
-  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);
 
 /** 更多菜单无法使用 `v-privilege`，改用 `hasPermission` 判断。 */

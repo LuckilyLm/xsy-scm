@@ -1,7 +1,7 @@
 package com.xsy.scm.mall.cart.constant;
 
 /**
- * 购物车行的可结算状态；库存充足性在结算与下单时由服务端重验，不在此固化。
+ * 购物车行的可结算状态；库存量只用于展示，结算与下单时由服务端重验可售、报价与数量规则。
  */
 public enum MallCartAvailabilityEnum {
     /**

@@ -8,7 +8,6 @@ import com.xsy.scm.mall.address.dao.MallCustomerAddressDao;
 import com.xsy.scm.mall.address.domain.vo.MallAddressVO;
 import com.xsy.scm.mall.cart.constant.MallCartAvailabilityEnum;
 import com.xsy.scm.mall.cart.dao.MallCartDao;
-import com.xsy.scm.mall.catalog.constant.MallStockStatusEnum;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.service.MallCatalogService;
 import com.xsy.scm.mall.catalog.service.MallQuantityPolicy;
@@ -162,10 +161,9 @@ public class MallCheckoutService {
         for (Long skuId : quantities.keySet()) {
             MallProductVO product = products.get(skuId);
             BigDecimal quantity = quantities.get(skuId);
-            if (product == null || product.getUnitPrice() == null
-                || !MallCartAvailabilityEnum.AVAILABLE.name().equals(product.getStockStatus())
-                || !MallQuantityPolicy.accepts(product, quantity) || product.getAvailableQty() == null
-                || product.getAvailableQty().compareTo(quantity) < 0) {
+            // 先接单后采购：库存量不参与结算判定。只校验可售、有正式报价与数量规则，
+            // 避免出现「商品页允许预订、购物车也显示可结算，提交却因库存为 0 被拒绝」。
+            if (!sellable(product, quantity)) {
                 throw new ScmBusinessException(MallErrorCode.CHECKOUT_ITEM_UNAVAILABLE);
             }
         }
@@ -228,8 +226,7 @@ public class MallCheckoutService {
         long sequence = 0;
         for (Map.Entry<Long, BigDecimal> entry : quantities.entrySet()) {
             MallProductVO product = products.get(entry.getKey());
-            if (product == null || product.getUnitPrice() == null
-                || !MallQuantityPolicy.accepts(product, entry.getValue())) {
+            if (!sellable(product, entry.getValue())) {
                 continue;
             }
             PromotionDiscountPreviewForm.Line line = new PromotionDiscountPreviewForm.Line();
@@ -308,13 +305,18 @@ public class MallCheckoutService {
         BigDecimal total = BigDecimal.ZERO.setScale(SCALE);
         for (Map.Entry<Long, BigDecimal> entry : quantities.entrySet()) {
             MallProductVO product = products.get(entry.getKey());
-            if (product == null || product.getUnitPrice() == null
-                || !MallQuantityPolicy.accepts(product, entry.getValue())) {
+            if (!sellable(product, entry.getValue())) {
                 continue;
             }
             total = total.add(product.getUnitPrice().multiply(entry.getValue()).setScale(SCALE, RoundingMode.HALF_UP));
         }
         return total;
+    }
+
+    /** 商城的可结算口径：服务端可售、有正式报价（0 元视为未报价）、数量符合起订/递增规则。 */
+    private static boolean sellable(MallProductVO product, BigDecimal quantity) {
+        return product != null && Boolean.TRUE.equals(product.getSellable()) && product.getUnitPrice() != null
+            && product.getUnitPrice().signum() > 0 && MallQuantityPolicy.accepts(product, quantity);
     }
 
     private Map<Long, MallProductVO> resolveProducts(RequestMallCustomer customer, Iterable<Long> skuIds,
@@ -368,20 +370,22 @@ public class MallCheckoutService {
         item.setUnitPrice(product.getUnitPrice());
         item.setPriceStatus(product.getPriceStatus());
         item.setPriceSource(product.getPriceSource());
-        if (product.getUnitPrice() == null) {
+        // 0 元按「未报价」处理，和商品页、购物车的展示口径一致；不能当成免费商品结算。
+        if (product.getUnitPrice() == null || product.getUnitPrice().signum() <= 0) {
             item.setAvailability(MallCartAvailabilityEnum.NO_PRICE.name());
             item.setUnavailableReason(ScmUnpricedReasonEnum.NO_PRICE_SOURCE.name());
+            return item;
+        }
+        if (!Boolean.TRUE.equals(product.getSellable())) {
+            item.setAvailability(MallCartAvailabilityEnum.UNAVAILABLE.name());
+            item.setUnavailableReason(product.getUnavailableReason() == null
+                ? ScmUnavailableReasonEnum.NOT_VISIBLE.name()
+                : product.getUnavailableReason());
             return item;
         }
         if (!MallQuantityPolicy.accepts(product, quantity)) {
             item.setAvailability(MallCartAvailabilityEnum.QUANTITY_INVALID.name());
             item.setUnavailableReason(MallErrorCode.CART_QUANTITY_RULE_INVALID.name());
-            return item;
-        }
-        if (!MallStockStatusEnum.AVAILABLE.name().equals(product.getStockStatus()) || product.getAvailableQty() == null
-            || product.getAvailableQty().compareTo(quantity) < 0) {
-            item.setAvailability(MallCartAvailabilityEnum.UNAVAILABLE.name());
-            item.setUnavailableReason(MallErrorCode.CHECKOUT_ITEM_UNAVAILABLE.name());
             return item;
         }
         item.setAvailability(MallCartAvailabilityEnum.AVAILABLE.name());

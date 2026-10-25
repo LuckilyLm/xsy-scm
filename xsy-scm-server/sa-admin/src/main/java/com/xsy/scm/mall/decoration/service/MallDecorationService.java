@@ -68,7 +68,9 @@ public class MallDecorationService {
         if (!Objects.equals(page.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        if (Jsoup.parse(page.getContent() == null ? "" : page.getContent()).text().isBlank()) {
+        // 与后台编辑器一致：有文字或有图片都算有内容；纯图片公告/资质说明不能卡在发布。
+        var document = Jsoup.parse(page.getContent() == null ? "" : page.getContent());
+        if (document.text().isBlank() && document.select("img").isEmpty()) {
             throw new ScmBusinessException(INVALID_PAGE);
         }
         if (decorationDao.publishPage(form.getPageCode(), page.getVersion(), ScmOperator.current()) != 1) {
@@ -85,7 +87,9 @@ public class MallDecorationService {
         if (page == null || page.getPublishedContent() == null) {
             throw new ScmBusinessException(INVALID_PAGE);
         }
-        return new MallPublishedPageVO(code.name(), page.getTitle(), page.getPublishedContent());
+        // 标题必须和正文来自同一次发布，不能用当前草稿标题拼旧正文。
+        String publishedTitle = page.getPublishedTitle() == null ? page.getTitle() : page.getPublishedTitle();
+        return new MallPublishedPageVO(code.name(), publishedTitle, page.getPublishedContent());
     }
 
     @Transactional(readOnly = true)

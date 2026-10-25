@@ -16,6 +16,8 @@ public class MallPageVO {
     private Integer version;
     /** 已发布正文；未发布过时为 null。 */
     private String publishedContent;
+    /** 与已发布正文同一次发布的标题；未发布过时为 null。 */
+    private String publishedTitle;
     private Integer publishedVersion;
     private OffsetDateTime publishedAt;
     @JsonSerialize(using = ScmOperatorNameSerializer.class)

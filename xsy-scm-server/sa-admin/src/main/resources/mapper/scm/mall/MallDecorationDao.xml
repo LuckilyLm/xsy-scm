@@ -8,7 +8,8 @@
 
     <sql id="pageColumns">
         page_code AS pageCode, title, draft_content AS content, version,
-        published_content AS publishedContent, published_version AS publishedVersion,
+        published_content AS publishedContent, published_title AS publishedTitle,
+        published_version AS publishedVersion,
         published_at AS publishedAt, published_by AS publishedBy, updated_at AS updatedAt, updated_by AS updatedBy
     </sql>
 
@@ -41,7 +42,7 @@
 
     <update id="publishPage">
         UPDATE xsy_mall_page
-        SET published_content = draft_content, published_version = version,
+        SET published_content = draft_content, published_title = title, published_version = version,
             published_at = CURRENT_TIMESTAMP, published_by = #{operator}
         WHERE page_code = #{pageCode}
             AND version = #{version}

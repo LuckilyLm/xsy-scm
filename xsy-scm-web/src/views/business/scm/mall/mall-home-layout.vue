@@ -14,21 +14,16 @@
                 <span class="console-state" :class="dirty ? 'is-dirty' : 'is-saved'">
                   <EditOutlined v-if="dirty" aria-hidden="true" />
                   <CheckCircleFilled v-else aria-hidden="true" />
-                  {{ dirty ? '有未保存修改' : '草稿已保存' }}
+                  {{ dirty ? '有未保存修改' : '已保存' }}
                 </span>
-                <span class="console-head__version">草稿 v{{ draftVersion }}</span>
-                <span class="console-head__version">{{ currentReleaseId ? `已发布 v${currentReleaseId}` : '尚未发布' }}</span>
+                <span class="console-head__version">当前 v{{ draftVersion }}</span>
+                <span class="console-head__version">{{ currentReleaseId ? `线上 v${currentReleaseId}` : '尚未发布' }}</span>
               </div>
             </div>
             <a-space>
-              <a-button v-privilege="'scm:mall:home:edit'" :loading="saving" :disabled="!dirty" @click="saveDraft">保存草稿</a-button>
-              <a-button
-                v-privilege="'scm:mall:home:publish'"
-                type="primary"
-                :loading="publishing"
-                :disabled="dirty || !blocks.length"
-                @click="publish"
-                >发布草稿</a-button
+              <a-button v-privilege="'scm:mall:home:edit'" :loading="saving" :disabled="!dirty" @click="saveDraft()">保存</a-button>
+              <a-button v-privilege="'scm:mall:home:publish'" type="primary" :loading="publishing" :disabled="!blocks.length" @click="publish"
+                >发布</a-button
               >
             </a-space>
           </div>
@@ -124,41 +119,16 @@
             <aside class="console-preview-panel" aria-label="实时预览">
               <div class="console-panel-head">
                 <div class="console-panel-head__title"><strong>实时预览</strong></div>
-                <a-button type="link" size="small" @click="previewDrawerOpen = true">按客户预览</a-button>
+                <a-button type="link" size="small" @click="openPreview">预览</a-button>
               </div>
               <div class="console-preview-stage">
                 <MallPhonePreview ref="phonePreviewRef" :theme-code="themeCode" :theme-color="themeColor" :blocks="blocks" />
               </div>
-              <a-collapse ghost class="console-history">
-                <a-collapse-panel key="history" :header="`发布记录 ${releases.length}`">
-                  <a-list :data-source="releases" :loading="loading" size="small" :locale="{emptyText: '尚无发布记录'}">
-                    <template #renderItem="{item}">
-                      <a-list-item>
-                        <template #actions>
-                          <a-button
-                            v-if="String(item.id) !== String(currentReleaseId)"
-                            type="link"
-                            size="small"
-                            :disabled="dirty"
-                            v-privilege="'scm:mall:home:publish'"
-                            @click="openRollback(item)"
-                            >回滚</a-button
-                          >
-                        </template>
-                        <a-list-item-meta
-                          :title="`版本 ${item.id} · ${item.publishKind === 'ROLLBACK' ? '回滚发布' : '正式发布'}`"
-                          :description="`${item.publishedAt} · ${item.publishedBy}`"
-                        />
-                      </a-list-item>
-                    </template>
-                  </a-list>
-                </a-collapse-panel>
-              </a-collapse>
             </aside>
           </div>
         </a-card>
 
-        <a-drawer v-model:open="previewDrawerOpen" title="按客户预览" :width="scmDrawerWidth('s')">
+        <a-drawer v-model:open="previewDrawerOpen" title="客户预览" :width="scmDrawerWidth('s')">
           <div class="console-customer-preview">
             <div class="console-customer-preview__controls">
               <div class="console-field">
@@ -171,7 +141,7 @@
               </div>
               <a-button :loading="previewLoading" :disabled="dirty" v-privilege="'scm:mall:home:query'" @click="preview">预览</a-button>
             </div>
-            <p v-if="dirty" class="console-customer-preview__hint">先保存草稿，再按客户预览。</p>
+            <p v-if="dirty" class="console-customer-preview__hint">保存后才能预览最新修改。</p>
             <a-alert v-if="previewError" type="error" show-icon :message="previewError" />
             <div v-if="previewPage" class="console-customer-preview__blocks">
               <div v-for="block in previewPage.blocks" :key="block.key" class="console-customer-preview__block">
@@ -238,7 +208,7 @@
             <a-form-item label="启用"><a-switch v-model:checked="editing.enabled" /></a-form-item>
           </a-form>
           <template #footer>
-            <a-space><a-button @click="editorOpen = false">取消</a-button><a-button type="primary" @click="applyEdit">加入草稿</a-button></a-space>
+            <a-space><a-button @click="editorOpen = false">取消</a-button><a-button type="primary" @click="applyEdit">确定</a-button></a-space>
           </template>
         </a-drawer>
 
@@ -254,6 +224,39 @@
     <a-tab-pane key="about" tab="关于我们"><MallPageSettings page-code="ABOUT" /></a-tab-pane>
     <a-tab-pane key="after-sale" tab="售后规则"><MallPageSettings page-code="AFTER_SALE" /></a-tab-pane>
     <a-tab-pane key="store" tab="店铺"><MallStoreSettings /></a-tab-pane>
+    <a-tab-pane key="history" tab="发布记录">
+      <a-card :bordered="false" size="small" class="console-history-page">
+        <div class="console-head">
+          <div class="console-head__intro">
+            <h2>发布记录</h2>
+            <p class="console-history-intro">每次正式发布或回滚都会生成一个新版本；回滚不会改写历史记录。</p>
+          </div>
+          <span class="console-history-count">共 {{ releases.length }} 次</span>
+        </div>
+        <a-spin :spinning="loading">
+          <div v-if="releases.length" class="console-release-list">
+            <article v-for="item in releases" :key="item.id" class="console-release">
+              <span class="console-release__version">v{{ item.id }}</span>
+              <div class="console-release__main">
+                <div class="console-release__heading">
+                  <strong>{{ item.publishKind === 'ROLLBACK' ? '回滚发布' : '正式发布' }}</strong>
+                  <a-tag v-if="String(item.id) === String(currentReleaseId)" color="green">当前线上</a-tag>
+                </div>
+                <span class="console-release__meta">{{ item.publishedAt }} · {{ item.publishedBy }}</span>
+              </div>
+              <a-button
+                v-if="String(item.id) !== String(currentReleaseId)"
+                :disabled="dirty"
+                v-privilege="'scm:mall:home:publish'"
+                @click="openRollback(item)"
+                >回滚到此版本</a-button
+              >
+            </article>
+          </div>
+          <a-empty v-else description="尚无发布记录" />
+        </a-spin>
+      </a-card>
+    </a-tab-pane>
   </a-tabs>
 </template>
 <script setup lang="ts">
@@ -564,7 +567,7 @@ function rowActions() {
   return [{key: 'remove', label: '移除', danger: true}];
 }
 function onRowAction(action: string, block: HomeBlock): void {
-  if (action === 'remove') Modal.confirm({title: '从草稿移除此组件？', onOk: () => removeBlock(block.key)});
+  if (action === 'remove') Modal.confirm({title: '移除此组件？', onOk: () => removeBlock(block.key)});
 }
 
 const uploadImage: UploadProps['customRequest'] = async (options) => {
@@ -592,24 +595,58 @@ const uploadImage: UploadProps['customRequest'] = async (options) => {
   }
 };
 
-async function saveDraft(): Promise<void> {
+/** 保存期间的编辑不会写进这次请求；用请求快照判断响应回来后是否还需要再保存。 */
+function draftSignature(): string {
+  return JSON.stringify({themeCode: themeCode.value, themeColor: themeColor.value, blocks: blocks.value});
+}
+
+/** 保存返回是否成功；预览和发布会先静默保存，避免用户还要手动多点一次。 */
+async function saveDraft(silent = false): Promise<boolean> {
   if (contrastWarning.value) {
     void message.warning('主色偏浅，白字可能看不清，请选择更深的颜色');
-    return;
+    return false;
   }
+  const signature = draftSignature();
   saving.value = true;
   try {
     const response = await mallHomeApi.save(draftVersion.value, themeCode.value, themeColor.value, blocks.value);
     draftVersion.value = response.data.version;
-    dirty.value = false;
-    void message.success('草稿已保存');
+    if (draftSignature() === signature) {
+      dirty.value = false;
+      if (!silent) void message.success('已保存');
+    } else {
+      // 服务端已保存的是请求快照，期间的新输入仍是未保存状态；不能清掉 dirty，否则会发布旧稿。
+      dirty.value = true;
+      if (!silent) void message.warning('已保存，保存期间的新修改尚未保存，请再次保存');
+    }
+    return true;
   } catch (cause) {
-    void message.error(String((cause as Error)?.message || '草稿保存失败'));
+    void message.error(String((cause as Error)?.message || '保存失败'));
+    return false;
   } finally {
     saving.value = false;
   }
 }
-function publish(): void {
+
+/** 预览和发布都针对已保存的内容；有未保存修改时先静默保存，不再让用户先点保存。 */
+async function prepareSavedChanges(): Promise<boolean> {
+  if (!dirty.value) return true;
+  const saved = await saveDraft(true);
+  if (!saved) return false;
+  if (dirty.value) {
+    void message.warning('保存期间有新的修改，请再次保存后再继续');
+    return false;
+  }
+  return true;
+}
+
+async function openPreview(): Promise<void> {
+  if (!(await prepareSavedChanges())) return;
+  previewDrawerOpen.value = true;
+}
+
+async function publish(): Promise<void> {
+  if (!(await prepareSavedChanges())) return;
   Modal.confirm({
     title: '发布商城首页？',
     onOk: async () => {
@@ -675,7 +712,15 @@ onMounted(load);
   margin-bottom: 12px;
 }
 
-/* 工作区标题与草稿状态 */
+/* 工作区标题与保存状态 */
+.console-head,
+.console-theme,
+.console-body {
+  width: 100%;
+  max-width: 1120px;
+  margin-right: auto;
+  margin-left: auto;
+}
 .console-head {
   display: flex;
   flex-wrap: wrap;
@@ -778,8 +823,8 @@ onMounted(load);
 /* 左侧页面结构 + 右侧实时预览 */
 .console-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 356px;
-  gap: 28px;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 32px;
   align-items: start;
   padding-top: 18px;
 }
@@ -934,25 +979,67 @@ onMounted(load);
 /* 预览台：手机周围留一圈中性底，不再套一层卡片 */
 .console-preview-stage {
   display: grid;
+  align-items: center;
   justify-items: center;
+  min-height: 680px;
   margin-top: 10px;
   padding: 20px 0;
   border-radius: 12px;
   background: #f3f4f2;
 }
-.console-history {
-  margin-top: 4px;
+
+/* 发布记录独立成页，不再堆在预览列底部 */
+.console-history-page :deep(.ant-card-body) {
+  max-width: 1120px;
+  margin: 0 auto;
 }
-.console-history :deep(.ant-collapse-header) {
-  padding: 10px 0 !important;
+.console-history-intro {
+  margin: 6px 0 0;
   color: var(--scm-text-secondary, #6b7280);
   font-size: 12px;
 }
-.console-history :deep(.ant-collapse-content-box) {
-  padding: 0 0 8px !important;
+.console-history-count {
+  color: var(--scm-text-secondary, #6b7280);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.console-release-list {
+  margin-top: 10px;
+  border-top: 1px solid var(--scm-line, #e5e7eb);
+}
+.console-release {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 4px;
+  border-bottom: 1px solid var(--scm-line, #e5e7eb);
+}
+.console-release__version {
+  flex: 0 0 56px;
+  color: var(--scm-ink, #1f2329);
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.console-release__main {
+  flex: 1;
+  min-width: 0;
+}
+.console-release__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.console-release__meta {
+  display: block;
+  margin-top: 4px;
+  color: var(--scm-text-secondary, #6b7280);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* 按客户预览抽屉 */
+/* 客户预览抽屉 */
 .console-customer-preview__controls {
   display: flex;
   flex-wrap: wrap;

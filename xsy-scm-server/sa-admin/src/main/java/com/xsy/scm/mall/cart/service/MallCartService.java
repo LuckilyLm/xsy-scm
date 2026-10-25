@@ -35,7 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 服务端购物车：按登录账号隔离，商品可见性、客户价与库存读取时实时解析，不在此保存。 库存与价格的最终校验在结算与下单时由服务端重新执行。
+ * 服务端购物车：按登录账号隔离，商品可见性、客户价与库存读取时实时解析，不在此保存。 可售、报价与数量的最终校验在结算与下单时由服务端重新执行；库存量只影响展示。
  */
 @Service
 @RequiredArgsConstructor
@@ -239,9 +239,17 @@ public class MallCartService {
         item.setUnitPrice(product.getUnitPrice());
         item.setPriceStatus(product.getPriceStatus());
         item.setPriceSource(product.getPriceSource());
-        if (product.getUnitPrice() == null) {
+        // 0 元按「未报价」处理，和商品页、结算页一致；不能当成免费商品进入可结算行。
+        if (product.getUnitPrice() == null || product.getUnitPrice().signum() <= 0) {
             item.setAvailability(MallCartAvailabilityEnum.NO_PRICE.name());
             item.setUnavailableReason(ScmUnpricedReasonEnum.NO_PRICE_SOURCE.name());
+            return item;
+        }
+        if (!Boolean.TRUE.equals(product.getSellable())) {
+            item.setAvailability(MallCartAvailabilityEnum.UNAVAILABLE.name());
+            item.setUnavailableReason(product.getUnavailableReason() == null
+                ? ScmUnavailableReasonEnum.NOT_VISIBLE.name()
+                : product.getUnavailableReason());
             return item;
         }
         if (!MallQuantityPolicy.accepts(product, row.getQuantity())) {

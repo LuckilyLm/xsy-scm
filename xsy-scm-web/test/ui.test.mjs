@@ -104,7 +104,7 @@ import ts from 'typescript';
     assert.match(api, /\/draft', \{version, themeCode, themeColor, blocks\}/);
     assert.match(api, /\/publish', \{draftVersion, pointerVersion\}/);
     assert.match(api, /\/rollback', \{targetReleaseId, pointerVersion, reason\}/);
-    assert.match(page, /:disabled="dirty \|\| !blocks\.length"[^>]*@click="publish"/);
+    assert.match(page, /:disabled="!blocks\.length"[^>]*@click="publish"/);
     assert.match(page, /mallHomeApi\.publish\(draftVersion\.value, pointerVersion\.value\)/);
     assert.match(page, /mallHomeApi\.rollback\(rollbackTarget\.value\.id, pointerVersion\.value, rollbackReason\.value\.trim\(\)\)/);
     assert.match(page, /mallHomeApi\.preview\(previewCustomerId\.value, previewWarehouseId\.value\)/);

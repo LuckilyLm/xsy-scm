@@ -366,6 +366,17 @@ export interface ReceiptItem {
   weightUnit?: string | null;
   weighingSource?: string | null;
   correctionReason?: string | null;
+  /** 已登记的收货批次；未启用批次追踪的仓库为空。 */
+  lots?: ReceiptItemLot[];
+}
+
+/** 收货行上的一条批次记录。 */
+export interface ReceiptItemLot {
+  receiptItemId?: Id;
+  lotId?: Id;
+  lotNo?: string;
+  sourceLotNo?: string | null;
+  quantity?: string | null;
 }
 
 /** `PurchaseReceiptVO`。 */
