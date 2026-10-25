@@ -101,7 +101,7 @@ import ts from 'typescript';
   const page = read('../src/views/business/scm/mall/mall-home-layout.vue');
 
   test('首页草稿、发布和回滚提交各自的乐观锁版本与原因', () => {
-    assert.match(api, /\/draft', \{version, themeCode, blocks\}/);
+    assert.match(api, /\/draft', \{version, themeCode, themeColor, blocks\}/);
     assert.match(api, /\/publish', \{draftVersion, pointerVersion\}/);
     assert.match(api, /\/rollback', \{targetReleaseId, pointerVersion, reason\}/);
     assert.match(page, /:disabled="dirty \|\| !blocks\.length"[^>]*@click="publish"/);
@@ -115,7 +115,7 @@ import ts from 'typescript';
     assert.ok(action);
     assert.ok(Number(action[1]) <= 180);
     assert.match(page, /:width="scmDrawerWidth\('s'\)"/);
-    assert.match(page, /<ScmActionMore v-if="hasPermission\('scm:mall:home:edit'\)"/);
+    assert.match(page, /<ScmActionMore\s+v-if="hasPermission\('scm:mall:home:edit'\)"/);
     assert.doesNotMatch(page, /var\(--scm-border-color\)|var\(--scm-fill-color\)/);
   });
 

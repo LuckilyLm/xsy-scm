@@ -1,195 +1,244 @@
 <template>
-  <div class="mall-home-editor">
-    <a-card :bordered="false" size="small">
-      <div class="mall-home-editor__heading">
-        <div>
-          <h2>商城首页装修</h2>
-          <p class="scm-note">按顺序配置轮播、入口、商品推荐、活动专题和公告。保存草稿后再预览与发布。</p>
-          <p class="mall-home-editor__versions">
-            当前草稿版本 {{ draftVersion }}<template v-if="currentReleaseId">，已发布版本 {{ currentReleaseId }}</template
-            ><template v-else>，尚未发布</template>
-          </p>
-        </div>
-      </div>
-      <a-alert v-if="error" type="error" :message="error" show-icon class="mall-home-editor__alert">
-        <template #action><a-button size="small" @click="load">重新加载</a-button></template>
-      </a-alert>
-      <div class="mall-home-editor__toolbar">
-        <div class="mall-home-editor__controls">
-          <div class="mall-home-editor__control">
-            <span class="mall-home-editor__label">首页主题</span>
-            <a-select
-              v-model:value="themeCode"
-              :options="themeOptions"
-              style="width: 140px"
-              @change="dirty = true"
-              aria-label="首页主题"
-              title="主题只作用于商城首页的配色，其他页面沿用系统配色"
-            />
-          </div>
-          <div class="mall-home-editor__control">
-            <span class="mall-home-editor__label">新组件</span>
-            <a-select v-model:value="newType" :options="blockTypeOptions" style="width: 150px" />
-            <a-button v-privilege="'scm:mall:home:edit'" :disabled="blocks.length >= 30" @click="addBlock">添加</a-button>
-          </div>
-        </div>
-        <a-space>
-          <a-button v-privilege="'scm:mall:home:edit'" :loading="saving" :disabled="!dirty" @click="saveDraft">保存草稿</a-button>
-          <a-button v-privilege="'scm:mall:home:publish'" type="primary" :loading="publishing" :disabled="dirty || !blocks.length" @click="publish"
-            >发布草稿</a-button
-          >
-        </a-space>
-      </div>
-      <a-table
-        :data-source="blocks"
-        :columns="columns"
-        row-key="key"
-        size="small"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :scroll="{x: scmColumnsWidth(columns)}"
-        :locale="{emptyText: '草稿还没有组件。选择「新组件」后点击「添加」。'}"
-      >
-        <template #bodyCell="{record, column, index}">
-          <template v-if="column.dataIndex === 'type'">{{ blockTypeLabel(record.type) }}</template>
-          <template v-else-if="column.dataIndex === 'title'">{{ record.title || record.text || '—' }}</template>
-          <template v-else-if="column.dataIndex === 'audience'">{{
-            record.customerIds?.length ? `指定 ${record.customerIds.length} 位客户` : '全部客户'
-          }}</template>
-          <template v-else-if="column.dataIndex === 'enabled'"
-            ><a-tag :color="record.enabled ? 'green' : 'default'">{{ record.enabled ? '启用' : '停用' }}</a-tag></template
-          >
-          <template v-else-if="column.dataIndex === 'action'">
-            <a-space size="small">
-              <a-button type="link" v-privilege="'scm:mall:home:edit'" @click="editBlock(record)">编辑</a-button>
-              <ScmActionMore v-if="hasPermission('scm:mall:home:edit')" :actions="rowActions(index)" @select="onRowAction($event, record, index)" />
-            </a-space>
-          </template>
-        </template>
-      </a-table>
-    </a-card>
-
-    <a-row :gutter="16" class="mall-home-editor__lower">
-      <a-col :xs="24" :lg="14">
-        <a-card title="客户内容预览" :bordered="false" size="small">
-          <div class="mall-home-editor__preview-controls">
-            <div class="mall-home-editor__control">
-              <span class="mall-home-editor__label">预览客户</span>
-              <CustomerSelect v-model:value="previewCustomerId" width="200px" />
+  <a-tabs v-model:activeKey="activeTab" class="mall-decoration-console">
+    <a-tab-pane key="home" tab="首页设置">
+      <div class="mall-home-editor">
+        <a-card :bordered="false" size="small">
+          <div class="mall-home-editor__heading">
+            <div>
+              <h2>商城首页</h2>
+              <p class="scm-note">按顺序配置轮播、入口、商品推荐、活动专题和公告。保存草稿后再预览与发布。</p>
+              <p class="mall-home-editor__versions">
+                当前草稿版本 {{ draftVersion }}<template v-if="currentReleaseId">，已发布版本 {{ currentReleaseId }}</template
+                ><template v-else>，尚未发布</template>
+              </p>
             </div>
-            <div class="mall-home-editor__control">
-              <span class="mall-home-editor__label">配送仓</span>
-              <WarehouseSelect v-model:value="previewWarehouseId" width="180px" />
-            </div>
-            <a-button :loading="previewLoading" :disabled="dirty" v-privilege="'scm:mall:home:query'" @click="preview">预览</a-button>
           </div>
-          <p v-if="dirty" class="scm-note mall-home-editor__preview-hint">有未保存修改，预览使用最近一次保存的草稿。</p>
-          <a-alert v-if="previewError" type="error" show-icon :message="previewError" />
-          <div v-if="previewPage" class="mall-home-editor__preview">
-            <div v-for="block in previewPage.blocks" :key="block.key" class="mall-home-editor__preview-block">
-              <img v-if="block.imageUrl" :src="block.imageUrl" :alt="block.title || '首页图片'" />
-              <strong v-if="block.title">{{ block.title }}</strong>
-              <p v-if="block.subtitle">{{ block.subtitle }}</p>
-              <p v-if="block.text">{{ block.text }}</p>
-              <div v-if="block.products?.length" class="mall-home-editor__preview-products">
-                <span v-for="product in block.products" :key="String(product.skuId)">{{ product.productName }} · {{ product.specName }}</span>
+          <a-alert v-if="error" type="error" :message="error" show-icon class="mall-home-editor__alert">
+            <template #action><a-button size="small" @click="load">重新加载</a-button></template>
+          </a-alert>
+          <div class="mall-home-editor__toolbar">
+            <div class="mall-home-editor__controls">
+              <div class="mall-home-editor__control">
+                <span class="mall-home-editor__label">主题预设</span>
+                <a-select
+                  v-model:value="themeCode"
+                  :options="themeOptions"
+                  style="width: 130px"
+                  @change="applyThemePreset"
+                  aria-label="主题预设"
+                  title="主题只作用于商城首页的配色，其他页面沿用系统配色"
+                />
+                <button
+                  v-for="preset in presetSwatches"
+                  :key="preset.code"
+                  type="button"
+                  class="mall-home-editor__swatch"
+                  :class="{'mall-home-editor__swatch--active': !themeColor && themeCode === preset.code}"
+                  :style="{background: preset.color}"
+                  :title="preset.label"
+                  :aria-label="`使用${preset.label}主题`"
+                  @click="selectPreset(preset.code)"
+                />
+              </div>
+              <div class="mall-home-editor__control">
+                <span class="mall-home-editor__label">主色</span>
+                <input type="color" class="mall-home-editor__color-input" :value="themeColorText" aria-label="自定义主题主色" @input="onColorInput" />
+                <a-input
+                  v-model:value="themeColorText"
+                  style="width: 104px"
+                  aria-label="主题主色色值"
+                  @blur="applyHexColor"
+                  @press-enter="applyHexColor"
+                />
+                <a-tag v-if="contrastWarning" color="orange" title="白字放在这个颜色上可能看不清，建议加深">主色偏浅</a-tag>
+                <span v-else class="mall-home-editor__contrast">白字对比度 {{ whiteContrastText }}</span>
+              </div>
+              <div class="mall-home-editor__control">
+                <span class="mall-home-editor__label">新组件</span>
+                <a-select v-model:value="newType" :options="blockTypeOptions" style="width: 150px" />
+                <a-button v-privilege="'scm:mall:home:edit'" :disabled="blocks.length >= 30" @click="addBlock">添加</a-button>
               </div>
             </div>
-            <a-empty v-if="!previewPage.blocks.length" description="该客户当前没有可展示的装修内容" />
+            <a-space>
+              <a-button v-privilege="'scm:mall:home:edit'" :loading="saving" :disabled="!dirty" @click="saveDraft">保存草稿</a-button>
+              <a-button
+                v-privilege="'scm:mall:home:publish'"
+                type="primary"
+                :loading="publishing"
+                :disabled="dirty || !blocks.length"
+                @click="publish"
+                >发布草稿</a-button
+              >
+            </a-space>
           </div>
-          <a-empty v-else class="mall-home-editor__preview-empty" description="选择客户与配送仓后预览" />
-        </a-card>
-      </a-col>
-      <a-col :xs="24" :lg="10">
-        <a-card title="发布记录" :bordered="false" size="small">
-          <a-list :data-source="releases" :loading="loading" :locale="{emptyText: '尚无发布记录'}">
-            <template #renderItem="{item}">
-              <a-list-item>
-                <template #actions>
-                  <a-button
-                    v-if="String(item.id) !== String(currentReleaseId)"
-                    type="link"
-                    :disabled="dirty"
-                    v-privilege="'scm:mall:home:publish'"
-                    @click="openRollback(item)"
-                    >回滚到此版</a-button
-                  >
-                </template>
-                <a-list-item-meta
-                  :title="`版本 ${item.id} · ${item.publishKind === 'ROLLBACK' ? '回滚发布' : '正式发布'}`"
-                  :description="`${item.publishedAt} · ${item.publishedBy}`"
-                />
-              </a-list-item>
+          <a-table
+            :data-source="blocks"
+            :columns="columns"
+            row-key="key"
+            size="small"
+            bordered
+            :loading="loading"
+            :pagination="false"
+            :scroll="{x: scmColumnsWidth(columns)}"
+            :locale="{emptyText: '草稿还没有组件。选择「新组件」后点击「添加」。'}"
+          >
+            <template #bodyCell="{record, column, index}">
+              <template v-if="column.dataIndex === 'type'">{{ blockTypeLabel(record.type) }}</template>
+              <template v-else-if="column.dataIndex === 'title'">{{ record.title || record.text || '—' }}</template>
+              <template v-else-if="column.dataIndex === 'audience'">{{
+                record.customerIds?.length ? `指定 ${record.customerIds.length} 位客户` : '全部客户'
+              }}</template>
+              <template v-else-if="column.dataIndex === 'enabled'"
+                ><a-tag :color="record.enabled ? 'green' : 'default'">{{ record.enabled ? '启用' : '停用' }}</a-tag></template
+              >
+              <template v-else-if="column.dataIndex === 'action'">
+                <a-space size="small">
+                  <a-button type="link" v-privilege="'scm:mall:home:edit'" @click="editBlock(record)">编辑</a-button>
+                  <ScmActionMore
+                    v-if="hasPermission('scm:mall:home:edit')"
+                    :actions="rowActions(index)"
+                    @select="onRowAction($event, record, index)"
+                  />
+                </a-space>
+              </template>
             </template>
-          </a-list>
+          </a-table>
         </a-card>
-      </a-col>
-    </a-row>
 
-    <a-drawer :open="editorOpen" title="编辑首页组件" :width="scmDrawerWidth('s')" @close="editorOpen = false">
-      <a-form v-if="editing" layout="vertical">
-        <a-form-item label="组件类型"><a-input :value="blockTypeLabel(editing.type)" disabled /></a-form-item>
-        <a-form-item v-if="editing.type !== 'ANNOUNCEMENT'" label="标题">
-          <a-input v-model:value="editing.title" :maxlength="80" />
-        </a-form-item>
-        <a-form-item v-if="['BANNER', 'ACTIVITY_TOPIC'].includes(editing.type)" label="副标题">
-          <a-input v-model:value="editing.subtitle" :maxlength="160" />
-        </a-form-item>
-        <a-form-item v-if="editing.type === 'ANNOUNCEMENT'" label="公告内容" required>
-          <a-textarea v-model:value="editing.text" :maxlength="600" :rows="4" />
-        </a-form-item>
-        <a-form-item v-if="['BANNER', 'SHORTCUT', 'ACTIVITY_TOPIC'].includes(editing.type)" label="展示图片">
-          <a-upload :accept="IMAGE_ACCEPT" :show-upload-list="false" :custom-request="uploadImage">
-            <a-button :loading="uploading">上传公开图片</a-button>
-          </a-upload>
-          <span v-if="editing.imageFileKey" class="scm-note">已选图片，保存后可预览。</span>
-        </a-form-item>
-        <a-form-item v-if="editing.type === 'RECOMMENDATION'" label="推荐商品规格" required>
-          <SkuSelect v-model:value="recommendationSkuIds" mode="multiple" :limit="100" />
-        </a-form-item>
-        <a-form-item v-if="editing.type !== 'RECOMMENDATION'" label="点击跳转">
-          <a-select v-model:value="editing.linkType" :options="linkOptions" />
-        </a-form-item>
-        <a-form-item v-if="editing.linkType === 'PRODUCT'" label="目标商品规格"><SkuSelect v-model:value="productTargetId" /></a-form-item>
-        <a-form-item v-if="editing.linkType === 'CATEGORY'" label="目标分类">
-          <CategorySelect v-model:value="categoryTargetId" :categories="categories" />
-        </a-form-item>
-        <a-form-item v-if="editing.linkType === 'ACTIVITY'" label="目标活动">
-          <a-select v-model:value="activityTargetId" show-search option-filter-prop="label" :options="activityOptions" />
-        </a-form-item>
-        <a-form-item v-if="editing.linkType === 'EXTERNAL_URL'" label="外部网页地址">
-          <a-input v-model:value="editing.linkTarget" placeholder="仅限已授权的 HTTPS 域名" />
-        </a-form-item>
-        <a-form-item label="展示客户">
-          <a-select
-            v-model:value="editing.customerIds"
-            mode="multiple"
-            show-search
-            option-filter-prop="label"
-            :options="customerOptions"
-            placeholder="留空表示全部客户"
-          />
-        </a-form-item>
-        <a-form-item label="展示时间"
-          ><a-range-picker v-model:value="period" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]" style="width: 100%"
-        /></a-form-item>
-        <a-form-item label="启用"><a-switch v-model:checked="editing.enabled" /></a-form-item>
-      </a-form>
-      <template #footer>
-        <a-space><a-button @click="editorOpen = false">取消</a-button><a-button type="primary" @click="applyEdit">加入草稿</a-button></a-space>
-      </template>
-    </a-drawer>
+        <a-row :gutter="16" class="mall-home-editor__lower">
+          <a-col :xs="24" :lg="14">
+            <a-card title="客户内容预览" :bordered="false" size="small">
+              <div class="mall-home-editor__preview-controls">
+                <div class="mall-home-editor__control">
+                  <span class="mall-home-editor__label">预览客户</span>
+                  <CustomerSelect v-model:value="previewCustomerId" width="200px" />
+                </div>
+                <div class="mall-home-editor__control">
+                  <span class="mall-home-editor__label">配送仓</span>
+                  <WarehouseSelect v-model:value="previewWarehouseId" width="180px" />
+                </div>
+                <a-button :loading="previewLoading" :disabled="dirty" v-privilege="'scm:mall:home:query'" @click="preview">预览</a-button>
+              </div>
+              <p v-if="dirty" class="scm-note mall-home-editor__preview-hint">有未保存修改，预览使用最近一次保存的草稿。</p>
+              <a-alert v-if="previewError" type="error" show-icon :message="previewError" />
+              <div v-if="previewPage" class="mall-home-editor__preview">
+                <div v-for="block in previewPage.blocks" :key="block.key" class="mall-home-editor__preview-block">
+                  <img v-if="block.imageUrl" :src="block.imageUrl" :alt="block.title || '首页图片'" />
+                  <strong v-if="block.title">{{ block.title }}</strong>
+                  <p v-if="block.subtitle">{{ block.subtitle }}</p>
+                  <p v-if="block.text">{{ block.text }}</p>
+                  <div v-if="block.products?.length" class="mall-home-editor__preview-products">
+                    <span v-for="product in block.products" :key="String(product.skuId)">{{ product.productName }} · {{ product.specName }}</span>
+                  </div>
+                </div>
+                <a-empty v-if="!previewPage.blocks.length" description="该客户当前没有可展示的装修内容" />
+              </div>
+              <a-empty v-else class="mall-home-editor__preview-empty" description="选择客户与配送仓后预览" />
+            </a-card>
+          </a-col>
+          <a-col :xs="24" :lg="10">
+            <div class="mall-home-editor__side">
+              <a-card title="装修效果预览" :bordered="false" size="small">
+                <p class="scm-note mall-home-editor__phone-note">按当前编辑中的主题与组件展示，图片以最近一次保存为准。</p>
+                <MallPhonePreview ref="phonePreviewRef" :theme-code="themeCode" :theme-color="themeColor" :blocks="blocks" />
+              </a-card>
+              <a-card title="发布记录" :bordered="false" size="small">
+                <a-list :data-source="releases" :loading="loading" :locale="{emptyText: '尚无发布记录'}">
+                  <template #renderItem="{item}">
+                    <a-list-item>
+                      <template #actions>
+                        <a-button
+                          v-if="String(item.id) !== String(currentReleaseId)"
+                          type="link"
+                          :disabled="dirty"
+                          v-privilege="'scm:mall:home:publish'"
+                          @click="openRollback(item)"
+                          >回滚到此版</a-button
+                        >
+                      </template>
+                      <a-list-item-meta
+                        :title="`版本 ${item.id} · ${item.publishKind === 'ROLLBACK' ? '回滚发布' : '正式发布'}`"
+                        :description="`${item.publishedAt} · ${item.publishedBy}`"
+                      />
+                    </a-list-item>
+                  </template>
+                </a-list>
+              </a-card>
+            </div>
+          </a-col>
+        </a-row>
 
-    <a-modal :open="rollbackOpen" title="回滚首页发布版本" :confirm-loading="publishing" @ok="rollback" @cancel="rollbackOpen = false">
-      <p>将目标版本复制为新的发布记录，当前版本仍保留在历史中。</p>
-      <a-form-item label="回滚原因" required><a-textarea v-model:value="rollbackReason" :maxlength="500" :rows="3" /></a-form-item>
-    </a-modal>
-  </div>
+        <a-drawer :open="editorOpen" title="编辑首页组件" :width="scmDrawerWidth('s')" @close="editorOpen = false">
+          <a-form v-if="editing" layout="vertical">
+            <a-form-item label="组件类型"><a-input :value="blockTypeLabel(editing.type)" disabled /></a-form-item>
+            <a-form-item v-if="editing.type !== 'ANNOUNCEMENT'" label="标题">
+              <a-input v-model:value="editing.title" :maxlength="80" />
+            </a-form-item>
+            <a-form-item v-if="['BANNER', 'ACTIVITY_TOPIC'].includes(editing.type)" label="副标题">
+              <a-input v-model:value="editing.subtitle" :maxlength="160" />
+            </a-form-item>
+            <a-form-item v-if="editing.type === 'ANNOUNCEMENT'" label="公告内容" required>
+              <a-textarea v-model:value="editing.text" :maxlength="600" :rows="4" />
+            </a-form-item>
+            <a-form-item v-if="['BANNER', 'SHORTCUT', 'ACTIVITY_TOPIC'].includes(editing.type)" label="展示图片">
+              <a-upload :accept="IMAGE_ACCEPT" :show-upload-list="false" :custom-request="uploadImage">
+                <a-button :loading="uploading">上传公开图片</a-button>
+              </a-upload>
+              <span v-if="editing.imageFileKey" class="scm-note">已选图片，保存后可预览。</span>
+            </a-form-item>
+            <a-form-item v-if="editing.type === 'RECOMMENDATION'" label="推荐商品规格" required>
+              <SkuSelect v-model:value="recommendationSkuIds" mode="multiple" :limit="100" />
+            </a-form-item>
+            <a-form-item v-if="editing.type !== 'RECOMMENDATION'" label="点击跳转">
+              <a-select v-model:value="editing.linkType" :options="linkOptions" />
+            </a-form-item>
+            <a-form-item v-if="editing.linkType === 'PRODUCT'" label="目标商品规格"><SkuSelect v-model:value="productTargetId" /></a-form-item>
+            <a-form-item v-if="editing.linkType === 'CATEGORY'" label="目标分类">
+              <CategorySelect v-model:value="categoryTargetId" :categories="categories" />
+            </a-form-item>
+            <a-form-item v-if="editing.linkType === 'ACTIVITY'" label="目标活动">
+              <a-select v-model:value="activityTargetId" show-search option-filter-prop="label" :options="activityOptions" />
+            </a-form-item>
+            <a-form-item v-if="editing.linkType === 'EXTERNAL_URL'" label="外部网页地址">
+              <a-input v-model:value="editing.linkTarget" placeholder="仅限已授权的 HTTPS 域名" />
+            </a-form-item>
+            <a-form-item label="展示客户">
+              <a-select
+                v-model:value="editing.customerIds"
+                mode="multiple"
+                show-search
+                option-filter-prop="label"
+                :options="customerOptions"
+                placeholder="留空表示全部客户"
+              />
+            </a-form-item>
+            <a-form-item label="展示时间"
+              ><a-range-picker v-model:value="period" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]" style="width: 100%"
+            /></a-form-item>
+            <a-form-item label="启用"><a-switch v-model:checked="editing.enabled" /></a-form-item>
+          </a-form>
+          <template #footer>
+            <a-space><a-button @click="editorOpen = false">取消</a-button><a-button type="primary" @click="applyEdit">加入草稿</a-button></a-space>
+          </template>
+        </a-drawer>
+
+        <a-modal :open="rollbackOpen" title="回滚首页发布版本" :confirm-loading="publishing" @ok="rollback" @cancel="rollbackOpen = false">
+          <p>将目标版本复制为新的发布记录，当前版本仍保留在历史中。</p>
+          <a-form-item label="回滚原因" required><a-textarea v-model:value="rollbackReason" :maxlength="500" :rows="3" /></a-form-item>
+        </a-modal>
+      </div>
+    </a-tab-pane>
+    <a-tab-pane key="popup" tab="首页弹窗"><MallPopupSettings /></a-tab-pane>
+    <a-tab-pane key="announcement" tab="商城公告"><MallPageSettings page-code="ANNOUNCEMENT" /></a-tab-pane>
+    <a-tab-pane key="terms" tab="服务条款"><MallPageSettings page-code="TERMS" /></a-tab-pane>
+    <a-tab-pane key="about" tab="关于我们"><MallPageSettings page-code="ABOUT" /></a-tab-pane>
+    <a-tab-pane key="after-sale" tab="售后规则"><MallPageSettings page-code="AFTER_SALE" /></a-tab-pane>
+    <a-tab-pane key="store" tab="店铺"><MallStoreSettings /></a-tab-pane>
+  </a-tabs>
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {onMounted, ref} from 'vue';
+import {computed, onMounted, ref, watch} from 'vue';
 import {message, Modal, type TableColumnsType, type UploadProps} from 'ant-design-vue';
 import {fileApi} from '/@/api/support/file-api';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
@@ -205,8 +254,20 @@ import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.v
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import MallPopupSettings from './components/mall-popup-settings.vue';
+import MallPageSettings from './components/mall-page-settings.vue';
+import MallStoreSettings from './components/mall-store-settings.vue';
+import MallPhonePreview from './components/mall-phone-preview.vue';
 import {hasPermission} from '../common/scm-permission';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {
+  MALL_THEME_PRESETS,
+  MIN_WHITE_CONTRAST,
+  isValidMallThemeColor,
+  mallThemeBaseColor,
+  normalizeMallThemeColor,
+  whiteContrast,
+} from '/@/utils/mall-theme';
 
 const blockTypeOptions: {value: HomeBlockType; label: string}[] = [
   {value: 'BANNER', label: '轮播图'},
@@ -245,6 +306,24 @@ const themeOptions = [
   {value: 'OCEAN', label: '海蓝'},
 ];
 const themeCode = ref('FRESH');
+/** 自定义主色；为空表示跟随主题预设。 */
+const themeColor = ref<string | null>(null);
+const themeColorText = ref(MALL_THEME_PRESETS.FRESH);
+const presetSwatches = [
+  {code: 'FRESH', label: '生鲜绿', color: MALL_THEME_PRESETS.FRESH},
+  {code: 'WARM', label: '暖橙', color: MALL_THEME_PRESETS.WARM},
+  {code: 'OCEAN', label: '海蓝', color: MALL_THEME_PRESETS.OCEAN},
+];
+const effectiveThemeColor = computed(() => mallThemeBaseColor(themeCode.value, themeColor.value));
+const themeContrast = computed(() => whiteContrast(effectiveThemeColor.value));
+const contrastWarning = computed(() => themeContrast.value < MIN_WHITE_CONTRAST);
+const whiteContrastText = computed(() => `${themeContrast.value.toFixed(1)}:1`);
+const activeTab = ref('home');
+const phonePreviewRef = ref<InstanceType<typeof MallPhonePreview>>();
+// 切回首页时刷新弹窗预览：弹窗在另一个标签页保存，手机预览不应停留在旧版本
+watch(activeTab, (tab) => {
+  if (tab === 'home') phonePreviewRef.value?.refreshPopup();
+});
 const loading = ref(false),
   saving = ref(false),
   publishing = ref(false),
@@ -275,6 +354,47 @@ function blockTypeLabel(type: HomeBlockType): string {
   return blockTypeOptions.find((option) => option.value === type)?.label || type;
 }
 
+/** 主色输入框与色板共用同一个值；主题预设只是主色的快捷方式。 */
+function syncColorText(): void {
+  themeColorText.value = effectiveThemeColor.value;
+}
+
+function applyThemePreset(): void {
+  themeColor.value = null;
+  syncColorText();
+  dirty.value = true;
+}
+
+function selectPreset(code: string): void {
+  themeCode.value = code;
+  applyThemePreset();
+}
+
+function onColorInput(event: Event): void {
+  const value = normalizeMallThemeColor((event.target as HTMLInputElement).value);
+  if (!isValidMallThemeColor(value)) return;
+  themeColor.value = value;
+  themeColorText.value = value as string;
+  dirty.value = true;
+}
+
+function applyHexColor(): void {
+  const raw = themeColorText.value.trim();
+  if (!raw) {
+    applyThemePreset();
+    return;
+  }
+  const value = normalizeMallThemeColor(raw.startsWith('#') ? raw : `#${raw}`);
+  if (!isValidMallThemeColor(value)) {
+    void message.warning('请输入 #RRGGBB 格式的主色');
+    syncColorText();
+    return;
+  }
+  themeColor.value = value;
+  themeColorText.value = value as string;
+  dirty.value = true;
+}
+
 async function load(): Promise<void> {
   const request = ++requestId;
   loading.value = true;
@@ -286,6 +406,8 @@ async function load(): Promise<void> {
     pointerVersion.value = draft.data.pointerVersion;
     currentReleaseId.value = draft.data.currentReleaseId;
     themeCode.value = draft.data.themeCode || 'FRESH';
+    themeColor.value = draft.data.themeColor || null;
+    syncColorText();
     blocks.value = draft.data.blocks || [];
     releases.value = history.data || [];
     dirty.value = false;
@@ -417,9 +539,13 @@ const uploadImage: UploadProps['customRequest'] = async (options) => {
 };
 
 async function saveDraft(): Promise<void> {
+  if (contrastWarning.value) {
+    void message.warning('主色偏浅，白字可能看不清，请选择更深的颜色');
+    return;
+  }
   saving.value = true;
   try {
-    const response = await mallHomeApi.save(draftVersion.value, themeCode.value, blocks.value);
+    const response = await mallHomeApi.save(draftVersion.value, themeCode.value, themeColor.value, blocks.value);
     draftVersion.value = response.data.version;
     dirty.value = false;
     void message.success('草稿已保存');
@@ -585,5 +711,42 @@ onMounted(load);
   padding: 4px 8px;
   background: var(--scm-fill, #fafafa);
   border-radius: 6px;
+}
+.mall-decoration-console :deep(.ant-tabs-nav) {
+  margin-bottom: 16px;
+}
+.mall-home-editor__swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--scm-line);
+  cursor: pointer;
+}
+.mall-home-editor__swatch--active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--scm-ink, #1f2329);
+}
+.mall-home-editor__color-input {
+  width: 32px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--scm-line);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+.mall-home-editor__contrast {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mall-home-editor__side {
+  display: grid;
+  gap: 16px;
+}
+.mall-home-editor__phone-note {
+  margin: 0 0 12px;
 }
 </style>

@@ -24,6 +24,21 @@ import '@wangeditor-next/editor/dist/css/style.css';
 import {Editor, Toolbar} from '@wangeditor-next/editor-for-vue';
 import {smartSentry} from '/@/lib/smart-sentry';
 
+// ----------------------- 以下是公用变量 emits props ----------------
+const editorHtml = ref();
+let props = defineProps({
+  modelValue: String,
+  height: {
+    type: Number,
+    default: 500,
+  },
+  /** 上传目录；商城装修等需要被小程序直接访问的内容传 PUBLIC_IMAGE。 */
+  folderType: {
+    type: Number,
+    default: FILE_FOLDER_TYPE_ENUM.COMMON.value,
+  },
+});
+
 //菜单
 const editorConfig = {MENU_CONF: {}};
 
@@ -33,7 +48,7 @@ let customUpload = {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      let res = await fileApi.uploadFile(formData, FILE_FOLDER_TYPE_ENUM.COMMON.value);
+      let res = await fileApi.uploadFile(formData, props.folderType);
       let data = res.data;
       insertFn(data.fileUrl);
     } catch (error) {
@@ -43,16 +58,6 @@ let customUpload = {
 };
 editorConfig.MENU_CONF['uploadImage'] = customUpload;
 editorConfig.MENU_CONF['uploadVideo'] = customUpload;
-
-// ----------------------- 以下是公用变量 emits props ----------------
-const editorHtml = ref();
-let props = defineProps({
-  modelValue: String,
-  height: {
-    type: Number,
-    default: 500,
-  },
-});
 watch(
   () => props.modelValue,
   (nVal) => {

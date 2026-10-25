@@ -21,6 +21,8 @@ export interface HomeBlock {
 }
 export interface HomeDraft {
   themeCode?: string;
+  /** 自定义主色；为空表示沿用主题预设。 */
+  themeColor?: string | null;
   version: number;
   pointerVersion: number;
   currentReleaseId: ScmId | null;
@@ -62,13 +64,36 @@ export interface HomePage {
   themeCode?: string | null;
   blocks: HomeVisibleBlock[];
 }
+export type HomePopupDisplayRule = 'DAILY' | 'EVERY_ENTRY';
+export interface HomePopupItem {
+  imageFileKey: string;
+  imageUrl?: string | null;
+  linkType?: HomeLinkType | null;
+  linkTarget?: string | null;
+  title?: string | null;
+}
+export interface HomePopup {
+  version: number;
+  enabled: boolean;
+  displayRule: HomePopupDisplayRule;
+  startAt?: string | null;
+  endAt?: string | null;
+  items: HomePopupItem[];
+  /** 当前时间是否在生效窗口内；客户端只在 active 时展示。 */
+  active?: boolean;
+  updatedAt?: string;
+  updatedBy?: string | null;
+}
 export const mallHomeApi = {
   draft: () => getRequest<HomeDraft>('/scm/mall-admin/home/draft', {}),
   history: () => getRequest<HomeRelease[]>('/scm/mall-admin/home/history', {}),
-  save: (version: number, themeCode: string, blocks: HomeBlock[]) =>
-    postRequest<HomeDraft>('/scm/mall-admin/home/draft', {version, themeCode, blocks}),
+  save: (version: number, themeCode: string, themeColor: string | null, blocks: HomeBlock[]) =>
+    postRequest<HomeDraft>('/scm/mall-admin/home/draft', {version, themeCode, themeColor, blocks}),
   publish: (draftVersion: number, pointerVersion: number) => postRequest<ScmId>('/scm/mall-admin/home/publish', {draftVersion, pointerVersion}),
   rollback: (targetReleaseId: ScmId, pointerVersion: number, reason: string) =>
     postRequest<ScmId>('/scm/mall-admin/home/rollback', {targetReleaseId, pointerVersion, reason}),
   preview: (customerId: ScmId, warehouseId: ScmId) => postRequest<HomePage>('/scm/mall-admin/home/preview', {customerId, warehouseId}),
+  popup: () => getRequest<HomePopup>('/scm/mall-admin/home/popup', {}),
+  savePopup: (form: Omit<HomePopup, 'items' | 'active' | 'updatedAt' | 'updatedBy'> & {items: HomePopupItem[]}) =>
+    postRequest<HomePopup>('/scm/mall-admin/home/popup', form),
 };
