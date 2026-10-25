@@ -30,6 +30,18 @@
       <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goCoupons"
         ><text>领券中心</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
       /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goPage('ANNOUNCEMENT')"
+        ><text>商城公告</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goPage('ABOUT')"
+        ><text>关于我们</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goPage('TERMS')"
+        ><text>服务条款</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goPage('AFTER_SALE')"
+        ><text>售后规则</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
       <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="changePassword"
         ><text>修改登录密码</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
       /></view>
@@ -101,6 +113,10 @@
   }
   function changePassword() {
     userStore.isLogin ? uni.navigateTo({ url: '/pages/account/password' }) : goLogin();
+  }
+  /** 单页内容不要求登录：条款、公告与售后规则对未登录顾客也应可查 */
+  function goPage(pageCode) {
+    uni.navigateTo({ url: `/pages-sub/page/index?pageCode=${pageCode}` });
   }
 
   /**

@@ -126,13 +126,15 @@
       <XsyEmpty v-else icon="shop" title="暂无可见商品" desc="商品上架后会显示在这里" compact />
     </view>
     <XsyTabBar :active="0" />
+    <MallHomePopup :visible="popupVisible" :items="popup?.items || []" @close="closePopup" @select="onPopupSelect" />
   </view>
 </template>
 
 <script setup>
   import { computed, ref, watch } from 'vue';
-  import { onReachBottom, onShow } from '@dcloudio/uni-app';
+  import { onHide, onReachBottom, onShow } from '@dcloudio/uni-app';
   import ProductCard from '@/components/business/product-card.vue';
+  import MallHomePopup from '@/components/business/mall-home-popup.vue';
   import XsySkeleton from '@/components/common/xsy-skeleton.vue';
   import XsyEmpty from '@/components/common/xsy-empty.vue';
   import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
@@ -150,6 +152,7 @@
   import { formatDate } from '@/utils/order-display';
   import { categoryEmoji } from '@/utils/category-icon';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import { HOME_POPUP_SEEN } from '@/constants/local-storage-key-const';
 
   const { theme, themeStyle } = useMallTheme();
 
@@ -204,6 +207,11 @@
   const newProducts = ref([]);
   const homeLayout = ref(null);
   let homeRequest = 0;
+  const popup = ref(null);
+  const popupVisible = ref(false);
+  /** EVERY_ENTRY：本次进入首页是否已经展示过；onHide 后重置 */
+  const popupShownThisEntry = ref(false);
+  let popupRequest = 0;
   const hasPublishedLayout = computed(() => homeLayout.value?.releaseId != null);
   const configuredSections = computed(() => {
     if (!hasPublishedLayout.value) return [];
@@ -323,12 +331,70 @@
     }
   }
 
+  function todayKey() {
+    const date = new Date();
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  /** DAILY 规则：同一天、同一弹窗版本只展示一次；版本更新后当天可再次展示。 */
+  function popupSeenToday(version) {
+    try {
+      const seen = uni.getStorageSync(HOME_POPUP_SEEN);
+      return Boolean(seen) && Number(seen.version) === Number(version) && seen.date === todayKey();
+    } catch {
+      return false;
+    }
+  }
+
+  function markPopupSeen(version) {
+    try {
+      uni.setStorageSync(HOME_POPUP_SEEN, { version, date: todayKey() });
+    } catch {
+      // 存储失败只是频控失效，不影响弹窗展示
+    }
+  }
+
+  async function loadHomePopup() {
+    if (!userStore.isLogin || popupVisible.value) return;
+    const request = ++popupRequest;
+    try {
+      const data = (await mallHomeApi.popup()).data;
+      if (request !== popupRequest || !userStore.isLogin || popupVisible.value) return;
+      if (!data.active || !data.items.length) return;
+      if (data.displayRule === 'DAILY') {
+        if (popupSeenToday(data.version)) return;
+        markPopupSeen(data.version);
+      } else if (popupShownThisEntry.value) {
+        return;
+      }
+      popupShownThisEntry.value = true;
+      popup.value = data;
+      popupVisible.value = true;
+    } catch (error) {
+      smartSentry.captureError(error);
+    }
+  }
+
+  function closePopup() {
+    popupVisible.value = false;
+  }
+
+  function onPopupSelect(item) {
+    popupVisible.value = false;
+    goHomeLink(item);
+  }
+
   watch(
     () => userStore.customerId,
     () => {
       homeRequest += 1;
+      popupRequest += 1;
       homeLayout.value = null;
-      if (userStore.isLogin) loadHomeLayout();
+      popupVisible.value = false;
+      if (userStore.isLogin) {
+        loadHomeLayout();
+        loadHomePopup();
+      }
     }
   );
 
@@ -397,11 +463,18 @@
     if (showed) {
       loadProducts(true);
       loadHomeLayout();
+      loadHomePopup();
     }
     showed = true;
   });
+  onHide(() => {
+    // 页面不可见即结束「本次进入」；再次进入时 EVERY_ENTRY 可重新展示
+    popupShownThisEntry.value = false;
+    popupVisible.value = false;
+  });
   loadProducts(true);
   loadHomeLayout();
+  loadHomePopup();
   loadCategoryRail();
   loadLocation();
 </script>

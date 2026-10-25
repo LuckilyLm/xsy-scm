@@ -63,3 +63,22 @@ export const MALL_THEMES = {
 export function normalizeMallThemeCode(code) {
   return code && Object.prototype.hasOwnProperty.call(MALL_THEMES, code) ? code : MALL_THEME_DEFAULT_CODE;
 }
+
+const THEME_COLOR_KEYS = ['primary', 'dark', 'ink', 'light', 'disabled'];
+const THEME_HEX = /^#[0-9a-fA-F]{6}$/;
+
+/**
+ * 自定义主色的派生色阶由服务端统一计算（见 MallThemeColors）。
+ * 这里只做形状校验：任何一项缺失或非法就整组丢弃，回退到预设主题，
+ * 避免出现「主色是自定义、深色还是默认绿」的混搭。
+ */
+export function normalizeMallThemePalette(palette) {
+  if (!palette || typeof palette !== 'object') return null;
+  const normalized = {};
+  for (const key of THEME_COLOR_KEYS) {
+    const value = palette[key];
+    if (typeof value !== 'string' || !THEME_HEX.test(value)) return null;
+    normalized[key] = value.toLowerCase();
+  }
+  return normalized;
+}

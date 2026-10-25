@@ -76,9 +76,11 @@
     },
     {
       "root": "pages-sub/mall",
-      "pages": [
-        { "path": "web", "style": { "navigationBarTitleText": "网页" } }
-      ]
+      "pages": [{ "path": "web", "style": { "navigationBarTitleText": "网页" } }]
+    },
+    {
+      "root": "pages-sub/page",
+      "pages": [{ "path": "index", "style": { "navigationBarTitleText": "商城公告" } }]
     },
     {
       "root": "pages-sub/trace",
@@ -97,7 +99,10 @@
     "pages/home/index": { "network": "all", "packages": ["pages-sub/product"] },
     "pages/cart/index": { "network": "all", "packages": ["pages-sub/checkout"] },
     "pages/order/index": { "network": "all", "packages": ["pages-sub/order"] },
-    "pages/mine/index": { "network": "wifi", "packages": ["pages-sub/wallet", "pages-sub/credit", "pages-sub/after-sale", "pages-sub/promotion"] }
+    "pages/mine/index": {
+      "network": "wifi",
+      "packages": ["pages-sub/wallet", "pages-sub/credit", "pages-sub/after-sale", "pages-sub/promotion", "pages-sub/page"]
+    }
   },
   "condition": {
     "current": 0,

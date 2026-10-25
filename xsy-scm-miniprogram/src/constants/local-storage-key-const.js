@@ -24,3 +24,8 @@ export const SEARCH_HISTORY = `${KEY_PREFIX}search_history`;
  * 只存 id，地址内容仍以服务端列表为准。
  */
 export const CHECKOUT_ADDRESS = `${KEY_PREFIX}checkout_address`;
+/**
+ * 首页弹窗「每日首次展示」记录：{version, date}。
+ * version 变化时当天会重新展示一次，便于新活动当天上线。
+ */
+export const HOME_POPUP_SEEN = `${KEY_PREFIX}home_popup_seen`;

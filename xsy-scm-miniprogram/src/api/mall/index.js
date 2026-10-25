@@ -7,3 +7,4 @@ export { mallAfterSaleApi } from './after-sale-api';
 export { mallFundsApi } from './funds-api';
 export { mallPromotionApi } from './promotion-api';
 export { mallHomeApi } from './home-api';
+export { mallDecorationApi } from './decoration-api';

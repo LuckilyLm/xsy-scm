@@ -46,6 +46,26 @@ test('theme follows published releases including rollback and fails closed to FR
   }
 });
 
+test('server-derived custom palette overrides preset; malformed palette falls back to preset', async () => {
+  const data = {
+    releaseId: 9,
+    themeCode: 'WARM',
+    palette: { primary: '#123456', dark: '#0d2b40', ink: '#0b1f2e', light: '#eef4f7', disabled: '#8a9aa6' },
+  };
+  const { store } = createStore(async () => ({ data }));
+  await store.refresh();
+  assert.equal(store.theme.primary, '#123456');
+  assert.equal(store.themeStyle['--mall-primary-light'], '#eef4f7');
+
+  data.palette = { ...data.palette, dark: 'red' };
+  await store.refresh();
+  assert.equal(store.theme.primary, colors.MALL_THEMES.WARM.primary);
+
+  data.palette = null;
+  await store.refresh();
+  assert.equal(store.theme.primary, colors.MALL_THEMES.WARM.primary);
+});
+
 test('parallel page refreshes share one request; failed refresh clears a prior theme', async () => {
   let finish;
   let calls = 0;
@@ -89,7 +109,7 @@ test('every registered page participates in theme lifecycle, including direct su
     ...config.pages.map((page) => page.path),
     ...config.subPackages.flatMap((pkg) => pkg.pages.map((page) => `${pkg.root}/${page.path}`)),
   ];
-  assert.equal(routes.length, 27);
+  assert.equal(routes.length, 29);
   for (const route of routes) {
     const source = read(`../src/${route}.vue`);
     assert.match(source, /useMallTheme\(\)/, route);
@@ -108,10 +128,11 @@ test('底部导航改用 uni-icons 自绘，不再引用静态图片', () => {
     .replace('export function applyNativeTheme', 'function applyNativeTheme');
   const context = vm.createContext({ ...colors, uni: { setTabBarStyle: (options) => calls.push(options) } });
   vm.runInContext(source, context);
-  context.applyNativeTheme('WARM');
-  context.applyNativeTheme('WARM');
+  context.applyNativeTheme(colors.MALL_THEMES.WARM);
+  context.applyNativeTheme({ primary: '#123456' });
   assert.equal(calls.length, 2);
   assert.equal(calls[0].selectedColor, colors.MALL_THEMES.WARM.primary);
+  assert.equal(calls[1].selectedColor, '#123456');
 
   // 五个 tab 的图标必须来自 uni-icons，页面与主题工具都不得再引用图片资源
   const bar = read('../src/components/common/xsy-tab-bar.vue');

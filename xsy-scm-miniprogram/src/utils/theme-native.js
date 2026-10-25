@@ -13,13 +13,13 @@ import { COLOR_TABBAR_NORMAL, MALL_THEMES, normalizeMallThemeCode } from '@/cons
 
 function noop() {}
 
-export function applyNativeTheme(themeCode) {
-  const code = normalizeMallThemeCode(themeCode);
-  const theme = MALL_THEMES[code];
+/** @param {{primary: string}} theme 当前主题配色（预设或服务端派生的自定义色阶） */
+export function applyNativeTheme(theme) {
+  const palette = theme && typeof theme.primary === 'string' ? theme : MALL_THEMES[normalizeMallThemeCode()];
   try {
     uni.setTabBarStyle({
       color: COLOR_TABBAR_NORMAL,
-      selectedColor: theme.primary,
+      selectedColor: palette.primary,
       backgroundColor: '#ffffff',
       borderStyle: 'white',
       fail: noop,
