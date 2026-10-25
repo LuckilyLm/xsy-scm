@@ -3,13 +3,6 @@
     <div class="page-heading">
       <div>
         <h2>{{ heading }}</h2>
-        <p class="scm-note">{{ description }}</p>
-        <p class="page-versions">
-          草稿版本 {{ page.version }}
-          <template v-if="page.publishedVersion != null"> · 已发布版本 {{ page.publishedVersion }} {{ page.publishedAt || '' }}</template>
-          <template v-else> · 尚未发布</template>
-          <a-tag v-if="page.unpublishedChanges" color="orange" class="page-versions__tag">有未发布修改</a-tag>
-        </p>
       </div>
       <a-space>
         <a-button v-privilege="'scm:mall:page:query'" :disabled="!page.publishedContent" @click="previewOpen = true">预览已发布内容</a-button>
@@ -21,7 +14,6 @@
     <a-alert v-if="error" type="error" show-icon :message="error" class="page-alert">
       <template #action><a-button size="small" @click="load">重新加载</a-button></template>
     </a-alert>
-    <p v-if="dirty" class="scm-note page-note">有未保存修改，发布前请先保存草稿。</p>
 
     <a-spin :spinning="loading">
       <a-form layout="vertical" class="page-form">
@@ -57,14 +49,13 @@ import {mallDecorationApi, type MallPage, type MallPageCode} from '/@/api/busine
 import WangEditor from '/@/components/framework/wangeditor/index.vue';
 
 const props = defineProps<{pageCode: MallPageCode}>();
-const PAGE_META: Record<MallPageCode, {heading: string; description: string}> = {
-  ANNOUNCEMENT: {heading: '商城公告', description: '展示在商城公告入口，适合发布门店通知、配送调整等信息。'},
-  TERMS: {heading: '服务条款', description: '顾客下单前可查看的服务条款；发布后顾客端立即可见。'},
-  ABOUT: {heading: '关于我们', description: '介绍门店与品牌信息，展示在商城「我的」页面。'},
-  AFTER_SALE: {heading: '售后规则', description: '说明退换货、质量问题处理等售后规则。'},
+const PAGE_TITLES: Record<MallPageCode, string> = {
+  ANNOUNCEMENT: '商城公告',
+  TERMS: '服务条款',
+  ABOUT: '关于我们',
+  AFTER_SALE: '售后规则',
 };
-const heading = computed(() => PAGE_META[props.pageCode].heading);
-const description = computed(() => PAGE_META[props.pageCode].description);
+const heading = computed(() => PAGE_TITLES[props.pageCode]);
 
 const page = ref<MallPage>({pageCode: props.pageCode, title: '', content: '', version: 0});
 const title = ref('');
@@ -139,7 +130,6 @@ async function save(): Promise<void> {
 function publish(): void {
   Modal.confirm({
     title: `发布「${heading.value}」？`,
-    content: '发布后顾客端立即显示当前草稿内容。',
     onOk: async () => {
       publishing.value = true;
       try {
@@ -173,23 +163,8 @@ onMounted(load);
   font-size: 18px;
 }
 
-.page-versions {
-  margin: 0;
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-  font-size: 12px;
-  line-height: 20px;
-}
-
-.page-versions__tag {
-  margin-left: 8px;
-}
-
 .page-alert {
   margin-bottom: 12px;
-}
-
-.page-note {
-  margin: 0 0 12px;
 }
 
 .page-form {

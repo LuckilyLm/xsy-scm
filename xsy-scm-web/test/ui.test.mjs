@@ -111,11 +111,12 @@ import ts from 'typescript';
   });
 
   test('装修页操作和抽屉遵守 SCM 页面约定', () => {
-    const action = page.match(/\{title: '操作', dataIndex: 'action', align: 'center', width: (\d+)\}/);
-    assert.ok(action);
-    assert.ok(Number(action[1]) <= 180);
-    assert.match(page, /:width="scmDrawerWidth\('s'\)"/);
+    // 首页结构是可排序的组件列表，不再用表格；操作仍由 ScmActionMore 走权限裁剪
+    assert.doesNotMatch(page, /dataIndex: 'action'/);
     assert.match(page, /<ScmActionMore\s+v-if="hasPermission\('scm:mall:home:edit'\)"/);
+    assert.match(page, /aria-label="上移"[\s\S]*?@click="move\(index, -1\)"/);
+    assert.match(page, /aria-label="下移"[\s\S]*?@click="move\(index, 1\)"/);
+    assert.match(page, /:width="scmDrawerWidth\('s'\)"/);
     assert.doesNotMatch(page, /var\(--scm-border-color\)|var\(--scm-fill-color\)/);
   });
 

@@ -3,10 +3,6 @@
     <div class="popup-heading">
       <div>
         <h2>首页弹窗</h2>
-        <p class="scm-note">最多 5 张图片，保存后顾客打开首页时展示。</p>
-        <p class="popup-versions">
-          当前版本 {{ version }}<template v-if="updatedAt"> · 更新于 {{ updatedAt }} · {{ updatedBy || '—' }}</template>
-        </p>
       </div>
       <a-space>
         <a-button v-privilege="'scm:mall:popup:query'" :disabled="!items.length" @click="previewOpen = true">预览弹窗</a-button>
@@ -22,7 +18,6 @@
       <a-form layout="vertical" class="popup-form">
         <a-form-item label="启用首页弹窗">
           <a-switch v-model:checked="enabled" @change="dirty = true" />
-          <span class="popup-note">关闭后商城不再弹出，已保存的图片不会丢失。</span>
         </a-form-item>
         <a-form-item label="展示规则">
           <a-radio-group v-model:value="displayRule" @change="dirty = true">
@@ -39,7 +34,6 @@
             style="width: 380px"
             @change="dirty = true"
           />
-          <span class="popup-note">留空表示长期生效；结束时间必须晚于开始时间。</span>
         </a-form-item>
 
         <div class="popup-section-head">
@@ -73,11 +67,11 @@
                 <a-input v-model:value="item.externalUrl" placeholder="仅限已授权的 HTTPS 域名" />
               </a-form-item>
               <a-form-item label="图片说明（可选）">
-                <a-input v-model:value="item.title" :maxlength="80" placeholder="用于无障碍描述，不显示在弹窗上" />
+                <a-input v-model:value="item.title" :maxlength="80" placeholder="选填" />
               </a-form-item>
             </div>
           </div>
-          <a-empty v-if="!items.length" description="还没有弹窗图片，添加后保存即可在商城展示" />
+          <a-empty v-if="!items.length" description="还没有弹窗图片" />
         </div>
         <a-button v-privilege="'scm:mall:popup:edit'" type="dashed" block :disabled="items.length >= 5" @click="addItem">+ 新增一张图片</a-button>
       </a-form>
@@ -91,9 +85,6 @@
             <div v-else class="popup-preview__placeholder">图片 {{ index + 1 }}</div>
           </div>
         </a-carousel>
-        <p class="popup-preview__hint">
-          实际展示时右上角会有「关闭」按钮；{{ displayRule === 'DAILY' ? '每日只出现一次' : '每次进入首页都会出现' }}。
-        </p>
       </div>
     </a-modal>
   </a-card>
@@ -142,8 +133,6 @@ const enabled = ref(false);
 const displayRule = ref<HomePopupDisplayRule>('DAILY');
 const period = ref<[string, string] | undefined>();
 const items = ref<PopupItemDraft[]>([]);
-const updatedAt = ref<string | null>(null),
-  updatedBy = ref<string | null>(null);
 const loading = ref(false),
   saving = ref(false),
   uploadingIndex = ref(-1),
@@ -181,8 +170,6 @@ async function load(): Promise<void> {
         externalUrl: linkType === 'EXTERNAL_URL' ? item.linkTarget || '' : '',
       };
     });
-    updatedAt.value = data.updatedAt ?? null;
-    updatedBy.value = data.updatedBy ?? null;
     dirty.value = false;
   } catch {
     error.value = '弹窗配置加载失败';
@@ -316,16 +303,6 @@ onMounted(load);
   font-size: 18px;
 }
 
-.popup-versions,
-.popup-note {
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-  font-size: 12px;
-}
-
-.popup-note {
-  margin-left: 12px;
-}
-
 .popup-alert {
   margin-bottom: 12px;
 }
@@ -417,12 +394,6 @@ onMounted(load);
   border: 1px dashed var(--scm-line-strong);
   border-radius: 10px;
   color: var(--scm-text-secondary);
-}
-
-.popup-preview__hint {
-  margin: 12px 0 0;
-  color: var(--scm-text-secondary);
-  font-size: 12px;
 }
 
 @media (max-width: 900px) {

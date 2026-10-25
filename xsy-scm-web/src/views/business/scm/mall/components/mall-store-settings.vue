@@ -3,10 +3,6 @@
     <div class="store-heading">
       <div>
         <h2>店铺</h2>
-        <p class="scm-note">维护商城名称与访问链接，顾客扫二维码即可进入商城。</p>
-        <p class="store-versions">
-          当前版本 {{ store.version }}<template v-if="store.updatedAt"> · 更新于 {{ store.updatedAt }} · {{ store.updatedBy || '—' }}</template>
-        </p>
       </div>
       <a-button v-privilege="'scm:mall:store:edit'" type="primary" :loading="saving" :disabled="!dirty" @click="save">保存店铺信息</a-button>
     </div>
@@ -23,9 +19,7 @@
           </a-form-item>
           <a-form-item label="店铺链接">
             <a-input v-model:value="storeLink" placeholder="https://" allow-clear @change="dirty = true" />
-            <span class="scm-note">必须是 HTTPS 地址；留空则不生成二维码。</span>
           </a-form-item>
-          <p v-if="dirty" class="scm-note">有未保存修改，二维码仍使用上次保存的链接。</p>
         </a-form>
 
         <div class="store-qr">
@@ -39,7 +33,7 @@
               <a-button :disabled="!qrDataUrl" @click="copyLink">复制链接</a-button>
             </a-space>
           </template>
-          <a-empty v-else description="保存店铺链接后生成二维码" />
+          <a-empty v-else description="暂无二维码" />
         </div>
       </div>
     </a-spin>
@@ -151,13 +145,6 @@ onMounted(load);
 .store-heading h2 {
   margin: 0 0 6px;
   font-size: 18px;
-}
-
-.store-versions {
-  margin: 0;
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-  font-size: 12px;
-  line-height: 20px;
 }
 
 .store-alert {

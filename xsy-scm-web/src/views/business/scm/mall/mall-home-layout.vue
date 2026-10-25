@@ -3,60 +3,21 @@
     <a-tab-pane key="home" tab="首页设置">
       <div class="mall-home-editor">
         <a-card :bordered="false" size="small">
-          <div class="mall-home-editor__heading">
-            <div>
-              <h2>商城首页</h2>
-              <p class="scm-note">按顺序配置轮播、入口、商品推荐、活动专题和公告。保存草稿后再预览与发布。</p>
-              <p class="mall-home-editor__versions">
-                当前草稿版本 {{ draftVersion }}<template v-if="currentReleaseId">，已发布版本 {{ currentReleaseId }}</template
-                ><template v-else>，尚未发布</template>
-              </p>
-            </div>
-          </div>
           <a-alert v-if="error" type="error" :message="error" show-icon class="mall-home-editor__alert">
             <template #action><a-button size="small" @click="load">重新加载</a-button></template>
           </a-alert>
-          <div class="mall-home-editor__toolbar">
-            <div class="mall-home-editor__controls">
-              <div class="mall-home-editor__control">
-                <span class="mall-home-editor__label">主题预设</span>
-                <a-select
-                  v-model:value="themeCode"
-                  :options="themeOptions"
-                  style="width: 130px"
-                  @change="applyThemePreset"
-                  aria-label="主题预设"
-                  title="主题只作用于商城首页的配色，其他页面沿用系统配色"
-                />
-                <button
-                  v-for="preset in presetSwatches"
-                  :key="preset.code"
-                  type="button"
-                  class="mall-home-editor__swatch"
-                  :class="{'mall-home-editor__swatch--active': !themeColor && themeCode === preset.code}"
-                  :style="{background: preset.color}"
-                  :title="preset.label"
-                  :aria-label="`使用${preset.label}主题`"
-                  @click="selectPreset(preset.code)"
-                />
-              </div>
-              <div class="mall-home-editor__control">
-                <span class="mall-home-editor__label">主色</span>
-                <input type="color" class="mall-home-editor__color-input" :value="themeColorText" aria-label="自定义主题主色" @input="onColorInput" />
-                <a-input
-                  v-model:value="themeColorText"
-                  style="width: 104px"
-                  aria-label="主题主色色值"
-                  @blur="applyHexColor"
-                  @press-enter="applyHexColor"
-                />
-                <a-tag v-if="contrastWarning" color="orange" title="白字放在这个颜色上可能看不清，建议加深">主色偏浅</a-tag>
-                <span v-else class="mall-home-editor__contrast">白字对比度 {{ whiteContrastText }}</span>
-              </div>
-              <div class="mall-home-editor__control">
-                <span class="mall-home-editor__label">新组件</span>
-                <a-select v-model:value="newType" :options="blockTypeOptions" style="width: 150px" />
-                <a-button v-privilege="'scm:mall:home:edit'" :disabled="blocks.length >= 30" @click="addBlock">添加</a-button>
+
+          <div class="console-head">
+            <div class="console-head__intro">
+              <h2>商城首页</h2>
+              <div class="console-head__state">
+                <span class="console-state" :class="dirty ? 'is-dirty' : 'is-saved'">
+                  <EditOutlined v-if="dirty" aria-hidden="true" />
+                  <CheckCircleFilled v-else aria-hidden="true" />
+                  {{ dirty ? '有未保存修改' : '草稿已保存' }}
+                </span>
+                <span class="console-head__version">草稿 v{{ draftVersion }}</span>
+                <span class="console-head__version">{{ currentReleaseId ? `已发布 v${currentReleaseId}` : '尚未发布' }}</span>
               </div>
             </div>
             <a-space>
@@ -71,102 +32,162 @@
               >
             </a-space>
           </div>
-          <a-table
-            :data-source="blocks"
-            :columns="columns"
-            row-key="key"
-            size="small"
-            bordered
-            :loading="loading"
-            :pagination="false"
-            :scroll="{x: scmColumnsWidth(columns)}"
-            :locale="{emptyText: '草稿还没有组件。选择「新组件」后点击「添加」。'}"
-          >
-            <template #bodyCell="{record, column, index}">
-              <template v-if="column.dataIndex === 'type'">{{ blockTypeLabel(record.type) }}</template>
-              <template v-else-if="column.dataIndex === 'title'">{{ record.title || record.text || '—' }}</template>
-              <template v-else-if="column.dataIndex === 'audience'">{{
-                record.customerIds?.length ? `指定 ${record.customerIds.length} 位客户` : '全部客户'
-              }}</template>
-              <template v-else-if="column.dataIndex === 'enabled'"
-                ><a-tag :color="record.enabled ? 'green' : 'default'">{{ record.enabled ? '启用' : '停用' }}</a-tag></template
-              >
-              <template v-else-if="column.dataIndex === 'action'">
-                <a-space size="small">
-                  <a-button type="link" v-privilege="'scm:mall:home:edit'" @click="editBlock(record)">编辑</a-button>
-                  <ScmActionMore
-                    v-if="hasPermission('scm:mall:home:edit')"
-                    :actions="rowActions(index)"
-                    @select="onRowAction($event, record, index)"
-                  />
-                </a-space>
-              </template>
-            </template>
-          </a-table>
+
+          <div class="console-theme">
+            <span class="console-theme__label">店铺配色</span>
+            <div class="console-theme__presets" role="group" aria-label="主题预设">
+              <button
+                v-for="preset in presetSwatches"
+                :key="preset.code"
+                type="button"
+                class="console-swatch"
+                :class="{'is-active': !themeColor && themeCode === preset.code}"
+                :style="{background: preset.color}"
+                :title="preset.label"
+                :aria-label="`使用${preset.label}主题`"
+                :aria-pressed="!themeColor && themeCode === preset.code"
+                @click="selectPreset(preset.code)"
+              />
+              <span class="console-theme__name">{{ themeName }}</span>
+            </div>
+            <div class="console-theme__custom">
+              <input type="color" class="console-color-input" :value="themeColorText" aria-label="自定义主题主色" @input="onColorInput" />
+              <a-input
+                v-model:value="themeColorText"
+                style="width: 96px"
+                aria-label="主题主色色值"
+                @blur="applyHexColor"
+                @press-enter="applyHexColor"
+              />
+            </div>
+            <a-tag v-if="contrastWarning" color="orange" title="白字放在这个颜色上可能看不清，建议加深">主色偏浅</a-tag>
+            <span v-else class="console-theme__contrast">白字对比度 {{ whiteContrastText }}</span>
+          </div>
+
+          <div class="console-body">
+            <section class="console-stack-panel" aria-label="页面结构">
+              <div class="console-panel-head">
+                <div class="console-panel-head__title">
+                  <strong>页面结构</strong>
+                  <span>{{ blocks.length }} 个组件</span>
+                </div>
+                <div class="console-panel-head__add">
+                  <a-select v-model:value="newType" :options="blockTypeOptions" style="width: 132px" aria-label="新组件类型" />
+                  <a-button v-privilege="'scm:mall:home:edit'" :disabled="blocks.length >= 30" @click="addBlock">
+                    <template #icon><PlusOutlined /></template>
+                    添加组件
+                  </a-button>
+                </div>
+              </div>
+              <a-spin :spinning="loading">
+                <div v-if="blocks.length" class="console-stack">
+                  <article v-for="(record, index) in blocks" :key="record.key" class="console-block" :class="{'is-off': !record.enabled}">
+                    <span class="console-block__order" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span>
+                    <span class="console-block__glyph" :style="{background: themePalette.light, color: themePalette.ink}">
+                      <component :is="blockTypeIcons[record.type]" aria-hidden="true" />
+                    </span>
+                    <div class="console-block__main">
+                      <div class="console-block__heading">
+                        <strong class="console-block__name">{{ blockSummary(record) }}</strong>
+                        <span class="console-status" :class="record.enabled ? 'is-on' : 'is-off'">{{ record.enabled ? '启用' : '停用' }}</span>
+                      </div>
+                      <div class="console-block__meta">
+                        <span>{{ blockTypeLabel(record.type) }}</span>
+                        <span>{{ audienceText(record) }}</span>
+                        <span v-if="scheduleText(record)">{{ scheduleText(record) }}</span>
+                      </div>
+                    </div>
+                    <div class="console-block__actions">
+                      <a-button type="link" size="small" v-privilege="'scm:mall:home:edit'" @click="editBlock(record)">编辑</a-button>
+                      <a-tooltip title="上移">
+                        <a-button type="text" size="small" aria-label="上移" :disabled="index === 0" @click="move(index, -1)">
+                          <ArrowUpOutlined />
+                        </a-button>
+                      </a-tooltip>
+                      <a-tooltip title="下移">
+                        <a-button type="text" size="small" aria-label="下移" :disabled="index === blocks.length - 1" @click="move(index, 1)">
+                          <ArrowDownOutlined />
+                        </a-button>
+                      </a-tooltip>
+                      <ScmActionMore v-if="hasPermission('scm:mall:home:edit')" :actions="rowActions()" @select="onRowAction($event, record)" />
+                    </div>
+                  </article>
+                </div>
+                <div v-else class="console-empty">
+                  <InboxOutlined aria-hidden="true" />
+                  <strong>还没有首页组件</strong>
+                  <span>选择组件类型后点「添加组件」</span>
+                </div>
+              </a-spin>
+            </section>
+
+            <aside class="console-preview-panel" aria-label="实时预览">
+              <div class="console-panel-head">
+                <div class="console-panel-head__title"><strong>实时预览</strong></div>
+                <a-button type="link" size="small" @click="previewDrawerOpen = true">按客户预览</a-button>
+              </div>
+              <div class="console-preview-stage">
+                <MallPhonePreview ref="phonePreviewRef" :theme-code="themeCode" :theme-color="themeColor" :blocks="blocks" />
+              </div>
+              <a-collapse ghost class="console-history">
+                <a-collapse-panel key="history" :header="`发布记录 ${releases.length}`">
+                  <a-list :data-source="releases" :loading="loading" size="small" :locale="{emptyText: '尚无发布记录'}">
+                    <template #renderItem="{item}">
+                      <a-list-item>
+                        <template #actions>
+                          <a-button
+                            v-if="String(item.id) !== String(currentReleaseId)"
+                            type="link"
+                            size="small"
+                            :disabled="dirty"
+                            v-privilege="'scm:mall:home:publish'"
+                            @click="openRollback(item)"
+                            >回滚</a-button
+                          >
+                        </template>
+                        <a-list-item-meta
+                          :title="`版本 ${item.id} · ${item.publishKind === 'ROLLBACK' ? '回滚发布' : '正式发布'}`"
+                          :description="`${item.publishedAt} · ${item.publishedBy}`"
+                        />
+                      </a-list-item>
+                    </template>
+                  </a-list>
+                </a-collapse-panel>
+              </a-collapse>
+            </aside>
+          </div>
         </a-card>
 
-        <a-row :gutter="16" class="mall-home-editor__lower">
-          <a-col :xs="24" :lg="14">
-            <a-card title="客户内容预览" :bordered="false" size="small">
-              <div class="mall-home-editor__preview-controls">
-                <div class="mall-home-editor__control">
-                  <span class="mall-home-editor__label">预览客户</span>
-                  <CustomerSelect v-model:value="previewCustomerId" width="200px" />
-                </div>
-                <div class="mall-home-editor__control">
-                  <span class="mall-home-editor__label">配送仓</span>
-                  <WarehouseSelect v-model:value="previewWarehouseId" width="180px" />
-                </div>
-                <a-button :loading="previewLoading" :disabled="dirty" v-privilege="'scm:mall:home:query'" @click="preview">预览</a-button>
+        <a-drawer v-model:open="previewDrawerOpen" title="按客户预览" :width="scmDrawerWidth('s')">
+          <div class="console-customer-preview">
+            <div class="console-customer-preview__controls">
+              <div class="console-field">
+                <span>预览客户</span>
+                <CustomerSelect v-model:value="previewCustomerId" width="200px" />
               </div>
-              <p v-if="dirty" class="scm-note mall-home-editor__preview-hint">有未保存修改，预览使用最近一次保存的草稿。</p>
-              <a-alert v-if="previewError" type="error" show-icon :message="previewError" />
-              <div v-if="previewPage" class="mall-home-editor__preview">
-                <div v-for="block in previewPage.blocks" :key="block.key" class="mall-home-editor__preview-block">
-                  <img v-if="block.imageUrl" :src="block.imageUrl" :alt="block.title || '首页图片'" />
-                  <strong v-if="block.title">{{ block.title }}</strong>
-                  <p v-if="block.subtitle">{{ block.subtitle }}</p>
-                  <p v-if="block.text">{{ block.text }}</p>
-                  <div v-if="block.products?.length" class="mall-home-editor__preview-products">
-                    <span v-for="product in block.products" :key="String(product.skuId)">{{ product.productName }} · {{ product.specName }}</span>
-                  </div>
-                </div>
-                <a-empty v-if="!previewPage.blocks.length" description="该客户当前没有可展示的装修内容" />
+              <div class="console-field">
+                <span>配送仓</span>
+                <WarehouseSelect v-model:value="previewWarehouseId" width="180px" />
               </div>
-              <a-empty v-else class="mall-home-editor__preview-empty" description="选择客户与配送仓后预览" />
-            </a-card>
-          </a-col>
-          <a-col :xs="24" :lg="10">
-            <div class="mall-home-editor__side">
-              <a-card title="装修效果预览" :bordered="false" size="small">
-                <p class="scm-note mall-home-editor__phone-note">按当前编辑中的主题与组件展示，图片以最近一次保存为准。</p>
-                <MallPhonePreview ref="phonePreviewRef" :theme-code="themeCode" :theme-color="themeColor" :blocks="blocks" />
-              </a-card>
-              <a-card title="发布记录" :bordered="false" size="small">
-                <a-list :data-source="releases" :loading="loading" :locale="{emptyText: '尚无发布记录'}">
-                  <template #renderItem="{item}">
-                    <a-list-item>
-                      <template #actions>
-                        <a-button
-                          v-if="String(item.id) !== String(currentReleaseId)"
-                          type="link"
-                          :disabled="dirty"
-                          v-privilege="'scm:mall:home:publish'"
-                          @click="openRollback(item)"
-                          >回滚到此版</a-button
-                        >
-                      </template>
-                      <a-list-item-meta
-                        :title="`版本 ${item.id} · ${item.publishKind === 'ROLLBACK' ? '回滚发布' : '正式发布'}`"
-                        :description="`${item.publishedAt} · ${item.publishedBy}`"
-                      />
-                    </a-list-item>
-                  </template>
-                </a-list>
-              </a-card>
+              <a-button :loading="previewLoading" :disabled="dirty" v-privilege="'scm:mall:home:query'" @click="preview">预览</a-button>
             </div>
-          </a-col>
-        </a-row>
+            <p v-if="dirty" class="console-customer-preview__hint">先保存草稿，再按客户预览。</p>
+            <a-alert v-if="previewError" type="error" show-icon :message="previewError" />
+            <div v-if="previewPage" class="console-customer-preview__blocks">
+              <div v-for="block in previewPage.blocks" :key="block.key" class="console-customer-preview__block">
+                <img v-if="block.imageUrl" :src="block.imageUrl" :alt="block.title || '首页图片'" />
+                <strong v-if="block.title">{{ block.title }}</strong>
+                <p v-if="block.subtitle">{{ block.subtitle }}</p>
+                <p v-if="block.text">{{ block.text }}</p>
+                <div v-if="block.products?.length" class="console-customer-preview__products">
+                  <span v-for="product in block.products" :key="String(product.skuId)">{{ product.productName }} · {{ product.specName }}</span>
+                </div>
+              </div>
+              <a-empty v-if="!previewPage.blocks.length" description="该客户当前没有可展示的装修内容" />
+            </div>
+            <a-empty v-else class="console-customer-preview__empty" description="选择客户与配送仓后预览" />
+          </div>
+        </a-drawer>
 
         <a-drawer :open="editorOpen" title="编辑首页组件" :width="scmDrawerWidth('s')" @close="editorOpen = false">
           <a-form v-if="editing" layout="vertical">
@@ -184,7 +205,6 @@
               <a-upload :accept="IMAGE_ACCEPT" :show-upload-list="false" :custom-request="uploadImage">
                 <a-button :loading="uploading">上传公开图片</a-button>
               </a-upload>
-              <span v-if="editing.imageFileKey" class="scm-note">已选图片，保存后可预览。</span>
             </a-form-item>
             <a-form-item v-if="editing.type === 'RECOMMENDATION'" label="推荐商品规格" required>
               <SkuSelect v-model:value="recommendationSkuIds" mode="multiple" :limit="100" />
@@ -237,9 +257,21 @@
   </a-tabs>
 </template>
 <script setup lang="ts">
-import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, onMounted, ref, watch} from 'vue';
-import {message, Modal, type TableColumnsType, type UploadProps} from 'ant-design-vue';
+import {computed, onMounted, ref, watch, type Component} from 'vue';
+import {message, Modal, type UploadProps} from 'ant-design-vue';
+import {
+  AppstoreOutlined,
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  CheckCircleFilled,
+  EditOutlined,
+  FlagOutlined,
+  InboxOutlined,
+  PictureOutlined,
+  PlusOutlined,
+  ShoppingOutlined,
+  SoundOutlined,
+} from '@ant-design/icons-vue';
 import {fileApi} from '/@/api/support/file-api';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
 import {IMAGE_ACCEPT, imageFileError} from '/@/constants/business/scm/image-const';
@@ -265,6 +297,7 @@ import {
   MIN_WHITE_CONTRAST,
   isValidMallThemeColor,
   mallThemeBaseColor,
+  mallThemePalette,
   normalizeMallThemeColor,
   whiteContrast,
 } from '/@/utils/mall-theme';
@@ -276,6 +309,14 @@ const blockTypeOptions: {value: HomeBlockType; label: string}[] = [
   {value: 'ACTIVITY_TOPIC', label: '活动专题'},
   {value: 'ANNOUNCEMENT', label: '公告'},
 ];
+/** 组件类型图标：工作区里用同一套线性图标区分组件，不靠颜色单独表意。 */
+const blockTypeIcons: Record<HomeBlockType, Component> = {
+  BANNER: PictureOutlined,
+  SHORTCUT: AppstoreOutlined,
+  RECOMMENDATION: ShoppingOutlined,
+  ACTIVITY_TOPIC: FlagOutlined,
+  ANNOUNCEMENT: SoundOutlined,
+};
 const linkOptions: {value: HomeLinkType; label: string}[] = [
   {value: 'NONE', label: '不跳转'},
   {value: 'PRODUCT', label: '商品详情'},
@@ -284,14 +325,6 @@ const linkOptions: {value: HomeLinkType; label: string}[] = [
   {value: 'COUPONS', label: '领券中心'},
   {value: 'SEARCH', label: '商品搜索'},
   {value: 'EXTERNAL_URL', label: '允许的外部网页'},
-];
-const columns: TableColumnsType<HomeBlock> = [
-  {title: '顺序', dataIndex: 'sortOrder', width: 70},
-  {title: '组件', dataIndex: 'type', align: 'center', width: 120},
-  {title: '内容', dataIndex: 'title', width: 230},
-  {title: '展示客户', dataIndex: 'audience', width: 145},
-  {title: '状态', dataIndex: 'enabled', width: 90},
-  {title: '操作', dataIndex: 'action', align: 'center', width: 150},
 ];
 const newType = ref<HomeBlockType>('BANNER');
 const blocks = ref<HomeBlock[]>([]),
@@ -318,6 +351,9 @@ const effectiveThemeColor = computed(() => mallThemeBaseColor(themeCode.value, t
 const themeContrast = computed(() => whiteContrast(effectiveThemeColor.value));
 const contrastWarning = computed(() => themeContrast.value < MIN_WHITE_CONTRAST);
 const whiteContrastText = computed(() => `${themeContrast.value.toFixed(1)}:1`);
+const themeName = computed(() => (themeColor.value ? '自定义' : themeOptions.find((option) => option.value === themeCode.value)?.label || '生鲜绿'));
+/** 组件图标底色跟随店铺配色，工作区和手机预览保持同一套颜色。 */
+const themePalette = computed(() => mallThemePalette(effectiveThemeColor.value));
 const activeTab = ref('home');
 const phonePreviewRef = ref<InstanceType<typeof MallPhonePreview>>();
 // 切回首页时刷新弹窗预览：弹窗在另一个标签页保存，手机预览不应停留在旧版本
@@ -340,6 +376,7 @@ const categories = ref<ProductCategory[]>([]);
 const customerOptions = ref<{value: ScmId; label: string}[]>([]);
 const activityOptions = ref<{value: ScmId; label: string}[]>([]);
 const uploading = ref(false);
+const previewDrawerOpen = ref(false);
 const previewCustomerId = ref<ScmId | ScmId[]>(),
   previewWarehouseId = ref<ScmId>();
 const previewLoading = ref(false),
@@ -352,6 +389,29 @@ let requestId = 0;
 
 function blockTypeLabel(type: HomeBlockType): string {
   return blockTypeOptions.find((option) => option.value === type)?.label || type;
+}
+
+function blockSummary(block: HomeBlock): string {
+  if (block.title?.trim()) return block.title.trim();
+  if (block.type === 'ANNOUNCEMENT') return block.text?.trim() || '未填写公告内容';
+  if (block.type === 'RECOMMENDATION') return `推荐商品 ${block.skuIds?.length || 0} 个规格`;
+  // 轮播图标题是可选的；没有标题时这是正常状态，不提示必填
+  if (block.type === 'BANNER') return block.subtitle?.trim() || '图片轮播';
+  return '未填写标题';
+}
+
+function audienceText(block: HomeBlock): string {
+  return block.customerIds?.length ? `指定 ${block.customerIds.length} 位客户` : '全部客户';
+}
+
+/** 时间范围只显示日期，工作区不需要秒级信息。 */
+function scheduleText(block: HomeBlock): string {
+  const start = block.startAt ? block.startAt.slice(0, 10) : '';
+  const end = block.endAt ? block.endAt.slice(0, 10) : '';
+  if (start && end) return `${start} 至 ${end}`;
+  if (start) return `${start} 起`;
+  if (end) return `至 ${end}`;
+  return '';
 }
 
 /** 主色输入框与色板共用同一个值；主题预设只是主色的快捷方式。 */
@@ -500,17 +560,11 @@ function removeBlock(key: string): void {
   normalize();
   dirty.value = true;
 }
-function rowActions(index: number) {
-  return [
-    {key: 'up', label: '上移', disabled: index === 0},
-    {key: 'down', label: '下移', disabled: index === blocks.value.length - 1},
-    {key: 'remove', label: '移除', danger: true},
-  ];
+function rowActions() {
+  return [{key: 'remove', label: '移除', danger: true}];
 }
-function onRowAction(action: string, block: HomeBlock, index: number): void {
-  if (action === 'up') move(index, -1);
-  else if (action === 'down') move(index, 1);
-  else if (action === 'remove') Modal.confirm({title: '从草稿移除此组件？', onOk: () => removeBlock(block.key)});
+function onRowAction(action: string, block: HomeBlock): void {
+  if (action === 'remove') Modal.confirm({title: '从草稿移除此组件？', onOk: () => removeBlock(block.key)});
 }
 
 const uploadImage: UploadProps['customRequest'] = async (options) => {
@@ -558,7 +612,6 @@ async function saveDraft(): Promise<void> {
 function publish(): void {
   Modal.confirm({
     title: '发布商城首页？',
-    content: '客户将在发布完成后看到此版本。',
     onOk: async () => {
       publishing.value = true;
       try {
@@ -616,137 +669,356 @@ onMounted(load);
 <style scoped>
 .mall-home-editor {
   display: grid;
-  gap: 16px;
+  gap: 0;
 }
-.mall-home-editor__heading h2 {
-  margin: 0 0 6px;
-  font-size: 18px;
+.mall-home-editor__alert {
+  margin-bottom: 12px;
 }
-.mall-home-editor__heading .scm-note {
-  margin-bottom: 2px;
-}
-/* 版本信息是说明文字，不做成标题旁的标签 */
-.mall-home-editor__versions {
-  margin: 0;
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-  font-size: 12px;
-  line-height: 20px;
-}
-.mall-home-editor__toolbar {
+
+/* 工作区标题与草稿状态 */
+.console-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px 16px;
-  margin: 16px 0 12px;
+  gap: 12px 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--scm-line, #e5e7eb);
 }
-.mall-home-editor__controls,
-.mall-home-editor__preview-controls {
+.console-head__intro h2 {
+  margin: 0;
+  color: var(--scm-ink, #1f2329);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.console-head__state {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
+  gap: 4px 14px;
+  margin-top: 6px;
+  font-size: 12px;
 }
-/* 控件前的说明文字：给下拉框和按钮一个明确的对象，避免一排无标题控件 */
-.mall-home-editor__control {
+.console-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.console-state .anticon {
+  font-size: 12px;
+}
+.console-state.is-saved {
+  color: #15803d;
+}
+.console-state.is-dirty {
+  color: #b45309;
+}
+.console-head__version {
+  color: var(--scm-text-secondary, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 店铺配色：色板即预设，不再叠加一个重复的下拉框 */
+.console-theme {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--scm-line, #e5e7eb);
+}
+.console-theme__label {
+  color: var(--scm-text-secondary, #6b7280);
+  font-size: 12px;
+}
+.console-theme__presets {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.mall-home-editor__control .mall-home-editor__label {
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+.console-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+}
+.console-swatch.is-active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--scm-ink, #1f2329);
+}
+.console-theme__name {
+  margin-left: 2px;
+  color: var(--scm-ink, #1f2329);
   font-size: 12px;
+}
+.console-theme__custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.console-color-input {
+  width: 32px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--scm-line, #e5e7eb);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+.console-theme__contrast {
+  color: var(--scm-text-secondary, #6b7280);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 左侧页面结构 + 右侧实时预览 */
+.console-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 356px;
+  gap: 28px;
+  align-items: start;
+  padding-top: 18px;
+}
+.console-stack-panel {
+  min-width: 0;
+}
+.console-preview-panel {
+  position: sticky;
+  top: 16px;
+  min-width: 0;
+}
+.console-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 32px;
+}
+.console-panel-head__title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.console-panel-head__title strong {
+  color: var(--scm-ink, #1f2329);
+  font-size: 15px;
+  font-weight: 600;
+}
+.console-panel-head__title span {
+  color: var(--scm-text-secondary, #6b7280);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.console-panel-head__add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 组件按真实顺序排列，序号是结构信息而不是装饰 */
+.console-stack {
+  margin-top: 10px;
+  border-top: 1px solid var(--scm-line, #e5e7eb);
+}
+.console-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--scm-line, #e5e7eb);
+}
+.console-block.is-off {
+  opacity: 0.62;
+}
+.console-block__order {
+  flex: 0 0 24px;
+  width: 24px;
+  color: #9aa1ab;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.console-block__glyph {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  font-size: 17px;
+}
+.console-block__main {
+  flex: 1;
+  min-width: 0;
+}
+.console-block__heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.console-block__name {
+  overflow: hidden;
+  color: var(--scm-ink, #1f2329);
+  font-size: 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.mall-home-editor__preview-controls {
-  padding-bottom: 4px;
+.console-status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  color: var(--scm-text-secondary, #6b7280);
+  font-size: 11px;
 }
-.mall-home-editor__preview-hint {
+.console-status::before {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentcolor;
+  content: '';
+}
+.console-status.is-on {
+  color: #15803d;
+}
+.console-block__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 4px;
+  color: var(--scm-text-secondary, #6b7280);
+  font-size: 12px;
+}
+.console-block__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+}
+.console-block__actions :deep(.ant-btn) {
+  color: var(--scm-text-secondary, #6b7280);
+}
+.console-block__actions :deep(.ant-btn[disabled]) {
+  color: #c9ced6;
+}
+
+.console-empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 64px 16px;
+  border-bottom: 1px solid var(--scm-line, #e5e7eb);
+  color: var(--scm-text-secondary, #6b7280);
+}
+.console-empty .anticon {
+  color: #c9ced6;
+  font-size: 28px;
+}
+.console-empty strong {
+  color: var(--scm-ink, #1f2329);
+  font-size: 14px;
+  font-weight: 500;
+}
+.console-empty span {
+  font-size: 12px;
+}
+
+/* 预览台：手机周围留一圈中性底，不再套一层卡片 */
+.console-preview-stage {
+  display: grid;
+  justify-items: center;
+  margin-top: 10px;
+  padding: 20px 0;
+  border-radius: 12px;
+  background: #f3f4f2;
+}
+.console-history {
+  margin-top: 4px;
+}
+.console-history :deep(.ant-collapse-header) {
+  padding: 10px 0 !important;
+  color: var(--scm-text-secondary, #6b7280);
+  font-size: 12px;
+}
+.console-history :deep(.ant-collapse-content-box) {
+  padding: 0 0 8px !important;
+}
+
+/* 按客户预览抽屉 */
+.console-customer-preview__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--scm-line, #e5e7eb);
+}
+.console-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--scm-text-secondary, #6b7280);
+  font-size: 12px;
+}
+.console-customer-preview__hint {
   margin: 12px 0 0;
+  color: #b45309;
+  font-size: 12px;
 }
-.mall-home-editor__preview-empty {
-  margin-top: 12px;
-}
-.mall-home-editor__preview-empty :deep(.ant-empty-image) {
-  height: 48px;
-  margin-bottom: 8px;
-}
-.mall-home-editor__preview-empty :deep(.ant-empty-image svg) {
-  height: 100%;
-}
-.mall-home-editor__alert {
-  margin-top: 12px;
-}
-.mall-home-editor__lower {
-  margin: 0;
-}
-.mall-home-editor__preview {
+.console-customer-preview__blocks {
   display: grid;
   gap: 12px;
   margin-top: 16px;
 }
-.mall-home-editor__preview-block {
-  padding: 12px;
-  border: 1px solid var(--scm-border, #f0f0f0);
-  border-radius: 12px;
+.console-customer-preview__block {
+  padding: 14px;
+  border: 1px solid var(--scm-line, #e5e7eb);
+  border-radius: 10px;
 }
-.mall-home-editor__preview-block img {
+.console-customer-preview__block img {
   display: block;
-  width: min(100%, 460px);
-  max-height: 170px;
-  object-fit: cover;
-  margin-bottom: 8px;
+  width: 100%;
+  max-height: 180px;
+  margin-bottom: 10px;
   border-radius: 8px;
+  object-fit: cover;
 }
-.mall-home-editor__preview-block p {
+.console-customer-preview__block p {
   margin: 6px 0 0;
 }
-.mall-home-editor__preview-products {
+.console-customer-preview__products {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
 }
-.mall-home-editor__preview-products span {
+.console-customer-preview__products span {
   padding: 4px 8px;
-  background: var(--scm-fill, #fafafa);
   border-radius: 6px;
+  background: var(--scm-fill, #fafafa);
 }
+.console-customer-preview__empty {
+  margin-top: 32px;
+}
+
 .mall-decoration-console :deep(.ant-tabs-nav) {
   margin-bottom: 16px;
 }
-.mall-home-editor__swatch {
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px var(--scm-line);
-  cursor: pointer;
-}
-.mall-home-editor__swatch--active {
-  border-color: #fff;
-  box-shadow: 0 0 0 2px var(--scm-ink, #1f2329);
-}
-.mall-home-editor__color-input {
-  width: 32px;
-  height: 32px;
-  padding: 2px;
-  border: 1px solid var(--scm-line);
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-}
-.mall-home-editor__contrast {
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-  font-size: 12px;
-  white-space: nowrap;
-}
-.mall-home-editor__side {
-  display: grid;
-  gap: 16px;
-}
-.mall-home-editor__phone-note {
-  margin: 0 0 12px;
+
+@media (max-width: 1000px) {
+  .console-body {
+    grid-template-columns: 1fr;
+  }
+  .console-preview-panel {
+    position: static;
+  }
 }
 </style>
