@@ -18,7 +18,7 @@ public class MallHomeDraftSaveForm {
     /**
      * 主题编码：FRESH / WARM / OCEAN。
      */
-    @NotNull(message = "首页组件不能为空")
+    @NotNull(message = "主题编码不能为空")
     @Size(max = 30, message = "首页最多配置30个组件")
     private String themeCode;
     /**
