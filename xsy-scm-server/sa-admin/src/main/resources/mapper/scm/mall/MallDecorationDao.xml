@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.mall.decoration.dao.MallDecorationDao">
+
+    <insert id="ensureStore">
+        INSERT INTO xsy_mall_store(id, store_name) VALUES (1, '商城') ON CONFLICT (id) DO NOTHING
+    </insert>
+
+    <sql id="pageColumns">
+        page_code AS pageCode, title, draft_content AS content, version,
+        published_content AS publishedContent, published_version AS publishedVersion,
+        published_at AS publishedAt, published_by AS publishedBy, updated_at AS updatedAt, updated_by AS updatedBy
+    </sql>
+
+    <select id="page" resultType="com.xsy.scm.mall.decoration.domain.vo.MallPageVO">
+        SELECT <include refid="pageColumns"/>
+        FROM xsy_mall_page
+        WHERE page_code = #{pageCode}
+    </select>
+
+    <select id="lockPage" resultType="com.xsy.scm.mall.decoration.domain.vo.MallPageVO">
+        SELECT <include refid="pageColumns"/>
+        FROM xsy_mall_page
+        WHERE page_code = #{pageCode}
+        FOR UPDATE
+    </select>
+
+    <select id="pages" resultType="com.xsy.scm.mall.decoration.domain.vo.MallPageVO">
+        SELECT <include refid="pageColumns"/>
+        FROM xsy_mall_page
+        ORDER BY page_code
+    </select>
+
+    <update id="savePage">
+        UPDATE xsy_mall_page
+        SET title = #{title}, draft_content = #{content}, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE page_code = #{pageCode}
+            AND version = #{version}
+    </update>
+
+    <update id="publishPage">
+        UPDATE xsy_mall_page
+        SET published_content = draft_content, published_version = version,
+            published_at = CURRENT_TIMESTAMP, published_by = #{operator}
+        WHERE page_code = #{pageCode}
+            AND version = #{version}
+    </update>
+
+    <select id="store" resultType="com.xsy.scm.mall.decoration.domain.vo.MallStoreVO">
+        SELECT version, store_name AS storeName, store_link AS storeLink, updated_at AS updatedAt, updated_by AS updatedBy
+        FROM xsy_mall_store
+        WHERE id = 1
+    </select>
+
+    <select id="lockStore" resultType="com.xsy.scm.mall.decoration.domain.vo.MallStoreVO">
+        SELECT version, store_name AS storeName, store_link AS storeLink, updated_at AS updatedAt, updated_by AS updatedBy
+        FROM xsy_mall_store
+        WHERE id = 1
+        FOR UPDATE
+    </select>
+
+    <update id="saveStore">
+        UPDATE xsy_mall_store
+        SET store_name = #{storeName}, store_link = #{storeLink}, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = 1
+            AND version = #{version}
+    </update>
+</mapper>

@@ -8,6 +8,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 public record MallHomeDraftVO(Integer version, Integer pointerVersion, Long currentReleaseId, String themeCode,
-    List<MallHomeBlockForm> blocks, OffsetDateTime updatedAt,
+    String themeColor, List<MallHomeBlockForm> blocks, OffsetDateTime updatedAt,
     @JsonSerialize(using = ScmOperatorNameSerializer.class) String updatedBy) {
 }

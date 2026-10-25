@@ -11,6 +11,7 @@ import com.xsy.scm.mall.home.domain.form.MallHomeBlockForm;
 import com.xsy.scm.mall.home.domain.vo.MallHomeBlockVO;
 import com.xsy.scm.mall.home.domain.vo.MallHomePageVO;
 import com.xsy.scm.mall.home.domain.vo.MallHomeReleaseVO;
+import com.xsy.scm.mall.home.domain.vo.MallHomeStorageVO;
 import com.xsy.scm.mall.home.domain.vo.MallThemeVO;
 import com.xsy.scm.mall.order.service.MallWarehouseService;
 import com.xsy.scm.mall.promotion.service.MallPromotionService;
@@ -47,7 +48,8 @@ public class MallHomeProjectionService {
 
     @Transactional(readOnly = true)
     public MallHomePageVO published(RequestMallCustomer customer, Long warehouseId) {
-        Long releaseId = homeDao.pointer().getCurrentReleaseId();
+        MallHomeStorageVO pointer = homeDao.pointer();
+        Long releaseId = pointer == null ? null : pointer.getCurrentReleaseId();
         if (releaseId == null) {
             return new MallHomePageVO(null, null, List.of());
         }
@@ -68,7 +70,9 @@ public class MallHomeProjectionService {
             return new MallThemeVO(null, null);
         }
         MallHomeReleaseVO release = homeDao.release(releaseId);
-        return release == null ? new MallThemeVO(null, null) : new MallThemeVO(releaseId, release.getThemeCode());
+        return release == null
+            ? new MallThemeVO(null, null)
+            : themeView(releaseId, release.getThemeCode(), release.getThemeColor());
     }
 
     @Transactional(readOnly = true)
@@ -78,7 +82,17 @@ public class MallHomeProjectionService {
         customer.setCustomerId(customerId);
         Long selectedWarehouse = warehouseService.require(customerId, null, warehouseId);
         var draft = homeDao.draft();
-        return project(null, draft.getThemeCode(), draft.getContent(), customer, selectedWarehouse);
+        return draft == null
+            ? new MallHomePageVO(null, null, List.of())
+            : project(null, draft.getThemeCode(), draft.getContent(), customer, selectedWarehouse);
+    }
+
+    private MallThemeVO themeView(Long releaseId, String themeCode, String themeColor) {
+        String base = MallThemeColors.isValid(themeColor)
+            ? MallThemeColors.normalize(themeColor)
+            : MallThemeColors.baseColor(themeCode);
+        return new MallThemeVO(releaseId, themeCode, themeColor, base, MallThemeColors.dark(base),
+            MallThemeColors.ink(base), MallThemeColors.light(base), MallThemeColors.disabled(base));
     }
 
     private MallHomePageVO project(Long releaseId, String themeCode, String content, RequestMallCustomer customer,

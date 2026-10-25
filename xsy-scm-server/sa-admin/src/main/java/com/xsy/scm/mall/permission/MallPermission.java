@@ -9,6 +9,12 @@ public final class MallPermission {
     public static final String HOME_QUERY = "scm:mall:home:query";
     public static final String HOME_EDIT = "scm:mall:home:edit";
     public static final String HOME_PUBLISH = "scm:mall:home:publish";
+    public static final String POPUP_QUERY = "scm:mall:popup:query";
+    public static final String POPUP_EDIT = "scm:mall:popup:edit";
+    public static final String PAGE_QUERY = "scm:mall:page:query";
+    public static final String PAGE_EDIT = "scm:mall:page:edit";
+    public static final String STORE_QUERY = "scm:mall:store:query";
+    public static final String STORE_EDIT = "scm:mall:store:edit";
 
     private MallPermission() {
     }

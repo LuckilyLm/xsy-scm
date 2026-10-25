@@ -11,6 +11,7 @@ public class MallHomeReleaseVO {
     private Long id;
     private String content;
     private String themeCode;
+    private String themeColor;
     private String publishKind;
     private Long sourceReleaseId;
     private String reason;

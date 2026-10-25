@@ -9,6 +9,7 @@ import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.mall.home.dao.MallHomeDao;
 import com.xsy.scm.mall.home.constant.MallHomePublishKind;
+import com.xsy.scm.mall.home.constant.MallTheme;
 import com.xsy.scm.mall.home.domain.form.MallHomeBlockForm;
 import com.xsy.scm.mall.home.domain.form.MallHomeDraftSaveForm;
 import com.xsy.scm.mall.home.domain.form.MallHomePublishForm;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.mall.home.constant.MallHomeErrorCode.INVALID_LAYOUT;
+import static com.xsy.scm.mall.home.constant.MallHomeErrorCode.INVALID_THEME_COLOR;
 import static com.xsy.scm.mall.home.constant.MallHomeErrorCode.RELEASE_NOT_FOUND;
 
 @Service
@@ -37,8 +39,6 @@ public class MallHomeLayoutService {
      * 受控主题：只改配色，不换版式。
      */
     private static final String DEFAULT_THEME = "FRESH";
-
-    private static final java.util.Set<String> THEMES = java.util.Set.of("FRESH", "WARM", "OCEAN");
 
     private static final TypeReference<List<MallHomeBlockForm>> BLOCKS = new TypeReference<>() {
     };
@@ -53,13 +53,10 @@ public class MallHomeLayoutService {
         MallHomeStorageVO draft = homeDao.draft();
         MallHomeStorageVO pointer = homeDao.pointer();
         // 存储行被清理过时按「空草稿 + 无发布版本」展示，页面仍可编辑；保存时会补齐行
-        return new MallHomeDraftVO(
-            draft == null ? 0 : draft.getVersion(),
-            pointer == null ? 0 : pointer.getVersion(),
+        return new MallHomeDraftVO(draft == null ? 0 : draft.getVersion(), pointer == null ? 0 : pointer.getVersion(),
             pointer == null ? null : pointer.getCurrentReleaseId(),
-            draft == null ? DEFAULT_THEME : draft.getThemeCode(),
-            draft == null ? List.of() : parse(draft.getContent()),
-            draft == null ? null : draft.getUpdatedAt(),
+            draft == null ? DEFAULT_THEME : draft.getThemeCode(), draft == null ? null : draft.getThemeColor(),
+            draft == null ? List.of() : parse(draft.getContent()), draft == null ? null : draft.getUpdatedAt(),
             draft == null ? null : draft.getUpdatedBy());
     }
 
@@ -81,7 +78,9 @@ public class MallHomeLayoutService {
         List<MallHomeBlockForm> ordered = form.getBlocks().stream()
             .sorted(Comparator.comparing(MallHomeBlockForm::getSortOrder)).toList();
         String themeCode = themeOf(form.getThemeCode());
-        if (homeDao.saveDraft(draft.getVersion(), stringify(ordered), themeCode, ScmOperator.current()) != 1) {
+        String themeColor = themeColorOf(form.getThemeColor());
+        if (homeDao.saveDraft(draft.getVersion(), stringify(ordered), themeCode, themeColor,
+            ScmOperator.current()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         return draft();
@@ -106,6 +105,7 @@ public class MallHomeLayoutService {
         release.setContent(stringify(blocks));
         // 主题跟着发布版本走：回滚时配色一起回去，不会出现「旧版式配新配色」
         release.setThemeCode(draft.getThemeCode());
+        release.setThemeColor(draft.getThemeColor());
         release.setPublishKind(MallHomePublishKind.PUBLISH.name());
         release.setPublishedBy(ScmOperator.current());
         homeDao.insertRelease(release);
@@ -132,6 +132,7 @@ public class MallHomeLayoutService {
         MallHomeReleaseVO release = new MallHomeReleaseVO();
         release.setContent(target.getContent());
         release.setThemeCode(target.getThemeCode());
+        release.setThemeColor(target.getThemeColor());
         release.setPublishKind(MallHomePublishKind.ROLLBACK.name());
         release.setSourceReleaseId(target.getId());
         release.setReason(form.getReason().trim());
@@ -155,8 +156,20 @@ public class MallHomeLayoutService {
             return DEFAULT_THEME;
         }
         String normalized = themeCode.trim().toUpperCase(java.util.Locale.ROOT);
-        if (!THEMES.contains(normalized)) {
+        if (!MallTheme.supports(normalized)) {
             throw new ScmBusinessException(INVALID_LAYOUT);
+        }
+        return normalized;
+    }
+
+    /** 自定义色只存主色；为空表示继续使用预设。过浅的颜色会让白字看不清，直接拒绝。 */
+    private String themeColorOf(String themeColor) {
+        if (themeColor == null || themeColor.isBlank()) {
+            return null;
+        }
+        String normalized = MallThemeColors.normalize(themeColor);
+        if (!MallThemeColors.isValid(normalized) || !MallThemeColors.readableOnWhite(normalized)) {
+            throw new ScmBusinessException(INVALID_THEME_COLOR);
         }
         return normalized;
     }

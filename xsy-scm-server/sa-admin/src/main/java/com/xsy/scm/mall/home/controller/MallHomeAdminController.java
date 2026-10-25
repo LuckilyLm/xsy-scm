@@ -5,12 +5,15 @@ import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.mall.home.domain.form.MallHomeDraftSaveForm;
 import com.xsy.scm.mall.home.domain.form.MallHomePreviewForm;
+import com.xsy.scm.mall.home.domain.form.MallHomePopupForm;
 import com.xsy.scm.mall.home.domain.form.MallHomePublishForm;
 import com.xsy.scm.mall.home.domain.form.MallHomeRollbackForm;
 import com.xsy.scm.mall.home.domain.vo.MallHomeDraftVO;
 import com.xsy.scm.mall.home.domain.vo.MallHomePageVO;
+import com.xsy.scm.mall.home.domain.vo.MallHomePopupVO;
 import com.xsy.scm.mall.home.domain.vo.MallHomeReleaseVO;
 import com.xsy.scm.mall.home.service.MallHomeLayoutService;
+import com.xsy.scm.mall.home.service.MallHomePopupService;
 import com.xsy.scm.mall.home.service.MallHomeProjectionService;
 import com.xsy.scm.mall.permission.MallPermission;
 import jakarta.validation.Valid;
@@ -38,6 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MallHomeAdminController {
     private final MallHomeLayoutService layoutService;
     private final MallHomeProjectionService projectionService;
+    private final MallHomePopupService popupService;
     private final CustomerService customerService;
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
@@ -51,6 +55,19 @@ public class MallHomeAdminController {
     @SaCheckPermission(MallPermission.HOME_QUERY)
     public ResponseDTO<List<MallHomeReleaseVO>> history() {
         return ResponseDTO.ok(layoutService.history());
+    }
+
+    @GetMapping("/popup")
+    @SaCheckPermission(MallPermission.POPUP_QUERY)
+    public ResponseDTO<MallHomePopupVO> popup() {
+        return ResponseDTO.ok(popupService.detail());
+    }
+
+    @PostMapping("/popup")
+    @SaCheckPermission(MallPermission.POPUP_EDIT)
+    @OperateLog
+    public ResponseDTO<MallHomePopupVO> savePopup(@Valid @RequestBody MallHomePopupForm form) {
+        return ResponseDTO.ok(popupService.save(form));
     }
 
     @PostMapping("/preview")

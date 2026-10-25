@@ -2,7 +2,9 @@ package com.xsy.scm.mall.home.controller;
 
 import com.xsy.scm.mall.account.support.MallRequestSupport;
 import com.xsy.scm.mall.home.domain.vo.MallHomePageVO;
+import com.xsy.scm.mall.home.domain.vo.MallHomePopupVO;
 import com.xsy.scm.mall.home.domain.vo.MallThemeVO;
+import com.xsy.scm.mall.home.service.MallHomePopupService;
 import com.xsy.scm.mall.home.service.MallHomeProjectionService;
 import com.xsy.scm.mall.order.service.MallWarehouseService;
 import jakarta.validation.constraints.Positive;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/scm/mall/home")
 public class MallHomeController {
     private final MallHomeProjectionService projectionService;
+    private final MallHomePopupService popupService;
     private final MallWarehouseService warehouseService;
 
     @GetMapping
@@ -29,6 +32,13 @@ public class MallHomeController {
             ? warehouseService.preferred(customer.getCustomerId(), null)
             : warehouseService.require(customer.getCustomerId(), null, warehouseId);
         return ResponseDTO.ok(projectionService.published(customer, selectedWarehouse));
+    }
+
+    /** 首页弹窗：只返回启用且在生效窗口内的内容，频控由客户端记录。 */
+    @GetMapping("/popup")
+    public ResponseDTO<MallHomePopupVO> popup() {
+        MallRequestSupport.requirePasswordChanged();
+        return ResponseDTO.ok(popupService.current());
     }
 
     /**

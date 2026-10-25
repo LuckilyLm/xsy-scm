@@ -1,5 +1,6 @@
 package com.xsy.scm.mall;
 
+import com.xsy.scm.mall.decoration.controller.MallDecorationController;
 import com.xsy.scm.mall.home.controller.MallHomeController;
 import com.xsy.scm.mall.home.domain.vo.MallThemeVO;
 import net.lab1024.sa.base.common.annoation.NoNeedLogin;
@@ -15,6 +16,14 @@ class MallThemeAccessTest {
                 .getAnnotation(NoNeedLogin.class)).isNull();
         assertThat(MallHomeController.class.getAnnotation(NoNeedLogin.class)).isNull();
         assertThat(MallThemeVO.class.getDeclaredFields()).extracting(java.lang.reflect.Field::getName)
-                .containsExactlyInAnyOrder("releaseId", "themeCode");
+                .containsExactlyInAnyOrder("releaseId", "themeCode", "themeColor", "primary", "dark", "ink", "light",
+                        "disabled");
+    }
+
+    @Test
+    void publishedDecorationPagesAreAnonymousButAdminPagesAreNot() throws NoSuchMethodException {
+        assertThat(MallDecorationController.class.getMethod("page", String.class)
+                .getAnnotation(NoNeedLogin.class)).isNotNull();
+        assertThat(MallDecorationController.class.getAnnotation(NoNeedLogin.class)).isNull();
     }
 }
