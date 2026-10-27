@@ -161,9 +161,9 @@ public class InventoryFulfillmentService {
         InventoryOutboundEntity outbound = insertOutbound(command);
         for (Line line : shipped) {
             InventoryOutboundItemEntity item = insertItem(outbound.getId(), line, command.operator());
-            String unit = inventoryCommandService
-                .postSalesOutbound(new InventoryOutboundFact(command.warehouseId(), line.skuId(), outbound.getId(),
-                    item.getId(), line.stockQuantity(), null, command.occurredAt(), command.operator()));
+            String unit = inventoryCommandService.postSalesOutbound(
+                new InventoryOutboundFact(command.warehouseId(), line.skuId(), outbound.getId(), item.getId(),
+                    line.stockQuantity(), null, command.occurredAt(), command.operator(), line.stockUnit()));
             inventoryOutboundItemDao.updateUnitSnapshot(item.getId(), unit, command.operator());
         }
         return new Result(outbound.getId(), outbound.getOutboundNo(),
@@ -359,12 +359,27 @@ public class InventoryFulfillmentService {
             .map(line -> line.reservationType() + ":" + line.reservationItemId())
             .collect(java.util.stream.Collectors.toSet());
         for (InventoryReservationEntity reservation : reservations.values()) {
-            InventoryBalanceEntity balance = balances
-                .get(balanceKey(reservation.getWarehouseId(), reservation.getSkuId()));
+            String key = balanceKey(reservation.getWarehouseId(), reservation.getSkuId());
+            InventoryBalanceEntity balance = balances.get(key);
+            boolean created = false;
             if (balance == null) {
-                throw new ScmBusinessException(InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND);
+                // 负库存仓允许余额行缺失：用预留时的记账单位补零行，后续出库才有可扣减的行。
+                // 这里不 decrementReserved：新行 reserved=0，原本就没有可释放的计数。
+                if (!Boolean.TRUE.equals(warehouseService.require(reservation.getWarehouseId()).getAllowNegativeStock())
+                    || reservation.getUnitSnapshot() == null) {
+                    throw new ScmBusinessException(InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND);
+                }
+                inventoryBalanceDao.insertOnConflictDoNothing(reservation.getWarehouseId(), reservation.getSkuId(),
+                    reservation.getUnitSnapshot(), command.operator());
+                balance = inventoryBalanceDao.lockByWarehouseAndSku(reservation.getWarehouseId(),
+                    reservation.getSkuId());
+                if (balance == null) {
+                    throw new ScmBusinessException(InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND);
+                }
+                balances.put(key, balance);
+                created = true;
             }
-            if (inventoryBalanceDao.decrementReserved(balance.getId(), reservation.getQuantity(),
+            if (!created && inventoryBalanceDao.decrementReserved(balance.getId(), reservation.getQuantity(),
                 command.operator()) != 1) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             }

@@ -196,6 +196,7 @@ import {
       '/inbound/export',
       '/inventory/loss/export',
       '/inventory/movement/export',
+      '/inventory/negative-stock/export',
       '/inventory/value/export',
       '/overview/daily/export',
       '/purchase/item/export',
@@ -212,7 +213,7 @@ import {
       '/sales/product/export',
       '/sales/seller/export',
     ]);
-    assert.equal(exportPaths.length, 21, '导出端点数与契约一致（概览 1 + 销售 6 + 采购 6 + 收货 2 + Finance 3 + 库存 3）');
+    assert.equal(exportPaths.length, 22, '导出端点数与契约一致（概览 1 + 销售 6 + 采购 6 + 收货 2 + Finance 3 + 库存 4）');
     assert.ok(!/new Blob|createObjectURL|\.xlsx'/.test(API), '文件名与下载由 postDownload 负责');
   });
 

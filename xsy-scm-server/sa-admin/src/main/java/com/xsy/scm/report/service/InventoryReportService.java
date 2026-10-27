@@ -1,6 +1,7 @@
 package com.xsy.scm.report.service;
 
 import java.math.RoundingMode;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -15,6 +16,7 @@ import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.inventory.constant.ScmInventoryMovementTypeEnum;
 import com.xsy.scm.report.dao.ReportDao;
 import com.xsy.scm.report.domain.form.ScmInventoryReportQueryForm;
+import com.xsy.scm.report.domain.form.ScmNegativeStockReportQueryForm;
 import com.xsy.scm.report.domain.vo.InventoryReportVO;
 import com.xsy.scm.report.support.ScmReportTimeRange;
 import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
@@ -135,6 +137,54 @@ public class InventoryReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         return SmartPageUtil.convert2PageResult(page,
             reportDao.inventoryValueList(page, form, context.getWarehouseScope()));
+    }
+
+    /**
+     * 负库存损耗：查询时点的余额快照。金额列跟随成本权限抹除，数量列照常显示。
+     *
+     * <p>
+     * 只读余额与历史流水，不生成报损单、不改库存。负库存本身不是损耗事实，它的用途是月末让负责人 知道「卖出去但没入成本」的缺口有多大，真实损耗仍走报损 / 盘亏审批。
+     */
+    public PageResult<InventoryReportVO.NegativeStockRow> negativeStockList(ScmNegativeStockReportQueryForm form) {
+        SalesReportService.rejectClientSort(form);
+        ScmDataScopeContext context = dataScopeService.resolve();
+        if (context.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
+        var page = SmartPageUtil.convert2PageQuery(form);
+        // LATERAL 取最近出库的语句交给分页插件自动优化 COUNT 容易把 join 裁掉，这里用完整包一层计数
+        page.setOptimizeCountSql(false);
+        PageResult<InventoryReportVO.NegativeStockRow> result = SmartPageUtil.convert2PageResult(page,
+            reportDao.negativeStockList(page, form, context.getWarehouseScope()));
+        if (!context.isCostVisible() && result != null && result.getList() != null) {
+            result.getList().forEach(row -> {
+                row.setAvgCost(null);
+                row.setEstimatedAmount(null);
+            });
+        }
+        return result;
+    }
+
+    /**
+     * 汇总与列表共用同一份范围与筛选，指标卡不是拿一页明细自己加出来的。
+     */
+    public InventoryReportVO.NegativeStockSummary negativeStockSummary(ScmNegativeStockReportQueryForm form) {
+        ScmDataScopeContext context = dataScopeService.resolve();
+        if (context.warehouseNowhere()) {
+            // 无授权仓库时一个负库存行都不可知，给空对象而不是「0 条」。
+            return new InventoryReportVO.NegativeStockSummary();
+        }
+        InventoryReportVO.NegativeStockSummary summary = reportDao.negativeStockSummary(form,
+            context.getWarehouseScope());
+        if (summary == null) {
+            summary = new InventoryReportVO.NegativeStockSummary();
+        }
+        summary.setSnapshotAt(OffsetDateTime.now());
+        if (!context.isCostVisible()) {
+            summary.setZeroCostRowCount(null);
+            summary.setTotalEstimatedAmount(null);
+        }
+        return summary;
     }
 
     /**

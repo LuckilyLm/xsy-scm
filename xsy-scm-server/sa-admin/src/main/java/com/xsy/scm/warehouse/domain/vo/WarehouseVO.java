@@ -28,6 +28,9 @@ public class WarehouseVO {
 
     private Boolean lotTrackingEnabled;
 
+    /** 是否允许销售出库出现负库存。 */
+    private Boolean allowNegativeStock;
+
     private String address;
 
     private Integer provinceCode;

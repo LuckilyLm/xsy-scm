@@ -1165,4 +1165,67 @@
         ORDER BY m.warehouse_id, m.sku_id
     </select>
 
+    <!--
+      负库存损耗：查询时点的余额快照，不按日期回算。范围谓词在列表与汇总之间共用本片段，
+      两个语句必须同口径，否则指标卡数出来的规格数和表里的行数对不上。
+    -->
+    <sql id="negativeStockWhere">
+        b.deleted = FALSE
+            AND b.quantity &lt; 0
+        <if test="query.warehouseId != null">AND b.warehouse_id = #{query.warehouseId}</if>
+        <if test="scope != null and scope.all == false">
+            AND b.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">AND FALSE</if>
+        <if test="query.skuId != null">AND b.sku_id = #{query.skuId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (spu.name ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                k.sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+    </sql>
+
+    <select id="negativeStockList" resultType="com.xsy.scm.report.domain.vo.InventoryReportVO$NegativeStockRow">
+        SELECT b.id AS balanceId, b.warehouse_id AS warehouseId, w.name AS warehouseName, b.sku_id AS skuId,
+            spu.name AS productName, k.sku_code AS skuCode, k.spec_name AS specName, b.unit AS unit,
+            b.quantity AS quantity, b.avg_cost AS avgCost, ROUND(b.quantity * b.avg_cost, 4) AS estimatedAmount,
+            last_out.occurred_at AS lastOutboundAt, last_out.outbound_no AS lastOutboundNo
+        FROM xsy_inventory_balance b
+        LEFT JOIN xsy_warehouse w ON w.id = b.warehouse_id
+            AND w.deleted = FALSE
+        LEFT JOIN xsy_product_sku k ON k.id = b.sku_id
+        LEFT JOIN xsy_product_spu spu ON spu.id = k.spu_id
+        <!--
+          最近一次销售出库：负库存多半是「先卖后补」，出库时间与出库单号能让人回到现场确认是哪一车。
+          促销赠品出库（ORDER_PROMOTION_GIFT）不算：它不产生应收，不能解释客户侧的负库存缺口。
+        -->
+        LEFT JOIN LATERAL (
+            SELECT m.occurred_at, o.outbound_no
+            FROM xsy_inventory_movement m
+            LEFT JOIN xsy_inventory_outbound o ON m.source_document_type = 'SALES_OUTBOUND_ITEM'
+                AND o.id = m.source_document_id
+            WHERE m.warehouse_id = b.warehouse_id
+                AND m.sku_id = b.sku_id
+                AND m.deleted = FALSE
+                AND m.movement_type = 'SALES_OUT'
+            ORDER BY m.occurred_at DESC, m.id DESC
+            LIMIT 1
+        ) last_out ON TRUE
+        WHERE
+        <include refid="negativeStockWhere"/>
+        ORDER BY ROUND(b.quantity * b.avg_cost, 4) ASC, b.warehouse_id, b.sku_id
+    </select>
+
+    <select id="negativeStockSummary"
+        resultType="com.xsy.scm.report.domain.vo.InventoryReportVO$NegativeStockSummary">
+        SELECT COUNT(*) AS rowCount, COUNT(DISTINCT b.warehouse_id) AS warehouseCount,
+            COUNT(*) FILTER (WHERE b.avg_cost = 0) AS zeroCostRowCount,
+            COALESCE(SUM(b.quantity * b.avg_cost), 0) AS totalEstimatedAmount
+        FROM xsy_inventory_balance b
+        LEFT JOIN xsy_product_sku k ON k.id = b.sku_id
+        LEFT JOIN xsy_product_spu spu ON spu.id = k.spu_id
+        WHERE
+        <include refid="negativeStockWhere"/>
+    </select>
+
 </mapper>

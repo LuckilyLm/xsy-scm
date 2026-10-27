@@ -82,6 +82,7 @@ public class WarehouseService {
         entity.setRemark(form.getRemark());
         // 批次追踪只在新建时决定：新建仓尚无库存，因此不需要期初批次回填。
         entity.setLotTrackingEnabled(Boolean.TRUE.equals(form.getLotTrackingEnabled()));
+        entity.setAllowNegativeStock(Boolean.TRUE.equals(form.getAllowNegativeStock()));
         entity.setVersion(0);
         entity.setDeleted(false);
         stamp(entity, true);
@@ -105,6 +106,12 @@ public class WarehouseService {
         entity.setAddress(form.getAddress());
         applyRegion(entity, form);
         entity.setRemark(form.getRemark());
+        boolean allowNegativeStock = Boolean.TRUE.equals(form.getAllowNegativeStock());
+        if (Boolean.TRUE.equals(entity.getAllowNegativeStock()) && !allowNegativeStock
+            && warehouseDisableGuard.hasNegativeStock(entity.getId())) {
+            throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_HAS_NEGATIVE_STOCK);
+        }
+        entity.setAllowNegativeStock(allowNegativeStock);
         // status 不随表单变化：WarehouseUpdateForm 字段清单里没有 status，
         // 因此保持 require() 读出的原值（实体声明 updateStrategy = ALWAYS，会原值回写）。
         entity.setVersion(form.getVersion());

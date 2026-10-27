@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.report.domain.form.ScmInventoryReportQueryForm;
+import com.xsy.scm.report.domain.form.ScmNegativeStockReportQueryForm;
 import com.xsy.scm.report.domain.form.ScmOverviewReportQueryForm;
 import com.xsy.scm.report.domain.form.ScmPurchaseReportQueryForm;
 import com.xsy.scm.report.domain.form.ScmReceiptReportQueryForm;
@@ -150,4 +151,10 @@ public interface ReportDao {
     List<InventoryReportVO.FlowSummaryRow> flowSummary(Page<?> page, @Param("startAt") OffsetDateTime startAt,
         @Param("endAt") OffsetDateTime endAt, @Param("inboundTypes") List<String> inboundTypes,
         @Param("query") ScmInventoryReportQueryForm query, @Param("scope") ScmValueScope scope);
+
+    List<InventoryReportVO.NegativeStockRow> negativeStockList(Page<?> page,
+        @Param("query") ScmNegativeStockReportQueryForm query, @Param("scope") ScmValueScope scope);
+
+    InventoryReportVO.NegativeStockSummary negativeStockSummary(@Param("query") ScmNegativeStockReportQueryForm query,
+        @Param("scope") ScmValueScope scope);
 }

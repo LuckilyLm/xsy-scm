@@ -41,4 +41,7 @@ public class WarehouseAddForm extends com.xsy.scm.common.domain.ScmLocationForm 
 
     /** 是否启用批次追踪；只在新建时设置，编辑时不可改。 */
     private Boolean lotTrackingEnabled;
+
+    /** 是否允许销售出库出现负库存；关闭前必须已无负余额。 */
+    private Boolean allowNegativeStock;
 }

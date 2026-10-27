@@ -53,6 +53,10 @@
           </a-tag>
         </template>
         <template v-else-if="column.dataIndex === 'areaText'">{{ areaText(record) }}</template>
+        <template v-else-if="column.dataIndex === 'allowNegativeStock'">
+          <a-tag v-if="record.allowNegativeStock" color="orange">允许负库存</a-tag>
+          <span v-else>—</span>
+        </template>
         <template v-else-if="column.dataIndex === 'located'">
           <!-- 未定位的仓库无法参与路线规划，用图标 + Tooltip 表达，不占一整列文字 -->
           <a-tooltip :title="isLocated(record) ? '已定位，可参与路线规划' : '未定位，无法参与路线规划'">
@@ -109,6 +113,11 @@
       <!-- 批次追踪只在新建空仓时决定：开启后不可关闭，因此编辑态只读回显 -->
       <a-form-item label="批次追踪">
         <a-switch v-model:checked="form.lotTrackingEnabled" :disabled="form.id !== undefined" />
+      </a-form-item>
+      <!-- 负库存只放行销售出库（先卖后补常发生在收货前），报损、盘点、调拨仍必须账实相符 -->
+      <a-form-item label="允许负库存出库">
+        <a-switch v-model:checked="form.allowNegativeStock" />
+        <div class="warehouse-form-hint">开启后销售出库可以扣成负数，月末用「报表 → 库存分析 → 负库存损耗」导出缺口；仓库仍有负余额时不能关闭。</div>
       </a-form-item>
     </a-form>
   </a-modal>
@@ -187,6 +196,7 @@ const columns = ref<TableColumnsType<Warehouse>>([
   {title: '详细地址', dataIndex: 'address', width: 240},
   {title: '定位', dataIndex: 'located', width: 80},
   {title: '状态', dataIndex: 'status', align: 'center', width: 96},
+  {title: '负库存', dataIndex: 'allowNegativeStock', width: 110},
   {title: '备注', dataIndex: 'remark', width: 200},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
@@ -265,6 +275,7 @@ async function open(row?: Warehouse) {
         geomCrs: row.geomCrs ?? null,
         remark: row.remark ?? null,
         lotTrackingEnabled: row.lotTrackingEnabled === true,
+        allowNegativeStock: row.allowNegativeStock === true,
         provinceCode: row.provinceCode ?? null,
         provinceName: row.provinceName ?? null,
         cityCode: row.cityCode ?? null,
@@ -345,5 +356,12 @@ onMounted(queryData);
 
 .located--warn {
   color: var(--scm-warning, #faad14);
+}
+
+.warehouse-form-hint {
+  margin-top: 4px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
+  line-height: 18px;
 }
 </style>

@@ -33,6 +33,10 @@ public class WarehouseEntity {
     @TableField(updateStrategy = FieldStrategy.NEVER)
     private Boolean lotTrackingEnabled;
 
+    /** 是否允许销售出库出现负库存；只影响 SALES_OUT，其他库存动作仍按原约束。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Boolean allowNegativeStock;
+
     @TableId(type = IdType.AUTO)
     private Long id;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

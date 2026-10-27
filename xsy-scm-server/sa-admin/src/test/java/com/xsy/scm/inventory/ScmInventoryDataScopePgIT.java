@@ -416,6 +416,10 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
         Long warehouseB = newWarehouse(tag + "B");
         Long skuA = newSkuOfType(tag + "A", "NON_STANDARD", "ON_SHELF");
         Long skuB = newSkuOfType(tag + "B", "NON_STANDARD", "ON_SHELF");
+        // 商品规格编码由服务端统一生成（SKU000xxx），而本类要按「本次夹具」收窄查询；
+        // 把编码改成带 prefix 的唯一值，查询条件才能只命中本用例造的行。
+        renameSkuCode(skuA, tag + "A-K");
+        renameSkuCode(skuB, tag + "B-K");
         stockIn(warehouseA, skuA, tag + "SA");
         stockIn(warehouseB, skuB, tag + "SB");
         return new Stocked(warehouseA, skuA, warehouseB, skuB);
@@ -435,6 +439,11 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
     }
 
     /** 直接插授权行：本类要测的是读侧按授权行收窄，写侧另有第 7 组用例。 */
+    private void renameSkuCode(Long skuId, String suffix) {
+        jdbc.update("UPDATE xsy_product_sku SET sku_code = ? WHERE id = ?", prefix + suffix, skuId);
+        evictMybatisCache();
+    }
+
     private void authorize(Long employeeId, Long warehouseId) {
         jdbc.update("INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
                 employeeId, warehouseId);

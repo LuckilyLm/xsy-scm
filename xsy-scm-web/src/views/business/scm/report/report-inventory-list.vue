@@ -2,11 +2,11 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
-      <!-- 当前库存价值是当前时点数据，这里不显示日期筛选；请求仍带日期，后端会忽略 -->
-      <a-form-item v-if="activeTab !== 'value'" label="发生日期" class="smart-query-form-item">
+      <!-- 当前库存价值 / 负库存损耗都是当前时点数据，这里不显示日期筛选；请求也不带日期 -->
+      <a-form-item v-if="activeTab !== 'value' && activeTab !== 'negative'" label="发生日期" class="smart-query-form-item">
         <ReportDateRangePicker v-model:value="dateRange" />
       </a-form-item>
-      <a-form-item v-else label="库存价值" class="smart-query-form-item">
+      <a-form-item v-else :label="activeTab === 'value' ? '库存价值' : '负库存'" class="smart-query-form-item">
         <a-tag color="blue">当前时点，与查询区间无关</a-tag>
       </a-form-item>
       <a-form-item label="仓库" class="smart-query-form-item">
@@ -210,6 +210,23 @@
       </a-card>
     </a-tab-pane>
 
+    <a-tab-pane key="negative" tab="负库存损耗">
+      <InventoryNegativeStockTab
+        :summary="negativeSummary"
+        :rows="negative.rows"
+        :loading="negative.loading"
+        :error="negative.error"
+        :can-view-cost="canViewCost"
+        :page-num="negative.pageNum"
+        :page-size="negative.pageSize"
+        :total="negative.total"
+        :exporting="negative.exporting"
+        @export="exportNegative"
+        @reload="loadNegative"
+        @page-change="loadNegativePage"
+      />
+    </a-tab-pane>
+
     <a-tab-pane key="flow" tab="收发存（数量版）">
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
@@ -271,6 +288,7 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
 import InventoryLossAnalysisTab from './report-components/inventory-loss-analysis-tab.vue';
+import InventoryNegativeStockTab from './report-components/inventory-negative-stock-tab.vue';
 import {reportInventoryApi} from '/@/api/business/scm/report-api';
 import {useScmExport} from '../common/use-scm-export';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -285,6 +303,9 @@ import type {
   InventoryLossRow,
   InventoryLossSummary,
   InventoryMovementRow,
+  InventoryNegativeStockQuery,
+  InventoryNegativeStockRow,
+  InventoryNegativeStockSummary,
   InventoryReportQuery,
   InventoryValueRow,
   ReportFilterQuery,
@@ -315,7 +336,7 @@ const PERM = SCM_REPORT_PERMISSION;
 const route = useRoute();
 const {canViewCost} = useReportPermission();
 
-type InventoryTab = 'movement' | 'loss' | 'value' | 'flow';
+type InventoryTab = 'movement' | 'loss' | 'value' | 'negative' | 'flow';
 
 const activeTab = ref<InventoryTab>('movement');
 const dateRange = ref<DateRange | undefined>();
@@ -331,13 +352,17 @@ const valueSummary = ref<{
   snapshotAt?: string | null;
 }>({});
 
+const negativeSummary = ref<InventoryNegativeStockSummary>();
+
 const movement = reactive(createTabView<InventoryMovementRow>());
 const loss = reactive(createTabView<InventoryLossRow>());
 const value = reactive(createTabView<InventoryValueRow>());
+const negative = reactive(createTabView<InventoryNegativeStockRow>());
 const flow = reactive(createTabView<InventoryFlowSummaryRow>());
 const lossExport = useScmExport(loss);
 const movementExport = useScmExport(movement);
 const valueExport = useScmExport(value);
+const negativeExport = useScmExport(negative);
 
 /** 成本列受权限控制。 */
 const COST_INDEXES = ['unitCost', 'costAmount'];
@@ -466,6 +491,31 @@ const loadValue = createTabLoader(
     })
 );
 
+/** 负库存没有日期区间：余额是当前状态，带上日期只会让人以为在看历史月份。 */
+function negativeQuery(tab: {pageNum: number; pageSize: number}): InventoryNegativeStockQuery {
+  return {
+    pageNum: tab.pageNum,
+    pageSize: tab.pageSize,
+    warehouseId: filters.warehouseId,
+    skuId: filters.skuId,
+    keyword: filters.keyword,
+  };
+}
+
+const loadNegative = createTabLoader(negative, () => negativeQuery(negative), reportInventoryApi.negativeStockQuery);
+
+function loadNegativePage(pageNum: number, pageSize: number) {
+  negative.pageNum = pageNum;
+  negative.pageSize = pageSize;
+  void loadNegative();
+}
+
+const loadNegativeSummary = createGuardedLoader(
+  (options) => reportInventoryApi.negativeStockSummary(negativeQuery({pageNum: 1, pageSize: 20}), options),
+  (data) => (negativeSummary.value = data),
+  chartError
+);
+
 function queryActiveTab() {
   const overLimit = rangeOverLimitError(dateRange.value);
   if (overLimit) {
@@ -483,6 +533,10 @@ function queryActiveTab() {
       break;
     case 'value':
       void loadValue();
+      break;
+    case 'negative':
+      void loadNegative();
+      void loadNegativeSummary();
       break;
     case 'flow':
       void loadFlow();
@@ -502,6 +556,9 @@ function enterActiveTab() {
       break;
     case 'value':
       enterTab(value);
+      break;
+    case 'negative':
+      enterTab(negative);
       break;
     case 'flow':
       enterTab(flow);
@@ -539,6 +596,7 @@ function resetQuery() {
   enterTab(movement);
   enterTab(loss);
   enterTab(value);
+  enterTab(negative);
   enterTab(flow);
   onSearch();
 }
@@ -563,6 +621,11 @@ function exportLoss() {
 function exportValue() {
   if (!guardExport()) return;
   void valueExport.run(() => reportInventoryApi.valueExport(exportQuery()));
+}
+
+/** 负库存是时点快照，没有区间上限可超，不需要日期守卫。 */
+function exportNegative() {
+  void negativeExport.run(() => reportInventoryApi.negativeStockExport(negativeQuery({pageNum: 1, pageSize: 20})));
 }
 
 onMounted(() => {

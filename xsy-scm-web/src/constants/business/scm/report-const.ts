@@ -54,6 +54,7 @@ export const SCM_REPORT_TABLE_ID = {
   INVENTORY_LOSS: 'scm-report-inventory-loss-table',
   INVENTORY_VALUE: 'scm-report-inventory-value-table',
   INVENTORY_FLOW_SUMMARY: 'scm-report-inventory-flow-summary-table',
+  INVENTORY_NEGATIVE_STOCK: 'scm-report-inventory-negative-stock-table',
   FINANCE_RECEIVABLE: 'scm-report-finance-receivable-table',
   FINANCE_PAYABLE: 'scm-report-finance-payable-table',
 } as const;

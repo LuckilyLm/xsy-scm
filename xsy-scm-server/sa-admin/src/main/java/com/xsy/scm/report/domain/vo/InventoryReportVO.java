@@ -157,6 +157,50 @@ public class InventoryReportVO {
     }
 
     /**
+     * 负库存损耗行：查询时点的余额快照（{@code quantity < 0}），不是历史月份回算。
+     *
+     * <p>
+     * 负数量本身不是损耗事实，只是「卖出去了但没有入库成本」的缺口。真实损耗仍以报损单 / 盘亏流水为准， 本报表按月导出供负责人估算，不生成任何库存流水或报损单。
+     */
+    @Data
+    public static class NegativeStockRow {
+        private Long balanceId;
+        private Long warehouseId;
+        private String warehouseName;
+        private Long skuId;
+        private String productName;
+        private String skuCode;
+        private String specName;
+        /** 余额的记账单位；一个 (仓库, SKU) 只有一个单位。 */
+        private String unit;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal quantity;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal avgCost;
+        /** {@code quantity × avgCost}，跟随余额符号为负；无成本权限时为 null。 */
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal estimatedAmount;
+        /** 最近一条销售出库流水的时间；从未销售出库时为 null（例如纯调拨导致的负数）。 */
+        private OffsetDateTime lastOutboundAt;
+        private String lastOutboundNo;
+    }
+
+    /**
+     * 负库存损耗汇总。数量跨单位不可相加，因此只给规格数 / 仓库数 / 金额。
+     */
+    @Data
+    public static class NegativeStockSummary {
+        private Long rowCount;
+        private Long warehouseCount;
+        /** 均价为 0 的行数：成本未知，估算金额会偏低，页面必须提示而不是当 0 展示完整。 */
+        private Long zeroCostRowCount;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal totalEstimatedAmount;
+        /** 取数时点；负库存是当前状态，历史月份需要月度快照表才能回溯。 */
+        private OffsetDateTime snapshotAt;
+    }
+
+    /**
      * 收发存数量报表按仓库、商品规格和单位汇总期内变动。缺少完整历史成本时不推算看似精确的期初、期末金额。
      */
     @Data

@@ -637,3 +637,46 @@ export interface InventoryReportQuery extends ReportPage, ReportDateQuery {
   movementType?: string;
   sourceDocumentType?: string;
 }
+
+/**
+ * 负库存损耗行：查询时点的余额快照（负数量），不是历史月份回算。
+ * 负库存只说明「卖出去了但没入成本」，真实损耗仍以报损/盘亏为准。
+ */
+export interface InventoryNegativeStockRow {
+  balanceId?: ReportId;
+  warehouseId?: ReportId;
+  warehouseName?: string | null;
+  skuId?: ReportId;
+  productName?: string | null;
+  skuCode?: string | null;
+  specName?: string | null;
+  /** 余额记账单位；一个 (仓库, 规格) 只有一个单位。 */
+  unit?: string | null;
+  /** 负数。 */
+  quantity?: string | null;
+  /** 余额均价；无成本权限时为 null。 */
+  avgCost?: string | null;
+  /** 负数量 × 平均成本，符号为负；无成本权限时为 null。 */
+  estimatedAmount?: string | null;
+  /** 最近一条销售出库流水的时间；从未销售出库时为 null。 */
+  lastOutboundAt?: string | null;
+  lastOutboundNo?: string | null;
+}
+
+/** 负库存损耗指标；数量跨单位不可相加，只统计规格数、仓库数与金额。 */
+export interface InventoryNegativeStockSummary {
+  rowCount?: number | null;
+  warehouseCount?: number | null;
+  /** 均价为 0 的行数：成本未知，金额会偏低，页面必须提示。 */
+  zeroCostRowCount?: number | null;
+  totalEstimatedAmount?: string | null;
+  /** 取数时点。 */
+  snapshotAt?: string | null;
+}
+
+/** 负库存查询没有日期：余额是当前时点状态，按日期筛选会得到一张假装是历史的表。 */
+export interface InventoryNegativeStockQuery extends ReportPage {
+  warehouseId?: ReportId;
+  skuId?: ReportId;
+  keyword?: string;
+}

@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 import lombok.Data;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 /**
  * 批次流水行。
@@ -55,5 +56,6 @@ public class InventoryLotMovementVO {
 
     private OffsetDateTime occurredAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String operator;
 }

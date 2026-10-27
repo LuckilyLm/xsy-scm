@@ -235,9 +235,13 @@ public class InventoryCommandService {
         BigDecimal oldQuantity = beforeQuantity == null ? BigDecimal.ZERO : beforeQuantity;
         BigDecimal oldAvg = beforeAvgCost == null ? BigDecimal.ZERO : beforeAvgCost;
         BigDecimal inCost = inboundUnitCost == null ? BigDecimal.ZERO : inboundUnitCost;
+        // 负库存期间没有可加权的正数库存：这批入库就是新的成本起点，不能把负数量带进分母。
+        if (oldQuantity.signum() <= 0) {
+            return inCost;
+        }
         BigDecimal newQuantity = oldQuantity.add(inboundQuantity);
-        if (newQuantity.signum() == 0) {
-            // 入量恒为正（DB CHECK），所以这里不可达；留作防御，避免除零。
+        if (newQuantity.signum() <= 0) {
+            // 入量恒为正，理论上不可达；保留原均价，避免除以零或负数。
             return oldAvg;
         }
         return oldQuantity.multiply(oldAvg).add(inboundQuantity.multiply(inCost)).divide(newQuantity, 4,
@@ -330,12 +334,22 @@ public class InventoryCommandService {
         }
         requireOutboundFact(fact);
 
-        warehouseService.require(fact.warehouseId());
+        var warehouse = warehouseService.require(fact.warehouseId());
+        boolean allowNegative = Boolean.TRUE.equals(warehouse.getAllowNegativeStock());
 
-        // 出库不建行：没有余额行 = 从未入库 = 无货可出。
+        // 未开启负库存时，没有余额行 = 从未入库 = 无货可出。
+        // 开启后允许先发货后补入库：用出库行的记账单位建零余额行，再扣成负数。
         InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
-            throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
+            if (!allowNegative || fact.stockUnit() == null) {
+                throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
+            }
+            inventoryBalanceDao.insertOnConflictDoNothing(fact.warehouseId(), fact.skuId(), fact.stockUnit(),
+                fact.operator());
+            balance = inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+            if (balance == null || !fact.stockUnit().equals(balance.getUnit())) {
+                throw new ScmBusinessException(INVENTORY_UNIT_MISMATCH);
+            }
         }
 
         String unit = balance.getUnit();
@@ -344,7 +358,8 @@ public class InventoryCommandService {
         BigDecimal onHand = balance.getQuantity();
         BigDecimal reserved = balance.getReservedQuantity() == null ? BigDecimal.ZERO : balance.getReservedQuantity();
         BigDecimal available = onHand.subtract(reserved);
-        if (available.compareTo(fact.quantity()) < 0) {
+        // 负库存只放行“没有预留”的余额；已有预留的货仍不能被本单吃掉，否则会把别人的库存占成负数。
+        if (available.compareTo(fact.quantity()) < 0 && (!allowNegative || reserved.signum() > 0)) {
             throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
         }
 

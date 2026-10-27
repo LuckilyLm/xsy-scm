@@ -13,5 +13,11 @@ import java.time.OffsetDateTime;
  * 数量恒为正，方向由 {@code movementType} 表达；{@code occurredAt} 取出库确认时刻，{@code operator} 取出库单确认人。
  */
 public record InventoryOutboundFact(Long warehouseId, Long skuId, Long outboundId, Long outboundItemId,
-    BigDecimal quantity, BigDecimal unitCost, OffsetDateTime occurredAt, String operator) {
+    BigDecimal quantity, BigDecimal unitCost, OffsetDateTime occurredAt, String operator, String stockUnit) {
+
+    /** 历史调用方不传记账单位时保持原行为：有余额行取余额单位，没有余额行则拒绝。 */
+    public InventoryOutboundFact(Long warehouseId, Long skuId, Long outboundId, Long outboundItemId,
+        BigDecimal quantity, BigDecimal unitCost, OffsetDateTime occurredAt, String operator) {
+        this(warehouseId, skuId, outboundId, outboundItemId, quantity, unitCost, occurredAt, operator, null);
+    }
 }

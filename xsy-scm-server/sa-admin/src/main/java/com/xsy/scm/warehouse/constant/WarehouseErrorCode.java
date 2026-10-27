@@ -38,7 +38,10 @@ public enum WarehouseErrorCode implements ScmErrorCode {
     WAREHOUSE_DEFAULT_AMBIGUOUS(41018, "当前启用仓库不是唯一一个，无法确定默认仓库"),
 
     /** 仓库存在未收货的在途调拨时不能停用，调入仓和调出仓都要检查。 */
-    WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER(41009, "仓库存在在途调拨单，不能停用");
+    WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER(41009, "仓库存在在途调拨单，不能停用"),
+
+    /** 关闭负库存前仍有负余额，先补货或做损溢处理。 */
+    WAREHOUSE_HAS_NEGATIVE_STOCK(41019, "仓库仍有负库存余额，不能关闭负库存出库");
 
     private final int code;
     private final String msg;

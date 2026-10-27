@@ -65,4 +65,11 @@ public class WarehouseDisableGuardImpl implements WarehouseDisableGuard {
         }
         return null;
     }
+
+    @Override
+    public boolean hasNegativeStock(Long warehouseId) {
+        return inventoryBalanceDao.selectCount(
+            new LambdaQueryWrapper<InventoryBalanceEntity>().eq(InventoryBalanceEntity::getWarehouseId, warehouseId)
+                .lt(InventoryBalanceEntity::getQuantity, BigDecimal.ZERO)) > 0;
+    }
 }

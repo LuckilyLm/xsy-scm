@@ -27,6 +27,7 @@ import com.xsy.scm.order.constant.ScmOrderPriceSourceEnum;
 import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.report.constant.ReportErrorCode;
 import com.xsy.scm.report.domain.form.ScmInventoryReportQueryForm;
+import com.xsy.scm.report.domain.form.ScmNegativeStockReportQueryForm;
 import com.xsy.scm.report.domain.form.ScmOverviewReportQueryForm;
 import com.xsy.scm.report.domain.form.ScmPurchaseReportQueryForm;
 import com.xsy.scm.report.domain.form.ScmReceiptReportQueryForm;
@@ -555,6 +556,52 @@ public class ScmReportController {
     public ResponseDTO<PageResult<InventoryReportVO.FlowSummaryRow>> flowSummary(
         @Valid @RequestBody ScmInventoryReportQueryForm form) {
         return ResponseDTO.ok(inventoryReportService.flowSummary(form));
+    }
+
+    /**
+     * 负库存损耗：查询时点快照，没有日期参数。金额列按成本权限在服务层抹除，导出同理。
+     */
+    @PostMapping("/inventory/negative-stock/query")
+    @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
+    public ResponseDTO<PageResult<InventoryReportVO.NegativeStockRow>> negativeStockList(
+        @Valid @RequestBody ScmNegativeStockReportQueryForm form) {
+        return ResponseDTO.ok(inventoryReportService.negativeStockList(form));
+    }
+
+    @PostMapping("/inventory/negative-stock/summary")
+    @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
+    public ResponseDTO<InventoryReportVO.NegativeStockSummary> negativeStockSummary(
+        @RequestBody ScmNegativeStockReportQueryForm form) {
+        return ResponseDTO.ok(inventoryReportService.negativeStockSummary(form));
+    }
+
+    @PostMapping("/inventory/negative-stock/export")
+    @SaCheckPermission(value = {ScmReportPermission.INVENTORY_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
+    @OperateLog
+    public void exportNegativeStock(@RequestBody ScmNegativeStockReportQueryForm form, HttpServletResponse response)
+        throws IOException {
+        boolean canViewCost = StpUtil.hasPermission(ScmReportPermission.COST_QUERY);
+        List<InventoryReportVO.NegativeStockRow> data = exportRows(form,
+            () -> inventoryReportService.negativeStockList(form));
+        // 成本列按权限增减，两种表头各构造一次；不用空列占位，避免无权限者导出后以为金额是 0。
+        if (canViewCost) {
+            List<String> titles = List.of("仓库", "商品名称", "商品规格编码", "商品规格", "负数量", "单位", "最近出库时间", "最近出库单号", "余额均价",
+                "估算金额");
+            List<List<Object>> rows = data.stream()
+                .map(r -> ScmReportExcel.row(titles, r.getWarehouseName(), r.getProductName(), r.getSkuCode(),
+                    r.getSpecName(), r.getQuantity(), r.getUnit(), r.getLastOutboundAt(), r.getLastOutboundNo(),
+                    r.getAvgCost(), r.getEstimatedAmount()))
+                .toList();
+            ScmReportExcel.write(response, "负库存损耗.xlsx", "负库存损耗", titles, rows);
+            return;
+        }
+        List<String> titles = List.of("仓库", "商品名称", "商品规格编码", "商品规格", "负数量", "单位", "最近出库时间", "最近出库单号");
+        List<
+            List<Object>> rows = data.stream()
+                .map(r -> ScmReportExcel.row(titles, r.getWarehouseName(), r.getProductName(), r.getSkuCode(),
+                    r.getSpecName(), r.getQuantity(), r.getUnit(), r.getLastOutboundAt(), r.getLastOutboundNo()))
+                .toList();
+        ScmReportExcel.write(response, "负库存损耗.xlsx", "负库存损耗", titles, rows);
     }
 
     @PostMapping("/inventory/movement/export")

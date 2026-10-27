@@ -231,11 +231,12 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         // {@code selectBySourceItem} 是一个只读回查（调拨收货回读转出腿成本），
         // 不改变这条纪律。
         // {@code listSalesOutAllocations} 只读查询原销售出库分摊，不增加历史写入口。
+        // {@code listBundleSalesOutAllocations} 同理：只读回查组合商品出库时各组成行的分摊。
         List<String> movementDaoMethods = Arrays.stream(InventoryMovementDao.class.getDeclaredMethods())
                 .map(Method::getName).sorted().toList();
         assertThat(movementDaoMethods).containsExactly(
-                "countActiveBySourceItem", "insertOnConflictDoNothing", "listSalesOutAllocations", "queryPage",
-                "selectBySourceItem");
+                "countActiveBySourceItem", "insertOnConflictDoNothing", "listBundleSalesOutAllocations",
+                "listSalesOutAllocations", "queryPage", "selectBySourceItem");
 
         // 余额 DAO 也没有任何「设置绝对数量」的方法：余额只能是流水的净和。
         // 出库扣减与预留增减都是增量方法，没有赋值型方法。
