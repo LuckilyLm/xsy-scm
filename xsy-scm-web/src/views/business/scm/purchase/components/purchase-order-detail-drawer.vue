@@ -33,6 +33,18 @@
             <span class="scm-quantity">{{ progress(order.receivedProgress) }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="提交时间">{{ datetime(order.submittedAt) }}</a-descriptions-item>
+          <a-descriptions-item label="锁单状态">
+            <a-space :size="4" wrap>
+              <a-tag v-if="order.lockedFlag" color="red">{{ order.lockReason === 'AUTO_7_DAYS' ? '自动锁单' : '已锁单' }}</a-tag>
+              <a-tag v-else color="green">未锁单</a-tag>
+              <span v-if="order.lockedAt" class="scm-cell-hint">{{ datetime(order.lockedAt) }} {{ order.lockedBy || '' }}</span>
+            </a-space>
+          </a-descriptions-item>
+          <a-descriptions-item label="待定价行数">
+            <a-tag v-if="order.pendingPriceCount" color="orange">{{ order.pendingPriceCount }}</a-tag>
+            <span v-else>—</span>
+          </a-descriptions-item>
+          <a-descriptions-item label="自动锁单时间">{{ datetime(order.autoLockAt) }}</a-descriptions-item>
           <a-descriptions-item label="取消时间">{{ datetime(order.cancelledAt) }}</a-descriptions-item>
           <a-descriptions-item label="少收关单时间">{{ datetime(order.shortClosedAt) }}</a-descriptions-item>
           <a-descriptions-item label="创建时间">{{ datetime(order.createdAt) }}</a-descriptions-item>
@@ -66,7 +78,24 @@
               <span class="scm-quantity">{{ quantity(record.overReceiptQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'purchasePrice'">
-              <span class="scm-money">{{ price(record.purchasePrice) }}</span>
+              <a-tag v-if="record.pricePending" color="orange">待定价</a-tag>
+              <span v-else class="scm-money">{{ price(record.purchasePrice) }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'action'">
+              <a-space :size="0" class="smart-table-operate scm-table-actions">
+                <a-button v-if="canFill(record)" type="link" size="small" v-privilege="'scm:purchase:price:fill'" @click="openPrice('FILL', record)"
+                  >补价</a-button
+                >
+                <a-button
+                  v-else-if="canAdjust(record)"
+                  type="link"
+                  size="small"
+                  v-privilege="'scm:purchase:price:adjust'"
+                  @click="openPrice('ADJUST', record)"
+                  >改价</a-button
+                >
+                <span v-else class="scm-cell-hint">—</span>
+              </a-space>
             </template>
             <template v-else-if="column.dataIndex === 'lineAmount'">
               <span class="scm-money">{{ amount(record.lineAmount) }}</span>
@@ -118,15 +147,33 @@
     </a-spin>
 
     <a-modal :open="cancelOpen" title="取消采购单" :confirm-loading="saving" @ok="cancel" @cancel="cancelOpen = false">
-      <a-form-item label="取消原因" name="cancelReason" required>
+      <a-form-item label="取消原因" required>
         <a-input v-model:value="cancelReason" maxlength="500" />
       </a-form-item>
     </a-modal>
 
     <a-modal :open="shortCloseOpen" title="少收关单" :confirm-loading="saving" @ok="shortClose" @cancel="shortCloseOpen = false">
-      <a-form-item label="少收关单原因" name="shortCloseReason" required>
+      <a-form-item label="少收关单原因" required>
         <a-input v-model:value="shortCloseReason" maxlength="500" />
       </a-form-item>
+    </a-modal>
+
+    <a-modal v-model:open="priceOpen" :title="priceMode === 'FILL' ? '补录采购价' : '调整采购价'" :confirm-loading="priceSaving" @ok="submitPrice">
+      <a-alert
+        v-if="priceRow"
+        type="info"
+        show-icon
+        :message="`${priceRow.productName || ''} / ${priceRow.skuName || ''}，当前价格 ${price(priceRow.purchasePrice)}`"
+      />
+      <a-form layout="vertical" class="price-form">
+        <a-form-item label="采购单价" required>
+          <a-input-number v-model:value="priceValue" string-mode :precision="4" :min="'0'" style="width: 100%" />
+        </a-form-item>
+        <a-form-item :label="priceMode === 'FILL' ? '补价原因（选填）' : '改价原因（必填）'">
+          <a-textarea v-model:value="priceReason" :maxlength="500" :rows="2" show-count />
+        </a-form-item>
+      </a-form>
+      <a-alert type="warning" show-icon message="补价只在提交后 7 天内可用；已确认收货的采购价不会回改库存成本；改价必须说明原因并留审计。" />
     </a-modal>
   </a-drawer>
 </template>
@@ -140,7 +187,7 @@ import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import {SCM_DEMAND_STATUS_ENUM, SCM_PURCHASE_OPERATION_ENUM, SCM_PURCHASE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import type {Allocation, Id, LogRow, Order, OrderItem} from '../purchase-types';
-import {amount, price, progress, quantity} from '../purchase-form-model';
+import {amount, fixed, price, priceFilled, progress, quantity} from '../purchase-form-model';
 import {datetime} from '../../common/scm-display';
 import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -154,6 +201,12 @@ const OPERATION_COLOR: Record<string, string> = {
   SUBMIT: 'blue',
   CANCEL: 'red',
   SHORT_CLOSE: 'purple',
+  PRICE_FILL: 'orange',
+  PRICE_ADJUST: 'orange',
+  PRICE_AUTO_FILL: 'orange',
+  PRICE_LOCK: 'red',
+  PRICE_UNLOCK: 'green',
+  PRICE_AUTO_LOCK: 'red',
 };
 
 const visible = ref(false);
@@ -171,6 +224,73 @@ const cancelOpen = ref(false);
 const shortCloseOpen = ref(false);
 const cancelReason = ref('');
 const shortCloseReason = ref('');
+/** 补价 / 改价：同一弹窗，模式决定是否必填原因。 */
+const priceOpen = ref(false);
+const priceSaving = ref(false);
+const priceMode = ref<'FILL' | 'ADJUST'>('FILL');
+const priceRow = ref<OrderItem>();
+const priceValue = ref('');
+const priceReason = ref('');
+
+/** 价格窗口 = 提交时刻 + 7 天；与后端 PurchaseOrderLockService.PRICE_WINDOW_DAYS 一致。 */
+const PRICE_WINDOW_DAYS = 7;
+function windowOpen(item: OrderItem): boolean {
+  if (!item.priceWindowStartedAt) {
+    return false;
+  }
+  return Date.parse(item.priceWindowStartedAt) + PRICE_WINDOW_DAYS * 24 * 60 * 60 * 1000 > Date.now();
+}
+
+/** 补价只对待定价行，且提交后、未锁单、窗口未过期；这四条后端都会再校验。 */
+function canFill(item: OrderItem): boolean {
+  return Boolean(item.pricePending) && order.value?.status !== 'DRAFT' && !order.value?.lockedFlag && windowOpen(item);
+}
+
+/** 改价只对「还没有确认收货」的行：确认后库存成本已冻结，改价会造成账实不符。 */
+function canAdjust(item: OrderItem): boolean {
+  return !item.pricePending && Number(item.receivedQuantity ?? '0') === 0 && order.value?.status !== 'DRAFT';
+}
+
+function openPrice(mode: 'FILL' | 'ADJUST', item: OrderItem) {
+  priceMode.value = mode;
+  priceRow.value = item;
+  priceValue.value = mode === 'ADJUST' && item.purchasePrice ? String(item.purchasePrice) : '';
+  priceReason.value = '';
+  priceOpen.value = true;
+}
+
+async function submitPrice() {
+  const row = priceRow.value;
+  if (!row?.id) {
+    return;
+  }
+  if (!priceFilled(priceValue.value)) {
+    message.warning('请填写非负的采购单价（最多 4 位小数）');
+    return;
+  }
+  const reason = priceReason.value.trim();
+  if (priceMode.value === 'ADJUST' && !reason) {
+    message.warning('改价必须说明原因');
+    return;
+  }
+  priceSaving.value = true;
+  try {
+    const body = {price: fixed(priceValue.value), reason: reason || null};
+    if (priceMode.value === 'FILL') {
+      await purchaseOrderApi.fillPrice(row.id, body);
+    } else {
+      await purchaseOrderApi.adjustPrice(row.id, body);
+    }
+    message.success(priceMode.value === 'FILL' ? '采购价已补录' : '采购价已调整');
+    priceOpen.value = false;
+    await load();
+    emit('saved');
+  } catch {
+    // 失败由全局提示给出，弹窗保留便于修改
+  } finally {
+    priceSaving.value = false;
+  }
+}
 
 function logColor(operationType: string | undefined): string {
   return OPERATION_COLOR[operationType ?? ''] ?? 'gray';
@@ -187,6 +307,7 @@ const itemColumns: TableColumnsType<OrderItem> = [
   {title: '采购单价', dataIndex: 'purchasePrice', width: 130},
   {title: '金额', dataIndex: 'lineAmount', width: 130},
   {title: '需求来源', dataIndex: 'allocationCount', width: 92},
+  {title: '操作', dataIndex: 'action', align: 'center', width: 100},
 ];
 
 const allocationColumns: TableColumnsType<Allocation> = [
@@ -320,6 +441,10 @@ defineExpose({open});
 
 .logs-trigger {
   margin-bottom: 12px;
+}
+
+.price-form {
+  margin-top: 16px;
 }
 
 /* 一条日志的抬头：时间 / 操作类型 / 操作人，等宽时间便于纵向比对。 */

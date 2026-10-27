@@ -148,7 +148,7 @@
             COALESCE((SELECT SUM(r.quantity) FROM xsy_inventory_reservation r WHERE r.deleted = FALSE AND
             r.status = 'ACTIVE' AND r.source_document_type = 'SALES_ORDER_ITEM' AND
             r.warehouse_id = #{query.warehouseId} AND
-            r.sku_id = oi.sku_id / * 「 本 批 」 = 与 外 层 同 源 的 确 认 窗 口 内 的 订 单 集 合 * / AND
+            r.sku_id = oi.sku_id /* 「本批」= 与外层同源的确认窗口内的订单集合 */ AND
             r.source_document_id IN (SELECT w.id FROM xsy_sales_order w WHERE w.deleted = FALSE AND
             w.status = 'CONFIRMED' AND w.confirmed_at &gt;= #{query.startAt} AND
             w.confirmed_at &lt; #{query.endAt})), 0) AS selected_order_reserved_quantity,

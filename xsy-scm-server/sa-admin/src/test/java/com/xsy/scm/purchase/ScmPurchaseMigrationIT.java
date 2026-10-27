@@ -55,8 +55,9 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         assertThat(sequences).contains("purchase_order_no_seq", "purchase_receipt_no_seq");
 
         // 非主键索引：主键走 pg_constraint，不计入这里的计数。部分索引分别来自
-        // V22（双入库生命周期）、V40（地图归属，warehouse）、V51（报表日期轴）、V74（采购每日清单）
-        // 与 V78（ADM-05 净需求冻结批次给 purchase_demand 加的「同一批次行只能生成一条需求」唯一索引）
+        // V22（双入库生命周期）、V40（地图归属，warehouse）、V51（报表日期轴）、V74（采购每日清单）、
+        // V78（ADM-05 净需求冻结批次给 purchase_demand 加的「同一批次行只能生成一条需求」唯一索引）
+        // 与 V183（录单参考最近采购价：采购单提交时间轴 + 采购行 SKU 有价索引）
         Integer indexes = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
@@ -64,17 +65,18 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                         + "  AND NOT EXISTS (SELECT 1 FROM pg_constraint c "
                         + "                  WHERE c.conname = i.indexname AND c.contype = 'p')",
                 Integer.class, V15_TABLE_LIST);
-        assertThat(indexes).isEqualTo(36);
+        assertThat(indexes).isEqualTo(38);
 
         Integer partial = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
                         + "  AND i.tablename = ANY (string_to_array(?, ',')) "
                         + "  AND i.indexdef LIKE '%WHERE%'", Integer.class, V15_TABLE_LIST);
-        // 计数 = V15 建表时的索引 + 后续获批的部分索引，最后一条是 V78 的 ADM-05 批次行唯一索引
+        // 计数 = V15 建表时的索引 + 后续获批的部分索引（V78 的 ADM-05 批次行唯一索引、
+        // V183 的两条最近采购价索引）
         // （ON purchase_demand(calculation_batch_item_id)
         // WHERE deleted=FALSE AND calculation_batch_item_id IS NOT NULL）。
-        assertThat(partial).isEqualTo(32);
+        assertThat(partial).isEqualTo(34);
 
         // 8 条唯一索引 = V15 里显式 CREATE UNIQUE INDEX 的 7 条 + V78（ADM-05 冻结批次）
         // 在 purchase_demand 上加的批次行唯一索引。
@@ -184,8 +186,13 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                         java.util.stream.IntStream.rangeClosed(1, latest).boxed().toList());
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
-        // 除版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
+        // 除版本化迁移外，最多只有 1 条 << Flyway Schema Creation >> 基线（version 为空）。
+        // 从空 schema 直接 migrate 时没有基线行，因此这里断言的是「不存在别的非版本化记录」。
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM flyway_schema_history WHERE version IS NULL", Integer.class)).isEqualTo(1);
+                "SELECT count(*) FROM flyway_schema_history WHERE version IS NULL", Integer.class))
+                .isLessThanOrEqualTo(1);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM flyway_schema_history WHERE version IS NULL AND description <> '<< Flyway Schema Creation >>'",
+                Integer.class)).isZero();
     }
 }

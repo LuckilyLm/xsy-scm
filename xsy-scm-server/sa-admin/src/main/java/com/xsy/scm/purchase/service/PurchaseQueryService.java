@@ -45,6 +45,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
@@ -350,7 +351,20 @@ public class PurchaseQueryService {
         List<PurchaseReceiptItemVO> items = purchaseReceiptItemDao.listByReceiptId(receiptId).stream()
             .map(PurchaseQueryService::receiptItemVo).toList();
         attachLots(items);
+        attachPricePending(items);
         return items;
+    }
+
+    /**
+     * 一次查出本次收货行里哪些采购行还在待定价；确认收货会冻结库存成本，页面必须提前拦住。
+     */
+    private void attachPricePending(List<PurchaseReceiptItemVO> items) {
+        List<Long> orderItemIds = items.stream().map(PurchaseReceiptItemVO::getPurchaseOrderItemId)
+            .filter(Objects::nonNull).distinct().toList();
+        Set<Long> pending = orderItemIds.isEmpty()
+            ? Set.of()
+            : Set.copyOf(purchaseOrderItemDao.pendingPriceItemIds(orderItemIds));
+        items.forEach(item -> item.setPricePending(pending.contains(item.getPurchaseOrderItemId())));
     }
 
     /**
@@ -419,6 +433,9 @@ public class PurchaseQueryService {
             PurchaseReceiptQuantityCalculator.overReceipt(row.getPlannedQuantity(), row.getReceivedQuantity()));
         vo.setPurchasePrice(row.getPurchasePrice());
         vo.setLineAmount(row.getLineAmount());
+        vo.setPricePending(Boolean.TRUE.equals(row.getPricePending()));
+        vo.setPriceWindowStartedAt(row.getPriceWindowStartedAt());
+        vo.setPriceFilledAt(row.getPriceFilledAt());
         vo.setSortOrder(row.getSortOrder());
         vo.setVersion(row.getVersion());
         vo.setAllocations(allocations);

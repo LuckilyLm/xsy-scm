@@ -7,6 +7,7 @@
     width="min(1180px, 96vw)"
     :confirm-loading="saving"
     ok-text="确认收货"
+    :ok-button-props="{disabled: pendingLines.length > 0}"
     @ok="confirm"
     @cancel="visible = false"
   >
@@ -15,6 +16,14 @@
         <a-button @click="load">重试</a-button>
       </template>
     </a-alert>
+    <!-- 收货确认会冻结库存成本：待定价行必须先回采购单补价，不能无价入库 -->
+    <a-alert
+      v-if="pendingLines.length"
+      class="pending-alert"
+      type="warning"
+      show-icon
+      :message="`本单有 ${pendingLines.length} 行采购价待定，确认收货会被拒绝。请先在采购单里补价。`"
+    />
 
     <a-spin :spinning="loading">
       <a-descriptions v-if="receipt" bordered size="small" :column="3">
@@ -50,7 +59,10 @@
             <span class="scm-quantity">{{ quantity(record.receiptDifference) }}</span>
           </template>
           <template v-else-if="column.dataIndex === 'receivedQuantity'">
-            <a-input-number string-mode :precision="4" :min="'0'" v-model:value="lineOf(record.id).receivedQuantity" aria-label="本次声明数量" />
+            <a-space :size="4">
+              <a-input-number string-mode :precision="4" :min="'0'" v-model:value="lineOf(record.id).receivedQuantity" aria-label="本次声明数量" />
+              <a-tag v-if="record.pricePending" color="orange">待定价</a-tag>
+            </a-space>
           </template>
           <template v-else-if="column.dataIndex === 'actualWeight'">
             <!-- 非标品的有效数量取实重，必须录入 -->
@@ -105,7 +117,7 @@
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {ref} from 'vue';
+import {computed, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
@@ -126,6 +138,8 @@ const lotOpen = ref(false);
 const lotLineId = ref<Id>();
 const lotDraft = ref<ReceiptConfirmLot[]>([]);
 let requestId = 0;
+/** 待定价行：确认收货会冻结库存成本，这些行必须先补价。 */
+const pendingLines = computed(() => (receipt.value?.items ?? []).filter((item) => item.pricePending));
 
 const columns: TableColumnsType<ReceiptItem> = [
   {title: '商品', dataIndex: 'skuName', width: 150},
@@ -250,6 +264,10 @@ defineExpose({open});
 <style scoped>
 .lines {
   margin: 16px 0;
+}
+
+.pending-alert {
+  margin-top: 12px;
 }
 
 .hint {

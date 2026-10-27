@@ -43,6 +43,16 @@ public class PurchaseOrderVO {
     private OffsetDateTime submittedAt;
     private OffsetDateTime cancelledAt;
     private OffsetDateTime shortClosedAt;
+    /** 锁单开关：只阻止补价，不改变采购状态；收货与应付照常。 */
+    private Boolean lockedFlag;
+    private OffsetDateTime lockedAt;
+    private String lockedBy;
+    /** MANUAL / AUTO_7_DAYS。 */
+    private String lockReason;
+    /** 提交时刻 + 7 天；草稿单为空。 */
+    private OffsetDateTime autoLockAt;
+    /** 待定价行数：列表据此显示「待定价」，不需要再拉明细。 */
+    private Integer pendingPriceCount;
     private Integer version;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;

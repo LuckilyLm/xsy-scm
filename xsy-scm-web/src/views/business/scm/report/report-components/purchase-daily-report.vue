@@ -5,7 +5,7 @@
         <a-date-picker v-model:value="queryForm.reportDate" value-format="YYYY-MM-DD" :allow-clear="false" :disabled-date="disabledDate" />
       </a-form-item>
       <a-form-item label="仓库">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" width="180px" />
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouseOptions" width="180px" />
       </a-form-item>
       <a-form-item label="商品">
         <a-input v-model:value="queryForm.keyword" placeholder="商品名称 / 商品规格" allow-clear :maxlength="100" />
@@ -14,6 +14,7 @@
         <a-space wrap>
           <a-button type="primary" :loading="loading" @click="search">查询</a-button>
           <a-button @click="reset">重置</a-button>
+          <a-button :disabled="!report?.generatedAt || loading || !!error" @click="printReport">打印</a-button>
           <a-button v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!report?.generatedAt || loading || !!error" @click="exportReport"
             >导出清单</a-button
           >
@@ -76,6 +77,8 @@ import type {Dayjs} from 'dayjs';
 import type {TableColumnsType} from 'ant-design-vue';
 import {message} from 'ant-design-vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
+import {warehouseApi} from '/@/api/business/scm/warehouse-api';
+import type {Warehouse} from '/@/views/business/scm/purchase/purchase-types';
 import {purchaseDailyReportApi} from '/@/api/business/scm/purchase-daily-report-api';
 import type {PurchaseDailyProduct, PurchaseDailyQuery, PurchaseDailyReport} from '/@/api/business/scm/purchase-daily-report-api';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
@@ -102,6 +105,7 @@ const queryForm = reactive<{reportDate: string; warehouseId: number | string | u
 });
 const pageNum = ref(1);
 const pageSize = ref(20);
+const warehouseOptions = ref<Warehouse[]>([]);
 const report = ref<PurchaseDailyReport>();
 const loading = ref(false);
 const exporting = ref(false);
@@ -185,7 +189,91 @@ async function exportReport() {
   }
 }
 
-onMounted(search);
+function warehouseLabel(warehouseId?: number | string) {
+  if (warehouseId === undefined || warehouseId === null) return '全部仓库';
+  return warehouseOptions.value.find((item) => String(item.id) === String(warehouseId))?.name ?? `仓库 ${warehouseId}`;
+}
+
+/** 浏览器打印当前清单页：表头固定打印当前查询条件，明细使用当前页已加载的数据。 */
+function printReport() {
+  const applied = appliedQuery;
+  const current = report.value;
+  if (!applied || !current?.generatedAt) return;
+  const rows = current.products.list ?? [];
+  const total = current.products.total ?? 0;
+  const frame = document.createElement('iframe');
+  frame.style.cssText = 'position:fixed;width:0;height:0;border:0;';
+  document.body.appendChild(frame);
+  const doc = frame.contentDocument;
+  if (!doc || !frame.contentWindow) {
+    frame.remove();
+    return;
+  }
+  doc.open();
+  doc.write(
+    '<!doctype html><html><head><meta charset="utf-8"><style>body{font:12px Arial,sans-serif;color:#222;padding:20px}h2{text-align:center;margin:0 0 8px}table{border-collapse:collapse;width:100%;margin-top:10px}td,th{border:1px solid #aaa;padding:5px;text-align:left}th{background:#f5f5f5}.r{text-align:right;font-variant-numeric:tabular-nums}.meta{color:#555}</style></head><body></body></html>'
+  );
+  doc.close();
+
+  const title = doc.createElement('h2');
+  title.textContent = `${applied.reportDate} 采购商品清单`;
+  doc.body.appendChild(title);
+
+  const pageCount = Math.max(1, Math.ceil(total / pageSize.value));
+  const meta = doc.createElement('p');
+  meta.className = 'meta';
+  meta.textContent = [
+    `生成时间：${datetime(current.generatedAt)}`,
+    `仓库：${warehouseLabel(applied.warehouseId)}`,
+    applied.keyword ? `商品：${applied.keyword}` : '',
+    `本页 ${rows.length} 项，共 ${total} 项`,
+    `第 ${pageNum.value} 页 / 共 ${pageCount} 页`,
+  ]
+    .filter(Boolean)
+    .join('　');
+  doc.body.appendChild(meta);
+
+  const table = doc.createElement('table');
+  const header = table.insertRow();
+  columns.forEach((column) => {
+    const th = doc.createElement('th');
+    th.textContent = String(column.title ?? '');
+    header.appendChild(th);
+  });
+  rows.forEach((row) => {
+    const values = [
+      row.productName,
+      row.skuName,
+      row.purchaseUnit,
+      String(row.orderCount ?? ''),
+      quantityText(row.plannedQuantity),
+      moneyText(row.orderAmount),
+    ];
+    const tr = table.insertRow();
+    values.forEach((value, index) => {
+      const td = tr.insertCell();
+      td.textContent = value;
+      if (index >= 4) td.className = 'r';
+    });
+  });
+  doc.body.appendChild(table);
+
+  frame.contentWindow.focus();
+  frame.contentWindow.print();
+  window.setTimeout(() => frame.remove(), 1000);
+}
+
+onMounted(() => {
+  // 仓库名称只用于打印表头；与清单查询并行，无权限时仍可查询和打印，按编号回退
+  void (async () => {
+    try {
+      warehouseOptions.value = (await warehouseApi.list({suppressGlobalErrorMessage: true})).data ?? [];
+    } catch {
+      // 保留空选项，不影响清单本身
+    }
+  })();
+  search();
+});
 onBeforeUnmount(() => {
   requestSequence += 1;
 });

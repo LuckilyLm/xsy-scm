@@ -53,6 +53,46 @@
             AND deleted = FALSE
     </update>
 
+    <!--
+      只启动尚未启动的窗口：重复提交 / 幂等重放不能把起点往后推，
+      否则「提交满 7 天」会被一次次提交无限延后。
+    -->
+    <update id="startPriceWindow">
+        UPDATE xsy_purchase_order_item
+        SET price_window_started_at = #{startedAt}, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE purchase_order_id = #{purchaseOrderId}
+            AND deleted = FALSE
+            AND price_pending = TRUE
+            AND price_window_started_at IS NULL
+    </update>
+
+    <!--
+      窗口过期 = price_window_started_at 早于「现在 - 7 天」。窗口未启动（草稿）不算过期：
+      提交那一刻才开始计时，提前回填会让「再等等供应商报价」失去意义。
+    -->
+    <select id="pendingPriceItemIds" resultType="long">
+        SELECT i.id
+        FROM xsy_purchase_order_item i
+        WHERE i.deleted = FALSE
+            AND i.price_pending = TRUE
+            AND i.id IN
+        <foreach collection="itemIds" item="itemId" open="(" separator="," close=")">#{itemId}</foreach>
+    </select>
+
+    <select id="pendingPriceOrderIds" resultType="long">
+        SELECT DISTINCT i.purchase_order_id
+        FROM xsy_purchase_order_item i
+        JOIN xsy_purchase_order o ON o.id = i.purchase_order_id
+            AND o.deleted = FALSE
+            AND o.locked_flag = FALSE
+        WHERE i.deleted = FALSE
+            AND i.price_pending = TRUE
+            AND i.price_window_started_at IS NOT NULL
+            AND i.price_window_started_at &lt;= CURRENT_TIMESTAMP - INTERVAL '7 days'
+        ORDER BY i.purchase_order_id
+        LIMIT #{limit}
+    </select>
+
     <update id="softDelete">
         UPDATE xsy_purchase_order_item
         SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
@@ -122,6 +162,33 @@
         GROUP BY oi.sku_id, oi.purchase_unit_snapshot, oi.sku_code_snapshot, oi.sku_name_snapshot,
             oi.product_name_snapshot, oi.product_type_snapshot
         ORDER BY pending_quantity DESC NULLS LAST, oi.sku_id ASC
+    </select>
+
+    <!--
+      每个商品规格最近一条已提交采购行（只读）。DISTINCT ON 先按 sku 分组，
+      组内按提交时间倒序、行 id 倒序取第一条；状态清单由调用方按 ScmPurchaseStatusEnum.committed() 传入。
+      采购员范围显式下传：scope 为 null 是调用方漏传，按失败关闭返回 0 行，绝不退化成全量。
+    -->
+    <select id="latestPurchasePrices" resultType="com.xsy.scm.purchase.domain.vo.PurchaseLastPriceVO">
+        SELECT DISTINCT ON (poi.sku_id)
+            poi.sku_id AS skuId, poi.purchase_price AS purchasePrice,
+            poi.purchase_unit_snapshot AS purchaseUnit, po.order_no AS purchaseOrderNo,
+            po.submitted_at AS submittedAt, po.supplier_name_snapshot AS supplierName
+        FROM xsy_purchase_order_item poi
+        JOIN xsy_purchase_order po ON po.id = poi.purchase_order_id
+            AND po.deleted = FALSE
+        WHERE poi.deleted = FALSE
+            AND poi.purchase_price IS NOT NULL
+            AND poi.sku_id IN
+            <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
+            AND po.status IN
+            <foreach collection="statuses" item="status" open="(" separator="," close=")">#{status}</foreach>
+        <if test="scope != null and scope.all == false">
+            AND po.purchaser_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">AND FALSE</if>
+        ORDER BY poi.sku_id, po.submitted_at DESC NULLS LAST, poi.id DESC
     </select>
 
 </mapper>

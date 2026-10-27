@@ -57,6 +57,17 @@ public class PurchaseOrderItemEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal lineAmount;
+    /** 待定价：TRUE 时 {@code purchasePrice} 必须为空，由数据库 CHECK 绑定。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Boolean pricePending;
+    /** 价格窗口起点 = 采购单提交时刻；草稿单为空。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private OffsetDateTime priceWindowStartedAt;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private OffsetDateTime priceFilledAt;
+    /** MANUAL 人工补价 / AUTO_LAST_PRICE 超期按最近已提交价回填。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String priceFillSource;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer sortOrder;
     @Version

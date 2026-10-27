@@ -7,7 +7,9 @@ import type {
   OrderBatchShortClosePayload,
   OrderCancelPayload,
   OrderExportPayload,
+  OrderLockPayload,
   OrderPayload,
+  OrderPricePayload,
   OrderQuery,
   OrderReassignPayload,
   OrderShortClosePayload,
@@ -48,6 +50,13 @@ export const purchaseOrderApi = {
   /** 改派采购归属：独立权限；/update 不改归属，重复提交由版本号拦截。 */
   reassign: (data: OrderReassignPayload) => postRequest<Order>('/scm/purchase/reassign', data),
   submit: (data: OrderVersionPayload) => purchaseCommand<Order>('/scm/purchase/submit', data),
+  /** 补价：只对待定价行，价格窗口内且未锁单。 */
+  fillPrice: (itemId: Id, data: OrderPricePayload) => purchaseCommand<Order>(`/scm/purchase/item/${itemId}/price/fill`, data),
+  /** 改价：首次收货确认前可用；锁单后仍需改价走这里（专门权限 + 必填原因）。 */
+  adjustPrice: (itemId: Id, data: OrderPricePayload) => purchaseCommand<Order>(`/scm/purchase/item/${itemId}/price/adjust`, data),
+  lock: (data: OrderLockPayload) => purchaseCommand<Order>('/scm/purchase/lock', data),
+  /** 解锁必须填原因：把已对账的单重新打开需要解释。 */
+  unlock: (data: OrderLockPayload) => purchaseCommand<Order>('/scm/purchase/unlock', data),
   cancel: (data: OrderCancelPayload) => purchaseCommand<Order>('/scm/purchase/cancel', data),
   shortClose: (data: OrderShortClosePayload) => purchaseCommand<Order>('/scm/purchase/short-close', data),
   /** 批量少收关单：整批原子、逐单校验。 */

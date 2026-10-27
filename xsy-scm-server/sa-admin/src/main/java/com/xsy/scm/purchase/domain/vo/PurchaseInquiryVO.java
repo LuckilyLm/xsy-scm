@@ -8,6 +8,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import lombok.Data;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 public final class PurchaseInquiryVO {
     private PurchaseInquiryVO() {
@@ -30,8 +31,10 @@ public final class PurchaseInquiryVO {
         private Integer version;
         private Long acceptedQuoteId;
         private OffsetDateTime acceptedAt;
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String acceptedBy;
         private OffsetDateTime createdAt;
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String createdBy;
     }
 
@@ -48,6 +51,7 @@ public final class PurchaseInquiryVO {
         private OffsetDateTime validUntil;
         private String remark;
         private OffsetDateTime recordedAt;
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String recordedBy;
     }
 

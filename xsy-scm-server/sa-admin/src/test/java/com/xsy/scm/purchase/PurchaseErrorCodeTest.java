@@ -29,8 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>锁定三件事：
  * <ol>
- *   <li>{@link PurchaseErrorCode} 恰好 41 个、{@link WarehouseErrorCode} 恰好 8 个，合计 49；</li>
- *   <li>这 49 个码段内无重复，且段分布为 400xx=13 · 404xx=7 · 409xx=22 · 410xx=7；</li>
+ *   <li>{@link PurchaseErrorCode} 恰好 53 个、{@link WarehouseErrorCode} 恰好 8 个，合计 61；</li>
+ *   <li>这 61 个码段内无重复，且段分布为 400xx=17 · 404xx=8 · 409xx=23 · 410xx=13；</li>
  *   <li>它们与其余全部 SCM 错误码零交集，且两个枚举之间也零重复。</li>
  * </ol>
  *
@@ -73,11 +73,11 @@ class PurchaseErrorCodeTest {
             "SupplierErrorCode", "PricingErrorCode", "OrderErrorCode");
 
     @Test
-    @DisplayName("撞码门禁：W5+B1 合计 49 码、段内无重复、段分布正确、与 W1–W4 零交集")
+    @DisplayName("撞码门禁：W5+B1 合计 61 码、段内无重复、段分布正确、与 W1–W4 零交集")
     void gate() {
         // ---------- 1. 数量 ----------
-        // 41 个里含净需求计算的 40092（批量上限）与 40487（批次不存在）。
-        assertThat(PurchaseErrorCode.values()).hasSize(41);
+        // 53 个里含净需求计算的 40092（批量上限）与 40487（批次不存在）。
+        assertThat(PurchaseErrorCode.values()).hasSize(53);
         // 8 个里含 WAREHOUSE_DEFAULT_AMBIGUOUS(41018)，
         // 以及阻塞仓库停用的在途调拨 41009。
         assertThat(WarehouseErrorCode.values()).hasSize(8);
@@ -87,24 +87,24 @@ class PurchaseErrorCodeTest {
                 .forEach(c -> w5.put("PurchaseErrorCode." + c.name(), c.getCode()));
         Arrays.stream(WarehouseErrorCode.values())
                 .forEach(c -> w5.put("WarehouseErrorCode." + c.name(), c.getCode()));
-        assertThat(w5).as("W5+B1 错误码合计").hasSize(49);
+        assertThat(w5).as("W5+B1 错误码合计").hasSize(61);
 
         // ---------- 2. 段内无重复 ----------
         Set<Integer> w5Codes = new LinkedHashSet<>(w5.values());
-        assertThat(w5Codes).as("W5+B1 段内存在重复码值").hasSize(49);
+        assertThat(w5Codes).as("W5+B1 段内存在重复码值").hasSize(61);
 
         // ---------- 3. 段分布 ----------
         Set<Integer> purchaseCodes = Arrays.stream(PurchaseErrorCode.values())
                 .map(PurchaseErrorCode::getCode).collect(Collectors.toSet());
         assertThat(purchaseCodes.stream().filter(c -> c / 100 == 400).count())
-                .as("PurchaseErrorCode 400xx 段").isEqualTo(13L);
+                .as("PurchaseErrorCode 400xx 段").isEqualTo(17L);
         assertThat(purchaseCodes.stream().filter(c -> c / 100 == 404).count())
-                .as("PurchaseErrorCode 404xx 段").isEqualTo(6L);
+                .as("PurchaseErrorCode 404xx 段").isEqualTo(7L);
         assertThat(purchaseCodes.stream().filter(c -> c / 100 == 409).count())
-                .as("PurchaseErrorCode 409xx 段").isEqualTo(21L);
+                .as("PurchaseErrorCode 409xx 段").isEqualTo(22L);
         assertThat(purchaseCodes.stream().filter(c -> c / 100 == 410).count())
-                .as("PurchaseErrorCode 410xx 段").isEqualTo(1L);
-        assertThat(purchaseCodes).hasSize(41);
+                .as("PurchaseErrorCode 410xx 段").isEqualTo(7L);
+        assertThat(purchaseCodes).hasSize(53);
 
         assertThat(WarehouseErrorCode.WAREHOUSE_NOT_FOUND.getCode()).isEqualTo(40485);
         assertThat(WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE.getCode()).isEqualTo(40996);
@@ -117,11 +117,11 @@ class PurchaseErrorCodeTest {
         // 在途调拨单阻塞仓库停用（第四条停用阻塞条件）
         assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER.getCode()).isEqualTo(41009);
 
-        // 合并后的段分布：400xx=13 · 404xx=7（含 40485）· 409xx=22（含 40996）· 410xx=7
-        assertThat(w5Codes.stream().filter(c -> c / 100 == 400).count()).isEqualTo(13L);
-        assertThat(w5Codes.stream().filter(c -> c / 100 == 404).count()).isEqualTo(7L);
-        assertThat(w5Codes.stream().filter(c -> c / 100 == 409).count()).isEqualTo(22L);
-        assertThat(w5Codes.stream().filter(c -> c / 100 == 410).count()).isEqualTo(7L);
+        // 合并后的段分布：400xx=17 · 404xx=8（含 40485）· 409xx=23（含 40996）· 410xx=13
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 400).count()).isEqualTo(17L);
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 404).count()).isEqualTo(8L);
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 409).count()).isEqualTo(23L);
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 410).count()).isEqualTo(13L);
 
         // ---------- 4. 与既有域错误码零交集 ----------
         List<Class<?>> discovered = discover();

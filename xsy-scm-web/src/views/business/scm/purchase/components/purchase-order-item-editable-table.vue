@@ -33,10 +33,15 @@
           :precision="4"
           :min="'0'"
           :allow-clear="true"
+          :disabled="record.pricePending"
+          :placeholder="record.pricePending ? '待定价' : ''"
           v-model:value="record.purchasePrice"
           :aria-label="'采购单价 ' + (index + 1)"
           @blur="normalizeNumber(record, 'purchasePrice')"
         />
+      </template>
+      <template v-else-if="column.dataIndex === 'pricePending'">
+        <a-checkbox :checked="record.pricePending" @change="(e: CheckboxChangeEvent) => onPendingChange(record, e)"> 待定价 </a-checkbox>
       </template>
       <template v-else-if="column.dataIndex === 'allocated'">
         <span class="scm-quantity">{{ allocatedOnItem(record) }}</span>
@@ -116,6 +121,7 @@ import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {reactive} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
+import type {CheckboxChangeEvent} from 'ant-design-vue/es/checkbox/interface';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {SCM_DEMAND_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
@@ -129,6 +135,7 @@ const columns: TableColumnsType<OrderItem> = [
   {title: '商品 / 商品规格', dataIndex: 'skuId', width: 300},
   {title: '采购数量', dataIndex: 'plannedQuantity', width: 150},
   {title: '采购单价', dataIndex: 'purchasePrice', width: 150},
+  {title: '待定价', dataIndex: 'pricePending', width: 100},
   {title: '已分配合计', dataIndex: 'allocated', width: 140},
   {title: '需求来源', dataIndex: 'allocationCount', width: 120},
   {title: '操作', dataIndex: 'action', align: 'center', width: 90},
@@ -169,6 +176,14 @@ function removeAllocation(item: OrderItem, index: number) {
 }
 
 /** 失焦时补成四位小数（"2" → "2.0000"）。input-number 只有在值实际变化时才回写显示。 */
+/** 勾上待定价就清空价格：两者互斥，留着旧价会被服务端判为矛盾。 */
+function onPendingChange(item: OrderItem, event: CheckboxChangeEvent) {
+  item.pricePending = event.target.checked === true;
+  if (item.pricePending) {
+    item.purchasePrice = null;
+  }
+}
+
 function normalizeNumber(target: object, key: 'plannedQuantity' | 'purchasePrice' | 'quantity') {
   const self = target as Record<string, string | null | undefined>;
   const normalized = normalizeTyped(self[key]);

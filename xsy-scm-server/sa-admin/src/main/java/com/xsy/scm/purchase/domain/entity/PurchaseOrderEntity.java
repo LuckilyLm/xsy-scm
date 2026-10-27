@@ -59,6 +59,19 @@ public class PurchaseOrderEntity {
     private OffsetDateTime cancelledAt;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime shortClosedAt;
+    /** 锁单开关：只关掉补价/改价入口，不改变采购状态，收货与应付照常。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Boolean lockedFlag;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private OffsetDateTime lockedAt;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String lockedBy;
+    /** MANUAL 手动锁单 / AUTO_7_DAYS 提交满 7 天自动锁单。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String lockReason;
+    /** 自动锁单时点 = 提交时刻 + 7 天；草稿单为空。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private OffsetDateTime autoLockAt;
     @Version
     private Integer version = 0;
     @TableLogic(value = "false", delval = "true")

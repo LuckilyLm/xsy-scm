@@ -11,6 +11,8 @@ import com.xsy.scm.purchase.domain.form.PurchaseOrderBatchShortCloseForm;
 import com.xsy.scm.purchase.domain.form.PurchaseOrderCancelForm;
 import com.xsy.scm.purchase.domain.form.PurchaseOrderDeleteForm;
 import com.xsy.scm.purchase.domain.form.PurchaseOrderExportForm;
+import com.xsy.scm.purchase.domain.form.PurchaseOrderLockForm;
+import com.xsy.scm.purchase.domain.form.PurchasePriceForm;
 import com.xsy.scm.purchase.domain.form.PurchaseOrderQueryForm;
 import com.xsy.scm.purchase.domain.form.PurchaseOrderReassignForm;
 import com.xsy.scm.purchase.domain.form.PurchaseOrderShortCloseForm;
@@ -20,7 +22,9 @@ import com.xsy.scm.purchase.domain.vo.PurchaseOperationLogVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderItemVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import com.xsy.scm.purchase.service.PurchaseOrderExportSupport;
+import com.xsy.scm.purchase.service.PurchaseOrderLockService;
 import com.xsy.scm.purchase.service.PurchaseOrderService;
+import com.xsy.scm.purchase.service.PurchasePriceService;
 import com.xsy.scm.purchase.service.PurchaseQueryService;
 import com.xsy.scm.purchase.permission.PurchasePermission;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -49,6 +53,10 @@ public class PurchaseOrderController {
     private final PurchaseOrderService purchaseOrderService;
 
     private final PurchaseQueryService purchaseQueryService;
+
+    private final PurchasePriceService purchasePriceService;
+
+    private final PurchaseOrderLockService purchaseOrderLockService;
 
     private static final int EXPORT_MAX_ROWS = 100000;
 
@@ -92,6 +100,45 @@ public class PurchaseOrderController {
         FastExcel.write(response.getOutputStream()).head(PurchaseOrderExportSupport.head(form.getExportColumns()))
             .autoCloseStream(Boolean.FALSE).sheet("采购单")
             .doWrite(PurchaseOrderExportSupport.rows(form.getExportColumns(), orders));
+    }
+
+    /**
+     * 补价：待定价行补上价格。窗口内、未锁单；带幂等键，重放不会写第二条审计。
+     */
+    @PostMapping("/item/{itemId}/price/fill")
+    @SaCheckPermission(PurchasePermission.PRICE_FILL)
+    @OperateLog
+    public ResponseDTO<PurchaseOrderVO> fillPrice(@PathVariable("itemId") Long itemId,
+        @Valid @RequestBody PurchasePriceForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseDTO.ok(purchasePriceService.fill(itemId, form, idempotencyKey));
+    }
+
+    /**
+     * 改价：首次收货确认前调整价格；需要改价权限、必须填原因，锁单后仍可使用（这就是「锁后改价」的专门口径）。
+     */
+    @PostMapping("/item/{itemId}/price/adjust")
+    @SaCheckPermission(PurchasePermission.PRICE_ADJUST)
+    @OperateLog
+    public ResponseDTO<PurchaseOrderVO> adjustPrice(@PathVariable("itemId") Long itemId,
+        @Valid @RequestBody PurchasePriceForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseDTO.ok(purchasePriceService.adjust(itemId, form, idempotencyKey));
+    }
+
+    @PostMapping("/lock")
+    @SaCheckPermission(PurchasePermission.LOCK)
+    @OperateLog
+    public ResponseDTO<PurchaseOrderVO> lock(@Valid @RequestBody PurchaseOrderLockForm form) {
+        return ResponseDTO.ok(purchaseOrderLockService.lock(form));
+    }
+
+    /** 解锁必须说明原因：把已对账的单重新打开是需要解释的动作。 */
+    @PostMapping("/unlock")
+    @SaCheckPermission(PurchasePermission.UNLOCK)
+    @OperateLog
+    public ResponseDTO<PurchaseOrderVO> unlock(@Valid @RequestBody PurchaseOrderLockForm form) {
+        return ResponseDTO.ok(purchaseOrderLockService.unlock(form));
     }
 
     @PostMapping("/create")

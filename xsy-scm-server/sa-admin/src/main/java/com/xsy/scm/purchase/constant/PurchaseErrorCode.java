@@ -68,6 +68,16 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     // ---- 收货入库确认 ----
     PURCHASE_RECEIPT_PUTAWAY_STATE_INVALID(41008, "收货单当前状态不允许入库确认"),
 
+    // ---- 采购价后置与锁单 ----
+    PURCHASE_PRICE_PENDING(41067, "采购明细仍有待定价商品，请先补价再确认收货"),
+    PURCHASE_PRICE_WINDOW_CLOSED(41068, "采购价补录窗口已关闭（提交后 7 天），不能直接补价"),
+    PURCHASE_ORDER_LOCKED(41069, "采购单已锁定，补价/改价需要先解锁"),
+    PURCHASE_ITEM_NOT_PRICE_PENDING(41074, "该采购明细已定价，不能再次补价"),
+    PURCHASE_PRICE_ADJUST_NOT_ALLOWED(41075, "该采购明细已确认收货，库存成本不能直接改价"),
+    PURCHASE_PRICE_NO_REFERENCE(41076, "没有可参考的最近采购价，需要人工补价"),
+    PURCHASE_UNLOCK_REASON_REQUIRED(41077, "解锁原因不能为空"),
+    PURCHASE_PRICE_REASON_REQUIRED(41078, "改价原因不能为空"),
+
     // ---- 采购单二维码分享 ----
     PURCHASE_SHARE_NOT_FOUND(41090, "分享链接不存在或已失效"),
 

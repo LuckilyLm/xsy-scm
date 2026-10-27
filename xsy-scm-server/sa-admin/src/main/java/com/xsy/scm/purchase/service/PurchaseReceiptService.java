@@ -61,6 +61,7 @@ import java.util.stream.Collectors;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_ITEM_EMPTY;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_ITEM_NOT_FOUND;
+import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_PRICE_PENDING;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_NOT_FOUND;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_DELETE_STATE_INVALID;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_ITEM_INCOMPLETE;
@@ -270,6 +271,11 @@ public class PurchaseReceiptService {
 
         Map<Long, PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.lockByOrderId(order.getId()).stream()
             .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
+        // 收货确认是库存成本入账的时点：任何一行还没价就停在这里。允许无价入库会把成本记成 0，
+        // 之后再改价也无法回冲（已确认收货的单不再改成本，见 D-1028-06）。
+        if (orderItems.values().stream().anyMatch(item -> Boolean.TRUE.equals(item.getPricePending()))) {
+            throw new ScmBusinessException(PURCHASE_PRICE_PENDING);
+        }
         List<PurchaseReceiptItemEntity> receiptItems = purchaseReceiptItemDao.lockByReceiptId(receipt.getId());
         Map<Long, PurchaseReceiptConfirmForm.Item> requested = requestedLines(form, receiptItems);
 

@@ -79,8 +79,13 @@ public final class PurchaseSnapshotFactory {
         item.setProductTypeSnapshot(sku.getProductType());
         item.setPlannedQuantity(PurchaseOrderValidator.decimal(form.getQuantity(), true));
         item.setReceivedQuantity(zero());
-        item.setPurchasePrice(PurchaseOrderValidator.decimal(form.getPrice(), false));
-        item.setLineAmount(PurchaseAmountCalculator.lineAmount(item.getPlannedQuantity(), item.getPurchasePrice()));
+        // 待定价行没有价格，金额记 0；缺价不等于免费，页面必须按 pricePending 标注
+        boolean pricePending = Boolean.TRUE.equals(form.getPricePending());
+        item.setPricePending(pricePending);
+        item.setPurchasePrice(pricePending ? null : PurchaseOrderValidator.decimal(form.getPrice(), false));
+        item.setLineAmount(pricePending
+            ? zero()
+            : PurchaseAmountCalculator.lineAmount(item.getPlannedQuantity(), item.getPurchasePrice()));
         item.setDeleted(false);
         return item;
     }

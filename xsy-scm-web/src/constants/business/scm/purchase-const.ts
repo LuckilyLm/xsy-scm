@@ -84,6 +84,12 @@ export const SCM_PURCHASE_OPERATION_ENUM: SmartEnum<string> = {
   RECEIPT_CONFIRM: {value: 'RECEIPT_CONFIRM', desc: '确认收货'},
   RECEIPT_DELETE: {value: 'RECEIPT_DELETE', desc: '删除收货单'},
   RECEIPT_PUTAWAY: {value: 'RECEIPT_PUTAWAY', desc: '确认入库'},
+  PRICE_FILL: {value: 'PRICE_FILL', desc: '补录采购价'},
+  PRICE_ADJUST: {value: 'PRICE_ADJUST', desc: '调整采购价'},
+  PRICE_AUTO_FILL: {value: 'PRICE_AUTO_FILL', desc: '按最近价自动补价'},
+  PRICE_LOCK: {value: 'PRICE_LOCK', desc: '锁定采购单'},
+  PRICE_UNLOCK: {value: 'PRICE_UNLOCK', desc: '解锁采购单'},
+  PRICE_AUTO_LOCK: {value: 'PRICE_AUTO_LOCK', desc: '7 天自动锁单'},
 };
 
 /**

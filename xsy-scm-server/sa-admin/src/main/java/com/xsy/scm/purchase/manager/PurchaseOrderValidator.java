@@ -100,7 +100,7 @@ public class PurchaseOrderValidator {
                 throw new ScmBusinessException(PURCHASE_ORDER_ITEM_DUPLICATE_SKU);
             }
             decimal(item.getQuantity(), true);
-            decimal(item.getPrice(), false);
+            price(item);
             if (item.getAllocations() == null) {
                 continue;
             }
@@ -115,6 +115,23 @@ public class PurchaseOrderValidator {
                 decimal(allocation.getQuantity(), true);
             }
         }
+    }
+
+    /**
+     * 单价与「待定价」必须成对：待定价时不得填价，否则单价必填且 ≥ 0。
+     *
+     * <p>
+     * 两者同时存在的含义是矛盾的（既没价又有价），必须挡在写入前；数据库 CHECK 只是最后一道兜底。
+     */
+    public static void price(PurchaseOrderAddForm.Item item) {
+        boolean pending = Boolean.TRUE.equals(item.getPricePending());
+        if (pending) {
+            if (StringUtils.isNotBlank(item.getPrice())) {
+                throw new ScmBusinessException(PURCHASE_PRICE_INVALID);
+            }
+            return;
+        }
+        decimal(item.getPrice(), false);
     }
 
     /**

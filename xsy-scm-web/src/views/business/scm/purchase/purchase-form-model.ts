@@ -78,7 +78,7 @@ export function progress(value: string | null | undefined): string {
 
 /** 一行空白采购行。 */
 export function newOrderItem(): OrderItem {
-  return {plannedQuantity: '1.0000', purchasePrice: '0.0000', allocations: []};
+  return {plannedQuantity: '1.0000', purchasePrice: '0.0000', pricePending: false, allocations: []};
 }
 
 /** 一张空白采购单。 */
@@ -179,9 +179,13 @@ export function validateOrder(form: Order): string | undefined {
     if (!FIXED.test(plannedQuantity) || new Decimal(plannedQuantity).lte(0)) {
       return '采购数量必须为大于零的四位定点数';
     }
-    // 单价可以留空（未定价）；填了才校验形状，否则服务端会以 40083 之类直接拒绝。
-    if (String(item.purchasePrice ?? '').trim() !== '' && !priceFilled(item.purchasePrice)) {
-      return '采购单价必须为非负四位定点数';
+    // 待定价与单价互斥：待定价必须留空，非待定价必须有价（服务端同一口径）
+    if (item.pricePending) {
+      if (String(item.purchasePrice ?? '').trim() !== '') {
+        return '标记为待定价的行不能填写采购单价';
+      }
+    } else if (!priceFilled(item.purchasePrice)) {
+      return '采购单价必须为非负四位定点数；价格未定时请勾选「待定价」';
     }
     for (const row of item.allocations ?? []) {
       if (!row.demandId) {
@@ -214,7 +218,9 @@ export function payload(form: Order): OrderPayload {
         version: item.version,
         skuId: item.skuId!,
         quantity: fixed(item.plannedQuantity),
-        price: fixed(item.purchasePrice),
+        // 待定价行有价必须为空：服务端把两者同时出现的请求判为矛盾
+        price: item.pricePending ? null : fixed(item.purchasePrice),
+        pricePending: item.pricePending === true,
         allocations: (item.allocations ?? []).map(
           (row): AllocationPayload => ({
             demandId: row.demandId!,

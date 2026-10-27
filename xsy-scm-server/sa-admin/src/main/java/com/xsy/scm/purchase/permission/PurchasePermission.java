@@ -52,6 +52,17 @@ public final class PurchasePermission {
 
     public static final String DELETE = "scm:purchase:delete";
 
+    /** 补价：把待定价行补成有价（窗口内、未锁单）。 */
+    public static final String PRICE_FILL = "scm:purchase:price:fill";
+
+    /** 改价：已定价行在收货确认前调整价格，需要独立权限与原因。 */
+    public static final String PRICE_ADJUST = "scm:purchase:price:adjust";
+
+    /** 锁单 / 解锁：对账完成后关掉补价入口；解锁必须说明原因。 */
+    public static final String LOCK = "scm:purchase:lock";
+
+    public static final String UNLOCK = "scm:purchase:unlock";
+
     public static final String RECEIPT_QUERY = "scm:purchase:receipt:query";
 
     public static final String RECEIPT_ADD = "scm:purchase:receipt:add";

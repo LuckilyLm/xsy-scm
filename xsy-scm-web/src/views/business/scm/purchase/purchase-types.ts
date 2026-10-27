@@ -242,7 +242,13 @@ export interface OrderItem {
   receivedQuantity?: string | null;
   remainingQuantity?: string | null;
   overReceiptQuantity?: string | null;
-  purchasePrice: string;
+  /** 待定价行为 `null`：有价与待定价互斥，由数据库 CHECK 兜底。 */
+  purchasePrice?: string | null;
+  /** 待定价：提交时没有价格，7 天内补录或在窗口结束时按最近采购价回填。 */
+  pricePending?: boolean;
+  /** 价格窗口起点（采购单提交时间）；未提交为空。 */
+  priceWindowStartedAt?: string | null;
+  priceFilledAt?: string | null;
   lineAmount?: string | null;
   sortOrder?: number;
   /** 集合，不是单个 `demandId`。 */
@@ -270,6 +276,14 @@ export interface Order {
   cancelReason?: string | null;
   shortCloseReason?: string | null;
   submittedAt?: string | null;
+  /** 锁单：锁后仍可收货，只挡补价/改价；提交后 7 天自动锁单。 */
+  lockedFlag?: boolean;
+  lockedAt?: string | null;
+  lockedBy?: string | null;
+  lockReason?: string | null;
+  autoLockAt?: string | null;
+  /** 待定价行数（列表与详情下发），0 或空表示全部有价。 */
+  pendingPriceCount?: number | null;
   cancelledAt?: string | null;
   shortClosedAt?: string | null;
   version?: number;
@@ -307,8 +321,22 @@ export interface OrderItemPayload {
   version?: number;
   skuId: Id;
   quantity: string;
-  price: string;
+  /** 待定价时为空；有价与待定价互斥，服务端会再校验一次。 */
+  price?: string | null;
+  pricePending?: boolean;
   allocations: AllocationPayload[];
+}
+
+/** 补价（仅待定价行）与改价（首次收货确认前）共用同一请求体。 */
+export interface OrderPricePayload {
+  /** 严格四位定点字符串。 */
+  price: string;
+  reason?: string | null;
+}
+
+/** 锁单/解锁：解锁必须填原因，锁单原因可选。 */
+export interface OrderLockPayload extends OrderVersionPayload {
+  reason?: string | null;
 }
 
 export interface AllocationPayload {
@@ -366,6 +394,8 @@ export interface ReceiptItem {
   weightUnit?: string | null;
   weighingSource?: string | null;
   correctionReason?: string | null;
+  /** 对应采购行待定价：确认收货会被拒绝，必须先补价。 */
+  pricePending?: boolean;
   /** 已登记的收货批次；未启用批次追踪的仓库为空。 */
   lots?: ReceiptItemLot[];
 }
@@ -528,6 +558,8 @@ export interface Warehouse extends Partial<AreaColumns>, ScmLocation {
   remark?: string | null;
   /** 是否启用批次追踪；开启后不可关闭。 */
   lotTrackingEnabled?: boolean;
+  /** 是否允许负库存出库；只影响销售出库，且仍有负余额时不能关闭。 */
+  allowNegativeStock?: boolean;
   version?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -550,6 +582,8 @@ export interface WarehouseFormModel extends Partial<AreaColumns>, ScmLocation {
   remark?: string | null;
   /** 是否启用批次追踪：只在新建时提交，编辑态只读回显。 */
   lotTrackingEnabled?: boolean;
+  /** 是否允许负库存出库：编辑态可改，但仍有负余额时服务端会拒绝关闭。 */
+  allowNegativeStock?: boolean;
 }
 
 /** 写请求体。不含 `warehouseCode`，编码由服务端生成。 */

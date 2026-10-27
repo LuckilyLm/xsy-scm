@@ -531,9 +531,15 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     f.items[0].plannedQuantity = '1.0000';
     f.items[0].purchasePrice = '-1.0000';
     assert.match(validateOrder(f), /采购单价/);
-    // 单价可以留空（未定价）；填了就必须是非负定点数。
+    // 单价可以留空，但必须同时勾选「待定价」；留空却没勾选就是漏填。
     f.items[0].purchasePrice = '';
+    assert.match(validateOrder(f), /待定价/);
+    f.items[0].pricePending = true;
     assert.equal(validateOrder(f), undefined);
+    // 反过来，勾了待定价就不能再填单价，两者只能取一个。
+    f.items[0].purchasePrice = '1.0000';
+    assert.match(validateOrder(f), /待定价/);
+    f.items[0].pricePending = false;
     f.items[0].purchasePrice = '0.0000';
     assert.equal(validateOrder(f), undefined);
   });
@@ -567,6 +573,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
       skuId: '3',
       quantity: '3.0000',
       price: '2.5000',
+      pricePending: false,
       allocations: [],
     });
     assert.equal(body.purchaserId, null);
@@ -600,6 +607,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
       skuId: '3',
       quantity: '1.0000',
       price: '2.0000',
+      pricePending: false,
       allocations: [{demandId: '7', quantity: '0.5000', demandVersion: 5}],
     });
     assert.deepEqual(body.items[1], {
@@ -608,6 +616,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
       skuId: '4',
       quantity: '1.0000',
       price: '1.0000',
+      pricePending: false,
       allocations: [],
     });
   });
@@ -628,7 +637,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     const blank = newAllocation({id: 8});
     assert.equal(blank.quantity, '0.0000');
     assert.equal(blank.demandVersion, 0);
-    assert.deepEqual(newOrderItem(), {plannedQuantity: '1.0000', purchasePrice: '0.0000', allocations: []});
+    assert.deepEqual(newOrderItem(), {plannedQuantity: '1.0000', purchasePrice: '0.0000', pricePending: false, allocations: []});
   });
 
   test('item totals and per-demand capacity follow the server allocation identity', () => {
@@ -825,6 +834,12 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
       'RECEIPT_CONFIRM',
       'RECEIPT_DELETE',
       'RECEIPT_PUTAWAY',
+      'PRICE_FILL',
+      'PRICE_ADJUST',
+      'PRICE_AUTO_FILL',
+      'PRICE_LOCK',
+      'PRICE_UNLOCK',
+      'PRICE_AUTO_LOCK',
     ]);
     assert.deepEqual(Object.keys(SCM_PURCHASE_TABLE_ID), ['ORDER', 'RECEIPT', 'DEMAND', 'LOG', 'WAREHOUSE']);
     assert.equal(SCM_PURCHASE_TABLE_ID.ORDER, 'scm-purchase-order-table');

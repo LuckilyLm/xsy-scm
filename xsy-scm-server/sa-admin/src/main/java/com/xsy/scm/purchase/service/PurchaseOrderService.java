@@ -279,9 +279,14 @@ public class PurchaseOrderService {
         }
 
         Map<String, Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
+        OffsetDateTime submittedAt = OffsetDateTime.now();
         order.setStatus(ScmPurchaseStatusEnum.SUBMITTED.name());
-        order.setSubmittedAt(OffsetDateTime.now());
+        order.setSubmittedAt(submittedAt);
+        // 自动锁单与价格窗口共用同一个锚点：提交时刻 + 7 天。窗口内允许补价，窗口外回填后锁单。
+        order.setAutoLockAt(submittedAt.plusDays(PurchaseOrderLockService.PRICE_WINDOW_DAYS));
         save(order);
+        // 草稿期间价格窗口不启动；提交这一刻才开始计时，避免「草稿放了三天，窗口只剩四天」
+        purchaseOrderItemDao.startPriceWindow(order.getId(), submittedAt, ScmOperator.current());
 
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.SUBMIT,

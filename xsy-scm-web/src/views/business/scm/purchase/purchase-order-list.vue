@@ -66,7 +66,11 @@
         </template>
         <template v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)" :label="SCM_PURCHASE_STATUS_ENUM[record.status]?.desc" />
+          <a-space :size="4" wrap>
+            <ScmStatusTag :tone="statusTone(record.status)" :label="SCM_PURCHASE_STATUS_ENUM[record.status]?.desc" />
+            <a-tag v-if="record.pendingPriceCount" color="orange">待定价 {{ record.pendingPriceCount }}</a-tag>
+            <a-tag v-if="record.lockedFlag" color="red">{{ record.lockReason === 'AUTO_7_DAYS' ? '自动锁单' : '已锁单' }}</a-tag>
+          </a-space>
         </template>
         <template v-else-if="column.dataIndex === 'plannedArrivalDate'">{{ dateOnly(record.plannedArrivalDate) }}</template>
         <template v-else-if="column.dataIndex === 'totalAmount'">
@@ -281,7 +285,7 @@ const columns = ref<TableColumnsType<Order>>([
   {title: '供应商', dataIndex: 'supplierName', width: 220, ellipsis: true},
   {title: '采购员', dataIndex: 'purchaserName', width: 110},
   {title: '收货仓库', dataIndex: 'warehouseName', width: 140},
-  {title: '状态', dataIndex: 'status', align: 'center', width: 100},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 190},
   {title: '计划到货', dataIndex: 'plannedArrivalDate', width: 120},
   {title: '采购金额', dataIndex: 'totalAmount', width: 148},
   {title: '收货进度', dataIndex: 'receivedProgress', width: 110},
@@ -304,6 +308,10 @@ const canAssign = computed(() => hasPermission('scm:purchase:assign'));
 const canCancel = computed(() => hasPermission('scm:purchase:cancel'));
 const canShortClose = computed(() => hasPermission('scm:purchase:short-close'));
 const canDelete = computed(() => hasPermission('scm:purchase:delete'));
+const canLock = computed(() => hasPermission('scm:purchase:lock'));
+const canUnlock = computed(() => hasPermission('scm:purchase:unlock'));
+/** 锁单只对已提交、部分收货的单有意义；草稿还没定价，收货完成的单已没有可改的价格窗口。 */
+const LOCKABLE_STATUSES = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 /** 只有进入正式采购流程的单才能分享给现场：草稿还没定，取消的没有任务。 */
 const SHAREABLE_STATUSES = ['SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED'];
 const canShare = computed(() => hasPermission('scm:purchase:share:create'));
@@ -317,6 +325,12 @@ function moreActions(row: Order): ScmActionItem[] {
     {key: 'share', label: '分享', hidden: !(canShare.value && SHAREABLE_STATUSES.includes(row.status ?? ''))},
     {key: 'feedback', label: '现场回填', hidden: draft},
     {key: 'reassign', label: '改派', hidden: !canAssign.value},
+    {
+      key: 'lock',
+      label: '锁单',
+      hidden: !(canLock.value && !row.lockedFlag && LOCKABLE_STATUSES.includes(row.status ?? '')),
+    },
+    {key: 'unlock', label: '解锁', hidden: !(canUnlock.value && row.lockedFlag)},
     {key: 'cancel', label: '取消', hidden: !(canCancel.value && ['DRAFT', 'SUBMITTED'].includes(row.status ?? ''))},
     {
       key: 'shortClose',
@@ -343,6 +357,10 @@ function onRowAction(key: string, row: Order) {
     printRow(row);
   } else if (key === 'reassign') {
     openReassign(row);
+  } else if (key === 'lock') {
+    lock(row);
+  } else if (key === 'unlock') {
+    unlock(row);
   } else if (key === 'cancel') {
     cancel(row);
   } else if (key === 'shortClose') {
@@ -442,6 +460,54 @@ function shortClose(row: Order) {
         throw new Error('short close reason required');
       }
       await purchaseOrderApi.shortClose({id: row.id!, version: row.version!, shortCloseReason: reason});
+      await queryData();
+    },
+  });
+}
+
+/** 锁单：原因可选；锁后仍可收货，只挡补价/改价（改价仍可走专门权限）。 */
+function lock(row: Order) {
+  let reason = '';
+  Modal.confirm({
+    title: '锁定这张采购单？',
+    content: () =>
+      h('div', [
+        h('p', '锁单用于与供应商对账：锁后不能再补价，改价需要专门权限；收货不受影响。'),
+        h('p', '锁单原因（选填）：'),
+        h(Input.TextArea, {
+          rows: 2,
+          maxlength: 500,
+          'onUpdate:value': (v: string) => (reason = v),
+        }),
+      ]),
+    onOk: async () => {
+      await purchaseOrderApi.lock({id: row.id!, version: row.version!, reason: reason.trim() || null});
+      await queryData();
+    },
+  });
+}
+
+/** 解锁必须填原因：把已对账的单重新打开需要解释。 */
+function unlock(row: Order) {
+  let reason = '';
+  Modal.confirm({
+    title: '解锁这张采购单？',
+    content: () =>
+      h('div', [
+        h('p', '解锁后可继续补价/改价。'),
+        h('p', '解锁原因（必填）：'),
+        h(Input.TextArea, {
+          rows: 2,
+          maxlength: 500,
+          'onUpdate:value': (v: string) => (reason = v),
+        }),
+      ]),
+    onOk: async () => {
+      if (!reason.trim()) {
+        message.warning('请填写解锁原因');
+        throw new Error('unlock reason required');
+      }
+      await purchaseOrderApi.unlock({id: row.id!, version: row.version!, reason: reason.trim()});
       await queryData();
     },
   });

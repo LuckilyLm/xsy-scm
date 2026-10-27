@@ -51,9 +51,15 @@ public class PurchaseOrderAddForm {
         @NotBlank(message = "采购数量不能为空")
         @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
         private String quantity;
-        @NotBlank(message = "采购单价不能为空")
+        /**
+         * 采购单价。{@code pricePending=true} 时必须为空；否则必填且 ≥ 0。
+         */
         @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
         private String price;
+        /**
+         * 待定价：现场先定数量、价格稍后补。没有价格时行金额按 0 计，页面必须显式标注， 不能把缺价当成「不要钱」。
+         */
+        private Boolean pricePending;
         @Valid
         @Size(max = 100, message = "需求分配列表不能超过100项")
         private List<Allocation> allocations;

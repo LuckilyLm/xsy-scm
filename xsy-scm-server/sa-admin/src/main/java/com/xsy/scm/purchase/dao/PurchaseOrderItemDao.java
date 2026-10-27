@@ -5,11 +5,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.purchase.domain.entity.PurchaseOrderItemEntity;
 import com.xsy.scm.purchase.domain.form.PurchaseReceiptItemWorkbenchQueryForm;
+import com.xsy.scm.purchase.domain.vo.PurchaseLastPriceVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -47,6 +49,31 @@ public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity
     int accumulateReceived(@Param("id") Long id, @Param("delta") BigDecimal delta, @Param("operator") String operator);
 
     /**
+     * 提交采购单时启动待定价行的价格窗口（只填尚未启动的行）。
+     *
+     * <p>
+     * 幂等重放或重复提交不会把窗口起点往后推：窗口必须有确定的起点，否则越提交越宽松。
+     */
+    int startPriceWindow(@Param("purchaseOrderId") Long purchaseOrderId, @Param("startedAt") OffsetDateTime startedAt,
+        @Param("operator") String operator);
+
+    /**
+     * 价格窗口已过期、且采购单未锁定的待定价单 id 批次。
+     *
+     * <p>
+     * 按采购单去重：一个订单的多行待定价要在同一事务里一起处理，避免一次只回填半张单。
+     */
+    List<Long> pendingPriceOrderIds(@Param("limit") int limit);
+
+    /**
+     * 给定采购行里仍在待定价的那些 id。
+     *
+     * <p>
+     * 收货确认前要用它提前提示「哪些行还没价」，避免用户填完整张收货单才被拒绝。
+     */
+    List<Long> pendingPriceItemIds(@Param("itemIds") List<Long> itemIds);
+
+    /**
      * 软删单行。
      */
     int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("operator") String operator);
@@ -66,4 +93,10 @@ public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity
      */
     List<PurchaseReceiptItemWorkbenchVO> workbench(Page<?> page,
         @Param("query") PurchaseReceiptItemWorkbenchQueryForm form, @Param("scope") ScmValueScope scope);
+
+    /**
+     * 每个商品规格最近一条已提交采购行（只读）。采购员范围显式传入，{@code scope == null} 按失败关闭处理。
+     */
+    List<PurchaseLastPriceVO> latestPurchasePrices(@Param("skuIds") List<Long> skuIds,
+        @Param("statuses") List<String> statuses, @Param("scope") ScmValueScope purchaserScope);
 }

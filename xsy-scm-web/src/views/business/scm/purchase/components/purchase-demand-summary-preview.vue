@@ -15,6 +15,7 @@
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:demand:query'">查询缺口</a-button>
           <a-button @click="resetQuery">重置</a-button>
+          <a-button :loading="printLoading" @click="printSummary" v-privilege="'scm:purchase:demand:query'">打印采购汇总</a-button>
         </a-button-group>
       </a-form-item>
     </a-row>
@@ -107,6 +108,7 @@ const total = ref(0);
 const pageNum = ref(1);
 const pageSize = ref(20);
 const loading = ref(false);
+const printLoading = ref(false);
 const error = ref('');
 let requestId = 0;
 
@@ -189,5 +191,102 @@ function resetQuery() {
   tableData.value = [];
   total.value = 0;
   error.value = '';
+}
+
+/** 汇总单要一次打全，不能只打当前页；按接口分页循环取完，仍受后端单页上限约束。 */
+async function fetchAllForPrint(rangeValue: [string, string], warehouse: Id): Promise<DemandSummaryRow[]> {
+  const rows: DemandSummaryRow[] = [];
+  const size = 200;
+  for (let page = 1; page <= 50; page++) {
+    const r = await purchaseDemandApi.summaryPreview({
+      startAt: rangeValue[0],
+      endAt: rangeValue[1],
+      warehouseId: warehouse,
+      keyword: keyword.value || null,
+      pageNum: page,
+      pageSize: size,
+    });
+    rows.push(...r.data.list);
+    if (!r.data.list.length || rows.length >= r.data.total) break;
+  }
+  return rows;
+}
+
+async function printSummary() {
+  if (!range.value || range.value.length !== 2) {
+    message.warning('请选择统计时间段');
+    return;
+  }
+  if (!warehouseId.value) {
+    message.warning('请选择仓库');
+    return;
+  }
+  const rangeValue: [string, string] = [range.value[0], range.value[1]];
+  const warehouse = warehouseId.value;
+  printLoading.value = true;
+  try {
+    const rows = await fetchAllForPrint(rangeValue, warehouse);
+    if (!rows.length) {
+      message.warning('没有可打印的采购汇总');
+      return;
+    }
+    const body = rows
+      .map(
+        (row, index) =>
+          `<tr><td>${index + 1}</td><td>${escapeHtml(row.productName)}</td><td>${escapeHtml(row.skuName)}</td>` +
+          `<td>${escapeHtml(row.demandUnit)}</td><td class="r">${escapeHtml(quantity(row.orderDemandQuantity))}</td>` +
+          `<td class="r">${escapeHtml(quantity(row.onHandQuantity))}</td><td class="r">${escapeHtml(quantity(row.netPurchaseGap))}</td></tr>`
+      )
+      .join('');
+    const html =
+      '<!doctype html><html lang="zh"><head><meta charset="utf-8"/><title>采购汇总</title><style>' +
+      '@page{size:A4 portrait;margin:12mm}body{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#1F2329;font-size:13px}' +
+      'h2{font-size:17px;margin:0 0 8px}.meta{margin-bottom:10px;color:#4E5969}' +
+      'table{border-collapse:collapse;width:100%}th,td{border:1px solid #86909C;padding:5px 6px;text-align:left}' +
+      'th{background:#F2F3F5}.r{text-align:right;font-variant-numeric:tabular-nums}' +
+      '.note{margin-top:10px;color:#86909C;font-size:12px}</style></head><body>' +
+      `<h2>采购汇总</h2><div class="meta">统计时间段：${escapeHtml(rangeValue[0])} 至 ${escapeHtml(rangeValue[1])}` +
+      `　仓库编号：${escapeHtml(warehouse)}　打印时间：${escapeHtml(new Date().toLocaleString())}</div>` +
+      '<table><thead><tr><th>序号</th><th>商品</th><th>商品规格</th><th>需求单位</th><th>订单需求量</th><th>现有量</th><th>净采购缺口</th></tr></thead>' +
+      `<tbody>${body}</tbody></table>` +
+      '<p class="note">本单为查询时点汇总，只用于采购参考；实际采购量可按现场需要多买，不自动生成采购单。</p>' +
+      '</body></html>';
+    await printHtml(html);
+  } catch (e) {
+    message.error(purchaseError(e));
+  } finally {
+    printLoading.value = false;
+  }
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** 隐藏 iframe 打印，避开弹窗拦截；打印结束后再移除。 */
+function printHtml(html: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+    iframe.onload = () => {
+      const win = iframe.contentWindow;
+      if (!win) {
+        iframe.remove();
+        reject(new Error('无法打开打印窗口，请重试'));
+        return;
+      }
+      window.setTimeout(() => iframe.remove(), 60000);
+      win.focus();
+      win.print();
+      resolve();
+    };
+    iframe.srcdoc = html;
+    document.body.appendChild(iframe);
+  });
 }
 </script>

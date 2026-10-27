@@ -22,12 +22,16 @@
             o.planned_arrival_date, o.status, o.total_amount, CASE WHEN agg.planned_total IS NOT NULL
             AND agg.planned_total &gt; 0 THEN ROUND(agg.received_total / agg.planned_total,
             4) ELSE NULL END AS received_progress, o.remark, o.cancel_reason, o.short_close_reason, o.submitted_at,
-            o.cancelled_at, o.short_closed_at, o.version, o.created_at, o.updated_at
+            o.cancelled_at, o.short_closed_at, o.locked_flag, o.locked_at, o.locked_by, o.lock_reason,
+            o.auto_lock_at, o.version, o.created_at, o.updated_at,
+            COALESCE(agg.pending_price_count, 0) AS pending_price_count
         FROM xsy_purchase_order o
         LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id
             AND e.deleted_flag = FALSE
         LEFT JOIN (SELECT purchase_order_id, SUM(planned_quantity) AS planned_total,
-            SUM(received_quantity) AS received_total FROM xsy_purchase_order_item WHERE deleted = FALSE GROUP BY
+            SUM(received_quantity) AS received_total,
+            COUNT(*) FILTER (WHERE price_pending) AS pending_price_count FROM xsy_purchase_order_item WHERE
+            deleted = FALSE GROUP BY
             purchase_order_id) agg ON agg.purchase_order_id = o.id
         WHERE o.deleted = FALSE
         <if test="query.orderNo != null and query.orderNo != ''">
@@ -59,12 +63,16 @@
             o.planned_arrival_date, o.status, o.total_amount, CASE WHEN agg.planned_total IS NOT NULL
             AND agg.planned_total &gt; 0 THEN ROUND(agg.received_total / agg.planned_total,
             4) ELSE NULL END AS received_progress, o.remark, o.cancel_reason, o.short_close_reason, o.submitted_at,
-            o.cancelled_at, o.short_closed_at, o.version, o.created_at, o.updated_at
+            o.cancelled_at, o.short_closed_at, o.locked_flag, o.locked_at, o.locked_by, o.lock_reason,
+            o.auto_lock_at, o.version, o.created_at, o.updated_at,
+            COALESCE(agg.pending_price_count, 0) AS pending_price_count
         FROM xsy_purchase_order o
         LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id
             AND e.deleted_flag = FALSE
         LEFT JOIN (SELECT purchase_order_id, SUM(planned_quantity) AS planned_total,
-            SUM(received_quantity) AS received_total FROM xsy_purchase_order_item WHERE deleted = FALSE GROUP BY
+            SUM(received_quantity) AS received_total,
+            COUNT(*) FILTER (WHERE price_pending) AS pending_price_count FROM xsy_purchase_order_item WHERE
+            deleted = FALSE GROUP BY
             purchase_order_id) agg ON agg.purchase_order_id = o.id
         WHERE o.deleted = FALSE
             AND o.id = #{id}
@@ -90,5 +98,55 @@
             AND version = #{version}
             AND deleted = FALSE
     </update>
+
+    <!--
+      锁单：WHERE 里带 locked_flag = FALSE，并发重复锁单只有一笔命中。
+      不覆盖已有锁定时刻/操作人，也不重置 auto_lock_at。
+    -->
+    <update id="lockIfUnlocked">
+        UPDATE xsy_purchase_order
+        SET locked_flag = TRUE, locked_at = #{lockedAt}, locked_by = #{lockedBy}, lock_reason = #{lockReason},
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{lockedBy}
+        WHERE id = #{id}
+            AND deleted = FALSE
+            AND locked_flag = FALSE
+    </update>
+
+    <update id="unlock">
+        UPDATE xsy_purchase_order
+        SET locked_flag = FALSE, locked_at = NULL, locked_by = NULL, lock_reason = NULL,
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id}
+            AND deleted = FALSE
+            AND locked_flag = TRUE
+    </update>
+
+    <!-- 合计只由明细行金额求和，不保留第二套公式；调用方已持有单头锁。 -->
+    <update id="refreshTotalAmount">
+        UPDATE xsy_purchase_order o
+        SET total_amount = COALESCE((SELECT SUM(line_amount)
+                                     FROM xsy_purchase_order_item
+                                     WHERE purchase_order_id = o.id
+                                         AND deleted = FALSE), 0),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE o.id = #{id}
+            AND o.deleted = FALSE
+    </update>
+
+    <!--
+      自动锁单候选：已提交 / 部分收货且已到 auto_lock_at 的未锁单。
+      草稿、已取消、已短关、已收货不需要锁：它们已经没有可补的价格入口（草稿在提交时才起算）。
+    -->
+    <select id="autoLockCandidates" resultType="long">
+        SELECT id
+        FROM xsy_purchase_order
+        WHERE deleted = FALSE
+            AND locked_flag = FALSE
+            AND auto_lock_at IS NOT NULL
+            AND auto_lock_at &lt;= CURRENT_TIMESTAMP
+            AND status IN ('SUBMITTED', 'PARTIALLY_RECEIVED')
+        ORDER BY auto_lock_at, id
+        LIMIT #{limit}
+    </select>
 
 </mapper>

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.OffsetDateTime;
 
 import lombok.Data;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * 采购单分享链接（后台侧）。
@@ -32,6 +34,7 @@ public class PurchaseShareVO {
     private OffsetDateTime revokedAt;
     private OffsetDateTime lastUsedAt;
     private Integer useCount;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
     private OffsetDateTime createdAt;
 }

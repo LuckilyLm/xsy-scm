@@ -9,6 +9,7 @@ import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -50,4 +51,29 @@ public interface PurchaseOrderDao extends BaseMapper<PurchaseOrderEntity> {
      * 软删（仅 DRAFT，由 Service 断言）。
      */
     int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("operator") String operator);
+
+    /**
+     * 加锁：只有未锁定的行会更新，并发重复锁单只有一笔成功。返回 0 表示已被别人锁上。
+     */
+    int lockIfUnlocked(@Param("id") Long id, @Param("lockedAt") OffsetDateTime lockedAt,
+        @Param("lockedBy") String lockedBy, @Param("lockReason") String lockReason,
+        @Param("autoLockAt") OffsetDateTime autoLockAt);
+
+    /**
+     * 解锁：只解除已锁定的行，并清空锁原因（历史留在操作日志）。
+     */
+    int unlock(@Param("id") Long id, @Param("operator") String operator);
+
+    /**
+     * 到期待自动锁单的采购单 id 批次。
+     */
+    List<Long> autoLockCandidates(@Param("limit") int limit);
+
+    /**
+     * 按明细行金额重算采购单合计。
+     *
+     * <p>
+     * 补价/改价发生在提交之后，而合计是创建/编辑时算好写进单头的；不重算就会留下「行金额变了、合计还是 0」。
+     */
+    int refreshTotalAmount(@Param("id") Long id);
 }
