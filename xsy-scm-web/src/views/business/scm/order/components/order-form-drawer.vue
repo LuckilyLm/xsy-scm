@@ -109,13 +109,8 @@
           <a-button :disabled="!form.customerId" @click="pasteOpen = true">整单粘贴</a-button>
           <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
         </div>
-        <p class="scm-note">整单粘贴会按商品名称、规格、单位匹配商品，匹配失败的行不会追加；也可继续用 Excel 导入整张送货单。</p>
-        <OrderPasteModal
-          v-model:open="pasteOpen"
-          :customer-id="form.customerId"
-          :existing-sku-ids="existingSkuIds"
-          @append="appendPasted"
-        />
+        <p class="item-actions__hint">粘贴失败的行不会追加；也可继续用 Excel 导入整张送货单。</p>
+        <OrderPasteModal v-model:open="pasteOpen" :customer-id="form.customerId" :existing-sku-ids="existingSkuIds" @append="appendPasted" />
       </a-form>
     </a-spin>
     <template #footer>
@@ -172,9 +167,7 @@ const form = ref<Order>(newOrder()),
 const exchangeReturnId = ref<Id>();
 const pasteOpen = ref(false);
 const formRef = ref<FormInstance>();
-const existingSkuIds = computed(() =>
-  form.value.items.map((item) => item.skuId).filter((skuId): skuId is Id => skuId != null && skuId !== '')
-);
+const existingSkuIds = computed(() => form.value.items.map((item) => item.skuId).filter((skuId): skuId is Id => skuId != null && skuId !== ''));
 /** 收货信息在 `form.address.*` 里，展平一份给表单校验用（顶层 `address` 就是详细地址）。 */
 const flatModel = computed(() => ({...form.value, ...form.value.address}));
 const warehouseValue = computed<Id | undefined>({
@@ -538,12 +531,19 @@ defineExpose({open, openFromHistory, openForExchange});
 .item-actions {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   margin-top: 12px;
+  vertical-align: top;
+}
+
+.item-actions__hint {
+  margin: 8px 0 0;
+  color: var(--scm-text-secondary, #667085);
+  font-size: 12px;
 }
 
 .app-drawer-form :deep(.add-line) {
-  margin: 12px 8px 0 0;
+  margin: 12px 12px 0 0;
 }
 
 .pending-edit-note {

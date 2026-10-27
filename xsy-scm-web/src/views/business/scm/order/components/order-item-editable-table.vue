@@ -163,22 +163,22 @@ import {orderError} from '../order-errors';
 const props = defineProps<{items: Item[]; customerId?: Id}>();
 const emit = defineEmits<{price: []}>();
 const columns: TableColumnsType<Item> = [
-  {title: '序号', dataIndex: 'rowNo', width: 60},
+  {title: '序号', dataIndex: 'rowNo', width: 50},
   {
     title: '商品 / 商品规格',
     dataIndex: 'skuId',
-    width: 300,
+    width: 230,
   },
-  {title: '规格', dataIndex: 'specNameSnapshot', width: 110},
-  {title: '单位', dataIndex: 'saleUnitSnapshot', width: 80},
-  {title: '下单数量', dataIndex: 'orderedQuantity', width: 150},
-  {title: '实数量', dataIndex: 'actualQuantity', width: 100},
+  {title: '规格', dataIndex: 'specNameSnapshot', width: 88},
+  {title: '单位', dataIndex: 'saleUnitSnapshot', width: 56},
+  {title: '下单数量', dataIndex: 'orderedQuantity', width: 110},
+  {title: '实数量', dataIndex: 'actualQuantity', width: 90},
   {
     title: '解析单价',
     dataIndex: 'draftUnitPrice',
-    width: 220,
+    width: 185,
   },
-  {title: '价格修订', dataIndex: 'override', width: 230},
+  {title: '价格修订', dataIndex: 'override', width: 175},
   {
     title: '操作',
     dataIndex: 'action',
