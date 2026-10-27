@@ -2,7 +2,9 @@ package com.xsy.scm.mall;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.common.ScmW6PgITBase;
@@ -19,7 +21,9 @@ import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.account.service.MallAccountService;
 import com.xsy.scm.mall.account.service.MallAuthService;
 import com.xsy.scm.mall.address.domain.form.MallAddressSaveForm;
+import com.xsy.scm.mall.address.domain.vo.MallMapLocationVO;
 import com.xsy.scm.mall.address.service.MallAddressService;
+import com.xsy.scm.mall.address.service.MallMapService;
 import com.xsy.scm.mall.aftersale.constant.MallAfterSaleDisplayStatusEnum;
 import com.xsy.scm.mall.aftersale.domain.form.MallAfterSaleApplyForm;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleRefundVO;
@@ -41,7 +45,8 @@ import com.xsy.scm.order.domain.form.OrderReturnApproveForm;
 import com.xsy.scm.order.domain.form.OrderReturnApproveItemForm;
 import com.xsy.scm.order.domain.form.OrderReturnReceiveForm;
 import com.xsy.scm.order.domain.form.OrderReturnReceiveItemForm;
-import com.xsy.scm.order.domain.form.OrderVersionForm;
+import com.xsy.scm.order.domain.form.OrderConfirmForm;
+import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 import com.xsy.scm.order.domain.vo.OrderReturnDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.service.OrderRefundService;
@@ -62,10 +67,12 @@ import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * 商城售后全链路（PG IT）：客户申请 → 配额守卫 → 后台审批与收货 → 退款完成 → 客户侧投影与审计。
@@ -87,6 +94,23 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
 
     private static final String TEMPORARY_PASSWORD = "Mall@123456";
     private static final String NEW_PASSWORD = "Mall@654321";
+
+    @MockitoBean
+    private MallMapService mapService;
+
+    @BeforeEach
+    void mockExternalMapProvider() {
+        MallMapLocationVO location = new MallMapLocationVO();
+        location.setLongitude(new BigDecimal("121.544000"));
+        location.setLatitude(new BigDecimal("31.221000"));
+        location.setProvinceCode(310000);
+        location.setCityCode(310100);
+        location.setDistrictCode(310115);
+        location.setProvinceName("上海市");
+        location.setCityName("上海市");
+        location.setDistrictName("浦东新区");
+        when(mapService.reverse(any(BigDecimal.class), any(BigDecimal.class))).thenReturn(location);
+    }
 
     @Autowired
     private MallAccountService mallAccountService;
@@ -388,7 +412,8 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         confirmReceipt(inbound.receipt().getId(), "10.0000");
 
         Long customerId = newCustomer();
-        jdbc.update("UPDATE xsy_customer SET cod_allowed = TRUE WHERE id = ?", customerId);
+        jdbc.update("UPDATE xsy_customer SET cod_allowed = TRUE, mall_delivery_warehouse_id = ? WHERE id = ?",
+                fixtureWarehouseId(), customerId);
         evictMybatisCache();
         MallAccount account = openMallAccount(customerId);
         RequestMallCustomer customer = signIn(account);
@@ -645,7 +670,8 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         actual.setReason("实重复核");
         SalesOrderDetailVO weighted = salesOrderService.actualQuantity(actual, prefix + ":actual:" + orderId);
 
-        OrderVersionForm confirm = new OrderVersionForm();
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setSettlementMethod(ScmSettlementMethodEnum.COD.name());
         confirm.setOrderId(weighted.getOrderId());
         confirm.setVersion(weighted.getVersion());
         salesOrderService.confirm(confirm, prefix + ":confirm:" + orderId);
@@ -760,6 +786,8 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         form.setDistrictName("浦东新区");
         form.setDetailAddress("张江路 3 号");
         form.setIsDefault(true);
+        form.setLongitude(new BigDecimal("121.544000"));
+        form.setLatitude(new BigDecimal("31.221000"));
         return form;
     }
 
@@ -770,13 +798,13 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         return form;
     }
 
-    private static MallOrderSubmitForm submitForm(Long skuId, Long addressId, String priceFingerprint) {
+    private MallOrderSubmitForm submitForm(Long skuId, Long addressId, String priceFingerprint) {
         MallOrderSubmitForm form = new MallOrderSubmitForm();
         form.setItems(List.of(checkoutItem(skuId, "3.0000")));
         form.setAddressId(addressId);
         form.setPriceFingerprint(priceFingerprint);
         form.setRemark("商城售后 IT");
-        form.setSettlementMethod("COD");
+        form.setWarehouseId(fixtureWarehouseId());
         return form;
     }
 

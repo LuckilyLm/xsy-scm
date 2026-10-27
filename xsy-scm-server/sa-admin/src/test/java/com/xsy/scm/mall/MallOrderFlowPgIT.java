@@ -43,7 +43,8 @@ import com.xsy.scm.mall.order.service.MallCheckoutService;
 import com.xsy.scm.mall.order.service.MallOrderQueryService;
 import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
-import com.xsy.scm.order.domain.form.OrderVersionForm;
+import com.xsy.scm.order.domain.form.OrderConfirmForm;
+import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 import com.xsy.scm.order.domain.form.SalesOrderQueryForm;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderVO;
@@ -75,6 +76,7 @@ import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockito.MockedStatic;
@@ -137,7 +139,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
 
     private int customerSequence;
 
-    // 测试商品先走真实采购收货，在绑定配送仓生成可售库存；商城不能凭主档库存下单。
+    // 履约与退货夹具先走真实收货，后续预留、出库及原批次退回使用同一份库存事实。
     @Override
     protected Long newOnShelfSku(String suffix) {
         Long skuId = super.newOnShelfSku(suffix);
@@ -170,6 +172,44 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         location.setCityName("上海市");
         location.setDistrictName("浦东新区");
         when(mapService.reverse(any(BigDecimal.class), any(BigDecimal.class))).thenReturn(location);
+    }
+
+    @Test
+    @DisplayName("标准品无余额授信及COD资格也能订货，后台收到同一待处理订单且不产生资金或库存占用")
+    void standardOrderOnlyIntakeIsPendingAndIdempotentWithoutFunds() {
+        Long skuId = newOnShelfSku("standard-intake");
+        jdbc.update("UPDATE xsy_product_sku SET product_type='STANDARD' WHERE id=?", skuId);
+        Long customerId = newCustomerAssignedTo(anyEmployeeId());
+        jdbc.update("UPDATE xsy_customer SET cod_allowed=FALSE, credit_limit=0 WHERE id=?", customerId);
+        evictMybatisCache();
+        RequestMallCustomer customer = signIn(openMallAccount(customerId));
+        Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
+        MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
+        assertThat(preview.getSettlementOptions()).isEmpty();
+        MallOrderSubmitForm form = submitForm(skuId, addressId, preview.getPriceFingerprint());
+        form.setSettlementMethod(null);
+        var submitted = mallCheckoutService.submit(customer, form, prefix + ":standard-only");
+        assertThat(submitted.getStatus()).isEqualTo("PENDING");
+        assertThat(mallCheckoutService.submit(customer, form, prefix + ":standard-only").getOrderId())
+                .isEqualTo(submitted.getOrderId());
+        assertThat(mallOrderQueryService.detail(customer, submitted.getOrderId()).getDisplayStatus())
+                .isEqualTo("PENDING");
+        asAdmin();
+        var backend = salesOrderQueryService.detail(submitted.getOrderId());
+        assertThat(backend.getOrderNo()).isEqualTo(submitted.getOrderNo());
+        assertThat(backend.getMallOrderOnly()).isTrue();
+        assertThat(backend.getSettlementMethod()).isNull();
+        assertThat(backend.getStatus()).isEqualTo("PENDING");
+        assertThat(backend.getItems()).allSatisfy(item -> assertThat(item.getProductTypeSnapshot()).isEqualTo("STANDARD"));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_payment_intent WHERE source_type='SALES_ORDER' AND source_id=?",
+                Integer.class, submitted.getOrderId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_customer_balance_movement WHERE customer_id=? AND direction='DEBIT'",
+                Integer.class, customerId)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_finance_receivable WHERE order_id=?",
+                Integer.class, submitted.getOrderId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_reservation WHERE source_document_type='SALES_ORDER_ITEM' AND source_document_id=?",
+                Integer.class, submitted.getOrderId())).isZero();
+        assertThat(mallOrderIdsVisibleToCurrentActor(customerId)).contains(submitted.getOrderId());
     }
 
     @Test
@@ -308,7 +348,8 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
                 java.sql.Timestamp.from(OffsetDateTime.now().minusHours(2).toInstant()),
                 java.sql.Timestamp.from(OffsetDateTime.now().minusHours(1).toInstant()), couponId)).isEqualTo(1);
         evictMybatisCache();
-        OrderVersionForm confirm = new OrderVersionForm();
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setSettlementMethod(ScmSettlementMethodEnum.COD.name());
         confirm.setOrderId(weighted.getOrderId());
         confirm.setVersion(weighted.getVersion());
         assertThatThrownBy(() -> salesOrderService.confirm(confirm, prefix + ":confirm-coupon"))
@@ -364,7 +405,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         assertThat(jdbc.queryForObject("SELECT mall_delivery_warehouse_id FROM xsy_sales_order WHERE id=?",
                 Long.class, submitted.getOrderId())).isEqualTo(seedWarehouseId());
         assertThat(submitted.getOrderedTotalAmount()).isEqualByComparingTo("2.4000");
-        // 非标品：商城不自动确认，等后台录实重后接单
+        // 所有商城订单都先待处理；非标品还需后台录实重后确认
         assertThat(submitted.getStatus()).isEqualTo("PENDING");
 
         // 下单成功后，已下单规格从购物车移除
@@ -478,7 +519,8 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         actual.setActualQuantity(actualQuantity);
         actual.setReason("实重复核");
         SalesOrderDetailVO weighted = salesOrderService.actualQuantity(actual, prefix + ":actual:" + orderId);
-        OrderVersionForm confirm = new OrderVersionForm();
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setSettlementMethod(ScmSettlementMethodEnum.COD.name());
         confirm.setOrderId(weighted.getOrderId());
         confirm.setVersion(weighted.getVersion());
         salesOrderService.confirm(confirm, prefix + ":confirm:" + orderId);
@@ -731,7 +773,6 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         form.setPriceFingerprint(priceFingerprint);
         form.setWarehouseId(seedWarehouseId());
         form.setRemark("商城下单");
-        form.setSettlementMethod("COD");
         return form;
     }
 

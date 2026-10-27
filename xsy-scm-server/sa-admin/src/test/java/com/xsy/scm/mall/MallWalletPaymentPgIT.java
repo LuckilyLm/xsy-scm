@@ -32,7 +32,13 @@ import com.xsy.scm.mall.order.service.MallCheckoutService;
 import com.xsy.scm.mall.order.service.MallOrderQueryService;
 import com.xsy.scm.mall.order.service.MallPaymentService;
 import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
-import com.xsy.scm.order.domain.form.OrderVersionForm;
+import com.xsy.scm.order.domain.form.OrderConfirmForm;
+import com.xsy.scm.payment.service.PaymentIntentService;
+import com.xsy.scm.payment.domain.form.PaymentIntentCreateForm;
+import com.xsy.scm.payment.constant.PaymentErrorCode;
+import com.xsy.scm.payment.constant.ScmPaymentMethodEnum;
+import com.xsy.scm.payment.constant.ScmPaymentProviderEnum;
+import com.xsy.scm.payment.constant.ScmPaymentSourceTypeEnum;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.order.service.SalesOrderService;
@@ -59,23 +65,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 商城余额支付闭环（PAY-01，真实 PostgreSQL + 真实服务）。
- *
- * <p>钉死三件事：
- * <ul>
- * <li><b>金额只由服务端算</b>：扣款额 = 实重 × 冻结锁定价 − 冻结优惠等比分摊（应付净额）再减已付；客户端不传金额，也没有部分支付；</li>
- * <li><b>只扣一次</b>：订单行锁把并发支付串行化，已付清再点与并发双击都扣不出第二笔；</li>
- * <li><b>资金事实同事务</b>：钱包 DEBIT、支付意图与交易、订单资金取数在同一笔提交里，任一步失败整笔回滚。</li>
- * </ul>
- *
- * <p><b>为什么必须跑真实库</b>：钱包余额是流水的代数和（{@code sumSignedByAccount}）、扣款要走 {@code FOR UPDATE} 的账户锁、
- * 已付金额又来自资金取数 SQL 的重算。这三件都在 SQL 与事务边界里，mock 掉任何一层都会把「扣了多少」变成对桩的断言。
- *
- * <p><b>夹具为什么直插钱包余额</b>：充值到账链（{@code createForBalanceRecharge} + 渠道回调）有自己的用例，
- * 本类要测的是「钱已经在钱包里之后，支付怎么扣」，因此用一笔 {@code CORRECTION} CREDIT 把余额铺好。
- */
-@DisplayName("商城余额支付闭环（PAY-01，PG IT）")
+/** 商城只提交订单；后台确认和支付继续验证实重金额、幂等、并发及资金事务。 */
+@DisplayName("商城订货与后台余额结算（PG IT）")
 class MallWalletPaymentPgIT extends ScmW5PgITBase {
 
     private static final String TEMPORARY_PASSWORD = "Mall@123456";
@@ -138,13 +129,16 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     private MallPaymentService mallPaymentService;
 
     @Autowired
+    private PaymentIntentService paymentIntentService;
+
+    @Autowired
     private SalesOrderService salesOrderService;
 
     @Autowired
     private SalesOrderQueryService salesOrderQueryService;
 
     @Test
-    @DisplayName("客户支付：扣款额等于服务端算出的应付净额，钱包流水与资金事实同事务落库")
+    @DisplayName("后台支付：扣款额等于服务端算出的应付净额，钱包流水与资金事实同事务落库")
     void walletPaymentDeductsExactlyTheServerComputedPayable() {
         WalletOrder fixture = mallOrder("happy", "10.0000", ScmSettlementMethodEnum.WALLET, true);
 
@@ -172,12 +166,12 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
         assertThatThrownBy(() -> pay(fixture, prefix + ":pay-again"))
                 .isInstanceOfSatisfying(ScmBusinessException.class, failure -> assertThat(failure.getErrorCode())
                         .as("已付清再点必须被拒，而不是再扣一笔")
-                        .isEqualTo(MallErrorCode.ORDER_ALREADY_PAID));
+                        .isEqualTo(PaymentErrorCode.PAYMENT_AMOUNT_EXCEEDS_DUE));
         assertThat(walletMovementCount(fixture.walletId(), "CONSUME")).isEqualTo(1);
     }
 
     @Test
-    @DisplayName("集团共享结算：子客户支付扣的是集团钱包，自己的余额一分不动")
+    @DisplayName("集团共享结算：后台为子客户支付扣的是集团钱包，自己的余额一分不动")
     void sharedSettlementPaysFromGroupWallet() {
         asAdmin();
         // 走正式建档命令而不是改库：上级客户必须是集团类型、结算主体要指向集团，这些校验只在命令里跑
@@ -252,22 +246,25 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
         assertThatThrownBy(() -> pay(unconfirmed, prefix + ":pay-pending"))
                 .isInstanceOfSatisfying(ScmBusinessException.class, failure -> assertThat(failure.getErrorCode())
                         .as("确认前实重未齐，没有权威应付口径，也就没有可支付的金额")
-                        .isEqualTo(MallErrorCode.ORDER_NOT_PAYABLE));
+                        .isEqualTo(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID));
         assertThat(walletMovementCount(unconfirmed.walletId(), "CONSUME")).isZero();
 
         WalletOrder credit = mallOrder("credit", "10.0000", ScmSettlementMethodEnum.CREDIT, true);
         assertThatThrownBy(() -> pay(credit, prefix + ":pay-credit"))
                 .isInstanceOfSatisfying(ScmBusinessException.class, failure -> assertThat(failure.getErrorCode())
                         .as("账期订单的钱走应收，不能从钱包扣")
-                        .isEqualTo(MallErrorCode.ORDER_SETTLEMENT_NOT_WALLET));
+                        .isEqualTo(PaymentErrorCode.PAYMENT_SETTLEMENT_METHOD_BLOCKED));
         assertThat(walletMovementCount(credit.walletId(), "CONSUME")).isZero();
 
         WalletOrder foreign = mallOrder("foreign", "10.0000", ScmSettlementMethodEnum.WALLET, true);
         RequestMallCustomer stranger = signIn(openMallAccount(newCustomer()));
+        assertThatThrownBy(() -> mallOrderQueryService.detail(stranger, foreign.orderId()))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        failure -> assertThat(failure.getErrorCode()).isEqualTo(MallErrorCode.ORDER_NOT_FOUND));
         assertThatThrownBy(() -> mallPaymentService.pay(stranger, foreign.orderId(), prefix + ":pay-foreign"))
                 .isInstanceOfSatisfying(ScmBusinessException.class, failure -> assertThat(failure.getErrorCode())
-                        .as("归属按订单客户收窄，别人的订单连存在性都不该暴露")
-                        .isEqualTo(MallErrorCode.ORDER_NOT_FOUND));
+                        .as("停用接口对任何订单都不提供扣款能力")
+                        .isEqualTo(MallErrorCode.ORDER_PAYMENT_DISABLED));
         assertThat(walletMovementCount(foreign.walletId(), "CONSUME")).isZero();
     }
 
@@ -290,10 +287,12 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
                     ready.countDown();
                     go.await();
                     try {
-                        mallPaymentService.pay(fixture.customer(), fixture.orderId(), key);
+                        pay(fixture, key);
                         return "PAID";
                     } catch (ScmBusinessException rejected) {
                         return String.valueOf(rejected.getErrorCode().getCode());
+                    } finally {
+                        SmartRequestUtil.remove();
                     }
                 }));
             }
@@ -305,7 +304,7 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
             }
             assertThat(results)
                     .as("恰好一侧成功，另一侧必须是被业务规则拒绝，而不是死锁、超时或裸约束异常")
-                    .containsExactlyInAnyOrder("PAID", String.valueOf(MallErrorCode.ORDER_ALREADY_PAID.getCode()));
+                    .containsExactlyInAnyOrder("PAID", String.valueOf(PaymentErrorCode.PAYMENT_AMOUNT_EXCEEDS_DUE.getCode()));
         } finally {
             pool.shutdownNow();
         }
@@ -313,6 +312,20 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
         assertThat(walletMovementCount(fixture.walletId(), "CONSUME")).isEqualTo(1);
         assertThat(walletDebits(fixture.walletId())).isEqualByComparingTo(PAYABLE);
         assertThat(paymentIntentCount(fixture.orderId())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("小程序旧支付入口在待处理及已确认时均拒绝，不产生资金事实")
+    void miniProgramPaymentIsDisabledForOwnOrders() {
+        for (boolean confirmed : List.of(false, true)) {
+            WalletOrder fixture = mallOrder("disabled-" + confirmed, "10.0000", ScmSettlementMethodEnum.WALLET, confirmed);
+            SmartRequestUtil.setRequestUser(fixture.customer());
+            assertThatThrownBy(() -> mallPaymentService.pay(fixture.customer(), fixture.orderId(), prefix + ":disabled:" + confirmed))
+                    .isInstanceOfSatisfying(ScmBusinessException.class,
+                            failure -> assertThat(failure.getErrorCode()).isEqualTo(MallErrorCode.ORDER_PAYMENT_DISABLED));
+            assertThat(walletMovementCount(fixture.walletId(), "CONSUME")).isZero();
+            assertThat(paymentIntentCount(fixture.orderId())).isZero();
+        }
     }
 
     // ------------------------------------------------------------------
@@ -358,7 +371,7 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
                 customerId);
         Long walletId = fundWallet(customerId, walletCredit);
         if (settlementMethod == ScmSettlementMethodEnum.CREDIT) {
-            // 账期可用性看正式授信口径：没有额度时结算页就不会把账期标成可选，单也下不出来
+            // 这里准备的是后台确认所需额度；客户下单本身不要求授信。
             jdbc.update("UPDATE xsy_customer SET credit_limit = ? WHERE id = ?", new BigDecimal("100.0000"),
                     customerId);
             evictMybatisCache();
@@ -377,10 +390,14 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
         Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
         MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
         MallOrderSubmitForm form = submitForm(skuId, addressId, preview.getPriceFingerprint());
-        form.setSettlementMethod(settlementMethod.name());
         Long orderId = mallCheckoutService.submit(customer, form, prefix + ":submit:" + tag).getOrderId();
+        assertThat(jdbc.queryForObject("SELECT status FROM xsy_sales_order WHERE id=?", String.class, orderId))
+                .isEqualTo("PENDING");
+        assertThat(jdbc.queryForObject("SELECT settlement_method FROM xsy_sales_order WHERE id=?", String.class, orderId))
+                .isNull();
+        assertThat(paymentIntentCount(orderId)).isZero();
         if (confirm) {
-            confirmOrder(orderId, tag);
+            confirmOrder(orderId, tag, settlementMethod);
         }
         return new WalletOrder(orderId, customerId, walletId, customer);
     }
@@ -425,7 +442,7 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     }
 
     /** 后台录实重并确认：实重与下单量不同，才能证明应付是按实重算的。 */
-    private void confirmOrder(Long orderId, String tag) {
+    private void confirmOrder(Long orderId, String tag, ScmSettlementMethodEnum settlementMethod) {
         asAdmin();
         SalesOrderDetailVO order = salesOrderQueryService.detail(orderId);
         OrderActualQuantityForm actual = new OrderActualQuantityForm();
@@ -435,7 +452,8 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
         actual.setActualQuantity(ACTUAL_QUANTITY);
         actual.setReason("PAY-01 IT 实重");
         SalesOrderDetailVO weighted = salesOrderService.actualQuantity(actual, prefix + ":actual:" + tag);
-        OrderVersionForm confirm = new OrderVersionForm();
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setSettlementMethod(settlementMethod.name());
         confirm.setOrderId(orderId);
         confirm.setVersion(weighted.getVersion());
         salesOrderService.confirm(confirm, prefix + ":confirm:" + tag);
@@ -448,8 +466,16 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     }
 
     private MallOrderVO pay(WalletOrder fixture, String idempotencyKey) {
-        SmartRequestUtil.setRequestUser(fixture.customer());
-        return mallPaymentService.pay(fixture.customer(), fixture.orderId(), idempotencyKey);
+        asAdmin();
+        PaymentIntentCreateForm form = new PaymentIntentCreateForm();
+        form.setSourceType(ScmPaymentSourceTypeEnum.SALES_ORDER.name());
+        form.setSourceId(fixture.orderId());
+        form.setCustomerId(fixture.customerId());
+        form.setMethod(ScmPaymentMethodEnum.BALANCE.name());
+        form.setProvider(ScmPaymentProviderEnum.INTERNAL_BALANCE.name());
+        form.setAmount(PAYABLE);
+        paymentIntentService.create(form, idempotencyKey);
+        return view(fixture);
     }
 
     private BigDecimal walletDebits(Long walletId) {

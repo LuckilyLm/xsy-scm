@@ -48,7 +48,7 @@ public class SalesOrderAddForm {
     private Long deliveryWarehouseId;
 
     /**
-     * 商城客户在结算页选定的结算方式（WALLET / CREDIT / COD）；仅商城来源的订单会带，后台建单不填。
+     * 旧调用方兼容字段。新建商城订单不采信此值，结算约定通过后台确认命令补齐。
      */
     private String settlementMethod;
 }

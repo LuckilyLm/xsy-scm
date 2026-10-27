@@ -2,14 +2,14 @@
  * Mock 契约层 · 结算、下单与订单中心
  *
  * 与后端 /scm/mall/orders/** 同构：预览返回明细 + 价格指纹；提交必须回传同一指纹；
- * 含非标品时订单停留在 PENDING（与后端 createAndProgress 一致），全标品才自动确认。
+ * 新订单统一停留在 PENDING，等待后台确认，不发起付款。
  * 仅用于开发环境（VITE_APP_USE_MOCK=true）。
  */
-import { fail, ok, paginate } from '../helpers';
-import { mockCartItems, mockCartRemove, mockCartSet } from './cart';
-import { mockAddressList } from './address';
-import { findProduct } from '../fixtures';
-import { PLATFORM_ERROR_CODE } from '@/constants/error-code-const';
+import {fail, ok, paginate} from '../helpers';
+import {mockCartItems, mockCartRemove, mockCartSet} from './cart';
+import {mockAddressList} from './address';
+import {findProduct} from '../fixtures';
+import {PLATFORM_ERROR_CODE} from '@/constants/error-code-const';
 
 /** 价格指纹：与后端同构的「按 skuId 排序的 skuId:quantity:unitPrice 摘要」 */
 function fingerprint(items) {
@@ -42,7 +42,7 @@ function selectedItems(session, form) {
           quantity: String(requested.quantity),
           lineAmount: item.unitPrice == null ? null : (Number(item.unitPrice) * Number(requested.quantity)).toFixed(4),
         }
-      : { skuId, quantity: String(requested.quantity), availability: 'UNAVAILABLE', unavailableReason: 'NOT_VISIBLE' };
+      : {skuId, quantity: String(requested.quantity), availability: 'UNAVAILABLE', unavailableReason: 'NOT_VISIBLE'};
   });
 }
 
@@ -59,26 +59,7 @@ function buildPreview(session, form) {
     totalCount: items.length,
     unavailableSkuIds: items.filter((item) => item.availability !== 'AVAILABLE').map((item) => item.skuId),
     priceFingerprint: fingerprint(items),
-    // 与后端 MallSettlementOptionVO 同形的结算方式可用性；mock 不接真实钱包与授信，金额仅供页面开发
-    settlementOptions: [
-      {
-        method: 'CREDIT',
-        label: '账期结算',
-        amountVisible: true,
-        availableAmount: '1000.0000',
-        enabled: true,
-        note: 'mock：账期按优惠前商品金额占用',
-      },
-      {
-        method: 'WALLET',
-        label: '余额支付',
-        amountVisible: true,
-        availableAmount: '500.0000',
-        enabled: true,
-        note: 'mock：余额在结算主体钱包内扣减',
-      },
-      { method: 'COD', label: '货到付款', amountVisible: true, availableAmount: null, enabled: false, disabledReason: '当前客户未开通货到付款' },
-    ],
+    settlementOptions: [],
   };
 }
 
@@ -99,7 +80,7 @@ function saveOrders(session, rows) {
 
 /** 配送进度节点：与后端 MallOrderQueryService.progressNodes 同形；done 只按事实是否存在判定 */
 function progressOf(order) {
-  const nodes = [{ code: 'SUBMITTED', text: '已提交订单', detail: null, time: order.submittedAt || order.createdAt, done: true }];
+  const nodes = [{code: 'SUBMITTED', text: '已提交订单', detail: null, time: order.submittedAt || order.createdAt, done: true}];
   if (order.status === 'CANCELLED') {
     // 取消之后不会再发车，只保留两格
     nodes.push({
@@ -118,7 +99,7 @@ function progressOf(order) {
     time: order.confirmedAt || null,
     done: !!order.confirmedAt,
   });
-  nodes.push({ code: 'DISPATCHED', text: '已发车配送', detail: null, time: null, done: false });
+  nodes.push({code: 'DISPATCHED', text: '已发车配送', detail: null, time: null, done: false});
   nodes.push({
     code: 'SIGNED',
     text: order.fulfillmentStatus === 'EXCEPTION' ? '配送异常' : '已签收',
@@ -162,13 +143,12 @@ function decorate(order) {
 
 const IDEMPOTENT_ORDERS = new Map();
 const IDEMPOTENT_CANCELS = new Map();
-const IDEMPOTENT_PAYMENTS = new Map();
 
 export const orderRoutes = [
   {
     method: 'GET',
     path: '/scm/mall/orders',
-    handler: async ({ data, session }) => {
+    handler: async ({data, session}) => {
       const denied = guard(session);
       if (denied) return denied;
       const wanted = data?.displayStatus;
@@ -181,7 +161,7 @@ export const orderRoutes = [
   {
     method: 'GET',
     path: '/scm/mall/orders/:orderId',
-    handler: async ({ params, session }) => {
+    handler: async ({params, session}) => {
       const denied = guard(session);
       if (denied) return denied;
       const order = accountOrders(session).find((item) => item.orderId === Number(params.orderId));
@@ -191,7 +171,7 @@ export const orderRoutes = [
   {
     method: 'POST',
     path: '/scm/mall/orders/:orderId/cancel',
-    handler: async ({ params, data, session, header }) => {
+    handler: async ({params, data, session, header}) => {
       const denied = guard(session);
       if (denied) return denied;
       const orderId = Number(params.orderId);
@@ -210,7 +190,7 @@ export const orderRoutes = [
         cancelledAt: new Date().toISOString(),
         timeline: [
           ...(order.timeline || []),
-          { logId: Date.now(), operationType: 'CANCEL', operatorName: '客户', reason, createdAt: new Date().toISOString() },
+          {logId: Date.now(), operationType: 'CANCEL', operatorName: '客户', reason, createdAt: new Date().toISOString()},
         ],
       };
       saveOrders(
@@ -224,43 +204,12 @@ export const orderRoutes = [
   {
     method: 'POST',
     path: '/scm/mall/orders/:orderId/pay',
-    handler: async ({ params, session, header }) => {
-      const denied = guard(session);
-      if (denied) return denied;
-      const orderId = Number(params.orderId);
-      const rows = accountOrders(session);
-      const order = rows.find((item) => item.orderId === orderId);
-      if (!order) return fail(40489, '订单不存在');
-      const idempotencyKey = header?.['Idempotency-Key'];
-      if (!idempotencyKey) return fail(40086, '缺少幂等键，无法安全支付');
-      const replayKey = `${accountKey(session)}:${orderId}:${idempotencyKey}`;
-      if (IDEMPOTENT_PAYMENTS.has(replayKey)) return ok(decorate(IDEMPOTENT_PAYMENTS.get(replayKey)));
-      // 与后端 MallPaymentService 同构：仅已确认 + 余额结算 + 待付大于零；金额由服务端算，客户端不传
-      if (order.status !== 'CONFIRMED') return fail(40990, '当前订单状态不允许支付');
-      if (order.settlementMethod !== 'WALLET') return fail(40993, '该订单未选择余额结算');
-      const payable = order.payableAmount || order.orderedTotalAmount;
-      const paid = order.paidAmount || '0.0000';
-      if (Number(payable) - Number(paid) <= 0) return fail(40992, '订单已支付，请勿重复付款');
-      const paidOrder = {
-        ...order,
-        paidAmount: payable,
-        timeline: [
-          ...(order.timeline || []),
-          { logId: Date.now(), operationType: 'PAY', operatorName: '客户', reason: '余额支付', createdAt: new Date().toISOString() },
-        ],
-      };
-      saveOrders(
-        session,
-        rows.map((item) => (item.orderId === orderId ? paidOrder : item))
-      );
-      IDEMPOTENT_PAYMENTS.set(replayKey, paidOrder);
-      return ok(decorate(paidOrder));
-    },
+    handler: async ({session}) => guard(session) || fail(40380, '小程序仅支持下单，付款及结算请联系业务员处理'),
   },
   {
     method: 'POST',
     path: '/scm/mall/orders/:orderId/reorder',
-    handler: async ({ params, session }) => {
+    handler: async ({params, session}) => {
       const denied = guard(session);
       if (denied) return denied;
       const order = accountOrders(session).find((item) => item.orderId === Number(params.orderId));
@@ -270,28 +219,28 @@ export const orderRoutes = [
       (order.items || []).forEach((item) => {
         const product = findProduct(item.skuId);
         if (!product) {
-          skipped.push({ skuId: item.skuId, productName: item.productName, reason: '商品已下架或对当前客户不可见' });
+          skipped.push({skuId: item.skuId, productName: item.productName, reason: '商品已下架或对当前客户不可见'});
           return;
         }
         if (product.unitPrice == null) {
-          skipped.push({ skuId: item.skuId, productName: item.productName, reason: '暂无客户价，请联系业务员询价' });
+          skipped.push({skuId: item.skuId, productName: item.productName, reason: '暂无客户价，请联系业务员询价'});
           return;
         }
         mockCartSet(session, item.skuId, item.orderedQuantity);
         addedCount += 1;
       });
-      return ok({ addedCount, skipped });
+      return ok({addedCount, skipped});
     },
   },
   {
     method: 'POST',
     path: '/scm/mall/orders/preview',
-    handler: async ({ data, session }) => guard(session) || ok(buildPreview(session, data)),
+    handler: async ({data, session}) => guard(session) || ok(buildPreview(session, data)),
   },
   {
     method: 'POST',
     path: '/scm/mall/orders',
-    handler: async ({ data, session, header }) => {
+    handler: async ({data, session, header}) => {
       const denied = guard(session);
       if (denied) return denied;
       const idempotencyKey = header?.['Idempotency-Key'];
@@ -328,23 +277,23 @@ export const orderRoutes = [
         orderedLineAmount: item.lineAmount,
         settlementLineAmount: null,
       }));
-      // 与后端 createAndProgress 一致：含非标品需要实重，停在待处理；全标品自动确认
-      const allStandard = items.every((item) => item.productType === 'STANDARD');
+      // 与正式商城命令一致：所有新订单先等待后台处理。
       const createdAt = new Date().toISOString();
       const order = {
         orderId: (orderSeq += 1),
         orderNo: `MO${Date.now()}${orderSeq}`,
-        status: allStandard ? 'CONFIRMED' : 'PENDING',
+        status: 'PENDING',
         orderSource: 'MALL',
         orderedTotalAmount: preview.estimatedAmount,
         settlementTotalAmount: null,
-        settlementMethod: data?.settlementMethod || null,
+        settlementMethod: null,
+        mallOrderOnly: true,
         paidAmount: null,
         expectDeliveryTime: data?.expectDeliveryDate ? `${data.expectDeliveryDate}T00:00:00+08:00` : null,
         remark: data?.remark || null,
         createdAt,
         submittedAt: createdAt,
-        confirmedAt: allStandard ? createdAt : null,
+        confirmedAt: null,
         cancelledAt: null,
         cancelReason: null,
         signedAt: null,
@@ -353,10 +302,10 @@ export const orderRoutes = [
         receiverPhone: address.receiverPhone,
         address: [address.provinceName, address.cityName, address.districtName, address.detailAddress].filter(Boolean).join(' '),
         items,
-        timeline: [{ logId: 1, operationType: 'CREATE', operatorName: '客户', reason: null, createdAt }],
+        timeline: [{logId: 1, operationType: 'CREATE', operatorName: '客户', reason: null, createdAt}],
       };
       saveOrders(session, [order, ...accountOrders(session)]);
-      IDEMPOTENT_ORDERS.set(replayKey, { requestSignature, order });
+      IDEMPOTENT_ORDERS.set(replayKey, {requestSignature, order});
       mockCartRemove(
         session,
         preview.items.map((item) => item.skuId)

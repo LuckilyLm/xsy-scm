@@ -29,6 +29,18 @@ public class OrderSettlementConfirmationPolicy {
     private final OrderCreditService orderCreditService;
     private final FinanceOrderPayableQueryService payableQueryService;
 
+    /** 新商城订单在后台确认时补齐约定；历史订单不能通过确认请求改换资金路径。 */
+    public void prepare(SalesOrderEntity order, String requestedMethod) {
+        if (Boolean.TRUE.equals(order.getMallOrderOnly()) && order.getSettlementMethod() == null) {
+            if (!ScmSettlementMethodEnum.isSupported(requestedMethod)) {
+                throw new ScmBusinessException(OrderErrorCode.ORDER_SETTLEMENT_METHOD_REQUIRED);
+            }
+            order.setSettlementMethod(requestedMethod);
+        } else if (requestedMethod != null && !Objects.equals(order.getSettlementMethod(), requestedMethod)) {
+            throw new ScmBusinessException(OrderErrorCode.ORDER_SETTLEMENT_METHOD_REQUIRED);
+        }
+    }
+
     public void validate(SalesOrderEntity order) {
         CustomerEntity buyer = customerService.requireTradable(order.getCustomerId());
         CustomerEntity settlement = customerService.requireSettlementCustomer(buyer);

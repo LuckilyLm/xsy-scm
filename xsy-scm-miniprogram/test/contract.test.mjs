@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
-import { URL } from 'node:url';
+import {URL} from 'node:url';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
@@ -151,20 +151,13 @@ test('checkout submits a price fingerprint and an idempotency key', () => {
   assert.doesNotMatch(page, /manualPriceOverride: true/);
 });
 
-test('checkout renders server-provided settlement options and submits the chosen method', () => {
+test('order-only checkout has no payment selection but retains order safeguards', () => {
   const page = read('../src/pages-sub/checkout/index.vue');
-  // 可用性判断完全来自服务端；客户端只做默认选择与失效改选，不自行推断
-  assert.match(page, /applySettlementOptions\(data\.settlementOptions \|\| \[\]\)/);
-  assert.match(page, /settlementOptions\.value = options/);
-  // 不可用的结算方式不得被选中
-  assert.match(page, /if \(!option\.enabled\) \{/);
-  // 结算方式变化要换幂等键，避免被旧键回放成另一笔约定
-  assert.match(page, /settlementMethod\.value === option\.method\) return;[\s\S]*syncIdempotencyKey\(\);/);
-  // 提交时把选择回传服务端
-  assert.match(page, /settlementMethod: settlementMethod\.value \|\| undefined/);
-  // 共享结算下服务端不回金额，客户端必须保持沉默，不得用推算值代替
-  assert.match(page, /if \(option\.amountVisible !== true\) return '';/);
-  assert.doesNotMatch(page, /option\.availableAmount \|\| 0/);
+  assert.doesNotMatch(page, /settlementOptions|settlementMethod|availableAmount|chooseSettlement/);
+  assert.match(page, /priceFingerprint:\s*fingerprint\.value/);
+  assert.match(page, /addressId:\s*address\.value\.addressId/);
+  assert.match(page, /unavailableItems\.value\.length/);
+  assert.match(page, /syncIdempotencyKey\(\)/);
 });
 
 test('order center exposes customer-scoped list and detail pages', () => {
@@ -443,22 +436,18 @@ test('catalog adapter maps backend VO fields to the display model', () => {
   assert.match(mock, /saleUnit: unit/);
 });
 
-test('pay sends no amount: the server owns the deduction figure', () => {
+test('mini program exposes order submission but no payment command', () => {
   const api = read('../src/api/mall/order-api.js');
-  // 支付只带订单号与幂等键，金额一律不进请求体
-  assert.match(api, /pay: \(orderId, idempotencyKey\) => postRequest\(`\/scm\/mall\/orders\/\$\{orderId\}\/pay`, \{\}, \{ idempotencyKey \}\)/);
-  assert.doesNotMatch(api, /pay[\s\S]{0,160}(amount|payableAmount)/);
+  assert.doesNotMatch(api, /pay:\s*\(|\/pay`|requestPayment/);
+  assert.match(api, /submit:[\s\S]*idempotencyKey/);
 });
 
-test('order detail shows wallet pay only when the server says there is a due amount', () => {
+test('order detail retains financial history without a payment action', () => {
   const page = read('../src/pages-sub/order/detail.vue');
-  const util = read('../src/utils/order-display.js');
-  assert.match(page, /v-if="canPayByWallet\(order\)"/);
-  assert.match(page, /mallOrderApi\.pay\(orderId\.value, `pay-\$\{orderId\.value\}`\)/);
-  // 入口条件：服务端下发的结算约定是余额，且下发的应付减已付仍大于零
-  assert.match(util, /order\.settlementMethod !== 'WALLET'/);
-  assert.match(util, /Math\.round\(Number\(order\.payableAmount\) \* 10000\)/);
-  assert.doesNotMatch(util, /Number\(order\.payableAmount\) - Number\(order\.paidAmount\)/);
+  assert.doesNotMatch(page, /canPayByWallet|payByWallet|mallOrderApi\.pay/);
+  assert.match(page, /order\.payableAmount/);
+  assert.match(page, /order\.paidAmount/);
+  assert.match(page, /settlementMethodText\(order\.settlementMethod\)/);
 });
 
 test('funds rows render server amounts and never a client-side guess', () => {
@@ -470,23 +459,24 @@ test('funds rows render server amounts and never a client-side guess', () => {
   assert.doesNotMatch(page, /payableAmount = /);
 });
 
-test('mock pay mirrors the backend money rules', () => {
+test('mock rejects legacy payment and leaves new orders pending', () => {
   const mock = read('../mock/routes/order.js');
   assert.match(mock, /\/scm\/mall\/orders\/:orderId\/pay/);
-  assert.match(mock, /order\.settlementMethod !== 'WALLET'/);
-  assert.match(mock, /Number\(payable\) - Number\(paid\) <= 0/);
-  // 结算方式仍是下单必选项，且资金投影与后端同形
-  assert.match(mock, /settlementMethod: data\?\.settlementMethod \|\| null/);
-  assert.match(mock, /function fundsOf\(order\)/);
+  assert.match(mock, /fail\(40380,/);
+  assert.match(mock, /status:\s*'PENDING'/);
+  assert.match(mock, /mallOrderOnly:\s*true/);
+  assert.match(mock, /settlementMethod:\s*null/);
+  assert.match(mock, /confirmedAt:\s*null/);
+  assert.doesNotMatch(mock, /paidAmount:\s*payable|allStandard/);
 });
 
-test('checkout settlement options come from the server preview', () => {
+test('order-only preview does not expose funds and funds menus are hidden', () => {
   const page = read('../src/pages-sub/checkout/index.vue');
   const mock = read('../mock/routes/order.js');
-  assert.match(page, /applySettlementOptions\(data\.settlementOptions \|\| \[\]\)/);
-  assert.doesNotMatch(page, /settlementOptions\.value = \[\{ method/i);
-  // mock 也必须返回同形的可选项，否则开发环境走不到支付链路
-  assert.match(mock, /settlementOptions: \[/);
+  const mine = read('../src/pages/mine/index.vue');
+  assert.doesNotMatch(page, /settlementOptions|availableAmount/);
+  assert.match(mock, /settlementOptions:\s*\[\]/);
+  assert.doesNotMatch(mine, /goWallet|goCredit|我的钱包|账期与账单/);
 });
 
 test('order summary aggregates on the server and reuses the shared quantity formatter', () => {

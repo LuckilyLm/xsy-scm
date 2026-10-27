@@ -166,7 +166,7 @@ public class SalesOrderService {
     }
 
     /**
-     * 商城客户下单先建单并提交，标品会尝试自动确认；同一幂等请求重试返回原订单，不因价格或地址后来变化而重新下单。库存预留需在到货后另外执行。
+     * 商城仅创建并提交订货，统一等待后台确认；历史幂等请求仍返回原订单。库存与资金由后续正式命令处理。
      */
     @Transactional(rollbackFor = Exception.class)
     public MallOrderCreationResult createFromMall(SalesOrderAddForm salesOrderAddForm, Object idempotencyRequest,
@@ -177,10 +177,6 @@ public class SalesOrderService {
         }
         var result = createDraft(salesOrderAddForm, false);
         result = submitOrderForMall(result.getOrderId(), result.getVersion());
-        if (result.getItems().stream()
-            .allMatch(orderItem -> ScmProductTypeEnum.STANDARD.name().equals(orderItem.getProductTypeSnapshot()))) {
-            result = confirmOrderForMall(result.getOrderId(), result.getVersion());
-        }
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
             result.getOrderId(), result);
         return new MallOrderCreationResult(result, false);
@@ -292,8 +288,9 @@ public class SalesOrderService {
             // 本次商城下单选定的配送仓不可再改，确认时不能按客户当前地址重新推断。
             salesOrder.setMallDeliveryWarehouseId(salesOrderAddForm.getMallDeliveryWarehouseId());
             salesOrder.setMallCouponInstanceId(salesOrderAddForm.getMallCouponInstanceId());
-            // 结算方式与预选券一样只认商城渠道，后台录单不采信请求体里的结算方式。
-            salesOrder.setSettlementMethod(salesOrderAddForm.getSettlementMethod());
+            // 新商城入口只收订单；旧客户端携带的付款方式也不能触发资金资格门槛。
+            salesOrder.setMallOrderOnly(true);
+            salesOrder.setSettlementMethod(null);
         } else {
             // 后台与补单也保存明确选择的配送仓，沿用订单现有的仓库字段，不另建字段。
             salesOrder.setMallDeliveryWarehouseId(selectedWarehouse);
@@ -601,10 +598,6 @@ public class SalesOrderService {
         return confirmOrder(orderId, expectedVersion, null, true);
     }
 
-    private SalesOrderDetailVO confirmOrderForMall(Long orderId, Integer expectedVersion) {
-        return confirmOrder(orderId, expectedVersion, null, false);
-    }
-
     private SalesOrderDetailVO confirmOrder(Long orderId, Integer expectedVersion, OrderConfirmForm confirmation) {
         return confirmOrder(orderId, expectedVersion, confirmation, true);
     }
@@ -616,6 +609,11 @@ public class SalesOrderService {
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.CONFIRMED.name());
         requireEmployeeScopeIfNeeded(salesOrder, enforceEmployeeScope);
         var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
+        if (Boolean.TRUE.equals(salesOrder.getMallOrderOnly()) && !enforceEmployeeScope) {
+            throw new ScmBusinessException(OrderErrorCode.ORDER_SETTLEMENT_METHOD_REQUIRED);
+        }
+        settlementConfirmationPolicy.prepare(salesOrder,
+            confirmation == null ? null : confirmation.getSettlementMethod());
         var rows = salesOrderItemDao.list(salesOrder.getId());
         for (var row : rows) {
             if (row.getActualQuantity() == null || row.getActualQuantity().signum() <= 0)

@@ -69,6 +69,11 @@ const ENUM_BY_FIELD: Record<string, ValueEnum> = {
   orderStatus: SCM_PURCHASE_STATUS_ENUM,
   orderSource: SCM_ORDER_SOURCE_ENUM,
   settleModeSnapshot: SETTLE_MODE_ENUM,
+  settlementMethod: {
+    WALLET: {value: 'WALLET', desc: '余额结算'},
+    CREDIT: {value: 'CREDIT', desc: '账期结算'},
+    COD: {value: 'COD', desc: '货到付款'},
+  },
   productTypeSnapshot: SCM_SORTING_PRODUCT_TYPE_ENUM,
   draftPriceSource: SCM_ORDER_PRICE_SOURCE_ENUM,
   lockedPriceSource: SCM_ORDER_PRICE_SOURCE_ENUM,

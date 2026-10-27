@@ -41,6 +41,7 @@ export interface Order {
   customerCodeSnapshot?: string;
   settleModeSnapshot?: string;
   settlementMethod?: 'WALLET' | 'CREDIT' | 'COD' | null;
+  mallOrderOnly?: boolean;
   sellerId?: Id | null;
   orderSource: string;
   mallCouponInstanceId?: Id | null;

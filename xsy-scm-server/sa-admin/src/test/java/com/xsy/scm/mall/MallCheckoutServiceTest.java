@@ -22,10 +22,8 @@ import com.xsy.scm.mall.order.domain.form.MallCheckoutItemForm;
 import com.xsy.scm.mall.order.domain.form.MallCheckoutPreviewForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderSubmitForm;
 import com.xsy.scm.mall.order.domain.vo.MallOrderSubmitVO;
-import com.xsy.scm.mall.order.domain.vo.MallSettlementOptionVO;
 import com.xsy.scm.mall.order.domain.vo.MallWarehouseOptionVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
-import com.xsy.scm.mall.order.service.MallSettlementService;
 import com.xsy.scm.mall.order.service.MallWarehouseService;
 import com.xsy.scm.order.domain.dto.MallOrderCreationResult;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
@@ -49,10 +47,9 @@ class MallCheckoutServiceTest {
     private final MallCartDao cartDao = mock(MallCartDao.class);
     private final SalesOrderService salesOrderService = mock(SalesOrderService.class);
     private final PromotionDiscountService promotionDiscountService = mock(PromotionDiscountService.class);
-    private final MallSettlementService settlementService = mock(MallSettlementService.class);
     private final MallWarehouseService warehouseService = mock(MallWarehouseService.class);
     private final MallCheckoutService service = new MallCheckoutService(catalogService, addressDao, cartDao,
-            salesOrderService, promotionDiscountService, settlementService, warehouseService);
+            salesOrderService, promotionDiscountService, warehouseService);
     private final RequestMallCustomer customer = customer();
     private final MallOrderSubmitForm form = form();
 
@@ -63,10 +60,6 @@ class MallCheckoutServiceTest {
         when(warehouseService.require(9L, 3L, 8L)).thenReturn(8L);
         when(catalogService.visibleProducts(eq(customer), any(), eq(3L), eq(8L)))
                 .thenReturn(List.of(product("5.0000")));
-        MallSettlementOptionVO cod = new MallSettlementOptionVO();
-        cod.setMethod("COD");
-        cod.setEnabled(true);
-        when(settlementService.options(any(), any())).thenReturn(List.of(cod));
         PromotionDiscountVO discount = new PromotionDiscountVO();
         discount.setSpecialDiscount(new BigDecimal("0.0000"));
         discount.setActivityDiscount(new BigDecimal("0.0000"));
@@ -74,6 +67,23 @@ class MallCheckoutServiceTest {
         discount.setDiscountAmount(new BigDecimal("0.0000"));
         discount.setFinalAmount(new BigDecimal("10.0000"));
         when(promotionDiscountService.preview(any())).thenReturn(discount);
+    }
+
+    @Test
+    void newOrderDoesNotRequirePaymentMethodAndDoesNotForwardLegacySelection() {
+        when(salesOrderService.createFromMall(any(), any(), eq("key")))
+                .thenReturn(new MallOrderCreationResult(order(), false));
+        form.setSettlementMethod(null);
+        service.submit(customer, form, "key");
+        when(salesOrderService.createFromMall(any(), any(), eq("legacy-selection")))
+                .thenReturn(new MallOrderCreationResult(order(), false));
+        form.setSettlementMethod("WALLET");
+        service.submit(customer, form, "legacy-selection");
+        ArgumentCaptor<SalesOrderAddForm> saved = ArgumentCaptor.forClass(SalesOrderAddForm.class);
+        verify(salesOrderService, times(2)).createFromMall(saved.capture(), any(), any());
+        assertThat(saved.getAllValues()).allSatisfy(order -> assertThat(order.getSettlementMethod()).isNull());
+        assertThat(saved.getValue().getOrderSource()).isEqualTo("MALL");
+        assertThat(saved.getValue().getCustomerId()).isEqualTo(customer.getCustomerId());
     }
 
     @AfterEach
@@ -285,15 +295,13 @@ class MallCheckoutServiceTest {
     }
 
     @Test
-    void newOrderRequiresAnExplicitSettlementMethod() {
+    void newOrderWithoutSettlementStillChecksAddressAndCreatesOrder() {
         form.setSettlementMethod(null);
-
-        assertThatThrownBy(() -> service.submit(customer, form, "new-key"))
-                .isInstanceOfSatisfying(ScmBusinessException.class,
-                        exception -> assertThat(exception.getErrorCode())
-                                .isEqualTo(MallErrorCode.CHECKOUT_SETTLEMENT_METHOD_REQUIRED));
-        verify(addressDao, never()).detailById(any(), any());
-        verify(salesOrderService, never()).createFromMall(any(), any(), any());
+        when(salesOrderService.createFromMall(any(), any(), eq("new-key")))
+                .thenReturn(new MallOrderCreationResult(order(), false));
+        assertThat(service.submit(customer, form, "new-key").getOrderId()).isEqualTo(21L);
+        verify(addressDao).detailById(9L, 3L);
+        verify(salesOrderService).createFromMall(any(), any(), eq("new-key"));
     }
 
     @Test
@@ -307,14 +315,14 @@ class MallCheckoutServiceTest {
     }
 
     @Test
-    void disabledSettlementMethodIsRejectedBeforeOrderCreation() {
+    void legacyCreditSelectionDoesNotBlockOrderIntake() {
         form.setSettlementMethod("CREDIT");
-
-        assertThatThrownBy(() -> service.submit(customer, form, "new-key"))
-                .isInstanceOfSatisfying(ScmBusinessException.class,
-                        exception -> assertThat(exception.getErrorCode())
-                                .isEqualTo(MallErrorCode.CHECKOUT_SETTLEMENT_METHOD_UNAVAILABLE));
-        verify(salesOrderService, never()).createFromMall(any(), any(), any());
+        when(salesOrderService.createFromMall(any(), any(), eq("new-key")))
+                .thenReturn(new MallOrderCreationResult(order(), false));
+        assertThat(service.submit(customer, form, "new-key").getOrderId()).isEqualTo(21L);
+        ArgumentCaptor<SalesOrderAddForm> saved = ArgumentCaptor.forClass(SalesOrderAddForm.class);
+        verify(salesOrderService).createFromMall(saved.capture(), any(), eq("new-key"));
+        assertThat(saved.getValue().getSettlementMethod()).isNull();
     }
 
     private static RequestMallCustomer customer() {

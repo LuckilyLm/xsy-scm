@@ -40,7 +40,8 @@ public enum MallErrorCode implements ScmErrorCode {
     CHECKOUT_SETTLEMENT_METHOD_UNAVAILABLE(40991, "所选结算方式当前不可用，请重新选择"),
     ORDER_NOT_PAYABLE(40990, "当前订单状态不允许支付"),
     ORDER_ALREADY_PAID(40992, "订单已支付，请勿重复付款"),
-    ORDER_SETTLEMENT_NOT_WALLET(40993, "该订单未选择余额结算");
+    ORDER_SETTLEMENT_NOT_WALLET(40993, "该订单未选择余额结算"),
+    ORDER_PAYMENT_DISABLED(40380, "小程序仅支持下单，付款及结算请联系业务员处理");
 
     private final int code;
     private final String msg;
