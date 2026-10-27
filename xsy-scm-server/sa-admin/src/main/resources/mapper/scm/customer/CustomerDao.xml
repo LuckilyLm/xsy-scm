@@ -141,6 +141,21 @@
             AND deleted = FALSE
     </select>
 
+    <select id="selectEmptiedGroupIds" resultType="long">
+        SELECT c.customer_group_id
+        FROM xsy_customer c
+        WHERE c.deleted = FALSE
+            AND c.customer_group_id IS NOT NULL
+        <if test="groupId != null">AND c.customer_group_id != #{groupId}</if>
+            AND c.id IN
+        <foreach collection="customerIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        GROUP BY c.customer_group_id
+        HAVING COUNT(*) = (SELECT COUNT(*)
+            FROM xsy_customer member
+            WHERE member.customer_group_id = c.customer_group_id
+                AND member.deleted = FALSE)
+    </select>
+
     <select id="selectActiveByNames" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
         SELECT
         <include refid="customerColumns"/>

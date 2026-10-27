@@ -66,4 +66,8 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
 
     /** 分组下有效客户数，删除分组前检查。 */
     long countActiveByGroupId(@Param("groupId") Long groupId);
+
+    /** 这些客户全部移入目标分组后，会变成零成员的其它分组。 */
+    List<Long> selectEmptiedGroupIds(@Param("customerIds") List<Long> customerIds,
+        @Param("groupId") Long targetGroupId);
 }

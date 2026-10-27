@@ -305,9 +305,16 @@ public class CustomerService {
             businessCategoryService.requireSelectable(businessCategoryId, BusinessCategoryScopeEnum.CUSTOMER);
         }
         entity.setBusinessCategoryId(businessCategoryId);
+        Long previousGroupId = entity.getCustomerGroupId();
         Long customerGroupId = form.getCustomerGroupId();
-        if (customerGroupId != null) {
-            customerGroupService.requireSelectable(customerGroupId);
+        if (!Objects.equals(previousGroupId, customerGroupId)) {
+            if (customerGroupId != null) {
+                customerGroupService.requireSelectable(customerGroupId);
+            }
+            // 已有客户改分组/移出分组时，原分组不能因此一个客户都不剩。
+            if (entity.getId() != null) {
+                customerGroupService.assertCanMove(java.util.List.of(entity.getId()), customerGroupId);
+            }
         }
         entity.setCustomerGroupId(customerGroupId);
         entity.setSettleMode(form.getSettleMode());

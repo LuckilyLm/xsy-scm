@@ -88,6 +88,21 @@ public class CustomerGroupService {
         return entity;
     }
 
+    /**
+     * 分组必须至少有一个客户：客户被移入别的分组或移出分组前，确认原分组不会归零。
+     *
+     * <p>
+     * 分组维护、客户档案改分组都走这里，避免从任入口把某条分组留成空壳。
+     */
+    public void assertCanMove(List<Long> customerIds, Long targetGroupId) {
+        if (customerIds == null || customerIds.isEmpty()) {
+            return;
+        }
+        if (!customerDao.selectEmptiedGroupIds(customerIds, targetGroupId).isEmpty()) {
+            throw new ScmBusinessException(CustomerErrorCode.CUSTOMER_GROUP_LAST_MEMBER);
+        }
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public Long add(CustomerGroupAddForm form) {
         String code = CustomerTypeValidator.normalizeCode(form.getGroupCode());
@@ -95,6 +110,8 @@ public class CustomerGroupService {
             throw new ScmBusinessException(CustomerErrorCode.CUSTOMER_GROUP_CODE_DUPLICATE);
         }
         List<Long> customerIds = requireMembers(form.getCustomerIds());
+        // 新分组还没有 id，不能排除目标分组；这些客户当前所在的旧分组不能因此归零。
+        assertCanMove(customerIds, null);
 
         var entity = new CustomerGroupEntity();
         entity.setGroupCode(code);
@@ -124,6 +141,7 @@ public class CustomerGroupService {
             throw new ScmBusinessException(CustomerErrorCode.CUSTOMER_GROUP_CODE_DUPLICATE);
         }
         List<Long> customerIds = requireMembers(form.getCustomerIds());
+        assertCanMove(customerIds, entity.getId());
 
         entity.setGroupCode(code);
         entity.setGroupName(CustomerTypeValidator.normalizeName(form.getGroupName()));

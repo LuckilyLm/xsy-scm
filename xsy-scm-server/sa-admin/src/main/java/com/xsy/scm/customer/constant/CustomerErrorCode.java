@@ -60,6 +60,9 @@ public enum CustomerErrorCode implements ScmErrorCode {
     /** 分组编码与现有记录冲突。 */
     CUSTOMER_GROUP_CODE_DUPLICATE(40941, "客户分组编码已存在"),
 
+    /** 移动或移出客户会让原分组一个客户都不剩。 */
+    CUSTOMER_GROUP_LAST_MEMBER(40957, "该客户是原分组唯一成员，请先在原分组保留其他客户"),
+
     // 客户推广二维码
     PROMOTION_CODE_NOT_FOUND(40040, "推广码不存在或已失效"),
 
