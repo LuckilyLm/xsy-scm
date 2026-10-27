@@ -51,6 +51,35 @@ class AgreementFormulaCalculatorTest {
         assertPrice(AgreementFormulaType.MARKET_MARKUP_RATE, null, "0.1000", "0.0000", null, "0.0000");
     }
 
+    @Test
+    void purchaseCostFormulaAppliesLossTaxAndMarkupAsPercentages() {
+        // 损耗率、税率是百分数：5.0000 / 13.0000 分别换算成 1.05 / 1.13。
+        assertThat(calcPurchase("10.0000", "0.1000", "10.0000", "5.0000", "13.0000"))
+            .isEqualByComparingTo("13.0515");
+        // 最近采购价缺失时回落到当前销售单位成本，不按 0 处理。
+        assertThat(calcPurchase(null, "0.2000", "8.0000", "0.0000", "0.0000")).isEqualByComparingTo("9.6000");
+        // 结果仍按四位小数 HALF_UP。
+        assertThat(calcPurchase("10.0000", "0.1000", null, "3.3333", "13.0000")).isEqualByComparingTo("12.8443");
+    }
+
+    @Test
+    void purchaseCostFormulaReturnsUnpricedWhenRatesAreMissingOrInvalid() {
+        // 损耗率或税率缺失时不能当 0 计算。
+        assertThat(calcPurchase("10.0000", "0.1000", "8.0000", null, "13.0000")).isNull();
+        assertThat(calcPurchase("10.0000", "0.1000", "8.0000", "5.0000", null)).isNull();
+        assertThat(calcPurchase("10.0000", "0.1000", "8.0000", "-1.0000", "13.0000")).isNull();
+        assertThat(calcPurchase("10.0000", "0.1000", "8.0000", "5.0000", "101.0000")).isNull();
+        // 最近采购价与配送仓成本都没有时同样不可定价。
+        assertThat(calcPurchase(null, "0.1000", null, "5.0000", "13.0000")).isNull();
+    }
+
+    private static BigDecimal calcPurchase(String latestPurchasePrice, String parameter, String saleUnitCost,
+            String lossRate, String taxRate) {
+        return AgreementFormulaCalculator.calculate(AgreementFormulaType.PURCHASE_COST_LOSS_TAX_MARKUP, null,
+                decimal(parameter), null, decimal(saleUnitCost), decimal(latestPurchasePrice), decimal(lossRate),
+                decimal(taxRate));
+    }
+
     private static void assertPrice(AgreementFormulaType formula, String fixed, String parameter,
             String market, String cost, String expected) {
         assertThat(calc(formula, fixed, parameter, market, cost)).isEqualByComparingTo(expected);

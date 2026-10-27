@@ -56,6 +56,8 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:value': [value: ScmId | ScmId[] | undefined];
   change: [value: ScmId | ScmId[] | undefined];
+  /** 选中项的完整规格快照；订单行用它回填商品名称、规格和单位，避免只存 skuId。 */
+  select: [option: SkuOption | undefined];
 }>();
 const rows = ref<SkuOption[]>([]),
   loading = ref(false),
@@ -103,6 +105,11 @@ function search(text: string) {
 function changed(value: ScmId | ScmId[] | undefined) {
   emit('update:value', value);
   emit('change', value);
+  const id = Array.isArray(value) ? value[0] : value;
+  emit(
+    'select',
+    rows.value.find((option) => String(option.skuId) === String(id))
+  );
 }
 
 function opened(open: boolean) {

@@ -18,6 +18,7 @@ import com.xsy.scm.pricing.service.PriceResolver;
 import com.xsy.scm.product.service.ProductBundleComponentQueryService;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
+import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -141,5 +142,139 @@ class PriceResolverAgreementFormulaTest {
         assertThat(price.getPriceBasisSnapshot()).containsEntry("basisSource", "MARKET_PRICE")
                 .containsEntry("basisUnitPrice", "20.0000");
         verifyNoInteractions(costs, bundles);
+    }
+
+    @Test
+    void purchaseCostFormulaUsesLatestCommittedPurchaseBeforeWarehouseCost() {
+        agreement.setFormulaType("PURCHASE_COST_LOSS_TAX_MARKUP");
+        agreement.setFormulaParameter(new BigDecimal("0.1000"));
+        var cost = cost("8.0000", "5.0000", "13.0000");
+        when(costs.byWarehouseAndSkus(7L, List.of(40L))).thenReturn(List.of(cost));
+        when(costs.latestPurchasePrices(List.of(40L), ScmPurchaseStatusEnum.committedNames()))
+                .thenReturn(List.of(latestPurchase("10.0000")));
+        when(bundles.listByBundleSkus(List.of(40L))).thenReturn(List.of());
+
+        var price = resolver.resolve(8L, List.of(40L), OffsetDateTime.now(), 7L).getFirst();
+
+        assertThat(price.getUnitPrice()).isEqualByComparingTo("13.0515");
+        assertThat(price.getPriceStatus()).isEqualTo(ScmPriceStatusEnum.PRICED);
+        assertThat(price.getPriceBasisSnapshot()).containsEntry("basisSource", "LATEST_PURCHASE_PRICE")
+                .containsEntry("basisUnitPrice", "10.0000")
+                .containsEntry("latestPurchasePrice", "10.0000")
+                .containsEntry("lossRate", "5.0000")
+                .containsEntry("taxRate", "13.0000")
+                .containsEntry("formulaType", "PURCHASE_COST_LOSS_TAX_MARKUP");
+    }
+
+    @Test
+    void purchasePriceInAnotherUnitIsConvertedIntoSaleUnitBeforeApplyingFormula() {
+        agreement.setFormulaType("PURCHASE_COST_LOSS_TAX_MARKUP");
+        agreement.setFormulaParameter(new BigDecimal("0.1000"));
+        when(costs.byWarehouseAndSkus(7L, List.of(40L))).thenReturn(List.of(cost("8.0000", "5.0000", "13.0000")));
+        var latest = latestPurchase("100.0000");
+        latest.setPurchaseUnit("箱");
+        latest.setSaleUnit("斤");
+        // 1 斤 = 0.1 箱：100 元/箱折算 10 元/斤
+        latest.setStockUnitsPerSaleUnit(new BigDecimal("0.1000"));
+        when(costs.latestPurchasePrices(List.of(40L), ScmPurchaseStatusEnum.committedNames()))
+                .thenReturn(List.of(latest));
+        when(bundles.listByBundleSkus(List.of(40L))).thenReturn(List.of());
+
+        var price = resolver.resolve(8L, List.of(40L), OffsetDateTime.now(), 7L).getFirst();
+
+        assertThat(price.getUnitPrice()).isEqualByComparingTo("13.0515");
+        assertThat(price.getPriceBasisSnapshot())
+                .containsEntry("basisSource", "LATEST_PURCHASE_PRICE")
+                .containsEntry("basisUnitPrice", "10.0000")
+                .containsEntry("latestPurchasePrice", "100.0000")
+                .containsEntry("latestPurchaseUnit", "箱")
+                .containsEntry("latestPurchasePriceSaleUnit", "10.0000");
+    }
+
+    @Test
+    void purchasePriceInAnotherUnitWithoutConversionFallsBackToWarehouseCost() {
+        agreement.setFormulaType("PURCHASE_COST_LOSS_TAX_MARKUP");
+        agreement.setFormulaParameter(new BigDecimal("0.1000"));
+        when(costs.byWarehouseAndSkus(7L, List.of(40L))).thenReturn(List.of(cost("8.0000", "5.0000", "13.0000")));
+        var latest = latestPurchase("100.0000");
+        latest.setPurchaseUnit("箱");
+        latest.setSaleUnit("斤");
+        when(costs.latestPurchasePrices(List.of(40L), ScmPurchaseStatusEnum.committedNames()))
+                .thenReturn(List.of(latest));
+        when(bundles.listByBundleSkus(List.of(40L))).thenReturn(List.of());
+
+        var price = resolver.resolve(8L, List.of(40L), OffsetDateTime.now(), 7L).getFirst();
+
+        assertThat(price.getUnitPrice()).isEqualByComparingTo("10.4412");
+        assertThat(price.getPriceBasisSnapshot())
+                .containsEntry("basisSource", "WAREHOUSE_WEIGHTED_AVG_COST")
+                .containsEntry("basisUnitPrice", "8.0000")
+                .containsEntry("latestPurchasePriceSaleUnit", null);
+    }
+
+    @Test
+    void purchaseCostFormulaFallsBackToSaleUnitCostWhenLatestPurchaseMissing() {
+        agreement.setFormulaType("PURCHASE_COST_LOSS_TAX_MARKUP");
+        agreement.setFormulaParameter(new BigDecimal("0.1000"));
+        when(costs.byWarehouseAndSkus(7L, List.of(40L))).thenReturn(List.of(cost("8.0000", "5.0000", "13.0000")));
+        when(costs.latestPurchasePrices(List.of(40L), ScmPurchaseStatusEnum.committedNames()))
+                .thenReturn(List.of());
+        when(bundles.listByBundleSkus(List.of(40L))).thenReturn(List.of());
+
+        var price = resolver.resolve(8L, List.of(40L), OffsetDateTime.now(), 7L).getFirst();
+
+        assertThat(price.getUnitPrice()).isEqualByComparingTo("10.4412");
+        assertThat(price.getPriceBasisSnapshot()).containsEntry("basisSource", "WAREHOUSE_WEIGHTED_AVG_COST")
+                .containsEntry("basisUnitPrice", "8.0000");
+    }
+
+    @Test
+    void purchaseCostFormulaIsUnpricedWhenProductRateIsMissing() {
+        agreement.setFormulaType("PURCHASE_COST_LOSS_TAX_MARKUP");
+        when(costs.byWarehouseAndSkus(7L, List.of(40L))).thenReturn(List.of(cost("8.0000", null, "13.0000")));
+        when(costs.latestPurchasePrices(List.of(40L), ScmPurchaseStatusEnum.committedNames()))
+                .thenReturn(List.of(latestPurchase("10.0000")));
+        when(bundles.listByBundleSkus(List.of(40L))).thenReturn(List.of());
+
+        var price = resolver.resolve(8L, List.of(40L), OffsetDateTime.now(), 7L).getFirst();
+
+        assertThat(price.getPriceStatus()).isEqualTo(ScmPriceStatusEnum.UNPRICED);
+        assertThat(price.getUnpricedReason()).isEqualTo(ScmUnpricedReasonEnum.AGREEMENT_RESULT_INVALID);
+    }
+
+    @Test
+    void purchaseCostFormulaIsUnpricedWhenBothLatestPurchaseAndWarehouseCostAreMissing() {
+        agreement.setFormulaType("PURCHASE_COST_LOSS_TAX_MARKUP");
+        when(costs.byWarehouseAndSkus(7L, List.of(40L))).thenReturn(List.of(cost(null, "5.0000", "13.0000")));
+        when(costs.latestPurchasePrices(List.of(40L), ScmPurchaseStatusEnum.committedNames()))
+                .thenReturn(List.of());
+        when(bundles.listByBundleSkus(List.of(40L))).thenReturn(List.of());
+
+        var price = resolver.resolve(8L, List.of(40L), OffsetDateTime.now(), 7L).getFirst();
+
+        assertThat(price.getPriceStatus()).isEqualTo(ScmPriceStatusEnum.UNPRICED);
+        assertThat(price.getUnpricedReason()).isEqualTo(ScmUnpricedReasonEnum.AGREEMENT_COST_MISSING);
+    }
+
+    private static PricingCostBasisVO cost(String saleUnitCost, String lossRate, String taxRate) {
+        var cost = new PricingCostBasisVO();
+        cost.setSkuId(40L);
+        cost.setWarehouseId(7L);
+        cost.setStockUnit("kg");
+        cost.setStockUnitCost(saleUnitCost == null ? null : new BigDecimal(saleUnitCost));
+        cost.setStockUnitsPerSaleUnit(BigDecimal.ONE);
+        cost.setBalanceVersion(11);
+        cost.setLossRate(lossRate == null ? null : new BigDecimal(lossRate));
+        cost.setTaxRate(taxRate == null ? null : new BigDecimal(taxRate));
+        return cost;
+    }
+
+    private static PricingCostBasisVO latestPurchase(String purchasePrice) {
+        var price = new PricingCostBasisVO();
+        price.setSkuId(40L);
+        price.setLatestPurchasePrice(new BigDecimal(purchasePrice));
+        price.setPurchaseUnit("斤");
+        price.setSaleUnit("斤");
+        return price;
     }
 }

@@ -51,8 +51,10 @@ class ProductAggregateValidatorTest {
     }
 
     @Test
-    void rejectsNormalizedCodesAndNonblankBarcodes() {
-        rejects(form(sku(" a ", true, "大"), sku("A", false, "小")), 40022);
+    void rejectsNormalizedBarcodes() {
+        // 商品规格编码的唯一性由 uk_product_sku_code 唯一索引兜底，ProductSpuService 把
+        // 约束冲突翻译成 40022；聚合校验器只负责条码/规格/价格这类行内判据，
+        // 这里不再断言「 a 」与「A」在内存里被判重。
         var a = sku("A", true, "大");
         var b = sku("B", false, "小");
         a.setBarcode(" 123 ");

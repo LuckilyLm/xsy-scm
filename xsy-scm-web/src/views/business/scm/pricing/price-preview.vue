@@ -127,6 +127,7 @@ function formulaLabel(value: unknown): string {
         MARKET_PLUS_AMOUNT: '市场价加固定金额',
         COST_MARKUP_RATE: '配送仓成本加价率',
         MARKET_MARKUP_RATE: '市场价加价率',
+        PURCHASE_COST_LOSS_TAX_MARKUP: '采购价+损耗+税点+加价',
       } as Record<string, string>
     )[String(value)] || '未命中协议价'
   );
@@ -149,8 +150,14 @@ function resultPriceText(row: TrialRow): string {
 
 function basisSourceLabel(value: unknown): string {
   return (
-    ({FIXED: '固定单价', MARKET_PRICE: '商品市场价', WAREHOUSE_WEIGHTED_AVG_COST: '配送仓移动加权成本'} as Record<string, string>)[String(value)] ||
-    '—'
+    (
+      {
+        FIXED: '固定单价',
+        MARKET_PRICE: '商品市场价',
+        WAREHOUSE_WEIGHTED_AVG_COST: '配送仓移动加权成本',
+        LATEST_PURCHASE_PRICE: '最近采购价',
+      } as Record<string, string>
+    )[String(value)] || '—'
   );
 }
 

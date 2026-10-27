@@ -31,9 +31,12 @@ public class ProductSkuForm {
     @Size(max = 30, message = "规格值不能超过30个字符")
     private Map<@NotBlank(message = "规格项名称不能为空") @Size(max = 100, message = "规格项名称不能超过100个字符") String,
         @NotBlank(message = "规格值不能为空") @Size(max = 150, message = "规格值不能超过150个字符") String> specValues;
+    /**
+     * 新建商品规格未传销售单位时默认按斤录入；显式传空值仍由 {@code @NotBlank} 拒绝。
+     */
     @NotBlank(message = "销售单位不能为空")
     @Size(max = 32, message = "销售单位不能超过32个字符")
-    private String saleUnit;
+    private String saleUnit = "斤";
     @NotNull(message = "商城起订量不能为空")
     @DecimalMin(value = "0.0001", message = "商城起订量必须大于0")
     @Digits(integer = 14, fraction = 4, message = "商城起订量最多14位整数和4位小数")

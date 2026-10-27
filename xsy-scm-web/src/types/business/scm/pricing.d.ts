@@ -1,7 +1,7 @@
 import type {ScmId, ScmSortItem} from './customer';
 
 export type PriceSource = 'AGREEMENT' | 'CUSTOMER_TYPE' | 'MARKET';
-export type AgreementFormulaType = 'FIXED' | 'MARKET_PLUS_AMOUNT' | 'COST_MARKUP_RATE' | 'MARKET_MARKUP_RATE';
+export type AgreementFormulaType = 'FIXED' | 'MARKET_PLUS_AMOUNT' | 'COST_MARKUP_RATE' | 'MARKET_MARKUP_RATE' | 'PURCHASE_COST_LOSS_TAX_MARKUP';
 export type UnavailableReason = 'SKU_NOT_FOUND' | 'SKU_OFF_SHELF' | 'SPU_OFF_SHELF' | 'CATEGORY_DISABLED' | 'NOT_VISIBLE';
 
 export interface PriceForm {
@@ -61,6 +61,8 @@ export interface ResolvedPrice {
   skuCode: string | null;
   productName: string | null;
   specName: string | null;
+  /** 销售单位；录单页用来判断参考价与当前行是否同一单位。 */
+  saleUnit: string | null;
   unitPrice: string | null;
   priceStatus: 'PRICED' | 'UNPRICED';
   priceSource: PriceSource | null;

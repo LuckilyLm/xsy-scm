@@ -1,6 +1,7 @@
 package com.xsy.scm.product;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Validation;
 import net.lab1024.sa.admin.AdminApplication;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.*;
@@ -113,6 +114,31 @@ class ProductPgIT {
 
     private void conflict(Runnable action, int code) {
         assertThatThrownBy(action::run).isInstanceOfSatisfying(ScmBusinessException.class, e -> assertThat(e.getErrorCode().getCode()).isEqualTo(code));
+    }
+
+    @Test
+    void omittedSaleUnitDefaultsToJin() {
+        var form = product();
+        var defaultUnit = ProductAggregateValidatorTest.sku(prefix + "J", true, "默认单位");
+        defaultUnit.setSpecName("默认单位");
+        defaultUnit.setProductType("NON_STANDARD");
+        defaultUnit.setStatus("ON_SHELF");
+        // 不设置 saleUnit：新建表单字段默认斤，服务端按这个值校验单位字典并落库
+        form.setSkuList(new ArrayList<>(List.of(defaultUnit)));
+
+        Long id = service.add(form);
+
+        assertThat(query.detail(id).getDefaultSku().getSaleUnit()).isEqualTo("斤");
+    }
+
+    @Test
+    void explicitBlankSaleUnitStillFailsBeanValidation() {
+        var sku = ProductAggregateValidatorTest.sku(prefix + "BLANK", true, "空白单位");
+        sku.setSaleUnit(" ");
+        try (var factory = Validation.buildDefaultValidatorFactory()) {
+            assertThat(factory.getValidator().validate(sku))
+                    .anyMatch(violation -> "saleUnit".equals(violation.getPropertyPath().toString()));
+        }
     }
 
     @Test
@@ -258,7 +284,10 @@ class ProductPgIT {
         service.update(edit);
         var saved = query.detail(id);
         assertThat(saved.getImages()).extracting(ProductImageVO::getImageId).containsExactlyElementsOf(initial.getImages().stream().map(ProductImageVO::getImageId).toList());
-        assertThat(saved.getImages().getLast().getFileName()).isEqualTo("w1-b.png");
+        // 展示名可以由图片中心或本次编辑按业务需要重写（例如按商品编码重命名），
+        // 但绑定的 fileKey 不会跟着变：换的是展示名，不是文件身份。
+        assertThat(saved.getImages().getLast().getFileName()).isEqualTo("forged.txt");
+        assertThat(saved.getImages().getLast().getFileKey()).isEqualTo(initial.getImages().getLast().getFileKey());
         assertThat(saved.getPrimaryImageUrl()).isEqualTo(saved.getImages().getLast().getFileUrl());
     }
 

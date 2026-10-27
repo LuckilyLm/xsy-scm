@@ -133,6 +133,7 @@ const formulaOptions: {value: AgreementFormulaType; label: string}[] = [
   {value: 'MARKET_PLUS_AMOUNT', label: '市场价加固定金额'},
   {value: 'COST_MARKUP_RATE', label: '配送仓成本加价率'},
   {value: 'MARKET_MARKUP_RATE', label: '市场价加价率'},
+  {value: 'PURCHASE_COST_LOSS_TAX_MARKUP', label: '采购价+损耗+税点+加价'},
 ];
 const formRef = ref<FormInstance>();
 /** 必填项逐项校验，错误显示在输入框下方。 */

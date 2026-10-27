@@ -48,7 +48,7 @@ export function emptySku(sortOrder = 0, defaultFlag = false): ProductSku {
     barcode: '',
     specName: defaultFlag ? '默认商品规格' : '',
     specValues: {},
-    saleUnit: '',
+    saleUnit: '斤',
     // 商城起订量/递增量是数量，不是金额：整数就写 1，不补四位尾零
     mallMinQuantity: '1',
     mallQuantityStep: '1',

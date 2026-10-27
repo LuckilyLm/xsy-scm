@@ -16,4 +16,7 @@ public interface ProductSkuOptionDao {
     List<ProductSkuOptionVO> selectByIds(@Param("ids") List<Long> ids);
 
     List<ProductSkuOptionVO> selectByCodes(@Param("codes") List<String> codes);
+
+    /** 按商品名称批量取规格，供送货单导入按「商品名称 + 规格」匹配；同名多规格由调用方判定。 */
+    List<ProductSkuOptionVO> selectByProductNames(@Param("names") List<String> names);
 }

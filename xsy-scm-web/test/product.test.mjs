@@ -177,6 +177,17 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
     assert.equal(form.skuList[0].defaultFlag, true);
     assert.equal(form.skuList[0].marketPrice, '0.0000');
   });
+  test('新建商品规格默认单位为斤，商品列表不再常驻描述与采购预警列', () => {
+    assert.equal(emptySku(0, true).saleUnit, '斤');
+    const list = readFileSync(new URL('../src/views/business/scm/product/product-list.vue', import.meta.url), 'utf8');
+    assert.doesNotMatch(list, /title: '商品描述'/);
+    assert.doesNotMatch(list, /title: '采购预警天数'/);
+    const drawer = readFileSync(new URL('../src/views/business/scm/product/components/product-form-drawer.vue', import.meta.url), 'utf8');
+    assert.doesNotMatch(drawer, /name="purchaseWarningDays"/);
+    const detail = readFileSync(new URL('../src/views/business/scm/product/product-detail.vue', import.meta.url), 'utf8');
+    assert.doesNotMatch(detail, /采购预警/);
+  });
+
   test('PCO-1 master fields start at the backend defaults', () => {
     const form = emptyProduct();
     // tagIds 与 taxExempt 是新增接口的必填项，缺省值必须能直接提交。

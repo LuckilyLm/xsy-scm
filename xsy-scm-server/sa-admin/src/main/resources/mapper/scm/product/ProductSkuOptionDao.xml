@@ -66,4 +66,16 @@
             AND s.sku_code IN <foreach collection="codes" item="code" open="(" separator="," close=")">#{code}</foreach>
     </select>
 
+    <!-- 送货单只写商品名称与规格，按商品名称整批取回后在内存里精确匹配，避免逐行查询。 -->
+    <select id="selectByProductNames" resultMap="sku">
+        SELECT
+        <include refid="columns"/>
+        <include refid="joins"/>
+        WHERE s.deleted = FALSE
+            AND p.id IS NOT NULL
+            AND p.name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">#{name}</foreach>
+        ORDER BY s.id
+    </select>
+
 </mapper>

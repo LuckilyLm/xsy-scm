@@ -2,21 +2,57 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.pricing.dao.PricingCostBasisDao">
 
+    <!--
+      成本基准从商品规格出发左连指定仓库余额：没有余额行时仍返回商品损耗率、税率，
+      由调用方决定「缺成本」而不是把缺行当成零成本。warehouseId 为空时不命中任何余额行。
+    -->
     <select id="byWarehouseAndSkus" resultType="com.xsy.scm.pricing.domain.vo.PricingCostBasisVO">
-        SELECT b.sku_id AS skuId, b.warehouse_id AS warehouseId, b.unit AS stockUnit, b.avg_cost AS stockUnitCost,
-            CASE WHEN s.sale_unit = b.unit THEN 1.0000 ELSE conversion.stock_units_per_sale_unit END AS
-            stockUnitsPerSaleUnit, b.version AS balanceVersion
-        FROM xsy_inventory_balance b
-        JOIN xsy_product_sku s ON s.id = b.sku_id
-            AND s.deleted = FALSE
+        SELECT s.id AS skuId, b.warehouse_id AS warehouseId, b.unit AS stockUnit, b.avg_cost AS stockUnitCost,
+            CASE WHEN b.sku_id IS NULL THEN NULL WHEN s.sale_unit = b.unit THEN 1.0000
+                ELSE conversion.stock_units_per_sale_unit END AS stockUnitsPerSaleUnit,
+            b.version AS balanceVersion, p.loss_rate AS lossRate, p.tax_rate AS taxRate,
+            s.sale_unit AS saleUnit
+        FROM xsy_product_sku s
+        JOIN xsy_product_spu p ON p.id = s.spu_id
+            AND p.deleted = FALSE
+        LEFT JOIN xsy_inventory_balance b ON b.sku_id = s.id
+            AND b.deleted = FALSE
+            AND b.warehouse_id = #{warehouseId}
         LEFT JOIN xsy_product_sku_stock_conversion conversion ON conversion.sku_id = b.sku_id
             AND conversion.sale_unit = s.sale_unit
             AND conversion.stock_unit = b.unit
             AND conversion.deleted = FALSE
-        WHERE b.deleted = FALSE
-            AND b.warehouse_id = #{warehouseId}
-            AND b.sku_id IN
+        WHERE s.deleted = FALSE
+            AND s.id IN
             <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
+    </select>
+
+    <!--
+      每个商品规格最近一条已提交采购行；组内按提交时间、行 id 倒序取第一条。
+      同时带出采购单位、销售单位与两者之间已配置的换算关系，调用方据此把采购价换算成销售单位成本；
+      单位不同又没有换算关系时不能直接当销售单位成本使用。
+    -->
+    <select id="latestPurchasePrices" resultType="com.xsy.scm.pricing.domain.vo.PricingCostBasisVO">
+        SELECT DISTINCT ON (poi.sku_id)
+            poi.sku_id AS skuId, poi.purchase_price AS latestPurchasePrice,
+            poi.purchase_unit_snapshot AS purchaseUnit, s.sale_unit AS saleUnit,
+            conversion.stock_units_per_sale_unit AS stockUnitsPerSaleUnit
+        FROM xsy_purchase_order_item poi
+        JOIN xsy_purchase_order po ON po.id = poi.purchase_order_id
+            AND po.deleted = FALSE
+        JOIN xsy_product_sku s ON s.id = poi.sku_id
+            AND s.deleted = FALSE
+        LEFT JOIN xsy_product_sku_stock_conversion conversion ON conversion.sku_id = poi.sku_id
+            AND conversion.sale_unit = s.sale_unit
+            AND conversion.stock_unit = poi.purchase_unit_snapshot
+            AND conversion.deleted = FALSE
+        WHERE poi.deleted = FALSE
+            AND poi.purchase_price IS NOT NULL
+            AND poi.sku_id IN
+            <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
+            AND po.status IN
+            <foreach collection="statuses" item="status" open="(" separator="," close=")">#{status}</foreach>
+        ORDER BY poi.sku_id, po.submitted_at DESC NULLS LAST, poi.id DESC
     </select>
 
 </mapper>

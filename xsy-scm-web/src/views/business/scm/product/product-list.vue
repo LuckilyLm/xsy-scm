@@ -151,7 +151,6 @@
           <span v-else-if="column.dataIndex === 'storageMethod'">{{ enumText(STORAGE_METHOD_ENUM, record.storageMethod) }}</span>
           <span v-else-if="column.dataIndex === 'shelfLifeDays'">{{ days(record.shelfLifeDays) }}</span>
           <span v-else-if="column.dataIndex === 'lossRate'">{{ percent(record.lossRate) }}</span>
-          <span v-else-if="column.dataIndex === 'purchaseWarningDays'">{{ days(record.purchaseWarningDays) }}</span>
           <span v-else-if="column.dataIndex === 'taxRate'">{{ percent(record.taxRate) }}</span>
           <span v-else-if="column.dataIndex === 'taxExempt'">{{ record.taxExempt ? '是' : '否' }}</span>
           <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
@@ -261,31 +260,17 @@ const user = useUserStore();
 const canBatch = computed(
   () => user.administratorFlag || user.getPointList?.some((point: {webPerms: string}) => point.webPerms === 'scm:product:batch')
 );
-// 默认摊开全部字段，便于核对；列太多可横向滚动或在「设置列」里隐藏。
+// 录单和查档常用字段常驻；开票、税率、时间戳等在商品表单/详情里维护，不进列表，避免横向滚动。
 const columns = ref<TableColumnsType<ProductRow>>([
   {title: '主图', dataIndex: 'primaryImageUrl', width: SCM_COLUMN_WIDTH.image},
-  {title: '商品名称', dataIndex: 'name', width: 200, sorter: true, ellipsis: true},
-  {title: '别名', dataIndex: 'alias', width: 130, ellipsis: true},
+  {title: '商品名称', dataIndex: 'name', width: 220, sorter: true, ellipsis: true},
   {title: '分类', dataIndex: 'categoryPath', align: 'center', width: SCM_COLUMN_WIDTH.name, ellipsis: true},
-  {title: '品牌', dataIndex: 'brandName', width: 110, ellipsis: true},
-  {title: '产地', dataIndex: 'origin', width: 110, ellipsis: true},
-  {title: '储存方式', dataIndex: 'storageMethod', width: 100, align: 'center'},
-  {title: '保质期', dataIndex: 'shelfLifeDays', width: 90},
-  {title: '损耗率', dataIndex: 'lossRate', width: 90},
-  {title: '采购预警天数', dataIndex: 'purchaseWarningDays', width: 120},
   {title: '单位', dataIndex: 'saleUnit', width: SCM_COLUMN_WIDTH.unit},
   {title: '市场价', dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange},
   {title: '规格数', dataIndex: 'skuCount', width: SCM_COLUMN_WIDTH.count},
   {title: '在售状态', dataIndex: 'status', width: SCM_COLUMN_WIDTH.status, align: 'center', sorter: true},
   {title: '主档状态', dataIndex: 'masterStatus', width: SCM_COLUMN_WIDTH.status, align: 'center'},
   {title: '标签', dataIndex: 'tags', width: 132},
-  {title: '开票品名', dataIndex: 'invoiceName', width: 130, ellipsis: true},
-  {title: '税收分类编码', dataIndex: 'taxCategoryCode', width: 140},
-  {title: '税率', dataIndex: 'taxRate', width: 80},
-  {title: '免税', dataIndex: 'taxExempt', width: 80, align: 'center'},
-  {title: '商品描述', dataIndex: 'description', width: 200, ellipsis: true},
-  {title: '创建时间', dataIndex: 'createdAt', width: SCM_COLUMN_WIDTH.dateTime},
-  {title: '更新时间', dataIndex: 'updatedAt', width: SCM_COLUMN_WIDTH.dateTime},
   {title: '操作', dataIndex: 'action', width: SCM_COLUMN_WIDTH.actionThree, align: 'center', fixed: 'right'},
 ]);
 // 宽屏剩余空间补给默认宽度的文本列；用户改过的列宽不动。

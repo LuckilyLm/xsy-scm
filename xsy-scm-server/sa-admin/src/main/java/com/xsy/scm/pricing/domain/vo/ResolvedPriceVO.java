@@ -22,6 +22,8 @@ public class ResolvedPriceVO {
     private String skuCode;
     private String productName;
     private String specName;
+    /** 销售单位；录单页据此判断参考价与当前行是否同一单位。 */
+    private String saleUnit;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal unitPrice;
     private ScmPriceStatusEnum priceStatus;

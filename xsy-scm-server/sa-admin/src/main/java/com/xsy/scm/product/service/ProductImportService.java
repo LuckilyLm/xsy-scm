@@ -63,6 +63,10 @@ import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 public class ProductImportService {
     public static final String TEMPLATE_VERSION = "1.0";
     /**
+     * 新建商品规格的默认销售单位：Excel 未填或 JSON 未传时按斤录入，显式空白仍按各自校验拒绝。
+     */
+    public static final String DEFAULT_SALE_UNIT = "斤";
+    /**
      * UPDATE 模式的显式清空标记：空白=保持原值，因此清除既存值必须另有记号。仅 UPDATE 解释该记号。
      */
     public static final String CLEAR_TOKEN = "(清空)";
@@ -322,7 +326,6 @@ public class ProductImportService {
                 addError(result, rowNumber, trim(row.getSkuCode()), "商品规格版本", "NEW_SKU_VERSION", "新增商品规格不应填写商品规格版本");
 
             required(result, rowNumber, trim(row.getSkuCode()), "商品规格名称", row.getSpecName());
-            required(result, rowNumber, trim(row.getSkuCode()), "销售单位", row.getSaleUnit());
             required(result, rowNumber, trim(row.getSkuCode()), "商品类型", row.getProductType());
             required(result, rowNumber, trim(row.getSkuCode()), "市场价", row.getMarketPrice());
             required(result, rowNumber, trim(row.getSkuCode()), "商品规格状态", row.getSkuStatus());
@@ -399,6 +402,7 @@ public class ProductImportService {
             }
             var form = new ProductSkuForm();
             form.setSkuCode(row.getSkuCode());
+            form.setSaleUnit(saleUnitOf(row));
             form.setSpecName(trim(row.getSpecName()));
             // 新增 SKU 与新增导入的规格值写法一致
             form.setSpecValues(new LinkedHashMap<>(Map.of("规格", trim(row.getSpecName()))));
@@ -509,12 +513,14 @@ public class ProductImportService {
         required(result, rowNumber, key, "分类编码", row.getCategoryCode());
         required(result, rowNumber, key, "商品状态", row.getSpuStatus());
         required(result, rowNumber, key, "商品规格名称", row.getSpecName());
-        required(result, rowNumber, key, "销售单位", row.getSaleUnit());
         required(result, rowNumber, key, "商品类型", row.getProductType());
         required(result, rowNumber, key, "市场价", row.getMarketPrice());
         required(result, rowNumber, key, "商品规格状态", row.getSkuStatus());
         required(result, rowNumber, key, "默认商品规格", row.getDefaultFlag());
         validateSharedCells(row, categoryMap, tagMap, result, false, unitMap);
+        // 未填销售单位时按默认单位落库；显式填写的单位已由共用校验检查，空值在这里检查默认单位。
+        if (trim(row.getSaleUnit()) == null)
+            requireUsableUnit(result, row, unitMap, DEFAULT_SALE_UNIT);
     }
 
     private void validateUpdateRow(ProductImportRow row, Map<String, ProductCategoryEntity> categoryMap,
@@ -588,24 +594,34 @@ public class ProductImportService {
         // UPDATE 不检查：写入路径只复核变动过的单位（ProductSpuService.update 的 changedUnits）
         // 和新挂的标签（assertNewBindings 允许已绑的停用标签保留），
         // 在这里照抄「必须在字典且启用」会把合法的历史值误判成单元格错误。
-        if (!allowClearToken) {
-            var unit = trim(row.getSaleUnit());
-            if (unit != null) {
-                var uom = unitMap.get(unit);
-                if (uom == null)
-                    addError(result, rowNumber, key, "销售单位", "UOM_NOT_USABLE", "计量单位不存在，请先在单位字典里维护");
-                else if (!ScmEnableStatusEnum.ENABLED.name().equals(uom.getStatus()))
-                    addError(result, rowNumber, key, "销售单位", "UOM_NOT_USABLE", "计量单位已停用，请改选启用的单位");
-            }
-        }
+        if (!allowClearToken && trim(row.getSaleUnit()) != null)
+            requireUsableUnit(result, row, unitMap, trim(row.getSaleUnit()));
         validateTagCodes(result, row, tagMap, allowClearToken);
+    }
+
+    private void requireUsableUnit(ProductImportResultVO result, ProductImportRow row,
+        Map<String, ProductUomEntity> unitMap, String unit) {
+        var uom = unitMap.get(unit);
+        if (uom == null)
+            addError(result, row.getRowNumber(), trim(row.getSpuCode()), "销售单位", "UOM_NOT_USABLE",
+                "计量单位不存在，请先在单位字典里维护");
+        else if (!ScmEnableStatusEnum.ENABLED.name().equals(uom.getStatus()))
+            addError(result, row.getRowNumber(), trim(row.getSpuCode()), "销售单位", "UOM_NOT_USABLE", "计量单位已停用，请改选启用的单位");
+    }
+
+    /**
+     * Excel 的销售单位为空时按默认单位落库；显式值保持原样交给字典校验。
+     */
+    private static String saleUnitOf(ProductImportRow row) {
+        var unit = trim(row.getSaleUnit());
+        return unit == null ? DEFAULT_SALE_UNIT : unit;
     }
 
     /**
      * CREATE 模式的单位字典：与 {@code ProductUomService.assertUsable} 同判据（活动行 + ENABLED）。
      */
     private Map<String, ProductUomEntity> loadUnits(List<ProductImportRow> rows) {
-        var names = rows.stream().map(row -> trim(row.getSaleUnit())).filter(Objects::nonNull).distinct().toList();
+        var names = rows.stream().map(ProductImportService::saleUnitOf).distinct().toList();
         return names.isEmpty()
             ? Map.of()
             : productUomDao
@@ -681,7 +697,7 @@ public class ProductImportService {
             sku.setBarcode(trim(row.getBarcode()));
             sku.setSpecName(trim(row.getSpecName()));
             sku.setSpecValues(new LinkedHashMap<>(Map.of("规格", trim(row.getSpecName()))));
-            sku.setSaleUnit(trim(row.getSaleUnit()));
+            sku.setSaleUnit(saleUnitOf(row));
             sku.setProductType(trim(row.getProductType()));
             sku.setMarketPrice(new BigDecimal(trim(row.getMarketPrice())).setScale(4, RoundingMode.HALF_UP));
             sku.setStatus(trim(row.getSkuStatus()));

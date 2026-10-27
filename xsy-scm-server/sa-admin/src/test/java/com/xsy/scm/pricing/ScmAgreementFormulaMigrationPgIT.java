@@ -47,6 +47,15 @@ class ScmAgreementFormulaMigrationPgIT {
     }
 
     @Test
+    void purchaseCostLossTaxMarkupPermitsNullFixedPrice() {
+        jdbc.update("INSERT INTO xsy_customer_agreement_price "
+                + "(id, customer_id, sku_id, unit_price, formula_type, formula_parameter, effective_from) "
+                + "VALUES (91116, 90001, 80007, null, 'PURCHASE_COST_LOSS_TAX_MARKUP', 0.1000, now())");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_customer_agreement_price "
+                + "WHERE id=91116 AND unit_price IS NULL", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
     void invalidNegativeMarkupIsRejectedByDatabase() {
         assertThatThrownBy(() -> jdbc.update("INSERT INTO xsy_customer_agreement_price "
                 + "(id, customer_id, sku_id, unit_price, formula_type, formula_parameter, effective_from) "

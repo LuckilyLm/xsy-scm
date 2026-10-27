@@ -31,6 +31,7 @@ import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
 import com.xsy.scm.pricing.constant.ScmPriceStatusEnum;
 import com.xsy.scm.pricing.constant.ScmUnpricedReasonEnum;
 import com.xsy.scm.pricing.manager.PriceValidation;
+import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.customer.dao.CustomerTypeDao;
 import com.xsy.scm.customer.dao.CustomerSkuVisibilityDao;
@@ -91,15 +92,26 @@ public class PriceResolver {
         var agreementPricesBySkuId = agreementPriceDao.selectEffective(customerId, skuIds, priceAt).stream()
             .collect(Collectors.toMap(AgreementPriceEntity::getSkuId, Function.identity(), (first, next) -> first));
         var costFormulaSkuIds = agreementPricesBySkuId.values().stream()
-            .filter(price -> AgreementFormulaType.COST_MARKUP_RATE.name().equals(price.getFormulaType()))
+            .filter(price -> AgreementFormulaType.COST_MARKUP_RATE.name().equals(price.getFormulaType())
+                || AgreementFormulaType.PURCHASE_COST_LOSS_TAX_MARKUP.name().equals(price.getFormulaType()))
+            .map(AgreementPriceEntity::getSkuId).toList();
+        var purchaseFormulaSkuIds = agreementPricesBySkuId.values().stream()
+            .filter(price -> AgreementFormulaType.PURCHASE_COST_LOSS_TAX_MARKUP.name().equals(price.getFormulaType()))
             .map(AgreementPriceEntity::getSkuId).toList();
         // 成本价只能来自订单显式选定的配送仓；缺少仓库时禁止使用任何默认仓成本。
+        // 采购成本公式还需要商品损耗率/税率，即使没有仓库也读一次基准（余额为空，只取主档比率）。
         Long costWarehouseId = warehouseId;
         Map<Long,
-            PricingCostBasisVO> costs = costFormulaSkuIds.isEmpty() || costWarehouseId == null
+            PricingCostBasisVO> costs = costFormulaSkuIds.isEmpty()
+                || (costWarehouseId == null && purchaseFormulaSkuIds.isEmpty())
+                    ? Map.of()
+                    : costBasisDao.byWarehouseAndSkus(costWarehouseId, costFormulaSkuIds).stream()
+                        .collect(Collectors.toMap(PricingCostBasisVO::getSkuId, Function.identity()));
+        Map<Long,
+            PricingCostBasisVO> latestPurchasePrices = purchaseFormulaSkuIds.isEmpty()
                 ? Map.of()
-                : costBasisDao.byWarehouseAndSkus(costWarehouseId, costFormulaSkuIds).stream()
-                    .collect(Collectors.toMap(PricingCostBasisVO::getSkuId, Function.identity()));
+                : costBasisDao.latestPurchasePrices(purchaseFormulaSkuIds, ScmPurchaseStatusEnum.committedNames())
+                    .stream().collect(Collectors.toMap(PricingCostBasisVO::getSkuId, Function.identity()));
         Map<Long,
             List<ProductBundleComponentEntity>> bundles = costFormulaSkuIds.isEmpty() || costWarehouseId == null
                 ? Map.of()
@@ -131,6 +143,7 @@ public class PriceResolver {
                 resolvedPrice.setSkuCode(skuOption.getSkuCode());
                 resolvedPrice.setProductName(skuOption.getProductName());
                 resolvedPrice.setSpecName(skuOption.getSpecName());
+                resolvedPrice.setSaleUnit(skuOption.getSaleUnit());
             }
             var unavailableReason = PriceValidation.unavailable(skuOption,
                 allEnabledVisibility || visibleSkuIds.contains(skuId));
@@ -179,37 +192,51 @@ public class PriceResolver {
                     }
                 }
                 BigDecimal marketPrice = skuOption == null ? null : skuOption.getMarketPrice();
+                PricingCostBasisVO latestPurchase = latestPurchasePrices.get(skuId);
+                // 采购价按采购单位记录，公式按销售单位计价，因此先换算；无法换算时不能直接使用。
+                BigDecimal latestPurchasePrice = latestPurchaseSaleUnitPrice(latestPurchase);
+                BigDecimal lossRate = cost == null ? null : cost.getLossRate();
+                BigDecimal taxRate = cost == null ? null : cost.getTaxRate();
                 BigDecimal calculated = AgreementFormulaCalculator.calculate(formula, agreementPrice.getUnitPrice(),
-                    agreementPrice.getFormulaParameter(), marketPrice, saleUnitCost);
+                    agreementPrice.getFormulaParameter(), marketPrice, saleUnitCost, latestPurchasePrice, lossRate,
+                    taxRate);
                 resolvedPrice.price(calculated, ScmPriceSourceEnum.AGREEMENT, agreementPrice.getId());
                 if (calculated == null) {
-                    resolvedPrice
-                        .setUnpricedReason(formula == AgreementFormulaType.COST_MARKUP_RATE && saleUnitCost == null
-                            ? ScmUnpricedReasonEnum.AGREEMENT_COST_MISSING
-                            : marketPrice == null && formula != AgreementFormulaType.FIXED
-                                ? ScmUnpricedReasonEnum.AGREEMENT_MARKET_PRICE_MISSING
-                                : ScmUnpricedReasonEnum.AGREEMENT_RESULT_INVALID);
+                    resolvedPrice.setUnpricedReason(
+                        unpricedReason(formula, marketPrice, saleUnitCost, latestPurchasePrice, lossRate, taxRate));
                 }
                 if (calculated != null) {
+                    boolean purchaseCostFormula = formula == AgreementFormulaType.PURCHASE_COST_LOSS_TAX_MARKUP;
                     Map<String, Object> basis = new LinkedHashMap<>();
                     basis.put("formulaType", formula.name());
                     basis.put("agreementPriceId", agreementPrice.getId().toString());
                     basis.put("agreementVersion", agreementPrice.getVersion().toString());
                     basis.put("formulaParameter", ScmDecimalStrings.format(agreementPrice.getFormulaParameter()));
-                    basis.put("basisSource", formula == AgreementFormulaType.COST_MARKUP_RATE
-                        ? "WAREHOUSE_WEIGHTED_AVG_COST"
-                        : formula == AgreementFormulaType.FIXED ? AgreementFormulaType.FIXED.name() : "MARKET_PRICE");
+                    basis.put("basisSource", basisSource(formula, latestPurchasePrice));
                     basis.put("basisUnitPrice",
-                        ScmDecimalStrings.format(formula == AgreementFormulaType.COST_MARKUP_RATE
-                            ? saleUnitCost
-                            : formula == AgreementFormulaType.FIXED ? agreementPrice.getUnitPrice() : marketPrice));
-                    basis.put("warehouseId",
-                        formula == AgreementFormulaType.COST_MARKUP_RATE ? costWarehouseId.toString() : null);
+                        ScmDecimalStrings.format(purchaseCostFormula
+                            ? (latestPurchasePrice != null ? latestPurchasePrice : saleUnitCost)
+                            : formula == AgreementFormulaType.COST_MARKUP_RATE
+                                ? saleUnitCost
+                                : formula == AgreementFormulaType.FIXED ? agreementPrice.getUnitPrice() : marketPrice));
+                    basis.put("warehouseId", basisWarehouseId(formula, costWarehouseId));
                     basis.put("stockUnit", cost == null ? null : cost.getStockUnit());
                     basis.put("stockUnitCost", cost == null ? null : ScmDecimalStrings.format(cost.getStockUnitCost()));
                     basis.put("stockUnitsPerSaleUnit",
                         cost == null ? null : ScmDecimalStrings.format(cost.getStockUnitsPerSaleUnit()));
-                    basis.put("inventoryBalanceVersion", cost == null ? null : cost.getBalanceVersion().toString());
+                    basis.put("inventoryBalanceVersion",
+                        cost == null || cost.getBalanceVersion() == null ? null : cost.getBalanceVersion().toString());
+                    if (purchaseCostFormula) {
+                        basis.put("latestPurchasePrice", ScmDecimalStrings
+                            .format(latestPurchase == null ? null : latestPurchase.getLatestPurchasePrice()));
+                        basis.put("latestPurchaseUnit",
+                            latestPurchase == null ? null : latestPurchase.getPurchaseUnit());
+                        basis.put("latestPurchasePriceSaleUnit", ScmDecimalStrings.format(latestPurchasePrice));
+                        basis.put("saleUnit", cost == null ? null : cost.getSaleUnit());
+                        basis.put("saleUnitCost", ScmDecimalStrings.format(saleUnitCost));
+                        basis.put("lossRate", ScmDecimalStrings.format(lossRate));
+                        basis.put("taxRate", ScmDecimalStrings.format(taxRate));
+                    }
                     basis.put("bundleCostComponents", bundle == null ? null : bundleBasis);
                     basis.put("resultUnitPrice", ScmDecimalStrings.format(calculated));
                     basis.put("calculatedAt", priceAt.toString());
@@ -241,5 +268,58 @@ public class PriceResolver {
             || resolvedPrice.getPriceStatus() == ScmPriceStatusEnum.UNPRICED))
             throw new ScmBusinessException(SKU_NOT_SELLABLE);
         return resolvedPrices;
+    }
+
+    private static ScmUnpricedReasonEnum unpricedReason(AgreementFormulaType formula, BigDecimal marketPrice,
+        BigDecimal saleUnitCost, BigDecimal latestPurchasePrice, BigDecimal lossRate, BigDecimal taxRate) {
+        if (formula == AgreementFormulaType.COST_MARKUP_RATE && saleUnitCost == null) {
+            return ScmUnpricedReasonEnum.AGREEMENT_COST_MISSING;
+        }
+        if (formula == AgreementFormulaType.PURCHASE_COST_LOSS_TAX_MARKUP) {
+            if (latestPurchasePrice == null && saleUnitCost == null) {
+                return ScmUnpricedReasonEnum.AGREEMENT_COST_MISSING;
+            }
+            // 比率缺失、越界或结果溢出都不以 0 兜底，统一按公式结果无效处理。
+            return ScmUnpricedReasonEnum.AGREEMENT_RESULT_INVALID;
+        }
+        if (marketPrice == null && formula != AgreementFormulaType.FIXED) {
+            return ScmUnpricedReasonEnum.AGREEMENT_MARKET_PRICE_MISSING;
+        }
+        return ScmUnpricedReasonEnum.AGREEMENT_RESULT_INVALID;
+    }
+
+    /**
+     * 最近采购价换算成销售单位成本：单位一致直接使用；单位不同时按商品已配置的库存单位换算关系折算； 没有换算关系时返回 null，绝不当成同一单位的价格参与定价。
+     */
+    private static BigDecimal latestPurchaseSaleUnitPrice(PricingCostBasisVO latestPurchase) {
+        if (latestPurchase == null || latestPurchase.getLatestPurchasePrice() == null) {
+            return null;
+        }
+        BigDecimal purchasePrice = latestPurchase.getLatestPurchasePrice();
+        if (latestPurchase.getPurchaseUnit() != null
+            && latestPurchase.getPurchaseUnit().equals(latestPurchase.getSaleUnit())) {
+            return purchasePrice;
+        }
+        BigDecimal stockUnitsPerSaleUnit = latestPurchase.getStockUnitsPerSaleUnit();
+        if (stockUnitsPerSaleUnit == null || stockUnitsPerSaleUnit.signum() <= 0) {
+            return null;
+        }
+        return purchasePrice.multiply(stockUnitsPerSaleUnit).setScale(4, RoundingMode.HALF_UP);
+    }
+
+    private static String basisSource(AgreementFormulaType formula, BigDecimal latestPurchasePrice) {
+        if (formula == AgreementFormulaType.PURCHASE_COST_LOSS_TAX_MARKUP) {
+            return latestPurchasePrice != null ? "LATEST_PURCHASE_PRICE" : "WAREHOUSE_WEIGHTED_AVG_COST";
+        }
+        if (formula == AgreementFormulaType.COST_MARKUP_RATE) {
+            return "WAREHOUSE_WEIGHTED_AVG_COST";
+        }
+        return formula == AgreementFormulaType.FIXED ? AgreementFormulaType.FIXED.name() : "MARKET_PRICE";
+    }
+
+    private static String basisWarehouseId(AgreementFormulaType formula, Long warehouseId) {
+        boolean usesWarehouseCost = formula == AgreementFormulaType.COST_MARKUP_RATE
+            || formula == AgreementFormulaType.PURCHASE_COST_LOSS_TAX_MARKUP;
+        return usesWarehouseCost && warehouseId != null ? warehouseId.toString() : null;
     }
 }

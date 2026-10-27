@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 import lombok.Data;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * 时价列表行。
@@ -22,6 +24,7 @@ public class TimePriceVO {
     private OffsetDateTime endAt;
     private String remark;
     private Integer version;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
     private OffsetDateTime createdAt;
 

@@ -124,6 +124,8 @@ function formulaText(row: PriceRow): string {
       return `配送仓成本 × (1 + ${value})`;
     case 'MARKET_MARKUP_RATE':
       return `市场价 × (1 + ${value})`;
+    case 'PURCHASE_COST_LOSS_TAX_MARKUP':
+      return `采购价 × (1 + 损耗率) × (1 + 税率) × (1 + ${value})`;
     default:
       return '固定协议价';
   }

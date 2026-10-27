@@ -74,12 +74,6 @@
                 <dd class="scm-field__value">{{ product.lossRate == null ? '—' : `${product.lossRate}%` }}</dd>
               </div>
               <div class="scm-field">
-                <dt class="scm-field__label">采购预警</dt>
-                <dd class="scm-field__value">
-                  {{ product.purchaseWarningDays == null ? '—' : `${product.purchaseWarningDays} 天` }}
-                </dd>
-              </div>
-              <div class="scm-field">
                 <dt class="scm-field__label">开票品名</dt>
                 <dd class="scm-field__value">{{ product.invoiceName || '—' }}</dd>
               </div>

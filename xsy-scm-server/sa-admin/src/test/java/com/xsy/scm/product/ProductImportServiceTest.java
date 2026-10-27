@@ -62,7 +62,10 @@ class ProductImportServiceTest {
         var kg = new ProductUomEntity();
         kg.setName("份");
         kg.setStatus("ENABLED");
-        when(productUomDao.selectList(any())).thenReturn(java.util.List.of(kg));
+        var jin = new ProductUomEntity();
+        jin.setName("斤");
+        jin.setStatus("ENABLED");
+        when(productUomDao.selectList(any())).thenReturn(java.util.List.of(kg, jin));
     }
 
     private static final String[] HEADERS = {"模板版本", "商品编码", "商品名称", "别名", "分类编码", "助记码",
@@ -264,6 +267,17 @@ class ProductImportServiceTest {
             assertThat(error.getCode()).isEqualTo("UOM_NOT_USABLE");
         });
         verifyNoInteractions(productImportWriteService);
+    }
+
+    @Test
+    void blankSaleUnitFallsBackToJin() throws Exception {
+        when(productImportWriteService.writeAll(anyList())).thenReturn(List.of(5001L));
+        // 列下标 15 是 CREATE 模板里的「销售单位」；留空时按默认单位斤校验并落库
+        var result = productImportService.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(15).setCellValue("")),
+                ImportMode.CREATE);
+        assertThat(result.getTotalErrors()).isZero();
+        verify(productImportWriteService).writeAll(argThat((List<ProductSpuAddForm> forms) ->
+                "斤".equals(forms.getFirst().getSkuList().getFirst().getSaleUnit())));
     }
 
     @Test

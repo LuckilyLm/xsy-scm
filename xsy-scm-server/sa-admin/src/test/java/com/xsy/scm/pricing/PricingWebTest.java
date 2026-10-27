@@ -4,9 +4,11 @@ import com.xsy.scm.common.handler.ScmExceptionHandler;
 import com.xsy.scm.customer.controller.CustomerVisibilityController;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
 import com.xsy.scm.customer.service.CustomerSkuVisibilityService;
 import com.xsy.scm.product.controller.ProductSkuController;
 import com.xsy.scm.product.service.ProductSkuOptionQueryService;
+import com.xsy.scm.product.service.ProductSkuStockConversionService;
 import com.xsy.scm.pricing.controller.*;
 import com.xsy.scm.pricing.domain.vo.*;
 import com.xsy.scm.pricing.service.*;
@@ -67,6 +69,10 @@ class PricingWebTest {
     CustomerSkuVisibilityService visibilityService;
     @MockitoBean
     ProductSkuOptionQueryService skuService;
+    @MockitoBean
+    ProductSkuStockConversionService skuConversionService;
+    @MockitoBean
+    ScmWarehouseScopeGuard warehouseScopeGuard;
     @MockitoBean(name = "systemEnvironment")
     SystemEnvironment environment;
 

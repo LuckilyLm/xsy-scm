@@ -85,11 +85,6 @@
                 </a-form-item>
               </div>
               <div class="product-form-field">
-                <a-form-item label="采购预警" name="purchaseWarningDays" class="app-drawer-field--compact">
-                  <a-input-number v-model:value="form.purchaseWarningDays" :min="0" :max="365" :precision="0" addon-after="天" placeholder="未维护" />
-                </a-form-item>
-              </div>
-              <div class="product-form-field">
                 <a-form-item label="损耗率" name="lossRate" class="app-drawer-field--compact">
                   <a-input-number v-model:value="form.lossRate" :min="0" :max="100" :precision="4" :controls="false" addon-after="%" />
                 </a-form-item>
