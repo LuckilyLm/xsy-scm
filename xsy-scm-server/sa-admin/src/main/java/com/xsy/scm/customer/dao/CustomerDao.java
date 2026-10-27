@@ -43,4 +43,7 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
         @Param("warehouseId") Long warehouseId, @Param("operator") String operator);
 
     List<CustomerEntity> selectActiveByCodes(@Param("codes") List<String> codes);
+
+    /** 按客户名称批量取有效客户，供送货单导入按「收货单位」匹配；重名由调用方判定。 */
+    List<CustomerEntity> selectActiveByNames(@Param("names") List<String> names);
 }

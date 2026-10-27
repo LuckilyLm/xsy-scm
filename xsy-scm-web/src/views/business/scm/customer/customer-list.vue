@@ -9,6 +9,9 @@
         <a-form-item label="客户类型" class="smart-query-form-item">
           <CustomerTypeSelect v-model:value="filters.customerTypeId" width="180px" />
         </a-form-item>
+        <a-form-item label="客户分类" class="smart-query-form-item">
+          <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="CUSTOMER" style="width: 160px" />
+        </a-form-item>
         <a-form-item label="状态" class="smart-query-form-item">
           <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_STATUS_ENUM" width="130px" />
         </a-form-item>
@@ -61,6 +64,7 @@
             </a-button>
           </template>
           <span v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</span>
+          <span v-else-if="column.dataIndex === 'businessCategoryName'">{{ record.businessCategoryName || '未分类' }}</span>
           <span v-else-if="column.dataIndex === 'sellerName'">{{ record.sellerName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'contactName'">{{ record.contactName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'contactPhone'" class="scm-mono">{{ record.contactPhone || '—' }}</span>
@@ -146,6 +150,7 @@ import CustomerPromotionModal from '/@/views/business/scm/customer/components/cu
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
+import BusinessCategoryTreeSelect from '/@/components/business/scm/business-category-tree-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerDrawer from './components/customer-form-drawer.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
@@ -224,6 +229,7 @@ type CustomerListColumn = TableColumnsType<CustomerRow>[number] & {showFlag?: bo
 const columns = ref<CustomerListColumn[]>([
   {title: '客户名称', dataIndex: 'name', width: 200, sorter: true, ellipsis: true},
   {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
+  {title: '客户分类', dataIndex: 'businessCategoryName', width: 120, align: 'center'},
   {title: '业务员', dataIndex: 'sellerName', width: 110},
   {title: '联系人', dataIndex: 'contactName', width: 120},
   {title: '联系电话', dataIndex: 'contactPhone', width: 140},
@@ -267,6 +273,7 @@ function reset() {
     pageSize: 20,
     keyword: undefined,
     customerTypeId: undefined,
+    businessCategoryId: undefined,
     status: undefined,
     settleMode: undefined,
     parentCustomerId: undefined,

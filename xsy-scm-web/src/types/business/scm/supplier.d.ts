@@ -47,6 +47,8 @@ export interface SupplierFormModel extends Partial<AreaColumns>, ScmLocation {
   /** 只读回显：编码由服务端生成，不进入写请求（见 `SupplierPayload`）。 */
   supplierCode: string;
   name: string;
+  /** 供应商业务分类；null 表示未分类。 */
+  businessCategoryId?: ScmId | null;
   contactName?: string | null;
   contactPhone?: string | null;
   paymentPeriodDays?: number;
@@ -66,6 +68,7 @@ export type SupplierPayload = Omit<SupplierFormModel, 'supplierCode'>;
 export interface SupplierRow extends SupplierFormModel {
   supplierId: ScmId;
   version: number;
+  businessCategoryName?: string;
   status: EnableStatus;
   skuCount: number;
   updatedAt: string;
@@ -88,6 +91,7 @@ export interface SupplierQuery {
   pageSize: number;
   searchCount?: boolean;
   keyword?: string;
+  businessCategoryId?: ScmId;
   status?: EnableStatus;
   sortItemList?: ScmSortItem[];
 }

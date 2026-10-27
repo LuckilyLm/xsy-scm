@@ -86,6 +86,8 @@ export interface CustomerFormModel extends Partial<AreaColumns>, ScmLocation {
   customerCode: string;
   name: string;
   customerTypeId?: ScmId;
+  /** 客户业务分类；null 表示未分类。 */
+  businessCategoryId?: ScmId | null;
   parentCustomerId?: ScmId | null;
   settlementCustomerId?: ScmId | null;
   mallDeliveryWarehouseId?: ScmId | null;
@@ -130,6 +132,7 @@ export interface CustomerRow extends CustomerFormModel {
   version: number;
   status: CustomerStatus;
   customerTypeName?: string;
+  businessCategoryName?: string;
   parentCustomerName?: string;
   sellerName?: string;
   updatedAt: string;
@@ -159,6 +162,7 @@ export interface CustomerQuery {
   searchCount?: boolean;
   keyword?: string;
   customerTypeId?: ScmId;
+  businessCategoryId?: ScmId;
   status?: CustomerStatus;
   settleMode?: SettleMode;
   parentCustomerId?: ScmId;

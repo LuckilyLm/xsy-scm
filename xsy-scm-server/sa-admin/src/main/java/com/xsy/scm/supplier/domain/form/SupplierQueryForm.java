@@ -2,6 +2,7 @@ package com.xsy.scm.supplier.domain.form;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -22,6 +23,9 @@ public class SupplierQueryForm extends PageParam {
 
     @ScmEnumValue(enumClass = ScmEnableStatusEnum.class, message = "供应商状态无效")
     private String status;
+
+    @Positive(message = "供应商分类必须大于0")
+    private Long businessCategoryId;
 
     @Override
     @Min(value = 1, message = "页码必须至少为1")

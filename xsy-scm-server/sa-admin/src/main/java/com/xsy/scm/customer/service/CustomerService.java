@@ -1,5 +1,7 @@
 package com.xsy.scm.customer.service;
 
+import com.xsy.scm.businesscategory.constant.BusinessCategoryScopeEnum;
+import com.xsy.scm.businesscategory.service.BusinessCategoryService;
 import com.xsy.scm.common.constant.ScmCustomerStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.constant.ScmSettleModeEnum;
@@ -61,6 +63,8 @@ public class CustomerService {
     private final CustomerValidator customerValidator;
 
     private final CustomerTypeService customerTypeService;
+
+    private final BusinessCategoryService businessCategoryService;
 
     private final ScmBusinessNoService businessNoService;
     private final WarehouseService warehouseService;
@@ -294,6 +298,11 @@ public class CustomerService {
         }
         entity.setName(CustomerValidator.normalizeName(form.getName()));
         entity.setCustomerTypeId(form.getCustomerTypeId());
+        Long businessCategoryId = form.getBusinessCategoryId();
+        if (businessCategoryId != null) {
+            businessCategoryService.requireSelectable(businessCategoryId, BusinessCategoryScopeEnum.CUSTOMER);
+        }
+        entity.setBusinessCategoryId(businessCategoryId);
         entity.setSettleMode(form.getSettleMode());
         // 只有集团主体才谈得上授权；切成独立结算时授权自动作废，不留下悬空权限
         entity.setSharedSettlementEnabled(ScmSettleModeEnum.GROUP.name().equals(form.getSettleMode())

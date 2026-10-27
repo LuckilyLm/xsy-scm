@@ -78,6 +78,10 @@
                   <h3 class="scm-detail-card__title">归属关系</h3>
                   <dl class="scm-field-list">
                     <div class="scm-field">
+                      <dt class="scm-field__label">客户分类</dt>
+                      <dd class="scm-field__value">{{ customer.businessCategoryName || '未分类' }}</dd>
+                    </div>
+                    <div class="scm-field">
                       <dt class="scm-field__label">上级集团</dt>
                       <dd class="scm-field__value">{{ customer.parentCustomerName || '—' }}</dd>
                     </div>

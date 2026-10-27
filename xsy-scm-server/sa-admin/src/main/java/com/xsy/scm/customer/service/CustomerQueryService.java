@@ -4,6 +4,8 @@ import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import lombok.RequiredArgsConstructor;
+import com.xsy.scm.businesscategory.dao.BusinessCategoryDao;
+import com.xsy.scm.businesscategory.domain.entity.BusinessCategoryEntity;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
@@ -67,6 +69,9 @@ public class CustomerQueryService {
     private final CustomerFrequentSkuDao customerFrequentSkuDao;
 
     private final CustomerTypeDao customerTypeDao;
+
+    /** 跨域只读：客户列表与详情补全业务分类名称。 */
+    private final BusinessCategoryDao businessCategoryDao;
 
     /**
      * 跨域只读：客户详情展示「绑定供应商」的名称。
@@ -132,6 +137,7 @@ public class CustomerQueryService {
         EnrichmentContext context = context(rows);
         vo.setCustomerTypeName(context.typeNames().get(entity.getCustomerTypeId()));
         vo.setParentCustomerName(context.customerNames().get(entity.getParentCustomerId()));
+        vo.setBusinessCategoryName(context.categoryNames().get(entity.getBusinessCategoryId()));
         CustomerEntity settlement = customerDao.selectById(entity.getSettlementCustomerId());
         vo.setSettlementCustomerName(settlement == null ? entity.getName() : settlement.getName());
         vo.setSellerName(context.employeeNames().get(entity.getSellerId()));
@@ -214,6 +220,7 @@ public class CustomerQueryService {
         vo.setCustomerId(entity.getId());
         vo.setCustomerTypeName(context.typeNames().get(entity.getCustomerTypeId()));
         vo.setParentCustomerName(context.customerNames().get(entity.getParentCustomerId()));
+        vo.setBusinessCategoryName(context.categoryNames().get(entity.getBusinessCategoryId()));
         vo.setSellerName(context.employeeNames().get(entity.getSellerId()));
         return vo;
     }
@@ -222,16 +229,17 @@ public class CustomerQueryService {
      * 一次性把一批客户行需要的外部名称取回来。
      *
      * <p>
-     * 四次批量查询封顶，与行数无关；空集合显式跳过，避免生成 {@code IN ()} 这种非法 SQL。
+     * 五次批量查询封顶，与行数无关；空集合显式跳过，避免生成 {@code IN ()} 这种非法 SQL。
      */
     private EnrichmentContext context(List<CustomerEntity> rows) {
         if (rows.isEmpty()) {
-            return new EnrichmentContext(Map.of(), Map.of(), Map.of(), Map.of());
+            return new EnrichmentContext(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         }
         Set<Long> typeIds = collect(rows, CustomerEntity::getCustomerTypeId);
         Set<Long> parentIds = collect(rows, CustomerEntity::getParentCustomerId);
         Set<Long> sellerIds = collect(rows, CustomerEntity::getSellerId);
         Set<Long> supplierIds = collect(rows, CustomerEntity::getSupplierId);
+        Set<Long> categoryIds = collect(rows, CustomerEntity::getBusinessCategoryId);
 
         Map<Long, String> typeNames = new HashMap<>();
         if (!typeIds.isEmpty()) {
@@ -261,7 +269,15 @@ public class CustomerQueryService {
                 .forEach(supplier -> supplierNames.put(supplier.getId(), supplier.getName()));
         }
 
-        return new EnrichmentContext(typeNames, customerNames, employeeNames, supplierNames);
+        Map<Long, String> categoryNames = new HashMap<>();
+        if (!categoryIds.isEmpty()) {
+            businessCategoryDao
+                .selectList(
+                    new LambdaQueryWrapper<BusinessCategoryEntity>().in(BusinessCategoryEntity::getId, categoryIds))
+                .forEach(category -> categoryNames.put(category.getId(), category.getName()));
+        }
+
+        return new EnrichmentContext(typeNames, customerNames, employeeNames, supplierNames, categoryNames);
     }
 
     private static Set<Long> collect(List<CustomerEntity> rows, Function<CustomerEntity, Long> getter) {
@@ -275,8 +291,8 @@ public class CustomerQueryService {
         return ids;
     }
 
-    /** 补全名称用的四张表，一次构造、多次复用。 */
+    /** 补全名称用的五张表，一次构造、多次复用。 */
     private record EnrichmentContext(Map<Long, String> typeNames, Map<Long, String> customerNames,
-        Map<Long, String> employeeNames, Map<Long, String> supplierNames) {
+        Map<Long, String> employeeNames, Map<Long, String> supplierNames, Map<Long, String> categoryNames) {
     }
 }

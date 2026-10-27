@@ -18,6 +18,9 @@ public class SupplierAddForm extends ScmLocationForm {
     @Size(max = 150, message = "供应商名称不能超过150个字符")
     private String name;
 
+    @Positive(message = "供应商分类必须大于0")
+    private Long businessCategoryId;
+
     @jakarta.validation.constraints.Min(value = 0, message = "付款账期不能小于0天")
     @jakarta.validation.constraints.Max(value = 3650, message = "付款账期不能超过3650天")
     private Integer paymentPeriodDays = 0;

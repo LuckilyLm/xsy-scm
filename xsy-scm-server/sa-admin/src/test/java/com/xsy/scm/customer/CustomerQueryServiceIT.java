@@ -159,6 +159,36 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
     }
 
     @Test
+    @DisplayName("客户分类名称批量补全，并可按分类筛选")
+    void businessCategoryNameIsEnrichedAndFilterable() {
+        Long categoryId = jdbc.queryForObject(
+            "SELECT id FROM xsy_business_category WHERE scope = 'CUSTOMER' AND category_code = 'CUSTOMER_EGG'",
+            Long.class);
+        CustomerAddForm form = form("BC");
+        form.setBusinessCategoryId(categoryId);
+        Long id = service.add(form);
+
+        CustomerQueryForm byCategory = queryForm();
+        byCategory.setBusinessCategoryId(categoryId);
+        CustomerVO row = queryService.query(byCategory).getList().stream()
+            .filter(vo -> vo.getCustomerId().equals(id)).findFirst().orElseThrow();
+        assertThat(row.getBusinessCategoryId()).isEqualTo(categoryId);
+        assertThat(row.getBusinessCategoryName()).isEqualTo("蛋");
+
+        CustomerDetailVO detail = queryService.detail(id);
+        assertThat(detail.getBusinessCategoryId()).isEqualTo(categoryId);
+        assertThat(detail.getBusinessCategoryName()).isEqualTo("蛋");
+
+        Long otherCategoryId = jdbc.queryForObject(
+            "SELECT id FROM xsy_business_category WHERE scope = 'CUSTOMER' AND category_code = 'CUSTOMER_MEAT'",
+            Long.class);
+        CustomerQueryForm otherCategory = queryForm();
+        otherCategory.setBusinessCategoryId(otherCategoryId);
+        assertThat(queryService.query(otherCategory).getList()).extracting(CustomerVO::getCustomerId)
+            .doesNotContain(id);
+    }
+
+    @Test
     @DisplayName("金额契约：授信额度序列化为 4 位小数字符串，未设置的账期阈值保持 null")
     void decimalContractSurvivesSerialization() throws Exception {
         CustomerAddForm form = form("J1");

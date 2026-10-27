@@ -34,6 +34,7 @@ import {
     // 状态不在表单里：新建强制 ENABLED（legacy S7），变更走独立的 updateStatus。
     assert.equal('status' in form, false);
     assert.equal(form.supplierCode, '');
+    assert.equal(form.businessCategoryId, null);
     // 区划六列必须由新建初值显式置 null：漏一列（undefined）就会让上一条记录的区划串进新供应商。
     for (const key of ['provinceCode', 'provinceName', 'cityCode', 'cityName', 'districtCode', 'districtName']) {
       assert.equal(form[key], null, `emptySupplier 缺少区划列 ${key}`);
@@ -147,6 +148,11 @@ import {
     assert.equal(payload.name, '供应商甲');
     assert.equal(payload.address, null);
     assert.equal(payload.remark, '备注');
+  });
+
+  test('供应商分类可空，选中后随写请求提交', () => {
+    assert.equal(toSupplierPayload(emptySupplier()).businessCategoryId, null);
+    assert.equal(toSupplierPayload({...emptySupplier(), name: '甲', businessCategoryId: 8}).businessCategoryId, 8);
   });
 
   test('写请求体不含供应商编码：编码由服务端生成', () => {

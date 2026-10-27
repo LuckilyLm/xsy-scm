@@ -54,6 +54,10 @@ public class SupplierEntity {
 
     private String name;
 
+    /** 供应商业务分类；为空表示未分类。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long businessCategoryId;
+
     private String status;
 
     private Integer paymentPeriodDays;

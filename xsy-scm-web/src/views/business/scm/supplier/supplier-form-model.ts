@@ -35,6 +35,7 @@ export function emptySupplier(): SupplierFormModel {
     districtName: null,
     supplierCode: '',
     name: '',
+    businessCategoryId: null,
     contactName: '',
     contactPhone: '',
     paymentPeriodDays: 0,
@@ -140,6 +141,7 @@ export function toSupplierPayload(form: SupplierFormModel): SupplierPayload {
   return {
     ...rest,
     name: (form.name ?? '').trim(),
+    businessCategoryId: form.businessCategoryId ?? null,
     contactName: blankToNull(form.contactName),
     contactPhone: blankToNull(form.contactPhone),
     address: blankToNull(form.address),

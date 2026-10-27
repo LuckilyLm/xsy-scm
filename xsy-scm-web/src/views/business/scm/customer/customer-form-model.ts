@@ -47,6 +47,7 @@ export function emptyCustomer(): CustomerFormModel {
     customerCode: '',
     name: '',
     customerTypeId: undefined,
+    businessCategoryId: null,
     parentCustomerId: undefined,
     mallDeliveryWarehouseId: null,
     clearMallDeliveryWarehouse: false,
@@ -142,6 +143,7 @@ export function toCustomerPayload(form: CustomerFormModel): CustomerPayload {
   return {
     ...rest,
     name: (form.name ?? '').trim(),
+    businessCategoryId: form.businessCategoryId ?? null,
     parentCustomerId: form.parentCustomerId ?? null,
     sellerId: form.sellerId ?? null,
     supplierId: form.supplierId ?? null,

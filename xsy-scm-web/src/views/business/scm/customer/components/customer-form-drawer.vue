@@ -19,6 +19,11 @@
                 <CustomerTypeSelect v-model:value="form.customerTypeId" />
               </a-form-item>
             </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="客户分类" name="businessCategoryId">
+                <BusinessCategoryTreeSelect v-model:value="form.businessCategoryId" scope="CUSTOMER" mode="select" />
+              </a-form-item>
+            </a-col>
             <a-col v-if="isEdit" :xs="24" :sm="12">
               <a-form-item>
                 <template #label>
@@ -251,6 +256,7 @@ import {areaColumnsOf, areaNodesOf} from '../../common/scm-area';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
+import BusinessCategoryTreeSelect from '/@/components/business/scm/business-category-tree-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {normalizeMoneyInput} from '/@/utils/scm-amount';
@@ -340,6 +346,7 @@ async function open(customerId?: ScmId) {
       customerCode: detail.customerCode,
       name: detail.name,
       customerTypeId: detail.customerTypeId,
+      businessCategoryId: detail.businessCategoryId ?? null,
       parentCustomerId: detail.parentCustomerId ?? null,
       settlementCustomerId: detail.settlementCustomerId ?? null,
       mallDeliveryWarehouseId: detail.mallDeliveryWarehouseId ?? null,

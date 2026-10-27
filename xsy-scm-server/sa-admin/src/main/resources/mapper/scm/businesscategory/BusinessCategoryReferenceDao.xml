@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.businesscategory.dao.BusinessCategoryReferenceDao">
+
+    <!-- 分类删除前的只读引用检查；不修改客户与供应商表。 -->
+    <select id="countCustomers" resultType="long">
+        SELECT COUNT(*)
+        FROM xsy_customer
+        WHERE business_category_id = #{categoryId}
+            AND deleted = FALSE
+    </select>
+
+    <select id="countSuppliers" resultType="long">
+        SELECT COUNT(*)
+        FROM xsy_supplier
+        WHERE business_category_id = #{categoryId}
+            AND deleted = FALSE
+    </select>
+
+</mapper>

@@ -3,6 +3,8 @@ package com.xsy.scm.customer.domain.vo;
 import java.time.OffsetDateTime;
 
 import lombok.Data;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * 客户专属推广二维码。
@@ -18,6 +20,7 @@ public class CustomerPromotionVO {
     private String sellerName;
     private OffsetDateTime revokedAt;
     private Integer scanCount;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
     private OffsetDateTime createdAt;
 

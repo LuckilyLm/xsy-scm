@@ -6,6 +6,9 @@
         <a-form-item label="关键字" class="smart-query-form-item">
           <a-input v-model:value="filters.keyword" allow-clear placeholder="编码 / 名称 / 联系人 / 电话" style="width: 240px" />
         </a-form-item>
+        <a-form-item label="供应商分类" class="smart-query-form-item">
+          <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="SUPPLIER" style="width: 160px" />
+        </a-form-item>
         <a-form-item label="状态" class="smart-query-form-item">
           <SmartEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_STATUS_ENUM" width="130px" />
         </a-form-item>
@@ -43,6 +46,9 @@
         <template #bodyCell="{column, record}">
           <template v-if="column.dataIndex === 'name'">
             <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.supplierId)">{{ record.name }}</a-button>
+          </template>
+          <template v-else-if="column.dataIndex === 'businessCategoryName'">
+            {{ record.businessCategoryName || '未分类' }}
           </template>
           <template v-else-if="column.dataIndex === 'contactName'">
             {{ record.contactName || '—' }}
@@ -101,6 +107,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
+import BusinessCategoryTreeSelect from '/@/components/business/scm/business-category-tree-select/index.vue';
 import SupplierDrawer from './components/supplier-form-drawer.vue';
 import SupplierSkuDrawer from './components/supplier-sku-drawer.vue';
 import {supplierError} from './supplier-errors';
@@ -123,6 +130,7 @@ const statusTone = (value: EnableStatus): ScmStatusTone => (value === 'ENABLED' 
 // 更新时间不上列表，可在详情里查看。
 const columns = ref<TableColumnsType<SupplierRow>>([
   {title: '供应商名称', dataIndex: 'name', width: 190, sorter: true, ellipsis: true},
+  {title: '供应商分类', dataIndex: 'businessCategoryName', width: 120, align: 'center'},
   {title: '联系人', dataIndex: 'contactName', width: 130, ellipsis: true},
   {title: '联系电话', dataIndex: 'contactPhone', width: 140},
   {title: '关联商品数', dataIndex: 'skuCount', width: 92},
@@ -158,7 +166,7 @@ function search() {
 }
 
 function reset() {
-  Object.assign(filters, {pageNum: 1, keyword: undefined, status: undefined, sortItemList: undefined});
+  Object.assign(filters, {pageNum: 1, keyword: undefined, businessCategoryId: undefined, status: undefined, sortItemList: undefined});
   void load();
 }
 

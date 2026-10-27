@@ -34,6 +34,10 @@ public class CustomerDetailVO {
 
     private String customerTypeName;
 
+    private Long businessCategoryId;
+
+    private String businessCategoryName;
+
     private String status;
 
     private String settleMode;

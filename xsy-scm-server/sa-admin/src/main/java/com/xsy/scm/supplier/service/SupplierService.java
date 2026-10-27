@@ -1,6 +1,8 @@
 package com.xsy.scm.supplier.service;
 
 import lombok.RequiredArgsConstructor;
+import com.xsy.scm.businesscategory.constant.BusinessCategoryScopeEnum;
+import com.xsy.scm.businesscategory.service.BusinessCategoryService;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
@@ -40,6 +42,8 @@ public class SupplierService {
     private final SupplierSkuDao supplierSkuDao;
 
     private final ScmBusinessNoService businessNoService;
+
+    private final BusinessCategoryService businessCategoryService;
 
     /** 读取供应商，不存在或已删除返回 40440。 */
     public SupplierEntity require(Long supplierId) {
@@ -129,6 +133,11 @@ public class SupplierService {
 
     private void apply(SupplierEntity entity, SupplierAddForm form) {
         entity.setName(SupplierValidator.normalizeName(form.getName()));
+        Long businessCategoryId = form.getBusinessCategoryId();
+        if (businessCategoryId != null) {
+            businessCategoryService.requireSelectable(businessCategoryId, BusinessCategoryScopeEnum.SUPPLIER);
+        }
+        entity.setBusinessCategoryId(businessCategoryId);
         entity.setPaymentPeriodDays(form.getPaymentPeriodDays() == null ? 0 : form.getPaymentPeriodDays());
         entity.setContactName(SupplierValidator.normalizeOptional(form.getContactName()));
         entity.setContactPhone(SupplierValidator.normalizeOptional(form.getContactPhone()));

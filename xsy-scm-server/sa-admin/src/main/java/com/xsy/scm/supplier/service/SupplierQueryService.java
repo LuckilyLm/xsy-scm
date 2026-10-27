@@ -1,7 +1,10 @@
 package com.xsy.scm.supplier.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import lombok.RequiredArgsConstructor;
+import com.xsy.scm.businesscategory.dao.BusinessCategoryDao;
+import com.xsy.scm.businesscategory.domain.entity.BusinessCategoryEntity;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.supplier.dao.SupplierDao;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +47,9 @@ public class SupplierQueryService {
 
     private final SupplierSkuDao supplierSkuDao;
 
+    /** 跨域只读：供应商列表与详情补全业务分类名称。 */
+    private final BusinessCategoryDao businessCategoryDao;
+
     public PageResult<SupplierVO> query(SupplierQueryForm form) {
         assertSortable(form);
         var page = SmartPageUtil.convert2PageQuery(form);
@@ -52,12 +59,14 @@ public class SupplierQueryService {
         List<SupplierEntity> rows = supplierDao.queryPage(page, form);
 
         Map<Long, Long> skuCounts = skuCounts(rows);
+        Map<Long, String> categoryNames = categoryNames(rows);
         List<SupplierVO> list = new ArrayList<>(rows.size());
         for (SupplierEntity row : rows) {
             SupplierVO vo = new SupplierVO();
             BeanUtils.copyProperties(row, vo);
             vo.setSupplierId(row.getId());
             vo.setSkuCount(skuCounts.getOrDefault(row.getId(), 0L));
+            vo.setBusinessCategoryName(categoryNames.get(row.getBusinessCategoryId()));
             list.add(vo);
         }
         return SmartPageUtil.convert2PageResult(page, list);
@@ -72,6 +81,10 @@ public class SupplierQueryService {
         BeanUtils.copyProperties(entity, vo);
         vo.setSupplierId(entity.getId());
         vo.setSkuCount(supplierSkuDao.countActiveBySupplierId(supplierId));
+        if (entity.getBusinessCategoryId() != null) {
+            BusinessCategoryEntity category = businessCategoryDao.selectById(entity.getBusinessCategoryId());
+            vo.setBusinessCategoryName(category == null ? null : category.getName());
+        }
         return vo;
     }
 
@@ -90,6 +103,22 @@ public class SupplierQueryService {
             list.add(vo);
         }
         return list;
+    }
+
+    private Map<Long, String> categoryNames(List<SupplierEntity> rows) {
+        Map<Long, String> names = new HashMap<>();
+        Set<Long> ids = new LinkedHashSet<>();
+        for (SupplierEntity row : rows) {
+            if (row.getBusinessCategoryId() != null) {
+                ids.add(row.getBusinessCategoryId());
+            }
+        }
+        if (!ids.isEmpty()) {
+            businessCategoryDao
+                .selectList(new LambdaQueryWrapper<BusinessCategoryEntity>().in(BusinessCategoryEntity::getId, ids))
+                .forEach(category -> names.put(category.getId(), category.getName()));
+        }
+        return names;
     }
 
     private Map<Long, Long> skuCounts(List<SupplierEntity> rows) {

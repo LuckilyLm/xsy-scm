@@ -21,6 +21,10 @@ public class SupplierDetailVO {
 
     private String name;
 
+    private Long businessCategoryId;
+
+    private String businessCategoryName;
+
     private String status;
 
     private Integer paymentPeriodDays;

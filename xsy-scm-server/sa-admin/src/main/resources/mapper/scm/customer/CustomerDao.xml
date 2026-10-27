@@ -4,7 +4,8 @@
 
     <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式契约） -->
     <sql id="customerColumns">
-        c.id, c.version, c.visibility_policy, c.customer_code, c.name, c.customer_type_id, c.status, c.settle_mode,
+        c.id, c.version, c.visibility_policy, c.customer_code, c.name, c.customer_type_id, c.business_category_id,
+            c.status, c.settle_mode,
             c.cod_allowed, c.shared_settlement_enabled, c.mall_delivery_warehouse_id, c.credit_limit,
             c.parent_customer_id, c.settlement_customer_id, c.mall_delivery_warehouse_id, c.seller_id, c.supplier_id,
             c.contact_name, c.contact_phone, c.address, c.credit_period_type, c.credit_amount_threshold,
@@ -34,6 +35,7 @@
                 c.contact_phone ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         <if test="query.customerTypeId != null">AND c.customer_type_id = #{query.customerTypeId}</if>
+        <if test="query.businessCategoryId != null">AND c.business_category_id = #{query.businessCategoryId}</if>
         <if test="query.status != null and query.status != ''">AND c.status = #{query.status}</if>
         <if test="query.settleMode != null and query.settleMode != ''">AND c.settle_mode = #{query.settleMode}</if>
         <if test="query.parentCustomerId != null">AND c.parent_customer_id = #{query.parentCustomerId}</if>
@@ -95,6 +97,15 @@
         WHERE c.deleted = FALSE
             AND c.customer_code IN
         <foreach collection="codes" item="code" open="(" separator="," close=")">#{code}</foreach>
+    </select>
+
+    <select id="selectActiveByNames" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
+        SELECT
+        <include refid="customerColumns"/>
+        FROM xsy_customer c
+        WHERE c.deleted = FALSE
+            AND c.name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">#{name}</foreach>
     </select>
 
 </mapper>

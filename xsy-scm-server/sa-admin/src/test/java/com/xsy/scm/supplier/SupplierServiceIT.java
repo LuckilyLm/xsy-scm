@@ -1,5 +1,9 @@
 package com.xsy.scm.supplier;
 
+import com.xsy.scm.businesscategory.domain.entity.BusinessCategoryEntity;
+import com.xsy.scm.businesscategory.domain.form.BusinessCategoryAddForm;
+import com.xsy.scm.businesscategory.domain.form.BusinessCategoryUpdateForm;
+import com.xsy.scm.businesscategory.service.BusinessCategoryService;
 import com.xsy.scm.common.ScmW2PgITBase;
 import com.xsy.scm.supplier.domain.form.SupplierAddForm;
 import com.xsy.scm.supplier.domain.form.SupplierDeleteForm;
@@ -35,6 +39,9 @@ class SupplierServiceIT extends ScmW2PgITBase {
 
     @Autowired
     private SupplierSkuService skuService;
+
+    @Autowired
+    private BusinessCategoryService businessCategoryService;
 
     private SupplierAddForm form(String suffix) {
         SupplierAddForm form = new SupplierAddForm();
@@ -124,6 +131,56 @@ class SupplierServiceIT extends ScmW2PgITBase {
         status.setVersion(1);
         service.updateStatus(status);
         expectCode(() -> service.requireEnabled(id), 40940);
+    }
+
+    @Test
+    @DisplayName("供应商分类必须属于 SUPPLIER 作用域且启用；编辑可清空")
+    void businessCategoryMustBeEnabledSupplierScope() {
+        Long supplierCategory = jdbc.queryForObject(
+            "SELECT id FROM xsy_business_category WHERE scope = 'SUPPLIER' AND category_code = 'SUPPLIER_VEG'",
+            Long.class);
+        Long customerCategory = jdbc.queryForObject(
+            "SELECT id FROM xsy_business_category WHERE scope = 'CUSTOMER' AND category_code = 'CUSTOMER_VEG'",
+            Long.class);
+
+        SupplierAddForm form = form("bc1");
+        form.setBusinessCategoryId(supplierCategory);
+        Long id = service.add(form);
+        assertThat(jdbc.queryForObject(
+            "SELECT business_category_id FROM xsy_supplier WHERE id = ?", Long.class, id))
+            .isEqualTo(supplierCategory);
+
+        SupplierAddForm crossScope = form("bc2");
+        crossScope.setBusinessCategoryId(customerCategory);
+        expectCode(() -> service.add(crossScope), 40444);
+
+        BusinessCategoryAddForm disabledForm = new BusinessCategoryAddForm();
+        disabledForm.setScope("SUPPLIER");
+        disabledForm.setCategoryCode(prefix + "DISABLED");
+        disabledForm.setName(prefix + "停用分类");
+        disabledForm.setSortOrder(0);
+        disabledForm.setStatus("ENABLED");
+        Long disabledId = businessCategoryService.add(disabledForm);
+        BusinessCategoryEntity disabled = businessCategoryService.require(disabledId);
+        BusinessCategoryUpdateForm disable = new BusinessCategoryUpdateForm();
+        disable.setCategoryId(disabledId);
+        disable.setVersion(disabled.getVersion());
+        disable.setScope("SUPPLIER");
+        disable.setCategoryCode(disabled.getCategoryCode());
+        disable.setName(disabled.getName());
+        disable.setSortOrder(disabled.getSortOrder());
+        disable.setStatus("DISABLED");
+        businessCategoryService.update(disable);
+
+        SupplierAddForm disabledCategory = form("bc3");
+        disabledCategory.setBusinessCategoryId(disabledId);
+        expectCode(() -> service.add(disabledCategory), 40954);
+
+        SupplierUpdateForm clear = updateForm(id, 0, "bc1");
+        clear.setBusinessCategoryId(null);
+        service.update(clear);
+        assertThat(jdbc.queryForObject(
+            "SELECT business_category_id FROM xsy_supplier WHERE id = ?", Long.class, id)).isNull();
     }
 
     @Test

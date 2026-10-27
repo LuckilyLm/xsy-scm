@@ -52,6 +52,10 @@
             <h3 class="scm-detail-card__title">采购与账期</h3>
             <dl class="scm-field-list">
               <div class="scm-field">
+                <dt class="scm-field__label">供应商分类</dt>
+                <dd class="scm-field__value">{{ supplier.businessCategoryName || '未分类' }}</dd>
+              </div>
+              <div class="scm-field">
                 <dt class="scm-field__label">付款账期</dt>
                 <dd class="scm-field__value">{{ supplier.paymentPeriodDays ?? 0 }} 天</dd>
               </div>

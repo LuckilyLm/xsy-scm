@@ -25,6 +25,9 @@ public class CustomerQueryForm extends PageParam {
     @Positive(message = "客户类型必须大于0")
     private Long customerTypeId;
 
+    @Positive(message = "客户分类必须大于0")
+    private Long businessCategoryId;
+
     @ScmEnumValue(enumClass = ScmCustomerStatusEnum.class, message = "客户状态无效")
     private String status;
 

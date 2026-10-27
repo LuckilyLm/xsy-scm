@@ -54,7 +54,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     const titles = [...LIST.matchAll(/\{\s*title:\s*'([^']+)',\s*dataIndex:\s*'([^']+)'/g)].map((m) => m[1]);
     assert.deepEqual(
       titles,
-      ['客户名称', '客户类型', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
+      ['客户名称', '客户类型', '客户分类', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
       '客户列表列结构被改动'
     );
     assert.doesNotMatch(LIST, /dataIndex: 'customerCode'/);
@@ -136,7 +136,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
       width: Number(m[1]),
       hiddenByDefault: /showFlag:\s*false/.test(m[2]),
     }));
-    assert.equal(columns.length, 9, '客户列表列数被改动');
+    assert.equal(columns.length, 10, '客户列表列数被改动');
     const visibleWidth = columns.filter((column) => !column.hiddenByDefault).reduce((sum, column) => sum + column.width, 0);
     assert.ok(visibleWidth > 0);
     // 列宽与铺满统一走 useScmTableFill：scrollX 由它算出
@@ -342,6 +342,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     // 空白 → null：后端 FieldStrategy.ALWAYS 只对 null 生效，送 "" 会变成「想清空却清不掉」。
     assert.equal(payload.contactName, null);
     assert.equal(payload.remark, '有备注');
+    assert.equal(payload.businessCategoryId, null);
     assert.equal(payload.parentCustomerId, null);
     assert.equal(payload.sellerId, null);
     assert.equal(payload.supplierId, null);
@@ -357,6 +358,12 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     // 编码只在 UI 表单模型（CustomerFormModel）上做只读回显，写请求体（CustomerPayload）没有这个键。
     assert.equal('customerCode' in payload, false);
     assert.equal(payload.name, '客户甲');
+  });
+
+  test('客户分类可空，选中后随写请求提交', () => {
+    assert.equal(emptyCustomer().businessCategoryId, null);
+    const payload = toCustomerPayload({...emptyCustomer(), customerTypeId: 1, businessCategoryId: 9});
+    assert.equal(payload.businessCategoryId, 9);
   });
 
   test('货到付款默认关闭，只有后台明确勾选才提交开通', () => {

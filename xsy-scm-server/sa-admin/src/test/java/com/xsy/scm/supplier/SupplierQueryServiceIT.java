@@ -99,6 +99,36 @@ class SupplierQueryServiceIT extends ScmW2PgITBase {
     }
 
     @Test
+    @DisplayName("供应商分类名称批量补全，并可按分类筛选")
+    void businessCategoryNameIsEnrichedAndFilterable() {
+        Long categoryId = jdbc.queryForObject(
+            "SELECT id FROM xsy_business_category WHERE scope = 'SUPPLIER' AND category_code = 'SUPPLIER_EGG'",
+            Long.class);
+        SupplierAddForm form = form("BC");
+        form.setBusinessCategoryId(categoryId);
+        Long id = service.add(form);
+
+        SupplierQueryForm byCategory = queryForm();
+        byCategory.setBusinessCategoryId(categoryId);
+        SupplierVO row = queryService.query(byCategory).getList().stream()
+            .filter(vo -> vo.getSupplierId().equals(id)).findFirst().orElseThrow();
+        assertThat(row.getBusinessCategoryId()).isEqualTo(categoryId);
+        assertThat(row.getBusinessCategoryName()).isEqualTo("蛋");
+
+        SupplierDetailVO detail = queryService.detail(id);
+        assertThat(detail.getBusinessCategoryId()).isEqualTo(categoryId);
+        assertThat(detail.getBusinessCategoryName()).isEqualTo("蛋");
+
+        Long otherCategoryId = jdbc.queryForObject(
+            "SELECT id FROM xsy_business_category WHERE scope = 'SUPPLIER' AND category_code = 'SUPPLIER_MEAT'",
+            Long.class);
+        SupplierQueryForm otherCategory = queryForm();
+        otherCategory.setBusinessCategoryId(otherCategoryId);
+        assertThat(queryService.query(otherCategory).getList()).extracting(SupplierVO::getSupplierId)
+            .doesNotContain(id);
+    }
+
+    @Test
     @DisplayName("列表与详情的 skuCount 反映活动关联数（软删不计入）")
     void skuCountCountsActiveRelationsOnly() {
         Long supplierId = service.add(form("c"));

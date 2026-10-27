@@ -6,6 +6,7 @@ import com.xsy.scm.customer.controller.CustomerController;
 import com.xsy.scm.customer.domain.vo.CustomerVO;
 import com.xsy.scm.customer.service.CustomerQueryService;
 import com.xsy.scm.customer.service.CustomerService;
+import com.xsy.scm.customer.service.CustomerSkuAliasService;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.SystemEnvironment;
 import net.lab1024.sa.base.common.exception.BusinessException;
@@ -52,6 +53,9 @@ class CustomerControllerTest {
 
     @MockitoBean
     private CustomerQueryService queryService;
+
+    @MockitoBean
+    private CustomerSkuAliasService customerSkuAliasService;
 
     @MockitoBean(name = "systemEnvironment")
     private SystemEnvironment environment;

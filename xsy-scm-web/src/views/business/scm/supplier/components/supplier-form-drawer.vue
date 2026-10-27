@@ -15,6 +15,11 @@
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
+              <a-form-item label="供应商分类" name="businessCategoryId">
+                <BusinessCategoryTreeSelect v-model:value="form.businessCategoryId" scope="SUPPLIER" mode="select" />
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
               <a-form-item label="联系人" name="contactName">
                 <a-input v-model:value="form.contactName" :maxlength="100" />
               </a-form-item>
@@ -93,6 +98,7 @@ import {areaColumnsOf, areaNodesOf} from '../../common/scm-area';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {supplierError} from '../supplier-errors';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
+import BusinessCategoryTreeSelect from '/@/components/business/scm/business-category-tree-select/index.vue';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const emit = defineEmits<{saved: []}>();
@@ -136,6 +142,7 @@ async function open(supplierId?: ScmId) {
       version: detail.version,
       supplierCode: detail.supplierCode,
       name: detail.name,
+      businessCategoryId: detail.businessCategoryId ?? null,
       contactName: detail.contactName ?? '',
       contactPhone: detail.contactPhone ?? '',
       paymentPeriodDays: detail.paymentPeriodDays ?? 0,
