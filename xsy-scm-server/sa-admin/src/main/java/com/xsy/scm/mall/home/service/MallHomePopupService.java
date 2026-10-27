@@ -147,7 +147,8 @@ public class MallHomePopupService {
         for (MallHomePopupItemForm item : items) {
             MallHomeLinkType linkType;
             try {
-                linkType = MallHomeLinkType.valueOf(item.getLinkType() == null ? "NONE" : item.getLinkType());
+                linkType = MallHomeLinkType
+                    .valueOf(item.getLinkType() == null ? MallHomeLinkType.NONE.name() : item.getLinkType());
             } catch (IllegalArgumentException invalidType) {
                 throw new ScmBusinessException(INVALID_LINK);
             }

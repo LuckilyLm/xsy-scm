@@ -153,6 +153,8 @@ class MallOrderServiceTest {
         MallProductVO product = new MallProductVO();
         product.setSkuId(skuId);
         product.setUnitPrice(unitPrice == null ? null : new BigDecimal(unitPrice));
+        // 称重商品按半斤递增：历史下单量 2.5000 在当前数量规则下仍可再次加入购物车。
+        product.setStepQty(new BigDecimal("0.5000"));
         return product;
     }
 

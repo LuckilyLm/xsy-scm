@@ -38,7 +38,7 @@ public class MallHomeLayoutService {
     /**
      * 受控主题：只改配色，不换版式。
      */
-    private static final String DEFAULT_THEME = "FRESH";
+    private static final String DEFAULT_THEME = MallTheme.FRESH.getCode();
 
     private static final TypeReference<List<MallHomeBlockForm>> BLOCKS = new TypeReference<>() {
     };
