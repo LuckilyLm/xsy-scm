@@ -54,6 +54,14 @@
   background: var(--scm-accent-soft);
 }
 
+/*
+ * 固定列左侧的投影常驻：宽表横向滚动时，被切掉的金额（如「¥ 0.0…」）只有一道阴影才能
+ * 说明「右边还有内容」，否则会被当成数值本身写错了。
+ */
+.scm-module .admin-layout .ant-table-wrapper .ant-table-cell-fix-right-first {
+  box-shadow: -8px 0 8px -8px rgb(29 37 30 / 18%);
+}
+
 /* 不再使用双行复合单元：名称、编码各自成列，避免拉高行高、拉宽列宽。 */
 
 /* 名称入口：默认为主题色链接；类名写两遍以压过 antd 运行时注入的同特异性样式。 */
