@@ -129,7 +129,9 @@ public class PurchaseOrderLockService {
         Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
         snapshot.put("lockedFlag", locked);
         snapshot.put("lockReason", lockReason);
-        snapshot.put("lockedAt", lockedAt);
+        // 时间一律写 ISO 字符串：JSONB 的 PurchaseJsonbTypeHandler 未注册 JavaTimeModule，
+        // 直接放 OffsetDateTime 会在写操作日志时抛异常。
+        snapshot.put("lockedAt", lockedAt == null ? null : lockedAt.toString());
         return snapshot;
     }
 }
