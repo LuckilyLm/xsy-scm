@@ -214,13 +214,13 @@ class SmartAdminMapperPgValidationIT {
                     .contains(methodName);
         }
         // BaseMapper 自动注册的方法不做独立 SQL PREPARE，因此这里跳过统计。
-        // 当前允许的最大跳过数为 618；新增跳过项必须显式调整这个数字。
+        // 当前允许的最大跳过数为 658；新增跳过项必须显式调整这个数字。
         // 上面第 1) 条已保证这些跳过项的方法名全部属于 BaseMapper，因此它们不可能是手写语句被漏掉——
         // 手写语句一旦混进来会先在那条断言上点名失败。
-        // 这个数字是「继承 BaseMapper 的 Mapper 接口数」的函数（2026-10-15 实测 124 个 DAO / 618 条），
-        // 与业务改动无关：往既有 DAO 加手写语句不会让它变，新增 MP DAO 才会。本次由 608 调到 618
-        // 就是远程合并 V128～V130 带来几个新 DAO 的结果，已确认跳过项全部是 BaseMapper 方法。
-        assertThat(skipped).as("跳过项基线 618 条，只增不减需显式确认").hasSizeLessThanOrEqualTo(618);
+        // 这个数字是「继承 BaseMapper 的 Mapper 接口数」的函数（2026-10-27 实测 658 条），
+        // 与业务改动无关：往既有 DAO 加手写语句不会让它变，新增 MP DAO 才会。本次由 618 调到 658
+        // 是客户供应商分类、商品规格库存换算等新 DAO 的结果，已确认跳过项全部是 BaseMapper 方法。
+        assertThat(skipped).as("跳过项基线 658 条，只增不减需显式确认").hasSizeLessThanOrEqualTo(658);
     }
 
     // ------------------------------------------------------------------

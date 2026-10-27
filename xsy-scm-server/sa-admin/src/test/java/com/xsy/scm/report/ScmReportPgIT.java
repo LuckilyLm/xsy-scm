@@ -36,10 +36,14 @@ import com.xsy.scm.report.service.ReceiptReportService;
 import com.xsy.scm.report.service.SalesReportService;
 import net.lab1024.sa.base.common.domain.PageParam;
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.stp.StpUtil;
+import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mockStatic;
 
 /**
  * Finance 报表中心（真实 PostgreSQL IT）。
@@ -427,17 +431,22 @@ class ScmReportPgIT extends ScmW6PgITBase {
         ScmReceiptReportQueryForm receipt = receiptForm();
         ScmInventoryReportQueryForm inventory = inventoryForm();
 
-        assertWorkbook("销售按商品", r -> reportController.exportSalesProduct(sales, r));
-        assertWorkbook("销售按客户", r -> reportController.exportSalesCustomer(sales, r));
-        assertWorkbook("销售订单明细", r -> reportController.exportSalesItem(sales, r));
-        assertWorkbook("采购按商品", r -> reportController.exportPurchaseProduct(purchase, r));
-        assertWorkbook("采购按供应商", r -> reportController.exportPurchaseSupplier(purchase, r));
-        assertWorkbook("采购明细", r -> reportController.exportPurchaseItem(purchase, r));
-        assertWorkbook("收货明细", r -> reportController.exportReceipt(receipt, r));
-        assertWorkbook("入库明细", r -> reportController.exportInbound(receipt, r));
-        assertWorkbook("库存流水", r -> reportController.exportMovement(inventory, r));
-        assertWorkbook("损耗分析", r -> reportController.exportLoss(inventory, r));
-        assertWorkbook("当前库存价值", r -> reportController.exportInventoryValue(inventory, r));
+        // 导出列白名单会按成本权限过滤列；IT 线程没有 Sa-Token 上下文，这里显式给出权限，
+        // 让导出走「有成本列」的完整路径（无权限分支由 ScmExportColumnSelectionTest 覆盖）。
+        try (MockedStatic<StpUtil> stp = mockStatic(StpUtil.class)) {
+            stp.when(() -> StpUtil.hasPermission(anyString())).thenReturn(true);
+            assertWorkbook("销售按商品", r -> reportController.exportSalesProduct(sales, r));
+            assertWorkbook("销售按客户", r -> reportController.exportSalesCustomer(sales, r));
+            assertWorkbook("销售订单明细", r -> reportController.exportSalesItem(sales, r));
+            assertWorkbook("采购按商品", r -> reportController.exportPurchaseProduct(purchase, r));
+            assertWorkbook("采购按供应商", r -> reportController.exportPurchaseSupplier(purchase, r));
+            assertWorkbook("采购明细", r -> reportController.exportPurchaseItem(purchase, r));
+            assertWorkbook("收货明细", r -> reportController.exportReceipt(receipt, r));
+            assertWorkbook("入库明细", r -> reportController.exportInbound(receipt, r));
+            assertWorkbook("库存流水", r -> reportController.exportMovement(inventory, r));
+            assertWorkbook("损耗分析", r -> reportController.exportLoss(inventory, r));
+            assertWorkbook("当前库存价值", r -> reportController.exportInventoryValue(inventory, r));
+        }
     }
 
     /** 每个导出单独一个 response：共用一个 response 会让前一个的内容被后一次写出混进来。 */

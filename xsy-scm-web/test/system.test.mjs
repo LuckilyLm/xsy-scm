@@ -1262,7 +1262,12 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     // 免责本身要留（避免把缺口读成采购建议），但它只在有人看那一列时才需要 —— 按 guidelines §8.1
     // 改成 Tooltip，不再占一行正文。
     secondaryType: 31,
-    hintClass: 33,
+    // 33 → 37（2026-10-28 现场确认 P0）：
+    // 采购单详情「锁单时间/操作人」与明细操作列占位（4 处里的 2 处）、
+    // 仓库表单「允许负库存」的后果说明（关闭前必须先清负余额，告知不到会直接错账）、
+    // 秤端会话记录「班次到期需重新签发」及结束原因（不告知会以为登录一次就长期有效）。
+    // 四处都是「不告知就可能操作错误」，不是实现口径说明；订单明细区原「合计数量」旁的解释句已删。
+    hintClass: 37,
     reportResidentInfoAlert: 0,
     residentLongText: 0,
   };

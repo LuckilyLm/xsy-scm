@@ -24,6 +24,16 @@ final class PgITFixtureNames {
      */
     private static final String[] OPERATORS = {"张伟", "李静", "王海涛", "陈晓芸", "周敏"};
 
+    /**
+     * 本 JVM 运行的唯一短码。
+     *
+     * <p>计数器每次启动都从 1 开始，只用「品牌 + 序号」时两次测试运行会生成同一批前缀；
+     * 幂等记录留在库里不清理，第二次运行就会撞上「同键不同内容」。把运行短码拼进前缀，
+     * 重跑和并发 fork 都不会复用上一次的键。
+     */
+    private static final String RUN_CODE = java.util.UUID.randomUUID().toString()
+        .substring(0, 4).toUpperCase(java.util.Locale.ROOT);
+
     private static final AtomicInteger BRAND_SEQ = new AtomicInteger();
 
     private static final AtomicInteger OPERATOR_SEQ = new AtomicInteger();
@@ -39,7 +49,10 @@ final class PgITFixtureNames {
      */
     static String brand() {
         int n = BRAND_SEQ.incrementAndGet();
-        return BRANDS[n % BRANDS.length] + (100 + n % 900);
+        // 后缀不能再取模：模 900 时整个 JVM 每 900 个用例就会复用同一前缀，
+        // 幂等键（前缀 + 序号）随之撞车 → 40990「相同幂等键的请求内容不一致」。
+        // 再拼上本次运行的短码，避免「重跑一次测试」复用上次留在库里的键。
+        return BRANDS[n % BRANDS.length] + (100 + n) + RUN_CODE;
     }
 
     /**

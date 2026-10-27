@@ -710,6 +710,70 @@ class ScmMigrationTargetPgIT {
         assertThat(missing).as("存量自定义小票模板也应带供应商来源").isZero();
     }
 
+    /** V181 起客户/供应商共用一张按 scope 隔离的小树，档案只存分类 id。 */
+    @Test
+    void businessCategoryExistsFromV181() {
+        int target = Integer.parseInt(targetVersion());
+        if (target < 181) {
+            return;
+        }
+        assertColumn("xsy_business_category", "scope");
+        assertColumn("xsy_business_category", "category_code");
+        assertColumn("xsy_customer", "business_category_id");
+        assertColumn("xsy_supplier", "business_category_id");
+        Integer seeds = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_business_category WHERE deleted = FALSE "
+                        + "AND scope IN ('CUSTOMER', 'SUPPLIER') AND name IN ('蔬菜', '蛋', '肉')",
+                Integer.class);
+        assertThat(seeds).as("客户与供应商各三个初始分类").isEqualTo(6);
+        Integer pageMenu = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id = 47604 AND menu_type = 2", Integer.class);
+        assertThat(pageMenu).as("分类维护页面应随迁移发布").isEqualTo(1);
+    }
+
+    /** V182 起对账单可打印，客户专属模板按客户 + 单据类型唯一。 */
+    @Test
+    void statementPrintAndCustomerBindingExistFromV182() {
+        int target = Integer.parseInt(targetVersion());
+        if (target < 182) {
+            return;
+        }
+        Integer statements = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_print_template WHERE document_type = 'STATEMENT' "
+                        + "AND template_code = 'STATEMENT_DEFAULT' AND default_flag = TRUE "
+                        + "AND enabled_flag = TRUE AND deleted = FALSE",
+                Integer.class);
+        assertThat(statements).as("对账单默认模板应存在").isEqualTo(1);
+        Integer constraints = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE connamespace = 'xsy_v2'::regnamespace "
+                        + "AND conname IN ('ck_scm_print_template_document_type', "
+                        + "'ck_scm_print_record_document_type') "
+                        + "AND pg_get_constraintdef(oid) LIKE '%STATEMENT%'",
+                Integer.class);
+        assertThat(constraints).as("模板与打印记录都要允许对账单").isEqualTo(2);
+        assertColumn("xsy_print_customer_template", "customer_id");
+        Integer uniqueBinding = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                        + "AND indexname = 'uk_scm_print_customer_template'",
+                Integer.class);
+        assertThat(uniqueBinding).as("同客户同单据类型只能有一条有效绑定").isEqualTo(1);
+    }
+
+    /** V183 起最近采购价按商品规格取最新已提交行，索引支撑 DISTINCT ON。 */
+    @Test
+    void purchaseLastPriceIndexesExistFromV183() {
+        int target = Integer.parseInt(targetVersion());
+        if (target < 183) {
+            return;
+        }
+        Integer indexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                        + "AND indexname IN ('idx_purchase_order_item_sku_live', "
+                        + "'idx_purchase_order_committed_submitted')",
+                Integer.class);
+        assertThat(indexes).as("最近采购价查询索引应随迁移建立").isEqualTo(2);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "
