@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 import lombok.Data;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 /**
  * 分次作业记录只表示分拣过程，不生成库存 / 财务数据。
@@ -22,6 +23,7 @@ public class SortingPartRecordVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class)
     private BigDecimal totalQuantity;
     private String note;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
     private OffsetDateTime createdAt;
 }

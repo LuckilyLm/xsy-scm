@@ -3,6 +3,8 @@ package com.xsy.scm.trace.domain.vo;
 import java.time.OffsetDateTime;
 
 import lombok.Data;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * 包装码更正申请。
@@ -33,10 +35,12 @@ public class TraceCorrectionVO {
 
     private String status;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String requestedBy;
 
     private OffsetDateTime requestedAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String decidedBy;
 
     private OffsetDateTime decidedAt;

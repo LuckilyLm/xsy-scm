@@ -8,6 +8,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import lombok.Data;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 /**
  * 包装码（一物一码）的视图。
@@ -46,6 +47,7 @@ public final class TraceUnitVO {
         private String status;
         private String remark;
         private OffsetDateTime createdAt;
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String createdBy;
     }
 
@@ -111,6 +113,7 @@ public final class TraceUnitVO {
         private String orderNo;
         private String customerName;
         private OffsetDateTime boundAt;
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String boundBy;
     }
 

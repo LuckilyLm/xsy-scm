@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 import lombok.Data;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 /**
  * 批次档案与收货行批次的视图。
@@ -27,6 +28,7 @@ public final class TraceLotVO {
         private String originType;
         private Long firstReceiptItemId;
         private OffsetDateTime createdAt;
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String createdBy;
     }
 
