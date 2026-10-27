@@ -42,9 +42,7 @@
         <template v-else-if="column.dataIndex === 'unitPrice'"
           ><span class="scm-money">{{ formatAmount(record.unitPrice) }}</span></template
         >
-        <template v-else-if="column.dataIndex === 'effectiveRange'">{{
-          effectiveRangeText(record.effectiveFrom, record.effectiveTo)
-        }}</template>
+        <template v-else-if="column.dataIndex === 'effectiveRange'">{{ effectiveRangeText(record.effectiveFrom, record.effectiveTo) }}</template>
         <ScmStatusTag v-else-if="column.dataIndex === 'effectiveness'" v-bind="effectiveness(record)" />
         <template v-else-if="column.dataIndex === 'action'"
           ><div class="smart-table-operate scm-table-actions">
