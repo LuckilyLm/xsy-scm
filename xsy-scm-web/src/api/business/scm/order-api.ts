@@ -5,6 +5,7 @@ import type {
   Query,
   Id,
   ImportResult,
+  LastPurchasePrice,
   RecentPrice,
   OrderPoolQuery,
   OrderPoolRow,
@@ -48,6 +49,34 @@ async function importOrders(file: File): Promise<ScmResponse<ImportResult>> {
   });
   importKeys.delete(file);
   return result;
+}
+
+export interface PastePreviewRow {
+  rowNumber: number;
+  productName?: string;
+  specName?: string;
+  unit?: string;
+  quantity?: string;
+  rawUnitPrice?: string;
+  remark?: string;
+  skuId?: Id;
+  skuCode?: string;
+  matchedProductName?: string;
+  matchedSpecName?: string;
+  saleUnit?: string;
+  productType?: string;
+  resolvedUnitPrice?: string | null;
+  priceSource?: string | null;
+  manualPrice: boolean;
+  matched: boolean;
+  errors: Array<{rowNumber: number; column: string; code: string; message: string}>;
+}
+
+export interface PastePreview {
+  totalRows: number;
+  matchedRows: number;
+  errorRows: number;
+  rows: PastePreviewRow[];
 }
 
 export interface CreditCheck {
@@ -102,6 +131,21 @@ export const orderApi = {
   createAndProgress: (data: Order) => orderCommand<Order>('/scm/order/create-and-progress', data),
   downloadImportTemplate: () => getDownload('/scm/order/import/template', {}),
   importOrders,
+  /** 整单粘贴预览：只匹配商品和解析价，不建单。 */
+  pastePreview: (
+    data: {
+      customerId: Id;
+      rows: Array<{
+        productName?: string;
+        specName?: string;
+        unit?: string;
+        quantity?: string;
+        unitPrice?: string;
+        remark?: string;
+      }>;
+    },
+    options?: RequestOptions
+  ) => postRequest<PastePreview>('/scm/order/import/paste-preview', data, options),
   update: (data: Order) => postRequest<Order>('/scm/order/update', data),
   reprice: (data: {orderId: Id; version: number; reason: string}) => postRequest<Order>('/scm/order/reprice', data),
   submit: (data: unknown) => orderCommand<Order>('/scm/order/submit', data),
@@ -130,6 +174,12 @@ export const orderApi = {
   ) => postRequest<ResolveResult>('/scm/order/price/preview', data, options),
   /** 为已确认订单预留库存：货到后由业务人员执行；任一行可用量不足则整体失败。 */
   reserveStock: (orderId: Id) => postRequest<string>('/scm/order/reserve-stock/' + orderId, {}),
+  /** 锁单/解锁：锁不是订单状态，只是改单需要额外授权的开关。 */
+  lock: (data: {orderId: Id; version: number; reason?: string}) => postRequest<Order>('/scm/order/lock', data),
+  unlock: (data: {orderId: Id; version: number; reason?: string}) => postRequest<Order>('/scm/order/unlock', data),
   /** 最近成交参考价：只作录单参考，不参与定价；limit 取 1~10，默认 5。 */
   recentPrices: (customerId: Id, skuId: Id, limit = 5) => getRequest<RecentPrice[]>('/scm/order/reference/recent-prices', {customerId, skuId, limit}),
+  /** 最近采购参考价：只读查询，一次最多 200 个商品规格；单次按逗号传递，避免数组参数序列化差异。 */
+  lastPurchasePrices: (skuIds: Id[], options?: RequestOptions) =>
+    getRequest<LastPurchasePrice[]>('/scm/order/reference/last-purchase-prices', {skuIds: skuIds.join(',')}, options),
 };

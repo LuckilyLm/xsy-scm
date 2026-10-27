@@ -36,6 +36,10 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         f.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         f.setSettleMode("INDEPENDENT");
         f.setSellerId(anyEmployeeId());
+        // 送货单导入按客户档案取收货人、电话与地址；其余用例不受影响。
+        f.setContactName("收货人");
+        f.setContactPhone("13800000000");
+        f.setAddress("测试地址");
         Long id = customers.add(f);
         var s = new CustomerStatusForm();
         s.setCustomerId(id);
@@ -71,7 +75,8 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     }
 
     SalesOrderDetailVO confirmed(Long c, Long sku) {
-        var o = orders.create(form(c, sku), prefix + "c");
+        // 键按次唯一：真提交的用例重跑时不能撞上上一次留下的幂等记录。
+        var o = orders.create(form(c, sku), prefix + "c-" + UUID.randomUUID());
         o = orders.submit(version(o), prefix + "s");
         var a = new OrderActualQuantityForm();
         a.setOrderId(o.getOrderId());
@@ -104,6 +109,14 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         expectCode(() -> orders.update(u), 40921);
         jdbc.update("UPDATE xsy_product_sku SET market_price=2.5000 WHERE id=?", sku);
         session.clearCache();
+        // 行情变了以后提交会被「报价依据已变化」拦下，必须显式核价留痕——这正是设计口径。
+        var stale = updated;
+        expectCode(() -> orders.submit(version(stale), prefix + "stale"), 40975);
+        var reprice = new OrderRepriceForm();
+        reprice.setOrderId(updated.getOrderId());
+        reprice.setVersion(updated.getVersion());
+        reprice.setReason("行情涨价");
+        updated = orders.reprice(reprice);
         o = orders.submit(version(updated), prefix + "s");
         assertThat(o.getOrderedTotalAmount()).isEqualByComparingTo("7.5000");
         assertThat(o.getItems().getFirst().getActualQuantity()).isNull();
@@ -155,48 +168,177 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     }
 
     @Test
+    void pendingOrderEditRelocksQuantityAndKeepsTheSubmittedPrice() {
+        var c = customer();
+        var sku = newOnShelfSku("PENDING_EDIT");
+        jdbc.update("UPDATE xsy_product_sku SET product_type='STANDARD' WHERE id=?", sku);
+        session.clearCache();
+        var pending = orders.submit(version(orders.create(form(c, sku), prefix + "pe")), prefix + "pe-submit");
+        assertThat(pending.getStatus()).isEqualTo("PENDING");
+        var quotedUnitPrice = pending.getItems().getFirst().getLockedUnitPrice();
+
+        var u = new SalesOrderUpdateForm();
+        org.springframework.beans.BeanUtils.copyProperties(form(c, sku), u);
+        u.setOrderId(pending.getOrderId());
+        u.setVersion(pending.getVersion());
+        u.getItems().getFirst().setItemId(pending.getItems().getFirst().getItemId());
+        u.getItems().getFirst().setVersion(pending.getItems().getFirst().getVersion());
+        u.getItems().getFirst().setOrderedQuantity("3.0000");
+        var edited = orders.update(u);
+
+        assertThat(edited.getStatus()).isEqualTo("PENDING");
+        assertThat(edited.getItems().getFirst().getOrderedQuantity()).isEqualByComparingTo("3.0000");
+        // 改单沿用提交时的报价，不静默改价；需要新价时走批量核价。
+        assertThat(edited.getItems().getFirst().getLockedUnitPrice()).isEqualByComparingTo(quotedUnitPrice);
+        assertThat(edited.getOrderedTotalAmount()).isEqualByComparingTo("3.6000");
+        // 标品实数量必须跟着下单量走，否则确认前会被实数量校验拦下。
+        assertThat(edited.getItems().getFirst().getActualQuantity()).isEqualByComparingTo("3.0000");
+        assertThat(logCount(pending.getOrderId(), "UPDATE")).isEqualTo(1);
+    }
+
+    @Test
+    void pendingOrderWithPaymentFactRefusesFurtherEdits() {
+        var c = customer();
+        var sku = newOnShelfSku("PENDING_BLOCKED");
+        var pending = orders.submit(version(orders.create(form(c, sku), prefix + "pb")), prefix + "pb-submit");
+        jdbc.queryForObject("INSERT INTO xsy_payment_intent (intent_no, customer_id, customer_name_snapshot,"
+                + " source_type, source_id, source_no_snapshot, amount, method, provider, status,"
+                + " created_by, updated_by) VALUES (?, ?, ?, 'SALES_ORDER', ?, ?, 1.0000, 'ONLINE', 'MOCK',"
+                + " 'PENDING', '1:1', '1:1') RETURNING id",
+                Long.class, "PI-" + prefix + "-" + UUID.randomUUID(), c, prefix, pending.getOrderId(),
+                "SO-" + pending.getOrderId());
+        session.clearCache();
+        var u = new SalesOrderUpdateForm();
+        org.springframework.beans.BeanUtils.copyProperties(form(c, sku), u);
+        u.setOrderId(pending.getOrderId());
+        u.setVersion(pending.getVersion());
+        u.getItems().getFirst().setItemId(pending.getItems().getFirst().getItemId());
+        u.getItems().getFirst().setVersion(pending.getItems().getFirst().getVersion());
+        u.getItems().getFirst().setOrderedQuantity("5.0000");
+        expectCode(() -> orders.update(u), 40976);
+        assertThat(jdbc.queryForObject("SELECT ordered_quantity FROM xsy_sales_order_item WHERE id=?",
+                java.math.BigDecimal.class, pending.getItems().getFirst().getItemId()))
+                .isEqualByComparingTo("2.0000");
+    }
+
+    @Test
+    void confirmedOrderAcceptsActualQuantityUntilDispatch() {
+        var c = customer();
+        var sku = newOnShelfSku("ACTUAL_CONFIRMED");
+        var order = confirmed(c, sku);
+        assertThat(order.getStatus()).isEqualTo("CONFIRMED");
+        assertThat(order.getSettlementTotalAmount()).isEqualByComparingTo("1.8000");
+
+        var a = new OrderActualQuantityForm();
+        a.setOrderId(order.getOrderId());
+        a.setItemId(order.getItems().getFirst().getItemId());
+        a.setVersion(order.getItems().getFirst().getVersion());
+        a.setActualQuantity("2.4000");
+        a.setReason("复称");
+        var edited = orders.actualQuantity(a, prefix + "ac-" + UUID.randomUUID());
+
+        assertThat(edited.getItems().getFirst().getActualQuantity()).isEqualByComparingTo("2.4000");
+        // 已确认订单的实发量就是结算量，订单结算合计必须同步。
+        assertThat(edited.getSettlementTotalAmount()).isEqualByComparingTo("2.8800");
+        assertThat(logCount(order.getOrderId(), "ACTUAL_QUANTITY")).isEqualTo(2);
+
+        // 发车出库后不再允许改实发量，否则与已出库的分拣记录脱节。
+        jdbc.update("UPDATE xsy_sales_order SET dispatched_at=CURRENT_TIMESTAMP WHERE id=?", order.getOrderId());
+        session.clearCache();
+        var stale = new OrderActualQuantityForm();
+        stale.setOrderId(edited.getOrderId());
+        stale.setItemId(edited.getItems().getFirst().getItemId());
+        stale.setVersion(edited.getItems().getFirst().getVersion());
+        stale.setActualQuantity("3.0000");
+        stale.setReason("复称");
+        expectCode(() -> orders.actualQuantity(stale, prefix + "ac2-" + UUID.randomUUID()), 40917);
+    }
+
+    @Test
     void excelImportIsAtomicAndKeepsNonStandardPending() throws Exception {
-        var customerId = customer();
-        var customerCode = jdbc.queryForObject("SELECT customer_code FROM xsy_customer WHERE id=?", String.class, customerId);
+        customer();
         var standardSku = newOnShelfSku("IMPORT_STANDARD");
         jdbc.update("UPDATE xsy_product_sku SET product_type='STANDARD' WHERE id=?", standardSku);
         var nonStandardSku = newOnShelfSku("IMPORT_WEIGHT");
         session.clearCache();
-        var standardCode = jdbc.queryForObject("SELECT sku_code FROM xsy_product_sku WHERE id=?", String.class, standardSku);
-        var nonStandardCode = jdbc.queryForObject("SELECT sku_code FROM xsy_product_sku WHERE id=?", String.class, nonStandardSku);
-        var first = importRow("A", customerCode, standardCode);
-        var second = importRow("B", customerCode, nonStandardCode);
-        var bytes = new java.io.ByteArrayOutputStream();
-        cn.idev.excel.FastExcel.write(bytes, com.xsy.scm.order.domain.dto.SalesOrderImportRow.class).sheet("销售订单").doWrite(List.of(first, second));
-        var file = new org.springframework.mock.web.MockMultipartFile("file", "orders.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", bytes.toByteArray());
-        var result = orderImports.importFile(file, prefix + "import", true);
-        assertThat(result.getConfirmedOrders()).isOne();
-        assertThat(result.getPendingOrders()).isOne();
-        assertThat(result.getOrders()).extracting(SalesOrderDetailVO::getOrderSource).containsOnly("IMPORT");
-        assertThat(orderImports.importFile(file, prefix + "import", true).getOrders()).extracting(SalesOrderDetailVO::getOrderId).containsExactlyElementsOf(result.getOrders().stream().map(SalesOrderDetailVO::getOrderId).toList());
+        var standard = productOf(standardSku);
+        var weight = productOf(nonStandardSku);
 
-        var bad = importRow("C", "MISSING", standardCode);
-        bad.setOrderedQuantity("0");
-        bytes = new java.io.ByteArrayOutputStream();
-        cn.idev.excel.FastExcel.write(bytes, com.xsy.scm.order.domain.dto.SalesOrderImportRow.class).sheet("销售订单").doWrite(List.of(bad));
-        file = new org.springframework.mock.web.MockMultipartFile("file", "bad.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", bytes.toByteArray());
+        // 一张送货单生成一张订单：同时含标品与称重品时整单待称重。
+        var mixedFile = deliveryNote(prefix, List.of(noteLine(standard, "2.0000"), noteLine(weight, "3.0000")));
+        var mixed = orderImports.importFile(mixedFile, prefix + "import", true);
+        assertThat(mixed.getTotalErrors()).isZero();
+        assertThat(mixed.getTotalOrders()).isOne();
+        assertThat(mixed.getPendingOrders()).isOne();
+        assertThat(mixed.getOrders()).singleElement().satisfies(o -> {
+            assertThat(o.getOrderSource()).isEqualTo("IMPORT");
+            assertThat(o.getStatus()).isEqualTo("PENDING");
+            assertThat(o.getItems()).filteredOn(item -> item.getSkuId().equals(standardSku)).singleElement()
+                    .satisfies(item -> assertThat(item.getActualQuantity()).isEqualByComparingTo("2.0000"));
+        });
+        // 同一文件 + 同一幂等键重放，不再产生第二张订单。
+        assertThat(orderImports.importFile(mixedFile, prefix + "import", true).getOrders())
+                .extracting(SalesOrderDetailVO::getOrderId)
+                .containsExactlyElementsOf(mixed.getOrders().stream().map(SalesOrderDetailVO::getOrderId).toList());
+
+        // 只含标品的送货单直接确认。
+        var single = orderImports.importFile(
+                deliveryNote(prefix, List.<String[]>of(noteLine(standard, "1.0000"))), prefix + "single", true);
+        assertThat(single.getConfirmedOrders()).isOne();
+
         var before = jdbc.queryForObject("SELECT count(*) FROM xsy_sales_order WHERE order_source='IMPORT'", Integer.class);
-        var invalid = orderImports.importFile(file, prefix + "bad", true);
+        var invalid = orderImports.importFile(
+                deliveryNote("不存在的收货单位" + prefix, List.<String[]>of(noteLine(standard, "0"))), prefix + "bad", true);
         assertThat(invalid.getTotalErrors()).isGreaterThanOrEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_sales_order WHERE order_source='IMPORT'", Integer.class)).isEqualTo(before);
     }
 
-    private com.xsy.scm.order.domain.dto.SalesOrderImportRow importRow(String key, String customerCode, String skuCode) {
-        var row = new com.xsy.scm.order.domain.dto.SalesOrderImportRow();
-        row.setTemplateVersion(SalesOrderImportService.TEMPLATE_VERSION);
-        row.setOrderKey(key);
-        row.setCustomerCode(customerCode);
-        row.setReceiverName("导入客户");
-        row.setReceiverPhone("13800000000");
-        row.setAddress("导入地址");
-        row.setSkuCode(skuCode);
-        row.setOrderedQuantity("2.0000");
-        return row;
+    /** 返回 {@code [商品名称, 规格, 单位]}，送货单只写名称与规格、单位必须与销售单位一致。 */
+    private String[] productOf(Long skuId) {
+        var row = jdbc.queryForMap(
+                "SELECT p.name, s.spec_name, s.sale_unit FROM xsy_product_sku s JOIN xsy_product_spu p ON p.id = s.spu_id WHERE s.id = ?",
+                skuId);
+        return new String[]{(String) row.get("name"), (String) row.get("spec_name"), (String) row.get("sale_unit")};
+    }
+
+    private String[] noteLine(String[] product, String quantity) {
+        return new String[]{product[0], product[1], product[2], quantity};
+    }
+
+    /** 生成客户版式的送货单：第 3 行收货单位/日期，第 4 行表头，明细从第 5 行开始，末行合计与签字栏。 */
+    private org.springframework.mock.web.MockMultipartFile deliveryNote(String customerName, List<String[]> lines)
+            throws Exception {
+        try (var book = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
+                var bytes = new java.io.ByteArrayOutputStream()) {
+            var sheet = book.createSheet("送货单");
+            sheet.createRow(0).createCell(0).setCellValue("鲜蔬源(西安)供应链服务有限公司");
+            sheet.createRow(1).createCell(0).setCellValue("送货单");
+            var meta = sheet.createRow(2);
+            meta.createCell(0).setCellValue("收货单位：");
+            meta.createCell(1).setCellValue(customerName);
+            meta.createCell(6).setCellValue("日期：");
+            meta.createCell(7).setCellValue("2026-10-27");
+            var headers = List.of("序号", "商品名称", "单位", "规格", "实数量", "销售单价", "销售金额", "备注");
+            var header = sheet.createRow(3);
+            for (int column = 0; column < headers.size(); column++)
+                header.createCell(column).setCellValue(headers.get(column));
+            for (int index = 0; index < lines.size(); index++) {
+                var values = lines.get(index);
+                var line = sheet.createRow(4 + index);
+                line.createCell(0).setCellValue(index + 1);
+                line.createCell(1).setCellValue(values[0]);
+                line.createCell(2).setCellValue(values[2]);
+                line.createCell(3).setCellValue(values[1]);
+                line.createCell(4).setCellValue(Double.parseDouble(values[3]));
+            }
+            sheet.createRow(4 + lines.size()).createCell(0).setCellValue("合计金额");
+            var footer = sheet.createRow(5 + lines.size());
+            footer.createCell(1).setCellValue("销售方：");
+            footer.createCell(7).setCellValue("收货方：");
+            book.write(bytes);
+            return new org.springframework.mock.web.MockMultipartFile("file", "delivery-note.xlsx",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", bytes.toByteArray());
+        }
     }
 
     @Test
@@ -435,14 +577,18 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         var c = customer();
         var sku = newOnShelfSku("CONCURRENT");
         var f = form(c, sku);
+        // 本用例真提交：键必须每次运行唯一，否则重跑会撞上上一次留下的幂等记录（请求指纹必然不同）。
+        var sameKey = prefix + "same-" + UUID.randomUUID();
         var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
         try {
             var barrier = new java.util.concurrent.CyclicBarrier(2);
             java.util.concurrent.Callable<SalesOrderDetailVO> create = () -> {
+                // 每个线程独立请求体：共用同一个对象时，写入路径对它的规范化会让另一线程算出的指纹漂移。
+                var request = form(c, sku);
                 operator();
                 try {
                     barrier.await();
-                    return orders.create(f, prefix + "same");
+                    return orders.create(request, sameKey);
                 } finally {
                     net.lab1024.sa.base.common.util.SmartRequestUtil.remove();
                 }

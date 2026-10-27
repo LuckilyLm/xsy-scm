@@ -21,10 +21,18 @@ public class OrderOperationLogRecorder {
     private final ObjectMapper objectMapper;
 
     public void record(Long orderId, ScmOrderOperationTypeEnum operation, String reason, Object before, Object after) {
+        record(orderId, operation, reason, before, after, ScmOperator.current());
+    }
+
+    /**
+     * 定时任务等没有登录上下文时用显式操作人写入，例如发车满 7 天的自动锁单。
+     */
+    public void record(Long orderId, ScmOrderOperationTypeEnum operation, String reason, Object before, Object after,
+        String operator) {
         var entry = new OrderOperationLogEntity();
         entry.setOrderId(orderId);
         entry.setOperationType(operation.name());
-        entry.setOperator(ScmOperator.current());
+        entry.setOperator(operator);
         entry.setCreatedBy(entry.getOperator());
         entry.setReason(reason);
         entry.setBeforeData(

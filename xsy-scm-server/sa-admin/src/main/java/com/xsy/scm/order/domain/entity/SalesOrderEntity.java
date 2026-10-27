@@ -78,6 +78,15 @@ public class SalesOrderEntity {
     private OffsetDateTime confirmedAt;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime cancelledAt;
+    /** 最近一次发车出库时间；由此起算 7 天自动锁单。 */
+    private OffsetDateTime dispatchedAt;
+    /** 锁单标记：锁定后普通改单被拒绝，只有持有锁后改单权限的账号能继续修改。 */
+    private Boolean lockedFlag = false;
+    private OffsetDateTime lockedAt;
+    private String lockedBy;
+    /** MANUAL 手动锁单；AUTO_7_DAYS 发车满 7 天自动锁单。 */
+    private String lockReason;
+    private OffsetDateTime autoLockAt;
     @Version
     private Integer version = 0;
     @TableLogic(value = "false", delval = "true")

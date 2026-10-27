@@ -12,6 +12,7 @@ import com.xsy.scm.inventory.dao.InventoryOutboundItemDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
+import com.xsy.scm.order.service.OrderActualQuantitySyncService;
 import com.xsy.scm.sorting.dao.SortingPartRecordDao;
 import com.xsy.scm.sorting.dao.SortingQueryDao;
 import com.xsy.scm.sorting.dao.SortingTaskDao;
@@ -64,7 +65,10 @@ import static com.xsy.scm.sorting.constant.SortingErrorCode.TASK_NOT_FOUND;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.WAREHOUSE_INVALID;
 
 /**
- * 分拣只记录实际数量，不直接修改销售订单或库存；完成后需要重开才能修改。
+ * 分拣只记录实际数量，不直接修改库存；完成后需要重开才能修改。
+ *
+ * <p>
+ * 实称量会经 {@link OrderActualQuantitySyncService} 回写已确认且未发车的订单行：签收应收按实发量生成， 分拣称出的量必须在下一次对账前落到订单上。回写与分拣录入同事务。
  */
 @Service
 @RequiredArgsConstructor
@@ -81,6 +85,8 @@ public class SortingTaskService {
     private final SortingPartRecordDao sortingPartRecordDao;
     private final SortingQueryDao sortingQueryDao;
     private final SortingAccess access;
+
+    private final OrderActualQuantitySyncService actualQuantitySync;
     private final WarehouseDao warehouseDao;
     private final EmployeeDao employeeDao;
     /** 供应商只读校验（建单时保存来源）：排序域不写供应商表，只按 id 读一行。 */
@@ -258,6 +264,8 @@ public class SortingTaskService {
             var correction = partEvent(id, row.getId(), "SET_TOTAL", difference, entry.getSortedQuantity(), reason);
             if (sortingPartRecordDao.insert(correction) != 1)
                 throw new IllegalStateException("分拣数量审计写入失败");
+            // 实称量回写订单：只对已确认、未发车、需称重的行生效，其余情况静默跳过。
+            actualQuantitySync.sync(row.getSalesOrderItemId(), entry.getSortedQuantity());
         }
         if (ScmSortingTaskStatusEnum.PENDING.name().equals(task.getStatus())) {
             task.setStatus(ScmSortingTaskStatusEnum.SORTING.name());

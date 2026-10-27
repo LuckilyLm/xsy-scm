@@ -21,7 +21,7 @@
         <template #icon>
           <DownloadOutlined />
         </template>
-        下载 Excel 模板
+        下载送货单模板
       </a-button>
       <span class="import-template__note">仅支持 .xlsx，最大 5 MiB · 任一错误均不会创建订单</span>
     </div>
@@ -30,8 +30,8 @@
       <p class="ant-upload-drag-icon">
         <InboxOutlined />
       </p>
-      <p class="ant-upload-text">点击或拖拽订单 Excel 到此处</p>
-      <p class="ant-upload-hint">请使用最新模板，按客户编码与商品规格编码填写</p>
+      <p class="ant-upload-text">点击或拖拽送货单 Excel 到此处</p>
+      <p class="ant-upload-hint">请使用最新模板：收货单位填客户名称，商品名称、规格、单位须与商品档案一致</p>
     </a-upload-dragger>
 
     <a-result
@@ -64,8 +64,9 @@ import FormNote from '/@/components/framework/form-note/index.vue';
 import type {ImportError, ImportResult} from '../order-types';
 
 const IMPORT_RULES = [
-  '同一「导入订单标识」的多行会合并为一张订单；请删除或替换模板示例行。',
-  '人工单价留空用系统定价；填写时必须同时填写改价原因并具备改价权限。',
+  '一张送货单生成一张订单：收货单位填客户档案里的客户名称，日期即期望送货日期。',
+  '商品按「商品名称 + 规格 + 单位」匹配商品档案，实数量作为下单数量；合计行与签字栏不导入。',
+  '填写销售单价即按送货单单价下单，需要订单改价权限，改价原因由系统记为「送货单导入」；留空按系统定价。',
   '纯标品自动确认；含非标品时整单待确认，等待电子秤回写实重。',
 ];
 
@@ -80,7 +81,7 @@ const imported = computed(() => !!result.value && result.value.totalErrors === 0
 const columns: TableColumnsType<ImportError> = [
   {title: '行号', dataIndex: 'rowNumber', width: 72},
   {
-    title: '订单标识',
+    title: '收货单位',
     dataIndex: 'orderKey',
     width: 130,
   },

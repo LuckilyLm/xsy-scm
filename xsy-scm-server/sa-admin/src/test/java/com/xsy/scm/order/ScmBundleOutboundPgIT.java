@@ -38,8 +38,10 @@ class ScmBundleOutboundPgIT extends ScmW3PgITBase {
         Long bundleSku = newOnShelfSku("OUT-BUNDLE");
         Long firstSku = newOnShelfSku("OUT-A");
         Long secondSku = newOnShelfSku("OUT-B");
-        long orderId = 998801L;
-        long orderItemId = 998802L;
+        // 出库行必须能追溯到真实存在的订单行（xsy_lock_trace_outbound_source_item 触发器），
+        // 因此订单与订单行走真实插入，而不是只造内存实体。
+        long orderId = seedOrder();
+        long orderItemId = seedOrderItem(orderId, bundleSku);
         long firstComponentId = 998803L;
         long secondComponentId = 998804L;
         long routeId = 998805L;
@@ -97,6 +99,24 @@ class ScmBundleOutboundPgIT extends ScmW3PgITBase {
         assertThat(movements).extracting(item -> item.getBundleComponentId())
                 .containsExactlyInAnyOrder(firstComponentId, secondComponentId);
         assertThat(movements).allSatisfy(item -> assertThat(item.getUnitCost()).isNotNull());
+    }
+
+    private long seedOrder() {
+        return jdbc.queryForObject("""
+                INSERT INTO xsy_sales_order (order_no, customer_id, customer_code_snapshot, customer_name_snapshot,
+                  settle_mode_snapshot, settlement_customer_id, settlement_customer_name_snapshot, status)
+                VALUES (?, 1, 'C-BUNDLE', ?, 'INDEPENDENT', 1, ?, 'CONFIRMED') RETURNING id
+                """, Long.class, prefix + "-BO-" + java.util.UUID.randomUUID(), prefix + "组合客户", prefix + "组合客户");
+    }
+
+    private long seedOrderItem(long orderId, Long skuId) {
+        return jdbc.queryForObject("""
+                INSERT INTO xsy_sales_order_item (order_id, spu_id, sku_id, spu_code_snapshot,
+                  product_name_snapshot, sku_code_snapshot, spec_name_snapshot, sale_unit_snapshot,
+                  product_type_snapshot, ordered_quantity, actual_quantity)
+                VALUES (?, (SELECT spu_id FROM xsy_product_sku WHERE id = ?), ?, 'SPU-BUNDLE', '组合商品',
+                  'SKU-BUNDLE', '默认规格', '件', 'STANDARD', 2.0000, 2.0000) RETURNING id
+                """, Long.class, orderId, skuId, skuId);
     }
 
     private Long seedBalance(Long warehouse, Long sku, String quantity, String cost) {

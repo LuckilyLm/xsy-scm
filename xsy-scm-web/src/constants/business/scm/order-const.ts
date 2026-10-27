@@ -42,6 +42,10 @@ export const SCM_ORDER_OPERATION_ENUM: SmartEnum<string> = {
   RETURN: {value: 'RETURN', desc: '退货'},
   REFUND: {value: 'REFUND', desc: '退款'},
   ASSIGN: {value: 'ASSIGN', desc: '指派业务员'},
+  LOCK: {value: 'LOCK', desc: '锁单'},
+  UNLOCK: {value: 'UNLOCK', desc: '解锁'},
+  AUTO_LOCK: {value: 'AUTO_LOCK', desc: '自动锁单'},
+  EDIT_AFTER_DISPATCH: {value: 'EDIT_AFTER_DISPATCH', desc: '发车后改单'},
 };
 export default {
   SCM_ORDER_STATUS_ENUM,

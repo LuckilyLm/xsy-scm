@@ -71,7 +71,27 @@ public enum ScmOrderOperationTypeEnum {
     /**
      * 重新定价。
      */
-    REPRICE("重新定价");
+    REPRICE("重新定价"),
+
+    /**
+     * 手动锁单。
+     */
+    LOCK("锁单"),
+
+    /**
+     * 解锁。
+     */
+    UNLOCK("解锁"),
+
+    /**
+     * 发车满 7 天自动锁单。
+     */
+    AUTO_LOCK("自动锁单"),
+
+    /**
+     * 发车出库后修改订单。
+     */
+    EDIT_AFTER_DISPATCH("发车后改单");
 
     private final String desc;
 }

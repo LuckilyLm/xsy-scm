@@ -28,6 +28,17 @@ public final class OrderPermission {
 
     public static final String RESERVE_STOCK = "scm:order:reserve-stock";
 
+    /** 手动锁单与自动锁单的办理入口；解锁是独立权限，避免同一角色既能锁又能随手解锁。 */
+    public static final String LOCK = "scm:order:lock";
+
+    public static final String UNLOCK = "scm:order:unlock";
+
+    /** 发车出库后仍要改单的窄口子；没有它，发车后的改单请求直接拒绝。 */
+    public static final String EDIT_AFTER_DISPATCH = "scm:order:edit-after-dispatch";
+
+    /** 锁单后仍要改单的窄口子。 */
+    public static final String EDIT_LOCKED = "scm:order:edit-locked";
+
     public static final String IMPORT = "scm:order:import";
 
     public static final String RETURN_QUERY = "scm:order:return:query";

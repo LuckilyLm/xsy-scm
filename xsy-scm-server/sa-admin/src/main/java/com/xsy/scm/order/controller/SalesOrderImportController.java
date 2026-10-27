@@ -3,9 +3,13 @@ package com.xsy.scm.order.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.xsy.scm.order.domain.form.SalesOrderPasteForm;
 import com.xsy.scm.order.domain.vo.SalesOrderImportResultVO;
+import com.xsy.scm.order.domain.vo.SalesOrderPastePreviewVO;
 import com.xsy.scm.order.service.SalesOrderImportService;
+import com.xsy.scm.order.service.SalesOrderPasteService;
 import com.xsy.scm.order.permission.OrderPermission;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.util.SmartResponseUtil;
@@ -14,6 +18,7 @@ import net.lab1024.sa.base.module.support.securityprotect.service.SecurityFileSe
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,12 +33,13 @@ import java.io.IOException;
 public class SalesOrderImportController {
     private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
     /**
-     * 模板固定在 sa-admin 的 classpath 下，随 JAR 一起发布，运行时不依赖开发机绝对路径。
+     * 模板固定在 sa-admin 的 classpath 下，随 JAR 一起发布，运行时不依赖开发机绝对路径。 当前模板为客户送货单版式：一张送货单生成一张订单。
      */
     private static final String TEMPLATE_RESOURCE = "template/sales-order-import.xlsx";
-    private static final String TEMPLATE_FILE_NAME = "销售订单导入模板.xlsx";
+    private static final String TEMPLATE_FILE_NAME = "销售订单送货单导入模板.xlsx";
 
     private final SalesOrderImportService salesOrderImportService;
+    private final SalesOrderPasteService salesOrderPasteService;
     private final SecurityFileService securityFileService;
 
     @GetMapping("/template")
@@ -69,5 +75,15 @@ public class SalesOrderImportController {
             return ResponseDTO.error(security);
         return ResponseDTO
             .ok(salesOrderImportService.importFile(file, key, StpUtil.hasPermission(OrderPermission.PRICE_OVERRIDE)));
+    }
+
+    /**
+     * 订单抽屉内的整单粘贴预览。只匹配商品和解析价格，不建单；粘贴行最终仍走正常订单命令。
+     */
+    @PostMapping("/paste-preview")
+    @SaCheckPermission(OrderPermission.ADD)
+    public ResponseDTO<SalesOrderPastePreviewVO> pastePreview(@Valid @RequestBody SalesOrderPasteForm form) {
+        return ResponseDTO
+            .ok(salesOrderPasteService.preview(form, StpUtil.hasPermission(OrderPermission.PRICE_OVERRIDE)));
     }
 }

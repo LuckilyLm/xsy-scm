@@ -36,6 +36,19 @@ public class SalesOrderVO {
     private OffsetDateTime submittedAt;
     private OffsetDateTime confirmedAt;
     private OffsetDateTime cancelledAt;
+    /** 最近一次发车出库时间；为空表示还没发车。 */
+    private OffsetDateTime dispatchedAt;
+    /** 锁单标记；发车 7 天后由定时任务自动置为 TRUE。 */
+    private Boolean lockedFlag;
+    private OffsetDateTime lockedAt;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
+    private String lockedBy;
+    private String lockReason;
+    private OffsetDateTime autoLockAt;
+    /** 当前调用者能否改单；前端按钮只看这一个标记，不再自己拼状态与权限。 */
+    private Boolean editable;
+    /** 不能改单的原因，可直接展示；可改单时为空。 */
+    private String editBlockedReason;
     private Integer version;
     private Boolean deleted;
     private OffsetDateTime createdAt;

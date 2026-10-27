@@ -30,6 +30,7 @@ class SalesOrderQueryRecentPriceTest {
                 mock(OrderOperationLogDao.class), mock(ScmOperatorNameResolver.class), mock(MallCustomerAccountDao.class),
                 mock(com.xsy.scm.common.scope.ScmDataScopeService.class),
                 mock(CustomerService.class),
+                mock(com.xsy.scm.purchase.dao.PurchaseOrderItemDao.class),
                 mock(com.xsy.scm.promotion.service.PromotionDiscountService.class));
     }
 

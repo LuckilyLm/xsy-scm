@@ -49,6 +49,12 @@ class OrderWebTest {
     @MockitoBean
     OrderCreditService credits;
     @MockitoBean
+    SalesOrderDetailReadService detailReads;
+    @MockitoBean
+    com.xsy.scm.order.service.OrderLockService orderLockService;
+    @MockitoBean
+    com.xsy.scm.common.scope.ScmWarehouseScopeGuard warehouseScopeGuard;
+    @MockitoBean
     SalesOrderImportService imports;
     @MockitoBean
     net.lab1024.sa.base.module.support.securityprotect.service.SecurityFileService securityFiles;
@@ -56,7 +62,7 @@ class OrderWebTest {
     SystemEnvironment environment;
 
     @Test
-    void allTwentyFiveEndpointsHaveNativePermissions() {
+    void allOrderEndpointsHaveNativePermissions() {
         int count = 0;
         for (var type : java.util.List.of(SalesOrderController.class, SalesOrderImportController.class, OrderReturnController.class, OrderRefundController.class))
             for (var m : type.getDeclaredMethods())
@@ -64,14 +70,15 @@ class OrderWebTest {
                     assertThat(m.getAnnotation(SaCheckPermission.class)).as(m.getName()).isNotNull();
                     count++;
                 }
-        assertThat(count).isEqualTo(29);
+        assertThat(count).isEqualTo(33);
     }
 
     @Test
     void importTemplateIsPackagedAndMatchesParserContract() throws Exception {
         var response = mvc.perform(get("/scm/order/import/template")).andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")))
-                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("%E9%94%80%E5%94%AE%E8%AE%A2%E5%8D%95%E5%AF%BC%E5%85%A5%E6%A8%A1%E6%9D%BF.xlsx")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString(
+                        "%E9%94%80%E5%94%AE%E8%AE%A2%E5%8D%95%E9%80%81%E8%B4%A7%E5%8D%95%E5%AF%BC%E5%85%A5%E6%A8%A1%E6%9D%BF.xlsx")))
                 // RFC 6266：中文名以 filename*=UTF-8'' 为准，filename= 仅作 ASCII 回退。
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("filename*=UTF-8''")))
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.startsWith("attachment;")))
@@ -80,18 +87,15 @@ class OrderWebTest {
         assertThat(response.getHeader("Content-Length")).isEqualTo(String.valueOf(response.getContentAsByteArray().length));
         try (var workbook = org.apache.poi.ss.usermodel.WorkbookFactory.create(new java.io.ByteArrayInputStream(response.getContentAsByteArray()))) {
             var sheet = workbook.getSheetAt(0);
-            var headerRow = sheet.getRow(0);
-            var example = sheet.getRow(1);
-            assertThat(java.util.stream.IntStream.range(0, 12).mapToObj(i -> headerRow.getCell(i).getStringCellValue()).toList()).containsExactly(
-                    "模板版本", "导入订单标识", "客户编码", "收货人", "联系电话", "收货地址", "期望配送时间", "SKU编码", "下单数量", "人工单价", "改价原因", "订单备注");
-            assertThat(example.getCell(0).getStringCellValue()).isEqualTo("1.0");
-            assertThat(example.getCell(2).getCellType()).isEqualTo(org.apache.poi.ss.usermodel.CellType.STRING);
-            assertThat(example.getCell(4).getCellType()).isEqualTo(org.apache.poi.ss.usermodel.CellType.STRING);
-            assertThat(example.getCell(7).getCellType()).isEqualTo(org.apache.poi.ss.usermodel.CellType.STRING);
-            // 编码/电话列必须是文本格式，否则 Excel 会把 13800000000 变成科学计数、把前导零吃掉。
-            for (int column : new int[]{2, 4, 7}) {
-                assertThat(example.getCell(column).getCellStyle().getDataFormatString()).as("列" + column).isEqualTo("@");
-            }
+            assertThat(sheet.getRow(1).getCell(0).getStringCellValue()).isEqualTo("送货单");
+            assertThat(sheet.getRow(2).getCell(0).getStringCellValue()).isEqualTo("收货单位：");
+            assertThat(sheet.getRow(2).getCell(6).getStringCellValue()).isEqualTo("日期：");
+            var headerRow = sheet.getRow(3);
+            assertThat(java.util.stream.IntStream.range(0, 8).mapToObj(i -> headerRow.getCell(i).getStringCellValue()).toList()).containsExactly(
+                    "序号", "商品名称", "单位", "规格", "实数量", "销售单价", "销售金额", "备注");
+            assertThat(sheet.getRow(66).getCell(0).getStringCellValue()).isEqualTo("合计金额");
+            assertThat(sheet.getRow(66).getCell(6).getCellType()).isEqualTo(org.apache.poi.ss.usermodel.CellType.FORMULA);
+            assertThat(sheet.getRow(67).getCell(1).getStringCellValue()).isEqualTo("销售方：");
         }
     }
 
@@ -101,7 +105,7 @@ class OrderWebTest {
         o.setOrderId(1L);
         o.setOrderedTotalAmount(null);
         o.setSettlementTotalAmount(new java.math.BigDecimal("0"));
-        when(queries.detail(1L)).thenReturn(o);
+        when(detailReads.detail(1L)).thenReturn(o);
         mvc.perform(get("/scm/order/detail/1")).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0)).andExpect(jsonPath("$.data.orderedTotalAmount").doesNotExist()).andExpect(jsonPath("$.data.settlementTotalAmount").value("0.0000"));
     }
 

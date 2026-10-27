@@ -15,22 +15,27 @@ import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
 import com.xsy.scm.order.domain.form.OrderBatchDeleteForm;
 import com.xsy.scm.order.domain.form.OrderCancelForm;
 import com.xsy.scm.order.domain.form.OrderConfirmForm;
+import com.xsy.scm.order.domain.form.OrderLastPurchasePriceQueryForm;
+import com.xsy.scm.order.domain.form.OrderLockForm;
 import com.xsy.scm.order.domain.form.OrderLogQueryForm;
 import com.xsy.scm.order.domain.form.OrderVersionForm;
 import com.xsy.scm.order.domain.form.OrderRepriceForm;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.form.SalesOrderQueryForm;
 import com.xsy.scm.order.domain.form.SalesOrderUpdateForm;
+import com.xsy.scm.order.domain.vo.OrderLastPurchasePriceVO;
 import com.xsy.scm.order.domain.vo.OrderOperationLogVO;
 import com.xsy.scm.order.domain.vo.OrderRecentPriceVO;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderVO;
 import com.xsy.scm.order.permission.OrderPermission;
+import com.xsy.scm.order.service.OrderLockService;
 import com.xsy.scm.order.service.SalesOrderDetailReadService;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.order.service.SalesOrderService;
 import com.xsy.scm.pricing.permission.PricingPermission;
 import com.xsy.scm.pricing.service.PriceResolver;
+import com.xsy.scm.report.constant.ScmReportPermission;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -53,6 +58,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/scm/order")
 public class SalesOrderController {
     private final SalesOrderService salesOrderService;
+    private final OrderLockService orderLockService;
     private final SalesOrderQueryService salesOrderQueryService;
     private final SalesOrderDetailReadService salesOrderDetailReadService;
     private final PriceResolver priceResolver;
@@ -108,6 +114,16 @@ public class SalesOrderController {
     public ResponseDTO<List<OrderRecentPriceVO>> recentPrices(@RequestParam Long customerId, @RequestParam Long skuId,
         @RequestParam(defaultValue = "5") int limit) {
         return ResponseDTO.ok(salesOrderQueryService.recentPrices(customerId, skuId, limit));
+    }
+
+    /**
+     * 最近采购价只作为录单参考，不参与当前商品定价。查询必须同时具备订单查询和成本查看权限； 取数再按采购员数据范围收窄，范围为空时失败关闭。
+     */
+    @GetMapping("/reference/last-purchase-prices")
+    @SaCheckPermission(value = {OrderPermission.QUERY, ScmReportPermission.COST_QUERY}, mode = SaMode.AND)
+    public ResponseDTO<List<OrderLastPurchasePriceVO>> lastPurchasePrices(
+        @Valid OrderLastPurchasePriceQueryForm queryForm) {
+        return ResponseDTO.ok(salesOrderQueryService.lastPurchasePrices(queryForm.getSkuIds()));
     }
 
     @PostMapping("/create")
@@ -206,6 +222,23 @@ public class SalesOrderController {
     public ResponseDTO<String> reserveStock(@PathVariable Long orderId) {
         salesOrderService.reserveStock(orderId);
         return ResponseDTO.ok();
+    }
+
+    /**
+     * 锁单后订单仍是已确认，只是改单要额外授权；手动锁单与 7 天自动锁单写同一种锁标记。
+     */
+    @PostMapping("/lock")
+    @SaCheckPermission(OrderPermission.LOCK)
+    @OperateLog
+    public ResponseDTO<SalesOrderDetailVO> lock(@Valid @RequestBody OrderLockForm orderLockForm) {
+        return ResponseDTO.ok(orderLockService.lock(orderLockForm));
+    }
+
+    @PostMapping("/unlock")
+    @SaCheckPermission(OrderPermission.UNLOCK)
+    @OperateLog
+    public ResponseDTO<SalesOrderDetailVO> unlock(@Valid @RequestBody OrderLockForm orderLockForm) {
+        return ResponseDTO.ok(orderLockService.unlock(orderLockForm));
     }
 
     private void overridePermission(SalesOrderAddForm salesOrderForm) {

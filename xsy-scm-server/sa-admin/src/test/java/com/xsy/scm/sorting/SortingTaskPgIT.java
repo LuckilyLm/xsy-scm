@@ -247,18 +247,56 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("缺货与少拣只落分拣结果，订单行的实发量与结算额一律不变")
-    void shortageNeverMutatesOrderFacts() {
+    @DisplayName("缺货称出 0 不回写：实发量不允许为 0，订单保持原实发量")
+    void shortageDoesNotWriteZeroActualQuantity() {
         var order = order("s1", "9.0000");
-        BigDecimal beforeSettlement = settlementLineAmount(order);
         var detail = as(lead, QUEUE_MANAGER,
                 () -> sorting.create(createForm("s1", List.of(order.item()), sorterA), key("s1")));
 
         completeLine(detail.getTask().getId(), detail.getItems().getFirst(), "0.0000", "OUT_OF_STOCK", "供应商未到货");
 
         assertThat(itemResultOfTask(detail.getTask().getId())).isEqualTo("OUT_OF_STOCK");
-        assertThat(actualQuantity(order)).as("缺货不改订单实发量").isEqualByComparingTo("9.0000");
-        assertThat(settlementLineAmount(order)).isEqualByComparingTo(beforeSettlement);
+        assertThat(actualQuantity(order)).as("0 不是合法实发量，回写跳过").isEqualByComparingTo("9.0000");
+    }
+
+    @Test
+    @DisplayName("分拣实称量回写已确认订单的实发量、行结算额与订单结算合计")
+    void sortingWritesActualQuantityBackToConfirmedOrder() {
+        var order = order("w1", "10.0000");
+        var detail = as(lead, QUEUE_MANAGER,
+                () -> sorting.create(createForm("w1", List.of(order.item()), sorterA), key("w1")));
+
+        completeLine(detail.getTask().getId(), detail.getItems().getFirst(), "8.5000", "NORMAL", null);
+
+        assertThat(actualQuantity(order)).isEqualByComparingTo("8.5000");
+        var lockedUnitPrice = jdbc.queryForObject("SELECT locked_unit_price FROM xsy_sales_order_item WHERE id=?",
+                BigDecimal.class, order.item());
+        assertThat(settlementLineAmount(order)).isEqualByComparingTo(lockedUnitPrice.multiply(new BigDecimal("8.5"))
+                .setScale(4, java.math.RoundingMode.HALF_UP));
+        assertThat(jdbc.queryForObject("SELECT settlement_total_amount FROM xsy_sales_order WHERE id=?",
+                BigDecimal.class, order.order())).isEqualByComparingTo(settlementLineAmount(order));
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_order_operation_log WHERE order_id=? AND operation_type='ACTUAL_QUANTITY'"
+                    + " AND reason='分拣称重回写'",
+                Integer.class, order.order())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("已发车订单不再被分拣回写，标品行实发量保持下单量")
+    void syncSkipsDispatchedAndStandardLines() {
+        var dispatched = order("w2", "10.0000");
+        jdbc.update("UPDATE xsy_sales_order SET dispatched_at=CURRENT_TIMESTAMP WHERE id=?", dispatched.order());
+        evictMybatisCache();
+        var dispatchedDetail = as(lead, QUEUE_MANAGER,
+                () -> sorting.create(createForm("w2", List.of(dispatched.item()), sorterA), key("w2")));
+        completeLine(dispatchedDetail.getTask().getId(), dispatchedDetail.getItems().getFirst(), "8.5000", "NORMAL", null);
+        assertThat(actualQuantity(dispatched)).isEqualByComparingTo("10.0000");
+
+        var standard = standardOrder("w3", "10.0000");
+        var standardDetail = as(lead, QUEUE_MANAGER,
+                () -> sorting.create(createForm("w3", List.of(standard.item()), sorterA), key("w3")));
+        completeLine(standardDetail.getTask().getId(), standardDetail.getItems().getFirst(), "8.5000", "NORMAL", null);
+        assertThat(actualQuantity(standard)).isEqualByComparingTo("10.0000");
     }
 
     @Test
@@ -747,7 +785,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         assertThat(count("SELECT count(*) FROM xsy_finance_receivable")).isEqualTo(receivables);
         var fresh = standardForm(taskId, itemId);
         expectCode(() -> as(sorterA, SORTER, () -> standardSorting.confirm(taskId, fresh, key("again"))), 41873);
-        expectCode(() -> as(sorterB, SORTER, () -> standardSorting.confirm(taskId, form, commandKey)), 30005);
+        expectNoPermission(() -> as(sorterB, SORTER, () -> standardSorting.confirm(taskId, form, commandKey)));
     }
 
     @Test
@@ -779,16 +817,16 @@ class SortingTaskPgIT extends ScmW6PgITBase {
                 createForm("auth-standard", List.of(order.item()), sorterA), key("auth-standard")));
         Long taskId = task.getTask().getId();
         var form = standardForm(taskId, task.getItems().getFirst().getId());
-        expectCode(() -> as(sorterA, Set.of(QUERY_PERM), () -> standardSorting.preview(taskId)), 30005);
-        expectCode(() -> as(sorterB, SORTER, () -> standardSorting.preview(taskId)), 30005);
-        expectCode(() -> as(lead, SORTER, () -> {
+        expectNoPermission(() -> as(sorterA, Set.of(QUERY_PERM), () -> standardSorting.preview(taskId)));
+        expectNoPermission(() -> as(sorterB, SORTER, () -> standardSorting.preview(taskId)));
+        expectNoPermission(() -> as(lead, SORTER, () -> {
             ((RequestEmployee) SmartRequestUtil.getRequestUser()).setAdministratorFlag(true);
             return standardSorting.confirm(taskId, form, key("admin"));
-        }), 30005);
+        }));
         jdbc.update("DELETE FROM xsy_employee_warehouse_scope WHERE employee_id=?", sorterA);
         evictMybatisCache();
-        expectCode(() -> as(sorterA, SORTER, () -> standardSorting.preview(taskId)), 30005);
-        expectCode(() -> as(sorterA, SORTER, () -> standardSorting.confirm(taskId, form, key("warehouse"))), 30005);
+        expectNoPermission(() -> as(sorterA, SORTER, () -> standardSorting.preview(taskId)));
+        expectNoPermission(() -> as(sorterA, SORTER, () -> standardSorting.confirm(taskId, form, key("warehouse"))));
     }
 
     @Test
@@ -911,6 +949,12 @@ class SortingTaskPgIT extends ScmW6PgITBase {
             body.run();
             return null;
         });
+    }
+
+    /** 无权限走底座 {@link BusinessException}（30005），不是 {@code ScmBusinessException}，不能拿 expectCode 断言数字码。 */
+    private void expectNoPermission(Runnable action) {
+        assertThatThrownBy(action::run).isInstanceOf(BusinessException.class)
+                .hasMessage(UserErrorCode.NO_PERMISSION.getMsg());
     }
 
     private void loginAs(Long employeeId) {

@@ -77,15 +77,22 @@ import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ACTUAL_NOT_ALLOWED
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ACTUAL_QUANTITY_REQUIRED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ACTUAL_REASON_REQUIRED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_CANCEL_REASON_REQUIRED;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_CONFIRMED_NON_STANDARD_INSERT_BLOCKED;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ACTUAL_AFTER_DISPATCH_BLOCKED;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_DISCOUNT_EDIT_BLOCKED;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_EDIT_AFTER_DISPATCH_FORBIDDEN;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_DELETE_STATE_INVALID;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ITEM_NOT_OWNED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ITEM_VERSION_CONFLICT;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_LOCKED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_NOT_FOUND;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ORIGINAL_INVALID;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_PENDING_EDIT_BLOCKED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_PRICE_INVALID;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_PRICE_OVERRIDE_REASON_REQUIRED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_REPRICE_REQUIRED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RESERVE_STATE_INVALID;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_SORTED_ITEM_CHANGE_BLOCKED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_STATE_INVALID;
 
 /**
@@ -336,6 +343,21 @@ public class SalesOrderService {
         requireOrderSellerScope(salesOrder);
         version(salesOrder.getVersion(), salesOrderUpdateForm.getVersion());
         OrderStateMachine.editable(salesOrder.getStatus());
+        // 已确认订单的两道授权闸门：锁单后要「锁单后改单」权限，发车出库后要「发车后改单」权限。
+        var dispatched = salesOrder.getDispatchedAt() != null;
+        if (Boolean.TRUE.equals(salesOrder.getLockedFlag())
+            && !ScmDataScopeService.hasPermission(OrderPermission.EDIT_LOCKED))
+            throw new ScmBusinessException(ORDER_LOCKED);
+        if (dispatched && !ScmDataScopeService.hasPermission(OrderPermission.EDIT_AFTER_DISPATCH))
+            throw new ScmBusinessException(ORDER_EDIT_AFTER_DISPATCH_FORBIDDEN);
+        // 待确认订单一旦有了支付、应收、预留、出库或分拣事实，改单会与这些事实脱节，必须失败关闭。
+        var pending = ScmOrderStatusEnum.PENDING.name().equals(salesOrder.getStatus());
+        if (pending && salesOrderDao.hasPriceFreezeBlockingFact(salesOrder.getId()))
+            throw new ScmBusinessException(ORDER_PENDING_EDIT_BLOCKED);
+        // 已确认订单：优惠在确认时已冻结并分摊到行，直接改金额会让分摊与单据对不上，只能取消重下或加单。
+        var confirmed = ScmOrderStatusEnum.CONFIRMED.name().equals(salesOrder.getStatus());
+        if (confirmed && promotionDiscountService.getByOrder(salesOrder.getId()) != null)
+            throw new ScmBusinessException(ORDER_DISCOUNT_EDIT_BLOCKED);
         // 客户和地址在创建时确定，编辑不能替换。
         if (!Objects.equals(salesOrder.getCustomerId(), salesOrderUpdateForm.getCustomerId()))
             throw new ScmBusinessException(ORDER_ORIGINAL_INVALID);
@@ -352,6 +374,10 @@ public class SalesOrderService {
             .collect(Collectors.toMap(SalesOrderItemEntity::getId, Function.identity()));
         var requested = materialize(salesOrderUpdateForm);
         var changes = SalesOrderItemChangeSet.between(existing, requested);
+        // 已分拣或已出库后增删商品，会让分拣记录和出库单指向不存在的订单行；要加商品就走加单。
+        if (confirmed && (!changes.removed().isEmpty() || !changes.inserted().isEmpty())
+            && salesOrderDao.hasSortingOrOutbound(salesOrder.getId()))
+            throw new ScmBusinessException(ORDER_SORTED_ITEM_CHANGE_BLOCKED);
         // 先删后插：被移除的 SKU 可以重新加回，不会撞上有效唯一索引。
         for (var row : changes.removed())
             removeItem(row);
@@ -371,15 +397,43 @@ public class SalesOrderService {
                     OrderAmountCalculator.lineAmount(row.getOrderedQuantity(), row.getDraftUnitPrice()));
             }
             row.setOrderId(salesOrder.getId());
+            if (pending)
+                lockPendingItem(row);
+            else if (confirmed)
+                relockConfirmedItem(row, previous);
             saveItem(row);
         }
-        for (var row : changes.inserted())
+        for (var row : changes.inserted()) {
+            if (pending)
+                lockPendingItem(row);
+            else if (confirmed) {
+                // 新增需称重的商品没有实数量，直接塞进已确认订单会得到一条结算金额缺失的行；要加就新增加单。
+                if (!ScmProductTypeEnum.STANDARD.name().equals(row.getProductTypeSnapshot()))
+                    throw new ScmBusinessException(ORDER_CONFIRMED_NON_STANDARD_INSERT_BLOCKED);
+                relockConfirmedItem(row, null);
+            }
             insert(salesOrder.getId(), row);
+        }
         header(salesOrder, salesOrderUpdateForm);
-        salesOrder.setOrderedTotalAmount(total(requested));
+        if (pending || confirmed) {
+            // 已经锁过价的订单：金额只按库里实际保留的行合计，未改动的行沿用锁定时的报价。
+            Map<Long, SalesOrderItemEntity> kept = new LinkedHashMap<>();
+            existing.forEach(row -> kept.put(row.getId(), row));
+            changes.removed().forEach(row -> kept.remove(row.getId()));
+            changes.updated().forEach(row -> kept.put(row.getId(), row));
+            var rows = new ArrayList<>(kept.values());
+            rows.addAll(changes.inserted());
+            salesOrder.setOrderedTotalAmount(total(rows));
+            if (confirmed)
+                salesOrder.setSettlementTotalAmount(settlementTotal(rows));
+        } else
+            salesOrder.setOrderedTotalAmount(total(requested));
         save(salesOrder);
         var result = salesOrderQueryService.detailSnapshot(salesOrder.getId());
-        log(salesOrder.getId(), ScmOrderOperationTypeEnum.UPDATE, null, before, result);
+        // 发车后改单单独记类型：对账与复盘要能一眼看出这笔改动发生在出库之后。
+        log(salesOrder.getId(),
+            confirmed && dispatched ? ScmOrderOperationTypeEnum.EDIT_AFTER_DISPATCH : ScmOrderOperationTypeEnum.UPDATE,
+            null, before, result);
         return result;
     }
 
@@ -535,6 +589,15 @@ public class SalesOrderService {
         var salesOrder = lock(orderActualQuantityForm.getOrderId());
         requireOrderSellerScope(salesOrder);
         OrderStateMachine.actualQuantity(salesOrder.getStatus());
+        // 已确认订单的实发量直接决定结算金额：发车后不再改，锁单后要「锁单后改单」权限。
+        var confirmedOrder = ScmOrderStatusEnum.CONFIRMED.name().equals(salesOrder.getStatus());
+        if (confirmedOrder) {
+            if (salesOrder.getDispatchedAt() != null)
+                throw new ScmBusinessException(ORDER_ACTUAL_AFTER_DISPATCH_BLOCKED);
+            if (Boolean.TRUE.equals(salesOrder.getLockedFlag())
+                && !ScmDataScopeService.hasPermission(OrderPermission.EDIT_LOCKED))
+                throw new ScmBusinessException(ORDER_LOCKED);
+        }
         var row = salesOrderItemDao.list(salesOrder.getId()).stream()
             .filter(salesOrderItem -> Objects.equals(salesOrderItem.getId(), orderActualQuantityForm.getItemId()))
             .findFirst().orElseThrow(() -> new ScmBusinessException(ORDER_ITEM_NOT_OWNED));
@@ -547,7 +610,13 @@ public class SalesOrderService {
         row.setActualQuantity(OrderValidator.decimal(orderActualQuantityForm.getActualQuantity(), true));
         row.setActualQuantitySource(ScmOrderQuantitySourceEnum.MANUAL.name());
         row.setActualQuantityReason(orderActualQuantityForm.getReason().trim());
+        if (confirmedOrder)
+            // 已确认订单的实发量就是结算量：行金额与订单结算合计必须跟着变，否则财务按旧量挂账。
+            row.setSettlementLineAmount(
+                OrderAmountCalculator.lineAmount(row.getActualQuantity(), row.getLockedUnitPrice()));
         saveItem(row);
+        if (confirmedOrder)
+            salesOrder.setSettlementTotalAmount(settlementTotal(salesOrderItemDao.list(salesOrder.getId())));
         // 一并推进订单版本：明细变了之后，旧的确认表单必须刷新。
         save(salesOrder);
         var result = salesOrderQueryService.detailSnapshot(salesOrder.getId());
@@ -916,6 +985,51 @@ public class SalesOrderService {
         stamp(salesOrder, false);
         if (salesOrderDao.updateById(salesOrder) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
+    }
+
+    /**
+     * 待确认订单改单后重新锁定：单价取行上已有的草稿报价（不重新解析），标品实数量必须等于下单量。 非标品的实数量是称重结果，不在改单时覆盖。
+     */
+    private void lockPendingItem(SalesOrderItemEntity row) {
+        row.setLockedUnitPrice(row.getDraftUnitPrice());
+        row.setLockedPriceSource(row.getDraftPriceSource());
+        row.setLockedPriceSourceId(row.getDraftPriceSourceId());
+        row.setOrderedLineAmount(OrderAmountCalculator.lineAmount(row.getOrderedQuantity(), row.getLockedUnitPrice()));
+        if (ScmProductTypeEnum.STANDARD.name().equals(row.getProductTypeSnapshot())) {
+            row.setActualQuantity(row.getOrderedQuantity());
+            row.setActualQuantitySource(ScmOrderQuantitySourceEnum.SYSTEM.name());
+        }
+    }
+
+    /**
+     * 已确认订单改单后的重锁：单价沿用行上已有的草稿报价（改价走人工改价并留痕）， 标品实数量回到下单量；非标品的实数量是称重结果，改单不覆盖它，但结算行金额按新单价重算。
+     *
+     * <p>
+     * 改单表单里不带实数量，非标品要从改前的行上取回，否则结算金额会被改单悄悄清零。
+     */
+    private void relockConfirmedItem(SalesOrderItemEntity row, SalesOrderItemEntity previous) {
+        row.setLockedUnitPrice(row.getDraftUnitPrice());
+        row.setLockedPriceSource(row.getDraftPriceSource());
+        row.setLockedPriceSourceId(row.getDraftPriceSourceId());
+        row.setOrderedLineAmount(OrderAmountCalculator.lineAmount(row.getOrderedQuantity(), row.getLockedUnitPrice()));
+        if (ScmProductTypeEnum.STANDARD.name().equals(row.getProductTypeSnapshot())) {
+            row.setActualQuantity(row.getOrderedQuantity());
+            row.setActualQuantitySource(ScmOrderQuantitySourceEnum.SYSTEM.name());
+        } else if (previous != null) {
+            row.setActualQuantity(previous.getActualQuantity());
+            row.setActualQuantitySource(previous.getActualQuantitySource());
+            // 人工实数量必须带原因（ck_sales_order_item_actual_reason），改单表单不带它，从改前的行取回。
+            row.setActualQuantityReason(previous.getActualQuantityReason());
+        }
+        if (row.getActualQuantity() != null)
+            row.setSettlementLineAmount(
+                OrderAmountCalculator.lineAmount(row.getActualQuantity(), row.getLockedUnitPrice()));
+    }
+
+    /** 已确认订单的结算合计：按实际数量 × 锁定单价逐行求和，与确认时的口径一致。 */
+    private BigDecimal settlementTotal(List<SalesOrderItemEntity> rows) {
+        return OrderAmountCalculator.orderAmount(
+            rows.stream().map(SalesOrderItemEntity::getSettlementLineAmount).filter(Objects::nonNull).toList());
     }
 
     private void saveItem(SalesOrderItemEntity row) {

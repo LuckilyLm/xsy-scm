@@ -7,11 +7,13 @@ import com.xsy.scm.mall.account.dao.MallCustomerAccountDao;
 import com.xsy.scm.order.domain.entity.OrderOperationLogEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
+import com.xsy.scm.order.manager.OrderEditPolicy;
 
 import com.xsy.scm.order.domain.form.OrderLogQueryForm;
 import com.xsy.scm.order.domain.form.SalesOrderQueryForm;
 
 import com.xsy.scm.order.domain.vo.OrderAddressSnapshotVO;
+import com.xsy.scm.order.domain.vo.OrderLastPurchasePriceVO;
 import com.xsy.scm.order.domain.vo.OrderOperationLogVO;
 import com.xsy.scm.order.domain.vo.OrderRecentPriceVO;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
@@ -26,10 +28,14 @@ import com.xsy.scm.order.dao.OrderTagDao;
 import com.xsy.scm.order.domain.vo.OrderTagVO;
 
 import com.xsy.scm.promotion.service.PromotionDiscountService;
+import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
+import com.xsy.scm.purchase.dao.PurchaseOrderItemDao;
+import com.xsy.scm.purchase.domain.vo.PurchaseLastPriceVO;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmValueScope;
 
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_NOT_FOUND;
 
@@ -60,6 +66,7 @@ public class SalesOrderQueryService {
     private final MallCustomerAccountDao mallCustomerAccountDao;
     private final ScmDataScopeService dataScopeService;
     private final CustomerService customerService;
+    private final PurchaseOrderItemDao purchaseOrderItemDao;
 
     /**
      * 订单详情带上优惠（只读）。订单域不重复实现优惠规则，直接引用营销域的读结果，让详情页能看到减免金额和所用券；没有优惠时为 null。
@@ -93,6 +100,10 @@ public class SalesOrderQueryService {
         var salesOrderVO = new SalesOrderVO();
         BeanUtils.copyProperties(salesOrder, salesOrderVO);
         salesOrderVO.setOrderId(salesOrder.getId());
+        // 改单资格由后端统一判定：前端按钮是否可点、写接口是否放行用同一套条件。
+        var blockedReason = OrderEditPolicy.blockedReason(salesOrder);
+        salesOrderVO.setEditable(blockedReason == null);
+        salesOrderVO.setEditBlockedReason(blockedReason);
         return salesOrderVO;
     }
 
@@ -164,6 +175,37 @@ public class SalesOrderQueryService {
         customerService.requireInCurrentScope(customerId);
         int n = Math.min(Math.max(limit, RECENT_PRICE_MIN_LIMIT), RECENT_PRICE_MAX_LIMIT);
         return salesOrderItemDao.recentPrices(customerId, skuId, n);
+    }
+
+    /**
+     * 某批商品规格的最近采购价（只读）：按采购员的授权范围取数，只供录单参考，不回算当前价格、不参与定价。
+     *
+     * <p>
+     * 采购范围为空时失败关闭，返回空结果而不是全量。成本可见性由接口权限注解保证。
+     */
+    public List<OrderLastPurchasePriceVO> lastPurchasePrices(List<Long> skuIds) {
+        if (skuIds == null || skuIds.isEmpty())
+            return List.of();
+        List<Long> distinctSkuIds = skuIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+        if (distinctSkuIds.isEmpty())
+            return List.of();
+        ScmValueScope purchaserScope = dataScopeService.resolve().getPurchaserScope();
+        if (purchaserScope.isEmpty())
+            return List.of();
+        return purchaseOrderItemDao
+            .latestPurchasePrices(distinctSkuIds, ScmPurchaseStatusEnum.committedNames(), purchaserScope).stream()
+            .map(SalesOrderQueryService::lastPurchasePrice).toList();
+    }
+
+    private static OrderLastPurchasePriceVO lastPurchasePrice(PurchaseLastPriceVO row) {
+        var vo = new OrderLastPurchasePriceVO();
+        vo.setSkuId(row.getSkuId());
+        vo.setPurchasePrice(row.getPurchasePrice());
+        vo.setPurchaseUnit(row.getPurchaseUnit());
+        vo.setPurchaseOrderNo(row.getPurchaseOrderNo());
+        vo.setSubmittedAt(row.getSubmittedAt());
+        vo.setSupplierName(row.getSupplierName());
+        return vo;
     }
 
     /**

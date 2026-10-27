@@ -19,8 +19,10 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
         // 25 条是订单域批准形态；V51 为报表日期轴追加 2 条部分索引（sales_order.confirmed_at、
         // order_refund.completed_at），二者都在本用例的表清单内；
         // V87（ADM-08 异常订单分析）再追加 order_return.rejected_at 的售后拒绝事件轴索引；
-        // V126 为待分配订单池在 sales_order 上追加部分索引 idx_sales_order_unassigned_mall_pool = 29。
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_indexes WHERE schemaname=current_schema() AND tablename IN (" + TABLES + ") AND indexname NOT LIKE '%_pkey'", Integer.class)).isEqualTo(29);
+        // V126 为待分配订单池在 sales_order 上追加部分索引 idx_sales_order_unassigned_mall_pool；
+        // 商城配送仓映射追加 idx_sales_order_mall_delivery_warehouse；
+        // V184 为发车满 7 天自动锁单追加部分索引 idx_sales_order_auto_lock = 31。
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_indexes WHERE schemaname=current_schema() AND tablename IN (" + TABLES + ") AND indexname NOT LIKE '%_pkey'", Integer.class)).isEqualTo(31);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.sequences WHERE sequence_schema=current_schema() AND sequence_name IN ('sales_order_no_seq','order_return_no_seq','order_refund_no_seq')", Integer.class)).isEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN (" + TABLES + ") AND column_name IN ('fulfillment_status','pay_status','actual_weight')", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN ('xsy_sales_order','xsy_sales_order_item') AND column_name IN ('draft_unit_price','draft_price_source','ordered_line_amount','ordered_total_amount') AND is_nullable='YES'", Integer.class)).isEqualTo(4);

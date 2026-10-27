@@ -5,6 +5,7 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.sorting.constant.SortingErrorCode;
 import com.xsy.scm.sorting.dao.SortingScaleEventDao;
 import com.xsy.scm.sorting.dao.SortingTaskDao;
+import com.xsy.scm.sorting.dao.SortingQueryDao;
 import com.xsy.scm.sorting.dao.SortingTaskItemDao;
 import com.xsy.scm.sorting.domain.entity.SortingScaleEventEntity;
 import com.xsy.scm.sorting.domain.entity.SortingTaskEntity;
@@ -51,6 +52,9 @@ class SortingScaleEventServiceTest {
     private SortingTaskItemDao itemDao;
 
     @Mock
+    private SortingQueryDao sortingQueryDao;
+
+    @Mock
     private SortingTaskService taskService;
 
     @Mock
@@ -83,8 +87,10 @@ class SortingScaleEventServiceTest {
 
         SortingTaskEntity task = new SortingTaskEntity();
         task.setId(TASK_ID);
+        // requirePending 先按 id 读一次拿到 taskId 才能锁任务，再 lockById 锁读数。
+        when(eventDao.selectById(EVENT_ID)).thenReturn(event);
+        when(sortingQueryDao.lockTask(TASK_ID)).thenReturn(task);
         when(eventDao.lockById(EVENT_ID)).thenReturn(event);
-        when(taskDao.selectById(TASK_ID)).thenReturn(task);
     }
 
     @Test

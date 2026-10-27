@@ -13,6 +13,8 @@ public class DeliverySortedLine {
     private Long salesOrderItemId;
     private Long skuId;
     private BigDecimal sortedQuantity;
+    /** 订单行的销售单位；没有库存换算时，它就是出库的记账单位。 */
+    private String saleUnitSnapshot;
     private String mallStockUnitSnapshot;
     private BigDecimal mallStockUnitsPerSaleUnit;
 }

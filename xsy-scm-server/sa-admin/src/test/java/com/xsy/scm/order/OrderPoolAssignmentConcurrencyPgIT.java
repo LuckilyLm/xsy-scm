@@ -1,6 +1,7 @@
 package com.xsy.scm.order;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
@@ -18,7 +19,9 @@ import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.account.service.MallAccountService;
 import com.xsy.scm.mall.account.service.MallAuthService;
 import com.xsy.scm.mall.address.domain.form.MallAddressSaveForm;
+import com.xsy.scm.mall.address.domain.vo.MallMapLocationVO;
 import com.xsy.scm.mall.address.service.MallAddressService;
+import com.xsy.scm.mall.address.service.MallMapService;
 import com.xsy.scm.mall.cart.domain.form.MallCartAddForm;
 import com.xsy.scm.mall.cart.service.MallCartService;
 import com.xsy.scm.mall.order.domain.form.MallCheckoutItemForm;
@@ -29,6 +32,7 @@ import com.xsy.scm.mall.order.service.MallCheckoutService;
 import com.xsy.scm.order.domain.form.OrderPoolAssignForm;
 import com.xsy.scm.order.domain.form.OrderPoolClaimForm;
 import com.xsy.scm.order.service.OrderPoolService;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -38,12 +42,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,6 +96,37 @@ class OrderPoolAssignmentConcurrencyPgIT extends ScmW5PgITBase {
 
     @Autowired
     private MallCheckoutService mallCheckoutService;
+
+    // 仅隔离高德公网依赖；商城地址校验、订单与库存仍访问真实服务和 PostgreSQL。
+    @MockitoBean
+    private MallMapService mapService;
+
+    @BeforeEach
+    void mockExternalMapProvider() {
+        MallMapLocationVO location = new MallMapLocationVO();
+        location.setLongitude(new BigDecimal("121.544000"));
+        location.setLatitude(new BigDecimal("31.221000"));
+        location.setProvinceCode(310000);
+        location.setCityCode(310100);
+        location.setDistrictCode(310115);
+        location.setProvinceName("上海市");
+        location.setCityName("上海市");
+        location.setDistrictName("浦东新区");
+        when(mapService.reverse(any(BigDecimal.class), any(BigDecimal.class))).thenReturn(location);
+        bindMockedDistrictToSeedWarehouse();
+    }
+
+    /**
+     * 商城按收货地址区县解析配送仓；高德 reverse 已被 mock 成 310115，
+     * 这里把该区县指到种子仓，保证地址→仓库这一步有确定的落点。
+     */
+    private void bindMockedDistrictToSeedWarehouse() {
+        jdbc.update("INSERT INTO xsy_mall_district_warehouse (district_code, warehouse_id, priority, deleted,"
+                        + " created_by, updated_by) VALUES (?, ?, 0, FALSE, '1:1', '1:1')"
+                        + " ON CONFLICT (district_code, warehouse_id) WHERE deleted = FALSE DO NOTHING",
+                310115, seedWarehouseId());
+    }
+
 
     private int customerSequence;
 
@@ -411,6 +448,8 @@ class OrderPoolAssignmentConcurrencyPgIT extends ScmW5PgITBase {
         form.setCityName("上海市");
         form.setDistrictName("浦东新区");
         form.setDetailAddress("张江路 2 号");
+        form.setLongitude(new BigDecimal("121.544000"));
+        form.setLatitude(new BigDecimal("31.221000"));
         form.setIsDefault(true);
         return form;
     }
@@ -422,13 +461,15 @@ class OrderPoolAssignmentConcurrencyPgIT extends ScmW5PgITBase {
         return form;
     }
 
-    private static MallOrderSubmitForm submitForm(Long skuId, Long addressId, String priceFingerprint) {
+    private MallOrderSubmitForm submitForm(Long skuId, Long addressId, String priceFingerprint) {
         MallOrderSubmitForm form = new MallOrderSubmitForm();
         form.setItems(List.of(checkoutItem(skuId, "1.0000")));
         form.setAddressId(addressId);
         form.setPriceFingerprint(priceFingerprint);
         form.setRemark("订单池并发 IT");
         form.setSettlementMethod("COD");
+        // 商城下单必须给出本次使用的配送仓；夹具统一用本类入库的那个仓。
+        form.setWarehouseId(seedWarehouseId());
         return form;
     }
 

@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import type {Address, Id, Item, Order, RecentPrice} from './order-types.ts';
+import type {Address, Id, Item, LastPurchasePrice, Order, RecentPrice} from './order-types.ts';
 
 /** 本模块会被 node 直接加载，不能使用相对路径的值导入，精度归一在这里就地实现。 */
 function roundScale(value: string | number | null | undefined, scale: number): string {
@@ -39,8 +39,22 @@ function groupMoney(value: string): string {
   return `${negative ? '-' : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
 }
 
+/** 现场按“当天录单、次日配送”作业；默认次日 08:00，仍可手改。 */
+function defaultDeliveryTime(): string {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} 08:00:00`;
+}
+
 export function newOrder(): Order {
-  return {orderSource: 'ADMIN', deliveryWarehouseId: null, items: [], address: {receiverName: '', receiverPhone: '', address: ''}};
+  return {
+    orderSource: 'ADMIN',
+    deliveryWarehouseId: null,
+    expectDeliveryTime: defaultDeliveryTime(),
+    items: [],
+    address: {receiverName: '', receiverPhone: '', address: ''},
+  };
 }
 
 /** 连续录单只沿用客户和仓库，其余内容一律重新填写。 */
@@ -53,6 +67,20 @@ export function nextOrderForCustomer(previous: Order): Order {
 
 export function fixed(value: string | number): string {
   return new Decimal(value).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
+}
+
+/** 录单区合计数量：只累加正在录入的下单数量，非法录入值跳过，保存时由校验统一报错。 */
+export function sumOrderedQuantity(items: {orderedQuantity?: string | number | null}[]): string {
+  let total = new Decimal(0);
+  for (const item of items) {
+    if (item.orderedQuantity === null || item.orderedQuantity === undefined || item.orderedQuantity === '') continue;
+    try {
+      total = total.plus(new Decimal(item.orderedQuantity));
+    } catch {
+      // 录入中的非法数量不参与合计
+    }
+  }
+  return total.toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
 }
 
 /** 草稿明细行：只存用户输入的内容。 */
@@ -222,6 +250,60 @@ export function recentPriceRows(cache: RecentPriceCache, customerId: Id | null |
 export function isLoadingRecentPrice(cache: RecentPriceCache, customerId: Id | null | undefined, skuId: Id | null | undefined): boolean {
   const key = recentPriceKey(customerId, skuId);
   return key != null && cache.loadingKey === key;
+}
+
+/** 最近采购价缓存。键只用商品规格，不掺客户或行号：同一规格在不同客户下是同一个采购事实。 */
+export interface LastPurchasePriceCache {
+  loadingKey: string | null;
+  rowsBySkuId: Record<string, LastPurchasePrice | null>;
+}
+
+export function createLastPurchasePriceCache(): LastPurchasePriceCache {
+  return {loadingKey: null, rowsBySkuId: {}};
+}
+
+export function lastPurchasePriceKey(skuId: Id | null | undefined): string | null {
+  if (skuId == null || skuId === '') {
+    return null;
+  }
+  return String(skuId);
+}
+
+/** 查过但没有采购记录也算已查过（缓存值是 null），用来区分空数据和未加载。 */
+export function hasLastPurchasePrice(cache: LastPurchasePriceCache, skuId: Id | null | undefined): boolean {
+  const key = lastPurchasePriceKey(skuId);
+  return key != null && key in cache.rowsBySkuId;
+}
+
+export function lastPurchasePrice(cache: LastPurchasePriceCache, skuId: Id | null | undefined): LastPurchasePrice | null {
+  const key = lastPurchasePriceKey(skuId);
+  return (key != null && cache.rowsBySkuId[key]) || null;
+}
+
+export function isLoadingLastPurchasePrice(cache: LastPurchasePriceCache, skuId: Id | null | undefined): boolean {
+  const key = lastPurchasePriceKey(skuId);
+  return key != null && cache.loadingKey === key;
+}
+
+/** 取最近采购价：有缓存直接返回；请求失败会清掉加载态，下次还能重试。 */
+export async function loadLastPurchasePrice(
+  cache: LastPurchasePriceCache,
+  skuId: Id | null | undefined,
+  fetcher: () => Promise<LastPurchasePrice | null>
+): Promise<boolean> {
+  const key = lastPurchasePriceKey(skuId);
+  if (!key || key in cache.rowsBySkuId || cache.loadingKey === key) {
+    return key != null && key in cache.rowsBySkuId;
+  }
+  cache.loadingKey = key;
+  try {
+    cache.rowsBySkuId[key] = (await fetcher()) ?? null;
+    return true;
+  } finally {
+    if (cache.loadingKey === key) {
+      cache.loadingKey = null;
+    }
+  }
 }
 
 /** 取历史价：有缓存直接返回；请求失败会清掉加载态，下次还能重试。 */

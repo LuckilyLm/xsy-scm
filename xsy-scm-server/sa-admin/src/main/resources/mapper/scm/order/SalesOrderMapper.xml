@@ -11,6 +11,11 @@
             OR EXISTS (SELECT 1 FROM xsy_sorting_task_item WHERE sales_order_id = #{orderId})
     </select>
 
+    <select id="hasSortingOrOutbound" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM xsy_inventory_outbound_item WHERE sales_order_id = #{orderId})
+            OR EXISTS (SELECT 1 FROM xsy_sorting_task_item WHERE sales_order_id = #{orderId})
+    </select>
+
     <select id="unassignedMallOrders" resultMap="row">
         SELECT *
         FROM xsy_sales_order
@@ -35,6 +40,56 @@
             AND order_source = 'MALL'
             AND status IN ('DRAFT', 'PENDING', 'CONFIRMED')
             AND deleted = FALSE
+    </update>
+
+    <update id="markDispatched">
+        UPDATE xsy_sales_order
+        SET dispatched_at = #{at}, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{orderId}
+            AND deleted = FALSE
+            AND status = 'CONFIRMED'
+    </update>
+
+    <!-- 自动锁单只看发车时间：未发车的订单不自动锁，避免把还没出库的单锁死。 -->
+    <select id="autoLockCandidates" resultType="long">
+        SELECT id
+        FROM xsy_sales_order
+        WHERE deleted = FALSE
+            AND locked_flag = FALSE
+            AND dispatched_at IS NOT NULL
+            AND dispatched_at &lt;= CURRENT_TIMESTAMP - INTERVAL '7 days'
+        ORDER BY dispatched_at, id
+        LIMIT #{limit}
+    </select>
+
+    <update id="lockIfUnlocked">
+        UPDATE xsy_sales_order
+        SET locked_flag = TRUE,
+            locked_at = #{at},
+            locked_by = #{operator},
+            lock_reason = #{reason},
+            auto_lock_at = #{autoLockAt},
+            version = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{orderId}
+            AND deleted = FALSE
+            AND locked_flag = FALSE
+    </update>
+
+    <update id="unlock">
+        UPDATE xsy_sales_order
+        SET locked_flag = FALSE,
+            locked_at = NULL,
+            locked_by = NULL,
+            lock_reason = NULL,
+            auto_lock_at = NULL,
+            version = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{orderId}
+            AND deleted = FALSE
+            AND locked_flag = TRUE
     </update>
 
     <select id="customerReferences" resultType="long">
@@ -72,6 +127,12 @@
         <result column="submitted_at" property="submittedAt"/>
         <result column="confirmed_at" property="confirmedAt"/>
         <result column="cancelled_at" property="cancelledAt"/>
+        <result column="dispatched_at" property="dispatchedAt"/>
+        <result column="locked_flag" property="lockedFlag"/>
+        <result column="locked_at" property="lockedAt"/>
+        <result column="locked_by" property="lockedBy"/>
+        <result column="lock_reason" property="lockReason"/>
+        <result column="auto_lock_at" property="autoLockAt"/>
         <result column="version" property="version"/>
         <result column="deleted" property="deleted"/>
         <result column="created_at" property="createdAt"/>
@@ -119,6 +180,30 @@
         <if test="query.startTime != null">AND created_at &gt;= #{query.startTime}</if>
         <if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if>
         ORDER BY created_at DESC, id DESC
+    </select>
+
+    <select id="selectForCustomerSheet" resultMap="row">
+        SELECT o.*
+        FROM xsy_sales_order o
+        WHERE o.deleted = FALSE
+            AND o.status = 'CONFIRMED'
+            AND o.expect_delivery_time &gt;= #{start}
+            AND o.expect_delivery_time &lt; #{end}
+        <if test="scope != null and scope.all == false">
+            AND o.seller_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">AND FALSE</if>
+        <if test="routeId != null">
+            AND EXISTS (SELECT 1 FROM xsy_delivery_route_order r
+                WHERE r.order_id = o.id AND r.route_id = #{routeId}
+                    AND r.deleted = FALSE AND r.assignment_status = 'ACTIVE')
+        </if>
+        <if test="customerIds != null and customerIds.size() > 0">
+            AND o.customer_id IN
+            <foreach collection="customerIds" item="customerId" open="(" separator="," close=")">#{customerId}</foreach>
+        </if>
+        ORDER BY o.customer_id, o.id
     </select>
 
     <select id="listByCustomer" resultMap="row">

@@ -7,6 +7,30 @@
   >
     <a-alert v-if="error" :message="error" type="error" show-icon />
     <p v-if="exchangeReturnId" class="scm-note">原货已接收。替换订单重新定价并从草稿开始；后续提交、预留和配送按正常订单办理，不自动抵扣退款。</p>
+    <a-alert
+      v-if="form.status === 'PENDING'"
+      type="warning"
+      show-icon
+      class="pending-edit-note"
+      message="该订单已提交、等待确认：保存后仍为待确认，未改动的商品沿用提交时的报价；需要按最新价格重算请用「批量核价」。"
+    />
+    <a-alert
+      v-if="form.status === 'CONFIRMED' && form.lockedFlag"
+      type="error"
+      show-icon
+      class="pending-edit-note"
+      message="该订单已锁单：保存需要「锁单后改单」权限；普通用户请新建加单。"
+    />
+    <a-alert
+      v-else-if="form.status === 'CONFIRMED'"
+      type="warning"
+      show-icon
+      class="pending-edit-note"
+      :message="
+        (form.dispatchedAt ? '该订单已发车出库，保存需要「发车后改单」权限。' : '该订单已确认：') +
+        '改单沿用原有的锁定单价重算金额，不静默改价；需称重的新增商品请新建加单。'
+      "
+    />
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical" class="app-drawer-form">
         <a-row :gutter="20">
@@ -82,8 +106,16 @@
         </a-row>
         <ItemTable ref="itemTableRef" :items="form.items" :customer-id="form.customerId" @price="preview" />
         <div class="item-actions">
+          <a-button :disabled="!form.customerId" @click="pasteOpen = true">整单粘贴</a-button>
           <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
         </div>
+        <p class="scm-note">整单粘贴会按商品名称、规格、单位匹配商品，匹配失败的行不会追加；也可继续用 Excel 导入整张送货单。</p>
+        <OrderPasteModal
+          v-model:open="pasteOpen"
+          :customer-id="form.customerId"
+          :existing-sku-ids="existingSkuIds"
+          @append="appendPasted"
+        />
       </a-form>
     </a-spin>
     <template #footer>
@@ -123,8 +155,9 @@ import {
 import {localSave, localRead, localRemove} from '/@/utils/local-util';
 import {useUserStore} from '/@/store/modules/system/user';
 import {orderError} from '../order-errors';
-import type {Order, Id} from '../order-types';
+import type {Order, Id, Item} from '../order-types';
 import ItemTable from './order-item-editable-table.vue';
+import OrderPasteModal from './order-paste-modal.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
@@ -137,7 +170,11 @@ const form = ref<Order>(newOrder()),
   error = ref(''),
   originals = ref<{value: Id; label: string}[]>([]);
 const exchangeReturnId = ref<Id>();
+const pasteOpen = ref(false);
 const formRef = ref<FormInstance>();
+const existingSkuIds = computed(() =>
+  form.value.items.map((item) => item.skuId).filter((skuId): skuId is Id => skuId != null && skuId !== '')
+);
 /** 收货信息在 `form.address.*` 里，展平一份给表单校验用（顶层 `address` 就是详细地址）。 */
 const flatModel = computed(() => ({...form.value, ...form.value.address}));
 const warehouseValue = computed<Id | undefined>({
@@ -372,6 +409,8 @@ async function preview() {
       const p = r.data.items.find((p) => String(p.skuId) === String(i.skuId));
       i.draftUnitPrice = p?.unitPrice ?? null;
       i.draftPriceSource = p?.priceSource ?? null;
+      // 单位用于参考价对比，只在解析结果给出时覆盖，避免清掉已保存行的快照
+      if (p?.saleUnit) i.saleUnitSnapshot = p.saleUnit;
     }
   } catch (e) {
     if (current === previewRequestId) error.value = orderError(e);
@@ -396,6 +435,13 @@ async function loadOriginals(keyword: string) {
   } catch (e) {
     error.value = orderError(e);
   }
+}
+
+/** 整单粘贴只追加已匹配行；数量、改价原因等仍按正常订单校验。 */
+function appendPasted(items: Item[]) {
+  form.value.items.push(...items);
+  message.success(`已追加 ${items.length} 行，正在按当前价格重新解析`);
+  void preview();
 }
 
 /** 继续录下一单：只保留客户和仓库，地址重新获取，商品和价格重新录入。 */
@@ -492,10 +538,15 @@ defineExpose({open, openFromHistory, openForExchange});
 .item-actions {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   margin-top: 12px;
 }
 
 .app-drawer-form :deep(.add-line) {
   margin: 12px 8px 0 0;
+}
+
+.pending-edit-note {
+  margin-bottom: 12px;
 }
 </style>

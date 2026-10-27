@@ -44,7 +44,8 @@
           >批量核价（最多8单）</a-button
         >
         <a-button v-if="canManageTags" :disabled="!selected.length || selected.length > 20" @click="openBatchTags">批量打标签</a-button>
-        <a-button v-if="canPrint" :disabled="!selected.length || selected.length > 10" @click="openBatchPrint">批量打印（最多10单）</a-button>
+        <a-button v-if="canPrint" :disabled="!selected.length" @click="openBatchPrint">批量打印订单</a-button>
+        <a-button v-if="canPrint" @click="customerSheetOpen = true">打印客户分拣单 / 送货单</a-button>
         <a-button danger v-privilege="'scm:order:delete'" :disabled="!selected.length || !selectedAllDraft" @click="batchDelete">
           批量删除草稿
         </a-button>
@@ -86,7 +87,15 @@
           </a-space>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="orderStatusTone(record.status)" :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc" />
+          <a-space :size="4">
+            <ScmStatusTag :tone="orderStatusTone(record.status)" :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc" />
+            <a-tooltip v-if="record.lockedFlag" :title="lockTip(record)">
+              <a-tag color="orange">已锁</a-tag>
+            </a-tooltip>
+            <a-tooltip v-else-if="record.dispatchedAt" title="已发车出库，改单需要发车后改单权限">
+              <a-tag color="blue">已发车</a-tag>
+            </a-tooltip>
+          </a-space>
         </template>
         <template v-else-if="column.dataIndex === 'orderSource'">{{ SCM_ORDER_SOURCE_ENUM[record.orderSource]?.desc }} </template>
         <template v-else-if="column.dataIndex === 'orderedTotalAmount'">
@@ -102,8 +111,22 @@
               <a-button type="link" size="small" v-privilege="'scm:order:update'" @click="drawer?.open(record.orderId)">编辑 </a-button>
               <a-button type="link" size="small" v-privilege="'scm:order:submit'" @click="submit(record)">提交 </a-button>
             </template>
+            <template v-else-if="record.status === 'PENDING'">
+              <a-button type="link" size="small" v-privilege="'scm:order:update'" @click="drawer?.open(record.orderId)">编辑 </a-button>
+              <a-button type="link" size="small" @click="openDetail(record.orderId)">详情</a-button>
+            </template>
             <template v-else-if="record.status === 'CONFIRMED'">
               <a-button type="link" size="small" @click="openDetail(record.orderId)">详情</a-button>
+              <a-button
+                type="link"
+                size="small"
+                v-privilege="'scm:order:update'"
+                :disabled="record.editable === false"
+                :title="record.editBlockedReason || ''"
+                @click="drawer?.open(record.orderId)"
+              >
+                编辑
+              </a-button>
               <a-button type="link" size="small" v-privilege="'scm:order:reserve-stock'" @click="reserveStock(record)">预留库存 </a-button>
             </template>
             <template v-else>
@@ -132,6 +155,7 @@
   <OrderBatchPriceCheckModal ref="priceCheckModal" @saved="queryData" />
   <OrderTagModal ref="tagModal" @saved="onTagsSaved" />
   <PrintDocumentModal :open="printOpen" document-type="SALES_ORDER" :business-ids="printOrderIds" @close="printOpen = false" />
+  <CustomerSheetBatchModal :open="customerSheetOpen" @close="customerSheetOpen = false" />
 </template>
 <script setup lang="ts">
 import {SCM_COLUMN_WIDTH} from '/@/views/business/scm/common/scm-column';
@@ -157,6 +181,7 @@ import OrderImportModal from './components/order-import-modal.vue';
 import OrderBatchPriceCheckModal from './components/order-batch-price-check-modal.vue';
 import OrderTagModal from './components/order-tag-modal.vue';
 import PrintDocumentModal from '../print/print-document-modal.vue';
+import CustomerSheetBatchModal from '../print/customer-sheet-batch-modal.vue';
 import {orderTagApi, tagColor} from '/@/api/business/scm/order-tag-api';
 import type {OrderTag} from '/@/api/business/scm/order-tag-api';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
@@ -172,6 +197,7 @@ const drawer = ref<InstanceType<typeof OrderForm>>(),
 const priceCheckModal = ref<InstanceType<typeof OrderBatchPriceCheckModal>>();
 const tagModal = ref<InstanceType<typeof OrderTagModal>>();
 const printOpen = ref(false);
+const customerSheetOpen = ref(false);
 const printOrderIds = ref<(string | number)[]>([]);
 const availableTags = ref<OrderTag[]>([]);
 const tagOptions = computed(() => availableTags.value.map((tag) => ({label: tag.name, value: tag.tagId})));
@@ -249,8 +275,7 @@ function openBatchTags(): void {
   tagModal.value?.open(selectedRows.value.map((row) => row.orderId!));
 }
 function openBatchPrint(): void {
-  if (!canPrint.value || selectedRows.value.length !== selected.value.length || selectedRows.value.length < 1 || selectedRows.value.length > 10)
-    return;
+  if (!canPrint.value || selectedRows.value.length !== selected.value.length || selectedRows.value.length < 1) return;
   openPrint(selectedRows.value.map((row) => row.orderId!));
 }
 function openPrint(ids: (string | number)[]): void {
@@ -266,12 +291,23 @@ function openBatchPriceCheck(): void {
 }
 
 /** 当前状态的常用动作常驻行内，其余收进「更多」。 */
+/** 锁单/解锁直接改改单权限，挂在「更多」里并各自要独立权限。 */
+const canLock = computed(() => hasPermission('scm:order:lock'));
+const canUnlock = computed(() => hasPermission('scm:order:unlock'));
+
+function lockTip(row: Order): string {
+  if (row.lockReason === 'AUTO_7_DAYS') return `发车满 7 天自动锁单${row.autoLockAt ? '（' + row.autoLockAt + '）' : ''}`;
+  return row.lockedAt ? `已锁单（${row.lockedAt}）` : '已锁单';
+}
+
 function rowActions(row: Order): ScmActionItem[] {
   const draft = row.status === 'DRAFT';
   const confirmed = row.status === 'CONFIRMED';
   return [
-    {key: 'detail', label: '详情', hidden: draft || confirmed},
+    {key: 'detail', label: '详情', hidden: !draft},
     {key: 'reuse', label: '复用为新单', hidden: !(confirmed && canAdd.value)},
+    {key: 'lock', label: '锁单', hidden: !(confirmed && !row.lockedFlag && canLock.value)},
+    {key: 'unlock', label: '解锁', hidden: !(confirmed && row.lockedFlag && canUnlock.value)},
     {key: 'tag', label: '订单标签', hidden: !canManageTags.value},
     {key: 'print', label: '打印订单', hidden: !canPrint.value},
     {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
@@ -288,6 +324,10 @@ function onRowAction(key: string, row: Order) {
     tagModal.value?.open([row.orderId]);
   } else if (row.orderId != null && key === 'print' && canPrint.value) {
     openPrint([row.orderId]);
+  } else if (row.orderId != null && key === 'lock') {
+    lockOrder(row);
+  } else if (row.orderId != null && key === 'unlock') {
+    unlockOrder(row);
   } else if (key === 'delete') {
     remove(row);
   }
@@ -355,6 +395,33 @@ function reserveStock(r: Order) {
     okText: '预留',
     onOk: async () => {
       await orderApi.reserveStock(r.orderId!);
+      await queryData();
+    },
+  });
+}
+
+/**
+ * 锁单是改单权限的开关：锁住后状态仍是已确认，配送与对账不受影响，但改单要「锁单后改单」权限。
+ */
+function lockOrder(r: Order) {
+  Modal.confirm({
+    title: '锁住这张订单？',
+    content: '锁单后订单仍是已确认；普通用户不能再改单，需要解锁或持「锁单后改单」权限。建议在发车出库 7 天内完成对账后锁单。',
+    okText: '锁单',
+    onOk: async () => {
+      await orderApi.lock({orderId: r.orderId!, version: r.version!});
+      await queryData();
+    },
+  });
+}
+
+function unlockOrder(r: Order) {
+  Modal.confirm({
+    title: '解锁这张订单？',
+    content: '解锁后改单不再需要额外授权；发车出库的订单仍受「发车后改单」权限约束。',
+    okText: '解锁',
+    onOk: async () => {
+      await orderApi.unlock({orderId: r.orderId!, version: r.version!});
       await queryData();
     },
   });

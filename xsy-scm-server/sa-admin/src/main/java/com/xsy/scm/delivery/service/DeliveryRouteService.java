@@ -411,7 +411,10 @@ public class DeliveryRouteService {
                 List<OrderBundleComponentEntity> components = bundles.get(line.getSalesOrderItemId());
                 if (components == null) {
                     lines.add(new InventoryFulfillmentService.Line(orderId, line.getSalesOrderItemId(), line.getSkuId(),
-                        line.getSortedQuantity(), line.getMallStockUnitSnapshot(),
+                        line.getSortedQuantity(),
+                        line.getMallStockUnitSnapshot() != null
+                            ? line.getMallStockUnitSnapshot()
+                            : line.getSaleUnitSnapshot(),
                         line.getMallStockUnitsPerSaleUnit()));
                     continue;
                 }
@@ -461,6 +464,11 @@ public class DeliveryRouteService {
         save(route);
         if (deliveryQueryDao.markInTransit(id, operator) != assigned.size())
             throw new ScmBusinessException(STATE_INVALID);
+        // 发车出库时间直接记在订单上：7 天自动锁单从这里起算，不靠配送履约状态反推。
+        for (var orderId : orderIds) {
+            if (salesOrderDao.markDispatched(orderId, now, operator) != 1)
+                throw new ScmBusinessException(STATE_INVALID);
+        }
 
         var result = new DeliveryDispatchResultVO();
         result.setRouteId(id);

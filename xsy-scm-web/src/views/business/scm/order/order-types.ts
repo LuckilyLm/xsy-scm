@@ -49,6 +49,17 @@ export interface Order {
   /** 旧接口沿用的仓库字段。 */
   mallDeliveryWarehouseId?: Id | null;
   status?: string;
+  /** 最近一次发车出库时间；为空表示还没发车。 */
+  dispatchedAt?: string | null;
+  /** 锁单标记：锁住后改单需要独立权限，订单状态仍是已确认。 */
+  lockedFlag?: boolean;
+  lockedAt?: string | null;
+  lockedBy?: string | null;
+  lockReason?: string | null;
+  autoLockAt?: string | null;
+  /** 后端判定的改单资格：前端按钮只看它，不自己拼状态与权限。 */
+  editable?: boolean;
+  editBlockedReason?: string | null;
   originalOrderId?: Id | null;
   supplementReason?: string | null;
   expectDeliveryTime?: string | null;
@@ -177,6 +188,17 @@ export interface OrderPoolRow {
 export interface OrderPoolAssignee {
   employeeId: number;
   actualName: string;
+}
+
+/** 某规格最近一张已提交采购单的采购价，只读，仅用于录单时参考，不参与定价。 */
+export interface LastPurchasePrice {
+  skuId: Id;
+  purchasePrice: string;
+  /** 采购价对应的单位；与订单行销售单位不同时不可直接比较。 */
+  purchaseUnit?: string | null;
+  purchaseOrderNo: string;
+  submittedAt: string;
+  supplierName: string;
 }
 
 /** 某客户某规格最近已确认订单的成交单价，只读，仅用于录单时参考，不参与定价。 */

@@ -46,7 +46,8 @@ class OrderUnpricedIT extends ScmW3PgITBase {
         p.setSellable(true);
         p.price(null, ScmPriceSourceEnum.MARKET, null);
         // Product pricing requires a market price, so the published UNPRICED resolver contract is injected here.
-        doReturn(List.of(p)).when(resolver).resolve(eq(c), anyList(), any());
+        // 下单解析按 (客户, SKU, 时点, 仓库) 解析；仓库为 null 表示不按仓取成本。
+        doReturn(List.of(p)).when(resolver).resolve(eq(c), anyList(), any(), isNull());
         var f = new SalesOrderAddForm();
         f.setCustomerId(c);
         f.setOrderSource("ADMIN");

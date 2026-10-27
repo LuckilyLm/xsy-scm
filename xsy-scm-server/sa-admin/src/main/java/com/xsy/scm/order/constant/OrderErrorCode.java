@@ -43,6 +43,15 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_ALREADY_ASSIGNED(40973, "订单已被接单或指派，请刷新待分配列表"),
     ORDER_ASSIGN_TARGET_INVALID(40974, "目标业务员不存在、已停用或没有订单查看权限"),
     ORDER_REPRICE_REQUIRED(40975, "订单价格依据已变化，请授权人员手动重算并填写原因"),
+    ORDER_PENDING_EDIT_BLOCKED(40976, "待确认订单已产生支付、应收、预留、出库或分拣事实，不能再改单"),
+    // 40912–40917 是 409xx 段中现查未占用的连续空位：40977–40982 与采购/商城域撞码，
+    // 由 PurchaseErrorCodeTest 撞码门禁拦下后整体迁移。
+    ORDER_LOCKED(40912, "订单已锁单，请新建加单而不是修改原单"),
+    ORDER_EDIT_AFTER_DISPATCH_FORBIDDEN(40913, "订单已发车出库，改单需要发车后改单权限"),
+    ORDER_DISCOUNT_EDIT_BLOCKED(40914, "订单已冻结优惠，不能直接改单；请取消后重下或新建加单"),
+    ORDER_SORTED_ITEM_CHANGE_BLOCKED(40915, "订单已分拣或出库，不能增删商品；请新建加单"),
+    ORDER_CONFIRMED_NON_STANDARD_INSERT_BLOCKED(40916, "已确认订单不能直接新增需称重的商品；请新建加单"),
+    ORDER_ACTUAL_AFTER_DISPATCH_BLOCKED(40917, "订单已发车出库，不能再修改实发数量"),
     ORDER_RECEIVED_CORRECTION_INVALID(41210, "客户实收数量更正无效，请核对已出库数量与最新记录"),
     ORDER_RECEIVED_CORRECTION_CONFLICT(41211, "客户实收数量已有新记录，请刷新后再提交"),
     ORDER_EXCHANGE_NOT_READY(41212, "退货须批准并完成实物接收后才能创建换货单"),

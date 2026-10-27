@@ -22,6 +22,12 @@ import {
   recentPriceKey,
   hasRecentPrices,
   recentPriceRows,
+  createLastPurchasePriceCache,
+  isLoadingLastPurchasePrice,
+  lastPurchasePrice,
+  lastPurchasePriceKey,
+  loadLastPurchasePrice,
+  hasLastPurchasePrice,
   payload,
   validateOrder,
   fixed,
@@ -721,6 +727,89 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   });
 }
 
+// ---------------------------------------------------------------- 来源：last-purchase-price.test.mjs
+{
+  /**
+   * 「最近采购价」只读参考价：
+   * 1. 走只读 getRequest，绝不复用带幂等键的写命令；
+   * 2. 缓存键只用商品规格，换行/换客户不会串价；
+   * 3. 不写回解析单价，也不进入订单载荷。
+   */
+
+  function code(relative) {
+    return readFileSync(new URL(relative, import.meta.url), 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+  }
+
+  const APPLE = 201,
+    BANANA = 202;
+  const purchaseOf = (skuId, purchasePrice) => ({
+    skuId,
+    purchasePrice,
+    purchaseOrderNo: `PO${skuId}`,
+    submittedAt: '2026-10-01T08:00:00+08:00',
+    supplierName: '供应商',
+  });
+
+  test('最近采购价走只读 getRequest 的 reference 端点，不复用幂等命令封装', () => {
+    const api = code('../src/api/business/scm/order-api.ts');
+    assert.match(api, /lastPurchasePrices:[\s\S]*?getRequest(?:<[^']*>)?\('\/scm\/order\/reference\/last-purchase-prices'/);
+    assert.doesNotMatch(api, /lastPurchasePrices:[^\n]*orderCommand/);
+  });
+
+  test('最近采购价缓存按商品规格命中，不同规格分别请求', async () => {
+    const cache = createLastPurchasePriceCache();
+    const calls = [];
+    const fetcher = (skuId) => async () => {
+      calls.push(skuId);
+      return purchaseOf(skuId, skuId === APPLE ? '6.5000' : '3.2000');
+    };
+    assert.equal(await loadLastPurchasePrice(cache, APPLE, fetcher(APPLE)), true);
+    assert.equal(await loadLastPurchasePrice(cache, APPLE, fetcher(APPLE)), true);
+    assert.equal(calls.length, 1, '同规格重复请求采购价');
+    assert.equal(lastPurchasePrice(cache, APPLE).purchasePrice, '6.5000');
+    await loadLastPurchasePrice(cache, BANANA, fetcher(BANANA));
+    assert.deepEqual(calls, [APPLE, BANANA]);
+    assert.notEqual(lastPurchasePriceKey(APPLE), lastPurchasePriceKey(BANANA));
+  });
+
+  test('没有采购记录也缓存为空，失败不落缓存且可重试', async () => {
+    const cache = createLastPurchasePriceCache();
+    await loadLastPurchasePrice(cache, APPLE, async () => null);
+    assert.equal(hasLastPurchasePrice(cache, APPLE), true);
+    assert.equal(lastPurchasePrice(cache, APPLE), null);
+
+    let calls = 0;
+    await assert.rejects(
+      loadLastPurchasePrice(cache, BANANA, async () => {
+        calls += 1;
+        throw new Error('network down');
+      })
+    );
+    assert.equal(isLoadingLastPurchasePrice(cache, BANANA), false);
+    assert.equal(hasLastPurchasePrice(cache, BANANA), false);
+    await loadLastPurchasePrice(cache, BANANA, async () => {
+      calls += 1;
+      return purchaseOf(BANANA, '1.0000');
+    });
+    assert.equal(calls, 2, '失败后无法重试');
+    assert.equal(await loadLastPurchasePrice(cache, undefined, async () => null), false);
+  });
+
+  test('采购价只用于比价提示，不回写解析单价或进入订单载荷', () => {
+    const table = code('../src/views/business/scm/order/components/order-item-editable-table.vue');
+    const model = code('../src/views/business/scm/order/order-form-model.ts');
+    assert.match(table, /orderApi\.lastPurchasePrices\(\[skuId\]/);
+    assert.match(table, /belowPurchasePrice/);
+    assert.doesNotMatch(table, /record\.draftUnitPrice\s*=/);
+    // 缓存与订单模型相互独立：序列化 / 载荷路径不出现采购价字段
+    assert.doesNotMatch(model.match(/export function payload[\s\S]*?\n\}/)?.[0] || '', /lastPurchase|purchasePrice/);
+    assert.doesNotMatch(model.match(/export function serializeDraft[\s\S]*?\n\}/)?.[0] || '', /lastPurchase|purchasePrice/);
+  });
+}
+
 // ---------------------------------------------------------------- 来源：order-contract.test.mjs
 {
   function form() {
@@ -810,5 +899,34 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     assert.match(page, /@click="load">重新加载/);
     assert.match(page, /返回订单列表/);
     assert.doesNotMatch(page, /<a-alert v-if="error"/, '整页加载失败仍在用横幅样式');
+  });
+}
+
+// ---------------------------------------------------------------- 锁单与发车后改单
+{
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+
+  test('订单列表按后端可改标记驱动编辑按钮，并提供锁单/解锁入口', () => {
+    const list = read('../src/views/business/scm/order/order-list.vue');
+    // 能不能改由后端 editable 回答，前端不再自己拼状态与权限。
+    assert.match(list, /:disabled="record\.editable === false"/);
+    assert.match(list, /record\.editBlockedReason/);
+    assert.match(list, /'scm:order:lock'/);
+    assert.match(list, /'scm:order:unlock'/);
+    assert.match(list, /record\.lockedFlag/);
+    assert.match(list, /已锁/);
+  });
+
+  test('锁单接口与迁移里的权限码一致', () => {
+    const api = read('../src/api/business/scm/order-api.ts');
+    assert.match(api, /lock: .*postRequest<Order>\('\/scm\/order\/lock'/);
+    assert.match(api, /unlock: .*postRequest<Order>\('\/scm\/order\/unlock'/);
+    const sql = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V184__scm_sales_order_lock.sql');
+    for (const code of ['scm:order:lock', 'scm:order:unlock', 'scm:order:edit-after-dispatch', 'scm:order:edit-locked']) {
+      assert.ok(sql.includes(code), `迁移缺少权限码 ${code}`);
+    }
+    const controller = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/SalesOrderController.java');
+    assert.match(controller, /@PostMapping\("\/lock"\)\s*@SaCheckPermission\(OrderPermission\.LOCK\)/);
+    assert.match(controller, /@PostMapping\("\/unlock"\)\s*@SaCheckPermission\(OrderPermission\.UNLOCK\)/);
   });
 }
