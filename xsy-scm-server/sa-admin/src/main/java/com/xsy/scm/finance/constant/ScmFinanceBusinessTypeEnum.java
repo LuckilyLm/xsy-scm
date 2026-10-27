@@ -37,7 +37,12 @@ public enum ScmFinanceBusinessTypeEnum {
     /**
      * 核销行（{@code xsy_finance_write_off}）。
      */
-    WRITE_OFF("核销");
+    WRITE_OFF("核销"),
+
+    /**
+     * 抹零事实（{@code xsy_finance_waiver}）。
+     */
+    WAIVER("抹零");
 
     private final String desc;
 }

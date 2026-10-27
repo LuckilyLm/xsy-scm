@@ -380,11 +380,11 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
         // ck_order_refund_completion：COMPLETED 必须带 completed_at。
         // return_id 只被 uk_order_refund_return_active 约束（该表对本用例没有外键），
         // 但它是全表唯一：同一个用例造多笔退款时必须各不相同，否则第二笔直接撞唯一索引。
-        // 与 id 共用序列既能保证唯一，也不会把值挤出 bigint 的常规区间。
+        // 从退货 id 序列取值，保证归还到数据库的假 return_id 永远不会被真实退货 id 复用。
         Long orderRefundId = jdbc.queryForObject("""
                 INSERT INTO xsy_order_refund
                     (refund_no, return_id, order_id, customer_id, refund_amount, status, completed_at, created_by)
-                VALUES (?, nextval('xsy_v2.order_refund_id_seq'), ?, ?, CAST(? AS numeric), 'COMPLETED',
+                VALUES (?, nextval(pg_get_serial_sequence('xsy_order_return', 'id')), ?, ?, CAST(? AS numeric), 'COMPLETED',
                     CURRENT_TIMESTAMP, ?)
                 RETURNING id
                 """, Long.class, prefix + "-ORF-" + suffix, orderId, customerId, refundAmount, operator());

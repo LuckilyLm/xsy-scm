@@ -49,26 +49,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
 
     /**
-     * V65 建的 8 张财务表。
+     * V65 建的 8 张财务表 + V194 的抹零表。
      */
     private static final List<String> FINANCE_TABLES = List.of(
             "xsy_finance_receivable", "xsy_finance_receivable_item",
             "xsy_finance_payable", "xsy_finance_payable_item",
             "xsy_finance_receipt", "xsy_finance_payment",
-            "xsy_finance_write_off", "xsy_finance_operation_log");
+            "xsy_finance_write_off", "xsy_finance_operation_log",
+            "xsy_finance_waiver");
 
     /**
-     * 七张带 {@code deleted} 列的事实表；{@code xsy_finance_operation_log} 不在其中 ——
+     * 八张带 {@code deleted} 列的事实表；{@code xsy_finance_operation_log} 不在其中 ——
      * 它连 {@code deleted} 列都没有，append-only 是结构性的。
      */
     private static final List<String> APPEND_ONLY_TABLES = List.of(
             "xsy_finance_receivable", "xsy_finance_receivable_item",
             "xsy_finance_payable", "xsy_finance_payable_item",
-            "xsy_finance_receipt", "xsy_finance_payment", "xsy_finance_write_off");
+            "xsy_finance_receipt", "xsy_finance_payment", "xsy_finance_write_off",
+            "xsy_finance_waiver");
 
     private static final List<String> FINANCE_SEQUENCES = List.of(
             "finance_receivable_no_seq", "finance_payable_no_seq", "finance_receipt_no_seq",
-            "finance_payment_no_seq", "finance_write_off_no_seq");
+            "finance_payment_no_seq", "finance_write_off_no_seq", "finance_waiver_no_seq");
 
     private String no(String prefix) {
         return prefix + UUID.randomUUID().toString().substring(0, 16).toUpperCase(java.util.Locale.ROOT);
@@ -167,7 +169,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("七张事实表带 append-only CHECK，软删在库级被拒（设计稿 §0 第 7 条）")
+    @DisplayName("八张事实表带 append-only CHECK，软删在库级被拒（设计稿 §0 第 7 条）")
     void appendOnlyCheckRejectsSoftDelete() {
         for (String table : APPEND_ONLY_TABLES) {
             assertThat(constraintDef(table, "ck_" + constraintBase(table) + "_append_only"))

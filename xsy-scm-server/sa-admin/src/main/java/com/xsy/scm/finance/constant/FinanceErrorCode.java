@@ -100,7 +100,21 @@ public enum FinanceErrorCode implements ScmErrorCode {
      * 同一货到付款收款命令已有来源事实。
      */
     COD_COLLECTION_ALREADY_REGISTERED(41154, "该笔货到付款收款已登记，不能重复登记"),
-    COD_COLLECTION_PAYMENT_CONFLICT(41155, "该订单已有未结束或成功的支付意图，不能再登记货到付款收款");
+    COD_COLLECTION_PAYMENT_CONFLICT(41155, "该订单已有未结束或成功的支付意图，不能再登记货到付款收款"),
+
+    // ---- 抹零 ----
+    WAIVER_NOT_FOUND(41156, "抹零记录不存在"),
+    WAIVER_AMOUNT_EXCEEDED(41157, "抹零金额超过应收未结金额"),
+    WAIVER_RECEIVABLE_INVALID(41158, "只能对正常应收抹零，且金额必须大于 0"),
+    WAIVER_ALREADY_REVERSED(41159, "该抹零记录已反向，不能重复反向"),
+
+    // ---- 自动核销 ----
+    AUTO_WRITE_OFF_NO_OPEN_TARGET(41160, "该收付款对方没有可按顺序核销的未结单据"),
+
+    /**
+     * 抹零的核销行不能走通用「反向核销」：它还必须把抹零事实置为 REVERSED，否则状态与余额会不一致。
+     */
+    WAIVER_REVERSE_VIA_WAIVER(41161, "抹零核销请通过抹零反向接口撤销");
 
     private final int code;
     private final String msg;

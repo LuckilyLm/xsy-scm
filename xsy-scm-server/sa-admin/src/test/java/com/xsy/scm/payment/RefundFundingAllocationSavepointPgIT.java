@@ -221,11 +221,15 @@ class RefundFundingAllocationSavepointPgIT extends ScmW5PgITBase {
                 prefix + "-SP-OPTN-" + UUID.randomUUID().toString().substring(0, 8), onlineAllocated, onlineAllocated,
                 onlineTransactionStatus, operator());
 
-        // ck_order_refund_completion：COMPLETED 必须带 completed_at；return_id 全表唯一，与 id 共用序列。
+        // ck_order_refund_completion：COMPLETED 必须带 completed_at。
+        // return_id 在本表没有外键，只被 uk_order_refund_return_active 约束为全表唯一；
+        // 本用例是 NOT_SUPPORTED、行会真实落库，所以必须从退货 id 序列取值 ——
+        // 用退款序列取值会让「假 return_id」落进真实退货 id 的取值区间，后续用例建出的
+        // 真实退货迟早撞上这些历史行（ScmFinanceReceivableRedPgIT 就是这样失败的）。
         Long orderRefundId = jdbc.queryForObject("""
                 INSERT INTO xsy_order_refund
                     (refund_no, return_id, order_id, customer_id, refund_amount, status, completed_at, created_by)
-                VALUES (?, nextval('xsy_v2.order_refund_id_seq'), ?, ?, CAST(? AS numeric), 'COMPLETED',
+                VALUES (?, nextval(pg_get_serial_sequence('xsy_order_return', 'id')), ?, ?, CAST(? AS numeric), 'COMPLETED',
                     CURRENT_TIMESTAMP, ?)
                 RETURNING id
                 """, Long.class, prefix + "-SP-AOR-" + UUID.randomUUID().toString().substring(0, 8), orderId,

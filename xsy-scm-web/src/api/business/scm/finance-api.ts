@@ -24,8 +24,13 @@ import type {
   FinanceReceiptReverseForm,
   FinanceRefundOption,
   FinanceRefundOptionQuery,
+  FinanceWaiver,
+  FinanceWaiverAddForm,
+  FinanceWaiverReverseForm,
   FinanceWriteOff,
   FinanceWriteOffAddForm,
+  FinanceWriteOffAutoForm,
+  FinanceWriteOffAutoPlan,
   FinanceWriteOffReverseForm,
   PayableQuery,
   PaymentQuery,
@@ -80,8 +85,13 @@ export const financeApi = {
 
   writeOffQuery: (data: WriteOffQuery, options?: RequestOptions) => postRequest<ScmPage<FinanceWriteOff>>(`${BASE}/write-off/query`, data, options),
   writeOffAdd: (data: FinanceWriteOffAddForm) => command(`${BASE}/write-off/add`, data),
+  writeOffAutoPreview: (data: FinanceWriteOffAutoForm) => postRequest<FinanceWriteOffAutoPlan[]>(`${BASE}/write-off/auto/preview`, data),
+  writeOffAuto: (data: FinanceWriteOffAutoForm) => command(`${BASE}/write-off/auto`, data),
   writeOffReverse: (data: FinanceWriteOffReverseForm) => command(`${BASE}/write-off/reverse`, data),
   writeOffExport: (data: Partial<FinancePageQuery> & Omit<WriteOffQuery, 'pageNum' | 'pageSize'>) => postDownload(`${BASE}/write-off/export`, data),
+
+  waiverAdd: (data: FinanceWaiverAddForm) => command<FinanceWaiver>(`${BASE}/waiver/add`, data),
+  waiverReverse: (data: FinanceWaiverReverseForm) => command<FinanceWaiver>(`${BASE}/waiver/reverse`, data),
   operationLogs: (businessType: FinanceBusinessType, businessId: FinanceId, options?: RequestOptions) =>
     getRequest<FinanceOperationLog[]>(`${BASE}/log/query`, {businessType, businessId}, options),
 };

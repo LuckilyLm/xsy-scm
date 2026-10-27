@@ -61,6 +61,45 @@
         FOR UPDATE OF p
     </select>
 
+    <!--
+      自动核销候选：未结金额现算（净额 = 金额 - 红字），再减核销净额；
+      红字与核销都按 target 聚合一次，避免逐行子查询在同一结果集里重复扫表。
+      采购员范围取收货单所属采购单的 purchaser_id，与应付列表同一口径。
+    -->
+    <select id="selectAutoTargets" resultType="com.xsy.scm.finance.domain.dto.FinanceAutoWriteOffTargetDto">
+        SELECT c.targetId, c.targetNo, c.targetName, c.eventAt, c.openAmount, c.ownerId
+        FROM (
+            SELECT p.id AS targetId, p.payable_no AS targetNo, p.supplier_name_snapshot AS targetName,
+                p.event_at AS eventAt, po.purchaser_id AS ownerId,
+                p.amount - COALESCE(red.red_amount, 0) - COALESCE(wo.written_off_amount, 0) AS openAmount
+            FROM xsy_finance_payable p
+            LEFT JOIN xsy_purchase_receipt pr ON pr.id = p.source_id
+                AND pr.deleted = FALSE
+            LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id
+                AND po.deleted = FALSE
+            LEFT JOIN (SELECT original_payable_id, SUM(amount) AS red_amount
+                FROM xsy_finance_payable
+                WHERE entry_type = 'RED' AND deleted = FALSE
+                GROUP BY original_payable_id) red ON red.original_payable_id = p.id
+            LEFT JOIN (SELECT target_id, SUM(CASE WHEN entry_type = 'NORMAL' THEN amount ELSE -amount END)
+                AS written_off_amount
+                FROM xsy_finance_write_off
+                WHERE target_type = 'PAYABLE' AND deleted = FALSE
+                GROUP BY target_id) wo ON wo.target_id = p.id
+            WHERE p.deleted = FALSE
+                AND p.entry_type = 'NORMAL'
+                AND p.supplier_id = #{supplierId}
+        ) c
+        WHERE c.openAmount &gt; 0
+        <if test="scope != null and scope.all == false">
+            AND c.ownerId IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">AND FALSE</if>
+        ORDER BY c.eventAt, c.targetId
+        LIMIT #{limit}
+    </select>
+
     <select id="selectRedAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(amount), 0)
         FROM xsy_finance_payable

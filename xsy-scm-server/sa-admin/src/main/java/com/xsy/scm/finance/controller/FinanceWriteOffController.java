@@ -6,9 +6,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import jakarta.servlet.http.HttpServletResponse;
 import com.xsy.scm.finance.domain.form.FinanceWriteOffAddForm;
+import com.xsy.scm.finance.domain.form.FinanceWriteOffAutoForm;
 import com.xsy.scm.finance.domain.form.FinanceWriteOffQueryForm;
 import com.xsy.scm.finance.domain.form.FinanceWriteOffReverseForm;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffAddResultVO;
+import com.xsy.scm.finance.domain.vo.FinanceWriteOffAutoPlanVO;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffVO;
 import com.xsy.scm.finance.support.FinanceExcel;
 import com.xsy.scm.finance.support.FinanceExportLabels;
@@ -51,6 +53,23 @@ public class FinanceWriteOffController {
         return ResponseDTO.ok(financeWriteOffService.add(form, idempotencyKey));
     }
 
+    /**
+     * 自动 FIFO 核销预览：只读，返回将按账单日期顺序核销的单据与金额。
+     */
+    @PostMapping("/auto/preview")
+    @SaCheckPermission(FinancePermission.WRITE_OFF_ADD)
+    public ResponseDTO<List<FinanceWriteOffAutoPlanVO>> autoPreview(@Valid @RequestBody FinanceWriteOffAutoForm form) {
+        return ResponseDTO.ok(financeWriteOffService.autoPreview(form));
+    }
+
+    @PostMapping("/auto")
+    @SaCheckPermission(FinancePermission.WRITE_OFF_ADD)
+    @OperateLog
+    public ResponseDTO<FinanceWriteOffAddResultVO> auto(@Valid @RequestBody FinanceWriteOffAutoForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseDTO.ok(financeWriteOffService.autoAdd(form, idempotencyKey));
+    }
+
     @PostMapping("/reverse")
     @SaCheckPermission(FinancePermission.WRITE_OFF_REVERSE)
     @OperateLog
@@ -66,8 +85,8 @@ public class FinanceWriteOffController {
     }
 
     @PostMapping("/export")
-    @SaCheckPermission(value = {FinancePermission.WRITE_OFF_QUERY,
-        FinancePermission.EXPORT}, mode = cn.dev33.satoken.annotation.SaMode.AND)
+    @SaCheckPermission(value = {FinancePermission.WRITE_OFF_QUERY, FinancePermission.EXPORT},
+        mode = cn.dev33.satoken.annotation.SaMode.AND)
     @OperateLog
     public void export(@Valid @RequestBody FinanceWriteOffQueryForm form, HttpServletResponse response)
         throws IOException {

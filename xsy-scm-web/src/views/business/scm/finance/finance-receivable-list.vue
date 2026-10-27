@@ -87,7 +87,16 @@
         </template>
         <template v-else-if="column.dataIndex === 'eventAt'">{{ dateTimeText(text) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="scm-table-actions"><a-button type="link" @click="showDetail(record)">明细</a-button></div>
+          <div class="scm-table-actions">
+            <a-button type="link" @click="showDetail(record)">明细</a-button>
+            <a-button
+              v-if="record.entryType === 'NORMAL' && record.settleState !== 'SETTLED'"
+              v-privilege="PERM.WAIVER_ADD"
+              type="link"
+              @click="openWaiver(record)"
+              >抹零</a-button
+            >
+          </div>
         </template>
       </template>
     </a-table>
@@ -113,11 +122,38 @@
     :error="detailError"
     @retry="reloadDetail"
   />
+
+  <a-modal v-model:open="waiverOpen" title="抹零" :confirm-loading="waiverSaving" @ok="submitWaiver">
+    <a-alert
+      v-if="waiverRow"
+      type="info"
+      show-icon
+      :message="`应收 ${waiverRow.receivableNo} · ${waiverRow.customerName}，未结 ${moneyText(waiverRow.openAmount)}`"
+    />
+    <a-form layout="vertical" class="waiver-form">
+      <a-form-item label="抹零金额" required>
+        <a-input-number
+          v-model:value="waiverAmount"
+          string-mode
+          :min="0"
+          :precision="4"
+          :max="99999999999999"
+          style="width: 100%"
+          placeholder="例如 0.30"
+        />
+      </a-form-item>
+      <a-form-item label="原因" required>
+        <a-textarea v-model:value="waiverReason" :maxlength="500" :rows="3" show-count placeholder="例如：对账抹零" />
+      </a-form-item>
+    </a-form>
+    <a-alert type="warning" show-icon message="抹零会追加一条冲减应收的核销记录；撤销抹零需单独的「反向抹零」权限。" />
+  </a-modal>
 </template>
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
+import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {financeApi} from '/@/api/business/scm/finance-api';
@@ -125,7 +161,16 @@ import {SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_SETTLE
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
-import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyClass, moneyText, settleStateText, settleStateTone} from './finance-form-model';
+import {
+  dateTimeText,
+  entryTypeText,
+  initialFinanceDateRange,
+  isValidPositiveAmount,
+  moneyClass,
+  moneyText,
+  settleStateText,
+  settleStateTone,
+} from './finance-form-model';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import type {FinanceReceivable, FinanceReceivableDetail, ReceivableQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
@@ -160,7 +205,7 @@ const columns = ref<TableColumnsType<FinanceReceivable>>([
   {title: '超额核销', dataIndex: 'overAppliedAmount', width: 148},
   {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110},
   {title: '事件时点', dataIndex: 'eventAt', width: 180},
-  {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 65},
+  {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);
 useFinanceMobileActionColumn(
   (compact) => {
@@ -200,6 +245,42 @@ function showDetail(row: FinanceReceivable) {
   return openDetail(row.receivableId);
 }
 
+// 抹零：只对正常应收、未结清的单据开放；金额与原因都由服务端再校验一次
+const waiverOpen = ref(false),
+  waiverSaving = ref(false),
+  waiverRow = ref<FinanceReceivable | null>(null),
+  waiverAmount = ref(''),
+  waiverReason = ref('');
+function openWaiver(row: FinanceReceivable) {
+  waiverRow.value = row;
+  waiverAmount.value = '';
+  waiverReason.value = '';
+  waiverOpen.value = true;
+}
+async function submitWaiver() {
+  if (!waiverRow.value) return;
+  if (!isValidPositiveAmount(waiverAmount.value)) {
+    message.warning('请填写大于 0、最多 4 位小数的抹零金额');
+    return;
+  }
+  const reason = waiverReason.value.trim();
+  if (!reason) {
+    message.warning('请填写抹零原因');
+    return;
+  }
+  waiverSaving.value = true;
+  try {
+    await financeApi.waiverAdd({receivableId: waiverRow.value.receivableId, amount: waiverAmount.value, reason});
+    message.success('抹零已登记');
+    waiverOpen.value = false;
+    await queryData();
+  } catch {
+    // 失败由全局 toast 提示，弹窗保持打开便于修改
+  } finally {
+    waiverSaving.value = false;
+  }
+}
+
 onMounted(async () => {
   try {
     // 客户筛选是可选增强：拉不到就静默降级，不弹提示
@@ -222,6 +303,9 @@ onMounted(async () => {
 }
 .money-alert {
   font-weight: 600;
+}
+.waiver-form {
+  margin-top: 16px;
 }
 .finance-mobile-balance-list {
   display: none;

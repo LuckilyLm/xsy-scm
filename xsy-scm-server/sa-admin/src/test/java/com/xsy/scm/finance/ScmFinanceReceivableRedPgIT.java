@@ -688,20 +688,33 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("D-4：少拣导致退货批准额 50 大于应收 30 → RED 全额 50，不封顶、不抛 41137")
     void redLargerThanNormalIsGeneratedInFull() {
-        // 下单 10、实发 6 → 正常应收 6 × 5.0000 = 30；退货按订单结算量批准 10 × 5.0000 = 50
-        Chain chain = planned("RDI", "10.0000", "5.0000", "6.0000");
-        dispatch(chain.routeId());
-        sign(chain.routeId(), chain.orderId(), "SIGNED", null);
-        assertThat(decimalOf(normalOf(chain.orderId()), "amount")).isEqualByComparingTo("30.0000");
+        // 下单 10，确认时订单实发量也是 10：此时批准退货 10 是合法的（可退上限 = 实发量）。
+        // 随后分拣只出 6，分拣称重回写把订单实发量改成 6，正常应收按出库量生成 6 × 5.0000 = 30；
+        // 已批准的退货仍是 10 × 5.0000 = 50 —— 红字不因正常应收后来变小而封顶。
+        Long warehouseId = locatedWarehouse("RDI");
+        Long skuId = newOnShelfSku("RDI");
+        stockIn(warehouseId, skuId, "RDI", "1000.0000");
+        Long customerId = addressedCustomer("RDI");
+        Long orderId = confirmedOrder("RDI", customerId, List.of(line(skuId, "10.0000", "5.0000")), "10.0000");
+        Long orderItemId = confirmedSalesOrderItemId(orderId);
 
-        OrderReturnDetailVO returned = approvedReturn("RDI", chain.orderId(), List.of(chain.orderItemId()),
+        OrderReturnDetailVO returned = approvedReturn("RDI", orderId, List.of(orderItemId),
                 List.of("10.0000"), List.of("10.0000"));
+
+        sortLines(orderId, List.of("6.0000"), warehouseId);
+        Long routeId = newRoute(warehouseId);
+        attach(routeId, orderId);
+        locateAllStops(routeId);
+        plan(routeId);
+        dispatch(routeId);
+        sign(routeId, orderId, "SIGNED", null);
+        assertThat(decimalOf(normalOf(orderId), "amount")).isEqualByComparingTo("30.0000");
 
         Map<String, Object> red = redOf(returned.getReturnId());
         assertThat(decimalOf(red, "amount")).as("超额红字必须全额保留").isEqualByComparingTo("50.0000");
         assertThat(jdbc.queryForObject(
                 "SELECT sum(CASE WHEN entry_type = 'NORMAL' THEN amount ELSE -amount END)"
-                        + " FROM xsy_finance_receivable WHERE order_id = ?", BigDecimal.class, chain.orderId()))
+                        + " FROM xsy_finance_receivable WHERE order_id = ?", BigDecimal.class, orderId))
                 .as("允许净应收为负（D-4），表达属 F1-5 读侧派生").isEqualByComparingTo("-20.0000");
         // 订单域事实未被财务改动
         assertThat(jdbc.queryForObject(

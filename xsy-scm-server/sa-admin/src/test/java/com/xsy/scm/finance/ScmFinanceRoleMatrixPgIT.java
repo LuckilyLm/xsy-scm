@@ -7,6 +7,7 @@ import com.xsy.scm.finance.controller.FinancePayableController;
 import com.xsy.scm.finance.controller.FinanceReadController;
 import com.xsy.scm.finance.controller.FinanceReceiptController;
 import com.xsy.scm.finance.controller.FinancePaymentController;
+import com.xsy.scm.finance.controller.FinanceWaiverController;
 import com.xsy.scm.finance.controller.FinanceWriteOffController;
 import com.xsy.scm.finance.domain.form.FinancePayableQueryForm;
 import com.xsy.scm.finance.domain.form.FinancePaymentQueryForm;
@@ -51,6 +52,8 @@ class ScmFinanceRoleMatrixPgIT extends ScmW5PgITBase {
             FinancePermission.WRITE_OFF_REVERSE,
             FinancePermission.RECEIPT_REVERSE,
             FinancePermission.PAYMENT_REVERSE,
+            FinancePermission.WAIVER_ADD,
+            FinancePermission.WAIVER_REVERSE,
             FinancePermission.EXPORT);
 
     @Autowired
@@ -93,7 +96,7 @@ class ScmFinanceRoleMatrixPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("SCM_FINANCE 可访问五个 Finance 页面及全部 13 个受保护能力，司机均不可见")
+    @DisplayName("SCM_FINANCE 可访问五个 Finance 页面及全部 15 个受保护能力，司机均不可见")
     void financeRoleHasFinancePagesAndActions() {
         Long financeEmployee = employeeWithRole("FIN", "SCM_FINANCE");
         Long driverEmployee = employeeWithRole("DRV", "SCM_DRIVER");
@@ -145,6 +148,11 @@ class ScmFinanceRoleMatrixPgIT extends ScmW5PgITBase {
                 com.xsy.scm.finance.domain.form.FinancePaymentReverseForm.class, FinancePermission.PAYMENT_REVERSE);
         assertPermission(FinancePaymentController.class, "refundOptions",
                 FinanceRefundOptionQueryForm.class, FinancePermission.PAYMENT_ADD);
+        // 抹零与反向抹零分开授权：会抹零不等于能撤销
+        assertPermission(FinanceWaiverController.class, "add",
+                com.xsy.scm.finance.domain.form.FinanceWaiverAddForm.class, FinancePermission.WAIVER_ADD);
+        assertPermission(FinanceWaiverController.class, "reverse",
+                com.xsy.scm.finance.domain.form.FinanceWaiverReverseForm.class, FinancePermission.WAIVER_REVERSE);
     }
 
     private static void assertPermission(Class<?> controller, String methodName, Class<?> parameterType,

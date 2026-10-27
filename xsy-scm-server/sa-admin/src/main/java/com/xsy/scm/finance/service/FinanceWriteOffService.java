@@ -26,6 +26,7 @@ import com.xsy.scm.finance.dao.FinancePaymentDao;
 import com.xsy.scm.finance.dao.FinanceReceiptDao;
 import com.xsy.scm.finance.dao.FinanceReceivableDao;
 import com.xsy.scm.finance.dao.FinanceWriteOffDao;
+import com.xsy.scm.finance.domain.dto.FinanceAutoWriteOffTargetDto;
 import com.xsy.scm.finance.domain.dto.FinancePayableTargetDto;
 import com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto;
 import com.xsy.scm.finance.domain.entity.FinancePaymentEntity;
@@ -33,12 +34,17 @@ import com.xsy.scm.finance.domain.entity.FinanceReceiptEntity;
 import com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity;
 import com.xsy.scm.finance.domain.form.FinanceWriteOffAddForm;
 import com.xsy.scm.finance.domain.form.FinanceWriteOffAddItemForm;
+import com.xsy.scm.finance.domain.form.FinanceWriteOffAutoForm;
 import com.xsy.scm.finance.domain.form.FinanceWriteOffReverseForm;
+import com.xsy.scm.finance.domain.vo.FinancePaymentQueryVO;
+import com.xsy.scm.finance.domain.vo.FinanceReceiptQueryVO;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffAddResultVO;
+import com.xsy.scm.finance.domain.vo.FinanceWriteOffAutoPlanVO;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -56,6 +62,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class FinanceWriteOffService {
+
+    /**
+     * 自动核销单次最多分配的目标数：超出部分留待下一次继续，避免一张收款一次拖住上千行应付。
+     */
+    private static final int AUTO_TARGET_LIMIT = 100;
 
     private final FinanceWriteOffDao financeWriteOffDao;
     private final FinanceOrderFundingSourceDao financeOrderFundingSourceDao;
@@ -81,10 +92,80 @@ public class FinanceWriteOffService {
         List<Allocation> allocations = allocations(form.getItems());
         String scopeKey = FinanceConstant.WRITE_OFF_ADD_SCOPE + ":" + sourceType + ":" + form.getSourceId();
         SourceFact source = lockSource(sourceType, form.getSourceId());
+        requireNotReserved(sourceType, source);
+        var claim = idempotencyService.claim(scopeKey, idempotencyKey, form);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, FinanceWriteOffAddResultVO.class);
+        }
+        return applyClaimed(sourceType, claim, source, allocations);
+    }
+
+    /**
+     * 按账单日期自动核销（FIFO）：只选资金来源，目标由服务端取同结算客户/供应商的未结单据，按账单日期、单据 id 升序逐笔分配。
+     *
+     * <p>
+     * 单次最多分配 {@value #AUTO_TARGET_LIMIT} 个目标，剩余额留在资金来源的待核销额里，再执行一次自动核销即可继续； 不新建核销表，分配结果仍是普通的 {@code NORMAL} 核销记录。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public FinanceWriteOffAddResultVO autoAdd(FinanceWriteOffAutoForm form, String idempotencyKey) {
+        String sourceType = sourceType(form.getSourceType());
+        if (form.getSourceId() == null || form.getSourceId() <= 0) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+        }
+        String scopeKey = FinanceConstant.WRITE_OFF_AUTO_SCOPE + ":" + sourceType + ":" + form.getSourceId();
+        SourceFact source = lockSource(sourceType, form.getSourceId());
+        requireNotReserved(sourceType, source);
+        // 幂等先于重新规划：重试时余额可能已经被第一次执行分完，不能再规划出空分配把重放变成报错
+        var claim = idempotencyService.claim(scopeKey, idempotencyKey, form);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, FinanceWriteOffAddResultVO.class);
+        }
+        List<PlannedAllocation> plan = planAuto(sourceType, source, dataScopeService.resolve());
+        if (plan.isEmpty()) {
+            throw new ScmBusinessException(FinanceErrorCode.AUTO_WRITE_OFF_NO_OPEN_TARGET);
+        }
+        List<Allocation> allocations = plan.stream().map(item -> new Allocation(item.targetId(), item.amount()))
+            .toList();
+        return applyClaimed(sourceType, claim, source, allocations);
+    }
+
+    /**
+     * 自动核销的分配预览：不加锁、不写库，按当前余额给出顺序与金额，执行前由人确认。
+     */
+    public List<FinanceWriteOffAutoPlanVO> autoPreview(FinanceWriteOffAutoForm form) {
+        String sourceType = sourceType(form.getSourceType());
+        if (form.getSourceId() == null || form.getSourceId() <= 0) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+        }
+        SourceFact source = readSource(sourceType, form.getSourceId());
+        requireNotReserved(sourceType, source);
+        return planAuto(sourceType, source, dataScopeService.resolve()).stream().map(allocation -> {
+            FinanceWriteOffAutoPlanVO plan = new FinanceWriteOffAutoPlanVO();
+            plan.setTargetId(allocation.targetId());
+            plan.setTargetNo(allocation.targetNo());
+            plan.setTargetName(allocation.targetName());
+            plan.setEventAt(allocation.eventAt());
+            plan.setOpenAmount(allocation.openAmount());
+            plan.setAllocatedAmount(allocation.amount());
+            return plan;
+        }).toList();
+    }
+
+    /**
+     * 钱包充值收款只用于订单抵扣，不能被当成人情核销的资金来源；手工与自动两条路径共用同一拦截。
+     */
+    private void requireNotReserved(String sourceType, SourceFact source) {
         if (ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name().equals(sourceType)
             && financeOrderFundingSourceDao.isRechargeReceipt(source.id())) {
             throw new ScmBusinessException(FinanceErrorCode.RECHARGE_RECEIPT_RESERVED);
         }
+    }
+
+    /**
+     * 目标锁定、范围校验与写入。手工与自动核销共用，保证两条路径的校验与加锁顺序完全一致。
+     */
+    private FinanceWriteOffAddResultVO applyClaimed(String sourceType, ScmIdempotencyService.Claim claim,
+        SourceFact source, List<Allocation> allocations) {
         String targetType = targetType(sourceType);
         List<Long> targetIds = allocations.stream().map(Allocation::targetId).distinct().sorted().toList();
         Map<Long, TargetFact> targets = lockTargets(targetType, targetIds);
@@ -92,10 +173,6 @@ public class FinanceWriteOffService {
 
         for (Long targetId : targetIds) {
             requireTargetVisible(scope, targets.get(targetId));
-        }
-        var claim = idempotencyService.claim(scopeKey, idempotencyKey, form);
-        if (claim.replay()) {
-            return idempotencyService.replay(claim, FinanceWriteOffAddResultVO.class);
         }
 
         BigDecimal sourceUsedAmount = financeWriteOffDao.selectSourceUsedAmount(sourceType, source.id());
@@ -170,6 +247,10 @@ public class FinanceWriteOffService {
         }
         if (!ScmFinanceReverseEntryTypeEnum.NORMAL.name().equals(initial.getEntryType())) {
             throw new ScmBusinessException(FinanceErrorCode.ALREADY_REVERSED);
+        }
+        if (ScmFinanceWriteOffSourceTypeEnum.WAIVER.name().equals(initial.getSourceType())) {
+            // 抹零反向还要把事实置为 REVERSED，只能走抹零接口，否则两边状态会不一致
+            throw new ScmBusinessException(FinanceErrorCode.WAIVER_REVERSE_VIA_WAIVER);
         }
         String reason = StringUtils.trimToNull(form.getReason());
         if (reason == null) {
@@ -271,6 +352,78 @@ public class FinanceWriteOffService {
                 payment.getCounterpartyType(), payment.getCounterpartyId(), effectiveAmount);
         }
         throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+    }
+
+    /**
+     * 预览用的资金来源读取：与 {@link #lockSource} 同一可见性口径，但不加锁、不写库。
+     */
+    private SourceFact readSource(String sourceType, Long sourceId) {
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name().equals(sourceType)) {
+            FinanceReceiptQueryVO receipt = financeReceiptDao.selectQueryById(sourceId);
+            if (receipt == null || !ScmFinanceReverseEntryTypeEnum.NORMAL.name().equals(receipt.getEntryType())) {
+                throw new ScmBusinessException(FinanceErrorCode.RECEIPT_NOT_FOUND);
+            }
+            requireCustomerVisible(scope, receipt.getCustomerId());
+            return new SourceFact(sourceType, sourceId, receipt.getReceiptNo(), receipt.getCustomerName(),
+                ScmFinanceCounterpartyTypeEnum.CUSTOMER.name(), receipt.getSettlementCustomerId(),
+                receipt.getEffectiveAmount());
+        }
+        if (ScmFinanceWriteOffSourceTypeEnum.PAYMENT.name().equals(sourceType)) {
+            FinancePaymentQueryVO payment = financePaymentDao.selectQueryById(sourceId);
+            if (payment == null || !ScmFinanceReverseEntryTypeEnum.NORMAL.name().equals(payment.getEntryType())) {
+                throw new ScmBusinessException(FinanceErrorCode.PAYMENT_NOT_FOUND);
+            }
+            return new SourceFact(sourceType, sourceId, payment.getPaymentNo(), payment.getCounterpartyName(),
+                payment.getCounterpartyType(), payment.getCounterpartyId(), payment.getEffectiveAmount());
+        }
+        throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+    }
+
+    private void requireCustomerVisible(ScmDataScopeContext scope, Long customerId) {
+        var customer = financeCounterpartySourceDao.selectCustomer(customerId);
+        if (customer == null || !scope.getCustomerSellerScope().allows(customer.getSellerId())) {
+            throw new ScmDataScopeException();
+        }
+    }
+
+    /**
+     * 按账单日期、单据 id 的顺序把来源剩余额逐笔分到未结目标；不超额，分不完的留在来源的待核销额里。
+     */
+    private List<PlannedAllocation> planAuto(String sourceType, SourceFact source, ScmDataScopeContext scope) {
+        BigDecimal available = source.effectiveAmount()
+            .subtract(financeWriteOffDao.selectSourceUsedAmount(sourceType, source.id()));
+        if (available.signum() <= 0) {
+            return List.of();
+        }
+        List<FinanceAutoWriteOffTargetDto> candidates;
+        if (ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name().equals(targetType(sourceType))) {
+            candidates = financeReceivableDao.selectAutoTargets(source.counterpartyId(), scope.getOrderSellerScope(),
+                AUTO_TARGET_LIMIT);
+        } else {
+            // 只有供应商付款能核销应付；客户退款付款的对手方是客户，不存在可分配的应付
+            if (!ScmFinanceCounterpartyTypeEnum.SUPPLIER.name().equals(source.counterpartyType())) {
+                return List.of();
+            }
+            candidates = financePayableDao.selectAutoTargets(source.counterpartyId(), scope.getPurchaserScope(),
+                AUTO_TARGET_LIMIT);
+        }
+        List<PlannedAllocation> plan = new ArrayList<>(candidates.size());
+        BigDecimal remaining = available;
+        for (FinanceAutoWriteOffTargetDto candidate : candidates) {
+            if (remaining.signum() <= 0) {
+                break;
+            }
+            BigDecimal amount = candidate.getOpenAmount().min(remaining).setScale(FinanceConstant.AMOUNT_SCALE,
+                RoundingMode.HALF_UP);
+            if (amount.signum() <= 0) {
+                continue;
+            }
+            plan.add(new PlannedAllocation(candidate.getTargetId(), candidate.getTargetNo(), candidate.getTargetName(),
+                candidate.getEventAt(), candidate.getOpenAmount(), amount));
+            remaining = remaining.subtract(amount);
+        }
+        return plan;
     }
 
     private Map<Long, TargetFact> lockTargets(String targetType, List<Long> targetIds) {
@@ -376,7 +529,7 @@ public class FinanceWriteOffService {
 
     private static String targetType(String sourceType) {
         return switch (ScmFinanceWriteOffSourceTypeEnum.valueOf(sourceType)) {
-            case RECEIPT, BALANCE_MOVEMENT -> ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name();
+            case RECEIPT, BALANCE_MOVEMENT, WAIVER -> ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name();
             case PAYMENT -> ScmFinanceWriteOffTargetTypeEnum.PAYABLE.name();
         };
     }
@@ -415,6 +568,10 @@ public class FinanceWriteOffService {
     }
 
     private record Allocation(Long targetId, BigDecimal amount) {
+    }
+
+    private record PlannedAllocation(Long targetId, String targetNo, String targetName, OffsetDateTime eventAt,
+        BigDecimal openAmount, BigDecimal amount) {
     }
 
     private record SourceFact(String type, Long id, String documentNo, String counterpartyName, String counterpartyType,

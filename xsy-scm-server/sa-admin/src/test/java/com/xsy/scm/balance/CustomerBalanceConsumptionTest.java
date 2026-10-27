@@ -38,8 +38,11 @@ class CustomerBalanceConsumptionTest {
     void wallet() {
         var customer = new CustomerEntity(); customer.setId(2L);
         var settlement = new CustomerEntity(); settlement.setId(3L); settlement.setName("集团");
+        settlement.setSharedSettlementEnabled(true);
         when(customers.require(2L)).thenReturn(customer);
         when(customers.requireSettlementAccount(customer)).thenReturn(settlement);
+        // consumeForPayment 在核对结算主体后会加锁重读该客户行；不桩住会得到 null 并 NPE。
+        when(customers.lockCreditAccount(3L)).thenReturn(settlement);
         var account = new CustomerBalanceAccountEntity(); account.setId(4L); account.setSettlementCustomerId(3L);
         when(accounts.lockBySettlementCustomerId(3L)).thenReturn(account);
     }

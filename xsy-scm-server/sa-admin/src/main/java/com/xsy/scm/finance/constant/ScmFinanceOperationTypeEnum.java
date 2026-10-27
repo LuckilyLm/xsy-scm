@@ -48,7 +48,17 @@ public enum ScmFinanceOperationTypeEnum {
     /**
      * 反向付款（{@code scm:finance:payment:reverse}，独立的破坏性权限）。
      */
-    PAYMENT_REVERSE("付款反向");
+    PAYMENT_REVERSE("付款反向"),
+
+    /**
+     * 登记抹零（{@code scm:finance:waiver:add}）：冲减应收的减免事实，不是收款。
+     */
+    WAIVER_ADD("抹零登记"),
+
+    /**
+     * 反向抹零（{@code scm:finance:waiver:reverse}）：追加反向核销行，抹零事实置为已反向。
+     */
+    WAIVER_REVERSE("抹零反向");
 
     private final String desc;
 }

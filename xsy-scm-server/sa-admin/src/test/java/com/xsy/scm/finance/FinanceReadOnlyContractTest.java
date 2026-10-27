@@ -131,15 +131,17 @@ class FinanceReadOnlyContractTest {
                 }
             }
         }
-        // 八张表都必须有实体，否则「实体 → 表」这条最强的边界证据就缺了一块。
+        // 每张表都必须有实体，否则「实体 → 表」这条最强的边界证据就缺了一块。
+        // 抹零（V194）是第九张：它只是核销来源的证明，余额仍由 xsy_finance_write_off 承担。
         assertThat(mapped)
                 .as("财务域实体的 @TableName 取值")
-                .hasSize(8)
+                .hasSize(9)
                 .allSatisfy(table -> assertThat(table).startsWith("xsy_finance_"))
                 .contains("xsy_finance_receivable", "xsy_finance_receivable_item",
                         "xsy_finance_payable", "xsy_finance_payable_item",
                         "xsy_finance_receipt", "xsy_finance_payment",
-                        "xsy_finance_write_off", "xsy_finance_operation_log");
+                        "xsy_finance_write_off", "xsy_finance_operation_log",
+                        "xsy_finance_waiver");
     }
 
     @Test

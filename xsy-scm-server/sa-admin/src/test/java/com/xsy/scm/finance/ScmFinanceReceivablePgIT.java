@@ -411,13 +411,14 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         sign(chain.routeId(), chain.orderId(), "SIGNED", null);
 
         Long orderItemId = confirmedSalesOrderItemId(chain.orderId());
-        // 前置事实：订单侧的下单量与结算量都还是 10，分拣行记的是 7
+        // 前置事实：下单量仍是 10；分拣称重已把订单实发量回写成 7（称多少、结多少），
+        // 分拣行也是 7。应收量与这三者都无关，只取出库行。
         assertThat(jdbc.queryForObject(
                 "SELECT ordered_quantity FROM xsy_sales_order_item WHERE id = ?", BigDecimal.class, orderItemId))
                 .isEqualByComparingTo("10.0000");
         assertThat(jdbc.queryForObject(
                 "SELECT actual_quantity FROM xsy_sales_order_item WHERE id = ?", BigDecimal.class, orderItemId))
-                .isEqualByComparingTo("10.0000");
+                .isEqualByComparingTo("7.0000");
         assertThat(jdbc.queryForObject(
                 "SELECT sorted_quantity FROM xsy_sorting_task_item WHERE sales_order_item_id = ? AND deleted = FALSE",
                 BigDecimal.class, orderItemId)).isEqualByComparingTo("7.0000");

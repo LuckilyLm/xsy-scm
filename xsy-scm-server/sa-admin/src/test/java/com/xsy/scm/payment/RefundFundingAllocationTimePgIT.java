@@ -173,11 +173,13 @@ class RefundFundingAllocationTimePgIT extends ScmW5PgITBase {
                 """, Long.class, prefix + "-BM-" + UUID.randomUUID().toString().substring(0, 8), accountId,
                 settlementCustomerId, customerId, refundAmount, intentId, operator(), operator());
 
-        // ck_order_refund_completion：COMPLETED 必须带 completed_at；return_id 全表唯一，与 id 共用序列。
+        // ck_order_refund_completion：COMPLETED 必须带 completed_at。
+        // return_id 无外键、只要求全表唯一；本用例 NOT_SUPPORTED，行会真实落库，
+        // 因此从退货 id 序列取值，避免假 return_id 与后续真实退货 id 撞唯一索引。
         Long orderRefundId = jdbc.queryForObject("""
                 INSERT INTO xsy_order_refund
                     (refund_no, return_id, order_id, customer_id, refund_amount, status, completed_at, created_by)
-                VALUES (?, nextval('xsy_v2.order_refund_id_seq'), ?, ?, CAST(? AS numeric), 'COMPLETED',
+                VALUES (?, nextval(pg_get_serial_sequence('xsy_order_return', 'id')), ?, ?, CAST(? AS numeric), 'COMPLETED',
                     CURRENT_TIMESTAMP, ?)
                 RETURNING id
                 """, Long.class, prefix + "-AOR-" + UUID.randomUUID().toString().substring(0, 8), orderId,

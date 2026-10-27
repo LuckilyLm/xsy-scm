@@ -24,7 +24,12 @@ public enum ScmFinanceWriteOffSourceTypeEnum {
      */
     PAYMENT("付款"),
 
-    BALANCE_MOVEMENT("余额消费");
+    BALANCE_MOVEMENT("余额消费"),
+
+    /**
+     * 抹零：{@code source_id} = {@code xsy_finance_waiver.id}，只能核 {@code RECEIVABLE}。
+     */
+    WAIVER("抹零");
 
     private final String desc;
 }

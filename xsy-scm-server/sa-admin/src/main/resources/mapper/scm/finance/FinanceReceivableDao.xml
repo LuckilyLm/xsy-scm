@@ -83,6 +83,42 @@
         FOR UPDATE OF r
     </select>
 
+    <!--
+      自动核销候选：未结金额现算（净额 = 金额 - 红字），再减核销净额；
+      红字与核销都按 target 聚合一次，避免逐行子查询在同一结果集里重复扫表。
+    -->
+    <select id="selectAutoTargets" resultType="com.xsy.scm.finance.domain.dto.FinanceAutoWriteOffTargetDto">
+        SELECT c.targetId, c.targetNo, c.targetName, c.eventAt, c.openAmount, c.ownerId
+        FROM (
+            SELECT r.id AS targetId, r.receivable_no AS targetNo, r.customer_name_snapshot AS targetName,
+                r.event_at AS eventAt, so.seller_id AS ownerId,
+                r.amount - COALESCE(red.red_amount, 0) - COALESCE(wo.written_off_amount, 0) AS openAmount
+            FROM xsy_finance_receivable r
+            LEFT JOIN xsy_sales_order so ON so.id = r.order_id
+                AND so.deleted = FALSE
+            LEFT JOIN (SELECT original_receivable_id, SUM(amount) AS red_amount
+                FROM xsy_finance_receivable
+                WHERE entry_type = 'RED' AND deleted = FALSE
+                GROUP BY original_receivable_id) red ON red.original_receivable_id = r.id
+            LEFT JOIN (SELECT target_id, SUM(CASE WHEN entry_type = 'NORMAL' THEN amount ELSE -amount END)
+                AS written_off_amount
+                FROM xsy_finance_write_off
+                WHERE target_type = 'RECEIVABLE' AND deleted = FALSE
+                GROUP BY target_id) wo ON wo.target_id = r.id
+            WHERE r.deleted = FALSE
+                AND r.entry_type = 'NORMAL'
+                AND r.settlement_customer_id = #{settlementCustomerId}
+        ) c
+        WHERE c.openAmount &gt; 0
+        <if test="scope != null and scope.all == false">
+            AND c.ownerId IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">AND FALSE</if>
+        ORDER BY c.eventAt, c.targetId
+        LIMIT #{limit}
+    </select>
+
     <select id="selectRedAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(amount), 0)
         FROM xsy_finance_receivable

@@ -16,6 +16,12 @@ public final class FinancePermission {
     public static final String WRITE_OFF_ADD = "scm:finance:write-off:add";
     public static final String PAYABLE_RED = "scm:finance:payable:red";
 
+    /**
+     * 抹零与反向抹零分开授权：会抹零不等于能撤销，撤销会把已放掉的余额变回欠款。
+     */
+    public static final String WAIVER_ADD = "scm:finance:waiver:add";
+    public static final String WAIVER_REVERSE = "scm:finance:waiver:reverse";
+
     public static final String WRITE_OFF_REVERSE = "scm:finance:write-off:reverse";
     public static final String RECEIPT_REVERSE = "scm:finance:receipt:reverse";
     public static final String PAYMENT_REVERSE = "scm:finance:payment:reverse";

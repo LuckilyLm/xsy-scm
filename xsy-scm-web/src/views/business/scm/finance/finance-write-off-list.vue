@@ -16,6 +16,7 @@
             {label: '收款', value: 'RECEIPT'},
             {label: '付款', value: 'PAYMENT'},
             {label: '余额消费', value: 'BALANCE_MOVEMENT'},
+            {label: '抹零', value: 'WAIVER'},
           ]"
       /></a-form-item>
       <a-form-item label="资金单号"><a-input v-model:value="query.sourceNo" allow-clear @press-enter="onSearch" /></a-form-item>
@@ -88,7 +89,7 @@
           <!-- 撤销核销是追加反向记录，不是编辑，所以用危险样式并单独确认 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button
-              v-if="record.entryType === 'NORMAL'"
+              v-if="record.entryType === 'NORMAL' && record.sourceType !== 'WAIVER'"
               type="link"
               size="small"
               danger
@@ -96,6 +97,7 @@
               @click="openReverse(record)"
               >撤销核销</a-button
             >
+            <!-- 抹零的反向登记在应收页，这里不提供入口 -->
             <span v-else class="scm-cell-hint">—</span>
           </a-space>
         </template>
@@ -115,7 +117,7 @@
     </div>
   </a-card>
 
-  <a-drawer v-model:open="addOpen" title="登记多目标核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
+  <a-drawer v-model:open="addOpen" title="登记核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError" />
     <a-form ref="addFormRef" :model="addModel" :rules="addRules" layout="vertical" class="app-drawer-form">
       <a-form-item name="sourceType">
@@ -136,34 +138,72 @@
       <a-descriptions-item label="方向">{{ entryTypeText(source.entryType) }}</a-descriptions-item>
       <a-descriptions-item label="可核销金额">{{ moneyText(source.availableAmount) }}</a-descriptions-item>
     </a-descriptions>
-    <div class="target-toolbar">
-      <h3>分配目标</h3>
-      <a-button :disabled="!source" @click="openTargetPicker">添加目标单</a-button>
-    </div>
-    <a-empty v-if="!targets.length" description="先选择一笔资金单，再添加一个或多个目标单" />
-    <a-table
-      v-else
-      size="small"
-      :data-source="targets"
-      :columns="targetColumns"
-      row-key="id"
-      :pagination="false"
-      :scroll="{x: scmColumnsWidth(targetColumns)}"
-    >
-      <template #bodyCell="{record, column}">
-        <template v-if="column.dataIndex === 'availableAmount'">
-          <span class="scm-money">{{ moneyText(record.availableAmount) }}</span>
+    <a-radio-group v-if="source" v-model:value="allocMode" button-style="solid" class="alloc-mode" @change="resetPlan">
+      <a-radio-button value="AUTO">自动 FIFO</a-radio-button>
+      <a-radio-button value="MANUAL">手工选择</a-radio-button>
+    </a-radio-group>
+
+    <template v-if="allocMode === 'AUTO'">
+      <div class="target-toolbar">
+        <h3>自动分配预览</h3>
+        <a-button :disabled="!source" :loading="planLoading" @click="previewAuto">预览分配</a-button>
+      </div>
+      <a-alert type="info" show-icon message="按账单日期、单据编号从早到晚分配，不超额；单次最多 100 单，剩余金额留在资金单的待核销额里。" />
+      <a-empty v-if="!plan.length" description="点击「预览分配」查看将要核销的单据" />
+      <a-table
+        v-else
+        class="plan-table"
+        size="small"
+        :data-source="plan"
+        :columns="planColumns"
+        row-key="targetId"
+        :pagination="false"
+        :scroll="{x: scmColumnsWidth(planColumns)}"
+      >
+        <template #bodyCell="{record, column}">
+          <template v-if="['openAmount', 'allocatedAmount'].includes(column.dataIndex)">
+            <span class="scm-money">{{ moneyText(record[column.dataIndex]) }}</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'eventAt'">{{ dateTimeText(record.eventAt) }}</template>
         </template>
-        <template v-else-if="column.dataIndex === 'amount'">
-          <a-input-number v-model:value="record.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width: 150px" />
+      </a-table>
+    </template>
+    <template v-else>
+      <div class="target-toolbar">
+        <h3>分配目标</h3>
+        <a-button :disabled="!source" @click="openTargetPicker">添加目标单</a-button>
+      </div>
+      <a-empty v-if="!targets.length" description="先选择一笔资金单，再添加一个或多个目标单" />
+      <a-table
+        v-else
+        size="small"
+        :data-source="targets"
+        :columns="targetColumns"
+        row-key="id"
+        :pagination="false"
+        :scroll="{x: scmColumnsWidth(targetColumns)}"
+      >
+        <template #bodyCell="{record, column}">
+          <template v-if="column.dataIndex === 'availableAmount'">
+            <span class="scm-money">{{ moneyText(record.availableAmount) }}</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'amount'">
+            <a-input-number v-model:value="record.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width: 150px" />
+          </template>
+          <template v-else-if="column.dataIndex === 'action'"><a-button type="link" danger @click="removeTarget(record.id)">移除</a-button></template>
         </template>
-        <template v-else-if="column.dataIndex === 'action'"><a-button type="link" danger @click="removeTarget(record.id)">移除</a-button></template>
-      </template>
-    </a-table>
+      </a-table>
+    </template>
     <template #footer>
       <a-space>
         <a-button @click="addOpen = false">取消</a-button>
-        <a-button type="primary" :loading="addSaving" :disabled="!source || !targets.length" @click="submitAdd">提交核销</a-button>
+        <a-button
+          type="primary"
+          :loading="addSaving"
+          :disabled="!source || (allocMode === 'AUTO' ? !plan.length : !targets.length)"
+          @click="submitAdd"
+          >{{ allocMode === 'AUTO' ? '确认自动核销' : '提交核销' }}</a-button
+        >
       </a-space>
     </template>
   </a-drawer>
@@ -203,7 +243,7 @@ import BalanceMovementDetail from './balance-movement-detail.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const movementDetail = ref<InstanceType<typeof BalanceMovementDetail>>();
 import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyText, isValidPositiveAmount} from './finance-form-model';
-import type {FinanceCandidate, FinanceWriteOff, WriteOffQuery} from './finance-types';
+import type {FinanceCandidate, FinanceWriteOff, FinanceWriteOffAutoPlan, WriteOffQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
@@ -220,6 +260,10 @@ const addOpen = ref(false),
   sourceType = ref<'RECEIPT' | 'PAYMENT'>();
 const source = ref<FinanceCandidate | null>(null),
   targets = ref<AllocationDraft[]>([]);
+/** 分配方式：自动 FIFO 只选资金来源，手工选择保留原有的多目标分配。 */
+const allocMode = ref<'AUTO' | 'MANUAL'>('AUTO');
+const plan = ref<FinanceWriteOffAutoPlan[]>([]),
+  planLoading = ref(false);
 const pickerOpen = ref(false),
   pickerKind = ref<'RECEIPT' | 'PAYMENT' | 'RECEIVABLE' | 'PAYABLE'>('RECEIPT'),
   picking = ref<'SOURCE' | 'TARGET'>('SOURCE');
@@ -248,11 +292,12 @@ const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({
 const sourceOptions = Object.values(SCM_FINANCE_SOURCE_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
-/** 资金来源中文。枚举只有收款和付款，核销记录还可能来自余额消费，这里补上。 */
+/** 资金来源中文。枚举只有收款和付款，核销记录还可能来自余额消费和抹零，这里补上。 */
 const SOURCE_TYPE_TEXT: Record<string, string> = {
   RECEIPT: '收款',
   PAYMENT: '付款',
   BALANCE_MOVEMENT: '余额消费',
+  WAIVER: '抹零',
 };
 
 function sourceTypeText(value?: string | null): string {
@@ -279,6 +324,13 @@ const columns = ref<TableColumnsType<FinanceWriteOff>>([
   {title: '操作人', dataIndex: 'operator', width: 110},
   {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);
+const planColumns: TableColumnsType<FinanceWriteOffAutoPlan> = [
+  {title: '目标单号', dataIndex: 'targetNo', width: 200},
+  {title: '往来方', dataIndex: 'targetName', width: 180},
+  {title: '账单日期', dataIndex: 'eventAt', width: 180},
+  {title: '未结金额', dataIndex: 'openAmount', width: 140},
+  {title: '本次核销', dataIndex: 'allocatedAmount', width: 140},
+];
 const targetColumns: TableColumnsType<AllocationDraft> = [
   {title: '目标单号', dataIndex: 'documentNo', width: 210},
   {title: '往来方', dataIndex: 'partyName', width: 170},
@@ -323,11 +375,36 @@ function openAdd() {
   sourceType.value = undefined;
   source.value = null;
   targets.value = [];
+  plan.value = [];
+  allocMode.value = 'AUTO';
   addOpen.value = true;
 }
 function resetAllocation() {
   source.value = null;
   targets.value = [];
+  plan.value = [];
+}
+/** 切换分配方式只清掉上一次的预览/目标，资金单保持不变（同一笔钱的两种分配方式）。 */
+function resetPlan() {
+  plan.value = [];
+  targets.value = [];
+}
+
+async function previewAuto() {
+  if (!sourceType.value || !source.value) return;
+  planLoading.value = true;
+  addError.value = '';
+  try {
+    const response = await financeApi.writeOffAutoPreview({sourceType: sourceType.value, sourceId: source.value.id});
+    plan.value = response.data;
+    if (!response.data.length) {
+      message.warning('该资金单的对方没有可按顺序核销的未结单据');
+    }
+  } catch {
+    plan.value = [];
+  } finally {
+    planLoading.value = false;
+  }
 }
 function openSourcePicker() {
   if (!sourceType.value) return;
@@ -345,6 +422,7 @@ function onCandidateSelected(candidate: FinanceCandidate) {
   if (picking.value === 'SOURCE') {
     source.value = candidate;
     targets.value = [];
+    plan.value = [];
     return;
   }
   if (targets.value.some((item) => String(item.id) === String(candidate.id))) {
@@ -359,27 +437,35 @@ function removeTarget(id: FinanceCandidate['id']) {
 }
 
 async function submitAdd() {
-  // 资金类型和资金单走字段校验；至少一条目标有正数金额用 toast 提示
+  // 资金类型和资金单走字段校验；目标金额按当前分配方式检查
   try {
     await addFormRef.value?.validate();
   } catch (err) {
     notifyFormInvalid(err, addFormRef.value);
     return;
   }
-  const items = targets.value.filter((item) => isValidPositiveAmount(item.amount)).map((item) => ({targetId: item.id, amount: item.amount}));
-  if (!items.length) {
-    message.warning('请为至少一条目标填写正数金额（最多 4 位小数）');
-    return;
-  }
   if (!source.value || !sourceType.value) {
     addError.value = '请选择核销来源';
+    return;
+  }
+  if (allocMode.value === 'AUTO' && !plan.value.length) {
+    message.warning('请先预览自动分配结果，再确认核销');
+    return;
+  }
+  const items = targets.value.filter((item) => isValidPositiveAmount(item.amount)).map((item) => ({targetId: item.id, amount: item.amount}));
+  if (allocMode.value === 'MANUAL' && !items.length) {
+    message.warning('请为至少一条目标填写正数金额（最多 4 位小数）');
     return;
   }
   addSaving.value = true;
   addError.value = '';
   try {
-    await financeApi.writeOffAdd({sourceType: sourceType.value, sourceId: source.value.id, items});
-    message.success('核销已登记');
+    if (allocMode.value === 'AUTO') {
+      await financeApi.writeOffAuto({sourceType: sourceType.value, sourceId: source.value.id});
+    } else {
+      await financeApi.writeOffAdd({sourceType: sourceType.value, sourceId: source.value.id, items});
+    }
+    message.success(allocMode.value === 'AUTO' ? '已按账单日期自动核销' : '核销已登记');
     addOpen.value = false;
     await queryData();
   } catch {
@@ -436,6 +522,12 @@ onMounted(queryData);
   }
 }
 .source-summary {
+  margin-top: 12px;
+}
+.alloc-mode {
+  margin: 16px 0 4px;
+}
+.plan-table {
   margin-top: 12px;
 }
 .target-toolbar {

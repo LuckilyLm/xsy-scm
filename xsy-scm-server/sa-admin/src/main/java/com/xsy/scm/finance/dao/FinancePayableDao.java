@@ -3,7 +3,9 @@ package com.xsy.scm.finance.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.common.time.ScmDateTimeRange;
+import com.xsy.scm.finance.domain.dto.FinanceAutoWriteOffTargetDto;
 import com.xsy.scm.finance.domain.dto.FinancePayableTargetDto;
 import com.xsy.scm.finance.domain.entity.FinancePayableEntity;
 import com.xsy.scm.finance.domain.form.FinancePayableQueryForm;
@@ -42,6 +44,15 @@ public interface FinancePayableDao extends BaseMapper<FinancePayableEntity> {
     List<FinancePayableTargetDto> selectNormalTargetsForUpdate(@Param("targetIds") List<Long> targetIds);
 
     FinancePayableTargetDto selectNormalTargetForUpdate(@Param("targetId") Long targetId);
+
+    /**
+     * 自动核销候选：同一供应商的未结正常应付，按账单日期、id 升序（FIFO）。
+     *
+     * <p>
+     * {@code scope} 为采购员数据范围，null 按失败关闭。
+     */
+    List<FinanceAutoWriteOffTargetDto> selectAutoTargets(@Param("supplierId") Long supplierId,
+        @Param("scope") ScmValueScope scope, @Param("limit") int limit);
 
     BigDecimal selectRedAmount(@Param("originalPayableId") Long originalPayableId);
 

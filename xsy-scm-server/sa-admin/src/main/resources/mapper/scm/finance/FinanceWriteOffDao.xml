@@ -88,8 +88,8 @@
 
     <sql id="writeOffProjectionFrom">
         SELECT wo.id AS writeOffId, wo.write_off_no AS writeOffNo, wo.source_type AS sourceType,
-            wo.source_id AS sourceId, COALESCE(r.receipt_no, p.payment_no, m.movement_no) AS sourceNo,
-            COALESCE(r.customer_name_snapshot, p.counterparty_name_snapshot, mc.name) AS sourceName,
+            wo.source_id AS sourceId, COALESCE(r.receipt_no, p.payment_no, m.movement_no, wv.waiver_no) AS sourceNo,
+            COALESCE(r.customer_name_snapshot, p.counterparty_name_snapshot, mc.name, wc.name) AS sourceName,
             wo.target_type AS targetType, wo.target_id AS targetId,
             COALESCE(ar.receivable_no, ap.payable_no) AS targetNo,
             COALESCE(ar.customer_name_snapshot, ap.supplier_name_snapshot) AS targetName, wo.amount,
@@ -107,6 +107,11 @@
             AND m.deleted = FALSE
         LEFT JOIN xsy_customer mc ON mc.id = m.customer_id
             AND mc.deleted = FALSE
+        LEFT JOIN xsy_finance_waiver wv ON wo.source_type = 'WAIVER'
+            AND wv.id = wo.source_id
+            AND wv.deleted = FALSE
+        LEFT JOIN xsy_customer wc ON wc.id = wv.customer_id
+            AND wc.deleted = FALSE
         LEFT JOIN xsy_finance_receivable ar ON wo.target_type = 'RECEIVABLE'
             AND ar.id = wo.target_id
             AND ar.deleted = FALSE
@@ -168,7 +173,8 @@
             <include refid="targetScopePredicate"/>
             <if test="query.sourceType != null and query.sourceType != ''">AND wo.source_type = #{query.sourceType}</if>
             <if test="query.sourceNo != null and query.sourceNo != ''">
-                AND COALESCE(r.receipt_no, p.payment_no, m.movement_no) ILIKE CONCAT('%', #{query.sourceNo}, '%')
+                AND COALESCE(r.receipt_no, p.payment_no, m.movement_no, wv.waiver_no) ILIKE CONCAT('%',
+                #{query.sourceNo}, '%')
             </if>
             <if test="query.writeOffId != null">AND wo.id = #{query.writeOffId}</if>
             <if test="query.sourceId != null">AND wo.source_id = #{query.sourceId}</if>

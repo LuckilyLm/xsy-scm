@@ -3,7 +3,9 @@ package com.xsy.scm.finance.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.common.time.ScmDateTimeRange;
+import com.xsy.scm.finance.domain.dto.FinanceAutoWriteOffTargetDto;
 import com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableEntity;
 import com.xsy.scm.finance.domain.form.FinanceReceivableQueryForm;
@@ -46,6 +48,15 @@ public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity
     List<FinanceReceivableTargetDto> selectNormalTargetsForUpdate(@Param("targetIds") List<Long> targetIds);
 
     FinanceReceivableTargetDto selectNormalTargetForUpdate(@Param("targetId") Long targetId);
+
+    /**
+     * 自动核销候选：同一结算客户的未结正常应收，按账单日期、id 升序（FIFO）。
+     *
+     * <p>
+     * 未结金额 = 应收金额 - 红字冲减 - 核销净额，现算；{@code scope} 为销售员数据范围，null 按失败关闭。
+     */
+    List<FinanceAutoWriteOffTargetDto> selectAutoTargets(@Param("settlementCustomerId") Long settlementCustomerId,
+        @Param("scope") ScmValueScope scope, @Param("limit") int limit);
 
     BigDecimal selectRedAmount(@Param("originalReceivableId") Long originalReceivableId);
 

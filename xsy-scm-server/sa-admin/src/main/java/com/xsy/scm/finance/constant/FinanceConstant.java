@@ -34,6 +34,11 @@ public final class FinanceConstant {
      */
     public static final String WRITE_OFF_NO_PREFIX = "WO";
 
+    /**
+     * 抹零单号前缀。
+     */
+    public static final String WAIVER_NO_PREFIX = "WV";
+
     public static final String RECEIVABLE_QUERY_PERM = FinancePermission.RECEIVABLE_QUERY;
     public static final String PAYABLE_QUERY_PERM = FinancePermission.PAYABLE_QUERY;
     public static final String RECEIPT_QUERY_PERM = FinancePermission.RECEIPT_QUERY;
@@ -90,6 +95,17 @@ public final class FinanceConstant {
      * 手工红字应付命令幂等 scope；实际 scope 还要拼原应付 id。
      */
     public static final String PAYABLE_RED_SCOPE = "FINANCE_PAYABLE_RED";
+
+    /**
+     * 抹零新增 / 反向的幂等 scope；反向还要拼原抹零 id。
+     */
+    public static final String WAIVER_ADD_SCOPE = "FINANCE_WAIVER_ADD";
+    public static final String WAIVER_REVERSE_SCOPE = "FINANCE_WAIVER_REVERSE";
+
+    /**
+     * 自动 FIFO 核销：同一收款 / 付款只允许一段连续自动分配，幂等 scope 拼来源类型与 id。
+     */
+    public static final String WRITE_OFF_AUTO_SCOPE = "FINANCE_WRITE_OFF_AUTO";
 
     /**
      * 四个反向/冲减动作各用一条独立权限：能登记一笔款的人不必然能冲掉一笔款，因此不与 {@code *:add} 合并，也不合成一个 {@code scm:finance:reverse}。

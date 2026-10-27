@@ -3,7 +3,7 @@ import type {ScmId, ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 export type FinanceId = ScmId;
 export type FinanceEntryType = 'NORMAL' | 'RED' | 'REVERSE';
 export type FinancePaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'OTHER';
-export type FinanceBusinessType = 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT' | 'WRITE_OFF';
+export type FinanceBusinessType = 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT' | 'WRITE_OFF' | 'WAIVER';
 
 export interface FinanceCandidate {
   id: FinanceId;
@@ -97,6 +97,9 @@ export interface FinanceRefundOption {
   completedAt: string;
 }
 
+/** 核销来源：抹零没有资金流入，但同样以核销行冲减应收，列表要能筛出它。 */
+export type FinanceWriteOffSourceType = 'RECEIPT' | 'PAYMENT' | 'BALANCE_MOVEMENT' | 'WAIVER';
+
 export interface WriteOffQuery extends FinancePageQuery {
   writeOffId?: FinanceId;
   sourceId?: FinanceId;
@@ -104,7 +107,7 @@ export interface WriteOffQuery extends FinancePageQuery {
   sourceNo?: string;
   targetNo?: string;
   entryType?: FinanceEntryType;
-  sourceType?: 'RECEIPT' | 'PAYMENT' | 'BALANCE_MOVEMENT';
+  sourceType?: FinanceWriteOffSourceType;
 }
 
 export interface FinanceAuditFields {
@@ -211,7 +214,7 @@ export interface FinancePayment extends FinanceAuditFields {
 export interface FinanceWriteOff {
   writeOffId: FinanceId;
   writeOffNo: string;
-  sourceType: 'RECEIPT' | 'PAYMENT' | 'BALANCE_MOVEMENT';
+  sourceType: FinanceWriteOffSourceType;
   sourceId: FinanceId;
   sourceNo: string;
   sourceName: string;
@@ -313,6 +316,54 @@ export interface FinanceWriteOffAddForm {
   sourceType: 'RECEIPT' | 'PAYMENT';
   sourceId: FinanceId;
   items: FinanceWriteOffAddItem[];
+}
+
+/** 自动 FIFO 只选资金来源，目标顺序由服务端按账单日期排。 */
+export interface FinanceWriteOffAutoForm {
+  sourceType: 'RECEIPT' | 'PAYMENT';
+  sourceId: FinanceId;
+}
+
+export interface FinanceWriteOffAutoPlan {
+  targetId: FinanceId;
+  targetNo: string;
+  targetName: string;
+  eventAt: string;
+  openAmount: string;
+  allocatedAmount: string;
+}
+
+export type FinanceWaiverStatus = 'NORMAL' | 'REVERSED';
+
+export interface FinanceWaiverAddForm {
+  receivableId: FinanceId;
+  amount: string;
+  reason: string;
+}
+
+export interface FinanceWaiverReverseForm {
+  waiverId: FinanceId;
+  reason: string;
+}
+
+export interface FinanceWaiver {
+  waiverId: FinanceId;
+  waiverNo: string;
+  receivableId: FinanceId;
+  receivableNo: string;
+  customerId: FinanceId;
+  customerName: string;
+  settlementCustomerId?: FinanceId | null;
+  amount: string;
+  reason: string;
+  status: FinanceWaiverStatus;
+  reversedAt?: string | null;
+  reversedBy?: string | null;
+  reverseReason?: string | null;
+  writeOffId?: FinanceId | null;
+  writeOffNo?: string | null;
+  createdAt: string;
+  createdBy?: string | null;
 }
 
 export interface FinanceReceiptAddForm {

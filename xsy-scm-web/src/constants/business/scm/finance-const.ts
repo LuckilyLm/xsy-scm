@@ -12,6 +12,9 @@ export const SCM_FINANCE_PERMISSION = {
   WRITE_OFF_ADD: 'scm:finance:write-off:add',
   PAYABLE_RED: 'scm:finance:payable:red',
   WRITE_OFF_REVERSE: 'scm:finance:write-off:reverse',
+  /** 抹零与反向抹零分开授权：会抹零不等于能撤销。 */
+  WAIVER_ADD: 'scm:finance:waiver:add',
+  WAIVER_REVERSE: 'scm:finance:waiver:reverse',
   RECEIPT_REVERSE: 'scm:finance:receipt:reverse',
   PAYMENT_REVERSE: 'scm:finance:payment:reverse',
   EXPORT: 'scm:finance:export',
@@ -44,6 +47,8 @@ export const SCM_FINANCE_OPERATION_TYPE_ENUM: SmartEnum<string> = {
   WRITE_OFF_REVERSE: {value: 'WRITE_OFF_REVERSE', desc: '核销撤销'},
   RECEIPT_REVERSE: {value: 'RECEIPT_REVERSE', desc: '收款反向'},
   PAYMENT_REVERSE: {value: 'PAYMENT_REVERSE', desc: '付款反向'},
+  WAIVER_ADD: {value: 'WAIVER_ADD', desc: '抹零登记'},
+  WAIVER_REVERSE: {value: 'WAIVER_REVERSE', desc: '抹零反向'},
 };
 
 /** 付款方式（与后端 `ScmFinancePaymentMethodEnum` 逐字对应）。 */
@@ -96,6 +101,7 @@ export const SCM_FINANCE_BUSINESS_TYPE_ENUM: SmartEnum<string> = {
   RECEIPT: {value: 'RECEIPT', desc: '收款'},
   PAYMENT: {value: 'PAYMENT', desc: '付款'},
   WRITE_OFF: {value: 'WRITE_OFF', desc: '核销'},
+  WAIVER: {value: 'WAIVER', desc: '抹零'},
 };
 
 /** Stable DOM ids for browser checks; column settings use the numeric ids below. */
