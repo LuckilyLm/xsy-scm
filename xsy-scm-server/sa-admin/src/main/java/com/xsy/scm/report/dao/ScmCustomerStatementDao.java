@@ -30,6 +30,9 @@ public interface ScmCustomerStatementDao {
 
     ScmCustomerStatementVO selectStatement(@Param("id") Long id, @Param("employeeId") Long employeeId);
 
+    /** 打印专用：按 id 取冻结版本，不按生成人过滤；可见性由调用方按源事实重验。 */
+    ScmCustomerStatementVO selectStatementById(@Param("id") Long id);
+
     List<ScmCustomerStatementVO> selectHistory(@Param("settlementCustomerId") Long settlementCustomerId,
         @Param("employeeId") Long employeeId);
 

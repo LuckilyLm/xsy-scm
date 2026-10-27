@@ -29,6 +29,9 @@ public class ScmPrintTemplateVO {
 
     private Boolean enabledFlag;
 
+    /** 是否为当前单据客户的专属模板；仅模板选项接口会填。 */
+    private Boolean customerBound;
+
     /** 受控模型；列表也返回，便于直接看出「这份模板打了哪几列」。 */
     private ScmPrintTemplateModel model;
 

@@ -39,6 +39,11 @@ public class SalesOrderPrintSourceProvider implements ScmPrintSourceProvider {
     }
 
     @Override
+    public Long customerId(Long businessId) {
+        return orderQueryService.detail(businessId).getCustomerId();
+    }
+
+    @Override
     public ScmPrintSource load(Long businessId) {
         SalesOrderDetailVO order = orderQueryService.detail(businessId);
         var header = ScmPrintSource.values();

@@ -29,6 +29,14 @@ public final class ScmPrintText {
                 .format(ScmOffsetDateTimeSerializer.FORMATTER);
     }
 
+    /** 纸面只印日期时用；时区与 {@link #dateTime} 一致。 */
+    public static String date(OffsetDateTime value) {
+        return value == null
+            ? ""
+            : value.atZoneSameInstant(ScmOffsetDateTimeSerializer.DISPLAY_ZONE).toLocalDate()
+                .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
+    }
+
     public static String fixed(BigDecimal value) {
         return value == null
             ? ""

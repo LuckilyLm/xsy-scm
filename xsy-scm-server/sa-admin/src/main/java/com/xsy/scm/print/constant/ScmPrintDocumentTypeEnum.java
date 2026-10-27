@@ -1,6 +1,7 @@
 package com.xsy.scm.print.constant;
 
 import com.xsy.scm.delivery.permission.DeliveryPermission;
+import com.xsy.scm.report.constant.ScmReportPermission;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -64,6 +65,40 @@ public enum ScmPrintDocumentTypeEnum {
             new ScmPrintField("settlementLineAmount", "结算行金额", true, true)),
         List.of(new ScmPrintField("totalAmount", "订单合计金额", true, true))),
 
+    /**
+     * 客户分拣单：一张纸一个客户，按订单行打印，不出现价格。实数量列留空，由分拣现场手写或秤端确认后另打送货单。
+     */
+    CUSTOMER_SORTING_SHEET("客户分拣单", null,
+        List.of(new ScmPrintField("customerName", "收货单位", false, false),
+            new ScmPrintField("orderNo", "订单号", false, false),
+            new ScmPrintField("expectDeliveryTime", "配送日期", false, false),
+            new ScmPrintField("routeNo", "线路", false, false), new ScmPrintField("receiverName", "收货人", false, false),
+            new ScmPrintField("receiverPhone", "收货电话", false, false),
+            new ScmPrintField("address", "收货地址", false, false), new ScmPrintField("remark", "备注", false, false)),
+        List.of(new ScmPrintField("rowNo", "序号", false, true), new ScmPrintField("productName", "商品名称", false, false),
+            new ScmPrintField("specName", "规格", false, false), new ScmPrintField("saleUnit", "单位", false, false),
+            new ScmPrintField("orderedQuantity", "数量", false, true),
+            new ScmPrintField("actualQuantity", "实数量", false, true), new ScmPrintField("remark", "备注", false, false)),
+        List.of()),
+
+    /**
+     * 客户送货单：一张纸一个客户，含实数量、单价、行金额和合计，末页留双方签字栏。
+     */
+    CUSTOMER_DELIVERY_NOTE("客户送货单", null,
+        List.of(new ScmPrintField("customerName", "收货单位", false, false),
+            new ScmPrintField("orderNo", "订单号", false, false),
+            new ScmPrintField("expectDeliveryTime", "配送日期", false, false),
+            new ScmPrintField("routeNo", "线路", false, false), new ScmPrintField("receiverName", "收货人", false, false),
+            new ScmPrintField("receiverPhone", "收货电话", false, false),
+            new ScmPrintField("address", "收货地址", false, false), new ScmPrintField("remark", "备注", false, false)),
+        List.of(new ScmPrintField("rowNo", "序号", false, true), new ScmPrintField("productName", "商品名称", false, false),
+            new ScmPrintField("specName", "规格", false, false), new ScmPrintField("saleUnit", "单位", false, false),
+            new ScmPrintField("actualQuantity", "实数量", false, true),
+            new ScmPrintField("lockedUnitPrice", "销售单价", true, true),
+            new ScmPrintField("settlementLineAmount", "销售金额", true, true),
+            new ScmPrintField("remark", "备注", false, false)),
+        List.of(new ScmPrintField("settlementTotalAmount", "合计金额", true, true))),
+
     SORTING_TICKET("分拣小票", null,
         List.of(new ScmPrintField("warehouseName", "仓库", false, false),
             new ScmPrintField("assigneeName", "分拣员", false, false),
@@ -88,7 +123,33 @@ public enum ScmPrintDocumentTypeEnum {
             new ScmPrintField("orderNo", "订单号", false, false),
             // 只用于生成二维码，不在标签上印 URL 文本
             new ScmPrintField("traceUrl", "溯源二维码", false, false)),
-        List.of(), List.of());
+        List.of(), List.of()),
+
+    /**
+     * 对账单读取已冻结的版本，不重新计算财务事实。金额单据本身可能只对财务角色开放， 因此金额列再按财务查看权限裁剪。
+     */
+    STATEMENT("对账单", ScmReportPermission.FINANCE_QUERY,
+        List.of(new ScmPrintField("settlementCustomerName", "结算方", false, false),
+            new ScmPrintField("period", "对账期间", false, false),
+            new ScmPrintField("openingReceivable", "期初净应收", true, true),
+            new ScmPrintField("closingReceivable", "期末净应收", true, true),
+            new ScmPrintField("generatedAt", "生成时间", false, false),
+            new ScmPrintField("statementVersion", "对账单版本", false, false),
+            new ScmPrintField("partialScope", "范围口径", false, false)),
+        List.of(new ScmPrintField("eventAt", "业务时间", false, false), new ScmPrintField("factType", "类型", false, false),
+            new ScmPrintField("documentNo", "单号", false, false), new ScmPrintField("relatedNo", "关联单号", false, false),
+            new ScmPrintField("receivableDelta", "应收变动", true, true),
+            new ScmPrintField("receiptDelta", "收款变动", true, true),
+            new ScmPrintField("writeOffDelta", "核销变动", true, true),
+            new ScmPrintField("refundDelta", "退款变动", true, true),
+            new ScmPrintField("receivableBalance", "滚动净应收", true, true)),
+        List.of(new ScmPrintField("closingReceivable", "期末净应收", true, true),
+            new ScmPrintField("receivableIncrease", "本期新增应收", true, true),
+            new ScmPrintField("receivableRed", "本期红字", true, true),
+            new ScmPrintField("writeOffNet", "本期核销净额", true, true),
+            // 抹零没有资金流入，与核销净额分列，否则「未分配资金」会对不上
+            new ScmPrintField("waiverNet", "本期抹零净额", true, true), new ScmPrintField("receiptNet", "本期实收净额", true, true),
+            new ScmPrintField("refundNet", "本期实退净额", true, true)));
 
     /** 展示名（模板列表与错误信息用）。 */
     private final String label;
@@ -133,6 +194,17 @@ public enum ScmPrintDocumentTypeEnum {
     /** 该类型是否要求金额权限。 */
     public boolean requiresMoneyPermission() {
         return moneyPermission != null;
+    }
+
+    /**
+     * 是否支持按客户绑定专属模板。
+     *
+     * <p>
+     * 只有单据能唯一对应一个客户时才有意义：采购单对应供应商，发货单和分拣小票一次跨多个客户， 均不参与客户绑定。
+     */
+    public boolean supportsCustomerBinding() {
+        return this == SALES_ORDER || this == STATEMENT || this == CUSTOMER_SORTING_SHEET
+            || this == CUSTOMER_DELIVERY_NOTE;
     }
 
     private static ScmPrintField find(List<ScmPrintField> fields, String key) {

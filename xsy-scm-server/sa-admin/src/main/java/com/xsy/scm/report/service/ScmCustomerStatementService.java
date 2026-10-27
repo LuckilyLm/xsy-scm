@@ -32,6 +32,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ScmCustomerStatementService {
     private static final int MAX_FACTS = 10_000;
+
+    /**
+     * 抹零事实类型，与 {@code ScmStatementFactType} 及对账 SQL 的 {@code fact_type} 取值一致。
+     *
+     * <p>
+     * 单列出来是因为抹零没有资金流入：它是应收减少，不是核销分配，不能并进 {@code writeOffNet}。
+     */
+    private static final String FACT_WAIVER = "WAIVER";
+    private static final String FACT_WAIVER_REVERSE = "WAIVER_REVERSE";
     private final ScmCustomerStatementDao statementDao;
     private final ScmDataScopeService dataScopeService;
 
@@ -67,6 +76,7 @@ public class ScmCustomerStatementService {
         BigDecimal revenue = BigDecimal.ZERO;
         BigDecimal red = BigDecimal.ZERO;
         BigDecimal writeOff = BigDecimal.ZERO;
+        BigDecimal waiver = BigDecimal.ZERO;
         BigDecimal receipt = BigDecimal.ZERO;
         BigDecimal refund = BigDecimal.ZERO;
         List<ScmCustomerStatementItemVO> lines = new ArrayList<>();
@@ -89,6 +99,10 @@ public class ScmCustomerStatementService {
             } else if (ScmFinanceEntryTypeEnum.RED.name().equals(fact.getFactType())) {
                 red = red.subtract(debtChange);
             }
+            if (isWaiver(fact.getFactType())) {
+                // 抹零是「应收直接被免掉」，用应收变动的反号表达净额；它与核销变动无关
+                waiver = waiver.subtract(debtChange);
+            }
             writeOff = writeOff.add(fact.getWriteOffDelta());
             receipt = receipt.add(fact.getReceiptDelta());
             refund = refund.add(fact.getRefundDelta());
@@ -103,6 +117,7 @@ public class ScmCustomerStatementService {
         result.setReceivableIncrease(revenue);
         result.setReceivableRed(red);
         result.setWriteOffNet(writeOff);
+        result.setWaiverNet(waiver);
         result.setReceiptNet(receipt);
         result.setRefundNet(refund);
         result.setClosingReceivable(debt);
@@ -134,6 +149,27 @@ public class ScmCustomerStatementService {
             throw new ScmBusinessException(ReportErrorCode.REPORT_STATEMENT_UNAVAILABLE);
         }
         version.setItems(statementDao.selectItems(id));
+        version.setWaiverNet(waiverNet(version.getItems()));
+        verifyCurrentScope(version, scope);
+        return version;
+    }
+
+    /**
+     * 打印专用读取：不要求当前员工是生成人，但必须仍能按当前数据范围看到这份对账单的全部源事实。
+     *
+     * <p>
+     * 普通详情接口仍只返回生成人自己的版本；这里放宽的只是「谁生成的」，不是「谁能看」。
+     */
+    @Transactional(readOnly = true)
+    public ScmCustomerStatementVO loadForPrint(Long id) {
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        requireScope(scope);
+        ScmCustomerStatementVO version = statementDao.selectStatementById(id);
+        if (version == null) {
+            throw new ScmBusinessException(ReportErrorCode.REPORT_STATEMENT_UNAVAILABLE);
+        }
+        version.setItems(statementDao.selectItems(id));
+        version.setWaiverNet(waiverNet(version.getItems()));
         verifyCurrentScope(version, scope);
         return version;
     }
@@ -173,6 +209,26 @@ public class ScmCustomerStatementService {
         now.forEach(row -> visibleFacts.add(row.getFactType() + ":" + row.getFactId()));
         return statementDao.selectSources(version.getId()).stream()
             .allMatch(row -> visibleFacts.contains(row.getFactType() + ":" + row.getFactId()));
+    }
+
+    /**
+     * 从明细事实汇总抹零净额：抹零行的应收变动是负数，取反就是本期免掉的金额。
+     */
+    private static BigDecimal waiverNet(List<ScmCustomerStatementItemVO> items) {
+        if (items == null) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal net = BigDecimal.ZERO;
+        for (ScmCustomerStatementItemVO item : items) {
+            if (isWaiver(item.getFactType()) && item.getReceivableDelta() != null) {
+                net = net.subtract(item.getReceivableDelta());
+            }
+        }
+        return net;
+    }
+
+    private static boolean isWaiver(String factType) {
+        return FACT_WAIVER.equals(factType) || FACT_WAIVER_REVERSE.equals(factType);
     }
 
     private void requireScope(ScmDataScopeContext scope) {

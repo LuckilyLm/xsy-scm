@@ -1,6 +1,8 @@
 package com.xsy.scm.print;
 
+import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.permission.OrderPermission;
+import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
 import com.xsy.scm.print.domain.model.ScmPrintTemplateModel;
 import com.xsy.scm.print.support.SalesOrderPrintSourceProvider;
@@ -10,6 +12,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class SalesOrderPrintContractTest {
     @Test
@@ -17,6 +22,19 @@ class SalesOrderPrintContractTest {
         var provider = new SalesOrderPrintSourceProvider(null);
         assertThat(provider.documentType()).isEqualTo(ScmPrintDocumentTypeEnum.SALES_ORDER);
         assertThat(provider.queryPermission()).isEqualTo(OrderPermission.QUERY);
+    }
+
+    @Test
+    void customerBindingUsesTheScopedOrderDetailCustomer() {
+        SalesOrderQueryService orderQueryService = mock(SalesOrderQueryService.class);
+        SalesOrderDetailVO detail = new SalesOrderDetailVO();
+        detail.setCustomerId(42L);
+        when(orderQueryService.detail(7L)).thenReturn(detail);
+
+        var provider = new SalesOrderPrintSourceProvider(orderQueryService);
+
+        assertThat(provider.customerId(7L)).isEqualTo(42L);
+        verify(orderQueryService).detail(7L);
     }
 
     @Test

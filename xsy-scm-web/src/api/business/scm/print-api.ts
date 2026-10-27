@@ -3,9 +3,13 @@ import {getRequest, postRequest, request, type RequestOptions} from '/@/lib/axio
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
   Id,
+  PrintCustomerTemplate,
+  PrintCustomerTemplateSave,
   PrintDocumentType,
   PrintDocumentTypeOption,
   PrintFieldCatalog,
+  PrintBatchRequest,
+  PrintBatchResult,
   PrintRecord,
   PrintRecordQuery,
   PrintRender,
@@ -55,6 +59,15 @@ export const printApi = {
 
   templateDelete: (id: Id, version: number) => postRequest<string>(`/scm/print/template/${id}/delete?version=${version}`, {}),
 
+  // ---- 客户专属模板 ----
+  customerBindings: (params?: {documentType?: PrintDocumentType; customerId?: Id}, options?: RequestOptions) =>
+    getRequest<PrintCustomerTemplate[]>('/scm/print/template/customer-binding', params ?? {}, options),
+
+  customerBind: (data: PrintCustomerTemplateSave) => postRequest<string>('/scm/print/template/customer-binding', data),
+
+  customerUnbind: (documentType: PrintDocumentType, customerId: Id) =>
+    postRequest<string>(`/scm/print/template/customer-binding/unbind?documentType=${documentType}&customerId=${customerId}`, {}),
+
   // ---- 渲染与打印 ----
   templateOptions: (documentType: PrintDocumentType, businessId: Id, options?: RequestOptions) =>
     getRequest<PrintTemplate[]>(`/scm/print/${documentType}/${businessId}/templates`, {}, options),
@@ -70,6 +83,13 @@ export const printApi = {
     printCommand<PrintRender>(`/scm/print/${documentType}/${businessId}/print`, {
       templateId: templateId ?? null,
     }),
+
+  /** 20:00 批量预览：按配送日期取当天全部已确认订单，不写打印记录。 */
+  batchPreview: (data: PrintBatchRequest, options?: RequestOptions) =>
+    postRequest<PrintBatchResult>('/scm/print/batch/preview', data, options),
+
+  /** 20:00 批量打印：每单独立记录；失败项在结果中返回，可重试。 */
+  batchPrint: (data: PrintBatchRequest) => printCommand<PrintBatchResult>('/scm/print/batch/print', data),
 
   /** 历史重印：使用当时保存的内容，金额按当前权限重新过滤。 */
   reprint: (recordId: Id) => getRequest<PrintRender>(`/scm/print/record/${recordId}/reprint`, {}),

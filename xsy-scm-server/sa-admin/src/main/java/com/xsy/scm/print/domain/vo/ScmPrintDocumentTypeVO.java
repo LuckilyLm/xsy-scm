@@ -17,4 +17,7 @@ public class ScmPrintDocumentTypeVO {
 
     /** 当前调用者是否可见金额。 */
     private boolean amountVisible;
+
+    /** 是否支持按客户绑定专属模板。 */
+    private boolean customerBindable;
 }

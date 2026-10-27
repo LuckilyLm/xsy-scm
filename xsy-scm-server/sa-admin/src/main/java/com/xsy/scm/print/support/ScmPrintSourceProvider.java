@@ -29,4 +29,14 @@ public interface ScmPrintSourceProvider {
 
     /** 只校验当前数据范围；历史重印不看当前能否打印，也不重算内容。 */
     void requireVisible(Long businessId);
+
+    /**
+     * 单据所属客户，用于解析客户专属模板；跨客户单据返回 {@code null}。
+     *
+     * <p>
+     * 必须在 {@link #requireVisible(Long)} 之后调用：客户归属信息也只能从该域带数据范围的查询里取。
+     */
+    default Long customerId(Long businessId) {
+        return null;
+    }
 }

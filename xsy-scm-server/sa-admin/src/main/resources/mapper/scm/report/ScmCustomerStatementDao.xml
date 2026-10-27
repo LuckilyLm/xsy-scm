@@ -86,7 +86,14 @@
             ar.deleted = FALSE JOIN eligible e ON e.id = CASE WHEN ar.entry_type = 'NORMAL' THEN ar.id ELSE
             ar.original_receivable_id END JOIN scoped_receipts rc ON wo.source_type = 'RECEIPT' AND
             rc.id = wo.source_id WHERE wo.deleted = FALSE AND
-            wo.target_type = 'RECEIVABLE' UNION ALL SELECT CASE WHEN p.entry_type = 'NORMAL' THEN 'REFUND' ELSE
+            wo.target_type = 'RECEIVABLE' UNION ALL SELECT CASE WHEN wo.entry_type = 'NORMAL' THEN 'WAIVER' ELSE
+            'WAIVER_REVERSE' END, wo.id, wo.written_off_at, wv.waiver_no, ar.receivable_no, ar.customer_id,
+            ar.customer_name_snapshot, CASE WHEN wo.entry_type = 'NORMAL' THEN -wo.amount ELSE wo.amount END, 0, 0,
+            0, wo.created_at FROM xsy_finance_write_off wo JOIN xsy_finance_waiver wv ON wv.id = wo.source_id AND
+            wv.deleted = FALSE JOIN xsy_finance_receivable ar ON ar.id = wo.target_id AND ar.deleted = FALSE JOIN
+            eligible e ON e.id = CASE WHEN ar.entry_type = 'NORMAL' THEN ar.id ELSE ar.original_receivable_id END
+            WHERE wo.deleted = FALSE AND wo.target_type = 'RECEIVABLE' AND
+            wo.source_type = 'WAIVER' UNION ALL SELECT CASE WHEN p.entry_type = 'NORMAL' THEN 'REFUND' ELSE
             'REFUND_REVERSE' END, p.id, p.paid_at, p.payment_no, refund.refund_no, p.counterparty_id,
             p.counterparty_name_snapshot, 0, 0, 0, CASE WHEN p.entry_type = 'NORMAL' THEN p.amount ELSE -p.amount END,
             p.created_at FROM xsy_finance_payment p JOIN xsy_finance_payment original ON original.id = COALESCE(
@@ -171,6 +178,13 @@
         FROM xsy_customer_statement
         WHERE id = #{id}
             AND generated_by_employee_id = #{employeeId}
+    </select>
+
+    <!-- 打印读取冻结版本，不按生成人过滤；调用方随后按源事实重验当前数据范围。 -->
+    <select id="selectStatementById" resultType="com.xsy.scm.report.domain.vo.ScmCustomerStatementVO">
+        SELECT *
+        FROM xsy_customer_statement
+        WHERE id = #{id}
     </select>
 
     <select id="selectHistory" resultType="com.xsy.scm.report.domain.vo.ScmCustomerStatementVO">

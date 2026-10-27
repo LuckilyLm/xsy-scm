@@ -7,7 +7,15 @@ export interface PrintPage {
   pageSize: number;
 }
 
-export type PrintDocumentType = 'PURCHASE_ORDER' | 'DELIVERY_NOTE' | 'SORTING_TICKET' | 'SALES_ORDER' | 'TRACE_UNIT';
+export type PrintDocumentType =
+  | 'PURCHASE_ORDER'
+  | 'DELIVERY_NOTE'
+  | 'SORTING_TICKET'
+  | 'SALES_ORDER'
+  | 'TRACE_UNIT'
+  | 'STATEMENT'
+  | 'CUSTOMER_SORTING_SHEET'
+  | 'CUSTOMER_DELIVERY_NOTE';
 
 export type PrintPaper = 'A4' | 'TICKET_80';
 
@@ -49,6 +57,8 @@ export interface PrintDocumentTypeOption {
   documentTypeLabel: string;
   amountPermissionRequired: boolean;
   amountVisible: boolean;
+  /** 是否支持按客户绑定专属模板。 */
+  customerBindable: boolean;
 }
 
 /** `ScmPrintTemplateVO`。 */
@@ -60,11 +70,35 @@ export interface PrintTemplate {
   templateName: string;
   defaultFlag?: boolean;
   enabledFlag?: boolean;
+  /** 是否为当前单据客户的专属模板；仅模板选项接口会填。 */
+  customerBound?: boolean;
   model?: PrintTemplateModel;
   remark?: string | null;
   version?: number;
   createdAt?: string;
   updatedAt?: string;
+}
+
+/** `ScmPrintCustomerTemplateVO` —— 客户专属模板绑定。 */
+export interface PrintCustomerTemplate {
+  id: Id;
+  customerId: Id;
+  customerName?: string;
+  documentType: PrintDocumentType;
+  documentTypeLabel?: string;
+  templateId: Id;
+  templateCode?: string;
+  templateName?: string;
+  templateEnabled?: boolean;
+  version?: number;
+  updatedAt?: string;
+}
+
+/** 绑定 / 换绑请求；一个客户对一种单据类型只保留一条有效绑定。 */
+export interface PrintCustomerTemplateSave {
+  customerId: Id;
+  documentType: PrintDocumentType;
+  templateId: Id;
 }
 
 export interface PrintTemplateQuery extends PrintPage {
@@ -120,6 +154,34 @@ export interface PrintRender {
   recordId?: Id;
   printedAt?: string;
   printedBy?: string;
+}
+
+/** 批量打印请求：按配送日期取当天已确认订单，也可直接给订单 id 重印。 */
+export interface PrintBatchRequest {
+  documentType: 'CUSTOMER_SORTING_SHEET' | 'CUSTOMER_DELIVERY_NOTE';
+  businessDate: string;
+  routeId?: Id | null;
+  customerIds?: Id[];
+  orderIds?: Id[];
+  templateId?: Id | null;
+  batchKey?: string;
+}
+
+export interface PrintBatchItem {
+  orderId: Id;
+  orderNo?: string;
+  customerName?: string;
+  success: boolean;
+  recordId?: Id;
+  message?: string;
+}
+
+export interface PrintBatchResult {
+  total: number;
+  succeeded: number;
+  failed: number;
+  items: PrintBatchItem[];
+  renders: PrintRender[];
 }
 
 /** `ScmPrintRecordVO`。 */

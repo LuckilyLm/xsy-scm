@@ -23,6 +23,7 @@
     <template #extra>
       <a-space>
         <a-button v-privilege="PERM.EXPORT" size="small" :loading="versionExport.exporting" @click="exportVersion">导出 Excel</a-button>
+        <a-button v-privilege="PERM.CUSTOMER_STATEMENT_QUERY" size="small" @click="printTemplateOpen = true">打印模板</a-button>
         <a-button size="small" @click="printVersion">打印 / 保存 PDF</a-button>
       </a-space>
     </template>
@@ -41,6 +42,7 @@
         <a-descriptions-item label="本期新增应收">{{ moneyText(selected.receivableIncrease) }}</a-descriptions-item>
         <a-descriptions-item label="本期红字">{{ moneyText(selected.receivableRed) }}</a-descriptions-item>
         <a-descriptions-item label="本期核销净额">{{ moneyText(selected.writeOffNet) }}</a-descriptions-item>
+        <a-descriptions-item label="本期抹零净额">{{ moneyText(selected.waiverNet) }}</a-descriptions-item>
         <a-descriptions-item label="期末净应收">{{ moneyText(selected.closingReceivable) }}</a-descriptions-item>
         <a-descriptions-item label="本期实收净额">{{ moneyText(selected.receiptNet) }}</a-descriptions-item>
         <a-descriptions-item label="期末未分配资金">{{ moneyText(selected.closingUnallocated) }}</a-descriptions-item>
@@ -63,6 +65,13 @@
       </a-table>
     </div>
   </a-card>
+
+  <PrintDocumentModal
+    :open="printTemplateOpen"
+    document-type="STATEMENT"
+    :business-ids="selected ? [selected.id] : []"
+    @close="printTemplateOpen = false"
+  />
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
@@ -76,6 +85,7 @@ import {reportError} from './report-errors';
 import {useScmExport} from '../common/use-scm-export';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
+import PrintDocumentModal from '/@/views/business/scm/print/print-document-modal.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 
 const settlementCustomerId = ref<ReportId>(),
@@ -84,6 +94,7 @@ const dateRange = ref<DateRange>(defaultDateRange());
 
 const selected = ref<CustomerStatement>(),
   history = ref<CustomerStatement[]>([]);
+const printTemplateOpen = ref(false);
 const versionExport = useScmExport();
 const printArea = ref<HTMLElement>(),
   busy = ref(false),
@@ -95,6 +106,8 @@ const factLabels: Record<string, string> = {
   RECEIPT_REVERSE: '反向收款',
   WRITE_OFF: '核销分配',
   WRITE_OFF_REVERSE: '反向核销',
+  WAIVER: '抹零',
+  WAIVER_REVERSE: '反向抹零',
   REFUND: '实际退款',
   REFUND_REVERSE: '反向退款',
 };

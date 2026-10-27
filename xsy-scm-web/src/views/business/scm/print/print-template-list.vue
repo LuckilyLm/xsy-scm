@@ -27,6 +27,7 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:print:template:add'" @click="openCreate">新建模板</a-button>
+        <a-button v-privilege="'scm:print:template:update'" @click="bindingOpen = true">客户专属模板</a-button>
       </div>
     </a-row>
 
@@ -158,6 +159,8 @@
       <a-checkbox-group v-model:value="form.model.columns" :options="columnOptions" />
     </a-form>
   </a-modal>
+
+  <PrintCustomerBindingDrawer :open="bindingOpen" @close="bindingOpen = false" />
 </template>
 
 <script setup lang="ts">
@@ -178,6 +181,7 @@ import type {
 } from './print-types';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import PrintCustomerBindingDrawer from './print-customer-binding-drawer.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import {hasPermission} from '../common/scm-permission';
 import {printError} from './print-errors';
@@ -193,6 +197,7 @@ const error = ref('');
 const documentTypes = ref<PrintDocumentTypeOption[]>([]);
 const catalog = ref<PrintFieldCatalog>();
 const editOpen = ref(false);
+const bindingOpen = ref(false);
 const saving = ref(false);
 const editError = ref('');
 let requestId = 0;

@@ -114,12 +114,18 @@ import {readFileSync} from 'node:fs';
     assert.doesNotMatch(provider, /PriceResolver|update\(|insert\(|selectById\(/);
   });
 
-  test('默认模板与 DB 类型约束同步扩展；批量打印有数量上限', () => {
+  test('默认模板与 DB 类型约束同步扩展；批量打印上限收口在服务端', () => {
     assert.match(migration, /ck_scm_print_record_document_type/);
     assert.match(migration, /SALES_ORDER_DEFAULT/);
     assert.match(migration, /"columns"/);
-    assert.match(list, /selected\.length > 10/);
+    // 20:00 要一次打完全部客户：列表页不再用 10 单卡住整批，数量上限统一由服务端批量服务控制
+    assert.doesNotMatch(list, /selected\.length > 10/);
     assert.match(list, /selectedRows\.value\.length !== selected\.value\.length/);
+    const batchService = readFileSync(
+      new URL('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/service/ScmPrintBatchService.java', import.meta.url),
+      'utf8'
+    );
+    assert.match(batchService, /MAX_ORDERS = 200/);
     assert.match(detail, /hasPermission\('scm:order:query'\)/);
   });
 }
@@ -137,6 +143,72 @@ import {readFileSync} from 'node:fs';
     assert.match(type, /new ScmPrintField\("traceUrl", "溯源二维码"/, '白名单必须允许 traceUrl');
     assert.match(migration, /document_type = 'TRACE_UNIT'/, '迁移只改包装码标签');
     assert.match(migration, /traceUrl/, '迁移必须补扫码地址');
+  });
+}
+
+// ---------------------------------------------------------------- 来源：statement-print-and-binding.test.mjs
+{
+  const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
+  const types = read('../src/views/business/scm/print/print-types.ts');
+  const api = read('../src/api/business/scm/print-api.ts');
+  const templateList = read('../src/views/business/scm/print/print-template-list.vue');
+  const bindingDrawer = read('../src/views/business/scm/print/print-customer-binding-drawer.vue');
+  const statementPage = read('../src/views/business/scm/report/report-customer-statement.vue');
+  const dailyReport = read('../src/views/business/scm/report/report-components/purchase-daily-report.vue');
+  const documentTypeEnum = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintDocumentTypeEnum.java');
+  const statementProvider = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/support/StatementPrintSourceProvider.java');
+  const printService = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/service/ScmPrintService.java');
+  const statementService = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/service/ScmCustomerStatementService.java');
+  const migration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V182__scm_print_statement_and_customer_binding.sql');
+
+  test('对账单接入打印中心：字段目录含金额列，默认模板与两类约束同步扩展', () => {
+    assert.match(types, /'STATEMENT'/);
+    assert.match(documentTypeEnum, /STATEMENT\("对账单"/);
+    assert.match(documentTypeEnum, /new ScmPrintField\("receivableBalance", "滚动净应收", true, true\)/);
+    assert.match(documentTypeEnum, /new ScmPrintField\("openingReceivable", "期初净应收", true, true\)/);
+    assert.match(migration, /ck_scm_print_template_document_type/);
+    assert.match(migration, /ck_scm_print_record_document_type/);
+    assert.match(migration, /'STATEMENT'/);
+    assert.match(migration, /STATEMENT_DEFAULT/);
+  });
+
+  test('对账单打印读取冻结版本并按当前数据范围重验源事实', () => {
+    assert.match(statementProvider, /ScmReportPermission\.CUSTOMER_STATEMENT_QUERY/);
+    assert.match(statementProvider, /statementService\.loadForPrint\(businessId\)/);
+    assert.match(statementService, /public ScmCustomerStatementVO loadForPrint\(Long id\)/);
+    assert.match(statementService, /selectStatementById\(id\)/);
+    assert.match(statementService, /verifyCurrentScope\(version, scope\)/);
+    // 普通详情仍只返回生成人自己的版本
+    assert.match(statementService, /selectStatement\(id, scope\.getEmployeeId\(\)\)/);
+  });
+
+  test('客户专属模板按 显式指定 → 客户绑定 → 类型默认 解析', () => {
+    assert.match(migration, /CREATE TABLE xsy_print_customer_template/);
+    assert.match(migration, /uk_scm_print_customer_template/);
+    assert.match(migration, /\(customer_id, document_type\) WHERE deleted = FALSE/);
+    assert.match(printService, /findBoundTemplate\(type\.name\(\)/);
+    assert.match(printService, /if \(templateId != null\)/);
+    assert.match(printService, /requireTypeMatch\(type, scmPrintTemplateService\.requireEnabled\(templateId\)\)/);
+    assert.match(templateList, /客户专属模板/);
+    assert.match(templateList, /PrintCustomerBindingDrawer/);
+    assert.match(api, /\/scm\/print\/template\/customer-binding/);
+    assert.match(bindingDrawer, /CustomerSelect/);
+    assert.match(bindingDrawer, /customerUnbind/);
+  });
+
+  test('对账单页面保留浏览器打印并新增模板打印入口', () => {
+    assert.match(statementPage, /document-type="STATEMENT"/);
+    assert.match(statementPage, /PrintDocumentModal/);
+    assert.match(statementPage, /打印 \/ 保存 PDF/);
+    assert.match(statementPage, /function printVersion\(\)/);
+  });
+
+  test('每日采购清单打印反映当前查询条件与分页', () => {
+    assert.match(dailyReport, /@click="printReport"/);
+    assert.match(dailyReport, /applied\.reportDate/);
+    assert.match(dailyReport, /warehouseLabel\(applied\.warehouseId\)/);
+    assert.match(dailyReport, /applied\.keyword/);
+    assert.match(dailyReport, /第 \$\{pageNum\.value\} 页/);
   });
 }
 

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.print.dao.ScmPrintCustomerTemplateDao">
+
+    <resultMap id="bindingMap" type="com.xsy.scm.print.domain.entity.ScmPrintCustomerTemplateEntity">
+        <id column="id" property="id"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="document_type" property="documentType"/>
+        <result column="template_id" property="templateId"/>
+        <result column="version" property="version"/>
+        <result column="deleted" property="deleted"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="updated_by" property="updatedBy"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, customer_id, document_type, template_id, version, deleted, created_at, updated_at, created_by, updated_by
+    </sql>
+
+    <select id="selectBinding" resultMap="bindingMap">
+        SELECT
+        <include refid="columns"/>
+        FROM xsy_print_customer_template
+        WHERE customer_id = #{customerId}
+            AND document_type = #{documentType}
+            AND deleted = FALSE
+    </select>
+
+    <select id="queryBindings" resultType="com.xsy.scm.print.domain.vo.ScmPrintCustomerTemplateVO">
+        SELECT b.id, b.customer_id AS customerId, c.name AS customerName, b.document_type AS documentType,
+            b.template_id AS templateId, t.template_code AS templateCode, t.template_name AS templateName,
+            t.enabled_flag AS templateEnabled, b.version, b.updated_at AS updatedAt
+        FROM xsy_print_customer_template b
+        JOIN xsy_customer c ON c.id = b.customer_id AND c.deleted = FALSE
+        JOIN xsy_print_template t ON t.id = b.template_id AND t.deleted = FALSE
+        WHERE b.deleted = FALSE
+        <if test="documentType != null and documentType != ''">AND b.document_type = #{documentType}</if>
+        <if test="customerId != null">AND b.customer_id = #{customerId}</if>
+        <!-- 客户归属范围落在驱动表 xsy_customer.seller_id 上；范围为空按失败关闭返回 0 行 -->
+        <if test="scope == null">AND FALSE</if>
+        <if test="scope != null and scope.all == false">
+            AND c.seller_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        ORDER BY b.updated_at DESC, b.id DESC
+    </select>
+
+    <select id="customerExists" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM xsy_customer WHERE id = #{customerId} AND deleted = FALSE)
+    </select>
+
+    <insert id="insertBinding" useGeneratedKeys="true" keyProperty="row.id">
+        INSERT INTO xsy_print_customer_template (customer_id, document_type, template_id, version, deleted,
+            created_at, updated_at, created_by, updated_by)
+        VALUES (#{row.customerId}, #{row.documentType}, #{row.templateId}, 0, FALSE, CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP, #{row.createdBy}, #{row.updatedBy})
+    </insert>
+
+    <update id="updateBinding">
+        UPDATE xsy_print_customer_template
+        SET template_id = #{templateId}, version = version + 1, updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+            AND deleted = FALSE
+    </update>
+
+    <update id="softDelete">
+        UPDATE xsy_print_customer_template
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE customer_id = #{customerId}
+            AND document_type = #{documentType}
+            AND deleted = FALSE
+    </update>
+
+</mapper>

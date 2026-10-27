@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
- * 打印域使用 41301–41310 错误码（41150 / 412xx 已被报表域占用）。
+ * 打印域使用 41301–41312 错误码（41150 / 412xx 已被报表域占用）。
  *
  * <p>
  * 「不属于你的单据」不走这里的业务码：那等于回答「这个 id 存在但你不该看」， 统一由各域的范围判定返回 30005。
@@ -32,7 +32,15 @@ public enum ScmPrintErrorCode implements ScmErrorCode {
 
     TEXT_NOT_PLAIN(41309, "标题与页脚备注只能是纯文本，不能包含尖括号"),
 
-    RECORD_NOT_FOUND(41310, "打印记录不存在");
+    RECORD_NOT_FOUND(41310, "打印记录不存在"),
+
+    CUSTOMER_BINDING_UNSUPPORTED(41311, "该单据类型不支持客户专属模板"),
+
+    CUSTOMER_BINDING_CUSTOMER_INVALID(41312, "客户不存在或已被删除"),
+
+    BATCH_TYPE_UNSUPPORTED(41313, "批量打印仅支持客户分拣单和客户送货单"),
+
+    BATCH_LIMIT_EXCEEDED(41314, "单次批量打印不能超过200单，请按线路分批");
 
     private final int code;
     private final String msg;

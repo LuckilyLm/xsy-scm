@@ -56,6 +56,7 @@ public class ScmPrintTemplateService {
             vo.setDocumentTypeLabel(type.getLabel());
             vo.setAmountPermissionRequired(type.requiresMoneyPermission());
             vo.setAmountVisible(scmPrintRenderService.amountVisible(type));
+            vo.setCustomerBindable(type.supportsCustomerBinding());
             result.add(vo);
         }
         return result;
@@ -181,9 +182,19 @@ public class ScmPrintTemplateService {
      */
     @Transactional(readOnly = true)
     public ScmPrintTemplateEntity requireEnabled(Long templateId) {
+        ScmPrintTemplateEntity row = findEnabled(templateId);
+        if (row == null) {
+            throw new ScmBusinessException(ScmPrintErrorCode.TEMPLATE_NOT_FOUND);
+        }
+        return row;
+    }
+
+    /** 启用中的模板；不存在、已删除或已停用时返回 {@code null}，供可回退的解析使用。 */
+    @Transactional(readOnly = true)
+    public ScmPrintTemplateEntity findEnabled(Long templateId) {
         ScmPrintTemplateEntity row = scmPrintTemplateDao.selectById(templateId);
         if (row == null || Boolean.TRUE.equals(row.getDeleted()) || !Boolean.TRUE.equals(row.getEnabledFlag())) {
-            throw new ScmBusinessException(ScmPrintErrorCode.TEMPLATE_NOT_FOUND);
+            return null;
         }
         return row;
     }

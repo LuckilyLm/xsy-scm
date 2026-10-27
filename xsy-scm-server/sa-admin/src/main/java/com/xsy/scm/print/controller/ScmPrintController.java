@@ -5,15 +5,21 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.print.domain.form.ScmPrintActionForm;
+import com.xsy.scm.print.domain.form.ScmPrintBatchForm;
+import com.xsy.scm.print.domain.form.ScmPrintCustomerTemplateForm;
 import com.xsy.scm.print.domain.form.ScmPrintRecordQueryForm;
 import com.xsy.scm.print.domain.form.ScmPrintTemplateForm;
 import com.xsy.scm.print.domain.form.ScmPrintTemplateQueryForm;
+import com.xsy.scm.print.domain.vo.ScmPrintBatchResultVO;
+import com.xsy.scm.print.domain.vo.ScmPrintCustomerTemplateVO;
 import com.xsy.scm.print.domain.vo.ScmPrintDocumentTypeVO;
 import com.xsy.scm.print.domain.vo.ScmPrintFieldCatalogVO;
 import com.xsy.scm.print.domain.vo.ScmPrintRecordVO;
 import com.xsy.scm.print.domain.vo.ScmPrintRenderVO;
 import com.xsy.scm.print.domain.vo.ScmPrintTemplateVO;
 import com.xsy.scm.print.permission.ScmPrintPermission;
+import com.xsy.scm.print.service.ScmPrintBatchService;
+import com.xsy.scm.print.service.ScmPrintCustomerBindingService;
 import com.xsy.scm.print.service.ScmPrintService;
 import com.xsy.scm.print.service.ScmPrintTemplateService;
 
@@ -42,7 +48,11 @@ public class ScmPrintController {
 
     private final ScmPrintTemplateService scmPrintTemplateService;
 
+    private final ScmPrintCustomerBindingService scmPrintCustomerBindingService;
+
     private final ScmPrintService scmPrintService;
+
+    private final ScmPrintBatchService scmPrintBatchService;
 
     // 模板
 
@@ -106,6 +116,35 @@ public class ScmPrintController {
         return ResponseDTO.ok();
     }
 
+    // 客户专属模板
+
+    /** 绑定列表；按单据类型、客户筛选均可省略。 */
+    @GetMapping("/template/customer-binding")
+    @SaCheckPermission(ScmPrintPermission.TEMPLATE_QUERY)
+    public ResponseDTO<List<ScmPrintCustomerTemplateVO>> queryCustomerBindings(
+        @RequestParam(value = "documentType", required = false) String documentType,
+        @RequestParam(value = "customerId", required = false) Long customerId) {
+        return ResponseDTO.ok(scmPrintCustomerBindingService.query(documentType, customerId));
+    }
+
+    /** 绑定或换绑客户专属模板；同客户同类型只保留一条有效绑定。 */
+    @PostMapping("/template/customer-binding")
+    @SaCheckPermission(ScmPrintPermission.TEMPLATE_UPDATE)
+    @OperateLog
+    public ResponseDTO<String> bindCustomerTemplate(@Valid @RequestBody ScmPrintCustomerTemplateForm form) {
+        scmPrintCustomerBindingService.bind(form);
+        return ResponseDTO.ok();
+    }
+
+    @PostMapping("/template/customer-binding/unbind")
+    @SaCheckPermission(ScmPrintPermission.TEMPLATE_UPDATE)
+    @OperateLog
+    public ResponseDTO<String> unbindCustomerTemplate(@RequestParam("documentType") String documentType,
+        @RequestParam("customerId") Long customerId) {
+        scmPrintCustomerBindingService.unbind(documentType, customerId);
+        return ResponseDTO.ok();
+    }
+
     // 渲染与打印
 
     @GetMapping("/{documentType}/{businessId}/templates")
@@ -131,6 +170,23 @@ public class ScmPrintController {
         @PathVariable("businessId") Long businessId, @Valid @RequestBody ScmPrintActionForm form,
         @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(scmPrintService.print(documentType, businessId, form, idempotencyKey));
+    }
+
+    /**
+     * 20:00 批量预览客户分拣单/送货单：按配送日期取当天已确认订单，逐单返回版面，不写打印记录。
+     */
+    @PostMapping("/batch/preview")
+    public ResponseDTO<ScmPrintBatchResultVO> batchPreview(@Valid @RequestBody ScmPrintBatchForm form) {
+        return ResponseDTO.ok(scmPrintBatchService.preview(form));
+    }
+
+    /**
+     * 20:00 批量正式打印：每单独立保存打印记录；一张失败不回滚其他单，结果里返回失败明细。
+     */
+    @PostMapping("/batch/print")
+    @OperateLog
+    public ResponseDTO<ScmPrintBatchResultVO> batchPrint(@Valid @RequestBody ScmPrintBatchForm form) {
+        return ResponseDTO.ok(scmPrintBatchService.print(form));
     }
 
     /** 历史重印：只读当时保存的内容，并按当前调用者的金额权限重新过滤。 */

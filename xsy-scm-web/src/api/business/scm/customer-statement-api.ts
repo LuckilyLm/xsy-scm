@@ -35,6 +35,8 @@ export interface CustomerStatement {
   receivableIncrease: string;
   receivableRed: string;
   writeOffNet: string;
+  /** 本期抹零净额：抹零没有资金流入，单独列示，不并进核销净额。 */
+  waiverNet?: string | null;
   closingReceivable: string;
   openingUnallocated: string | null;
   receiptNet: string;

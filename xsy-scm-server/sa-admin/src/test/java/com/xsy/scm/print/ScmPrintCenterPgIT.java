@@ -3,8 +3,10 @@ package com.xsy.scm.print;
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.common.ScmW5PgITBase;
 import com.xsy.scm.print.domain.form.ScmPrintActionForm;
+import com.xsy.scm.print.domain.form.ScmPrintCustomerTemplateForm;
 import com.xsy.scm.print.domain.form.ScmPrintTemplateForm;
 import com.xsy.scm.print.domain.vo.ScmPrintRenderVO;
+import com.xsy.scm.print.service.ScmPrintCustomerBindingService;
 import com.xsy.scm.print.service.ScmPrintService;
 import com.xsy.scm.print.service.ScmPrintTemplateService;
 import org.junit.jupiter.api.AfterEach;
@@ -40,6 +42,9 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
 
     @Autowired
     ScmPrintTemplateService templateService;
+
+    @Autowired
+    ScmPrintCustomerBindingService bindingService;
 
     private MockedStatic<StpUtil> permissions;
 
@@ -268,5 +273,45 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
         assertThatThrownBy(() -> templateService.update(stale))
                 .as("乐观锁必须拒掉过期版本")
                 .isInstanceOf(com.xsy.scm.common.exception.ScmBusinessException.class);
+    }
+
+    @Test
+    @DisplayName("客户专属模板优先于默认模板，显式指定模板仍然优先")
+    void customerBindingResolvesBeforeDefaultAndExplicitTemplateWins() {
+        Long customerId = newCustomer();
+        Long skuId = newOnShelfSku("PRINT-SO");
+        Long orderId = confirmedSalesOrder(customerId, skuId, "5.0000", "5.0000");
+        var defaultTemplate = templateService.requireDefault("SALES_ORDER");
+
+        ScmPrintTemplateForm form = new ScmPrintTemplateForm();
+        var model = templateService.detail(defaultTemplate.getId()).getModel();
+        model.setTitle("客户专属销售单");
+        form.setDocumentType("SALES_ORDER");
+        form.setTemplateCode("BOUND_SO_" + orderId);
+        form.setTemplateName("客户专属销售单模板");
+        form.setModel(model.toMap());
+        Long boundTemplateId = templateService.create(form);
+
+        ScmPrintCustomerTemplateForm binding = new ScmPrintCustomerTemplateForm();
+        binding.setCustomerId(customerId);
+        binding.setDocumentType("SALES_ORDER");
+        binding.setTemplateId(boundTemplateId);
+        bindingService.bind(binding);
+
+        ScmPrintRenderVO bound = printService.preview("SALES_ORDER", orderId, null);
+        assertThat(bound.getTemplateId()).as("未指定模板时使用客户绑定模板").isEqualTo(boundTemplateId);
+        assertThat(bound.getTitle()).isEqualTo("客户专属销售单");
+
+        var options = printService.templateOptions("SALES_ORDER", orderId);
+        assertThat(options.getFirst().getId()).isEqualTo(boundTemplateId);
+        assertThat(options.getFirst().getCustomerBound()).isTrue();
+
+        ScmPrintRenderVO explicit = printService.preview("SALES_ORDER", orderId, defaultTemplate.getId());
+        assertThat(explicit.getTemplateId()).as("显式选择的模板优先于客户绑定").isEqualTo(defaultTemplate.getId());
+
+        bindingService.unbind("SALES_ORDER", customerId);
+        ScmPrintRenderVO fallback = printService.preview("SALES_ORDER", orderId, null);
+        assertThat(fallback.getTemplateId()).as("解除绑定后回退到类型默认模板")
+                .isEqualTo(defaultTemplate.getId());
     }
 }

@@ -31,6 +31,14 @@ public class ScmCustomerStatementVO {
     private BigDecimal receivableRed;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal writeOffNet;
+    /**
+     * 本期抹零净额：抹零没有资金流入，不能并进核销净额，否则「未分配资金」会被少算。
+     *
+     * <p>
+     * 不落表：对账单明细已经冻结，读时从明细事实汇总与冻结结果等价。
+     */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal waiverNet;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal closingReceivable;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

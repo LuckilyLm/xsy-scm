@@ -77,7 +77,7 @@ const frozenByBusiness = new Map<string, PrintRender>();
 const templateOptions = computed(() =>
   templates.value.map((item) => ({
     value: item.id,
-    label: `${item.templateName}${item.defaultFlag ? '（默认）' : ''}`,
+    label: `${item.templateName}${item.customerBound ? '（客户专属）' : ''}${item.defaultFlag ? '（默认）' : ''}`,
   }))
 );
 
@@ -119,7 +119,8 @@ async function loadTemplates(id: number) {
   const r = await printApi.templateOptions(props.documentType, firstId, {suppressGlobalErrorMessage: true});
   if (id !== requestId) return;
   templates.value = r.data ?? [];
-  const preferred = templates.value.find((item) => item.defaultFlag) ?? templates.value[0];
+  // 客户专属模板优先；没有绑定时才用默认模板
+  const preferred = templates.value.find((item) => item.customerBound) ?? templates.value.find((item) => item.defaultFlag) ?? templates.value[0];
   templateId.value = preferred?.id;
 }
 

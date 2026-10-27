@@ -48,6 +48,8 @@ public class ScmPrintService {
 
     private final ScmPrintTemplateService scmPrintTemplateService;
 
+    private final ScmPrintCustomerBindingService scmPrintCustomerBindingService;
+
     private final ScmPrintRenderService scmPrintRenderService;
 
     private final ScmPrintRecordDao scmPrintRecordDao;
@@ -69,7 +71,9 @@ public class ScmPrintService {
     @Transactional(readOnly = true)
     public ScmPrintRenderVO preview(String documentType, Long businessId, Long templateId) {
         ScmPrintDocumentTypeEnum type = requireType(documentType);
-        return render(type, businessId, template(type, templateId));
+        // 客户归属必须先过查看权再取：客户专属模板解析不能成为读取单据归属的旁路
+        requireVisible(type, businessId);
+        return render(type, businessId, template(type, businessId, templateId));
     }
 
     /**
@@ -77,14 +81,45 @@ public class ScmPrintService {
      */
     @Transactional(readOnly = true)
     public List<ScmPrintTemplateVO> templateOptions(String documentType, Long businessId) {
-        requireVisible(requireType(documentType), businessId);
-        return scmPrintTemplateService.enabledOptions(documentType);
+        ScmPrintDocumentTypeEnum type = requireType(documentType);
+        requireVisible(type, businessId);
+        List<ScmPrintTemplateVO> options = new ArrayList<>(scmPrintTemplateService.enabledOptions(documentType));
+        ScmPrintTemplateEntity bound = scmPrintCustomerBindingService.findBoundTemplate(documentType,
+            scmPrintRenderService.provider(type).customerId(businessId));
+        if (bound == null) {
+            return options;
+        }
+        for (ScmPrintTemplateVO option : options) {
+            if (option.getId().equals(bound.getId())) {
+                option.setCustomerBound(true);
+            }
+        }
+        // 客户专属模板排在最前：它就是「不指定模板」时实际会用的那一份
+        options.sort((left, right) -> Boolean.compare(!left.getId().equals(bound.getId()),
+            !right.getId().equals(bound.getId())));
+        return options;
     }
 
-    private ScmPrintTemplateEntity template(ScmPrintDocumentTypeEnum type, Long templateId) {
-        ScmPrintTemplateEntity template = templateId == null
-            ? scmPrintTemplateService.requireDefault(type.name())
-            : scmPrintTemplateService.requireEnabled(templateId);
+    /**
+     * 模板解析顺序：显式指定 → 客户专属模板 → 单据类型默认模板。
+     *
+     * <p>
+     * 调用前必须已完成 {@link #requireVisible}，客户归属只能从带数据范围的业务查询取得。
+     */
+    private ScmPrintTemplateEntity template(ScmPrintDocumentTypeEnum type, Long businessId, Long templateId) {
+        if (templateId != null) {
+            return requireTypeMatch(type, scmPrintTemplateService.requireEnabled(templateId));
+        }
+        ScmPrintTemplateEntity bound = scmPrintCustomerBindingService.findBoundTemplate(type.name(),
+            scmPrintRenderService.provider(type).customerId(businessId));
+        if (bound != null) {
+            return bound;
+        }
+        return scmPrintTemplateService.requireDefault(type.name());
+    }
+
+    private static ScmPrintTemplateEntity requireTypeMatch(ScmPrintDocumentTypeEnum type,
+        ScmPrintTemplateEntity template) {
         if (!type.name().equals(template.getDocumentType())) {
             // 拿采购单的模板去打印发货单：字段完全不同，按「模板不存在」拒绝
             throw new ScmBusinessException(ScmPrintErrorCode.TEMPLATE_NOT_FOUND);
@@ -126,7 +161,7 @@ public class ScmPrintService {
             return replay;
         }
 
-        ScmPrintTemplateEntity template = template(type, form.getTemplateId());
+        ScmPrintTemplateEntity template = template(type, businessId, form.getTemplateId());
         ScmPrintRenderVO render = render(type, businessId, template);
 
         ScmPrintRecordEntity record = new ScmPrintRecordEntity();
