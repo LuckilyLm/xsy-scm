@@ -1,6 +1,79 @@
 # 项目状态
 
-最后更新：2026-10-25。当前实施与验证以本文顶部的最新基线为准；下方日期条目保留其发生当时的结果，不代表当前工作区全量验收。
+最后更新：2026-10-28。当前实施与验证以本文顶部的最新基线为准；下方日期条目保留其发生当时的结果，不代表当前工作区全量验收。
+
+## 2026-10-28 现场确认后的 P0 第一批（源码完成；仅后端编译、定向单测与前端静态检查已执行）
+
+本批按 [2026-10-28 客户现场确认](requirements/2026-10-28-客户现场确认.md) 与 `docs/decisions.md` 的 D-1028 系列落地，迁移 V186–V197 已写入源码。**未在数据库执行**（本轮未启动应用），也未做页面、E2E、电子秤或现场验收。
+
+- **订单整单录入与整单粘贴**：订单抽屉明细改为纸面列序（序号/商品/规格/单位/数量/单价/金额/备注），新增 `POST /scm/order/import/paste-preview` 与 `order-paste-modal.vue`；订单仍是一客户一单多行，最终走 `create/update`，不绕过定价与幂等。
+- **客户分拣单 / 客户送货单 + 批量打印 + 采购汇总**：新增 `CUSTOMER_SORTING_SHEET`（无价格、实数量留空）与 `CUSTOMER_DELIVERY_NOTE`（含实数量、金额、签字栏），批量接口按配送日期/线路取当日已确认订单，单张独立事务与幂等键，服务端上限 200 单；销售订单批量打印的 10 单限制已去掉。采购需求汇总增加打印/导出与批次展示。
+- **电子秤班次授权页**：`/sorting/scale-devices` 页面（注册/配对、签发 5–720 分钟会话、复制授权引用、查看/手动结束会话），接口 `POST /scm/device/scale/query`、`GET /{id}/sessions`、`POST /{id}/session/{sessionId}/end`，权限沿用 `scm:device:scale:query` 与 `SESSION_ISSUE`。单位仍要求「设备单位 = 销售单位」，未加隐式换算。
+- **负库存 + 损耗报表**：仓库 `allow_negative_stock`（默认关闭，关闭前检查是否仍有负余额）；V187 删除旧的余额 CHECK 并加 `BEFORE INSERT OR UPDATE OF quantity` 触发器（负数量仅限开关仓库、`reserved_quantity = 0`）；销售出库在开关仓库下允许负余额，赠品出库不跟随；加权平均在旧量 ≤ 0 时取本次入库价。新增「负库存损耗」报表页签（`POST /scm/report/inventory/negative-stock/query|summary|export`），是查询时点快照，成本列按 `scm:report:cost:query` 裁剪。
+- **采购价 7 天后置 + 锁单**：采购行 `purchase_price` 可空并新增 `price_pending`/价格窗口，单价与待定价由服务端与数据库 CHECK 双向互斥；`POST /scm/purchase/item/{itemId}/price/fill|adjust`（补价限待定价且窗口内未锁；改价限首次收货确认前、原因必填、锁后仍可用专门权限）；`POST /scm/purchase/lock|unlock`，提交后 7 天自动锁单；`PurchasePriceAutoFillJob` 按最近已提交采购价回填，无历史价则保持待定价。收货确认遇到任一待定价行返回 `PURCHASE_PRICE_PENDING`；收货明细带 `pricePending`，确认弹窗提前拦截。前端明细可勾「待定价」、列表/详情显示待定价与锁单标记、提供补价/改价与锁单/解锁入口。
+- **财务自动 FIFO 核销 + 抹零**：`FinanceWriteOffService` 抽出「锁目标—校验—幂等—写入」公共段，新增 `autoPreview`/`autoAdd`（按账单日期、单据 id 分配，单次最多 100 单，剩余留在资金单待核销额），接口 `POST /scm/finance/write-off/auto/preview|auto`，幂等 scope 与手工核销分开。抹零新增 `xsy_finance_waiver`（V194，只存金额与原因，**不落状态列**：是否已反向由该核销行有没有 `REVERSE` 推导），核销来源扩展 `WAIVER`（V195），`POST /scm/finance/waiver/add|reverse` 与独立权限（V196）。对账单 SQL 增加 `WAIVER`/`WAIVER_REVERSE` 事实，抹零只减应收、不并进核销净额，新增「本期抹零净额」（打印合计字段 `waiverNet` 与导出列）；通用核销反向接口拒绝撤销抹零，必须走抹零反向。
+- **已验证**（仅以下项目）：`mvn -pl sa-admin -am compile`、`test-compile` 通过；新增 `FinanceWriteOffAutoTest` 4 项、`FinanceWaiverServiceTest` 5 项与既有 `FinanceReadOnlyContractTest` 4 项共 13 项通过（含 FIFO 顺序与不超额、预览不写库、无未结目标拒绝、客户退款付款不查应付、抹零超额/无原因拒绝、反向只追加）。`FinanceReadOnlyContractTest` 与 `ScmFinanceSchemaPgIT`/`ScmFinanceRoleMatrixPgIT` 已按第九张财务表、抹零权限与「无状态列」口径更新断言。前端全量契约单测 `npm test` 549 项全部通过（本轮先红后修：表格列对齐、表格数字 id 撞号、报表导出端点清单、采购待定价校验与载荷、采购操作类型枚举、报表常驻口径说明与 `hint` 基线、抽屉宽度与操作列宽度、`a-form-item name` 缺 `:model`、服务端/快照等黑名单文案）；改动文件 Prettier、ESLint 通过，`vue-tsc` 全仓基线仍有既有 1516 条错误、改动文件 0 条；`npm run build`（vite production）通过。
+- **未执行**：Playwright/E2E、任何 Pg IT（需要数据库）、`tools/verify.ps1`（总入口未跑，只跑了上面的单项命令）、迁移在真实库执行、电子秤代理 `verify.ps1` 与真实读重/去皮/断网/班次过期、打印纸张与批量 50+ 单、负库存实物盘点现场验收。计划中的 `InventoryNegativeStockIT`、`PurchasePriceWindowIT`、`FinanceFifoWriteOffIT`、`FinanceWaiverIT` 等 IT 尚未编写。
+
+## 开发库数据被清空（2026-10-27，事故记录）
+
+- 为清理集成测试库时误对开发库 `xsy_scm` 的 `xsy_v2` schema 执行了 `DROP SCHEMA ... CASCADE`。该库没有备份，除迁移自带的种子（管理员账号、角色、菜单、权限）外的业务演示数据（客户、商品、供应商、订单、收货、财务等）已全部丢失。
+- 已重启后端，由 Flyway 从空 schema 重建到 V184，表结构、菜单与权限种子恢复；集成测试库 `xsy_v2_it` 与其它数据库未受影响。
+- `xsy_v2_final`（428 客户 / 409 商品 / 418 订单）等历史库仍在，可作为恢复来源；但未经确认不导入开发库，以免混入来源与版本不明的数据。
+- 恢复情况：已用管理员会话按真实接口重建一套最小基础资料（1 个客户「联调体验客户」并置为合作中、1 个供货商「联调鲜蔬供货商」、3 个上架商品：上海青/土豆/鸡蛋），Playwright 复核商品、客户、供应商列表与新建订单抽屉均正常。原记录无法恢复，金额与单据数据需要重新录入。
+- 防复发：新增 `tools/reset-it-db.sh`，只接受以 `_it` 结尾的库，清空前打印目标并等待 5 秒；开发库/演示库直接拒绝。
+
+## 质量门禁告警清零（2026-10-27）
+
+- `tools/quality/quality_guard.py check` 原有 14 条 `magic-string-domain-literal`：其中 1 条来自本轮锁单代码，13 条来自此前未提交的装修控制台、对账单打印与送货单导入改动。全部按「值只在枚举里出现一次」的口径修掉：
+  - 锁单原因改用 `ScmOrderLockReasonEnum`（`MANUAL` / `AUTO_7_DAYS`）；
+  - `MallTheme` 去掉重复的字符串 code，编码即枚举名；弹窗链接类型默认值改用 `MallHomeLinkType.NONE.name()`；
+  - 对账单事实类型中文标签收敛到 `ScmStatementFactType`；
+  - 送货单「销售金额不等于数量×单价」的错误码改为 `AMOUNT_NOT_MATCH`（原值与支付域枚举撞名）。
+- 门禁现为 PASS；`SalesOrderImportServiceTest`、对账单打印 IT、装修相关测试、排序/订单/锁单 IT 与架构测试共 103 项全部通过。
+
+## 称重实发量回写订单（2026-10-27，源码与本地环境已验证）
+
+- 分拣录入（含电子秤筐重确认）在 `SortingTaskService.enter` 内调用 `OrderActualQuantitySyncService`，把非标品实称量写回已确认且未发车的订单行，重算行结算额与订单结算合计，并记「分拣称重回写」的 `ACTUAL_QUANTITY` 日志；与分拣录入同事务。
+- 待确认订单、标品行、已发车订单不回写；称出 0 因数据库要求实发量大于 0 而不回写。
+- 手工实发量命令放宽到已确认订单：已发车返回 40917，锁单后需「锁单后改单」权限；修改后同步重算结算金额。
+- 已验证：`SortingTaskPgIT` 30 项全部通过（新增 3 项：回写实发量与结算、发车/标品跳过、缺货 0 不写）；同时修正该类既有用例对无权限场景的错误断言——30005 抛的是底座 `BusinessException`，原用例用只认 `ScmBusinessException` 的 `expectCode` 断言，导致 `standardConfirmation…` 与 `standardPreview…` 一直失败。`SalesOrderServiceIT` 17 项全部通过，其中 `lifecycleRetainsSnapshotsAndLockedPricesAndAudit` 已按现行「报价依据变化必须显式核价」口径补上 40975 断言与核价步骤。
+- 未验证：页面/电子秤实测未做；开发库数据已清空（见下条），端到端复测需先补基础资料。
+
+## 订单锁单与发车后改单（2026-10-27，源码与本地环境已验证）
+
+- 订单新增 `dispatched_at`、`locked_flag`、`locked_at`、`locked_by`、`lock_reason`、`auto_lock_at`（V184），操作日志类型扩到 `LOCK`/`UNLOCK`/`AUTO_LOCK`/`EDIT_AFTER_DISPATCH`，新增权限 `scm:order:lock`、`scm:order:unlock`、`scm:order:edit-after-dispatch`、`scm:order:edit-locked`（菜单 47605–47608，授予管理员与财务）。
+- 配送发车出库时在订单上记录发车时间；`OrderAutoLockJob` 每小时扫描发车满 7 天且未锁的订单，自动锁单并以系统操作人写日志；手动锁单/解锁走 `POST /scm/order/lock`、`POST /scm/order/unlock`。
+- 改单放宽到已确认订单：未发车未锁可直接改；已发车要「发车后改单」权限（错误码 40913），已锁单要「锁单后改单」权限（40912）；已冻结优惠的订单拒绝改单（40914），已分拣或已出库不能增删商品（40915），已确认订单不能直接新增需称重商品（40916）。改单重锁单价并按实数量重算结算金额，非标品称重实数量与原因保留。
+- 订单列表与详情返回 `editable`/`editBlockedReason`，列表的编辑按钮改为按它启用，并新增「已锁/已发车」标记与锁单/解锁入口。
+- 已验证：新增 `OrderLockPgIT` 6 项通过（锁单改单拒绝与解锁、发车后改单权限、自动锁单选单范围与幂等、锁后改单留痕）；`OrderWebTest` 9 项、`DeliveryRouteServiceIT` 2 项、`DeliveryDispatchPgIT` 9 项、`DeliveryDispatchConcurrencyPgIT` 2 项通过；`SalesOrderServiceIT` 17 项全部通过（`lifecycleRetainsSnapshotsAndLockedPricesAndAudit` 已按现行核价口径修正）。前端 `npm test` 549 项、Prettier、ESLint、TypeScript 棘轮与 `npm run build` 通过。
+- 运行中的后端（test profile jar）与 Web 静态资源已换成含本次改动的构建产物，V184 已在开发库执行；Playwright 登录实测订单列表编辑按钮、「更多 → 锁单」确认文案、锁后「已锁」标记、管理员持「锁单后改单」仍可编辑、解锁后标记消失，共 8 项通过，操作日志记到 `1:1`。
+
+## 待确认订单可改单（2026-10-27，源码与本地环境已验证）
+
+- 订单列表对「待确认」行显示「编辑」，抽屉保存后订单仍为待确认，并提示未改动行沿用提交时报价、按最新价格重算请用「批量核价」。
+- 后端可改单状态放宽到草稿与待确认；待确认订单存在支付意图、应收、库存预留、出库或分拣事实时，改单返回新错误码 40976 并整笔拒绝。改单沿用行上报价重新锁定单价，标品实数量同步下单量，非标品称重结果保留。
+- 已验证：`SalesOrderServiceIT` 新增 2 个用例（改单后仍待确认且单价不变、存在支付意图时拒绝改单）通过；该类 16 项中 15 项通过，`lifecycleRetainsSnapshotsAndLockedPricesAndAudit` 仍为既有失败（已在 HEAD 复现）。顺带修正该 IT 中真提交用例的幂等键与请求体共用问题，使重跑不再撞上历史幂等记录。前端 `npm test` 547 项通过。
+- 未验证：页面上的编辑动作尚未做 Playwright 实测；运行中容器仍是本次改动前的构建。
+
+## 销售订单导入改为客户送货单版式（2026-10-27，源码与本地环境已验证）
+
+- 导入模板替换为客户提供的送货单：收货单位、日期在上方标签行，明细为序号、商品名称、单位、规格、实数量、销售单价、销售金额、备注，末行合计与签字栏不导入。旧的 12 列模板、模板版本列和行级导入数据类已删除。
+- 一张送货单生成一张订单；收货单位按客户名称匹配有效客户，商品按商品名称、规格、单位匹配，实数量作为下单数量；收货人、电话、地址取客户档案，缺项时拒绝导入。
+- 送货单单价按人工改价导入：需要订单改价权限，改价原因由服务端固定记为“送货单导入”；单价留空回退系统定价，系统无价则拒绝。销售金额仅用于核对数量×单价。
+- 已验证：后端 `SalesOrderImportServiceTest` 30 项、`OrderWebTest` 9 项通过；`SalesOrderServiceIT` 14 项中 13 项通过（`excelImportIsAtomicAndKeepsNonStandardPending` 覆盖新模板的标品确认、称重品待确认、幂等重放与整批拒绝），`lifecycleRetainsSnapshotsAndLockedPricesAndAudit` 在 HEAD 同样以“订单价格依据已变化”失败，属既有问题，与本次改动无关。前端 `npm test` 547 项、Prettier、ESLint、TypeScript 棘轮与 `npm run build` 通过。
+- 运行中的后端与 Web 已换成含本次改动的构建产物（Docker Hub 不可达，仍以覆盖 `/app/app.jar` 与 Nginx 静态目录的方式刷新）。Playwright 登录实测：导入弹窗规则文案、模板下载文件名与内容、上传错误单据后按「收货单位 / 商品名称」定位错误且不写入订单，共 10 项全部通过；成功导入未在联调库制造订单。
+
+## 客户确认需求阶段一（2026-10-27，源码与本地环境已验证）
+
+- 商品档案列表移除商品描述与采购预警天数，主档状态保留；商品规格新建默认单位为“斤”，服务端表单与导入缺省同一口径，显式空单位仍拒绝，历史商品不回写。
+- 新增客户/供应商业务分类（V181），种子蔬菜/蛋/肉，档案增加分类字段、筛选与列表列，新增分类维护页及菜单 47604；分类与客户类型、供应商类型分开维护。
+- 录单新增只读最近采购价：`GET /scm/order/reference/last-purchase-prices` 按采购员数据范围返回采购价、采购单位、单号与供应商；录单页浮层显示单位，单位不一致时不比较高低。
+- 协议价新增 `PURCHASE_COST_LOSS_TAX_MARKUP`：最近采购价按已配置的库存换算关系折算到销售单位后计算；无法换算时退回仓库销售单位成本；损耗率、税率缺失或越界时整行未定价，不以 0 兜底。
+- 打印中心新增对账单类型与 `StatementPrintSourceProvider`（V182），打印前按当前数据范围重校验；新增客户专属模板绑定表与接口，解析顺序为显式模板 → 客户绑定 → 类型默认模板；每日采购清单增加浏览器打印。
+- 迁移：V181、V182、V183 已在本地开发库执行（Flyway 当前版本 183）。
+- 已验证：新增与受影响的后端单元测试、`OrderLastPurchasePriceIT`、`ScmPrintCenterPgIT`、`ScmArchitectureTest` 及客户/供应商/商品/打印相关集成测试通过；前端 `npm test` 547 项全部通过，Prettier、ESLint、TypeScript 棘轮与 `npm run build` 通过；Playwright 登录实测商品列表与默认单位、客户/供应商分类、分类维护页、客户专属模板抽屉、录单最近采购价、协议价新公式、每日清单打印入口。
+- 未完成：Docker 镜像重建因本机无法访问 Docker Hub 未成功，当前运行容器通过覆盖 `/app/app.jar` 与 Web 静态目录后重启完成验证；阶段二尚未开始。
 
 ## 商城装修控制台（2026-10-25，本地环境已验收，真机待验）
 

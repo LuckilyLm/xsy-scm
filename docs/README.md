@@ -4,8 +4,8 @@
 
 - [有效决策](decisions.md)：当前业务、架构与权限不变量，以及尚未裁决事项。
 - [项目状态](status.md)：代码现状、验证证据、风险与待完成工作。
-- [下一阶段开发计划](next-development-plan.md)：按原始 13 模块、44 条功能描述收敛为 MVP 主链验收、基础缺口补齐和轻量回归；蔬东坡只参考常规业务操作，不自动扩展需求。
-- [需求基线](requirements/产品功能需求基线.md)及[负责人确认口径](requirements/2026-09-09-负责人确认口径.md)：产品需求和原始业务确认。
+- [下一阶段开发计划](next-development-plan.md)：按现场一天的主链组织能力差距、P0 批次和验收证据；不再按 13 模块逐条铺开，蔬东坡只参考常规业务操作。
+- [需求基线](requirements/产品功能需求基线.md)及[负责人确认口径](requirements/2026-09-09-负责人确认口径.md)：产品需求和原始业务确认；[2026-10-28 客户现场确认](requirements/2026-10-28-客户现场确认.md)记录当日作业时间线、纸面单据样式和未决事项。
 - [业务身份与追溯架构](architecture/business-identity-and-traceability.md)：L1 批次、L2 包装码的身份边界、已实施内容与后续目标模型；实施状态以状态文档为准。
 - [贡献与评审约定](../CONTRIBUTING.md)及[代理协作规则](../AGENTS.md)：工程实践、用户界面与 Git 约束。
 - [工程技能配置](agents/)：`mattpocock/skills` 使用的 issue tracker 与领域文档约定；`.scratch/` 是本地工作区，不入库。
