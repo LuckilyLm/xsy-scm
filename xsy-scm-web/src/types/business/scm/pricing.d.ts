@@ -1,6 +1,6 @@
 import type {ScmId, ScmSortItem} from './customer';
 
-export type PriceSource = 'AGREEMENT' | 'CUSTOMER_TYPE' | 'MARKET';
+export type PriceSource = 'AGREEMENT' | 'CUSTOMER_GROUP' | 'CUSTOMER_TYPE' | 'TIME_PRICE' | 'MARKET';
 export type AgreementFormulaType = 'FIXED' | 'MARKET_PLUS_AMOUNT' | 'COST_MARKUP_RATE' | 'MARKET_MARKUP_RATE' | 'PURCHASE_COST_LOSS_TAX_MARKUP';
 export type UnavailableReason = 'SKU_NOT_FOUND' | 'SKU_OFF_SHELF' | 'SPU_OFF_SHELF' | 'CATEGORY_DISABLED' | 'NOT_VISIBLE';
 
@@ -36,6 +36,37 @@ export interface PriceQuery {
   customerId?: ScmId;
   customerTypeId?: ScmId;
   skuId?: ScmId;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+  sortItemList?: ScmSortItem[];
+}
+
+/** 客户分组价：按「分组 + 商品 + 销售单位」维护；skuId 只用于确定商品与单位。 */
+export interface GroupPriceForm {
+  groupPriceId?: ScmId;
+  version?: number;
+  groupId?: ScmId;
+  skuId?: ScmId;
+  unitPrice: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+}
+
+export interface GroupPriceRow extends GroupPriceForm {
+  groupCode?: string;
+  groupName?: string;
+  spuId?: ScmId;
+  productName?: string;
+  saleUnit?: string;
+  updatedAt?: string;
+}
+
+export interface GroupPriceQuery {
+  pageNum: number;
+  pageSize: number;
+  groupId?: ScmId;
+  spuId?: ScmId;
+  keyword?: string;
   effectiveFrom?: string | null;
   effectiveTo?: string | null;
   sortItemList?: ScmSortItem[];
@@ -106,6 +137,7 @@ export interface HistoryRow {
   priceId: ScmId;
   customerName: string;
   customerTypeName: string;
+  groupName?: string | null;
   skuCode: string;
   productName: string;
   specName: string;

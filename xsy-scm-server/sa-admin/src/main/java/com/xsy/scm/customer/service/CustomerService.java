@@ -66,6 +66,8 @@ public class CustomerService {
 
     private final BusinessCategoryService businessCategoryService;
 
+    private final CustomerGroupService customerGroupService;
+
     private final ScmBusinessNoService businessNoService;
     private final WarehouseService warehouseService;
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
@@ -303,6 +305,11 @@ public class CustomerService {
             businessCategoryService.requireSelectable(businessCategoryId, BusinessCategoryScopeEnum.CUSTOMER);
         }
         entity.setBusinessCategoryId(businessCategoryId);
+        Long customerGroupId = form.getCustomerGroupId();
+        if (customerGroupId != null) {
+            customerGroupService.requireSelectable(customerGroupId);
+        }
+        entity.setCustomerGroupId(customerGroupId);
         entity.setSettleMode(form.getSettleMode());
         // 只有集团主体才谈得上授权；切成独立结算时授权自动作废，不留下悬空权限
         entity.setSharedSettlementEnabled(ScmSettleModeEnum.GROUP.name().equals(form.getSettleMode())

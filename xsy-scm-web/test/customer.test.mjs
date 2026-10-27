@@ -52,9 +52,10 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
 
   test('客户列表将独立识别字段分列，且不摊开主数据时间列', () => {
     const titles = [...LIST.matchAll(/\{\s*title:\s*'([^']+)',\s*dataIndex:\s*'([^']+)'/g)].map((m) => m[1]);
+    // 2026-10-28 客户分组价：分组决定组内协议价，列表要能直接看出客户归属哪个分组。
     assert.deepEqual(
       titles,
-      ['客户名称', '客户类型', '客户分类', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
+      ['客户名称', '客户类型', '客户分类', '客户分组', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
       '客户列表列结构被改动'
     );
     assert.doesNotMatch(LIST, /dataIndex: 'customerCode'/);
@@ -136,7 +137,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
       width: Number(m[1]),
       hiddenByDefault: /showFlag:\s*false/.test(m[2]),
     }));
-    assert.equal(columns.length, 10, '客户列表列数被改动');
+    assert.equal(columns.length, 11, '客户列表列数被改动');
     const visibleWidth = columns.filter((column) => !column.hiddenByDefault).reduce((sum, column) => sum + column.width, 0);
     assert.ok(visibleWidth > 0);
     // 列宽与铺满统一走 useScmTableFill：scrollX 由它算出

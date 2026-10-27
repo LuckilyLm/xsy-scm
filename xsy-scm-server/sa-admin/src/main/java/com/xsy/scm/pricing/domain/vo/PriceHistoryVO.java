@@ -18,9 +18,11 @@ public class PriceHistoryVO {
     private Long priceId;
     private Long customerId;
     private Long customerTypeId;
+    private Long groupId;
     private Long skuId;
     private String customerName;
     private String customerTypeName;
+    private String groupName;
     private String skuCode;
     private String productName;
     private String specName;

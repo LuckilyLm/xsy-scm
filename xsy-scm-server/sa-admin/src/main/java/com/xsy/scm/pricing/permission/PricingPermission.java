@@ -13,6 +13,10 @@ public final class PricingPermission {
     public static final String TYPE_PRICE_ADD = "scm:pricing:type-price:add";
     public static final String TYPE_PRICE_UPDATE = "scm:pricing:type-price:update";
     public static final String TYPE_PRICE_DELETE = "scm:pricing:type-price:delete";
+    public static final String GROUP_PRICE_QUERY = "scm:pricing:group-price:query";
+    public static final String GROUP_PRICE_ADD = "scm:pricing:group-price:add";
+    public static final String GROUP_PRICE_UPDATE = "scm:pricing:group-price:update";
+    public static final String GROUP_PRICE_DELETE = "scm:pricing:group-price:delete";
 
     /** 时价维护（增删改查同一把权限）。 */
     public static final String TIME_PRICE_MANAGE = "scm:pricing:time-price:manage";

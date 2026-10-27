@@ -24,6 +24,15 @@
                 <BusinessCategoryTreeSelect v-model:value="form.businessCategoryId" scope="CUSTOMER" mode="select" />
               </a-form-item>
             </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="客户分组" name="customerGroupId">
+                <template #label>
+                  客户分组
+                  <ScmFieldHelp label="客户分组" text="组内客户对同一商品同单位共用分组价；不选则不参与分组定价" />
+                </template>
+                <CustomerGroupSelect v-model:value="form.customerGroupId" />
+              </a-form-item>
+            </a-col>
             <a-col v-if="isEdit" :xs="24" :sm="12">
               <a-form-item>
                 <template #label>
@@ -256,6 +265,7 @@ import {areaColumnsOf, areaNodesOf} from '../../common/scm-area';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
+import CustomerGroupSelect from '/@/components/business/scm/customer-group-select/index.vue';
 import BusinessCategoryTreeSelect from '/@/components/business/scm/business-category-tree-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -347,6 +357,7 @@ async function open(customerId?: ScmId) {
       name: detail.name,
       customerTypeId: detail.customerTypeId,
       businessCategoryId: detail.businessCategoryId ?? null,
+      customerGroupId: detail.customerGroupId ?? null,
       parentCustomerId: detail.parentCustomerId ?? null,
       settlementCustomerId: detail.settlementCustomerId ?? null,
       mallDeliveryWarehouseId: detail.mallDeliveryWarehouseId ?? null,

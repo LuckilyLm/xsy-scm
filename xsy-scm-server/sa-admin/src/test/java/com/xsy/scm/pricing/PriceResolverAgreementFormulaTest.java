@@ -9,10 +9,14 @@ import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.pricing.constant.ScmPriceStatusEnum;
 import com.xsy.scm.pricing.constant.ScmUnpricedReasonEnum;
 import com.xsy.scm.pricing.dao.AgreementPriceDao;
+import com.xsy.scm.pricing.dao.CustomerGroupPriceDao;
 import com.xsy.scm.pricing.dao.CustomerTypePriceDao;
 import com.xsy.scm.pricing.dao.TimePriceDao;
 import com.xsy.scm.pricing.dao.PricingCostBasisDao;
+import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
 import com.xsy.scm.pricing.domain.entity.AgreementPriceEntity;
+import com.xsy.scm.pricing.domain.entity.CustomerGroupPriceEntity;
+import com.xsy.scm.pricing.domain.entity.CustomerTypePriceEntity;
 import com.xsy.scm.pricing.domain.vo.PricingCostBasisVO;
 import com.xsy.scm.pricing.service.PriceResolver;
 import com.xsy.scm.product.service.ProductBundleComponentQueryService;
@@ -40,6 +44,7 @@ class PriceResolverAgreementFormulaTest {
     private final CustomerService customers = mock(CustomerService.class);
     private final CustomerTypeDao customerTypes = mock(CustomerTypeDao.class);
     private final AgreementPriceDao agreements = mock(AgreementPriceDao.class);
+    private final CustomerGroupPriceDao groupPrices = mock(CustomerGroupPriceDao.class);
     private final CustomerTypePriceDao typePrices = mock(CustomerTypePriceDao.class);
     private final TimePriceDao timePrices = mock(TimePriceDao.class);
     private final ProductSkuOptionDao products = mock(ProductSkuOptionDao.class);
@@ -47,14 +52,16 @@ class PriceResolverAgreementFormulaTest {
     private final CustomerSkuVisibilityDao visibility = mock(CustomerSkuVisibilityDao.class);
     private final PricingCostBasisDao costs = mock(PricingCostBasisDao.class);
 
-    private final PriceResolver resolver = new PriceResolver(customers, customerTypes, agreements, typePrices,
-            timePrices, products, bundles, visibility, costs);
+    private final PriceResolver resolver = new PriceResolver(customers, customerTypes, agreements, groupPrices,
+            typePrices, timePrices, products, bundles, visibility, costs);
 
     private AgreementPriceEntity agreement;
 
+    private CustomerEntity customer;
+
     @BeforeEach
     void setup() {
-        var customer = new CustomerEntity();
+        customer = new CustomerEntity();
         customer.setId(8L);
         customer.setCustomerTypeId(5L);
         when(customers.requireTradable(8L)).thenReturn(customer);
@@ -68,6 +75,8 @@ class PriceResolverAgreementFormulaTest {
         var sku = new ProductSkuOptionVO();
         sku.setSkuId(40L);
         sku.setSkuCode("SKU40");
+        sku.setSpuId(30L);
+        sku.setSaleUnit("斤");
         sku.setStatus("ON_SHELF");
         sku.setSpuStatus("ON_SHELF");
         sku.setCategoryStatus("ENABLED");
@@ -254,6 +263,54 @@ class PriceResolverAgreementFormulaTest {
 
         assertThat(price.getPriceStatus()).isEqualTo(ScmPriceStatusEnum.UNPRICED);
         assertThat(price.getUnpricedReason()).isEqualTo(ScmUnpricedReasonEnum.AGREEMENT_COST_MISSING);
+    }
+
+    @Test
+    void groupPriceAppliesByProductAndSaleUnitAboveTypePrice() {
+        customer.setCustomerGroupId(9L);
+        when(agreements.selectEffective(eq(8L), eq(List.of(40L)), any(OffsetDateTime.class)))
+                .thenReturn(List.of());
+        var groupPrice = new CustomerGroupPriceEntity();
+        groupPrice.setId(200L);
+        groupPrice.setVersion(0);
+        groupPrice.setGroupId(9L);
+        groupPrice.setSpuId(30L);
+        groupPrice.setSaleUnit("斤");
+        groupPrice.setUnitPrice(new BigDecimal("12.0000"));
+        when(groupPrices.selectEffective(eq(9L), eq(List.of(30L)), any(OffsetDateTime.class)))
+                .thenReturn(List.of(groupPrice));
+        var typePrice = new CustomerTypePriceEntity();
+        typePrice.setId(300L);
+        typePrice.setSkuId(40L);
+        typePrice.setUnitPrice(new BigDecimal("18.0000"));
+        when(typePrices.selectEffective(eq(5L), eq(List.of(40L)), any(OffsetDateTime.class)))
+                .thenReturn(List.of(typePrice));
+
+        var price = resolver.resolve(8L, List.of(40L), OffsetDateTime.now()).getFirst();
+
+        assertThat(price.getPriceSource()).isEqualTo(ScmPriceSourceEnum.CUSTOMER_GROUP);
+        assertThat(price.getSourceRecordId()).isEqualTo(200L);
+        assertThat(price.getUnitPrice()).isEqualByComparingTo("12");
+    }
+
+    @Test
+    void groupPriceDoesNotCrossSaleUnits() {
+        customer.setCustomerGroupId(9L);
+        when(agreements.selectEffective(eq(8L), eq(List.of(40L)), any(OffsetDateTime.class)))
+                .thenReturn(List.of());
+        var groupPrice = new CustomerGroupPriceEntity();
+        groupPrice.setId(200L);
+        groupPrice.setSpuId(30L);
+        groupPrice.setSaleUnit("箱");
+        groupPrice.setUnitPrice(new BigDecimal("99.0000"));
+        when(groupPrices.selectEffective(eq(9L), eq(List.of(30L)), any(OffsetDateTime.class)))
+                .thenReturn(List.of(groupPrice));
+
+        var price = resolver.resolve(8L, List.of(40L), OffsetDateTime.now()).getFirst();
+
+        // 斤与箱是不同单位，不做隐式换算，回落到市场价。
+        assertThat(price.getPriceSource()).isEqualTo(ScmPriceSourceEnum.MARKET);
+        assertThat(price.getUnitPrice()).isEqualByComparingTo("20");
     }
 
     private static PricingCostBasisVO cost(String saleUnitCost, String lossRate, String taxRate) {

@@ -18,6 +18,10 @@ public final class CustomerPermission {
     public static final String TYPE_UPDATE = "scm:customer:type:update";
     public static final String TYPE_DELETE = "scm:customer:type:delete";
     public static final String VISIBILITY_QUERY = "scm:customer:visibility:query";
+    public static final String GROUP_QUERY = "scm:customer:group:query";
+    public static final String GROUP_ADD = "scm:customer:group:add";
+    public static final String GROUP_UPDATE = "scm:customer:group:update";
+    public static final String GROUP_DELETE = "scm:customer:group:delete";
 
     /** 客户专属推广二维码的生成、撤销与扫码记录查看。 */
     public static final String PROMOTION_MANAGE = "scm:customer:promotion:manage";

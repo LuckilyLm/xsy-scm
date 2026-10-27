@@ -16,6 +16,7 @@ public class PriceHistoryQueryService {
 
     public PageResult<PriceHistoryVO> query(PriceHistoryQueryForm form) {
         if (!ScmPriceSourceEnum.AGREEMENT.name().equals(form.getSource())
+            && !ScmPriceSourceEnum.CUSTOMER_GROUP.name().equals(form.getSource())
             && !ScmPriceSourceEnum.CUSTOMER_TYPE.name().equals(form.getSource())
             && !ScmPriceSourceEnum.TIME_PRICE.name().equals(form.getSource())) {
             form.setSource(null);

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.pricing.dao.CustomerGroupPriceDao">
+
+    <select id="queryPage" resultType="com.xsy.scm.pricing.domain.vo.CustomerGroupPriceVO">
+        SELECT p.id group_price_id, p.version, p.group_id, g.group_code, g.group_name, p.spu_id,
+            sp.name product_name, p.sale_unit, p.unit_price, p.effective_from, p.effective_to, p.updated_at
+        FROM xsy_customer_group_price p
+        LEFT JOIN xsy_customer_group g ON g.id = p.group_id
+        LEFT JOIN xsy_product_spu sp ON sp.id = p.spu_id
+        WHERE p.deleted = FALSE
+        <if test="query.groupId != null">AND p.group_id = #{query.groupId}</if>
+        <if test="query.spuId != null">AND p.spu_id = #{query.spuId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (g.group_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR g.group_name ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR sp.name ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        <if test="query.effectiveFrom != null">
+            AND (p.effective_to IS NULL OR p.effective_to &gt; #{query.effectiveFrom})
+        </if>
+        <if test="query.effectiveTo != null">AND p.effective_from &lt; #{query.effectiveTo}</if>
+    </select>
+
+    <select id="detail" resultType="com.xsy.scm.pricing.domain.vo.CustomerGroupPriceVO">
+        SELECT p.id group_price_id, p.version, p.group_id, g.group_code, g.group_name, p.spu_id,
+            (SELECT s.id FROM xsy_product_sku s
+             WHERE s.spu_id = p.spu_id AND s.sale_unit = p.sale_unit AND s.deleted = FALSE
+             ORDER BY s.id LIMIT 1) sku_id,
+            sp.name product_name, p.sale_unit, p.unit_price, p.effective_from, p.effective_to, p.updated_at
+        FROM xsy_customer_group_price p
+        LEFT JOIN xsy_customer_group g ON g.id = p.group_id
+        LEFT JOIN xsy_product_spu sp ON sp.id = p.spu_id
+        WHERE p.id = #{id}
+            AND p.deleted = FALSE
+    </select>
+
+    <select id="lockGroup" resultType="long">
+        SELECT id
+        FROM xsy_customer_group
+        WHERE id = #{groupId}
+            AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="countOverlapping" resultType="long">
+        SELECT count(*)
+        FROM xsy_customer_group_price
+        WHERE group_id = #{groupId}
+            AND spu_id = #{spuId}
+            AND sale_unit = #{saleUnit}
+            AND deleted = FALSE
+            AND effective_from &lt; COALESCE(#{to,jdbcType=TIMESTAMP_WITH_TIMEZONE}, 'infinity'::timestamptz)
+            AND (effective_to IS NULL OR effective_to &gt; #{from,jdbcType=TIMESTAMP_WITH_TIMEZONE})
+        <if test="excludeId != null">AND id != #{excludeId}</if>
+    </select>
+
+    <select id="selectEffective" resultType="com.xsy.scm.pricing.domain.entity.CustomerGroupPriceEntity">
+        SELECT p.id, p.group_id, p.spu_id, p.sale_unit, p.unit_price, p.effective_from, p.effective_to,
+            p.version, p.deleted
+        FROM xsy_customer_group_price p
+            JOIN xsy_customer_group g ON g.id = p.group_id
+        WHERE p.deleted = FALSE
+            AND g.deleted = FALSE
+            AND g.status = 'ENABLED'
+            AND p.group_id = #{groupId}
+            AND p.effective_from &lt;= #{at}
+            AND (p.effective_to IS NULL OR p.effective_to &gt; #{at})
+            AND p.spu_id IN <foreach collection="spuIds" item="spu" open="(" separator="," close=")">#{spu}</foreach>
+        ORDER BY p.effective_from DESC, p.id DESC
+    </select>
+
+    <update id="softDelete">
+        UPDATE xsy_customer_group_price
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id}
+            AND version = #{version}
+            AND deleted = FALSE
+    </update>
+
+    <insert id="log">
+        INSERT INTO xsy_customer_group_price_operation_log (group_price_id, operation_type, operator,
+            before_data, after_data, created_by)
+        VALUES (#{id}, #{operation}, #{operator}, CAST(#{before,jdbcType=VARCHAR} AS jsonb),
+            CAST(#{after,jdbcType=VARCHAR} AS jsonb), #{operator})
+    </insert>
+
+</mapper>

@@ -5,6 +5,7 @@
     <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式契约） -->
     <sql id="customerColumns">
         c.id, c.version, c.visibility_policy, c.customer_code, c.name, c.customer_type_id, c.business_category_id,
+            c.customer_group_id,
             c.status, c.settle_mode,
             c.cod_allowed, c.shared_settlement_enabled, c.mall_delivery_warehouse_id, c.credit_limit,
             c.parent_customer_id, c.settlement_customer_id, c.mall_delivery_warehouse_id, c.seller_id, c.supplier_id,
@@ -36,6 +37,7 @@
         </if>
         <if test="query.customerTypeId != null">AND c.customer_type_id = #{query.customerTypeId}</if>
         <if test="query.businessCategoryId != null">AND c.business_category_id = #{query.businessCategoryId}</if>
+        <if test="query.customerGroupId != null">AND c.customer_group_id = #{query.customerGroupId}</if>
         <if test="query.status != null and query.status != ''">AND c.status = #{query.status}</if>
         <if test="query.settleMode != null and query.settleMode != ''">AND c.settle_mode = #{query.settleMode}</if>
         <if test="query.parentCustomerId != null">AND c.parent_customer_id = #{query.parentCustomerId}</if>
@@ -97,6 +99,46 @@
         WHERE c.deleted = FALSE
             AND c.customer_code IN
         <foreach collection="codes" item="code" open="(" separator="," close=")">#{code}</foreach>
+    </select>
+
+    <select id="selectGroupMembers" resultType="com.xsy.scm.customer.domain.vo.CustomerGroupMemberVO">
+        SELECT c.id AS customer_id, c.customer_code, c.name AS customer_name
+        FROM xsy_customer c
+        WHERE c.deleted = FALSE
+            AND c.customer_group_id = #{groupId}
+        ORDER BY c.name ASC, c.id ASC
+    </select>
+
+    <update id="assignGroup">
+        UPDATE xsy_customer
+        SET customer_group_id = #{groupId},
+            version = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE deleted = FALSE
+            AND id IN
+        <foreach collection="customerIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <update id="clearGroupMembers">
+        UPDATE xsy_customer
+        SET customer_group_id = NULL,
+            version = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE deleted = FALSE
+            AND customer_group_id = #{groupId}
+        <if test="keepIds != null and keepIds.size() > 0">
+            AND id NOT IN
+            <foreach collection="keepIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+    </update>
+
+    <select id="countActiveByGroupId" resultType="long">
+        SELECT COUNT(*)
+        FROM xsy_customer
+        WHERE customer_group_id = #{groupId}
+            AND deleted = FALSE
     </select>
 
     <select id="selectActiveByNames" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">

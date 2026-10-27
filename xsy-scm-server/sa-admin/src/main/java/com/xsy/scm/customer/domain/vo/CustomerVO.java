@@ -33,6 +33,10 @@ public class CustomerVO {
 
     private String businessCategoryName;
 
+    private Long customerGroupId;
+
+    private String customerGroupName;
+
     private String status;
 
     private String settleMode;

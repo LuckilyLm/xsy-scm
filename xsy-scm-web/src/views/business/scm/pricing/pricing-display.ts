@@ -43,6 +43,7 @@ export function effectiveRangeText(effectiveFrom?: string | null, effectiveTo?: 
 /** 价格来源的中文标签。后端返回枚举名，这里统一翻译。 */
 export const HISTORY_SOURCE_LABEL: Record<string, string> = {
   AGREEMENT: '客户协议价',
+  CUSTOMER_GROUP: '客户分组价',
   CUSTOMER_TYPE: '客户类型价',
   TIME_PRICE: '时价',
 };

@@ -186,6 +186,7 @@ async function trial() {
 /** 来源颜色：协议价蓝、类型价绿、时价橙、市场价灰。 */
 const PRICE_SOURCE_TONE: Record<string, ScmStatusTone> = {
   AGREEMENT: 'processing',
+  CUSTOMER_GROUP: 'processing',
   CUSTOMER_TYPE: 'success',
   TIME_PRICE: 'warning',
   MARKET: 'neutral',

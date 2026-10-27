@@ -57,6 +57,41 @@ export interface CustomerType {
   createdAt?: string;
 }
 
+export interface CustomerGroupOption {
+  groupId: ScmId;
+  groupCode: string;
+  groupName: string;
+  status: EnableStatus;
+  customerCount?: number;
+}
+
+export interface CustomerGroupMember {
+  customerId: ScmId;
+  customerCode: string;
+  customerName: string;
+}
+
+export interface CustomerGroupRow extends CustomerGroupOption {
+  version: number;
+  members?: CustomerGroupMember[];
+}
+
+export interface CustomerGroupForm {
+  groupId?: ScmId;
+  version?: number;
+  groupCode: string;
+  groupName: string;
+  status: EnableStatus;
+  customerIds: ScmId[];
+}
+
+export interface CustomerGroupQuery {
+  pageNum: number;
+  pageSize: number;
+  keyword?: string;
+  status?: EnableStatus;
+}
+
 export interface CustomerTypeForm {
   typeId?: ScmId;
   version?: number;
@@ -88,6 +123,8 @@ export interface CustomerFormModel extends Partial<AreaColumns>, ScmLocation {
   customerTypeId?: ScmId;
   /** 客户业务分类；null 表示未分类。 */
   businessCategoryId?: ScmId | null;
+  /** 客户分组；分组价按分组生效，null 表示不参与分组定价。 */
+  customerGroupId?: ScmId | null;
   parentCustomerId?: ScmId | null;
   settlementCustomerId?: ScmId | null;
   mallDeliveryWarehouseId?: ScmId | null;
@@ -133,6 +170,7 @@ export interface CustomerRow extends CustomerFormModel {
   status: CustomerStatus;
   customerTypeName?: string;
   businessCategoryName?: string;
+  customerGroupName?: string | null;
   parentCustomerName?: string;
   sellerName?: string;
   updatedAt: string;
@@ -163,6 +201,7 @@ export interface CustomerQuery {
   keyword?: string;
   customerTypeId?: ScmId;
   businessCategoryId?: ScmId;
+  customerGroupId?: ScmId;
   status?: CustomerStatus;
   settleMode?: SettleMode;
   parentCustomerId?: ScmId;

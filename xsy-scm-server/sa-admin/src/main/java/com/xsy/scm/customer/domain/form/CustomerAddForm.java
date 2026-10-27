@@ -43,6 +43,9 @@ public class CustomerAddForm extends ScmLocationForm {
     @Positive(message = "客户分类必须大于0")
     private Long businessCategoryId;
 
+    @Positive(message = "客户分组 ID 必须大于0")
+    private Long customerGroupId;
+
     @Positive(message = "上级客户 ID 必须大于0")
     private Long parentCustomerId;
 

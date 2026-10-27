@@ -10,9 +10,11 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.customer.dao.CustomerDao;
+import com.xsy.scm.customer.dao.CustomerGroupDao;
 import com.xsy.scm.customer.dao.CustomerFrequentSkuDao;
 import com.xsy.scm.customer.dao.CustomerTypeDao;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
+import com.xsy.scm.customer.domain.entity.CustomerGroupEntity;
 import com.xsy.scm.customer.domain.entity.CustomerTypeEntity;
 import com.xsy.scm.customer.domain.form.CustomerQueryForm;
 import com.xsy.scm.customer.domain.vo.CustomerDetailVO;
@@ -69,6 +71,9 @@ public class CustomerQueryService {
     private final CustomerFrequentSkuDao customerFrequentSkuDao;
 
     private final CustomerTypeDao customerTypeDao;
+
+    /** 客户分组名称：列表与详情都按 id 批量补全。 */
+    private final CustomerGroupDao customerGroupDao;
 
     /** 跨域只读：客户列表与详情补全业务分类名称。 */
     private final BusinessCategoryDao businessCategoryDao;
@@ -138,6 +143,7 @@ public class CustomerQueryService {
         vo.setCustomerTypeName(context.typeNames().get(entity.getCustomerTypeId()));
         vo.setParentCustomerName(context.customerNames().get(entity.getParentCustomerId()));
         vo.setBusinessCategoryName(context.categoryNames().get(entity.getBusinessCategoryId()));
+        vo.setCustomerGroupName(context.groupNames().get(entity.getCustomerGroupId()));
         CustomerEntity settlement = customerDao.selectById(entity.getSettlementCustomerId());
         vo.setSettlementCustomerName(settlement == null ? entity.getName() : settlement.getName());
         vo.setSellerName(context.employeeNames().get(entity.getSellerId()));
@@ -221,6 +227,7 @@ public class CustomerQueryService {
         vo.setCustomerTypeName(context.typeNames().get(entity.getCustomerTypeId()));
         vo.setParentCustomerName(context.customerNames().get(entity.getParentCustomerId()));
         vo.setBusinessCategoryName(context.categoryNames().get(entity.getBusinessCategoryId()));
+        vo.setCustomerGroupName(context.groupNames().get(entity.getCustomerGroupId()));
         vo.setSellerName(context.employeeNames().get(entity.getSellerId()));
         return vo;
     }
@@ -233,13 +240,14 @@ public class CustomerQueryService {
      */
     private EnrichmentContext context(List<CustomerEntity> rows) {
         if (rows.isEmpty()) {
-            return new EnrichmentContext(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+            return new EnrichmentContext(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         }
         Set<Long> typeIds = collect(rows, CustomerEntity::getCustomerTypeId);
         Set<Long> parentIds = collect(rows, CustomerEntity::getParentCustomerId);
         Set<Long> sellerIds = collect(rows, CustomerEntity::getSellerId);
         Set<Long> supplierIds = collect(rows, CustomerEntity::getSupplierId);
         Set<Long> categoryIds = collect(rows, CustomerEntity::getBusinessCategoryId);
+        Set<Long> groupIds = collect(rows, CustomerEntity::getCustomerGroupId);
 
         Map<Long, String> typeNames = new HashMap<>();
         if (!typeIds.isEmpty()) {
@@ -277,7 +285,14 @@ public class CustomerQueryService {
                 .forEach(category -> categoryNames.put(category.getId(), category.getName()));
         }
 
-        return new EnrichmentContext(typeNames, customerNames, employeeNames, supplierNames, categoryNames);
+        Map<Long, String> groupNames = new HashMap<>();
+        if (!groupIds.isEmpty()) {
+            customerGroupDao
+                .selectList(new LambdaQueryWrapper<CustomerGroupEntity>().in(CustomerGroupEntity::getId, groupIds))
+                .forEach(group -> groupNames.put(group.getId(), group.getGroupName()));
+        }
+
+        return new EnrichmentContext(typeNames, customerNames, employeeNames, supplierNames, categoryNames, groupNames);
     }
 
     private static Set<Long> collect(List<CustomerEntity> rows, Function<CustomerEntity, Long> getter) {
@@ -293,6 +308,7 @@ public class CustomerQueryService {
 
     /** 补全名称用的五张表，一次构造、多次复用。 */
     private record EnrichmentContext(Map<Long, String> typeNames, Map<Long, String> customerNames,
-        Map<Long, String> employeeNames, Map<Long, String> supplierNames, Map<Long, String> categoryNames) {
+        Map<Long, String> employeeNames, Map<Long, String> supplierNames, Map<Long, String> categoryNames,
+        Map<Long, String> groupNames) {
     }
 }

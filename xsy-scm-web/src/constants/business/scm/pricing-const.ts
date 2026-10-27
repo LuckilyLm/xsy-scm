@@ -2,6 +2,7 @@ import type {SmartEnum} from '/@/types/smart-enum';
 
 export const SCM_PRICE_SOURCE_ENUM: SmartEnum<string> = {
   AGREEMENT: {value: 'AGREEMENT', desc: '客户协议价'},
+  CUSTOMER_GROUP: {value: 'CUSTOMER_GROUP', desc: '客户分组价'},
   CUSTOMER_TYPE: {value: 'CUSTOMER_TYPE', desc: '客户类型价'},
   TIME_PRICE: {value: 'TIME_PRICE', desc: '时价'},
   MARKET: {value: 'MARKET', desc: '市场价'},

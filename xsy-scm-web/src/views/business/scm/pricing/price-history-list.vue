@@ -47,7 +47,9 @@
         <template v-if="column.dataIndex === 'source'">
           {{ historyLabel(HISTORY_SOURCE_LABEL, record.source) }}
         </template>
-        <template v-else-if="column.dataIndex === 'customerName'">{{ record.customerName || record.customerTypeName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'customerName'">{{
+          record.customerName || record.groupName || record.customerTypeName || '—'
+        }}</template>
         <template v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'specName'">{{ record.specName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'operationType'">

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.customer.dao.CustomerGroupDao">
+
+    <sql id="joined">
+        SELECT g.id group_id, g.version, g.group_code, g.group_name, g.status,
+            (SELECT COUNT(*) FROM xsy_customer c WHERE c.customer_group_id = g.id AND c.deleted = FALSE)
+                customer_count
+        FROM xsy_customer_group g
+    </sql>
+
+    <select id="queryPage" resultType="com.xsy.scm.customer.domain.vo.CustomerGroupVO">
+        <include refid="joined"/>
+        WHERE g.deleted = FALSE
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (g.group_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR g.group_name ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        <if test="query.status != null and query.status != ''">AND g.status = #{query.status}</if>
+    </select>
+
+    <select id="detail" resultType="com.xsy.scm.customer.domain.vo.CustomerGroupVO">
+        <include refid="joined"/>
+        WHERE g.deleted = FALSE
+            AND g.id = #{groupId}
+    </select>
+
+    <select id="lock" resultType="long">
+        SELECT id
+        FROM xsy_customer_group
+        WHERE id = #{groupId}
+            AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <update id="softDelete">
+        UPDATE xsy_customer_group
+        SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{groupId}
+            AND version = #{version}
+            AND deleted = FALSE
+    </update>
+
+</mapper>

@@ -14,35 +14,49 @@
     </resultMap>
 
     <select id="query" resultMap="history">
-        SELECT h.*, c.name customer_name, ct.name customer_type_name, s.sku_code, s.spec_name, sp.name product_name
+        SELECT h.*, c.name customer_name, ct.name customer_type_name, cg.group_name, s.sku_code, s.spec_name,
+            COALESCE(sp.name, gsp.name) product_name
         FROM (SELECT l.id history_id, 'AGREEMENT' source, l.agreement_price_id price_id, p.customer_id,
-            NULL::bigint customer_type_id, p.sku_id, l.operation_type, l.operator, l.created_at operated_at,
+            NULL::bigint customer_type_id, p.sku_id, NULL::bigint group_id, NULL::bigint spu_id,
+            l.operation_type, l.operator, l.created_at operated_at,
             l.before_data, l.after_data, p.unit_price current_unit_price, p.effective_from current_effective_from,
             p.effective_to current_effective_to,
             COALESCE(p.deleted,
             TRUE) current_deleted FROM xsy_customer_agreement_price_operation_log l LEFT JOIN
             xsy_customer_agreement_price p ON p.id = l.agreement_price_id UNION ALL SELECT l.id history_id,
             'CUSTOMER_TYPE' source, l.customer_type_price_id price_id, NULL::bigint customer_id, p.customer_type_id,
-            p.sku_id, l.operation_type, l.operator, l.created_at operated_at, l.before_data, l.after_data,
+            p.sku_id, NULL::bigint group_id, NULL::bigint spu_id, l.operation_type, l.operator, l.created_at operated_at,
+            l.before_data, l.after_data,
             p.unit_price current_unit_price, p.effective_from current_effective_from,
             p.effective_to current_effective_to,
             COALESCE(p.deleted,
             TRUE) current_deleted FROM xsy_customer_type_price_operation_log l LEFT JOIN xsy_customer_type_price p ON
-            p.id = l.customer_type_price_id UNION ALL SELECT l.id history_id, 'TIME_PRICE' source,
-            l.time_price_id price_id, NULL::bigint customer_id, NULL::bigint customer_type_id, p.sku_id,
-            l.operation_type, l.operator, l.created_at operated_at, l.before_data, l.after_data,
+            p.id = l.customer_type_price_id UNION ALL SELECT l.id history_id, 'CUSTOMER_GROUP' source,
+            l.group_price_id price_id, NULL::bigint customer_id, NULL::bigint customer_type_id, NULL::bigint sku_id,
+            p.group_id, p.spu_id, l.operation_type, l.operator, l.created_at operated_at, l.before_data, l.after_data,
+            p.unit_price current_unit_price, p.effective_from current_effective_from,
+            p.effective_to current_effective_to,
+            COALESCE(p.deleted, TRUE) current_deleted
+            FROM xsy_customer_group_price_operation_log l
+            LEFT JOIN xsy_customer_group_price p ON p.id = l.group_price_id UNION ALL SELECT l.id history_id,
+            'TIME_PRICE' source, l.time_price_id price_id, NULL::bigint customer_id, NULL::bigint customer_type_id,
+            p.sku_id, NULL::bigint group_id, NULL::bigint spu_id, l.operation_type, l.operator, l.created_at operated_at,
+            l.before_data, l.after_data,
             p.unit_price current_unit_price, p.start_at current_effective_from, p.end_at current_effective_to,
             COALESCE(p.deleted,
             TRUE) current_deleted FROM xsy_pricing_time_price_operation_log l LEFT JOIN xsy_pricing_time_price p ON p.id
             = l.time_price_id) h
         LEFT JOIN xsy_customer c ON c.id = h.customer_id
         LEFT JOIN xsy_customer_type ct ON ct.id = h.customer_type_id
+        LEFT JOIN xsy_customer_group cg ON cg.id = h.group_id
         LEFT JOIN xsy_product_sku s ON s.id = h.sku_id
         LEFT JOIN xsy_product_spu sp ON sp.id = s.spu_id
+        LEFT JOIN xsy_product_spu gsp ON gsp.id = h.spu_id
         <where>
             <if test="query.source != null">AND h.source = #{query.source}</if>
             <if test="query.customerId != null">AND h.customer_id = #{query.customerId}</if>
             <if test="query.customerTypeId != null">AND h.customer_type_id = #{query.customerTypeId}</if>
+            <if test="query.groupId != null">AND h.group_id = #{query.groupId}</if>
             <if test="query.skuId != null">AND h.sku_id = #{query.skuId}</if>
             <if test="query.operationType != null">AND h.operation_type = #{query.operationType}</if>
             <if test="query.operatedFrom != null">AND h.operated_at &gt;= #{query.operatedFrom}</if>

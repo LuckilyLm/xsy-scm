@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -21,7 +22,9 @@ import com.xsy.scm.pricing.constant.AgreementFormulaType;
 import com.xsy.scm.pricing.manager.AgreementFormulaCalculator;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.pricing.dao.CustomerTypePriceDao;
+import com.xsy.scm.pricing.dao.CustomerGroupPriceDao;
 import com.xsy.scm.pricing.dao.TimePriceDao;
+import com.xsy.scm.pricing.domain.entity.CustomerGroupPriceEntity;
 import com.xsy.scm.pricing.domain.entity.TimePriceEntity;
 import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.pricing.domain.vo.PriceResolveResultVO;
@@ -52,6 +55,7 @@ public class PriceResolver {
     private final CustomerService customerService;
     private final CustomerTypeDao customerTypeDao;
     private final AgreementPriceDao agreementPriceDao;
+    private final CustomerGroupPriceDao customerGroupPriceDao;
     private final CustomerTypePriceDao customerTypePriceDao;
     private final TimePriceDao timePriceDao;
     private final ProductSkuOptionDao productSkuOptionDao;
@@ -124,6 +128,16 @@ public class PriceResolver {
                 ? Map.of()
                 : costBasisDao.byWarehouseAndSkus(costWarehouseId, componentSkuIds).stream()
                     .collect(Collectors.toMap(PricingCostBasisVO::getSkuId, Function.identity()));
+        // 分组价按商品 + 销售单位匹配：组内同一商品同单位的规格共用一条价格，跨单位不隐式换算。
+        Long customerGroupId = customer.getCustomerGroupId();
+        List<Long> spuIds = skuOptionsById.values().stream().map(ProductSkuOptionVO::getSpuId).filter(Objects::nonNull)
+            .distinct().toList();
+        Map<String,
+            CustomerGroupPriceEntity> groupPricesByProductUnit = customerGroupId == null || spuIds.isEmpty()
+                ? Map.of()
+                : customerGroupPriceDao.selectEffective(customerGroupId, spuIds, priceAt).stream()
+                    .collect(Collectors.toMap(price -> productUnitKey(price.getSpuId(), price.getSaleUnit()),
+                        Function.identity(), (first, next) -> first));
         var customerTypePricesBySkuId = customerTypePriceDao.selectEffective(customerType.getId(), skuIds, priceAt)
             .stream()
             .collect(Collectors.toMap(CustomerTypePriceEntity::getSkuId, Function.identity(), (first, next) -> first));
@@ -242,6 +256,11 @@ public class PriceResolver {
                     basis.put("calculatedAt", priceAt.toString());
                     resolvedPrice.setPriceBasisSnapshot(basis);
                 }
+            } else if (skuOption != null && groupPricesByProductUnit
+                .containsKey(productUnitKey(skuOption.getSpuId(), skuOption.getSaleUnit()))) {
+                var groupPrice = groupPricesByProductUnit
+                    .get(productUnitKey(skuOption.getSpuId(), skuOption.getSaleUnit()));
+                resolvedPrice.price(groupPrice.getUnitPrice(), ScmPriceSourceEnum.CUSTOMER_GROUP, groupPrice.getId());
             } else if (customerTypePricesBySkuId.containsKey(skuId)) {
                 var customerTypePrice = customerTypePricesBySkuId.get(skuId);
                 resolvedPrice.price(customerTypePrice.getUnitPrice(), ScmPriceSourceEnum.CUSTOMER_TYPE,
@@ -268,6 +287,10 @@ public class PriceResolver {
             || resolvedPrice.getPriceStatus() == ScmPriceStatusEnum.UNPRICED))
             throw new ScmBusinessException(SKU_NOT_SELLABLE);
         return resolvedPrices;
+    }
+
+    private static String productUnitKey(Long spuId, String saleUnit) {
+        return spuId + "|" + saleUnit;
     }
 
     private static ScmUnpricedReasonEnum unpricedReason(AgreementFormulaType formula, BigDecimal marketPrice,

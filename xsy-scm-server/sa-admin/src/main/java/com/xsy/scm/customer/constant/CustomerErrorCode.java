@@ -48,6 +48,18 @@ public enum CustomerErrorCode implements ScmErrorCode {
 
     VISIBILITY_SKU_NOT_SELLABLE(40037, "可见性明细包含不可售商品规格"),
 
+    /** 客户分组不存在。 */
+    CUSTOMER_GROUP_NOT_FOUND(40434, "客户分组不存在"),
+
+    /** 客户分组已停用，不能挂新客户或用于定价。 */
+    CUSTOMER_GROUP_DISABLED(40435, "客户分组已停用"),
+
+    /** 分组必须至少有一个客户。 */
+    CUSTOMER_GROUP_MEMBER_REQUIRED(40039, "客户分组至少需要一个客户"),
+
+    /** 分组编码与现有记录冲突。 */
+    CUSTOMER_GROUP_CODE_DUPLICATE(40941, "客户分组编码已存在"),
+
     // 客户推广二维码
     PROMOTION_CODE_NOT_FOUND(40040, "推广码不存在或已失效"),
 

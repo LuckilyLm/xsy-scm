@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.domain.form.CustomerQueryForm;
+import com.xsy.scm.customer.domain.vo.CustomerGroupMemberVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -46,4 +47,23 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
 
     /** 按客户名称批量取有效客户，供送货单导入按「收货单位」匹配；重名由调用方判定。 */
     List<CustomerEntity> selectActiveByNames(@Param("names") List<String> names);
+
+    /**
+     * 客户分组成员：只返回未删除的客户，按名称排序。
+     *
+     * <p>
+     * 分组保存时整体替换成员，因此这里的读取结果就是「当前组内客户」。
+     */
+    List<CustomerGroupMemberVO> selectGroupMembers(@Param("groupId") Long groupId);
+
+    /** 把一批客户挂到指定分组；已在同组的行也会被更新版本号，保证成员变更可追溯。 */
+    int assignGroup(@Param("customerIds") List<Long> customerIds, @Param("groupId") Long groupId,
+        @Param("operator") String operator);
+
+    /** 把分组内不在保留名单里的客户移出分组。 */
+    int clearGroupMembers(@Param("groupId") Long groupId, @Param("keepIds") List<Long> keepIds,
+        @Param("operator") String operator);
+
+    /** 分组下有效客户数，删除分组前检查。 */
+    long countActiveByGroupId(@Param("groupId") Long groupId);
 }

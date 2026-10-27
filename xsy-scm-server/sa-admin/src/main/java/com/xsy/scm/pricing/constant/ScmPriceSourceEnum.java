@@ -2,6 +2,8 @@ package com.xsy.scm.pricing.constant;
 
 public enum ScmPriceSourceEnum {
     AGREEMENT("客户协议价"),
+    /** 按客户分组维护的商品单位价；优先级在逐客协议价之下、客户类型价之上。 */
+    CUSTOMER_GROUP("客户分组价"),
     CUSTOMER_TYPE("客户类型价"),
     /** 商品规格级、按时间段生效的临时价格；优先级在客户类型价之下、市场价之上。 */
     TIME_PRICE("时价"),

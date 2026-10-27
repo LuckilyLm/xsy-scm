@@ -58,6 +58,10 @@ public class CustomerEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long businessCategoryId;
 
+    /** 客户分组（价格约定的载体）；为空表示不参与分组价。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long customerGroupId;
+
     private String status;
 
     private String settleMode;

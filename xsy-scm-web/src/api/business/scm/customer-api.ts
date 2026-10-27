@@ -2,6 +2,10 @@ import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {
   CustomerDeletePayload,
   CustomerDetail,
+  CustomerGroupForm,
+  CustomerGroupOption,
+  CustomerGroupQuery,
+  CustomerGroupRow,
   CustomerFrequentSku,
   CustomerOption,
   CustomerPayload,
@@ -38,6 +42,15 @@ export const mallAccountApi = {
     postRequest<MallAccount>('/scm/customer/mall-account/create', form),
   status: (form: {accountId: ScmId; enabled: boolean}) => postRequest('/scm/customer/mall-account/status', form),
   resetPassword: (form: {accountId: ScmId; temporaryPassword: string}) => postRequest('/scm/customer/mall-account/password/reset', form),
+};
+export const customerGroupApi = {
+  query: (form: CustomerGroupQuery, options?: RequestOptions) => postRequest<ScmPage<CustomerGroupRow>>('/scm/customer/group/query', form, options),
+  /** 下拉只返回启用分组。 */
+  options: () => getRequest<CustomerGroupOption[]>('/scm/customer/group/options', {}),
+  detail: (groupId: ScmId, options?: RequestOptions) => getRequest<CustomerGroupRow>(`/scm/customer/group/${groupId}`, {}, options),
+  add: (form: CustomerGroupForm) => postRequest<ScmId>('/scm/customer/group/add', form),
+  update: (form: CustomerGroupForm) => postRequest('/scm/customer/group/update', form),
+  delete: (form: {groupId: ScmId; version: number}) => postRequest('/scm/customer/group/delete', form),
 };
 export const customerApi = {
   skuAliases: (customerId: ScmId) => getRequest<CustomerSkuAlias[]>(`/scm/customer/${customerId}/sku-aliases`, {}),
