@@ -29,14 +29,15 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_AGREEMENT" :refresh="load" /></div
     ></a-row>
     <a-table
+      ref="tableRef"
       :data-source="rows"
-      :columns="columns"
+      :columns="displayColumns"
       row-key="agreementPriceId"
       size="small"
       bordered
       :loading="loading"
       :pagination="false"
-      :scroll="{x: scmColumnsWidth(columns)}"
+      :scroll="{x: scrollX}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'customerName'">{{ record.customerName || '—' }}</template>
@@ -75,7 +76,7 @@
   <PriceDrawer ref="drawer" @saved="load" />
 </template>
 <script setup lang="ts">
-import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import {onMounted, reactive, ref} from 'vue';
 import {Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -113,6 +114,7 @@ const columns = ref<AgreementPriceColumn[]>([
   {title: '状态', dataIndex: 'effectiveness', align: 'center', width: 100},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 120},
 ]);
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 function formulaText(row: PriceRow): string {
   const value =

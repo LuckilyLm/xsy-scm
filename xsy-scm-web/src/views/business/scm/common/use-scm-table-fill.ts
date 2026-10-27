@@ -36,17 +36,32 @@ export function useScmTableFill<T extends ScmTableColumn>(columns: Ref<readonly 
   /** 文本列压缩下限：再窄就没法读了。 */
   const MIN_TEXT_WIDTH = 80;
 
-  /** 按比例压缩仍使用默认宽度的文本列，最低 80px；压不下就保留横向滚动。 */
-  function shrinkToFit<T extends {dataIndex?: unknown; width?: number | string}>(columns: readonly T[], deficit: number): T[] {
+  /**
+   * 按比例压缩文本列，最低 80px；压不下就保留横向滚动。
+   *
+   * <p>可压缩的是所有左对齐文本列，而不是只有声明了 ellipsis 的列：一张表往往只有名称列写了
+   * ellipsis，光靠它能腾出的宽度不够时，整张表会被判成「宽表」直接横向滚动，右侧列被固定
+   * 操作列压住。压缩时自动补上 ellipsis，避免文字换行把行高撑开。
+   */
+  function shrinkToFit<
+    T extends {dataIndex?: unknown; width?: number | string; ellipsis?: unknown; fixed?: unknown; align?: 'left' | 'center' | 'right'},
+  >(columns: readonly T[], deficit: number): T[] {
     const flexible = columns
       .map((column, index) => ({column, index}))
-      .filter(
-        ({column}) =>
-          typeof column.dataIndex === 'string' &&
-          defaultWidths[column.dataIndex] != null &&
-          toPixel(column.width) === defaultWidths[column.dataIndex] &&
-          toPixel(column.width) > MIN_TEXT_WIDTH
-      );
+      .filter(({column}) => {
+        if (typeof column.dataIndex !== 'string' || column.fixed) {
+          return false;
+        }
+        if (column.align === 'center' || column.align === 'right') {
+          return false;
+        }
+        if (toPixel(column.width) <= MIN_TEXT_WIDTH) {
+          return false;
+        }
+        // 用户手动调过宽度的列不参与自动压缩
+        const defaultWidth = defaultWidths[column.dataIndex];
+        return defaultWidth == null || toPixel(column.width) === defaultWidth;
+      });
     const capacity = flexible.reduce((sum, {column}) => sum + toPixel(column.width) - MIN_TEXT_WIDTH, 0);
     if (flexible.length === 0 || capacity < deficit) {
       return [...columns];
@@ -61,7 +76,7 @@ export function useScmTableFill<T extends ScmTableColumn>(columns: Ref<readonly 
       const take = isLast ? remaining : Math.min(room, Math.round((deficit * width) / totalWidth));
       const applied = Math.min(room, take, remaining);
       remaining -= applied;
-      result[index] = {...column, width: width - applied};
+      result[index] = {...column, width: width - applied, ...(column.ellipsis ? {} : {ellipsis: true})};
     });
     return result;
   }

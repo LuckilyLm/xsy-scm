@@ -26,14 +26,15 @@
   <a-card size="small" :bordered="false">
     <a-table
       id="order-return-table"
+      ref="tableRef"
       size="small"
       :data-source="tableData"
-      :columns="columns"
+      :columns="displayColumns"
       row-key="returnId"
       :loading="loading"
       bordered
       :pagination="false"
-      :scroll="{x: scmColumnsWidth(columns)}"
+      :scroll="{x: scrollX}"
     >
       <template #bodyCell="{record, column, text}">
         <template v-if="column.dataIndex === 'status'">
@@ -202,6 +203,7 @@
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import {computed, onDeactivated, onMounted, onScopeDispose, reactive, ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import Decimal from 'decimal.js';
@@ -282,6 +284,7 @@ const columns = ref<TableColumnsType<ReturnRow>>([
     width: 150,
   },
 ]);
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 /** 「更多」菜单挂不上 v-privilege，改用 hasPermission 判断。 */
 const canReject = computed(() => hasPermission('scm:order:return:reject'));

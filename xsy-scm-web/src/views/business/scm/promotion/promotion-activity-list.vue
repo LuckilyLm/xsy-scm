@@ -32,14 +32,15 @@
     </a-row>
 
     <a-table
+      ref="tableRef"
       size="small"
       :data-source="tableData"
-      :columns="columns"
+      :columns="displayColumns"
       row-key="id"
       bordered
       :loading="loading"
       :pagination="false"
-      :scroll="{x: scmColumnsWidth(columns)}"
+      :scroll="{x: scrollX}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'activityName'">{{ record.activityName || '—' }}</template>
@@ -255,7 +256,7 @@
 </template>
 
 <script setup lang="ts">
-import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
@@ -318,7 +319,7 @@ function statusLabelOf(value: string): string {
 }
 
 // 活动列表的列定义
-const columns: TableColumnsType<PromotionActivity> = [
+const columns = ref<TableColumnsType<PromotionActivity>>([
   {title: '活动名称', dataIndex: 'activityName', width: 200},
   {title: '类型', dataIndex: 'activityType', align: 'center', width: 110},
   {title: '规则摘要', dataIndex: 'ruleText', width: 260},
@@ -328,7 +329,8 @@ const columns: TableColumnsType<PromotionActivity> = [
   {title: '互斥组', dataIndex: 'exclusiveGroup', width: 130},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
-];
+]);
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 /** 规则表单：数值用 number，提交时转成定点字符串。 */
 interface RuleForm {

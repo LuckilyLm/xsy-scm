@@ -38,16 +38,17 @@
     </a-row>
 
     <a-table
+      ref="tableRef"
       :id="SCM_INVENTORY_TABLE_ID.LOT_BALANCE"
       size="small"
       :data-source="tableData"
-      :columns="columns"
+      :columns="displayColumns"
       row-key="id"
       bordered
       :loading="loading"
       :pagination="false"
       :locale="{emptyText: '暂无批次库存'}"
-      :scroll="{x: scmColumnsWidth(columns)}"
+      :scroll="{x: scrollX}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'skuName'">
@@ -90,7 +91,7 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
-import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {inventoryLotApi} from '/@/api/business/scm/inventory-lot-api';
@@ -130,6 +131,7 @@ const columns = ref<InventoryLotBalanceColumn[]>([
   {title: '更新时间', dataIndex: 'updatedAt', width: 170},
   ...(canViewInspection ? [{title: '操作', dataIndex: 'action', width: 100, align: 'center' as const, fixed: 'right' as const}] : []),
 ]);
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 async function queryData() {
   loading.value = true;

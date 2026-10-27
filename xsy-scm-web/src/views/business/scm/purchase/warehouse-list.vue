@@ -37,14 +37,15 @@
 
     <a-table
       :id="SCM_PURCHASE_TABLE_ID.WAREHOUSE"
+      ref="tableRef"
       size="small"
       :data-source="tableData"
-      :columns="columns"
+      :columns="displayColumns"
       row-key="id"
       bordered
       :loading="loading"
       :pagination="false"
-      :scroll="{x: scmColumnsWidth(columns)}"
+      :scroll="{x: scrollX}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
@@ -127,7 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
 import {emptyLocation, isLocated, locationError} from '/@/components/business/scm/map/types';
 import {CheckCircleOutlined, ExclamationCircleOutlined} from '@ant-design/icons-vue';
@@ -191,15 +192,16 @@ let requestId = 0;
 
 /** 列表列。编码单独一列；“未定位”用图标提示，未定位不能参与路线规划。 */
 const columns = ref<TableColumnsType<Warehouse>>([
-  {title: '仓库名称', dataIndex: 'name', width: 200},
-  {title: '所在地区', dataIndex: 'areaText', width: 190},
-  {title: '详细地址', dataIndex: 'address', width: 240},
+  {title: '仓库名称', dataIndex: 'name', width: 200, ellipsis: true},
+  {title: '所在地区', dataIndex: 'areaText', width: 190, ellipsis: true},
+  {title: '详细地址', dataIndex: 'address', width: 240, ellipsis: true},
   {title: '定位', dataIndex: 'located', width: 80},
   {title: '状态', dataIndex: 'status', align: 'center', width: 96},
   {title: '负库存', dataIndex: 'allowNegativeStock', width: 110},
-  {title: '备注', dataIndex: 'remark', width: 200},
+  {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 /** 省市区名称拼成一行；未选择时显示“—”。 */
 function areaText(record: Warehouse): string {

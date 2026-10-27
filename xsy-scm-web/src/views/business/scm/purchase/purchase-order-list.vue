@@ -46,13 +46,14 @@
       :id="SCM_PURCHASE_TABLE_ID.ORDER"
       size="small"
       :data-source="tableData"
-      :columns="columns"
+      ref="tableRef"
+      :columns="displayColumns"
       row-key="id"
       bordered
       :loading="loading"
       :pagination="false"
       :locale="{emptyText}"
-      :scroll="{x: scmColumnsWidth(columns, SCM_COLUMN_WIDTH.selection)}"
+      :scroll="{x: scrollX}"
       :row-selection="{
         columnWidth: SCM_COLUMN_WIDTH.selection,
         selectedRowKeys: selected,
@@ -155,7 +156,8 @@
 </template>
 
 <script setup lang="ts">
-import {SCM_COLUMN_WIDTH, scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {SCM_COLUMN_WIDTH} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import {computed, h, onMounted, reactive, ref} from 'vue';
 import {Input, message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -281,16 +283,17 @@ const partialSelected = computed(() => selectedOrders.value.filter((o) => o.stat
 
 // 创建时间不默认上列；计划到货才是采购跟单关注的日期。
 const columns = ref<TableColumnsType<Order>>([
-  {title: '采购单号', dataIndex: 'orderNo', width: 190},
-  {title: '供应商', dataIndex: 'supplierName', width: 220, ellipsis: true},
-  {title: '采购员', dataIndex: 'purchaserName', width: 110},
-  {title: '收货仓库', dataIndex: 'warehouseName', width: 140},
-  {title: '状态', dataIndex: 'status', align: 'center', width: 190},
-  {title: '计划到货', dataIndex: 'plannedArrivalDate', width: 120},
-  {title: '采购金额', dataIndex: 'totalAmount', width: 148},
-  {title: '收货进度', dataIndex: 'receivedProgress', width: 110},
-  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
+  {title: '采购单号', dataIndex: 'orderNo', width: 160, ellipsis: true},
+  {title: '供应商', dataIndex: 'supplierName', width: 180, ellipsis: true},
+  {title: '采购员', dataIndex: 'purchaserName', width: 80, ellipsis: true},
+  {title: '收货仓库', dataIndex: 'warehouseName', width: 100, ellipsis: true},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 130},
+  {title: '计划到货', dataIndex: 'plannedArrivalDate', width: 110},
+  {title: '采购金额', dataIndex: 'totalAmount', width: 130},
+  {title: '收货进度', dataIndex: 'receivedProgress', width: 95},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 170},
 ]);
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns, () => SCM_COLUMN_WIDTH.selection);
 
 /** 草稿/部分完成=待处理，已提交=处理中，已收货=完成，少收关单/取消=失效。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {

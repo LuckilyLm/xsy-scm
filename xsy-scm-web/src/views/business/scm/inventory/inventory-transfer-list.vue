@@ -43,16 +43,17 @@
     </a-row>
 
     <a-table
+      ref="tableRef"
       :id="SCM_INVENTORY_TABLE_ID.TRANSFER"
       size="small"
       :data-source="tableData"
-      :columns="columns"
+      :columns="displayColumns"
       row-key="id"
       bordered
       :loading="loading"
       :pagination="false"
       :locale="{emptyText: '暂无调拨单'}"
-      :scroll="{x: scmColumnsWidth(columns)}"
+      :scroll="{x: scrollX}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'direction'">
@@ -185,6 +186,7 @@
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
@@ -234,6 +236,7 @@ const columns = ref<TableColumnsType<InventoryTransfer>>([
   {title: '收货人', dataIndex: 'receivedBy', width: 110},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 180},
 ]);
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},

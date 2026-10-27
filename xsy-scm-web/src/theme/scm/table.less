@@ -34,11 +34,34 @@
   justify-content: center;
 }
 
+/*
+ * 固定列必须自带底色。主题把表头、表体底色显式设为透明，横向滚动时被固定的操作列会与
+ * 下方滚过的列重叠，看起来像「核销金额操作」这样两列文字粘在一起。
+ * 选择器要压过 shell.less 里的透明背景规则，否则只修好一半。
+ */
+.scm-module .admin-layout .ant-table-wrapper .ant-table-thead > tr > th.ant-table-cell-fix-right,
+.scm-module .admin-layout .ant-table-wrapper .ant-table-thead > tr > th.ant-table-cell-fix-left,
+.scm-module .admin-layout .ant-table-wrapper .ant-table-tbody > tr > td.ant-table-cell-fix-right,
+.scm-module .admin-layout .ant-table-wrapper .ant-table-tbody > tr > td.ant-table-cell-fix-left {
+  background: var(--scm-surface, #fff);
+}
+
+/* 悬停、选中沿用整行的淡色底，固定列不能停在白色上 */
+.scm-module .admin-layout .ant-table-wrapper .ant-table-tbody > tr.ant-table-row:hover > td.ant-table-cell-fix-right,
+.scm-module .admin-layout .ant-table-wrapper .ant-table-tbody > tr.ant-table-row:hover > td.ant-table-cell-fix-left,
+.scm-module .admin-layout .ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-right,
+.scm-module .admin-layout .ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected > td.ant-table-cell-fix-left {
+  background: var(--scm-accent-soft);
+}
+
 /* 不再使用双行复合单元：名称、编码各自成列，避免拉高行高、拉宽列宽。 */
 
 /* 名称入口：默认为主题色链接；类名写两遍以压过 antd 运行时注入的同特异性样式。 */
 .scm-cell-link.scm-cell-link {
+  display: inline-block;
   height: auto;
+  /* 名称列为长公司名时按列宽省略：a-button 默认按内容撑宽，不给 max-width 会顶进下一列 */
+  max-width: 100%;
   padding: 0;
   font-size: 14px;
   font-weight: 500;

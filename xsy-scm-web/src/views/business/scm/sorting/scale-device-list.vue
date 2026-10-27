@@ -40,13 +40,14 @@
     <a-table
       :id="TABLE_ID"
       size="small"
+      ref="tableRef"
       :data-source="tableData"
-      :columns="columns"
+      :columns="displayColumns"
       row-key="id"
       bordered
       :loading="loading"
       :pagination="false"
-      :scroll="{x: 1380}"
+      :scroll="{x: scrollX}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
@@ -217,6 +218,7 @@ import {hasPermission} from '../common/scm-permission';
 import {datetime} from '../common/scm-display';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import {
   SCM_SCALE_DEVICE_STATUS_ENUM,
   type ScaleDevice,
@@ -248,18 +250,19 @@ const loading = ref(false);
 const error = ref('');
 let requestId = 0;
 
-const columns: TableColumnsType<ScaleDevice> = [
-  {title: '设备编号', dataIndex: 'deviceCode', width: 150},
-  {title: '设备名称', dataIndex: 'deviceName', width: 160},
-  {title: '型号', dataIndex: 'deviceModel', width: 160},
-  {title: '仓库', dataIndex: 'warehouseName', width: 140},
-  {title: '工位', dataIndex: 'stationCode', width: 110},
-  {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
-  {title: '在线', dataIndex: 'online', width: 260},
-  {title: '有效会话', dataIndex: 'activeSessionCount', width: 100},
-  {title: '凭证到期', dataIndex: 'credentialExpiresAt', width: 170},
-  {title: '操作', dataIndex: 'action', align: 'center', width: 160, fixed: 'right'},
-];
+const columns = ref<TableColumnsType<ScaleDevice>>([
+  {title: '设备编号', dataIndex: 'deviceCode', width: 140, ellipsis: true},
+  {title: '设备名称', dataIndex: 'deviceName', width: 150, ellipsis: true},
+  {title: '型号', dataIndex: 'deviceModel', width: 140, ellipsis: true},
+  {title: '仓库', dataIndex: 'warehouseName', width: 110, ellipsis: true},
+  {title: '工位', dataIndex: 'stationCode', width: 90, ellipsis: true},
+  {title: '状态', dataIndex: 'status', width: 90, align: 'center'},
+  {title: '在线', dataIndex: 'online', width: 220},
+  {title: '有效会话', dataIndex: 'activeSessionCount', width: 85},
+  {title: '凭证到期', dataIndex: 'credentialExpiresAt', width: 150},
+  {title: '操作', dataIndex: 'action', align: 'center', width: 190, fixed: 'right'},
+]);
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 const canBind = computed(() => hasPermission(PERM.BIND));
 

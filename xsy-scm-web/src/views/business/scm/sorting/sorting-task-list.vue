@@ -40,15 +40,16 @@
 
     <a-table
       :id="SCM_SORTING_TABLE_ID.TASK"
+      ref="tableRef"
       size="small"
       :data-source="rows"
-      :columns="columns"
+      :columns="displayColumns"
       row-key="id"
       bordered
       :loading="loading"
       :pagination="false"
       :locale="{emptyText}"
-      :scroll="{x: scmColumnsWidth(columns)}"
+      :scroll="{x: scrollX}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
@@ -200,7 +201,7 @@
 </template>
 
 <script setup lang="ts">
-import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import PrintDocumentModal from '../print/print-document-modal.vue';
 import {computed, onMounted, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
@@ -276,6 +277,7 @@ const columns = ref<TableColumnsType<SortingTask>>([
   {title: '供应商来源', dataIndex: 'supplierNameSnapshot', width: 150},
   {title: '操作', dataIndex: 'action', fixed: 'right', align: 'center', width: 150},
 ]);
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 /** 状态视觉：待分拣 = 待处理（橙），分拣中 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
 const SORTING_STATUS_TONE: Record<string, ScmStatusTone> = {
