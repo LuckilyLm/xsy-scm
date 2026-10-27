@@ -1,9 +1,14 @@
 package com.xsy.scm.device.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.device.domain.entity.ScaleDeviceEntity;
+import com.xsy.scm.device.domain.form.ScaleDeviceQueryForm;
+import com.xsy.scm.device.domain.vo.ScaleDeviceVO;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -37,4 +42,8 @@ public interface ScaleDeviceDao extends BaseMapper<ScaleDeviceEntity> {
         @Param("lastReadingAt") OffsetDateTime lastReadingAt);
 
     int markRevoked(@Param("id") Long id, @Param("operator") String operator);
+
+    /** 设备台账；scope 为仓库数据范围，null 按拒绝处理。 */
+    List<ScaleDeviceVO> queryPage(Page<?> page, @Param("query") ScaleDeviceQueryForm query,
+        @Param("scope") ScmValueScope scope);
 }

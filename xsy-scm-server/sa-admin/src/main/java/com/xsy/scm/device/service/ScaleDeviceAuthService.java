@@ -2,6 +2,8 @@ package com.xsy.scm.device.service;
 
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.device.constant.ScaleDeviceErrorCode;
 import com.xsy.scm.device.constant.ScaleDeviceStatusEnum;
 import com.xsy.scm.device.dao.ScaleDeviceDao;
@@ -9,12 +11,15 @@ import com.xsy.scm.device.dao.ScaleDeviceSessionDao;
 import com.xsy.scm.device.domain.entity.ScaleDeviceEntity;
 import com.xsy.scm.device.domain.entity.ScaleDeviceSessionEntity;
 import com.xsy.scm.device.domain.form.ScaleActivateForm;
+import com.xsy.scm.device.domain.form.ScaleDeviceQueryForm;
 import com.xsy.scm.device.domain.form.ScaleDeviceRegisterForm;
 import com.xsy.scm.device.domain.form.ScaleHeartbeatForm;
 import com.xsy.scm.device.domain.form.ScaleOperatorSessionForm;
 import com.xsy.scm.device.domain.vo.ScaleDeviceConfigVO;
 import com.xsy.scm.device.domain.vo.ScaleDeviceCredentialVO;
 import com.xsy.scm.device.domain.vo.ScaleDeviceRegisterVO;
+import com.xsy.scm.device.domain.vo.ScaleDeviceSessionVO;
+import com.xsy.scm.device.domain.vo.ScaleDeviceVO;
 import com.xsy.scm.device.domain.vo.ScaleOperatorSessionVO;
 import com.xsy.scm.device.support.ScaleCredentialCodec;
 import com.xsy.scm.device.support.ScaleDeviceContext;
@@ -22,11 +27,14 @@ import com.xsy.scm.device.support.ScaleDevicePrincipal;
 import com.xsy.scm.warehouse.service.WarehouseQueryService;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Objects;
 
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity;
 import net.lab1024.sa.admin.module.system.employee.service.EmployeeService;
+import net.lab1024.sa.base.common.domain.PageResult;
+import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,7 +57,12 @@ public class ScaleDeviceAuthService {
     /** 设备凭证有效期；到期前需重新激活，不能靠续期绕过撤销。 */
     private static final int CREDENTIAL_VALID_DAYS = 30;
 
+    /** 后台只回看最近若干条会话：更早的登录记录没有现场价值，翻页反而把「当前谁在用」淹没。 */
+    private static final int RECENT_SESSION_LIMIT = 50;
+
     private final ScaleDeviceDao scaleDeviceDao;
+
+    private final ScmDataScopeService dataScopeService;
 
     private final ScaleDeviceSessionDao scaleDeviceSessionDao;
 
@@ -82,6 +95,40 @@ public class ScaleDeviceAuthService {
         return new ScaleDeviceRegisterVO(device.getId(), deviceCode, pairingCode, device.getPairingExpiresAt());
     }
 
+    /**
+     * 设备台账。按绑定仓库的数据范围收窄：未授权仓库的设备不出现在列表里，而不是出现了再拒绝。
+     */
+    @Transactional(readOnly = true)
+    public PageResult<ScaleDeviceVO> query(ScaleDeviceQueryForm form) {
+        ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
+        if (scope.isEmpty()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
+        var page = SmartPageUtil.convert2PageQuery(form);
+        return SmartPageUtil.convert2PageResult(page, scaleDeviceDao.queryPage(page, form, scope));
+    }
+
+    /** 某台秤最近的员工授权会话；设备不在授权仓库内时按无权限回答。 */
+    @Transactional(readOnly = true)
+    public List<ScaleDeviceSessionVO> sessions(Long deviceId) {
+        ScaleDeviceEntity device = requireScopedDevice(deviceId);
+        return scaleDeviceSessionDao.selectRecent(device.getId(), RECENT_SESSION_LIMIT);
+    }
+
+    /**
+     * 后台结束一条会话：秤端下次请求即失效，不需要在设备上操作。
+     *
+     * <p>
+     * 只结束未结束的会话，已结束的保留原结束原因，不覆盖历史。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void endSession(Long deviceId, Long sessionId) {
+        requireScopedDevice(deviceId);
+        if (scaleDeviceSessionDao.endSession(deviceId, sessionId, "后台手动结束", OffsetDateTime.now()) != 1) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_INVALID);
+        }
+    }
+
     /** 为设备上的员工签发操作会话。同一设备可以有多位员工先后登录，各自一条会话记录。 */
     @Transactional(rollbackFor = Exception.class)
     public ScaleOperatorSessionVO issueOperatorSession(Long deviceId, ScaleOperatorSessionForm form) {
@@ -89,6 +136,8 @@ public class ScaleDeviceAuthService {
         if (device == null || ScaleDeviceStatusEnum.REVOKED.name().equals(device.getStatus())) {
             throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_FOUND);
         }
+        // 签发会话等于把该仓的分拣写权限交给现场员工，必须先确认调用者对该仓有数据范围
+        warehouseQueryService.detail(device.getWarehouseId());
         EmployeeEntity employee = employeeService.getById(form.getEmployeeId());
         if (employee == null || Boolean.TRUE.equals(employee.getDisabledFlag())) {
             throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_INVALID);
@@ -113,6 +162,7 @@ public class ScaleDeviceAuthService {
         if (device == null) {
             throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_FOUND);
         }
+        warehouseQueryService.detail(device.getWarehouseId());
         if (ScaleDeviceStatusEnum.REVOKED.name().equals(device.getStatus())) {
             throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_ACTIVE);
         }
@@ -219,6 +269,16 @@ public class ScaleDeviceAuthService {
         if (device.getCredentialExpiresAt() == null || !device.getCredentialExpiresAt().isAfter(now)) {
             throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_UNAUTHORIZED);
         }
+        return device;
+    }
+
+    /** 设备必须真实存在且所在仓库在调用者范围内；两者都不满足时不区分回答，避免用设备 id 探测授权。 */
+    private ScaleDeviceEntity requireScopedDevice(Long deviceId) {
+        ScaleDeviceEntity device = scaleDeviceDao.selectById(deviceId);
+        if (device == null) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_FOUND);
+        }
+        warehouseQueryService.detail(device.getWarehouseId());
         return device;
     }
 

@@ -21,4 +21,23 @@
             AND ended_at IS NULL
     </update>
 
+    <select id="selectRecent" resultType="com.xsy.scm.device.domain.vo.ScaleDeviceSessionVO">
+        SELECT s.id, s.device_id, s.employee_id, e.actual_name AS employee_name,
+               s.issued_at, s.expires_at, s.ended_at, s.end_reason,
+               (s.ended_at IS NULL AND s.expires_at &gt; CURRENT_TIMESTAMP) AS active
+        FROM xsy_scale_device_session s
+        LEFT JOIN t_employee e ON e.employee_id = s.employee_id
+        WHERE s.device_id = #{deviceId}
+        ORDER BY s.issued_at DESC, s.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <update id="endSession">
+        UPDATE xsy_scale_device_session
+        SET ended_at = #{endedAt}, end_reason = #{reason}
+        WHERE id = #{sessionId}
+            AND device_id = #{deviceId}
+            AND ended_at IS NULL
+    </update>
+
 </mapper>

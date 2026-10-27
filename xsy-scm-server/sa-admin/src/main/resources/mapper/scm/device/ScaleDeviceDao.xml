@@ -63,6 +63,32 @@
             AND status = 'ACTIVE'
     </update>
 
+    <select id="queryPage" resultType="com.xsy.scm.device.domain.vo.ScaleDeviceVO">
+        SELECT d.id, d.device_code, d.device_name, d.device_model, d.warehouse_id,
+               w.name AS warehouse_name, d.station_code, d.status, d.protocol_type, d.agent_version,
+               d.pairing_expires_at, d.credential_expires_at, d.last_seen_at, d.last_reading_at,
+               d.queue_depth, d.scale_connected, d.printer_connected, d.revoked_at, d.created_at,
+               (SELECT COUNT(*) FROM xsy_scale_device_session s
+                WHERE s.device_id = d.id AND s.ended_at IS NULL
+                    AND s.expires_at &gt; CURRENT_TIMESTAMP) AS active_session_count
+        FROM xsy_scale_device d
+        LEFT JOIN xsy_warehouse w ON w.id = d.warehouse_id AND w.deleted = FALSE
+        WHERE d.deleted = FALSE
+        <if test="scope != null and scope.all == false">
+            AND d.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">AND FALSE</if>
+        <if test="query.warehouseId != null">AND d.warehouse_id = #{query.warehouseId}</if>
+        <if test="query.status != null and query.status != ''">AND d.status = #{query.status}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (d.device_code ILIKE '%' || #{query.keyword} || '%'
+                OR d.device_name ILIKE '%' || #{query.keyword} || '%'
+                OR d.station_code ILIKE '%' || #{query.keyword} || '%')
+        </if>
+        ORDER BY d.created_at DESC, d.id DESC
+    </select>
+
     <!--
       撤销保留历史：只改状态并清空凭证，不删行。已撤销的设备不能再激活，
       否则历史读数会被同一编号的另一台物理秤继承。
