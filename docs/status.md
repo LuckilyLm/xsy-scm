@@ -4,7 +4,7 @@
 
 ## 2026-10-28 现场确认后的 P0 第一批（源码完成；仅后端编译、定向单测与前端静态检查已执行）
 
-本批按 [2026-10-28 客户现场确认](requirements/2026-10-28-客户现场确认.md) 与 `docs/decisions.md` 的 D-1028 系列落地，迁移 V186–V198 已写入源码。**未在数据库执行**（本轮未启动应用），也未做页面、E2E、电子秤或现场验收。
+本批按 [2026-10-28 客户现场确认](requirements/2026-10-28-客户现场确认.md) 与 `docs/decisions.md` 的 D-1028 系列落地，迁移 V186–V198 已写入源码；2026-10-28 已在本地演示环境把 V186–V198 应用到开发库 `xsy_v2`，并刷新后端 test profile jar 与 Web 构建产物。未做 E2E、电子秤或现场验收。
 
 - **订单整单录入与整单粘贴**：订单抽屉明细改为纸面列序（序号/商品/规格/单位/数量/单价/金额/备注），新增 `POST /scm/order/import/paste-preview` 与 `order-paste-modal.vue`；订单仍是一客户一单多行，最终走 `create/update`，不绕过定价与幂等。
 - **客户分拣单 / 客户送货单 + 批量打印 + 采购汇总**：新增 `CUSTOMER_SORTING_SHEET`（无价格、实数量留空）与 `CUSTOMER_DELIVERY_NOTE`（含实数量、金额、签字栏），批量接口按配送日期/线路取当日已确认订单，单张独立事务与幂等键，服务端上限 200 单；销售订单批量打印的 10 单限制已去掉。采购需求汇总增加打印/导出与批次展示。
@@ -14,7 +14,8 @@
 - **财务自动 FIFO 核销 + 抹零**：`FinanceWriteOffService` 抽出「锁目标—校验—幂等—写入」公共段，新增 `autoPreview`/`autoAdd`（按账单日期、单据 id 分配，单次最多 100 单，剩余留在资金单待核销额），接口 `POST /scm/finance/write-off/auto/preview|auto`，幂等 scope 与手工核销分开。抹零新增 `xsy_finance_waiver`（V194，只存金额与原因，**不落状态列**：是否已反向由该核销行有没有 `REVERSE` 推导），核销来源扩展 `WAIVER`（V195），`POST /scm/finance/waiver/add|reverse` 与独立权限（V196）。对账单 SQL 增加 `WAIVER`/`WAIVER_REVERSE` 事实，抹零只减应收、不并进核销净额，新增「本期抹零净额」（打印合计字段 `waiverNet` 与导出列）；通用核销反向接口拒绝撤销抹零，必须走抹零反向。
 - **客户分组价**（V198）：新增客户分组主数据（`xsy_customer_group`，客户档案上的 `customer_group_id`）与分组价表（`xsy_customer_group_price`，唯一键为分组 + 商品 + 销售单位 + 开始时刻）、分组价操作日志；客户分组页 `/customer/customer-group-list`，分组价页 `/pricing/customer-group-price-list`，权限拆到 `scm:customer:group:*` 与 `scm:pricing:group-price:*`。分组保存必须至少一个客户；把客户移入其它分组或移出分组时，若原分组会归零则拒绝；删除分组先把客户移出再软删除。`PriceResolver` 在逐客协议价之后、客户类型价之前按「客户所属分组 + 商品 + 销售单位」取价，停用分组不参与；订单行 `CUSTOMER_GROUP` 来源已放开数据库 CHECK 与前端枚举。价格变更历史并入分组价日志，详情页用首个同单位规格回填编辑。
 - **已验证**（仅以下项目）：`mvn -pl sa-admin -am compile`、`test-compile` 通过；新增 `FinanceWriteOffAutoTest` 4 项、`FinanceWaiverServiceTest` 5 项与既有 `FinanceReadOnlyContractTest` 4 项共 13 项通过（含 FIFO 顺序与不超额、预览不写库、无未结目标拒绝、客户退款付款不查应付、抹零超额/无原因拒绝、反向只追加）。`FinanceReadOnlyContractTest` 与 `ScmFinanceSchemaPgIT`/`ScmFinanceRoleMatrixPgIT` 已按第九张财务表、抹零权限与「无状态列」口径更新断言。客户分组价补充 `PriceResolverAgreementFormulaTest` 两项（分组价按商品 + 单位命中并压过客户类型价、跨单位不命中回落市场价）、`PriceResolverTest` 来源数量断言与 `CustomerGroupServiceTest` 三项（唯一成员移出拒绝、留有余量放行、空名单不查库），四个单测类全部通过。前端全量契约单测 `npm test` 549 项全部通过（本轮先红后修：表格列对齐、表格数字 id 撞号、报表导出端点清单、采购待定价校验与载荷、采购操作类型枚举、报表常驻口径说明与 `hint` 基线、抽屉宽度与操作列宽度、`a-form-item name` 缺 `:model`、服务端/快照等黑名单文案）；改动文件 Prettier、ESLint 通过，`vue-tsc` 全仓基线仍有既有 1516 条错误、改动文件 0 条；`npm run build`（vite production）通过。
-- **未执行**：Playwright/E2E、任何 Pg IT（需要数据库）、`tools/verify.ps1`（总入口未跑，只跑了上面的单项命令）、迁移在真实库执行、电子秤代理 `verify.ps1` 与真实读重/去皮/断网/班次过期、打印纸张与批量 50+ 单、负库存实物盘点现场验收。计划中的 `InventoryNegativeStockIT`、`PurchasePriceWindowIT`、`FinanceFifoWriteOffIT`、`FinanceWaiverIT` 等 IT 尚未编写。
+- **本地演示实测（2026-10-28）**：后端 test profile jar 与 Web `dist` 已替换到运行中的容器；Flyway 从 V185 依次应用 V186–V198 成功（`Successfully applied 13 migrations`）。浏览器实测：客户分组页可新增「鲜蔬源演示组」（2 个成员，成员数正确）；分组价页可新增「上海青 / 斤 / ¥2.00」，列表状态为生效中；价格试算对组内客户「余杭区未来科技城食堂」命中 `¥2.00 / 客户分组价`，对已有逐客协议价的客户仍优先命中客户协议价；价格历史按 `CUSTOMER_GROUP` 返回分组名、商品与操作日志。演示数据保留在开发库，便于继续查看。
+- **未执行**：Playwright/E2E 自动化套件、任何 Pg IT（未跑集成测试库）、`tools/verify.ps1`（总入口未跑，只跑了上面的单项命令）、电子秤代理 `verify.ps1` 与真实读重/去皮/断网/班次过期、打印纸张与批量 50+ 单、负库存实物盘点现场验收。计划中的 `InventoryNegativeStockIT`、`PurchasePriceWindowIT`、`FinanceFifoWriteOffIT`、`FinanceWaiverIT` 等 IT 尚未编写。
 
 ## 开发库数据被清空（2026-10-27，事故记录）
 
