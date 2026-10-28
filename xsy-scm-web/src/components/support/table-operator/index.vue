@@ -70,17 +70,44 @@ let originalColumn = reactive(_.cloneDeep(props.modelValue));
 // 存储最新的列数据
 let newColumn = reactive(_.cloneDeep(props.modelValue));
 
+// 拖拽改宽后的落库请求：打开列设置前先等它写完，
+// 否则刚调好的宽度会被服务端旧配置盖回去
+let pendingSave: Promise<unknown> = Promise.resolve();
+
+/** 页面列与内部列共有的最小形状：列键、显隐、宽度与拖拽标记。 */
+interface ColumnLike {
+  dataIndex?: unknown;
+  width?: number | string;
+  showFlag?: boolean;
+  fixed?: unknown;
+  columnKey?: string;
+  dragAndDropFlag?: boolean;
+  [key: string]: unknown;
+}
+
 // 用于监听表格拖拽后新的列数据
 watch(
   () => props.modelValue,
   (value) => {
-    newColumn.forEach((item) => {
-      value.forEach((itemNewColumns) => {
+    let resized = false;
+    const incoming = (value ?? []) as ColumnLike[];
+    newColumn.forEach((item: ColumnLike) => {
+      incoming.forEach((itemNewColumns) => {
         if (item.dataIndex === itemNewColumns.dataIndex) {
           Object.assign(item, itemNewColumns);
+          // 表头拖拽改宽由 useScmTableFill 打标：宽度已经写进列定义，这里负责落库。
+          // 标记本身不参与列设置合并，两边都要清掉，否则打开弹窗会被当成待保存
+          if (itemNewColumns.dragAndDropFlag) {
+            delete itemNewColumns.dragAndDropFlag;
+            delete item.dragAndDropFlag;
+            resized = true;
+          }
         }
       });
     });
+    if (resized) {
+      pendingSave = persistColumns();
+    }
   },
   {
     deep: true,
@@ -182,7 +209,31 @@ function exitElementFullscreen(element) {
 
 const smartTableColumnModal = ref<{show: (columns: unknown[], tableId?: number | string) => void}>();
 
-function showModal() {
+/** 拖拽列宽后立即保存：刷新页面与列设置弹窗读到同一份宽度。 */
+async function persistColumns() {
+  if (!props.tableId) {
+    return;
+  }
+  const columnList = newColumn.map((item: any, index: number) => {
+    const column: {columnKey: string; sort: number; width?: number | string; showFlag?: boolean} = {
+      columnKey: item.columnKey,
+      sort: index + 1,
+    };
+    if (item.width) {
+      column.width = item.width;
+    }
+    column.showFlag = item.fixed ? true : item.showFlag !== false;
+    return column;
+  });
+  try {
+    await tableColumnApi.updateTableColumn({tableId: props.tableId, columnList});
+  } catch (e) {
+    smartSentry.captureError(e);
+  }
+}
+
+async function showModal() {
+  await pendingSave;
   const excluded = new Set(props.excludeColumnKeys);
   const visibleColumns = excluded.size
     ? newColumn.filter((item: any) => {

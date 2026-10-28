@@ -196,7 +196,16 @@ import {productApi} from '/@/api/business/scm/product-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {productTagApi} from '/@/api/business/scm/product-assistant-api';
 import {useUserStore} from '/@/store/modules/system/user';
-import type {ProductBatchItem, ProductCategory, ProductId, ProductQuery, ProductRow, ProductTag, ProductTagRef} from '/@/types/business/scm/product';
+import type {
+  ProductBatchItem,
+  ProductCategory,
+  ProductId,
+  ProductQuery,
+  ProductRow,
+  ProductTag,
+  ProductTagRef,
+  ShelfStatus,
+} from '/@/types/business/scm/product';
 import {
   MASTER_STATUS_COLOR,
   MASTER_STATUS_ENUM,
@@ -413,8 +422,15 @@ function batchDone() {
 /** 开关不能挂 v-privilege，用 hasPermission 判断。 */
 const canUpdateStatus = computed(() => hasPermission('scm:product:status'));
 
-/** 状态开关：先确认再改；取消或失败时开关保持原状态（值由 record.status 驱动）。 */
+/**
+ * 状态开关：目标状态直接由开关值决定，不再按当前状态取反。
+ * 已处于目标状态的事件（键盘方向键等重复触发）直接忽略，避免文案与结果相反。
+ */
 function onStatusSwitch(row: ProductRow, checked: boolean) {
+  const target: ShelfStatus = checked ? 'ON_SHELF' : 'OFF_SHELF';
+  if (row.status === target) {
+    return;
+  }
   const next = checked ? '上架' : '下架';
   Modal.confirm({
     title: `${next}商品`,
@@ -422,13 +438,13 @@ function onStatusSwitch(row: ProductRow, checked: boolean) {
     okText: next,
     okType: checked ? 'primary' : 'danger',
     cancelText: '取消',
-    onOk: () => toggleStatus(row),
+    onOk: () => changeStatus(row, target),
   });
 }
 
-async function toggleStatus(row: ProductRow) {
+async function changeStatus(row: ProductRow, target: ShelfStatus) {
   try {
-    await productApi.status(row.spuId, row.version, row.status === 'ON_SHELF' ? 'OFF_SHELF' : 'ON_SHELF');
+    await productApi.status(row.spuId, row.version, target);
     message.success('商品状态已更新');
     await load();
   } catch {

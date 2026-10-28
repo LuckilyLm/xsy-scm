@@ -195,7 +195,15 @@ export function useScmTableFill<T extends ScmTableColumn>(columns: Ref<readonly 
     event.preventDefault();
     event.stopPropagation();
     swallowNextClick = true;
+    // 屏幕上显示的是自动铺满/压缩后的宽度；先把这份显示宽度冻结成列宽，
+    // 否则一按下就退回页面原始列宽，其它列会先跳一次，拖拽边界也跟不上鼠标
+    const frozen = displayColumns.value.map((column) => {
+      const copy = {...column};
+      delete copy.customHeaderCell;
+      return copy;
+    });
     resizing.value = {dataIndex, startX: event.clientX, startWidth: Math.round(rect.width)};
+    columns.value = frozen;
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('mousemove', onResizeMove);
@@ -216,8 +224,30 @@ export function useScmTableFill<T extends ScmTableColumn>(columns: Ref<readonly 
   }
 
   function onResizeEnd() {
-    if (!resizing.value) {
+    const drag = resizing.value;
+    if (!drag) {
       return;
+    }
+    // 冻结后的宽度成为新的铺满基线：窗口再变化时这些列仍参与自动铺满/压缩，
+    // 不会因为不等于页面初始宽度而被当成用户手改列宽永久锁死。
+    // 固定列和居中的状态/操作列不参与拉伸，保持原来的分配口径。
+    // 表格本来就放不下（仍在横向滚动）时不能登记：否则同一份缺口会被再压一次。
+    if (scmColumnsWidth(columns.value) <= hostWidth.value) {
+      for (const column of columns.value) {
+        if (typeof column.dataIndex !== 'string' || typeof column.width !== 'number' || column.fixed) {
+          continue;
+        }
+        if (column.align === 'center' || column.align === 'right') {
+          continue;
+        }
+        defaultWidths[column.dataIndex] = toPixel(column.width);
+      }
+    }
+    // 打标告知「表格列设置」这是拖拽改宽：它看到标记后立刻落库，
+    // 刷新页面和再次打开列设置读到的都是当前宽度，不会被旧配置盖回去
+    const index = columns.value.findIndex((column) => column.dataIndex === drag.dataIndex);
+    if (index >= 0) {
+      (columns.value as (T & {dragAndDropFlag?: boolean})[])[index] = {...columns.value[index], dragAndDropFlag: true};
     }
     resizing.value = null;
     document.body.style.cursor = '';

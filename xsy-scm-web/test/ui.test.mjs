@@ -784,6 +784,11 @@ import ts from 'typescript';
   const ROUTE_LIST = code('../src/views/business/scm/delivery/route-list.vue');
   const AGREEMENT_PRICE = code('../src/views/business/scm/pricing/agreement-price-list.vue');
   const CUSTOMER_TYPE_PRICE = code('../src/views/business/scm/pricing/customer-type-price-list.vue');
+  const TABLE_OPERATOR = code('../src/components/support/table-operator/index.vue');
+  const TABLE_FILL = code('../src/views/business/scm/common/use-scm-table-fill.ts');
+  const SUPPLIER_LIST = code('../src/views/business/scm/supplier/supplier-list.vue');
+  const WAREHOUSE_LIST = code('../src/views/business/scm/purchase/warehouse-list.vue');
+  const PURCHASE_ORDER_LIST = code('../src/views/business/scm/purchase/purchase-order-list.vue');
   const INVENTORY_CODE_LISTS = [
     code('../src/views/business/scm/inventory/inventory-warning-list.vue'),
     code('../src/views/business/scm/inventory/inventory-reservation-list.vue'),
@@ -861,6 +866,46 @@ import ts from 'typescript';
     // 宽度输入不能触发列的显隐切换
     assert.match(COLUMN_MODAL, /scm-column-grid__toggle/);
     assert.doesNotMatch(COLUMN_MODAL, /class="scm-column-grid__cell"[\s\S]{0,200}@click="toggleColumn\(item\)"/);
+  });
+
+  test('两态开关按目标状态提交，与当前状态相同的事件直接忽略', () => {
+    // 键盘方向键等会重复发出 change，按当前状态取反会让文案与结果相反
+    for (const [name, source] of [
+      ['供应商', SUPPLIER_LIST],
+      ['商品', PRODUCT_LIST],
+    ]) {
+      assert.ok(source.includes('if (row.status === target)'), `${name}开关没有忽略同值事件`);
+      assert.ok(source.includes('changeStatus(row, target)'), `${name}开关没有按目标状态提交`);
+    }
+    assert.doesNotMatch(SUPPLIER_LIST, /row\.status === 'ENABLED' \? 'DISABLED' : 'ENABLED'/);
+    assert.doesNotMatch(PRODUCT_LIST, /row\.status === 'ON_SHELF' \? 'OFF_SHELF' : 'ON_SHELF'/);
+    // 仓库开关同样只接受与当前状态不同的目标
+    assert.match(WAREHOUSE_LIST, /\(row\.status === 'ENABLED'\) === checked/);
+  });
+
+  test('拖拽列宽：冻结当前显示宽度、标记后落库，打开列设置先等保存完成', () => {
+    // 按下时用自动铺满/压缩后的显示宽度作基准，否则列边界会先跳一次
+    assert.match(TABLE_FILL, /const frozen = displayColumns\.value\.map/);
+    assert.match(TABLE_FILL, /columns\.value = frozen/);
+    // 松手后打标，由表格列设置落库；只改页面列宽不保存会随刷新丢失
+    assert.match(TABLE_FILL, /dragAndDropFlag: true/);
+    assert.match(TABLE_OPERATOR, /if \(itemNewColumns\.dragAndDropFlag\)/);
+    assert.match(TABLE_OPERATOR, /pendingSave = persistColumns\(\)/);
+    assert.match(TABLE_OPERATOR, /await tableColumnApi\.updateTableColumn/);
+    // 打开列设置前先等落库完成，服务端旧配置不会把刚拖好的宽度盖回去
+    assert.match(TABLE_OPERATOR, /async function showModal\(\) \{\s*await pendingSave;/);
+  });
+
+  test('首列被隐藏时「更多」补回详情入口', () => {
+    for (const [name, source, key] of [
+      ['客户', CUSTOMER_LIST, 'name'],
+      ['供应商', SUPPLIER_LIST, 'name'],
+      ['销售订单', ORDER_LIST, 'orderNo'],
+      ['采购单', PURCHASE_ORDER_LIST, 'orderNo'],
+    ]) {
+      assert.ok(source.includes(`dataIndex === '${key}'`), `${name}没有检测入口列显隐`);
+      assert.ok(source.includes(`{key: 'detail', label: '详情', hidden: !entryHidden.value}`), `${name}首列隐藏后没有详情兜底`);
+    }
   });
 
   test('商品表格铺满内容区，但只让仍在使用默认宽度的文本列吸收宽屏额外空间', () => {

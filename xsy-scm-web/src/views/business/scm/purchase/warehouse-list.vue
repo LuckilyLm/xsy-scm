@@ -217,6 +217,10 @@ const canDisable = computed(() => hasPermission('scm:warehouse:disable'));
 
 /** 开关值由数据驱动：确认框取消或请求失败时，开关保持原状态。 */
 function onStatusSwitch(row: Warehouse, checked: boolean) {
+  // 已处于目标状态的事件（键盘方向键等重复触发）直接忽略，不发无意义的启停请求
+  if ((row.status === 'ENABLED') === checked) {
+    return;
+  }
   if (checked) {
     void enable(row);
   } else {

@@ -194,10 +194,9 @@ function openSku(row: SupplierRow) {
   void skuDrawer.value?.open(row);
 }
 
-async function toggleStatus(row: SupplierRow) {
-  const next: EnableStatus = row.status === 'ENABLED' ? 'DISABLED' : 'ENABLED';
+async function changeStatus(row: SupplierRow, target: EnableStatus) {
   try {
-    await supplierApi.updateStatus({supplierId: row.supplierId, version: row.version, status: next});
+    await supplierApi.updateStatus({supplierId: row.supplierId, version: row.version, status: target});
     message.success('供应商状态已更新');
     await load();
   } catch {
@@ -219,13 +218,26 @@ async function remove(row: SupplierRow) {
 const canUpdateStatus = computed(() => hasPermission('scm:supplier:status'));
 const canDelete = computed(() => hasPermission('scm:supplier:delete'));
 
-/** 只在「更多」留危险动作：详情走第一列，启停走状态列的开关。 */
+/** 名称列被列设置隐藏时，详情需要另留一个入口。 */
+const entryHidden = computed(() => !columns.value.some((column) => (column as {dataIndex?: string}).dataIndex === 'name'));
+
+/** 启停走状态列的开关；详情默认走第一列，只有第一列被隐藏时才补回「更多」。 */
 function rowActions(): ScmActionItem[] {
-  return [{key: 'delete', label: '删除', danger: true, hidden: !canDelete.value}];
+  return [
+    {key: 'detail', label: '详情', hidden: !entryHidden.value},
+    {key: 'delete', label: '删除', danger: true, hidden: !canDelete.value},
+  ];
 }
 
-/** 状态开关：先确认再改，取消时开关回到原状态（值由数据驱动，不会先翻过去）。 */
+/**
+ * 状态开关：目标状态直接由开关值决定，不再按当前状态取反。
+ * 已处于目标状态的事件（键盘方向键等重复触发）直接忽略，避免文案与结果相反。
+ */
 function onStatusSwitch(row: SupplierRow, checked: boolean) {
+  const target: EnableStatus = checked ? 'ENABLED' : 'DISABLED';
+  if (row.status === target) {
+    return;
+  }
   const next = checked ? '启' : '停';
   Modal.confirm({
     title: `${next}用供应商`,
@@ -233,12 +245,14 @@ function onStatusSwitch(row: SupplierRow, checked: boolean) {
     okText: next + '用',
     okType: checked ? 'primary' : 'danger',
     cancelText: '取消',
-    onOk: () => toggleStatus(row),
+    onOk: () => changeStatus(row, target),
   });
 }
 
 function onRowAction(key: string, row: SupplierRow) {
-  if (key === 'delete') {
+  if (key === 'detail') {
+    detail(row.supplierId);
+  } else if (key === 'delete') {
     Modal.confirm({
       title: '删除供应商',
       content: `确认删除「${row.name}」（${row.supplierCode}）？`,
