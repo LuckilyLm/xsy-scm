@@ -3,6 +3,7 @@ package com.xsy.scm.purchase.manager;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
+import com.xsy.scm.order.support.PlannedQuantity;
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 import com.xsy.scm.purchase.constant.ScmPurchaseDemandStatusEnum;
 import com.xsy.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
@@ -150,7 +151,17 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * 采购需求在生成时保存销售订单的单位和实际数量，不能用采购单位覆盖。采购单位由供应商商品关系决定，正式分配时校验两者一致。
+     * 采购需求的数量取「计划数量」：已称重用实发量，还没称重（非标行在分拣台才称）用订购量。
+     *
+     * <p>
+     * 采购是照着订单备货，不是照着称重结果报损；要求必须先有实重才能生成需求，等于把 14:00 的采购卡在 20:00 的称重之后。
+     */
+    public static BigDecimal plannedQuantity(SalesOrderItemEntity source) {
+        return PlannedQuantity.of(source.getActualQuantity(), source.getOrderedQuantity());
+    }
+
+    /**
+     * 采购需求在生成时保存销售订单的单位和计划数量，不能用采购单位覆盖。采购单位由供应商商品关系决定，正式分配时校验两者一致。
      */
     public static PurchaseDemandEntity demand(SalesOrderItemEntity source, SalesOrderEntity order, Long supplierId,
         Long warehouseId, Long purchaserId) {
@@ -168,7 +179,7 @@ public final class PurchaseSnapshotFactory {
         demand.setSpecValuesSnapshot(copySpecValues(source.getSpecValuesSnapshot()));
         demand.setDemandUnitSnapshot(source.getSaleUnitSnapshot());
         demand.setProductTypeSnapshot(source.getProductTypeSnapshot());
-        demand.setRequiredQuantity(source.getActualQuantity());
+        demand.setRequiredQuantity(plannedQuantity(source));
         demand.setAllocatedQuantity(zero());
         demand.setSupplierId(supplierId);
         demand.setWarehouseId(warehouseId);

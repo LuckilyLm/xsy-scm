@@ -14,8 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
+import com.xsy.scm.finance.permission.FinancePermission;
 import com.xsy.scm.finance.constant.ScmFinanceEntryTypeEnum;
 import com.xsy.scm.print.constant.ScmStatementFactType;
 import com.xsy.scm.report.constant.ReportErrorCode;
@@ -232,10 +234,19 @@ public class ScmCustomerStatementService {
         List<ScmCustomerStatementItemVO> facts = new ArrayList<>(
             statementDao.selectEvents(form, endAt, scope, asOfCreatedAt, MAX_FACTS + 1));
         if (Boolean.TRUE.equals(form.getIncludePosting())) {
+            // 过账是授权后才可见的虚拟单据：生成、历史读取、导出、打印都走这里，缺权限直接拒绝而不是静默去掉
+            requirePostingPermission();
             facts.addAll(statementDao.selectPostingEvents(form, endAt, scope, asOfCreatedAt, MAX_FACTS + 1));
             facts.sort(EVENT_ORDER);
         }
         return facts;
+    }
+
+    /** 过账行的读取权限与过账列表一致：没有权限的账号不能通过对账单绕过。 */
+    private static void requirePostingPermission() {
+        if (!ScmDataScopeService.hasPermission(FinancePermission.POSTING_QUERY)) {
+            throw new ScmDataScopeException();
+        }
     }
 
     /**

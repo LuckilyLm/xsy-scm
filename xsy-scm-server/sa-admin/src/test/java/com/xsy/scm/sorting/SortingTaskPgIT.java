@@ -146,6 +146,33 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         assertThat(actualQuantity(order)).as("建单不得改订单实发量").isEqualByComparingTo("10.0000");
     }
 
+    @Test
+    @DisplayName("还没称重的非标行也能建分拣任务：计划量按订购量暂计，称完再回写实际值")
+    void unweighedLineIsSortableOnOrderedQuantity() {
+        Long skuId = newOnShelfSku("uw1");
+        Long orderId = confirmedUnweighedSalesOrder(newCustomer(), skuId, "6.0000");
+        Long itemId = confirmedSalesOrderItemId(orderId);
+        assertThat(jdbc.queryForObject("SELECT actual_quantity FROM xsy_sales_order_item WHERE id = ?",
+                BigDecimal.class, itemId)).as("确认时允许不带实重").isNull();
+        assertThat(jdbc.queryForObject("SELECT settlement_line_amount FROM xsy_sales_order_item WHERE id = ?",
+                BigDecimal.class, itemId)).as("确认时按订购量暂计").isEqualByComparingTo("7.2000");
+
+        var detail = as(lead, QUEUE_MANAGER,
+                () -> sorting.create(createForm("uw1", List.of(itemId), sorterA), key("uw1")));
+
+        assertThat(detail.getItems().getFirst().getPlannedQuantitySnapshot()).as("没有实重就按订购量排计划")
+            .isEqualByComparingTo("6.0000");
+        assertThat(jdbc.queryForObject("SELECT actual_quantity FROM xsy_sales_order_item WHERE id = ?",
+                BigDecimal.class, itemId)).as("建单不动订单实发量").isNull();
+
+        completeLine(detail.getTask().getId(), detail.getItems().getFirst(), "6.5000", "NORMAL", null);
+
+        assertThat(jdbc.queryForObject("SELECT actual_quantity FROM xsy_sales_order_item WHERE id = ?",
+                BigDecimal.class, itemId)).as("称完回写实际值").isEqualByComparingTo("6.5000");
+        assertThat(jdbc.queryForObject("SELECT settlement_line_amount FROM xsy_sales_order_item WHERE id = ?",
+                BigDecimal.class, itemId)).as("结算额按实称量重算").isEqualByComparingTo("7.8000");
+    }
+
     /**
      * 占用互斥的用例<b>必须止于那条被拒的建单</b>：唯一索引冲突会把 PostgreSQL 的共享事务打进
      * aborted 态（25P02），之后任何回读都只会拿到「current transaction is aborted」。

@@ -118,18 +118,18 @@ public class SalesOrderImportService {
         try (var workbook = WorkbookFactory.create(new ByteArrayInputStream(bytes))) {
             if (workbook.getNumberOfSheets() != 1) {
                 addError(result, 0, null, "文件", "SHEET_COUNT", "请保留模板中的一个工作表，避免遗漏订单");
-                return new DeliveryNote(null, 0, null, 0, List.of(), null);
+                return new DeliveryNote(null, 0, null, 0, List.of());
             }
             var sheet = workbook.getSheetAt(0);
             var headerRowIndex = findHeaderRow(sheet, formatter);
             if (headerRowIndex < 0) {
                 addError(result, 1, null, "表头", "HEADER_INVALID",
                     "未找到送货单表头，应包含：" + String.join("、", HEADERS) + "；请使用最新模板");
-                return new DeliveryNote(null, 0, null, 0, List.of(), null);
+                return new DeliveryNote(null, 0, null, 0, List.of());
             }
             validateHeader(sheet.getRow(headerRowIndex), formatter, headerRowIndex, result);
             if (result.getTotalErrors() > 0)
-                return new DeliveryNote(null, 0, null, 0, List.of(), null);
+                return new DeliveryNote(null, 0, null, 0, List.of());
 
             var meta = readMeta(sheet, headerRowIndex, formatter, result);
             var lines = readLines(sheet, headerRowIndex, formatter, result);
@@ -139,18 +139,15 @@ public class SalesOrderImportService {
             if (lines.size() > MAX_ROWS)
                 addError(result, lines.get(MAX_ROWS).rowNumber(), null, "商品名称", "ROW_LIMIT",
                     "数据行不能超过 " + MAX_ROWS + " 行");
-            var orderRemark = lines.stream().map(NoteLine::remark).filter(Objects::nonNull).distinct()
-                .collect(Collectors.joining("；"));
-            if (orderRemark.length() > 500)
-                addError(result, headerRowIndex + 2, null, "备注", "TOO_LONG", "各行备注汇总后不能超过 500 个字符");
-            return new DeliveryNote(meta.customerName(), meta.customerRow(), meta.deliveryDate(), meta.dateRow(), lines,
-                orderRemark.isEmpty() ? null : orderRemark);
+            // 备注属于商品行（切段、去皮、分袋），逐行保留；不汇总成整单备注，否则打印时分不清是哪件商品的要求
+            return new DeliveryNote(meta.customerName(), meta.customerRow(), meta.deliveryDate(), meta.dateRow(),
+                lines);
         } catch (Exception exception) {
             // 对调用方仍返回 FILE_INVALID，但服务端要留下原因：解析异常若只改写成「请使用最新模板」，
             // 用户会反复重导模板，运维也拿不到线索。
             log.error("订单导入文件解析失败，整批按 FILE_INVALID 拒绝", exception);
             addError(result, 0, null, "文件", "FILE_INVALID", "Excel 文件无法读取，请使用最新送货单模板");
-            return new DeliveryNote(null, 0, null, 0, List.of(), null);
+            return new DeliveryNote(null, 0, null, 0, List.of());
         }
     }
 
@@ -424,7 +421,7 @@ public class SalesOrderImportService {
             required(result, rowNumber, key, "商品名称", line.productName());
             required(result, rowNumber, key, "单位", line.unit());
             required(result, rowNumber, key, "实数量", line.quantity());
-            length(result, rowNumber, key, "备注", line.remark(), 500);
+            length(result, rowNumber, key, "备注", line.remark(), 200);
             decimal(result, rowNumber, key, "实数量", line.quantity(), true);
             if (line.unitPrice() != null)
                 decimal(result, rowNumber, key, "销售单价", line.unitPrice(), false);
@@ -503,7 +500,6 @@ public class SalesOrderImportService {
         var form = new SalesOrderAddForm();
         form.setCustomerId(customer.getId());
         form.setOrderSource(ScmOrderSourceEnum.IMPORT.name());
-        form.setRemark(note.orderRemark());
         form.setExpectDeliveryTime(note.deliveryDate());
         var address = new OrderAddressForm();
         address.setReceiverName(trim(customer.getContactName()));
@@ -516,6 +512,8 @@ public class SalesOrderImportService {
             var item = new SalesOrderItemForm();
             item.setSkuId(lines.get(index).sku().getSkuId());
             item.setOrderedQuantity(fixed(line.quantity()));
+            // 送货单的备注是行备注：随商品打印到分拣单/送货单，不再汇总到整单备注
+            item.setRemark(trim(line.remark()));
             item.setSortOrder(index);
             var manual = line.unitPrice() != null;
             item.setManualPriceOverride(manual);
@@ -596,7 +594,7 @@ public class SalesOrderImportService {
     }
 
     private record DeliveryNote(String customerName, int customerRow, OffsetDateTime deliveryDate, int dateRow,
-        List<NoteLine> lines, String orderRemark) {
+        List<NoteLine> lines) {
     }
 
     private record IndexedLine(int rowNumber, NoteLine line, ProductSkuOptionVO sku) {

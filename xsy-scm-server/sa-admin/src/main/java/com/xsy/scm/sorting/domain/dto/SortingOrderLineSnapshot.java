@@ -25,5 +25,7 @@ public class SortingOrderLineSnapshot {
     private String specNameSnapshot;
     private String saleUnitSnapshot;
     private String productTypeSnapshot;
+    /** 已称重的实发量；非标行在分拣前可能为空，计划量回退到订购量。 */
     private BigDecimal actualQuantity;
+    private BigDecimal orderedQuantity;
 }

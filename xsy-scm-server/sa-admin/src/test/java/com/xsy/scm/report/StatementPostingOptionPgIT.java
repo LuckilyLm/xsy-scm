@@ -1,12 +1,20 @@
 package com.xsy.scm.report;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mockStatic;
+
+import cn.dev33.satoken.stp.StpUtil;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.finance.permission.FinancePermission;
+import org.mockito.MockedStatic;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import com.xsy.scm.common.ScmW5PgITBase;
 import com.xsy.scm.finance.domain.form.FinancePostingAddForm;
@@ -41,7 +49,10 @@ class StatementPostingOptionPgIT extends ScmW5PgITBase {
         Long customerId = newCustomer();
         insertReceipt(customerId, "50.0000");
         postingService.add(postingForm(customerId, "30.0000"), key("add"));
+        withPostingPermission(() -> balanceAssertions(customerId));
+    }
 
+    private Void balanceAssertions(Long customerId) {
         ScmCustomerStatementVO withoutPosting = statementService.freeze(statementForm(customerId, false));
         assertThat(withoutPosting.getIncludePosting()).isFalse();
         assertThat(factsOf(withoutPosting)).noneMatch("POSTING"::equals);
@@ -65,6 +76,7 @@ class StatementPostingOptionPgIT extends ScmW5PgITBase {
         assertThat(jdbc.queryForObject(
             "SELECT posting_amount FROM xsy_customer_statement_item WHERE statement_id = ? AND fact_type = 'POSTING'",
             BigDecimal.class, withPosting.getId())).isEqualByComparingTo("30.0000");
+        return null;
     }
 
     @Test
@@ -79,8 +91,11 @@ class StatementPostingOptionPgIT extends ScmW5PgITBase {
         voidForm.setReason("录错客户");
         postingService.voidPosting(voidForm, key("void"));
 
-        ScmCustomerStatementVO statement = statementService.freeze(statementForm(customerId, true));
-        assertThat(factsOf(statement)).containsExactly("RECEIPT");
+        withPostingPermission(() -> {
+            ScmCustomerStatementVO statement = statementService.freeze(statementForm(customerId, true));
+            assertThat(factsOf(statement)).containsExactly("RECEIPT");
+            return null;
+        });
     }
 
     @Test
@@ -90,11 +105,39 @@ class StatementPostingOptionPgIT extends ScmW5PgITBase {
         insertReceipt(customerId, "10.0000");
         postingService.add(postingForm(customerId, "5.0000"), key("read-add"));
 
-        ScmCustomerStatementVO created = statementService.freeze(statementForm(customerId, true));
-        ScmCustomerStatementVO reloaded = statementService.loadForPrint(created.getId());
-        assertThat(reloaded.getIncludePosting()).isTrue();
-        assertThat(factsOf(reloaded)).containsExactlyInAnyOrder("RECEIPT", "POSTING");
-        assertThat(postingLine(reloaded).getPostingAmount()).isEqualByComparingTo("5.0000");
+        withPostingPermission(() -> {
+            ScmCustomerStatementVO created = statementService.freeze(statementForm(customerId, true));
+            ScmCustomerStatementVO reloaded = statementService.loadForPrint(created.getId());
+            assertThat(reloaded.getIncludePosting()).isTrue();
+            assertThat(factsOf(reloaded)).containsExactlyInAnyOrder("RECEIPT", "POSTING");
+            assertThat(postingLine(reloaded).getPostingAmount()).isEqualByComparingTo("5.0000");
+            return null;
+        });
+    }
+
+    @Test
+    @DisplayName("#4 没有过账查询权限：勾选包含过账被拒绝，不勾选照常出单")
+    void postingLinesRequirePostingPermission() {
+        Long customerId = newCustomer();
+        insertReceipt(customerId, "10.0000");
+        try (MockedStatic<StpUtil> stp = mockStatic(StpUtil.class)) {
+            stp.when(() -> StpUtil.hasPermission(FinancePermission.POSTING_QUERY)).thenReturn(false);
+            assertThatThrownBy(() -> statementService.freeze(statementForm(customerId, true)))
+                .isInstanceOf(ScmDataScopeException.class);
+            // 不包含过账时，普通对账权限不受影响
+            assertThat(factsOf(statementService.freeze(statementForm(customerId, false)))).containsExactly("RECEIPT");
+        }
+    }
+
+    /**
+     * 勾选「包含过账」要求 {@code scm:finance:posting:query}；IT 里没有 Sa-Token 登录上下文，
+     * {@code StpUtil.hasPermission} 默认取 false，必须显式点名放行。
+     */
+    private <T> T withPostingPermission(Supplier<T> body) {
+        try (MockedStatic<StpUtil> stp = mockStatic(StpUtil.class)) {
+            stp.when(() -> StpUtil.hasPermission(FinancePermission.POSTING_QUERY)).thenReturn(true);
+            return body.get();
+        }
     }
 
     private static List<String> factsOf(ScmCustomerStatementVO statement) {

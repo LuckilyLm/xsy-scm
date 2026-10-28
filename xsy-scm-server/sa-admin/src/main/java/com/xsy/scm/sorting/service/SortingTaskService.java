@@ -13,6 +13,7 @@ import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.order.service.OrderActualQuantitySyncService;
+import com.xsy.scm.order.support.PlannedQuantity;
 import com.xsy.scm.sorting.dao.SortingPartRecordDao;
 import com.xsy.scm.sorting.dao.SortingQueryDao;
 import com.xsy.scm.sorting.dao.SortingTaskDao;
@@ -372,12 +373,18 @@ public class SortingTaskService {
         if (found.size() != ids.size())
             throw new ScmBusinessException(ORDER_NOT_SORTABLE);
         for (var line : found) {
+            // 非标行允许还没称重：计划量取实发量，没有实发量时回退订购量（称重后回写订单）
             if (!ScmOrderStatusEnum.CONFIRMED.name().equals(line.getOrderStatus())
                 || Boolean.TRUE.equals(line.getOrderDeleted()) || Boolean.TRUE.equals(line.getItemDeleted())
-                || line.getActualQuantity() == null)
+                || plannedQuantityOf(line) == null || plannedQuantityOf(line).signum() <= 0)
                 throw new ScmBusinessException(ORDER_NOT_SORTABLE);
         }
         return found;
+    }
+
+    /** 计划量：已称重取实发量，未称重（非标）取订购量；两者都没有就不可分拣。 */
+    private static BigDecimal plannedQuantityOf(SortingOrderLineSnapshot line) {
+        return PlannedQuantity.of(line.getActualQuantity(), line.getOrderedQuantity());
     }
 
     private SortingTaskItemEntity newItem(Long taskId, SortingOrderLineSnapshot line) {
@@ -396,8 +403,9 @@ public class SortingTaskService {
         item.setSpecNameSnapshot(line.getSpecNameSnapshot());
         item.setSaleUnitSnapshot(line.getSaleUnitSnapshot());
         item.setProductTypeSnapshot(line.getProductTypeSnapshot());
-        // 计划量 = 建单时保存的订单行实发量；订单侧的值之后怎么变都不影响已生成的任务。
-        item.setPlannedQuantitySnapshot(line.getActualQuantity());
+        // 计划量 = 建单时保存的订单行实发量；还没称重的非标行以下单量作为计划量。
+        // 订单侧的值之后怎么变都不影响已生成的任务。
+        item.setPlannedQuantitySnapshot(plannedQuantityOf(line));
         item.setOccupationStatus(ScmSortingOccupationStatusEnum.ACTIVE.name());
         item.setVersion(0);
         stamp(item, true);

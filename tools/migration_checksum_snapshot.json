@@ -840,6 +840,10 @@
     "210": {
       "file": "V210__scm_mall_order_only.sql",
       "checksum": 1483492169
+    },
+    "211": {
+      "file": "V211__scm_sales_order_item_remark.sql",
+      "checksum": 353076605
     }
   }
 }

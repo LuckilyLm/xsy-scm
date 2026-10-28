@@ -23,5 +23,7 @@ public class SalesOrderItemForm {
     private String unitPrice;
     @Size(max = 500, message = "改价原因不能超过500个字符")
     private String overrideReason;
+    @Size(max = 200, message = "商品备注不能超过200个字符")
+    private String remark;
     private Integer sortOrder;
 }

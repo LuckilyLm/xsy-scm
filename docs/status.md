@@ -23,6 +23,27 @@
   - 页面样式巡检（1440×900 / 390×844 截图）：修掉三处问题——详情抽屉日志表未给 `scroll.x`，窄屏（抽屉被 `96vw` 限制）时「原因/快照」被裁掉且无法滚动；日志原因列没有宽度，在可滚动表里被压成 0；状态标签与返款状态标签没走 `ScmStatusTag`，返款三态也看不出轻重（现为未返款=warning、部分=processing、已返款=success）。详情抽屉同时按其它详情页拆成「单据信息 / 操作日志」两段。
 - **未执行**：现场财务岗位对「隐藏」范围与返款状态的确认；过账单打印（当前只有导出，没有单独纸质模板）。
 
+## 审查修正批次：非标先确认后称重、行备注与三处越权/口径（2026-10-28，源码完成；定向 Pg IT 与门禁已执行）
+
+按静态审查提出的 7 项问题逐条修正（第 2 项按负责人纠正降为额外功能的缺陷，不算客户需求缺口）。口径见 `docs/decisions.md`「非标行先确认后称重」「商品行备注」「订单、对账与采购边界修正」。
+
+- **非标行先确认后称重**：`SalesOrderService.confirm` 对非标行允许实发量为空，行结算额与订单结算合计按订购量 × 锁定单价暂计；标品仍强制实发量（`ORDER_ACTUAL_QUANTITY_REQUIRED`）。授信检查（`creditCheck`）对未称重非标行同样按订购量估算，不再 40963。分拣侧去掉「必须有实发量」的过滤：`SortingQueryDao.xml` 候选行不再要求 `actual_quantity IS NOT NULL` 并补选 `ordered_quantity`，`SortingTaskService.plannedQuantityOf` 按「实发量 > 0 取实发量，否则取订购量」冻结计划量。称重完成后仍由 `OrderActualQuantitySyncService` 回写实发量并重算结算额。
+- **计划数量口径贯穿到下游**：确认放开之后，「先按订单做计划」的地方不能各自再判断一次实发量。新增 `order/support/PlannedQuantity`（实发量 > 0 取实发量，否则取订购量），用在授信检查、分拣计划量、采购需求生成（`PurchaseSnapshotFactory.plannedQuantity`）、采购需求计算批次，以及两条采购需求 SQL（`listSourceItems`、`summaryPreview` 的 `SUM` 与过滤）和销售报表成交数量（`ReportDao.salesByProduct`）。否则未称重订单在 14:00 采购时会被整体跳过，报表里「有金额没数量」把成交均价算高。
+- **商品行备注**：新增 V211 `xsy_sales_order_item.remark`（VARCHAR(200)）；`SalesOrderItemEntity/Form/VO` 补字段，`OrderSnapshotFactory` 冻结行备注；Excel 导入与整单粘贴逐行落备注（不再汇总成整单备注），客户分拣单/送货单打印 `remark` 列；前端录单明细表、订单详情、粘贴预览按行展示与回填。
+- **整单粘贴越权**：`pastePreview` 改为同时要求 `scm:order:add` 与 `scm:price:resolve:query`（`SaMode.AND`），并在预览前走 `CustomerService.requireInCurrentScope`；越权客户直接 403，不返回协议价。
+- **对账单读过账**：`ScmCustomerStatementService.loadFacts` 在 `includePosting` 时校验 `scm:finance:posting:query`，没有权限抛 `ScmDataScopeException`；不勾选过账不受影响。页面勾选框按同一权限渲染。
+- **采购自动补价单位**：`PurchaseOrderItemDao.latestPurchasePricesByUnit` 用 `DISTINCT ON (sku_id, purchase_unit_snapshot)` 取同 SKU 同采购单位的最近已提交价；没有同单位参考价保持待定价，不再拿公斤价填斤价。
+- **自动锁单抢先**：`PurchaseOrderAutoLockJob` 先调 `PurchasePriceService.autoFill` 再 `autoLock`，两步各自 try/catch；`autoFill` 本身幂等，补价后再锁不会产生待定价的锁单。
+- **验证（已执行）**：
+  - `python tools/verify.py quality` PASS（错误码注册、跨域 DAO、阶段注释、Checkstyle、迁移清单自检）。
+  - 定向 Pg IT：`SortingTaskPgIT` 31 项（新增「还没称重的非标行也能建分拣任务：计划量按订购量暂计，称完回写实际值」）、`SalesOrderPastePreviewIT` 5 项（新增越权拒绝、行备注与手工价原文）、`StatementPostingOptionPgIT` 4 项（新增无过账查询权限被拒）、`PurchasePriceWindowIT` 6 项（新增单位不符保持待定价、锁单任务先补价），全部通过。
+  - 定向单测：`SalesOrderImportServiceTest` 30、`SalesOrderServiceIT` 18（新增「行备注落库并按行读回」：创建—修改覆盖—清空，整单备注不受影响）、`OrderRulesTest` 32、`OrderWebTest` 9、`SortingStandardGuardTest` 2、`ScmOptimisticLockIT` 1，全部通过。
+  - `ScmPrintBatchIT` 2 项复跑通过，#1 补断言：行备注 `remark` 经 `SalesOrderItemMapper` 显式映射（`SELECT *` → 实体）后进入客户分拣单渲染行，不再依赖 MyBatis 自动映射。
+  - 计划数量下游：`PurchaseDemandServiceIT` 10（新增「还没称重的非标订单按订购量生成需求」）、`PurchaseDemandSummaryPreviewIT` 11、`PurchaseOrderServiceIT` 11、`PurchaseRulesTest` 37、`ScmReportPgIT` 10（成交数量改为按计划数量统计）、`ScmReportDataScopePgIT` 8、`ScmOrderExceptionReadDaoPgIT` 1、`PurchaseDailyReportPgIT` 8，全部通过。
+  - `StatementPostingOptionPgIT` 的旧断言按新权限口径改写：IT 没有 Sa-Token 登录上下文，`StpUtil.hasPermission` 默认 false，勾选过账的用例改用 `MockedStatic<StpUtil>` 显式放行。
+  - `python tools/verify.py frontend`：首次 FAIL 是合并 `origin/main` 商城「仅下单」带进来的既有红——订单详情新增「确认不会自动扣款」`scm-cell-hint`，`system.test.mjs` 的 hint 基线仍停在 38。按基线自身的口径（不告知就会操作错误）把基线记为 39 并写明来由，复跑 PASS。这条与本次审查修正无关，属于合并后 main 的门禁红。
+- **未执行**：净改动的 E2E 全量回归；现场对「确认时暂计、称重后结算」的签字确认；V211 尚未应用到本地开发库（下次后端启动由 Flyway 自动应用，迁移快照已按文件校验和冻结）。
+
 ## 2026-10-28 现场确认后的 P0 第一批（源码完成；后端编译、定向单测、新增 Pg IT 与前端静态检查已执行）
 
 本批按 [2026-10-28 客户现场确认](requirements/2026-10-28-客户现场确认.md) 与 `docs/decisions.md` 的 D-1028 系列落地，迁移 V186–V198 已写入源码。未做电子秤或现场验收。

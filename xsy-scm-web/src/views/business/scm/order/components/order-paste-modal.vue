@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
-import {orderApi} from '/@/api/business/scm/order-api';
+import {orderApi, type PastePreviewRow} from '/@/api/business/scm/order-api';
 import type {Id, Item} from '../order-types';
 import {amount, fixed} from '../order-form-model';
 import {orderError} from '../order-errors';
@@ -75,20 +75,8 @@ interface PasteRow {
   remark: string;
 }
 
-interface PreviewRow extends PasteRow {
-  rowNumber: number;
-  skuId?: Id;
-  skuCode?: string;
-  matchedProductName?: string;
-  matchedSpecName?: string;
-  saleUnit?: string;
-  productType?: string;
-  resolvedUnitPrice?: string | null;
-  priceSource?: string | null;
-  manualPrice: boolean;
-  matched: boolean;
-  errors: Array<{rowNumber: number; column: string; code: string; message: string}>;
-}
+/** 预览行直接用接口类型：手工价原文在 rawUnitPrice，不要再伪造 unitPrice。 */
+type PreviewRow = PastePreviewRow;
 
 const props = defineProps<{open: boolean; customerId?: Id; existingSkuIds?: Id[]}>();
 const emit = defineEmits<{
@@ -182,7 +170,7 @@ async function preview() {
   parseError.value = '';
   try {
     const r = await orderApi.pastePreview({customerId: props.customerId, rows: rows.value});
-    previewRows.value = r.data.rows as unknown as PreviewRow[];
+    previewRows.value = r.data.rows;
     previewed.value = true;
     const duplicate = previewRows.value.find((row) => row.matched && (props.existingSkuIds ?? []).some((id) => String(id) === String(row.skuId)));
     if (duplicate) {
@@ -196,20 +184,26 @@ async function preview() {
 }
 
 function append() {
-  const items: Item[] = appendable.value.map((row) => ({
-    skuId: row.skuId,
-    orderedQuantity: fixed(row.quantity),
-    manualPriceOverride: row.manualPrice,
-    unitPrice: row.manualPrice ? fixed(row.unitPrice) : null,
-    overrideReason: row.manualPrice ? '整单粘贴' : null,
-    productNameSnapshot: row.matchedProductName,
-    specNameSnapshot: row.matchedSpecName,
-    saleUnitSnapshot: row.saleUnit,
-    skuCodeSnapshot: row.skuCode,
-    productTypeSnapshot: row.productType,
-    draftUnitPrice: row.resolvedUnitPrice ?? null,
-    draftPriceSource: row.priceSource ?? null,
-  }));
+  const items: Item[] = appendable.value.map((row) => {
+    // 手工价的原文在 rawUnitPrice：后端不返回 unitPrice，别再按不存在的字段取值
+    const manualUnitPrice = row.manualPrice && row.rawUnitPrice ? fixed(row.rawUnitPrice) : null;
+    return {
+      skuId: row.skuId,
+      orderedQuantity: fixed(row.quantity ?? ''),
+      manualPriceOverride: manualUnitPrice != null,
+      unitPrice: manualUnitPrice,
+      overrideReason: manualUnitPrice != null ? '整单粘贴' : null,
+      productNameSnapshot: row.matchedProductName,
+      specNameSnapshot: row.matchedSpecName,
+      // 备注属于这一行商品：粘贴时保留，打印分拣单/送货单按行输出
+      remark: row.remark ?? null,
+      saleUnitSnapshot: row.saleUnit,
+      skuCodeSnapshot: row.skuCode,
+      productTypeSnapshot: row.productType,
+      draftUnitPrice: row.resolvedUnitPrice ?? null,
+      draftPriceSource: row.priceSource ?? null,
+    };
+  });
   emit('append', items);
   close();
 }

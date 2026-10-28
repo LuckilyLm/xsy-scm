@@ -3,7 +3,8 @@
     <a-form-item label="结算方" required><CustomerSelect v-model:value="settlementCustomerId" width="200px" /></a-form-item>
     <a-form-item label="原客户"><CustomerSelect v-model:value="customerId" width="200px" /></a-form-item>
     <a-form-item label="对账期间" required><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>
-    <a-form-item label="过账记录">
+    <!-- 过账是隐藏式单据：没有过账查询权限的人连选项都不该看到 -->
+    <a-form-item v-privilege="FINANCE_PERM.POSTING_QUERY" label="过账记录">
       <a-checkbox v-model:checked="includePosting">包含过账记录</a-checkbox>
     </a-form-item>
     <a-form-item>
@@ -90,6 +91,7 @@ import {moneyText} from '../finance/finance-form-model';
 import {reportError} from './report-errors';
 import {useScmExport} from '../common/use-scm-export';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
+import {SCM_FINANCE_PERMISSION as FINANCE_PERM} from '/@/constants/business/scm/finance-const';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import PrintDocumentModal from '/@/views/business/scm/print/print-document-modal.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';

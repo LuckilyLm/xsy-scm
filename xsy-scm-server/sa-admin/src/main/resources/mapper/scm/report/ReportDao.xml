@@ -239,8 +239,11 @@
             i.sku_code_snapshot AS skuCode, i.spec_name_snapshot AS specName, i.sale_unit_snapshot AS saleUnit,
             MAX(COALESCE(cat3.name, cat2.name, cat.name)) AS rootCategoryName, MAX(cat.name) AS leafCategoryName,
             COUNT(DISTINCT i.order_id) AS orderCount, COUNT(DISTINCT o.customer_id) AS customerCount,
-            SUM(i.actual_quantity) AS confirmedQuantity,
-            ROUND(SUM(i.settlement_line_amount) / NULLIF(SUM(i.actual_quantity), 0), 4) AS avgTransactionPrice,
+            <!-- 非标行称重前实发量为空：成交数量按计划数量(COALESCE(实发量, 订购量))统计，
+                 否则这些行会从数量里消失、却仍留在金额里，把成交均价算高 -->
+            SUM(COALESCE(i.actual_quantity, i.ordered_quantity)) AS confirmedQuantity,
+            ROUND(SUM(i.settlement_line_amount) / NULLIF(SUM(COALESCE(i.actual_quantity, i.ordered_quantity)), 0),
+            4) AS avgTransactionPrice,
             SUM(i.settlement_line_amount) AS settlementAmount,
             ROUND(100 * SUM(i.settlement_line_amount) / NULLIF(SUM(SUM(i.settlement_line_amount)) OVER (), 0),
             4) AS salesAmountSharePercent,

@@ -46,6 +46,8 @@ public class SalesOrderItemVO {
     private BigDecimal orderedLineAmount;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal settlementLineAmount;
+    /** 商品行备注（切段、去皮、分袋等），打印分拣单/送货单时随行输出。 */
+    private String remark;
     private Integer sortOrder;
     private Integer version;
     private Boolean deleted;

@@ -239,8 +239,8 @@
       不收窄的代价由两点兑住：入口只授建单权（现状仅仓库主管与超管），
       且本语句只取队列必需列，不取任何价格与金额。
       已确认订单的有效明细，且尚未被任何活动任务占用（裁决第 1、2 条）。
-      actual_quantity IS NOT NULL 是防御性重复：标品在提交时按订购量落值、非标在确认前必须已录实重，
-      因此 CONFIRMED 的行必然有值；写下这条是为了让「计划量快照 > 0」的前提在 SQL 里也看得出来。
+      非标行允许 actual_quantity 为空：称重发生在分拣台，不能要求「先填估计实重才能确认」；
+      这类行的分拣计划量在 {@code SortingTaskService.newItem} 里回退为订购量，称重完成后再回写实际值。
     -->
     <select id="candidateLines" resultType="com.xsy.scm.sorting.domain.vo.SortingCandidateLineVO">
         SELECT i.id AS sales_order_item_id, o.id AS sales_order_id, o.order_no, o.customer_id,
@@ -252,7 +252,6 @@
             AND i.deleted = FALSE
         WHERE o.deleted = FALSE
             AND o.status = 'CONFIRMED'
-            AND i.actual_quantity IS NOT NULL
             AND NOT EXISTS (SELECT 1 FROM xsy_sorting_task_item si WHERE si.sales_order_item_id = i.id AND
             si.deleted = FALSE AND si.occupation_status = 'ACTIVE')
         <if test="q.customerId != null">AND o.customer_id = #{q.customerId}</if>
@@ -269,7 +268,8 @@
         SELECT i.id AS sales_order_item_id, o.id AS sales_order_id, o.status AS order_status,
             o.deleted AS order_deleted, i.deleted AS item_deleted, o.order_no, o.customer_id,
             o.customer_name_snapshot AS customer_name, i.spu_id, i.sku_id, i.spu_code_snapshot, i.product_name_snapshot,
-            i.sku_code_snapshot, i.spec_name_snapshot, i.sale_unit_snapshot, i.product_type_snapshot, i.actual_quantity
+            i.sku_code_snapshot, i.spec_name_snapshot, i.sale_unit_snapshot, i.product_type_snapshot, i.actual_quantity,
+            i.ordered_quantity
         FROM xsy_sales_order_item i
         JOIN xsy_sales_order o ON o.id = i.order_id
         WHERE i.id IN <foreach collection="ids" item="lineId" open="(" separator="," close=")">#{lineId}</foreach>

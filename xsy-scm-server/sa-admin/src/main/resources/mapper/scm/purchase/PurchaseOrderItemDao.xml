@@ -191,4 +191,31 @@
         ORDER BY poi.sku_id, po.submitted_at DESC NULLS LAST, poi.id DESC
     </select>
 
+    <!--
+      每个「商品规格 + 采购单位」最近一条已提交采购行：自动补价只能引用同单位的历史价。
+      公斤与斤、件与包的换算关系不在这一层猜测，缺同单位参考价就保持待定价。
+    -->
+    <select id="latestPurchasePricesByUnit" resultType="com.xsy.scm.purchase.domain.vo.PurchaseLastPriceVO">
+        SELECT DISTINCT ON (poi.sku_id, poi.purchase_unit_snapshot)
+            poi.sku_id AS skuId, poi.purchase_price AS purchasePrice,
+            poi.purchase_unit_snapshot AS purchaseUnit, po.order_no AS purchaseOrderNo,
+            po.submitted_at AS submittedAt, po.supplier_name_snapshot AS supplierName
+        FROM xsy_purchase_order_item poi
+        JOIN xsy_purchase_order po ON po.id = poi.purchase_order_id
+            AND po.deleted = FALSE
+        WHERE poi.deleted = FALSE
+            AND poi.purchase_price IS NOT NULL
+            AND poi.purchase_unit_snapshot IS NOT NULL
+            AND poi.sku_id IN
+            <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
+            AND po.status IN
+            <foreach collection="statuses" item="status" open="(" separator="," close=")">#{status}</foreach>
+        <if test="scope != null and scope.all == false">
+            AND po.purchaser_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">AND FALSE</if>
+        ORDER BY poi.sku_id, poi.purchase_unit_snapshot, po.submitted_at DESC NULLS LAST, poi.id DESC
+    </select>
+
 </mapper>

@@ -46,6 +46,7 @@ import com.xsy.scm.order.manager.OrderStateMachine;
 import com.xsy.scm.order.manager.OrderValidator;
 import com.xsy.scm.order.manager.SalesOrderItemChangeSet;
 import com.xsy.scm.order.permission.OrderPermission;
+import com.xsy.scm.order.support.PlannedQuantity;
 import com.xsy.scm.pricing.constant.AgreementFormulaType;
 import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.pricing.service.PriceResolver;
@@ -633,10 +634,12 @@ public class SalesOrderService {
         }
         var rows = salesOrderItemDao.list(orderId);
         var amount = OrderAmountCalculator.orderAmount(rows.stream().map(row -> {
-            if (row.getActualQuantity() == null || row.getActualQuantity().signum() <= 0) {
+            // 未称重的非标行与确认口径一致：按订购量估算，称重后再以实际值结算
+            boolean weighed = row.getActualQuantity() != null && row.getActualQuantity().signum() > 0;
+            if (!weighed && !ScmProductTypeEnum.NON_STANDARD.name().equals(row.getProductTypeSnapshot()))
                 throw new ScmBusinessException(ORDER_ACTUAL_QUANTITY_REQUIRED);
-            }
-            return OrderAmountCalculator.lineAmount(row.getActualQuantity(), row.getLockedUnitPrice());
+            return OrderAmountCalculator.lineAmount(
+                PlannedQuantity.of(row.getActualQuantity(), row.getOrderedQuantity()), row.getLockedUnitPrice());
         }).toList());
         return orderCreditService.checkSettlement(order.getSettlementCustomerId(), amount);
     }
@@ -685,8 +688,14 @@ public class SalesOrderService {
             confirmation == null ? null : confirmation.getSettlementMethod());
         var rows = salesOrderItemDao.list(salesOrder.getId());
         for (var row : rows) {
-            if (row.getActualQuantity() == null || row.getActualQuantity().signum() <= 0)
+            boolean weighed = row.getActualQuantity() != null && row.getActualQuantity().signum() > 0;
+            boolean nonStandard = ScmProductTypeEnum.NON_STANDARD.name().equals(row.getProductTypeSnapshot());
+            // 非标品可以带着「还没称」确认：实数量保持为空，金额按订购量暂计，分拣称重后由
+            // OrderActualQuantitySyncService 回写实际值并重算。要求先填估计实重，等于让销售替秤报数。
+            if (!weighed && !nonStandard)
                 throw new ScmBusinessException(ORDER_ACTUAL_QUANTITY_REQUIRED);
+            // 未称重的非标行按订购量暂计结算额；称重回写时会被实际值覆盖
+            BigDecimal settlementQuantity = weighed ? row.getActualQuantity() : row.getOrderedQuantity();
             boolean bundle = bundleSnapshotService.freeze(row, salesOrder.getMallDeliveryWarehouseId());
             if (ScmOrderSourceEnum.MALL.name().equals(salesOrder.getOrderSource()) && !bundle) {
                 if (salesOrder.getMallDeliveryWarehouseId() == null) {
@@ -696,11 +705,10 @@ public class SalesOrderService {
                     row.getSkuId(), row.getSaleUnitSnapshot());
                 row.setMallStockUnitSnapshot(conversion.stockUnit());
                 row.setMallStockUnitsPerSaleUnit(conversion.stockUnitsPerSaleUnit());
-                com.xsy.scm.inventory.service.InventorySaleUnitConverter.toStockQuantity(row.getActualQuantity(),
+                com.xsy.scm.inventory.service.InventorySaleUnitConverter.toStockQuantity(settlementQuantity,
                     conversion.stockUnit(), conversion.stockUnitsPerSaleUnit());
             }
-            row.setSettlementLineAmount(
-                OrderAmountCalculator.lineAmount(row.getActualQuantity(), row.getLockedUnitPrice()));
+            row.setSettlementLineAmount(OrderAmountCalculator.lineAmount(settlementQuantity, row.getLockedUnitPrice()));
             saveItem(row);
         }
         // 组合组成及售价分摊已在 freeze() 中保存，但确认订单不自动占库存；

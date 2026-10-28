@@ -1,8 +1,14 @@
 package com.xsy.scm.order;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
+import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
+import java.util.function.Supplier;
 import com.xsy.scm.order.domain.form.SalesOrderPasteForm;
 import com.xsy.scm.order.domain.vo.SalesOrderPastePreviewRowVO;
 import com.xsy.scm.order.service.SalesOrderPasteService;
@@ -100,6 +106,33 @@ class SalesOrderPastePreviewIT extends ScmW5PgITBase {
         assertThat(allowed.getRows().getFirst().getRawUnitPrice()).isEqualTo("2.5000");
     }
 
+    @Test
+    @DisplayName("#4 其他业务员的客户：预览直接按越权拒绝，不返回协议价")
+    void previewRejectsCustomerOutsideDataScope() {
+        Long customerId = newCustomer();
+        Long skuId = newOnShelfSku("PASTE-S");
+        List<SalesOrderPasteForm.Row> rows = List.of(row(skuId, "2.0000", null));
+
+        asEmployee(99001L, () -> assertThatThrownBy(() -> salesOrderPasteService.preview(form(customerId, rows), false))
+            .isExactlyInstanceOf(ScmDataScopeException.class));
+    }
+
+    @Test
+    @DisplayName("#5 行备注与手工价原文原样返回，供前端追加到订单行")
+    void previewKeepsRowRemarkAndRawPrice() {
+        Long customerId = newCustomer();
+        Long skuId = newOnShelfSku("PASTE-R");
+        SalesOrderPasteForm.Row manual = row(skuId, "1.0000", "2.5000");
+        manual.setRemark("去皮");
+
+        var preview = salesOrderPasteService.preview(form(customerId, List.of(manual)), true);
+
+        var row = preview.getRows().getFirst();
+        assertThat(row.getRemark()).isEqualTo("去皮");
+        assertThat(row.getRawUnitPrice()).isEqualTo("2.5000");
+        assertThat(row.isManualPrice()).isTrue();
+    }
+
     private SalesOrderPasteForm form(Long customerId, List<SalesOrderPasteForm.Row> rows) {
         SalesOrderPasteForm form = new SalesOrderPasteForm();
         form.setCustomerId(customerId);
@@ -124,5 +157,25 @@ class SalesOrderPastePreviewIT extends ScmW5PgITBase {
         Integer value = jdbc.queryForObject("SELECT count(*) FROM xsy_sales_order WHERE customer_id = ?",
             Integer.class, customerId);
         return value == null ? 0 : value;
+    }
+
+    /** 以非超管员工执行：客户归属别人时，预览必须按数据范围拒绝。 */
+    private <T> T asEmployee(Long employeeId, Supplier<T> body) {
+        RequestEmployee employee = new RequestEmployee();
+        employee.setEmployeeId(employeeId);
+        employee.setActualName("整单粘贴数据范围 IT");
+        employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
+        employee.setAdministratorFlag(false);
+        SmartRequestUtil.setRequestUser(employee);
+        try {
+            return body.get();
+        } finally {
+            RequestEmployee admin = new RequestEmployee();
+            admin.setEmployeeId(1L);
+            admin.setActualName("整单粘贴 IT 操作员");
+            admin.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
+            admin.setAdministratorFlag(true);
+            SmartRequestUtil.setRequestUser(admin);
+        }
     }
 }

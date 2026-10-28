@@ -1271,7 +1271,9 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     // 过账页工具栏的「虚拟单据：不生成应收应付，不参与核销」，不写的话财务会以为
     // 登记过账就等于给客户挂账，月末对账时把金额重复计一次。属于「不告知就操作错误」，
     // 不是实现口径说明。
-    hintClass: 38,
+    // 38 → 39（合并 origin/main 的商城「仅下单」）：订单详情待确认态补了一句
+    // 「确认不会自动扣款」。不告知的话，销售会以为点确认就把钱收了，客户账上却没动。
+    hintClass: 39,
     reportResidentInfoAlert: 0,
     residentLongText: 0,
   };

@@ -57,6 +57,9 @@ class ScmPrintBatchIT extends ScmW5PgITBase {
         Long secondOrder = confirmedSalesOrder(secondCustomer, newOnShelfSku("PB2"), "2.0000", "2.0000");
         moveDeliveryDate(firstOrder, businessDate);
         moveDeliveryDate(secondOrder, businessDate);
+        // 行备注要跟着商品走到纸面：不是整单备注，也不是打印模板里的空列
+        jdbc.update("UPDATE xsy_sales_order_item SET remark = '去皮' WHERE order_id = ?", firstOrder);
+        evictMybatisCache();
 
         ScmPrintBatchForm form = new ScmPrintBatchForm();
         form.setDocumentType("CUSTOMER_SORTING_SHEET");
@@ -69,6 +72,9 @@ class ScmPrintBatchIT extends ScmW5PgITBase {
         assertThat(preview.getFailed()).isZero();
         assertThat(preview.getRenders()).extracting(render -> render.getDocumentType())
             .containsOnly("CUSTOMER_SORTING_SHEET");
+        assertThat(preview.getRenders()).filteredOn(render -> firstOrder.equals(render.getBusinessId()))
+            .singleElement().satisfies(render -> assertThat(render.getRows()).singleElement()
+                .satisfies(row -> assertThat(row.get("remark")).isEqualTo("去皮")));
         assertThat(preview.getItems()).extracting(item -> item.getOrderId())
             .containsExactlyInAnyOrder(firstOrder, secondOrder);
 

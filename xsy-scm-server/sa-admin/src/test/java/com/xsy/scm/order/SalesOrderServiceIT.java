@@ -123,8 +123,11 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         jdbc.update("UPDATE xsy_product_sku SET market_price=8.0000 WHERE id=?", sku);
         jdbc.update("UPDATE xsy_customer SET name='changed',settle_mode='GROUP',seller_id=NULL WHERE id=?", c);
         session.clearCache();
-        var pending = o;
-        expectCode(() -> orders.confirm(version(pending), prefix + "early"), 40963);
+        // 非标未称重也能确认：不要求销售先填估计实重，金额按订购量暂计，称重后回写实际值
+        o = orders.confirm(version(o), prefix + "confirm");
+        assertThat(o.getStatus()).isEqualTo("CONFIRMED");
+        assertThat(o.getItems().getFirst().getActualQuantity()).isNull();
+        assertThat(o.getSettlementTotalAmount()).isEqualByComparingTo("7.5000");
         var a = new OrderActualQuantityForm();
         a.setOrderId(o.getOrderId());
         a.setItemId(o.getItems().getFirst().getItemId());
@@ -132,7 +135,6 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         a.setActualQuantity("2.1234");
         a.setReason("人工称重");
         o = orders.actualQuantity(a, prefix + "actual");
-        o = orders.confirm(version(o), prefix + "confirm");
         assertThat(o.getSettlementTotalAmount()).isEqualByComparingTo("5.3085");
         assertThat(o.getOrderedTotalAmount()).isEqualByComparingTo("7.5000");
         assertThat(o.getSettleModeSnapshot()).isEqualTo("INDEPENDENT");
@@ -371,7 +373,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     }
 
     @Test
-    void mixedManualOrderWaitsForWeightAndCannotConfirmEarly() {
+    void mixedManualOrderConfirmsWithProvisionalWeightRowAmount() {
         var customerId = customer();
         var standardSku = newOnShelfSku("MIX_STANDARD");
         var weightSku = newOnShelfSku("MIX_WEIGHT");
@@ -385,7 +387,14 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
                 .satisfies(item -> assertThat(item.getActualQuantity()).isEqualByComparingTo("2.0000"));
         assertThat(order.getItems()).filteredOn(item -> item.getSkuId().equals(weightSku)).singleElement()
                 .satisfies(item -> assertThat(item.getActualQuantity()).isNull());
-        expectCode(() -> orders.confirm(version(order), prefix + "early-confirm"), 40963);
+        // 称重行未称也能确认：实数量保持空，结算额按订购量暂计，等分拣台称完再回写
+        var confirmed = orders.confirm(version(order), prefix + "early-confirm");
+        assertThat(confirmed.getStatus()).isEqualTo("CONFIRMED");
+        assertThat(confirmed.getItems()).filteredOn(item -> item.getSkuId().equals(weightSku)).singleElement()
+                .satisfies(item -> {
+                    assertThat(item.getActualQuantity()).isNull();
+                    assertThat(item.getSettlementLineAmount()).isEqualByComparingTo(item.getOrderedLineAmount());
+                });
     }
 
     @Test
@@ -690,5 +699,34 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         decision.setVersion(r.getVersion());
         assertThat(returns.cancel(decision, prefix + "cancel").getStatus()).isEqualTo("CANCELLED");
         assertThat(returns.create(f, prefix + "r3").getStatus()).isEqualTo("PENDING");
+    }
+
+    @Test
+    @DisplayName("商品行备注落库并按行读回：修改能覆盖、清空能生效，不写进整单备注")
+    void itemRemarkRoundTripsPerLine() {
+        var c = customer();
+        var f = form(c, newOnShelfSku("IREMARK"));
+        f.getItems().getFirst().setRemark("去皮");
+        var o = orders.create(f, prefix + "ir-create");
+
+        // 读的是实体 resultMap：行备注必须显式映射，否则 SELECT * 取回也落不到 VO
+        assertThat(o.getItems().getFirst().getRemark()).isEqualTo("去皮");
+        assertThat(o.getRemark()).as("整单备注另存").isEqualTo("测试订单");
+
+        var u = new SalesOrderUpdateForm();
+        org.springframework.beans.BeanUtils.copyProperties(f, u);
+        u.setOrderId(o.getOrderId());
+        u.setVersion(o.getVersion());
+        u.getItems().getFirst().setItemId(o.getItems().getFirst().getItemId());
+        u.getItems().getFirst().setVersion(o.getItems().getFirst().getVersion());
+        u.getItems().getFirst().setRemark("切段、分袋");
+        var updated = orders.update(u);
+        assertThat(updated.getItems().getFirst().getRemark()).isEqualTo("切段、分袋");
+
+        u.setVersion(updated.getVersion());
+        u.getItems().getFirst().setVersion(updated.getItems().getFirst().getVersion());
+        u.getItems().getFirst().setRemark(null);
+        assertThat(orders.update(u).getItems().getFirst().getRemark()).as("清空行备注要真的清掉").isNull();
+        assertThat(query.detail(o.getOrderId()).getRemark()).isEqualTo("测试订单");
     }
 }

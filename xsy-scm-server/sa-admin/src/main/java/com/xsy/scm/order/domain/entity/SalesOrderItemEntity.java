@@ -80,6 +80,9 @@ public class SalesOrderItemEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal settlementLineAmount;
+    /** 商品行备注：随行打印到分拣单/送货单，不能拿整单备注代替。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String remark;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer sortOrder;
     @Version

@@ -99,4 +99,13 @@ public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity
      */
     List<PurchaseLastPriceVO> latestPurchasePrices(@Param("skuIds") List<Long> skuIds,
         @Param("statuses") List<String> statuses, @Param("scope") ScmValueScope purchaserScope);
+
+    /**
+     * 每个「商品规格 + 采购单位」最近一条已提交采购行（只读）。
+     *
+     * <p>
+     * 自动补价必须按单位取参考价：同一规格可能先按公斤、后按斤采购，跨单位直接套用价格会把每公斤的价填成每斤的价。
+     */
+    List<PurchaseLastPriceVO> latestPurchasePricesByUnit(@Param("skuIds") List<Long> skuIds,
+        @Param("statuses") List<String> statuses, @Param("scope") ScmValueScope purchaserScope);
 }

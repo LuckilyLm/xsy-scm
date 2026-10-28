@@ -122,6 +122,10 @@
           </template>
         </a-space>
       </template>
+      <template v-else-if="column.dataIndex === 'remark'">
+        <!-- 行备注随商品打印到分拣单/送货单：切段、去皮、分袋这类要求不能写进整单备注 -->
+        <a-input v-model:value="record.remark" :maxlength="200" placeholder="如：切段、去皮" :aria-label="'商品备注 ' + (index + 1)" />
+      </template>
       <template v-else-if="column.dataIndex === 'action'">
         <a-button danger type="link" @click="items.splice(index, 1)">移除</a-button>
       </template>
@@ -179,6 +183,7 @@ const columns: TableColumnsType<Item> = [
     width: 185,
   },
   {title: '价格修订', dataIndex: 'override', width: 175},
+  {title: '备注', dataIndex: 'remark', width: 160},
   {
     title: '操作',
     dataIndex: 'action',

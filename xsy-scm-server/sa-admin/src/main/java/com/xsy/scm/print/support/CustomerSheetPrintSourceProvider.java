@@ -80,7 +80,7 @@ public abstract class CustomerSheetPrintSourceProvider implements ScmPrintSource
                 row.put("lockedUnitPrice", ScmPrintText.fixed(item.getLockedUnitPrice()));
                 row.put("settlementLineAmount", ScmPrintText.fixed(item.getSettlementLineAmount()));
             }
-            row.put("remark", "");
+            row.put("remark", ScmPrintText.text(item.getRemark()));
             rows.add(row);
         }
         var totals = ScmPrintSource.values();

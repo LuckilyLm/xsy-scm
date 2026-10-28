@@ -138,12 +138,14 @@ public class PurchaseDemandCalculationBatchService {
         int lineNo = 1;
         for (SalesOrderItemEntity source : sourceItems) {
             SalesOrderEntity order = orders.get(source.getOrderId());
-            if (order == null || source.getActualQuantity() == null || source.getActualQuantity().signum() <= 0) {
+            // 计划数量：非标行还没称重时按订购量备货，称重结果只影响结算，不回改已生成的采购需求
+            BigDecimal planned = PurchaseSnapshotFactory.plannedQuantity(source);
+            if (order == null || planned == null || planned.signum() <= 0) {
                 continue;
             }
             PurchaseDemandEntity old = existing.get(source.getId());
             BigDecimal required = old == null
-                ? consume(gaps, key(source.getSkuId(), source.getSaleUnitSnapshot()), source.getActualQuantity())
+                ? consume(gaps, key(source.getSkuId(), source.getSaleUnitSnapshot()), planned)
                 : BigDecimal.ZERO.setScale(4);
             PurchaseDemandCalculationBatchItemEntity item = new PurchaseDemandCalculationBatchItemEntity();
             item.setBatchId(null);
@@ -161,7 +163,7 @@ public class PurchaseDemandCalculationBatchService {
             item.setSpecValuesSnapshot(PurchaseSnapshotFactory.copySpecValues(source.getSpecValuesSnapshot()));
             item.setDemandUnitSnapshot(source.getSaleUnitSnapshot());
             item.setProductTypeSnapshot(source.getProductTypeSnapshot());
-            item.setSourceQuantity(source.getActualQuantity());
+            item.setSourceQuantity(planned);
             item.setRequiredQuantity(required);
             item.setExistingDemandId(old == null ? null : old.getId());
             items.add(item);

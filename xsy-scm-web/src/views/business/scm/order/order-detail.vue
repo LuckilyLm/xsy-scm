@@ -358,6 +358,7 @@ const columns: TableColumnsType<Item> = [
     width: 115,
   },
   {title: '结算金额', dataIndex: 'settlementLineAmount', width: 115},
+  {title: '备注', dataIndex: 'remark', width: 160, ellipsis: true},
   {
     title: '操作',
     dataIndex: 'action',

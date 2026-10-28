@@ -479,7 +479,7 @@ public abstract class ScmW5PgITBase {
      * 造一张已确认的销售订单（采购需求的唯一取数口径：{@code status = CONFIRMED} + {@code confirmed_at}）。
      *
      * <p>链路完全走订单命令：{@code create → submit → actualQuantity → confirm}。
-     * 非标品必须在 {@code confirm} 前显式给实数量，因此这里一定要调 {@code actualQuantity}。
+     * 要造「确认了但还没称重」的非标订单，用 {@link #confirmedUnweighedSalesOrder}。
      *
      * <p>幂等键带逐张递增的序号：同一用例造多张订单时必须各不相同，否则第二次会撞
      * 订单域的「同键不同内容」判定（40990）。见 {@link #salesOrderSequence}。
@@ -489,6 +489,33 @@ public abstract class ScmW5PgITBase {
     protected Long confirmedSalesOrder(Long customerId, Long skuId,
                                        String orderedQuantity, String actualQuantity) {
         String scope = prefix + ":so:" + (++salesOrderSequence);
+        SalesOrderDetailVO order = submittedSalesOrder(scope, customerId, skuId, orderedQuantity);
+
+        OrderActualQuantityForm actual = new OrderActualQuantityForm();
+        actual.setOrderId(order.getOrderId());
+        actual.setItemId(order.getItems().getFirst().getItemId());
+        actual.setVersion(order.getItems().getFirst().getVersion());
+        actual.setActualQuantity(actualQuantity);
+        actual.setReason("W5 IT 实重");
+        order = salesOrderService.actualQuantity(actual, scope + ":actual");
+
+        return salesOrderService.confirm(salesOrderVersion(order), scope + ":confirm").getOrderId();
+    }
+
+    /**
+     * 造一张<b>还没称重</b>的已确认非标订单：实数量为空、结算额按订购量暂计。
+     *
+     * <p>现场顺序是先确认订单、分拣时秤端才出实际重量。要求确认前先填估计实重，等于让销售替秤报数。
+     *
+     * @return 该订单的 id（{@code xsy_sales_order.id}）
+     */
+    protected Long confirmedUnweighedSalesOrder(Long customerId, Long skuId, String orderedQuantity) {
+        String scope = prefix + ":so:" + (++salesOrderSequence);
+        SalesOrderDetailVO order = submittedSalesOrder(scope, customerId, skuId, orderedQuantity);
+        return salesOrderService.confirm(salesOrderVersion(order), scope + ":confirm").getOrderId();
+    }
+
+    private SalesOrderDetailVO submittedSalesOrder(String scope, Long customerId, Long skuId, String orderedQuantity) {
         SalesOrderAddForm form = new SalesOrderAddForm();
         form.setCustomerId(customerId);
         form.setOrderSource("ADMIN");
@@ -505,17 +532,7 @@ public abstract class ScmW5PgITBase {
         form.setItems(new ArrayList<>(List.of(item)));
 
         SalesOrderDetailVO order = salesOrderService.create(form, scope + ":create");
-        order = salesOrderService.submit(salesOrderVersion(order), scope + ":submit");
-
-        OrderActualQuantityForm actual = new OrderActualQuantityForm();
-        actual.setOrderId(order.getOrderId());
-        actual.setItemId(order.getItems().getFirst().getItemId());
-        actual.setVersion(order.getItems().getFirst().getVersion());
-        actual.setActualQuantity(actualQuantity);
-        actual.setReason("W5 IT 实重");
-        order = salesOrderService.actualQuantity(actual, scope + ":actual");
-
-        return salesOrderService.confirm(salesOrderVersion(order), scope + ":confirm").getOrderId();
+        return salesOrderService.submit(salesOrderVersion(order), scope + ":submit");
     }
 
     /**
@@ -543,6 +560,18 @@ public abstract class ScmW5PgITBase {
         Long supplierId = newPurchasableSupplier(suffix, skuId);
         Long customerId = newCustomer();
         Long salesOrderId = confirmedSalesOrder(customerId, skuId, orderedQuantity, actualQuantity);
+        return new Fixture(skuId, supplierId, customerId, salesOrderId,
+                confirmedSalesOrderItemId(salesOrderId), salesOrderConfirmedAt(salesOrderId));
+    }
+
+    /**
+     * 还没称重的非标订单：需求按订购量备货，不能等分拣台称完再生成（称重只影响结算）。
+     */
+    protected Fixture unweighedFixture(String suffix, String orderedQuantity) {
+        Long skuId = newOnShelfSku(suffix);
+        Long supplierId = newPurchasableSupplier(suffix, skuId);
+        Long customerId = newCustomer();
+        Long salesOrderId = confirmedUnweighedSalesOrder(customerId, skuId, orderedQuantity);
         return new Fixture(skuId, supplierId, customerId, salesOrderId,
                 confirmedSalesOrderItemId(salesOrderId), salesOrderConfirmedAt(salesOrderId));
     }

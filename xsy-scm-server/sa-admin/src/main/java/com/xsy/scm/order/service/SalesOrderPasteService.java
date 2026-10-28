@@ -3,6 +3,7 @@ package com.xsy.scm.order.service;
 import com.xsy.scm.common.constant.ScmCustomerStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.dao.CustomerDao;
+import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.order.domain.form.SalesOrderPasteForm;
 import com.xsy.scm.order.domain.vo.SalesOrderImportErrorVO;
 import com.xsy.scm.order.domain.vo.SalesOrderPastePreviewRowVO;
@@ -41,6 +42,7 @@ public class SalesOrderPasteService {
     private static final int MAX_ROWS = 100;
 
     private final CustomerDao customerDao;
+    private final CustomerService customerService;
     private final ProductSkuOptionDao productSkuOptionDao;
     private final PriceResolver priceResolver;
 
@@ -68,6 +70,8 @@ public class SalesOrderPasteService {
             result.setErrorRows(1);
             return result;
         }
+        // 预览会带出该客户的协议价：与普通价格预览同一口径，客户必须在当前数据范围内
+        customerService.requireInCurrentScope(customer.getId());
 
         var skuByName = loadSkus(rows);
         var previewRows = new ArrayList<SalesOrderPastePreviewRowVO>();

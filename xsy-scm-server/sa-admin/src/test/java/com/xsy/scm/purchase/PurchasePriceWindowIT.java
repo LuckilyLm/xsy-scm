@@ -186,6 +186,60 @@ class PurchasePriceWindowIT extends ScmW6PgITBase {
             Integer.class, itemId)).isZero();
     }
 
+    @Test
+    @DisplayName("#5 自动回填只认同一采购单位的历史价：公斤价不会被填成斤价")
+    void autoFillRequiresSamePurchaseUnit() {
+        Long skuId = newOnShelfSku("PW5");
+        Long supplierId = newPurchasableSupplier("PW5", skuId);
+        PurchaseOrderVO history = submitOrder(createDraftOrder("PW5-H", supplierId, skuId, "2.0000", "6.0000").getId());
+        PurchaseOrderVO pending = submitOrder(createPendingOrder("PW5-P", supplierId, skuId, "3.0000").getId());
+        Long pendingItemId = pending.getItems().getFirst().getId();
+        String pendingUnit = pending.getItems().getFirst().getPurchaseUnit();
+
+        // 历史行改成另一个单位：没有同单位参考价时必须保持待定价，不能直接套用
+        jdbc.update("UPDATE xsy_purchase_order_item SET purchase_unit_snapshot = ? WHERE id = ?",
+            pendingUnit + "-OTHER", history.getItems().getFirst().getId());
+        expireWindow(pending.getId(), pendingItemId);
+        purchasePriceAutoFillJob.autoFillExpiredPrices();
+        assertThat(reloadOrder(pending.getId()).getItems().getFirst().getPricePending()).isTrue();
+        assertThat(reloadOrder(pending.getId()).getItems().getFirst().getPurchasePrice()).isNull();
+
+        // 单位一致后才回填
+        jdbc.update("UPDATE xsy_purchase_order_item SET purchase_unit_snapshot = ? WHERE id = ?", pendingUnit,
+            history.getItems().getFirst().getId());
+        purchasePriceAutoFillJob.autoFillExpiredPrices();
+        PurchaseOrderVO filled = reloadOrder(pending.getId());
+        assertThat(filled.getItems().getFirst().getPricePending()).isFalse();
+        assertThat(filled.getItems().getFirst().getPurchasePrice()).isEqualByComparingTo("6.0000");
+    }
+
+    @Test
+    @DisplayName("#6 自动锁单任务先补价再锁单：锁单不会抢先把可回填的单锁死")
+    void autoLockJobFillsPriceBeforeLocking() {
+        Long skuId = newOnShelfSku("PW6");
+        Long supplierId = newPurchasableSupplier("PW6", skuId);
+        submitOrder(createDraftOrder("PW6-H", supplierId, skuId, "2.0000", "5.5000").getId());
+        PurchaseOrderVO pending = submitOrder(createPendingOrder("PW6-P", supplierId, skuId, "3.0000").getId());
+        Long pendingItemId = pending.getItems().getFirst().getId();
+        expireWindow(pending.getId(), pendingItemId);
+
+        // 只跑锁单任务：补价必须在同一轮里先发生，否则这张单会被锁成待定价
+        purchaseOrderAutoLockJob.lockExpiredOrders();
+
+        PurchaseOrderVO reloaded = reloadOrder(pending.getId());
+        assertThat(reloaded.getLockedFlag()).isTrue();
+        assertThat(reloaded.getItems().getFirst().getPricePending()).isFalse();
+        assertThat(reloaded.getItems().getFirst().getPurchasePrice()).isEqualByComparingTo("5.5000");
+    }
+
+    private void expireWindow(Long orderId, Long itemId) {
+        jdbc.update("UPDATE xsy_purchase_order_item SET price_window_started_at = CURRENT_TIMESTAMP - INTERVAL '8 days' "
+            + "WHERE id = ?", itemId);
+        jdbc.update("UPDATE xsy_purchase_order SET auto_lock_at = CURRENT_TIMESTAMP - INTERVAL '1 hour' WHERE id = ?",
+            orderId);
+        evictMybatisCache();
+    }
+
     private PurchaseOrderVO createPendingOrder(String suffix, Long supplierId, Long skuId, String quantity) {
         PurchaseOrderAddForm form = orderForm(supplierId, fixtureWarehouseId(), skuId, quantity, null);
         form.getItems().getFirst().setPricePending(true);

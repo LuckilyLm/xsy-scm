@@ -275,17 +275,21 @@ class ScmReportPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("销售成交均价：分母为 0 或实际数量缺失时返回 null，不是 0")
-    void avgPriceIsNullWhenConfirmedQuantityMissing() {
+    @DisplayName("销售成交均价：没称重的行按订购量计入数量；分母为 0 时返回 null，不是 0")
+    void avgPriceFallsBackToOrderedQuantityAndIsNullOnZeroDenominator() {
         Long customerId = 900_000_002L;
         Long orderId = insertSalesOrder("CONFIRMED", insideRange(), customerId);
+        // 非标行确认时还没称重：实发量为空、结算额按订购量暂计（此处故意给 0 便于比对）
         jdbc.update("UPDATE xsy_sales_order_item i SET actual_quantity = NULL, settlement_line_amount = 0 "
                 + "FROM xsy_sales_order o WHERE i.order_id = o.id AND o.id = ?", orderId);
+        evictMybatisCache();
 
-        SalesReportVO.ProductRow row = salesProductRowOf(orderId);
-        assertThat(row).isNotNull();
-        assertThat(row.getAvgTransactionPrice()).isNull();
-        assertThat(row.getConfirmedQuantity()).isNull();
+        SalesReportVO.ProductRow unweighed = salesProductRowOf(orderId);
+        assertThat(unweighed).isNotNull();
+        // 金额里有这一行，数量里也必须有一行：否则成交均价会被算高
+        assertThat(unweighed.getConfirmedQuantity()).isEqualByComparingTo("10.0000");
+        assertThat(unweighed.getAvgTransactionPrice()).isEqualByComparingTo("0.0000");
+        // 分母为 0 的分支由 SQL 的 NULLIF 兜底：订购量有 CHECK > 0，正常数据走不到，这里不为它造非法行
     }
 
     @Test

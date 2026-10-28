@@ -380,11 +380,14 @@ class SalesOrderImportServiceTest {
     }
 
     @Test
-    void rowRemarksAreAggregatedIntoOrderRemark() throws Exception {
+    void rowRemarkBelongsToItsOwnItemNotTheOrder() throws Exception {
         var result = service.importFile(
-            workbook(book -> book.getSheetAt(0).getRow(4).getCell(7).setCellValue("早上送达")), "key", true);
+            workbook(book -> book.getSheetAt(0).getRow(4).getCell(7).setCellValue("去皮")), "key", true);
         assertThat(result.getTotalErrors()).isZero();
-        assertThat(capturedForms().getFirst().getRemark()).isEqualTo("早上送达");
+        var form = capturedForms().getFirst();
+        // 备注跟着商品走：分拣单/送货单按行打印，不能汇总成整单备注
+        assertThat(form.getRemark()).isNull();
+        assertThat(form.getItems().getFirst().getRemark()).isEqualTo("去皮");
     }
 
     @Test

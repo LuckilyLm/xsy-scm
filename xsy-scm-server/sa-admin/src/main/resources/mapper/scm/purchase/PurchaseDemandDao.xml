@@ -49,8 +49,8 @@
             AND o.deleted = FALSE
         WHERE o.status = 'CONFIRMED'
             AND oi.deleted = FALSE
-            AND oi.actual_quantity IS NOT NULL
-            AND oi.actual_quantity &gt; 0
+            <!-- 非标行允许还没称重：计划数量取 COALESCE(实发量, 订购量)，与 Java 侧 PlannedQuantity 同一口径 -->
+            AND COALESCE(oi.actual_quantity, oi.ordered_quantity) &gt; 0
             AND o.confirmed_at &gt;= #{startAt}
             AND o.confirmed_at &lt; #{endAt}
         <if test="scope == null">AND FALSE</if>
@@ -97,8 +97,9 @@
     <!--
       订单汇总 / 库存缺口预览（只读聚合）。
 
-      取数口径 WHERE 与 listSourceItems 完全同源：已确认订单 + 有实数量 + 同一确认窗口，
+      取数口径 WHERE 与 listSourceItems 完全同源：已确认订单 + 计划数量 > 0 + 同一确认窗口，
       因此本预览看到的订单量与将来 generate 生成的需求数量一致（不改写需求语义）。
+      计划数量 = COALESCE(实发量, 订购量)：非标行分拣时才称重，采购不能等称完再下单。
 
       仓库只存在于库存/采购侧、订单行不带仓库，故 warehouseId 作为入参进入 xsy_inventory_balance
       的 LEFT JOIN 谓词（放 ON 而非 WHERE，否则左连退化成内连会把无余额的 SKU 整行藏掉）。
@@ -115,7 +116,7 @@
       selectedOrderReservedQuantity 只读既有预留事实 xsy_inventory_reservation（ACTIVE +
       SALES_ORDER_ITEM + 来源单落在同一确认窗口），不新造第二套预留记录。它按 oi.sku_id 相关，
       组内恒等，因此写成标量子查询而不是普通 LEFT JOIN —— 后者会让
-      SUM(oi.actual_quantity) 随预留行数翻倍。
+      SUM(COALESCE(oi.actual_quantity, oi.ordered_quantity)) 随预留行数翻倍。
 
       可用量 / 差额 / 状态全部用 NUMERIC 在 SQL 里算好（4 位定点），Java/前端不做浮点减法。
       非聚合列一律显式进 GROUP BY：xsy_inventory_balance 的部分唯一索引不构成 PG 的 GROUP BY
@@ -142,7 +143,8 @@
         FROM (SELECT oi.sku_id, k.sku_code, p.name AS product_name, k.spec_name AS sku_name, cat.name AS category_name,
             oi.sale_unit_snapshot AS demand_unit, b.unit AS inventory_unit,
             COUNT(DISTINCT oi.order_id) AS source_order_count, COUNT(oi.id) AS source_line_count,
-            SUM(oi.actual_quantity) AS order_demand_quantity, COALESCE(b.quantity, 0) AS on_hand_quantity,
+            SUM(COALESCE(oi.actual_quantity, oi.ordered_quantity)) AS order_demand_quantity,
+            COALESCE(b.quantity, 0) AS on_hand_quantity,
             COALESCE(b.reserved_quantity, 0) AS reserved_quantity,
             (COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0)) AS available_quantity,
             COALESCE((SELECT SUM(r.quantity) FROM xsy_inventory_reservation r WHERE r.deleted = FALSE AND
@@ -178,8 +180,9 @@
             AND o.deleted = FALSE LEFT JOIN xsy_product_sku k ON k.id = oi.sku_id LEFT JOIN xsy_product_spu p ON p.id =
             k.spu_id LEFT JOIN xsy_product_category cat ON cat.id = p.category_id LEFT JOIN xsy_inventory_balance b ON
             b.sku_id = oi.sku_id AND b.warehouse_id = #{query.warehouseId} AND
-            b.deleted = FALSE WHERE o.status = 'CONFIRMED' AND oi.deleted = FALSE AND oi.actual_quantity IS NOT NULL AND
-            oi.actual_quantity &gt; 0 AND o.confirmed_at &gt;= #{query.startAt} AND o.confirmed_at &lt; #{query.endAt}
+            b.deleted = FALSE WHERE o.status = 'CONFIRMED' AND oi.deleted = FALSE AND
+            COALESCE(oi.actual_quantity, oi.ordered_quantity) &gt; 0 AND
+            o.confirmed_at &gt;= #{query.startAt} AND o.confirmed_at &lt; #{query.endAt}
         <if test="query.categoryId != null">AND p.category_id = #{query.categoryId}</if>
         <if test="query.keyword != null and query.keyword != ''">
             AND (p.spu_code ILIKE CONCAT('%', #{query.keyword}, '%') OR

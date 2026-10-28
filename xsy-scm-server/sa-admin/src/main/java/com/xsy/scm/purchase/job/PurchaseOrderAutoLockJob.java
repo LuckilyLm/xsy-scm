@@ -2,6 +2,7 @@ package com.xsy.scm.purchase.job;
 
 import com.xsy.scm.purchase.dao.PurchaseOrderDao;
 import com.xsy.scm.purchase.service.PurchaseOrderLockService;
+import com.xsy.scm.purchase.service.PurchasePriceService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,11 +30,22 @@ public class PurchaseOrderAutoLockJob {
 
     private final PurchaseOrderDao purchaseOrderDao;
 
+    private final PurchasePriceService purchasePriceService;
+
     private final PurchaseOrderLockService purchaseOrderLockService;
 
+    /**
+     * 补价窗口与自动锁单是同一个到期日，顺序不能交给两个任务的初始延迟去碰运气： 一旦先锁单，补价任务就会因为「已锁单」永远跳过这张单。这里固定先补价、再锁单。
+     */
     @Scheduled(fixedDelayString = DELAY, initialDelayString = INITIAL_DELAY)
     public void lockExpiredOrders() {
         for (Long orderId : purchaseOrderDao.autoLockCandidates(BATCH_SIZE)) {
+            try {
+                purchasePriceService.autoFill(orderId);
+            } catch (RuntimeException exception) {
+                // 补价失败不阻断锁单：没有参考价的行本来就该带着待定价被锁住，等人工处理
+                log.warn("采购单自动补价失败：orderId={}", orderId, exception);
+            }
             try {
                 if (purchaseOrderLockService.autoLock(orderId)) {
                     log.info("采购单提交满 {} 天自动锁单：orderId={}", PurchaseOrderLockService.PRICE_WINDOW_DAYS, orderId);

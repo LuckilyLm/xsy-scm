@@ -24,6 +24,8 @@ export interface Item {
   orderedLineAmount?: string | null;
   actualQuantity?: string | null;
   settlementLineAmount?: string | null;
+  /** 商品行备注：随行打印到分拣单/送货单，不是整单备注。 */
+  remark?: string | null;
 }
 
 export interface Address {

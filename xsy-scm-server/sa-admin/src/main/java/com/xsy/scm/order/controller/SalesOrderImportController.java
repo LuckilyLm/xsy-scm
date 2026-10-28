@@ -1,7 +1,9 @@
 package com.xsy.scm.order.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import cn.dev33.satoken.stp.StpUtil;
+import com.xsy.scm.pricing.permission.PricingPermission;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -78,10 +80,10 @@ public class SalesOrderImportController {
     }
 
     /**
-     * 订单抽屉内的整单粘贴预览。只匹配商品和解析价格，不建单；粘贴行最终仍走正常订单命令。
+     * 订单抽屉内的整单粘贴预览。只匹配商品和解析价格，不建单；粘贴行最终仍走正常订单命令。 预览会读到客户协议价，权限与普通价格预览对齐：录单 + 价格查询。数据范围在服务里复核。
      */
     @PostMapping("/paste-preview")
-    @SaCheckPermission(OrderPermission.ADD)
+    @SaCheckPermission(value = {OrderPermission.ADD, PricingPermission.RESOLVE_QUERY}, mode = SaMode.AND)
     public ResponseDTO<SalesOrderPastePreviewVO> pastePreview(@Valid @RequestBody SalesOrderPasteForm form) {
         return ResponseDTO
             .ok(salesOrderPasteService.preview(form, StpUtil.hasPermission(OrderPermission.PRICE_OVERRIDE)));

@@ -120,6 +120,18 @@ class PurchaseDemandServiceIT extends ScmW5PgITBase {
         assertThat(row.getSourceConfirmedAt().toInstant()).isEqualTo(fixture.confirmedAt().toInstant());
     }
 
+    @Test
+    @DisplayName("还没称重的非标订单按订购量生成需求：采购不能等分拣台称完再下单")
+    void unweighedOrderGeneratesDemandOnOrderedQuantity() {
+        Fixture fixture = unweighedFixture("DGU", "4.0000");
+
+        PurchaseDemandService.GenerateResult result = demandService.generate(window(fixture), prefix + ":gu");
+
+        assertThat(result.getCreatedCount()).isEqualTo(1);
+        PurchaseDemandEntity row = myDemand(fixture);
+        assertThat(row.getRequiredQuantity()).isEqualByComparingTo("4.0000");
+    }
+
     // ------------------------------------------------------------------
     // 2. demand_date 派生
     // ------------------------------------------------------------------

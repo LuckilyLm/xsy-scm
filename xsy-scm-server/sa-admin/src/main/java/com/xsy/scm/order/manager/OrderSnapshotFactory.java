@@ -49,6 +49,8 @@ public final class OrderSnapshotFactory {
             applyPrice(orderItem, resolvedPrice);
         orderItem.setOrderedLineAmount(
             OrderAmountCalculator.lineAmount(orderItem.getOrderedQuantity(), orderItem.getDraftUnitPrice()));
+        // 行备注只属于这一行商品；整单备注另存，两者不能互相顶替
+        orderItem.setRemark(OrderValidator.trim(salesOrderItemForm.getRemark()));
         orderItem.setSortOrder(salesOrderItemForm.getSortOrder() == null ? 0 : salesOrderItemForm.getSortOrder());
         return orderItem;
     }

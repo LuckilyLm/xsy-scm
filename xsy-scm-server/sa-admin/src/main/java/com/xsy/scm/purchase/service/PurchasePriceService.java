@@ -174,11 +174,14 @@ public class PurchasePriceService {
             return false;
         }
 
-        Map<Long,
+        // 参考价必须同单位：同一规格可能先按公斤、后按斤采购，跨单位套用会把单价填错。
+        Map<String,
             PurchaseLastPriceVO> references = purchaseOrderItemDao
-                .latestPurchasePrices(pending.stream().map(PurchaseOrderItemEntity::getSkuId).distinct().toList(),
+                .latestPurchasePricesByUnit(pending.stream().map(PurchaseOrderItemEntity::getSkuId).distinct().toList(),
                     ScmPurchaseStatusEnum.committedNames(), ScmValueScope.all())
-                .stream().collect(Collectors.toMap(PurchaseLastPriceVO::getSkuId, Function.identity(), (a, b) -> a));
+                .stream()
+                .collect(Collectors.toMap(reference -> unitKey(reference.getSkuId(), reference.getPurchaseUnit()),
+                    Function.identity(), (a, b) -> a));
 
         boolean filled = false;
         OffsetDateTime now = OffsetDateTime.now();
@@ -186,11 +189,11 @@ public class PurchasePriceService {
             if (now.isBefore(row.getPriceWindowStartedAt().plusDays(PurchaseOrderLockService.PRICE_WINDOW_DAYS))) {
                 continue;
             }
-            PurchaseLastPriceVO reference = references.get(row.getSkuId());
+            PurchaseLastPriceVO reference = references.get(unitKey(row.getSkuId(), row.getPurchaseUnitSnapshot()));
             if (reference == null || reference.getPurchasePrice() == null) {
                 // 保持待定价，等人工补价；自动锁单不会让这一行变成 0 元
-                log.warn("采购价超期但没有可参考的最近采购价，保持待定价：orderId={}, itemId={}, skuId={}", order.getId(), row.getId(),
-                    row.getSkuId());
+                log.warn("采购价超期但没有同单位的最近采购价，保持待定价：orderId={}, itemId={}, skuId={}, unit={}", order.getId(), row.getId(),
+                    row.getSkuId(), row.getPurchaseUnitSnapshot());
                 continue;
             }
             applyPrice(row, reference.getPurchasePrice(), now, ScmPurchasePriceSourceEnum.AUTO_LAST_PRICE.name(),
@@ -252,6 +255,11 @@ public class PurchasePriceService {
         audit.setIdempotencyKey(PurchaseOrderValidator.trim(idempotencyKey));
         audit.setCreatedAt(OffsetDateTime.now());
         purchasePriceAdjustDao.insert(audit);
+    }
+
+    /** 参考价按「商品规格 + 采购单位」配对，单位不同的历史价不能被当成同一口径。 */
+    private static String unitKey(Long skuId, String purchaseUnit) {
+        return skuId + "|" + (purchaseUnit == null ? "" : purchaseUnit);
     }
 
     private static void assertWindowOpen(PurchaseOrderItemEntity item, OffsetDateTime now) {
