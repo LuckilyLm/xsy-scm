@@ -34,6 +34,16 @@ export function numberText(value: string | null | undefined): string {
   }
 }
 
+/** 税点按百分比展示：去掉无意义尾零（13.0000 → 13%），不参与任何金额计算。 */
+export function percentText(value: string | null | undefined): string {
+  if (value == null || value === '') return '—';
+  try {
+    return `${new LineAmountDecimal(value).toFixed(4).replace(/\.?0+$/, '')}%`;
+  } catch {
+    return '—';
+  }
+}
+
 export function dateTimeText(value: string | null | undefined): string {
   if (!value) return '—';
   const date = dayjs(value);

@@ -344,9 +344,14 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
     }
 
     private int rejectMessagesFor(Long lossGainId) {
+        // t_message 是全站共用表，data_id 只存业务单号字符串；订单确认等其它通知的 data_id
+        // 可能与报损单 id 撞号，必须同时按业务类型收敛，否则用例结果取决于谁先占了同一个数字。
         return jdbc.queryForObject(
-                "SELECT count(*) FROM t_message WHERE data_id = ? AND receiver_user_id = 1",
-                Integer.class, String.valueOf(lossGainId));
+                "SELECT count(*) FROM t_message WHERE message_type = ? AND data_id = ? AND receiver_user_id = 1",
+                Integer.class,
+                net.lab1024.sa.base.module.support.message.constant.MessageTypeEnum.SCM_INVENTORY_LOSS_GAIN
+                        .getValue(),
+                String.valueOf(lossGainId));
     }
 
     @Test

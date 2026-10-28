@@ -17,6 +17,7 @@ import com.xsy.scm.finance.dao.FinanceOperationLogDao;
 import com.xsy.scm.finance.dao.FinancePayableDao;
 import com.xsy.scm.finance.dao.FinancePayableSourceDao;
 import com.xsy.scm.finance.dao.FinancePaymentDao;
+import com.xsy.scm.finance.dao.FinancePostingDao;
 import com.xsy.scm.finance.dao.FinanceReceivableDao;
 import com.xsy.scm.finance.dao.FinanceReceivableSourceDao;
 import com.xsy.scm.finance.dao.FinanceReceiptDao;
@@ -24,6 +25,7 @@ import com.xsy.scm.finance.dao.FinanceWriteOffDao;
 import com.xsy.scm.finance.domain.entity.FinanceOperationLogEntity;
 import com.xsy.scm.finance.domain.entity.FinancePayableEntity;
 import com.xsy.scm.finance.domain.entity.FinancePaymentEntity;
+import com.xsy.scm.finance.domain.entity.FinancePostingEntity;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableEntity;
 import com.xsy.scm.finance.domain.entity.FinanceReceiptEntity;
 import com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity;
@@ -50,6 +52,7 @@ public class FinanceOperationLogQueryService {
     private final FinanceReceiptDao financeReceiptDao;
     private final FinancePaymentDao financePaymentDao;
     private final FinanceWriteOffDao financeWriteOffDao;
+    private final FinancePostingDao financePostingDao;
     private final FinanceReceivableSourceDao financeReceivableSourceDao;
     private final FinancePayableSourceDao financePayableSourceDao;
     private final FinanceCounterpartySourceDao financeCounterpartySourceDao;
@@ -150,6 +153,14 @@ public class FinanceOperationLogQueryService {
                     ? writeOff.getReverseOfId()
                     : businessId;
             }
+            case POSTING -> {
+                FinancePostingEntity posting = financePostingDao.selectById(businessId);
+                if (posting == null || Boolean.TRUE.equals(posting.getDeleted())) {
+                    throw new ScmBusinessException(FinanceErrorCode.POSTING_NOT_FOUND);
+                }
+                require(scope.getCustomerSellerScope().allows(financePostingDao.selectCustomerSellerId(businessId)));
+                return businessId;
+            }
         }
         throw new ScmBusinessException(VALIDATION_ERROR);
     }
@@ -172,6 +183,7 @@ public class FinanceOperationLogQueryService {
             case RECEIPT -> StpUtil.checkPermission(FinancePermission.RECEIPT_QUERY);
             case PAYMENT -> StpUtil.checkPermission(FinancePermission.PAYMENT_QUERY);
             case WRITE_OFF -> StpUtil.checkPermission(FinancePermission.WRITE_OFF_QUERY);
+            case POSTING -> StpUtil.checkPermission(FinancePermission.POSTING_QUERY);
         }
     }
 

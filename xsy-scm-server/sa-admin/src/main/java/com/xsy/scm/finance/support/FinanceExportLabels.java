@@ -5,6 +5,8 @@ import com.xsy.scm.finance.constant.ScmFinanceCounterpartyTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceEntryTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentSourceTypeEnum;
+import com.xsy.scm.finance.constant.ScmFinancePostingRefundStatusEnum;
+import com.xsy.scm.finance.constant.ScmFinancePostingStatusEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReceiptMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinanceSettleStateEnum;
 
@@ -83,6 +85,28 @@ public final class FinanceExportLabels {
         }
         try {
             return ScmFinancePaymentSourceTypeEnum.valueOf(value).getDesc();
+        } catch (IllegalArgumentException exception) {
+            return value;
+        }
+    }
+
+    public static String postingRefundStatus(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        try {
+            return ScmFinancePostingRefundStatusEnum.valueOf(value).getDesc();
+        } catch (IllegalArgumentException exception) {
+            return value;
+        }
+    }
+
+    public static String postingStatus(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        try {
+            return ScmFinancePostingStatusEnum.valueOf(value).getDesc();
         } catch (IllegalArgumentException exception) {
             return value;
         }

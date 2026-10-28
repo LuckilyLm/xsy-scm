@@ -1,6 +1,7 @@
 package com.xsy.scm.finance.dao;
 
 import com.xsy.scm.finance.domain.dto.FinanceCodCollectionOrderDto;
+import com.xsy.scm.finance.domain.dto.FinanceIndependentReturnSourceDto;
 import com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto;
 import com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto;
 import com.xsy.scm.finance.domain.dto.FinanceReceivableSourceDto;
@@ -56,6 +57,16 @@ public interface FinanceReceivableSourceDao {
      * 不加 {@code approved_quantity IS NOT NULL} 分支：{@code > 0} 对 NULL 恒不成立，未批准的行自然排除。
      */
     List<FinanceReturnSourceLineDto> selectApprovedReturnLines(@Param("orderReturnId") Long orderReturnId);
+
+    /**
+     * 独立退货（{@code order_id IS NULL}）的已批准单头，客户与结算主体取客户档案；非独立退货读不到。
+     */
+    FinanceIndependentReturnSourceDto selectApprovedIndependentReturn(@Param("orderReturnId") Long orderReturnId);
+
+    /**
+     * 独立退货的有效红字行，列与 {@link #selectApprovedReturnLines} 相同，但商品快照与订单元数据都来自退货行自身。
+     */
+    List<FinanceReturnSourceLineDto> selectApprovedIndependentReturnLines(@Param("orderReturnId") Long orderReturnId);
 
     Long selectOrderSellerId(@Param("salesOrderId") Long salesOrderId);
 

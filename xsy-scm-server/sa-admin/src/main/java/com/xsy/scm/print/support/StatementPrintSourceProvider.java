@@ -70,6 +70,7 @@ public class StatementPrintSourceProvider implements ScmPrintSourceProvider {
             row.put("receiptDelta", ScmPrintText.fixed(item.getReceiptDelta()));
             row.put("writeOffDelta", ScmPrintText.fixed(item.getWriteOffDelta()));
             row.put("refundDelta", ScmPrintText.fixed(item.getRefundDelta()));
+            row.put("postingAmount", ScmPrintText.fixed(item.getPostingAmount()));
             row.put("receivableBalance", ScmPrintText.fixed(item.getReceivableBalance()));
             rows.add(row);
         }

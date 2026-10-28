@@ -33,9 +33,22 @@ class ScmInventoryOutboundIT extends ScmW6PgITBase {
     @Autowired
     private InventoryReservationService reservations;
 
+    private Long outboundWarehouseId;
+
+    /**
+     * 负库存关闭的独立仓：这些用例守的是「没有货不能出」的守恒口径，
+     * 而种子仓 WH001 在 V186 起允许销售出库出负数量，借用它会把断言变成对开关的断言。
+     */
+    @Override
+    protected Long fixtureWarehouseId() {
+        if (outboundWarehouseId == null) {
+            outboundWarehouseId = newWarehouse("出库");
+        }
+        return outboundWarehouseId;
+    }
+
     private Long warehouseId() {
-        // Outbound invariants need a stable ledger unit; default-enabled selection is a separate warehouse rule.
-        return seedWarehouseId();
+        return fixtureWarehouseId();
     }
 
     /**

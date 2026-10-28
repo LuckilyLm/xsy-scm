@@ -24,8 +24,15 @@ public class OrderReturnEntity {
     private String returnNo;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long orderId;
+    /**
+     * ORDER = 关联原订单；INDEPENDENT = 独立退货，orderId 为空，客户与商品靠退货单自身快照。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String sourceType;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long customerId;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String customerNameSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String status;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

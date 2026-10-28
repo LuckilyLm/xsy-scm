@@ -113,22 +113,22 @@ class SmartAdminMenuComponentPgIT {
     }
 
     @Test
-    @DisplayName("Finance 五个页面菜单都指向已存在组件")
+    @DisplayName("Finance 六个页面菜单都指向已存在组件")
     void financePagesArePublishedWithTheirComponents() {
         // 能力点可以先行，但不能注册不存在的 .vue。
         assertThat(jdbc.queryForList(
                 "SELECT menu_id FROM t_menu WHERE (menu_id BETWEEN 1500 AND 1599"
                         + " OR api_perms LIKE 'scm:finance:%' OR web_perms LIKE 'scm:finance:%'"
                         + " OR path LIKE '/finance/%') AND menu_type = 2 ORDER BY menu_id", Long.class))
-                .as("F1-6 发布的只有五个应收、应付、收款、付款与核销页面")
-                .containsExactly(1501L, 1502L, 1503L, 1504L, 1505L);
+                .as("已发布的只有六个应收、应付、收款、付款、核销与过账页面")
+                .containsExactly(1501L, 1502L, 1503L, 1504L, 1505L, 1506L);
 
         assertThat(jdbc.queryForList(
                 "SELECT menu_id FROM t_menu WHERE (menu_id BETWEEN 1500 AND 1599"
                         + " OR api_perms LIKE 'scm:finance:%' OR web_perms LIKE 'scm:finance:%')"
                         + " AND component IS NOT NULL ORDER BY menu_id", Long.class))
-                .as("声明 component 的 Finance 菜单恰好就是五个真实页面")
-                .containsExactly(1501L, 1502L, 1503L, 1504L, 1505L);
+                .as("声明 component 的 Finance 菜单恰好就是六个真实页面")
+                .containsExactly(1501L, 1502L, 1503L, 1504L, 1505L, 1506L);
     }
 
     private String stripLeadingSlash(String component) {

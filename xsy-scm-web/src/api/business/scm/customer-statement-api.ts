@@ -5,6 +5,8 @@ export interface CustomerStatementForm {
   customerId?: ReportId;
   startDate: string;
   endDate: string;
+  /** 是否把过账记录一并列进对账单；默认不包含。 */
+  includePosting?: boolean;
 }
 export interface CustomerStatementLine {
   statementId: ReportId;
@@ -20,6 +22,8 @@ export interface CustomerStatementLine {
   receiptDelta: string;
   writeOffDelta: string;
   refundDelta: string;
+  /** 只有过账行有值；不是应收/收款变动，不参与滚动余额。 */
+  postingAmount?: string | null;
   receivableBalance: string;
 }
 export interface CustomerStatement {
@@ -30,6 +34,8 @@ export interface CustomerStatement {
   startDate: string;
   endDate: string;
   partialScope: boolean;
+  /** 生成时是否包含过账记录。 */
+  includePosting?: boolean;
   generatedAt: string;
   openingReceivable: string;
   receivableIncrease: string;

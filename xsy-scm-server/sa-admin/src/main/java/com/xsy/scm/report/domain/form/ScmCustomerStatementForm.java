@@ -21,4 +21,12 @@ public class ScmCustomerStatementForm implements ScmReportDateFilter {
     private LocalDate startDate;
     @NotNull(message = "结束日期不能为空")
     private LocalDate endDate;
+
+    /**
+     * 是否把过账记录一并列进对账单；不填按「不包含」处理。
+     *
+     * <p>
+     * 过账行只有过账金额，不带应收/收款/核销变动，也不改期末净应收。
+     */
+    private Boolean includePosting;
 }

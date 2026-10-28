@@ -114,7 +114,16 @@ public enum FinanceErrorCode implements ScmErrorCode {
     /**
      * 抹零的核销行不能走通用「反向核销」：它还必须把抹零事实置为 REVERSED，否则状态与余额会不一致。
      */
-    WAIVER_REVERSE_VIA_WAIVER(41165, "抹零核销请通过抹零反向接口撤销");
+    WAIVER_REVERSE_VIA_WAIVER(41165, "抹零核销请通过抹零反向接口撤销"),
+
+    // ---- 过账特殊单据 ----
+    POSTING_NOT_FOUND(41184, "过账记录不存在"),
+    POSTING_ALREADY_VOIDED(41185, "该过账记录已作废，不能重复作废或修改"),
+    POSTING_CUSTOMER_NOT_FOUND(41186, "过账客户不存在或已删除"),
+    POSTING_VOID_REASON_REQUIRED(41187, "作废过账必须填写作废原因"),
+    POSTING_AMOUNT_INVALID(41189, "过账金额必须大于 0"),
+    POSTING_TAX_RATE_INVALID(41190, "税点必须在 0 到 100 之间"),
+    POSTING_REFUND_STATUS_INVALID(41191, "返款状态只能是未返款、部分返款或已返款");
 
     private final int code;
     private final String msg;

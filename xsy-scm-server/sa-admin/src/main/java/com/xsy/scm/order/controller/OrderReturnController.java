@@ -8,15 +8,21 @@ import com.xsy.scm.order.domain.vo.OrderReturnReceiptVO;
 import com.xsy.scm.order.domain.form.OrderReturnAddForm;
 import com.xsy.scm.order.domain.form.OrderReturnApproveForm;
 import com.xsy.scm.order.domain.form.OrderReturnDecisionForm;
+import com.xsy.scm.order.domain.form.OrderReturnIndependentAddForm;
+import com.xsy.scm.order.domain.form.OrderReturnIndependentApproveForm;
+import com.xsy.scm.order.domain.form.OrderReturnPricePreviewForm;
 import com.xsy.scm.order.domain.form.OrderReturnQueryForm;
-
 import com.xsy.scm.order.domain.vo.OrderReturnDetailVO;
+import com.xsy.scm.order.domain.vo.OrderReturnPricePreviewVO;
 import com.xsy.scm.order.domain.vo.OrderReturnVO;
+
+import java.util.List;
 
 import com.xsy.scm.order.permission.OrderPermission;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,6 +68,35 @@ public class OrderReturnController {
     public ResponseDTO<OrderReturnDetailVO> approve(@Valid @RequestBody OrderReturnApproveForm orderReturnApproveForm,
         @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderReturnService.approve(orderReturnApproveForm, key));
+    }
+
+    /**
+     * 独立退货建单：人工填价属于改价，必须具备订单改价权限。
+     */
+    @PostMapping("/independent/create")
+    @SaCheckPermission(OrderPermission.RETURN_ADD)
+    @OperateLog
+    public ResponseDTO<OrderReturnDetailVO> createIndependent(@Valid @RequestBody OrderReturnIndependentAddForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        if (form.getItems().stream().anyMatch(item -> item.getUnitPrice() != null && !item.getUnitPrice().isBlank()))
+            StpUtil.checkPermission(OrderPermission.PRICE_OVERRIDE);
+        return ResponseDTO.ok(orderReturnService.createIndependent(form, key));
+    }
+
+    @PostMapping("/independent/price/preview")
+    @SaCheckPermission(OrderPermission.RETURN_ADD)
+    public ResponseDTO<List<OrderReturnPricePreviewVO>> previewIndependentPrices(
+        @Valid @RequestBody OrderReturnPricePreviewForm form) {
+        return ResponseDTO.ok(orderReturnService.previewIndependentPrices(form));
+    }
+
+    @PostMapping("/independent/approve")
+    @SaCheckPermission(OrderPermission.RETURN_APPROVE)
+    @OperateLog
+    public ResponseDTO<OrderReturnDetailVO> approveIndependent(
+        @Valid @RequestBody OrderReturnIndependentApproveForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(orderReturnService.approveIndependent(form, key));
     }
 
     @PostMapping("/receive")

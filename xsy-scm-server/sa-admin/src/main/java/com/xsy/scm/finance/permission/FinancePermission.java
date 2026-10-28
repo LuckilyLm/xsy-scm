@@ -22,6 +22,14 @@ public final class FinancePermission {
     public static final String WAIVER_ADD = "scm:finance:waiver:add";
     public static final String WAIVER_REVERSE = "scm:finance:waiver:reverse";
 
+    /**
+     * 过账特殊单据：查询、登记、修改、作废各自授权。作废不复用修改权限 —— 作废会让一张对外账目失效，影响比改备注大。
+     */
+    public static final String POSTING_QUERY = "scm:finance:posting:query";
+    public static final String POSTING_ADD = "scm:finance:posting:add";
+    public static final String POSTING_UPDATE = "scm:finance:posting:update";
+    public static final String POSTING_VOID = "scm:finance:posting:void";
+
     public static final String WRITE_OFF_REVERSE = "scm:finance:write-off:reverse";
     public static final String RECEIPT_REVERSE = "scm:finance:receipt:reverse";
     public static final String PAYMENT_REVERSE = "scm:finance:payment:reverse";

@@ -190,7 +190,8 @@ class InventoryFulfillmentPgIT extends ScmW6PgITBase {
     @DisplayName("库存不足：整条线路回滚，第一行也不留在账上")
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void insufficientStockRollsBackWholeRoute() {
-        Long warehouseId = seedWarehouseId();
+        // 种子仓 WH001 自 V186 起允许销售出库出负数，这里另建普通仓才能验「库存不足必须拒绝」。
+        Long warehouseId = newWarehouse("缺货");
         Long skuId = newOnShelfSku("ff5");
         stockIn(warehouseId, skuId, "ff5", "6.0000");
         Long firstOrder = confirmedOrder(newCustomer(), skuId, "4.0000");

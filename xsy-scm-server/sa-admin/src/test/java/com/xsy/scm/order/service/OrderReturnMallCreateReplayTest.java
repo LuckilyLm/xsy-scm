@@ -30,6 +30,7 @@ class OrderReturnMallCreateReplayTest {
                 mock(SalesOrderItemDao.class), returns, mock(OrderReturnItemDao.class),
                 mock(OrderReturnReceiptItemDao.class), mock(OrderRefundDao.class), mock(OrderNumberGenerator.class),
                 idempotency, mock(OrderOperationLogRecorder.class), mock(ScmDataScopeService.class),
+                mock(com.xsy.scm.customer.service.CustomerService.class), mock(OrderReturnPriceService.class),
                 mock(FinanceReceivableService.class));
         OrderReturnAddForm request = new OrderReturnAddForm();
         request.setOrderId(21L);

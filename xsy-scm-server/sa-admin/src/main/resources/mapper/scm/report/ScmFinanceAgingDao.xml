@@ -79,13 +79,27 @@
         WITH accounts AS(
         <choose>
             <when test="query.receivable">
-                SELECT 'RECEIVABLE' AS account_type, r.id AS document_id, r.receivable_no AS document_no,
+                <!--
+                  客户级红字（独立退货）不挂单据：按客户 + 结算主体先进先出抵减最早未结的应收，
+                  credit_applied 是本单分到的抵扣额，open_amount = 本单未结 - 抵扣。
+                -->
+                SELECT account_type, document_id, document_no, source_id, source_no, counterparty_id,
+                    counterparty_name, settlement_customer_id, settlement_customer_name, event_at, due_date, amount,
+                    red_amount, net_amount, written_off_amount, GREATEST(base_open - credit_applied, 0) AS open_amount
+                FROM (SELECT raw.*,
+                    GREATEST(LEAST(raw.base_open + COALESCE(SUM(raw.base_open) OVER (PARTITION BY
+                    raw.customer_id, raw.settlement_customer_id ORDER BY raw.event_at, raw.document_id ROWS BETWEEN
+                    UNBOUNDED PRECEDING AND 1 PRECEDING), 0), raw.pool_amount) - COALESCE(SUM(raw.base_open) OVER
+                    (PARTITION BY raw.customer_id, raw.settlement_customer_id ORDER BY raw.event_at,
+                    raw.document_id ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING), 0), 0) AS credit_applied
+                FROM (SELECT 'RECEIVABLE' AS account_type, r.id AS document_id, r.receivable_no AS document_no,
                     r.order_id AS source_id, so.order_no AS source_no, r.customer_id AS counterparty_id,
                     r.customer_name_snapshot AS counterparty_name, r.settlement_customer_id,
                     r.settlement_customer_name_snapshot AS settlement_customer_name, r.event_at, r.due_date, r.amount,
                     COALESCE(red.amount, 0) AS red_amount, r.amount - COALESCE(red.amount, 0) AS net_amount,
                     COALESCE(wo.amount, 0) AS written_off_amount,
-                    GREATEST(r.amount - COALESCE(red.amount, 0) - COALESCE(wo.amount, 0), 0) AS open_amount
+                    GREATEST(r.amount - COALESCE(red.amount, 0) - COALESCE(wo.amount, 0), 0) AS base_open,
+                    COALESCE(pool.amount, 0) AS pool_amount, r.customer_id AS customer_id
                 FROM xsy_finance_receivable r
                 JOIN xsy_sales_order so ON so.id = r.order_id
                     AND so.deleted = FALSE
@@ -97,10 +111,15 @@
                 LEFT JOIN LATERAL (SELECT SUM(CASE WHEN x.entry_type = 'NORMAL' THEN x.amount ELSE -x.amount END) AS
                     amount FROM xsy_finance_write_off x WHERE x.target_type = 'RECEIVABLE' AND x.target_id = r.id AND
                     x.deleted = FALSE AND x.written_off_at &lt; #{endAt}) wo ON TRUE
+                LEFT JOIN LATERAL (SELECT SUM(x.amount) AS amount FROM xsy_finance_receivable x WHERE
+                    x.entry_type = 'RED' AND x.original_receivable_id IS NULL AND x.deleted = FALSE AND
+                    x.event_at &lt; #{endAt} AND x.customer_id = r.customer_id AND
+                    x.settlement_customer_id = r.settlement_customer_id) pool ON TRUE
                 WHERE r.entry_type = 'NORMAL'
                     AND r.deleted = FALSE
                     AND r.event_at &lt; #{endAt}
                 <include refid="receivableScope"/>
+                ) raw) credited
             </when>
             <otherwise>
                 SELECT 'PAYABLE' AS account_type, p.id AS document_id, p.payable_no AS document_no,

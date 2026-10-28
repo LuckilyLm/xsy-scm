@@ -14,9 +14,18 @@ import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 public class OrderReturnItemVO {
     private Long returnItemId;
     private Long returnId;
+    /**
+     * 原单退货的订单行 ID；独立退货为空。
+     */
     private Long orderItemId;
+    private Long skuId;
     private String productName;
+    private String specName;
     private String unit;
+    /**
+     * 独立退货的取价来源（最近成交价 / 定价链来源 / 人工填价）；原单退货为空。
+     */
+    private String priceSource;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal requestedQuantity;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

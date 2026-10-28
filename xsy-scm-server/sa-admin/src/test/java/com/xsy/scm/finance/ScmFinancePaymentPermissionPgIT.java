@@ -114,10 +114,10 @@ class ScmFinancePaymentPermissionPgIT extends ScmW5PgITBase {
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND menu_type = 2",
                 Integer.class))
-                .as("F1-6 已发布五个带真实组件的财务页面")
-                .isEqualTo(5);
+                .as("已发布六个带真实组件的财务页面")
+                .isEqualTo(6);
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1501 AND 1505 AND component IS NOT NULL",
-                Integer.class)).isEqualTo(5);
+                "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1501 AND 1506 AND component IS NOT NULL",
+                Integer.class)).isEqualTo(6);
     }
 }

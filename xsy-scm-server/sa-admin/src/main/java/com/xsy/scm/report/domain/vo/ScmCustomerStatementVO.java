@@ -21,6 +21,8 @@ public class ScmCustomerStatementVO {
     private LocalDate startDate;
     private LocalDate endDate;
     private Boolean partialScope;
+    /** 生成时是否包含过账记录；只影响明细行，不影响任何余额口径。 */
+    private Boolean includePosting;
     private Long generatedByEmployeeId;
     private OffsetDateTime generatedAt;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

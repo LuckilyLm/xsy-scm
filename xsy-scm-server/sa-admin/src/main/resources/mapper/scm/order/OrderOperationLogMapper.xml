@@ -5,6 +5,7 @@
     <resultMap id="row" type="com.xsy.scm.order.domain.entity.OrderOperationLogEntity">
         <result column="id" property="id"/>
         <result column="order_id" property="orderId"/>
+        <result column="customer_id" property="customerId"/>
         <result column="operation_type" property="operationType"/>
         <result column="operator" property="operator"/>
         <result column="reason" property="reason"/>
@@ -17,26 +18,29 @@
     </resultMap>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_order_operation_log (order_id, operation_type, operator, reason, before_data, after_data,
-            created_by)
-        VALUES (#{orderId}, #{operationType}, #{operator}, #{reason},
+        INSERT INTO xsy_order_operation_log (order_id, customer_id, operation_type, operator, reason, before_data,
+            after_data, created_by)
+        VALUES (#{orderId}, #{customerId}, #{operationType}, #{operator}, #{reason},
             #{beforeData,typeHandler=com.xsy.scm.order.support.OrderJsonbTypeHandler},
             #{afterData,typeHandler=com.xsy.scm.order.support.OrderJsonbTypeHandler}, #{createdBy})
     </insert>
 
     <!--
       操作日志行没有 owner 列（operator/created_by 只回答「谁按的按钮」，不是归属），
-      因此可见性一律跟随父订单：order_id IN (范围内的订单)。日志表与 xsy_sales_order 是
-      多对一，用子查询而不是 JOIN，行数不会被放大、也不会因为订单被删而丢日志副本。
+      因此可见性跟随日志主体：原单日志跟 order_id IN (范围内的订单)，独立退货日志跟
+      customer_id IN (范围内客户)。日志表与订单/客户都是多对一，用子查询而不是 JOIN，
+      行数不会被放大、也不会因为主体被删而丢日志副本。
     -->
     <select id="query" resultMap="row">
         SELECT *
         FROM xsy_order_operation_log
         WHERE TRUE
         <if test="scope != null and scope.all == false">
-            AND order_id IN (SELECT so.id FROM xsy_sales_order so WHERE so.deleted = FALSE AND so.seller_id IN
+            AND (order_id IN (SELECT so.id FROM xsy_sales_order so WHERE so.deleted = FALSE AND so.seller_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
-            )
+            ) OR customer_id IN (SELECT c.id FROM xsy_customer c WHERE c.deleted = FALSE AND c.seller_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+            ))
         </if>
         <if test="scope == null">AND FALSE</if>
         <if test="query.operationType != null and query.operationType != ''">
@@ -47,9 +51,11 @@
           审计页若只能按操作类型过滤，跨订单混排下根本缩不到一张订单——开发库已经几百行。
         -->
         <if test="query.keyword != null and query.keyword != ''">
-            AND order_id IN (SELECT so.id FROM xsy_sales_order so WHERE so.deleted = FALSE
+            AND (order_id IN (SELECT so.id FROM xsy_sales_order so WHERE so.deleted = FALSE
             AND (so.order_no ILIKE '%' || #{query.keyword} || '%'
             OR so.customer_name_snapshot ILIKE '%' || #{query.keyword} || '%'))
+            OR customer_id IN (SELECT c.id FROM xsy_customer c WHERE c.deleted = FALSE
+            AND c.name ILIKE '%' || #{query.keyword} || '%'))
         </if>
         <if test="query.orderId != null">AND order_id = #{query.orderId}</if>
         <if test="query.startTime != null">AND created_at &gt;= #{query.startTime}</if>

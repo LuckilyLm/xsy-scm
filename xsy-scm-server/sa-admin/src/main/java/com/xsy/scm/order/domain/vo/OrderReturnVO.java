@@ -14,10 +14,17 @@ public class OrderReturnVO {
     private Long returnId;
     private String returnNo;
     private Long orderId;
+    /**
+     * 独立退货没有原订单，orderNo 为空。
+     */
     private String orderNo;
+    /**
+     * ORDER / INDEPENDENT。
+     */
+    private String sourceType;
     private Long customerId;
     /**
-     * 原销售订单上的客户名称，不随客户主档改名变化。
+     * 退货单上的客户名称快照，不随客户主档改名变化。
      */
     private String customerName;
     private String status;

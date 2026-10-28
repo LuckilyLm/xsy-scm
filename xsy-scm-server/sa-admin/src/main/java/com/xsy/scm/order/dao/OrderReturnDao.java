@@ -9,7 +9,7 @@ import java.util.List;
 
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.order.domain.entity.OrderReturnEntity;
-import com.xsy.scm.order.domain.form.SalesOrderQueryForm;
+import com.xsy.scm.order.domain.form.OrderReturnQueryForm;
 import com.xsy.scm.order.domain.vo.OrderReturnVO;
 
 @Mapper
@@ -17,9 +17,9 @@ public interface OrderReturnDao extends BaseMapper<OrderReturnEntity> {
     OrderReturnEntity lock(@Param("id") Long id);
 
     /**
-     * 列表查询；范围按父订单的 {@code xsy_sales_order.seller_id} 收窄，见 OrderReturnMapper.xml。
+     * 列表查询；原单退货按父订单业务员收窄，独立退货按客户负责业务员收窄，见 OrderReturnMapper.xml。
      */
-    List<OrderReturnVO> query(Page<?> page, @Param("query") SalesOrderQueryForm query,
+    List<OrderReturnVO> query(Page<?> page, @Param("query") OrderReturnQueryForm query,
         @Param("scope") ScmValueScope scope);
 
     /**

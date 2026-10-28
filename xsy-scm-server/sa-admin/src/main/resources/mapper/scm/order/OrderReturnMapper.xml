@@ -6,7 +6,9 @@
         <result column="id" property="id"/>
         <result column="return_no" property="returnNo"/>
         <result column="order_id" property="orderId"/>
+        <result column="source_type" property="sourceType"/>
         <result column="customer_id" property="customerId"/>
+        <result column="customer_name_snapshot" property="customerNameSnapshot"/>
         <result column="status" property="status"/>
         <result column="reason" property="reason"/>
         <result column="decision_reason" property="decisionReason"/>
@@ -30,30 +32,36 @@
         FOR UPDATE
     </select>
 
-    <!-- 父订单按主键联接，不放大分页行数；名称使用订单快照，可见性仍跟随订单归属。 -->
+    <!--
+      父订单与客户都按主键 LEFT JOIN，不放大分页行数；名称用退货单自己的快照。
+      可见性：原单退货跟随订单业务员，独立退货跟随客户负责业务员（D-1028-15）。
+    -->
     <select id="query" resultType="com.xsy.scm.order.domain.vo.OrderReturnVO">
-        SELECT r.id AS return_id, r.return_no, r.order_id, so.order_no, r.customer_id,
-            so.customer_name_snapshot AS customer_name, r.status, r.reason, r.decision_reason, r.approved_amount,
+        SELECT r.id AS return_id, r.return_no, r.order_id, so.order_no, r.source_type, r.customer_id,
+            r.customer_name_snapshot AS customer_name, r.status, r.reason, r.decision_reason, r.approved_amount,
             r.approved_at, r.rejected_at, r.cancelled_at, r.version, r.deleted, r.created_at, r.updated_at,
             r.created_by, r.updated_by
         FROM xsy_order_return r
         LEFT JOIN xsy_sales_order so ON so.id = r.order_id
             AND so.deleted = FALSE
+        LEFT JOIN xsy_customer c ON c.id = r.customer_id
+            AND c.deleted = FALSE
         WHERE r.deleted = FALSE
         <choose>
             <when test="scope != null and scope.all"/>
             <when test="scope != null and scope.ids != null and scope.ids.size() > 0">
-                AND so.seller_id IN
+                AND COALESCE(so.seller_id, c.seller_id) IN
                 <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
             </when>
             <otherwise>AND FALSE</otherwise>
         </choose>
         <if test="query.customerId != null">AND r.customer_id = #{query.customerId}</if>
         <if test="query.status != null and query.status != ''">AND r.status = #{query.status}</if>
+        <if test="query.sourceType != null and query.sourceType != ''">AND r.source_type = #{query.sourceType}</if>
         <if test="query.orderId != null">AND r.order_id = #{query.orderId}</if>
         <if test="query.keyword != null and query.keyword != ''">
             AND (r.return_no ILIKE '%' || #{query.keyword} || '%' OR so.order_no ILIKE '%' || #{query.keyword} || '%' OR
-                so.customer_name_snapshot ILIKE '%' || #{query.keyword} || '%')
+                r.customer_name_snapshot ILIKE '%' || #{query.keyword} || '%')
         </if>
         <if test="query.startTime != null">AND r.created_at &gt;= #{query.startTime}</if>
         <if test="query.endTime != null">AND r.created_at &lt; #{query.endTime}</if>

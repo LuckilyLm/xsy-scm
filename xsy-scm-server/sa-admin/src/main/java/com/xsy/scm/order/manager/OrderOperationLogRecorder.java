@@ -29,8 +29,22 @@ public class OrderOperationLogRecorder {
      */
     public void record(Long orderId, ScmOrderOperationTypeEnum operation, String reason, Object before, Object after,
         String operator) {
+        record(orderId, null, operation, reason, before, after, operator);
+    }
+
+    /**
+     * 独立退货没有订单，日志主体记客户；订单日志与客户日志共用同一张表和同一套 jsonb 快照。
+     */
+    public void recordForCustomer(Long customerId, ScmOrderOperationTypeEnum operation, String reason, Object before,
+        Object after) {
+        record(null, customerId, operation, reason, before, after, ScmOperator.current());
+    }
+
+    private void record(Long orderId, Long customerId, ScmOrderOperationTypeEnum operation, String reason,
+        Object before, Object after, String operator) {
         var entry = new OrderOperationLogEntity();
         entry.setOrderId(orderId);
+        entry.setCustomerId(customerId);
         entry.setOperationType(operation.name());
         entry.setOperator(operator);
         entry.setCreatedBy(entry.getOperator());

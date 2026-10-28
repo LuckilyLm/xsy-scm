@@ -163,11 +163,15 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 .contains("LOSS_REPORT").contains("GAIN_REPORT")
                 .contains("TRANSFER_OUT").contains("TRANSFER_IN")
                 .contains("CONVERT_OUT").contains("CONVERT_IN");
-        assertThat(constraintDef("xsy_inventory_balance", "ck_inventory_balance_quantity"))
-                .contains("quantity");
-        // 可用量不为负：已预留的货不能被出库吃掉
-        assertThat(constraintDef("xsy_inventory_balance", "ck_inventory_balance_available"))
-                .contains("reserved_quantity").contains("quantity");
+        // V187：余额不再用 CHECK 约束数量非负（负库存开关仓库允许销售出库出负数），
+        // 改为 trg_scm_inventory_balance_negative_guard 按仓库 allow_negative_stock 判定；
+        // 负余额不得有预留、非负余额仍要求 reserved_quantity <= quantity 的判断都在触发器里。
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
+                        + "WHERE c.relname = 'xsy_inventory_balance' AND t.tgname = ? "
+                        + "AND NOT t.tgisinternal",
+                Integer.class, "trg_scm_inventory_balance_negative_guard"))
+                .as("负库存守护触发器必须存在，否则负数余额会绕开所有约束").isEqualTo(1);
         assertThat(constraintDef("xsy_inventory_balance", "ck_inventory_balance_reserved"))
                 .contains("reserved_quantity");
         // V34：均价不得为负（服务层加权计算已保证，这里 DB 兜底）。
@@ -218,9 +222,10 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 + "before_quantity, after_quantity, occurred_at, deleted) "
                 + "VALUES (1, 1, 'PURCHASE_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 1, '  ', 0, 1, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 4);
-        // 余额数量 >= 0
+        // 余额数量 >= 0：V186 把种子仓 WH001 设为允许负库存，这里另建一个普通仓验证守恒口径。
+        Long strictWarehouseId = newWarehouse("守恒");
         expectSqlFailure("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, version, deleted) "
-                + "VALUES (1, 1, 'kg', -1, 0, FALSE)");
+                + "VALUES (?, 1, 'kg', -1, 0, FALSE)", strictWarehouseId);
         // 余额单位不能是空白
         expectSqlFailure("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, version, deleted) "
                 + "VALUES (1, 1, '', 1, 0, FALSE)");

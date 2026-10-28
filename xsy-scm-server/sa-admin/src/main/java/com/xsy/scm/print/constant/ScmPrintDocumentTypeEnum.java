@@ -142,6 +142,8 @@ public enum ScmPrintDocumentTypeEnum {
             new ScmPrintField("receiptDelta", "收款变动", true, true),
             new ScmPrintField("writeOffDelta", "核销变动", true, true),
             new ScmPrintField("refundDelta", "退款变动", true, true),
+            // 过账行只有这一列有值：它不进应收、不参与核销，因此不是余额的一部分
+            new ScmPrintField("postingAmount", "过账金额", true, true),
             new ScmPrintField("receivableBalance", "滚动净应收", true, true)),
         List.of(new ScmPrintField("closingReceivable", "期末净应收", true, true),
             new ScmPrintField("receivableIncrease", "本期新增应收", true, true),

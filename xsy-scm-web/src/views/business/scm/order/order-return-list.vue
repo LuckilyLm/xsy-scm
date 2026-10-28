@@ -7,6 +7,19 @@
       <a-form-item label="状态" class="smart-query-form-item">
         <SmartEnumSelect enum-name="SCM_ORDER_RETURN_STATUS_ENUM" v-model:value="queryForm.status" width="160px" />
       </a-form-item>
+      <a-form-item label="来源" class="smart-query-form-item">
+        <a-select
+          v-model:value="queryForm.sourceType"
+          allow-clear
+          placeholder="全部"
+          width="140px"
+          style="width: 140px"
+          :options="[
+            {value: 'ORDER', label: '原单退货'},
+            {value: 'INDEPENDENT', label: '独立退货'},
+          ]"
+        />
+      </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:order:return:query'">查询</a-button>
@@ -14,6 +27,7 @@
         </a-button-group>
       </a-form-item>
       <div class="scm-query-table-tools">
+        <a-button type="primary" v-privilege="'scm:order:return:add'" @click="independentModal?.open()">新建独立退货</a-button>
         <TableOperator v-model="columns" :table-id="603" :refresh="queryData" />
       </div>
     </a-row>
@@ -41,6 +55,7 @@
           <ScmStatusTag :tone="returnStatusTone(record.status)" :label="SCM_ORDER_RETURN_STATUS_ENUM[text]?.desc" />
         </template>
         <template v-else-if="column.dataIndex === 'customerName'">{{ record.customerName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'sourceType'">{{ record.sourceType === 'INDEPENDENT' ? '独立退货' : '原单退货' }}</template>
         <template v-else-if="column.dataIndex === 'orderNo'">
           <span class="scm-mono">{{ record.orderNo || '—' }}</span>
         </template>
@@ -93,6 +108,7 @@
       <template v-if="detail">
         <a-descriptions bordered :column="1" size="small">
           <a-descriptions-item label="退货单号">{{ detail.returnNo }}</a-descriptions-item>
+          <a-descriptions-item label="来源">{{ detail.sourceType === 'INDEPENDENT' ? '独立退货' : '原单退货' }}</a-descriptions-item>
           <a-descriptions-item label="原订单号">{{ detail.orderNo || '—' }}</a-descriptions-item>
           <a-descriptions-item label="客户">{{ detail.customerName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="状态">{{ SCM_ORDER_RETURN_STATUS_ENUM[detail.status]?.desc ?? detail.status }}</a-descriptions-item>
@@ -101,12 +117,13 @@
         </a-descriptions>
         <a-table
           :data-source="detail.items"
-          row-key="orderItemId"
+          row-key="returnItemId"
           :pagination="false"
           :scroll="{x: scmColumnsWidth(detailItemColumns)}"
           :columns="detailItemColumns"
         />
-        <a-space class="exchange-actions">
+        <!-- 换货单要按原订单行换货，独立退货没有原单，不提供入口。 -->
+        <a-space v-if="detail.sourceType !== 'INDEPENDENT'" class="exchange-actions">
           <a-button v-if="replacementOrderId" @click="router.push(`/order/detail/${replacementOrderId}`)">查看关联换货单</a-button>
           <a-button v-else-if="exchangeReady" v-privilege="'scm:order:add'" type="primary" @click="openExchange">创建关联换货单</a-button>
           <span v-else-if="detail.status === 'APPROVED'" class="scm-cell-hint">{{
@@ -143,7 +160,7 @@
               {title: '锁定单价', dataIndex: 'lockedUnitPrice'},
               {title: '批准数量', dataIndex: 'approvedQuantity'},
             ]"
-            row-key="orderItemId"
+            row-key="returnItemId"
             :pagination="false"
           >
             <template #bodyCell="{record, column}">
@@ -200,6 +217,7 @@
     </a-spin>
   </a-modal>
   <OrderFormDrawer ref="exchangeDrawer" @saved="onExchangeSaved" />
+  <OrderIndependentReturnModal ref="independentModal" @saved="queryData" />
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
@@ -230,6 +248,7 @@ const returnStatusTone = (status: string): ScmStatusTone => RETURN_STATUS_TONE[s
 
 const detailItemColumns: TableColumnsType<ReturnItem> = [
   {title: '商品', dataIndex: 'productName', width: 200},
+  {title: '规格', dataIndex: 'specName', width: 110},
   {title: '单位', dataIndex: 'unit', width: 72},
   {title: '申请数量', dataIndex: 'requestedQuantity', width: 112},
   {title: '批准数量', dataIndex: 'approvedQuantity', width: 112},
@@ -237,6 +256,7 @@ const detailItemColumns: TableColumnsType<ReturnItem> = [
 ];
 const receiveItemColumns: TableColumnsType<ReturnItemWithDisposition> = [
   {title: '商品', dataIndex: 'productName', width: 200},
+  {title: '规格', dataIndex: 'specName', width: 110},
   {title: '单位', dataIndex: 'unit', width: 72},
   {title: '批准数量', dataIndex: 'approvedQuantity', width: 112},
   {title: '已接收', dataIndex: 'receivedQuantity', width: 112},
@@ -248,6 +268,7 @@ import {orderError} from './order-errors';
 import {hasPermission} from '../common/scm-permission';
 import {orderApi} from '/@/api/business/scm/order-api';
 import OrderFormDrawer from './components/order-form-drawer.vue';
+import OrderIndependentReturnModal from './components/order-independent-return-modal.vue';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}),
@@ -267,6 +288,7 @@ const columns = ref<TableColumnsType<ReturnRow>>([
     width: 220,
   },
   {title: '客户', dataIndex: 'customerName', width: 150},
+  {title: '来源', dataIndex: 'sourceType', width: 104, align: 'center'},
   {title: '原订单号', dataIndex: 'orderNo', width: 190},
   {title: '退货原因', dataIndex: 'reason', width: 260, ellipsis: true},
   {
@@ -331,6 +353,7 @@ function onSearch() {
 function resetQuery() {
   queryForm.keyword = undefined;
   queryForm.status = undefined;
+  queryForm.sourceType = undefined;
   queryForm.operationType = undefined;
   onSearch();
 }
@@ -428,19 +451,23 @@ async function save() {
           disposition: i.disposition,
         })),
       });
+    } else if (action.value === 'approve') {
+      // 独立退货没有原订单行，审批明细按退货行 ID 提交。
+      if (r.sourceType === 'INDEPENDENT') {
+        await api.approveIndependent({
+          returnId: r.returnId,
+          version: r.version,
+          items: r.items.map((i) => ({returnItemId: i.returnItemId, approvedQuantity: fixed(i.approvedQuantity ?? '0')})),
+        });
+      } else {
+        await api.approve({
+          returnId: r.returnId,
+          version: r.version,
+          items: r.items.map((i) => ({orderItemId: i.orderItemId, approvedQuantity: fixed(i.approvedQuantity ?? '0')})),
+        });
+      }
     } else {
-      await api[action.value]({
-        returnId: r.returnId,
-        version: r.version,
-        ...(action.value === 'approve'
-          ? {
-              items: r.items.map((i) => ({
-                orderItemId: i.orderItemId,
-                approvedQuantity: fixed(i.approvedQuantity ?? '0'),
-              })),
-            }
-          : {decisionReason: decisionReason.value}),
-      });
+      await api[action.value]({returnId: r.returnId, version: r.version, decisionReason: decisionReason.value});
     }
     if (generation !== editRequestId) return;
     visible.value = false;
@@ -461,6 +488,7 @@ const replacementOrderId = ref<Id | null>(null),
   replacementLoaded = ref(false),
   replacementLoadFailed = ref(false);
 const exchangeDrawer = ref<InstanceType<typeof OrderFormDrawer>>();
+const independentModal = ref<InstanceType<typeof OrderIndependentReturnModal>>();
 const router = useRouter();
 const exchangeReady = computed(
   () =>
@@ -505,10 +533,11 @@ async function showDetail(id?: Id) {
 }
 function openExchange(): void {
   const current = detail.value;
-  if (!current || !exchangeReady.value) return;
+  // 独立退货没有原订单，入口本身已隐藏；这里再挡一次，避免把空订单号传进换货抽屉。
+  if (!current || !current.orderId || !exchangeReady.value) return;
   const lines = current.items
-    .filter((item) => new Decimal(item.receivedQuantity ?? 0).gt(0))
-    .map((item) => ({orderItemId: item.orderItemId, receivedQuantity: item.receivedQuantity!}));
+    .filter((item) => item.orderItemId !== null && new Decimal(item.receivedQuantity ?? 0).gt(0))
+    .map((item) => ({orderItemId: item.orderItemId as Id, receivedQuantity: item.receivedQuantity!}));
   detailOpen.value = false;
   void exchangeDrawer.value?.openForExchange(current.returnId, current.returnNo, current.orderId, lines);
 }

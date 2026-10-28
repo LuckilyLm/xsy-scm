@@ -17,6 +17,16 @@ public interface ScmCustomerStatementDao {
         @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmDataScopeContext scope,
         @Param("asOfCreatedAt") OffsetDateTime asOfCreatedAt, @Param("limit") int limit);
 
+    /**
+     * 对账单可选的过账行：只有过账金额，三个资金变动列一律为 0。
+     *
+     * <p>
+     * 读作独立查询而不是并进 {@code selectEvents} 的 UNION：过账不是财务事实， 混进同一条 SQL 会让人以为它也参与滚动余额的计算。合并与排序由服务层显式完成。
+     */
+    List<ScmCustomerStatementItemVO> selectPostingEvents(@Param("query") ScmCustomerStatementForm query,
+        @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmDataScopeContext scope,
+        @Param("asOfCreatedAt") OffsetDateTime asOfCreatedAt, @Param("limit") int limit);
+
     String selectSettlementName(@Param("id") Long id);
 
     void insertStatement(ScmCustomerStatementVO statement);

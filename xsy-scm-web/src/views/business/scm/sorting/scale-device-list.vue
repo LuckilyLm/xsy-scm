@@ -231,6 +231,7 @@ import {
   type ScaleDeviceStatus,
   type ScaleOperatorSessionResult,
 } from './scale-device-types';
+import type {Id} from './sorting-types';
 
 const PERM = {
   QUERY: 'scm:device:scale:query',
@@ -508,5 +509,4 @@ onMounted(queryData);
   font-size: 15px;
   word-break: break-all;
 }
-
 </style>

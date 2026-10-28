@@ -20,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -49,28 +50,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
 
     /**
-     * V65 建的 8 张财务表 + V194 的抹零表。
+     * V65 建的 8 张财务表 + V194 的抹零表 + V207 的过账与过账作废事实。
      */
     private static final List<String> FINANCE_TABLES = List.of(
             "xsy_finance_receivable", "xsy_finance_receivable_item",
             "xsy_finance_payable", "xsy_finance_payable_item",
             "xsy_finance_receipt", "xsy_finance_payment",
             "xsy_finance_write_off", "xsy_finance_operation_log",
-            "xsy_finance_waiver");
+            "xsy_finance_waiver", "xsy_finance_posting", "xsy_finance_posting_void");
 
     /**
-     * 八张带 {@code deleted} 列的事实表；{@code xsy_finance_operation_log} 不在其中 ——
+     * 带 {@code deleted} 列的事实表；{@code xsy_finance_operation_log} 不在其中 ——
      * 它连 {@code deleted} 列都没有，append-only 是结构性的。
      */
     private static final List<String> APPEND_ONLY_TABLES = List.of(
             "xsy_finance_receivable", "xsy_finance_receivable_item",
             "xsy_finance_payable", "xsy_finance_payable_item",
             "xsy_finance_receipt", "xsy_finance_payment", "xsy_finance_write_off",
-            "xsy_finance_waiver");
+            "xsy_finance_waiver", "xsy_finance_posting", "xsy_finance_posting_void");
 
     private static final List<String> FINANCE_SEQUENCES = List.of(
             "finance_receivable_no_seq", "finance_payable_no_seq", "finance_receipt_no_seq",
-            "finance_payment_no_seq", "finance_write_off_no_seq", "finance_waiver_no_seq");
+            "finance_payment_no_seq", "finance_write_off_no_seq", "finance_waiver_no_seq",
+            "finance_posting_no_seq");
 
     private String no(String prefix) {
         return prefix + UUID.randomUUID().toString().substring(0, 16).toUpperCase(java.util.Locale.ROOT);
@@ -154,13 +156,20 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         // 落库的派生态一定会漂移；审批相关列不属于财务域。
         // due_date 不在禁用之列：ADM-04 账期把它作为冻结事实落库（主档后来改账期不得重算旧应收），
         // 它是账期规则的求值结果快照，不是可被回写的派生态。
-        List<String> forbidden = List.of(
+        List<String> forbidden = new ArrayList<>(List.of(
                 "status", "settled_amount", "open_amount", "written_off_amount", "net_amount",
-                "approver", "approval_state", "currency", "tax_rate", "tax_amount");
+                "approver", "approval_state", "currency", "tax_rate", "tax_amount"));
+        // 过账特殊单据是唯一例外：现场要求按纸质单据原样记下税点（D-1028-16）。
+        // 它只存税率这一个输入，不存 tax_amount，也不参与任何金额计算，因此不违背「财务域不做税额」的本意。
+        // status 仍然被禁：是否作废由 xsy_finance_posting_void 推导，与本类其余表同一纪律。
         for (String table : FINANCE_TABLES) {
+            List<String> tableForbidden = new ArrayList<>(forbidden);
+            if ("xsy_finance_posting".equals(table)) {
+                tableForbidden.remove("tax_rate");
+            }
             assertThat(columnsOf(table))
                     .as("表 %s 不得出现派生态或越界列", table)
-                    .doesNotContainAnyElementsOf(forbidden);
+                    .doesNotContainAnyElementsOf(tableForbidden);
         }
         // 方向编码在类型里，因此不存在独立的 direction 列（照 inventory_movement 的纪律）。
         for (String table : FINANCE_TABLES) {
@@ -169,7 +178,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("八张事实表带 append-only CHECK，软删在库级被拒（设计稿 §0 第 7 条）")
+    @DisplayName("事实表带 append-only CHECK，软删在库级被拒（设计稿 §0 第 7 条）")
     void appendOnlyCheckRejectsSoftDelete() {
         for (String table : APPEND_ONLY_TABLES) {
             assertThat(constraintDef(table, "ck_" + constraintBase(table) + "_append_only"))
@@ -225,7 +234,9 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                         "SELECT numeric_precision FROM information_schema.columns "
                                 + "WHERE table_schema = current_schema() AND table_name = ? "
                                 + "AND column_name = ?", Integer.class, table, column);
-                assertThat(precision).as("%s.%s 精度", table, column).isEqualTo(18);
+                // 过账单据的税点是百分比而不是金额：小数位仍是四位，但不需要金额的 14 位整数位。
+                boolean postingTaxRate = "xsy_finance_posting".equals(table) && "tax_rate".equals(column);
+                assertThat(precision).as("%s.%s 精度", table, column).isEqualTo(postingTaxRate ? 8 : 18);
                 assertThat(scale).as("%s.%s 小数位", table, column).isEqualTo(4);
             }
         }
@@ -575,45 +586,55 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     void financePublishesOnlyImplementedCapabilities() {
         assertThat(jdbc.queryForList(
                 "SELECT menu_id FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 ORDER BY menu_id", Long.class))
-                .as("V71 之后财务段只允许目录、五个实际页面与十三个真实能力权限")
-                .containsExactly(1500L, 1501L, 1502L, 1503L, 1504L, 1505L, 1511L, 1512L, 1513L, 1514L, 1515L,
-                        1521L, 1522L, 1523L, 1524L, 1525L, 1526L, 1527L, 1531L);
+                .as("财务段只允许目录、六个实际页面与十九个真实能力权限")
+                .containsExactly(1500L, 1501L, 1502L, 1503L, 1504L, 1505L, 1506L, 1511L, 1512L, 1513L, 1514L,
+                        1515L, 1521L, 1522L, 1523L, 1524L, 1525L, 1526L, 1527L, 1528L, 1529L, 1531L, 1532L,
+                        1533L, 1534L, 1535L);
 
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND menu_type = 2",
                 Integer.class))
-                .as("五个菜单页面只在对应 .vue 存在后发布")
-                .isEqualTo(5);
+                .as("菜单页面只在对应 .vue 存在后发布")
+                .isEqualTo(6);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND component IS NOT NULL",
                 Integer.class))
-                .as("五个页面都必须声明真实组件路径")
-                .isEqualTo(5);
+                .as("每个页面都必须声明真实组件路径")
+                .isEqualTo(6);
         assertThat(jdbc.queryForList(
-                "SELECT component FROM t_menu WHERE menu_id BETWEEN 1501 AND 1505 ORDER BY menu_id", String.class))
+                "SELECT component FROM t_menu WHERE menu_id BETWEEN 1501 AND 1506 ORDER BY menu_id", String.class))
                 .containsExactly("/business/scm/finance/finance-receivable-list.vue",
                         "/business/scm/finance/finance-payable-list.vue",
                         "/business/scm/finance/finance-receipt-list.vue",
                         "/business/scm/finance/finance-payment-list.vue",
-                        "/business/scm/finance/finance-write-off-list.vue");
+                        "/business/scm/finance/finance-write-off-list.vue",
+                        "/business/scm/finance/finance-posting-list.vue");
         assertThat(jdbc.queryForList(
-                "SELECT icon FROM t_menu WHERE menu_id BETWEEN 1500 AND 1505 ORDER BY menu_id", String.class))
+                "SELECT icon FROM t_menu WHERE menu_id BETWEEN 1500 AND 1506 ORDER BY menu_id", String.class))
                 .containsExactly("DollarOutlined", "AccountBookOutlined", "FileTextOutlined", "ImportOutlined",
-                        "ExportOutlined", "RetweetOutlined");
+                        "ExportOutlined", "RetweetOutlined", "AuditOutlined");
         assertThat(jdbc.queryForObject(
                 "SELECT visible_flag FROM t_menu WHERE menu_id = 1500", Boolean.class))
-                .as("五个财务页发布时同步显示目录入口")
+                .as("财务页发布时同步显示目录入口")
                 .isTrue();
+        // 「隐藏式」靠授权范围实现：过账页只有超管与正式财务岗位能看见，不靠 visible_flag 把入口从已授权的人眼前藏掉。
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu WHERE menu_id = 1506", Integer.class))
+                .as("过账页面恰好两条授权行，多一条就是多授了一个角色")
+                .isEqualTo(2);
 
         // 权限串按内容再查一遍：换号段种同样会造成「已授权但无任何端点使用它」。
         assertThat(jdbc.queryForList(
                 "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms LIKE 'scm:finance:%' ORDER BY api_perms",
                 String.class))
-                .as("只发布已实现的登记、查询、核销、红字、反向与导出权限")
+                .as("只发布已实现的登记、查询、核销、红字、抹零、过账、反向与导出权限")
                 .containsExactly("scm:finance:export", "scm:finance:payable:query", "scm:finance:payable:red",
                         "scm:finance:payment:add", "scm:finance:payment:query", "scm:finance:payment:reverse",
+                        "scm:finance:posting:add", "scm:finance:posting:query", "scm:finance:posting:update",
+                        "scm:finance:posting:void",
                         "scm:finance:receipt:add", "scm:finance:receipt:query", "scm:finance:receipt:reverse",
-                        "scm:finance:receivable:query", "scm:finance:write-off:add",
+                        "scm:finance:receivable:query", "scm:finance:waiver:add", "scm:finance:waiver:reverse",
+                        "scm:finance:write-off:add",
                         "scm:finance:write-off:query", "scm:finance:write-off:reverse");
         // api_perms == web_perms：前端按钮与服务端鉴权读的是同一个串。
         // 作用域限制在财务段：底座原生菜单行本就允许两者不对称，全库断言会误伤。
@@ -626,18 +647,18 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "WHERE m.menu_id BETWEEN 1500 AND 1599", Integer.class))
-                .as("财务段十九行菜单（目录、五页面、十三权限）各授超管兜底与 SCM_FINANCE，共 19 × 2 行")
-                .isEqualTo(38);
+                .as("财务段二十六行菜单（目录、六页面、十九权限）各授超管兜底与 SCM_FINANCE，共 26 × 2 行")
+                .isEqualTo(52);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "JOIN t_role r ON r.role_id = rm.role_id "
-                        + "WHERE m.menu_id BETWEEN 1501 AND 1505 AND r.role_code = 'SCM_FINANCE'", Integer.class))
-                .as("SCM_FINANCE 获得五个页面菜单")
-                .isEqualTo(5);
+                        + "WHERE m.menu_id BETWEEN 1501 AND 1506 AND r.role_code = 'SCM_FINANCE'", Integer.class))
+                .as("SCM_FINANCE 获得六个页面菜单")
+                .isEqualTo(6);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "JOIN t_role r ON r.role_id = rm.role_id "
-                        + "WHERE m.menu_id BETWEEN 1501 AND 1505 AND r.role_code = 'SCM_DRIVER'", Integer.class))
+                        + "WHERE m.menu_id BETWEEN 1501 AND 1506 AND r.role_code = 'SCM_DRIVER'", Integer.class))
                 .as("司机角色没有财务页面")
                 .isZero();
         assertThat(jdbc.queryForObject(

@@ -3,6 +3,7 @@ package com.xsy.scm.report.service;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -42,6 +43,13 @@ public class ScmCustomerStatementService {
      */
     private static final String FACT_WAIVER = ScmStatementFactType.WAIVER.name();
     private static final String FACT_WAIVER_REVERSE = ScmStatementFactType.WAIVER_REVERSE.name();
+
+    /**
+     * 与 SQL 的 {@code ORDER BY event_at, fact_type, fact_id} 同一顺序：过账行与财务事实合并后仍按时间轴排列。
+     */
+    private static final Comparator<ScmCustomerStatementItemVO> EVENT_ORDER = Comparator
+        .comparing(ScmCustomerStatementItemVO::getEventAt).thenComparing(ScmCustomerStatementItemVO::getFactType)
+        .thenComparing(ScmCustomerStatementItemVO::getFactId);
     private final ScmCustomerStatementDao statementDao;
     private final ScmDataScopeService dataScopeService;
 
@@ -50,8 +58,7 @@ public class ScmCustomerStatementService {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext scope = dataScopeService.resolve();
         requireScope(scope);
-        List<ScmCustomerStatementItemVO> facts = statementDao.selectEvents(form, range.endAt(), scope, null,
-            MAX_FACTS + 1);
+        List<ScmCustomerStatementItemVO> facts = loadFacts(form, range.endAt(), scope, null);
         if (facts.size() > MAX_FACTS) {
             throw new ScmBusinessException(ReportErrorCode.REPORT_STATEMENT_TOO_LARGE);
         }
@@ -70,6 +77,7 @@ public class ScmCustomerStatementService {
         result.setEndDate(form.getEndDate());
         result.setPartialScope(form.getCustomerId() != null || !scope.getWarehouseScope().isAll()
             || !scope.getOrderSellerScope().isAll() || !scope.getCustomerSellerScope().isAll());
+        result.setIncludePosting(Boolean.TRUE.equals(form.getIncludePosting()));
         result.setGeneratedByEmployeeId(scope.getEmployeeId());
         result.setGeneratedAt(OffsetDateTime.now());
         BigDecimal debt = BigDecimal.ZERO;
@@ -200,9 +208,10 @@ public class ScmCustomerStatementService {
         form.setCustomerId(version.getCustomerId());
         form.setStartDate(version.getStartDate());
         form.setEndDate(version.getEndDate());
+        // 冻结时选择了过账行，就按同一口径重验它们；否则只看财务事实。
+        form.setIncludePosting(version.getIncludePosting());
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
-        List<ScmCustomerStatementItemVO> now = statementDao.selectEvents(form, range.endAt(), scope,
-            version.getGeneratedAt(), MAX_FACTS + 1);
+        List<ScmCustomerStatementItemVO> now = loadFacts(form, range.endAt(), scope, version.getGeneratedAt());
         if (now.size() > MAX_FACTS) {
             return false;
         }
@@ -210,6 +219,23 @@ public class ScmCustomerStatementService {
         now.forEach(row -> visibleFacts.add(row.getFactType() + ":" + row.getFactId()));
         return statementDao.selectSources(version.getId()).stream()
             .allMatch(row -> visibleFacts.contains(row.getFactType() + ":" + row.getFactId()));
+    }
+
+    /**
+     * 财务事实 + 可选的过账行。
+     *
+     * <p>
+     * 过账不是财务事实，单独取再合并：它的三个资金变动都是 0，只带一个过账金额， 因此不可能改变滚动余额或期末净应收。合并后仍按时间轴排， 对账单读起来是一条完整的时间线。
+     */
+    private List<ScmCustomerStatementItemVO> loadFacts(ScmCustomerStatementForm form, OffsetDateTime endAt,
+        ScmDataScopeContext scope, OffsetDateTime asOfCreatedAt) {
+        List<ScmCustomerStatementItemVO> facts = new ArrayList<>(
+            statementDao.selectEvents(form, endAt, scope, asOfCreatedAt, MAX_FACTS + 1));
+        if (Boolean.TRUE.equals(form.getIncludePosting())) {
+            facts.addAll(statementDao.selectPostingEvents(form, endAt, scope, asOfCreatedAt, MAX_FACTS + 1));
+            facts.sort(EVENT_ORDER);
+        }
+        return facts;
     }
 
     /**

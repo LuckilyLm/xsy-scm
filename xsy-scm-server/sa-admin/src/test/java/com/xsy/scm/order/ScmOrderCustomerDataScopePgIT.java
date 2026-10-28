@@ -658,8 +658,11 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
 
     private Long insertReturn(Long orderId, Long customerId, String suffix) {
         String returnNo = prefix + "-RT" + suffix;
-        jdbc.update("INSERT INTO xsy_order_return (return_no, order_id, customer_id, status, reason)"
-                + " VALUES (?, ?, ?, 'PENDING', '范围测试退货')", returnNo, orderId, customerId);
+        // V202 起退货单必须带客户名称快照：独立退货没有原单可回查，页面与日志都读这一列。
+        jdbc.update("INSERT INTO xsy_order_return (return_no, source_type, order_id, customer_id,"
+                + " customer_name_snapshot, status, reason)"
+                + " VALUES (?, 'ORDER', ?, ?, '范围测试客户', 'PENDING', '范围测试退货')",
+            returnNo, orderId, customerId);
         return jdbc.queryForObject("SELECT id FROM xsy_order_return WHERE return_no = ?", Long.class, returnNo);
     }
 

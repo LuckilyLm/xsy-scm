@@ -39,6 +39,11 @@ public final class FinanceConstant {
      */
     public static final String WAIVER_NO_PREFIX = "WV";
 
+    /**
+     * 过账单号前缀。
+     */
+    public static final String POSTING_NO_PREFIX = "PD";
+
     public static final String RECEIVABLE_QUERY_PERM = FinancePermission.RECEIVABLE_QUERY;
     public static final String PAYABLE_QUERY_PERM = FinancePermission.PAYABLE_QUERY;
     public static final String RECEIPT_QUERY_PERM = FinancePermission.RECEIPT_QUERY;
@@ -101,6 +106,16 @@ public final class FinanceConstant {
      */
     public static final String WAIVER_ADD_SCOPE = "FINANCE_WAIVER_ADD";
     public static final String WAIVER_REVERSE_SCOPE = "FINANCE_WAIVER_REVERSE";
+
+    /**
+     * 过账登记 / 修改 / 作废的幂等 scope；修改与作废还要拼原过账 id。
+     *
+     * <p>
+     * 修改与作废同时靠 {@code version} 乐观锁兜底：幂等键只防重复请求， 防不住「两个窗口各改一半」。
+     */
+    public static final String POSTING_ADD_SCOPE = "FINANCE_POSTING_ADD";
+    public static final String POSTING_UPDATE_SCOPE = "FINANCE_POSTING_UPDATE";
+    public static final String POSTING_VOID_SCOPE = "FINANCE_POSTING_VOID";
 
     /**
      * 自动 FIFO 核销：同一收款 / 付款只允许一段连续自动分配，幂等 scope 拼来源类型与 id。

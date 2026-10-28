@@ -65,7 +65,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                         + "  AND NOT EXISTS (SELECT 1 FROM pg_constraint c "
                         + "                  WHERE c.conname = i.indexname AND c.contype = 'p')",
                 Integer.class, V15_TABLE_LIST);
-        assertThat(indexes).isEqualTo(38);
+        assertThat(indexes).isEqualTo(40);
 
         Integer partial = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
@@ -74,9 +74,10 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                         + "  AND i.indexdef LIKE '%WHERE%'", Integer.class, V15_TABLE_LIST);
         // 计数 = V15 建表时的索引 + 后续获批的部分索引（V78 的 ADM-05 批次行唯一索引、
         // V183 的两条最近采购价索引）
+        // V190 待定价窗口索引、V192 自动锁单索引）
         // （ON purchase_demand(calculation_batch_item_id)
         // WHERE deleted=FALSE AND calculation_batch_item_id IS NOT NULL）。
-        assertThat(partial).isEqualTo(34);
+        assertThat(partial).isEqualTo(36);
 
         // 8 条唯一索引 = V15 里显式 CREATE UNIQUE INDEX 的 7 条 + V78（ADM-05 冻结批次）
         // 在 purchase_demand 上加的批次行唯一索引。

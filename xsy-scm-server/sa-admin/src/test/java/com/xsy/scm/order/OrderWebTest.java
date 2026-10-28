@@ -72,7 +72,7 @@ class OrderWebTest {
                     assertThat(m.getAnnotation(SaCheckPermission.class)).as(m.getName()).isNotNull();
                     count++;
                 }
-        assertThat(count).isEqualTo(34);
+        assertThat(count).isEqualTo(37);
     }
 
     @Test

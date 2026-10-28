@@ -440,6 +440,402 @@
     "110": {
       "file": "V110__scm_reorder_root_navigation.sql",
       "checksum": -771687655
+    },
+    "111": {
+      "file": "V111__scm_business_no_sequences.sql",
+      "checksum": 1460914463
+    },
+    "112": {
+      "file": "V112__scm_delivery_route_detail_page.sql",
+      "checksum": 576066791
+    },
+    "113": {
+      "file": "V113__scm_business_no_sequence_floor.sql",
+      "checksum": -2025912557
+    },
+    "114": {
+      "file": "V114__scm_business_no_sequence_floor_no_regress.sql",
+      "checksum": 2141488215
+    },
+    "115": {
+      "file": "V115__scm_dashboard_permission.sql",
+      "checksum": 579531971
+    },
+    "116": {
+      "file": "V116__scm_shorten_sidebar_menu_names.sql",
+      "checksum": -302340950
+    },
+    "117": {
+      "file": "V117__scm_callback_rejected_event_retry.sql",
+      "checksum": -732880319
+    },
+    "118": {
+      "file": "V118__scm_table_prefix_xsy.sql",
+      "checksum": 454469713
+    },
+    "119": {
+      "file": "V119__scm_table_prefix_xsy_functions.sql",
+      "checksum": 379354883
+    },
+    "120": {
+      "file": "V120__scm_refund_funding_allocation.sql",
+      "checksum": -1128723969
+    },
+    "121": {
+      "file": "V121__scm_mall_account_foundation.sql",
+      "checksum": -893642903
+    },
+    "122": {
+      "file": "V122__scm_mall_multi_account_per_customer.sql",
+      "checksum": 9945265
+    },
+    "123": {
+      "file": "V123__scm_mall_cart.sql",
+      "checksum": -1950670562
+    },
+    "124": {
+      "file": "V124__scm_mall_customer_address.sql",
+      "checksum": 8330179
+    },
+    "125": {
+      "file": "V125__scm_refund_recovery.sql",
+      "checksum": -290526888
+    },
+    "126": {
+      "file": "V126__scm_unassigned_order_pool.sql",
+      "checksum": 1975781086
+    },
+    "127": {
+      "file": "V127__scm_drop_refund_recovery_log_foreign_key.sql",
+      "checksum": 129234709
+    },
+    "128": {
+      "file": "V128__scm_mall_coupon_claim.sql",
+      "checksum": -1388982749
+    },
+    "129": {
+      "file": "V129__scm_mall_order_settlement_method.sql",
+      "checksum": 144396298
+    },
+    "130": {
+      "file": "V130__scm_customer_cod_permission.sql",
+      "checksum": -1839482563
+    },
+    "131": {
+      "file": "V131__scm_finance_cod_collection_source.sql",
+      "checksum": -1259925977
+    },
+    "132": {
+      "file": "V132__scm_finance_cod_installments.sql",
+      "checksum": -1523278209
+    },
+    "133": {
+      "file": "V133__scm_rename_customer_sku_visibility_menu.sql",
+      "checksum": -787010724
+    },
+    "134": {
+      "file": "V134__scm_mall_sku_quantity_rules.sql",
+      "checksum": 1916622406
+    },
+    "135": {
+      "file": "V135__scm_mall_delivery_warehouse.sql",
+      "checksum": -1940778418
+    },
+    "136": {
+      "file": "V136__scm_mall_stock_unit_conversion.sql",
+      "checksum": -690171207
+    },
+    "137": {
+      "file": "V137__scm_mall_return_stock_quantity.sql",
+      "checksum": 1889666123
+    },
+    "138": {
+      "file": "V138__scm_customer_sku_alias.sql",
+      "checksum": -1099076304
+    },
+    "139": {
+      "file": "V139__scm_agreement_price_formula.sql",
+      "checksum": 2060033372
+    },
+    "140": {
+      "file": "V140__scm_product_bundle.sql",
+      "checksum": 1840883771
+    },
+    "141": {
+      "file": "V141__scm_sorting_part_records.sql",
+      "checksum": 1766208747
+    },
+    "142": {
+      "file": "V142__scm_mall_home_layout.sql",
+      "checksum": -10989882
+    },
+    "143": {
+      "file": "V143__scm_purchase_inquiry.sql",
+      "checksum": -98781177
+    },
+    "144": {
+      "file": "V144__scm_user_filter_presets.sql",
+      "checksum": -981043254
+    },
+    "145": {
+      "file": "V145__scm_order_tags.sql",
+      "checksum": 1572727189
+    },
+    "146": {
+      "file": "V146__scm_sales_order_print.sql",
+      "checksum": 1359449995
+    },
+    "147": {
+      "file": "V147__scm_product_internal_code_sequences.sql",
+      "checksum": 1114360147
+    },
+    "148": {
+      "file": "V148__scm_order_exception_compensation.sql",
+      "checksum": 901743822
+    },
+    "149": {
+      "file": "V149__scm_supplier_item_code.sql",
+      "checksum": -176044323
+    },
+    "150": {
+      "file": "V150__scm_rename_price_preview_menu.sql",
+      "checksum": -476561564
+    },
+    "151": {
+      "file": "V151__scm_inventory_lot.sql",
+      "checksum": 1763892455
+    },
+    "152": {
+      "file": "V152__scm_trace_unit.sql",
+      "checksum": -572578134
+    },
+    "153": {
+      "file": "V153__scm_trace_unit_binding.sql",
+      "checksum": -2102709879
+    },
+    "154": {
+      "file": "V154__scm_trace_unit_print.sql",
+      "checksum": -957629709
+    },
+    "155": {
+      "file": "V155__scm_trace_unit_void_permission.sql",
+      "checksum": 1092605187
+    },
+    "156": {
+      "file": "V156__scm_trace_unit_binding_active_guard.sql",
+      "checksum": 69049729
+    },
+    "157": {
+      "file": "V157__scm_trace_unit_correction.sql",
+      "checksum": -119400139
+    },
+    "158": {
+      "file": "V158__scm_trace_unit_consistency_guards.sql",
+      "checksum": 255997815
+    },
+    "159": {
+      "file": "V159__scm_purchase_share.sql",
+      "checksum": -93055310
+    },
+    "160": {
+      "file": "V160__scm_customer_promotion_code.sql",
+      "checksum": 103590574
+    },
+    "161": {
+      "file": "V161__scm_pricing_time_price.sql",
+      "checksum": 1461992661
+    },
+    "162": {
+      "file": "V162__scm_sorting_ticket_supplier.sql",
+      "checksum": 779860756
+    },
+    "163": {
+      "file": "V163__scm_customer_shared_settlement.sql",
+      "checksum": -450104463
+    },
+    "164": {
+      "file": "V164__scm_mall_home_theme.sql",
+      "checksum": -816434910
+    },
+    "165": {
+      "file": "V165__scm_help_doc_operations.sql",
+      "checksum": 551670345
+    },
+    "166": {
+      "file": "V166__scm_time_price_audit.sql",
+      "checksum": 296103096
+    },
+    "167": {
+      "file": "V167__scm_sorting_ticket_supplier_all_templates.sql",
+      "checksum": -380689043
+    },
+    "168": {
+      "file": "V168__scm_menu_icons.sql",
+      "checksum": 883947931
+    },
+    "169": {
+      "file": "V169__retire_demo_and_code_generator.sql",
+      "checksum": -557369925
+    },
+    "170": {
+      "file": "V170__scm_brand_name.sql",
+      "checksum": -14879977
+    },
+    "171": {
+      "file": "V171__scm_scale_device_access.sql",
+      "checksum": -1984426397
+    },
+    "172": {
+      "file": "V172__scm_scale_basket_and_completion.sql",
+      "checksum": -1704618184
+    },
+    "173": {
+      "file": "V173__scm_trace_unit_weight_and_public_token.sql",
+      "checksum": 1632082297
+    },
+    "174": {
+      "file": "V174__scm_trace_attachment.sql",
+      "checksum": 1757108611
+    },
+    "175": {
+      "file": "V175__scm_trace_public_query_log.sql",
+      "checksum": -217246100
+    },
+    "176": {
+      "file": "V176__scm_trace_inspection_report.sql",
+      "checksum": -1879024080
+    },
+    "177": {
+      "file": "V177__scm_trace_unit_label_qr.sql",
+      "checksum": -1698374633
+    },
+    "178": {
+      "file": "V178__scm_print_template_remove_noise.sql",
+      "checksum": -379839272
+    },
+    "179": {
+      "file": "V179__scm_mall_decoration_console.sql",
+      "checksum": 761790591
+    },
+    "180": {
+      "file": "V180__scm_mall_page_published_title.sql",
+      "checksum": 13934729
+    },
+    "181": {
+      "file": "V181__scm_business_category.sql",
+      "checksum": -1549361195
+    },
+    "182": {
+      "file": "V182__scm_print_statement_and_customer_binding.sql",
+      "checksum": -402754476
+    },
+    "183": {
+      "file": "V183__scm_purchase_last_price_indexes.sql",
+      "checksum": -31568164
+    },
+    "184": {
+      "file": "V184__scm_sales_order_lock.sql",
+      "checksum": 116909806
+    },
+    "185": {
+      "file": "V185__scm_menu_contract_fixes.sql",
+      "checksum": -1488373918
+    },
+    "186": {
+      "file": "V186__scm_warehouse_allow_negative_stock.sql",
+      "checksum": 1335788470
+    },
+    "187": {
+      "file": "V187__scm_inventory_negative_guard.sql",
+      "checksum": -1731914850
+    },
+    "188": {
+      "file": "V188__scm_scale_admin_menu.sql",
+      "checksum": 757506353
+    },
+    "189": {
+      "file": "V189__scm_print_customer_sheet_types.sql",
+      "checksum": -462752926
+    },
+    "190": {
+      "file": "V190__scm_purchase_price_window.sql",
+      "checksum": 249452368
+    },
+    "191": {
+      "file": "V191__scm_purchase_price_audit.sql",
+      "checksum": 400695920
+    },
+    "192": {
+      "file": "V192__scm_purchase_order_lock.sql",
+      "checksum": -2110572624
+    },
+    "193": {
+      "file": "V193__scm_purchase_price_permission.sql",
+      "checksum": 1908418730
+    },
+    "194": {
+      "file": "V194__scm_finance_waiver.sql",
+      "checksum": 2131716052
+    },
+    "195": {
+      "file": "V195__scm_finance_write_off_waiver_source.sql",
+      "checksum": 163429551
+    },
+    "196": {
+      "file": "V196__scm_finance_waiver_permission.sql",
+      "checksum": -1381917260
+    },
+    "197": {
+      "file": "V197__scm_finance_waiver_no_seq.sql",
+      "checksum": 1489583887
+    },
+    "198": {
+      "file": "V198__scm_customer_group_price.sql",
+      "checksum": 1027118716
+    },
+    "199": {
+      "file": "V199__scm_retire_dead_menus.sql",
+      "checksum": -1608535003
+    },
+    "200": {
+      "file": "V200__scm_purchase_log_receipt_putaway.sql",
+      "checksum": -1053739230
+    },
+    "201": {
+      "file": "V201__scm_inventory_stocktake_negative_book.sql",
+      "checksum": -1231768791
+    },
+    "202": {
+      "file": "V202__scm_order_return_independent.sql",
+      "checksum": -918907937
+    },
+    "203": {
+      "file": "V203__scm_finance_customer_level_red.sql",
+      "checksum": 1340866625
+    },
+    "204": {
+      "file": "V204__scm_order_log_customer_subject.sql",
+      "checksum": 329715986
+    },
+    "205": {
+      "file": "V205__scm_customer_group_drop_foreign_keys.sql",
+      "checksum": 393313538
+    },
+    "206": {
+      "file": "V206__scm_customer_group_menu_icons.sql",
+      "checksum": -1780957177
+    },
+    "207": {
+      "file": "V207__scm_finance_posting.sql",
+      "checksum": -1319785586
+    },
+    "208": {
+      "file": "V208__scm_finance_posting_permission.sql",
+      "checksum": 570252645
+    },
+    "209": {
+      "file": "V209__scm_statement_posting_option.sql",
+      "checksum": -1701284565
     }
   }
 }

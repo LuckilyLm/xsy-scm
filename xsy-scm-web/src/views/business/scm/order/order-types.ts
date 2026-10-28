@@ -165,6 +165,8 @@ export interface Query {
   customerId?: Id;
   orderId?: Id;
   operationType?: string;
+  /** 退货列表按来源筛选：ORDER / INDEPENDENT。 */
+  sourceType?: string;
 }
 
 export interface OrderPoolQuery {
@@ -217,9 +219,14 @@ export interface RecentPrice {
 
 export interface ReturnItem {
   productName?: string;
+  specName?: string;
   unit?: string;
   returnItemId?: Id;
-  orderItemId: Id;
+  skuId?: Id;
+  /** 独立退货没有原订单行。 */
+  orderItemId: Id | null;
+  /** 独立退货的取价来源：RECENT_TRANSACTION / 定价链来源 / MANUAL。 */
+  priceSource?: string | null;
   requestedQuantity: string;
   approvedQuantity?: string | null;
   lockedUnitPrice?: string;
@@ -227,9 +234,23 @@ export interface ReturnItem {
   receivedQuantity?: string;
 }
 
+/** 独立退货建单前的取价预览。 */
+export interface ReturnPricePreview {
+  skuId: Id;
+  productName?: string | null;
+  specName?: string | null;
+  saleUnit?: string | null;
+  unitPrice?: string | null;
+  priceSource?: string | null;
+  priced: boolean;
+}
+
 export interface ReturnRow {
   returnId: Id;
-  orderId: Id;
+  /** 独立退货为空。 */
+  orderId: Id | null;
+  /** ORDER / INDEPENDENT。 */
+  sourceType?: string | null;
   orderNo?: string | null;
   customerName?: string | null;
   returnNo: string;

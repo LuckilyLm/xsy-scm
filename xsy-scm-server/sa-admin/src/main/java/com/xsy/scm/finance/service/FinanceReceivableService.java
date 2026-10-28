@@ -10,6 +10,7 @@ import com.xsy.scm.finance.constant.ScmFinanceReceivableSourceTypeEnum;
 import com.xsy.scm.finance.dao.FinanceReceivableDao;
 import com.xsy.scm.finance.dao.FinanceReceivableItemDao;
 import com.xsy.scm.finance.dao.FinanceReceivableSourceDao;
+import com.xsy.scm.finance.domain.dto.FinanceIndependentReturnSourceDto;
 import com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto;
 import com.xsy.scm.finance.domain.dto.FinanceReceivableSourceDto;
 import com.xsy.scm.finance.domain.dto.FinanceReceivableSourceLineDto;
@@ -89,6 +90,48 @@ public class FinanceReceivableService {
     }
 
     /**
+     * 独立退货批准后生成客户级红字应收：挂在客户名下，不挂原订单。
+     *
+     * <p>
+     * 没有原订单，也没有可指定的原应收：红字只挂客户与结算主体，由账龄、核销按客户先进先出抵减最早未结应收。 金额取审批时保存的行金额之和，不重新取价；没有有效金额行时成功跳过。
+     *
+     * @param orderReturnId
+     *            已批准的独立退货单 ID
+     * @return 红字金额
+     */
+    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
+    public BigDecimal generateRedOnIndependentReturnApproved(Long orderReturnId) {
+        FinanceIndependentReturnSourceDto returned = financeReceivableSourceDao
+            .selectApprovedIndependentReturn(orderReturnId);
+        if (returned == null) {
+            throw new IllegalStateException("独立退货单未处于 APPROVED 状态，不能生成客户级红字: " + orderReturnId);
+        }
+        // 独立退货没有订单优惠可反向，优惠分摊固定为 0；这里必须用允许 null 键的映射，行的 orderItemId 为空。
+        List<FinanceReceivableItemEntity> items = toRedItems(returned.getApprovedBy(),
+            financeReceivableSourceDao.selectApprovedIndependentReturnLines(orderReturnId), new HashMap<>());
+        BigDecimal amount = items.stream().map(FinanceReceivableItemEntity::getAmount).reduce(BigDecimal.ZERO,
+            BigDecimal::add);
+        if (amount.signum() <= 0) {
+            return amount;
+        }
+        FinanceReceivableEntity red = independentRedHeader(returned, amount);
+        if (financeReceivableDao.insertOnConflictDoNothing(red) == 0) {
+            return amount;
+        }
+        for (FinanceReceivableItemEntity item : items) {
+            item.setReceivableId(red.getId());
+            if (financeReceivableItemDao.insertOnConflictDoNothing(item) != 1) {
+                throw new IllegalStateException("退货行已挂在别的应收单上，本次红字生成整体回滚: " + item.getSourceId());
+            }
+        }
+        operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIVABLE, red.getId(),
+            ScmFinanceOperationTypeEnum.RED_GENERATE, returned.getReason(), null,
+            redGeneratedSnapshot(red, returned.getReturnNo(), returned.getOrderReturnId(), items.size()),
+            returned.getApprovedBy());
+        return amount;
+    }
+
+    /**
      * 确保该订单的正常应收存在：本次插入，或已被并发的另一次签收插入（那一次才是这条记录的创建者）。
      *
      * <p>
@@ -153,7 +196,7 @@ public class FinanceReceivableService {
      * 结算对方与名称一律继承原正常应收：红字与正常必须落在同一个客户账上，从订单或退货行重新取值会让同一笔债权出现两个对方身份。 正常应收尚未生成时，本方法仍返回相同净额，签收后再补生成红字。
      */
     private BigDecimal generateRed(FinanceReturnSourceDto returned, FinanceReceivableEntity normal) {
-        List<FinanceReceivableItemEntity> items = toRedItems(returned,
+        List<FinanceReceivableItemEntity> items = toRedItems(returned.getApprovedBy(),
             financeReceivableSourceDao.selectApprovedReturnLines(returned.getOrderReturnId()),
             orderLineDiscounts(returned.getOrderId()));
         BigDecimal amount = items.stream().map(FinanceReceivableItemEntity::getAmount).reduce(BigDecimal.ZERO,
@@ -243,6 +286,35 @@ public class FinanceReceivableService {
     }
 
     /**
+     * 客户级红字单头：来源是独立退货单，订单与原应收都为空；到期日与信用规则由数据库触发器按 RED 分支留空。
+     */
+    private FinanceReceivableEntity independentRedHeader(FinanceIndependentReturnSourceDto returned,
+        BigDecimal amount) {
+        OffsetDateTime now = OffsetDateTime.now();
+
+        FinanceReceivableEntity red = new FinanceReceivableEntity();
+        red.setReceivableNo(
+            ScmDocumentNumbers.format(FinanceConstant.RECEIVABLE_NO_PREFIX, financeReceivableDao.nextReceivableNo()));
+        red.setSourceType(ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name());
+        red.setSourceId(returned.getOrderReturnId());
+        red.setOrderId(null);
+        red.setCustomerId(returned.getCustomerId());
+        red.setCustomerNameSnapshot(returned.getCustomerNameSnapshot());
+        red.setSettlementCustomerId(returned.getSettlementCustomerId());
+        red.setSettlementCustomerNameSnapshot(returned.getSettlementCustomerNameSnapshot());
+        red.setEntryType(ScmFinanceEntryTypeEnum.RED.name());
+        red.setOriginalReceivableId(null);
+        red.setAmount(amount);
+        red.setEventAt(returned.getApprovedAt());
+        red.setReason(returned.getReason());
+        red.setCreatedAt(now);
+        red.setUpdatedAt(now);
+        red.setCreatedBy(returned.getApprovedBy());
+        red.setUpdatedBy(returned.getApprovedBy());
+        return red;
+    }
+
+    /**
      * 正常明细：数量取出库行、价格取订单行保存的售价，毛额 {@code ROUND(量 × 价, 4, HALF_UP)}，再扣该订单行承担的优惠分摊得到净额； 单头是已舍入行净额之和。一条订单行对应多条出库行时逐条成行、不合并。
      */
     private List<FinanceReceivableItemEntity> toNormalItems(FinanceReceivableSourceDto source,
@@ -274,8 +346,8 @@ public class FinanceReceivableService {
      * 红字明细：毛额直接采用订单域已保存的 {@code approved_amount}，不重算 {@code quantity × unit_price}；
      * 再扣按同一算法算出的反向优惠得到净额。也不存行级原明细指针——一条订单行可能对应多条出库行，不存在唯一的原正常明细。
      */
-    private List<FinanceReceivableItemEntity> toRedItems(FinanceReturnSourceDto returned,
-        List<FinanceReturnSourceLineDto> lines, Map<Long, BigDecimal> orderLineDiscounts) {
+    private List<FinanceReceivableItemEntity> toRedItems(String approvedBy, List<FinanceReturnSourceLineDto> lines,
+        Map<Long, BigDecimal> orderLineDiscounts) {
         OffsetDateTime now = OffsetDateTime.now();
 
         return lines.stream().map(line -> {
@@ -283,7 +355,7 @@ public class FinanceReceivableService {
             BigDecimal discount = discountShare(line.getOrderItemId(), gross, line.getOrderedLineAmount(),
                 orderLineDiscounts);
 
-            FinanceReceivableItemEntity item = newItem(returned.getApprovedBy(), now);
+            FinanceReceivableItemEntity item = newItem(approvedBy, now);
             item.setSourceType(ScmFinanceReceivableItemSourceTypeEnum.ORDER_RETURN_ITEM.name());
             item.setSourceId(line.getOrderReturnItemId());
             item.setOrderItemId(line.getOrderItemId());
@@ -359,9 +431,14 @@ public class FinanceReceivableService {
      */
     private Map<String, Object> redGeneratedSnapshot(FinanceReceivableEntity red, FinanceReturnSourceDto returned,
         int itemCount) {
+        return redGeneratedSnapshot(red, returned.getReturnNo(), returned.getOrderReturnId(), itemCount);
+    }
+
+    private Map<String, Object> redGeneratedSnapshot(FinanceReceivableEntity red, String returnNo, Long returnId,
+        int itemCount) {
         Map<String, Object> snapshot = baseSnapshot(red);
-        snapshot.put("sourceReturnId", returned.getOrderReturnId());
-        snapshot.put("returnNo", returned.getReturnNo());
+        snapshot.put("sourceReturnId", returnId);
+        snapshot.put("returnNo", returnNo);
         snapshot.put("originalReceivableId", red.getOriginalReceivableId());
         snapshot.put("itemCount", itemCount);
         return snapshot;

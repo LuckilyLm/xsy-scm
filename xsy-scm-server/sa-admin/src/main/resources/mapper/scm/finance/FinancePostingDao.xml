@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.finance.dao.FinancePostingDao">
+
+    <select id="nextPostingNo" resultType="long">
+        SELECT nextval('finance_posting_no_seq')
+    </select>
+
+    <select id="selectByIdForUpdate" resultType="com.xsy.scm.finance.domain.entity.FinancePostingEntity">
+        SELECT *
+        FROM xsy_finance_posting
+        WHERE id = #{postingId}
+            AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="selectVoidByPostingId" resultType="com.xsy.scm.finance.domain.entity.FinancePostingVoidEntity">
+        SELECT *
+        FROM xsy_finance_posting_void
+        WHERE posting_id = #{postingId}
+            AND deleted = FALSE
+    </select>
+
+    <insert id="insertVoidOnConflictDoNothing"
+            parameterType="com.xsy.scm.finance.domain.entity.FinancePostingVoidEntity"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO xsy_finance_posting_void (posting_id, reason, voided_at, version, deleted, created_at,
+            updated_at, created_by, updated_by)
+        VALUES (#{postingId}, #{reason}, #{voidedAt}, 0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy},
+            #{updatedBy})
+        ON CONFLICT (posting_id)
+        WHERE deleted = FALSE DO NOTHING
+    </insert>
+
+    <select id="selectCustomerSellerId" resultType="long">
+        SELECT c.seller_id
+        FROM xsy_finance_posting p
+        JOIN xsy_customer c ON c.id = p.customer_id
+            AND c.deleted = FALSE
+        WHERE p.id = #{postingId}
+            AND p.deleted = FALSE
+    </select>
+
+    <!--
+      有效状态从作废事实推导：作废行存在即 VOIDED。过账行本身没有状态列，
+      这样「作废了没有」只有一份真值，不会出现行上写 NORMAL、作废表却有行的分裂。
+    -->
+    <sql id="postingSelect">
+        SELECT p.id AS postingId, p.posting_no AS postingNo, p.customer_id AS customerId,
+            p.customer_name_snapshot AS customerName, p.settlement_customer_id AS settlementCustomerId,
+            p.settlement_customer_name_snapshot AS settlementCustomerName, p.document_date AS documentDate,
+            p.amount, p.tax_rate AS taxRate, p.refund_status AS refundStatus, p.remark,
+            CASE WHEN v.id IS NULL THEN 'NORMAL' ELSE 'VOIDED' END AS status,
+            v.voided_at AS voidedAt, v.created_by AS voidedBy, v.reason AS voidReason,
+            p.version, p.created_at AS createdAt, p.updated_at AS updatedAt, p.created_by AS createdBy,
+            p.updated_by AS updatedBy
+        FROM xsy_finance_posting p
+        LEFT JOIN xsy_finance_posting_void v ON v.posting_id = p.id
+            AND v.deleted = FALSE
+        LEFT JOIN xsy_customer c ON c.id = p.customer_id
+            AND c.deleted = FALSE
+    </sql>
+
+    <select id="selectDetail" resultType="com.xsy.scm.finance.domain.vo.FinancePostingVO">
+        <include refid="postingSelect"/>
+        WHERE p.id = #{postingId}
+            AND p.deleted = FALSE
+        <choose>
+            <when test="scope == null or scope.customerSellerScope.empty">AND FALSE</when>
+            <when test="scope.customerSellerScope.all"></when>
+            <otherwise>
+                AND c.seller_id IN
+                <foreach collection="scope.customerSellerScope.ids"
+                         item="sellerId"
+                         open="("
+                         separator=","
+                         close=")">
+                    #{sellerId}
+                </foreach>
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="queryPage" resultType="com.xsy.scm.finance.domain.vo.FinancePostingVO">
+        <include refid="postingSelect"/>
+        <where>
+            p.deleted = FALSE
+                AND p.document_date &gt;= #{timeRange.startDate}
+                AND p.document_date &lt;= #{timeRange.endDate}
+            <choose>
+                <when test="scope == null or scope.customerSellerScope.empty">AND FALSE</when>
+                <when test="scope.customerSellerScope.all"></when>
+                <otherwise>
+                    AND c.seller_id IN
+                    <foreach collection="scope.customerSellerScope.ids"
+                             item="sellerId"
+                             open="("
+                             separator=","
+                             close=")">
+                        #{sellerId}
+                    </foreach>
+                </otherwise>
+            </choose>
+            <if test="query.postingId != null">AND p.id = #{query.postingId}</if>
+            <if test="query.customerId != null">AND p.customer_id = #{query.customerId}</if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND (p.posting_no ILIKE CONCAT('%', #{query.keyword}, '%')
+                    OR p.customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+            </if>
+            <if test="query.refundStatus != null and query.refundStatus != ''">
+                AND p.refund_status = #{query.refundStatus}
+            </if>
+            <if test="query.status == 'NORMAL'">AND v.id IS NULL</if>
+            <if test="query.status == 'VOIDED'">AND v.id IS NOT NULL</if>
+        </where>
+        ORDER BY p.document_date DESC, p.id DESC
+    </select>
+
+</mapper>

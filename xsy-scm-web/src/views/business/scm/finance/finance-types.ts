@@ -3,7 +3,7 @@ import type {ScmId, ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 export type FinanceId = ScmId;
 export type FinanceEntryType = 'NORMAL' | 'RED' | 'REVERSE';
 export type FinancePaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'OTHER';
-export type FinanceBusinessType = 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT' | 'WRITE_OFF' | 'WAIVER';
+export type FinanceBusinessType = 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT' | 'WRITE_OFF' | 'WAIVER' | 'POSTING';
 
 export interface FinanceCandidate {
   id: FinanceId;
@@ -364,6 +364,67 @@ export interface FinanceWaiver {
   writeOffNo?: string | null;
   createdAt: string;
   createdBy?: string | null;
+}
+
+export type FinancePostingStatus = 'NORMAL' | 'VOIDED';
+export type FinancePostingRefundStatus = 'PENDING' | 'PARTIAL' | 'REFUNDED';
+
+export interface PostingQuery extends FinancePageQuery {
+  postingId?: FinanceId;
+  customerId?: FinanceId;
+  keyword?: string;
+  refundStatus?: FinancePostingRefundStatus;
+  status?: FinancePostingStatus;
+}
+
+/**
+ * 过账特殊单据：财务对外的虚拟记账留痕。
+ *
+ * 不生成应收应付、不参与核销；`status` 由服务端按作废事实推导，前端只读。
+ */
+export interface FinancePosting extends FinanceAuditFields {
+  postingId: FinanceId;
+  postingNo: string;
+  customerId: FinanceId;
+  customerName: string;
+  settlementCustomerId?: FinanceId | null;
+  settlementCustomerName?: string | null;
+  documentDate: string;
+  amount: string;
+  taxRate?: string | null;
+  refundStatus: FinancePostingRefundStatus;
+  remark?: string | null;
+  status: FinancePostingStatus;
+  voidedAt?: string | null;
+  voidedBy?: string | null;
+  voidReason?: string | null;
+  version: number;
+}
+
+export interface FinancePostingAddForm {
+  customerId: FinanceId;
+  documentDate: string;
+  amount: string;
+  taxRate?: string | null;
+  refundStatus?: FinancePostingRefundStatus;
+  remark?: string | null;
+}
+
+/** 客户不随修改改变：换客户等于换一张单，应作废后重新登记。 */
+export interface FinancePostingUpdateForm {
+  postingId: FinanceId;
+  version: number;
+  documentDate: string;
+  amount: string;
+  taxRate?: string | null;
+  refundStatus?: FinancePostingRefundStatus;
+  remark?: string | null;
+}
+
+export interface FinancePostingVoidForm {
+  postingId: FinanceId;
+  version: number;
+  reason: string;
 }
 
 export interface FinanceReceiptAddForm {

@@ -15,6 +15,11 @@ export const SCM_FINANCE_PERMISSION = {
   /** 抹零与反向抹零分开授权：会抹零不等于能撤销。 */
   WAIVER_ADD: 'scm:finance:waiver:add',
   WAIVER_REVERSE: 'scm:finance:waiver:reverse',
+  /** 过账特殊单据：查询、登记、修改、作废各自授权，作废不复用修改。 */
+  POSTING_QUERY: 'scm:finance:posting:query',
+  POSTING_ADD: 'scm:finance:posting:add',
+  POSTING_UPDATE: 'scm:finance:posting:update',
+  POSTING_VOID: 'scm:finance:posting:void',
   RECEIPT_REVERSE: 'scm:finance:receipt:reverse',
   PAYMENT_REVERSE: 'scm:finance:payment:reverse',
   EXPORT: 'scm:finance:export',
@@ -49,6 +54,9 @@ export const SCM_FINANCE_OPERATION_TYPE_ENUM: SmartEnum<string> = {
   PAYMENT_REVERSE: {value: 'PAYMENT_REVERSE', desc: '付款反向'},
   WAIVER_ADD: {value: 'WAIVER_ADD', desc: '抹零登记'},
   WAIVER_REVERSE: {value: 'WAIVER_REVERSE', desc: '抹零反向'},
+  POSTING_ADD: {value: 'POSTING_ADD', desc: '过账登记'},
+  POSTING_UPDATE: {value: 'POSTING_UPDATE', desc: '过账修改'},
+  POSTING_VOID: {value: 'POSTING_VOID', desc: '过账作废'},
 };
 
 /** 付款方式（与后端 `ScmFinancePaymentMethodEnum` 逐字对应）。 */
@@ -102,6 +110,20 @@ export const SCM_FINANCE_BUSINESS_TYPE_ENUM: SmartEnum<string> = {
   PAYMENT: {value: 'PAYMENT', desc: '付款'},
   WRITE_OFF: {value: 'WRITE_OFF', desc: '核销'},
   WAIVER: {value: 'WAIVER', desc: '抹零'},
+  POSTING: {value: 'POSTING', desc: '过账'},
+};
+
+/** 过账单据的有效状态（由作废事实推导，前端只读）。 */
+export const SCM_FINANCE_POSTING_STATUS_ENUM: SmartEnum<string> = {
+  NORMAL: {value: 'NORMAL', desc: '有效'},
+  VOIDED: {value: 'VOIDED', desc: '已作废'},
+};
+
+/** 过账单据的返款状态（与后端 `ScmFinancePostingRefundStatusEnum` 逐字对应）。 */
+export const SCM_FINANCE_POSTING_REFUND_STATUS_ENUM: SmartEnum<string> = {
+  PENDING: {value: 'PENDING', desc: '未返款'},
+  PARTIAL: {value: 'PARTIAL', desc: '部分返款'},
+  REFUNDED: {value: 'REFUNDED', desc: '已返款'},
 };
 
 /** Stable DOM ids for browser checks; column settings use the numeric ids below. */
@@ -111,6 +133,7 @@ export const SCM_FINANCE_DOM_TABLE_ID = {
   RECEIPT: 'scm-finance-receipt-table',
   PAYMENT: 'scm-finance-payment-table',
   WRITE_OFF: 'scm-finance-write-off-table',
+  POSTING: 'scm-finance-posting-table',
 } as const;
 
 export const SCM_FINANCE_ENTRY_COLOR: Record<string, string> = {
@@ -129,4 +152,6 @@ export default {
   SCM_FINANCE_COUNTERPARTY_TYPE_ENUM,
   SCM_FINANCE_SOURCE_TYPE_ENUM,
   SCM_FINANCE_BUSINESS_TYPE_ENUM,
+  SCM_FINANCE_POSTING_STATUS_ENUM,
+  SCM_FINANCE_POSTING_REFUND_STATUS_ENUM,
 };

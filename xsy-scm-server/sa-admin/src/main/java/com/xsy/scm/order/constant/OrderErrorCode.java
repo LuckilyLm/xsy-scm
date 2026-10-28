@@ -57,6 +57,8 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_RECEIVED_CORRECTION_CONFLICT(41211, "客户实收数量已有新记录，请刷新后再提交"),
     ORDER_EXCHANGE_NOT_READY(41212, "退货须批准并完成实物接收后才能创建换货单"),
     ORDER_EXCHANGE_EXISTS(41213, "该退货单已有换货订单"),
+    ORDER_RETURN_INDEPENDENT_PRICE_REQUIRED(41214, "该客户该商品没有可用价格，请人工填写单价并说明原因"),
+    ORDER_RETURN_INDEPENDENT_UNIT_INVALID(41216, "退货单位与商品销售单位不一致，请先确认单位"),
 
     /**
      * 只有已确认订单允许预留库存；草稿、取消和完成订单不得占用库存。

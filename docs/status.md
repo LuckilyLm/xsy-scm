@@ -2,6 +2,27 @@
 
 最后更新：2026-10-28。当前实施与验证以本文顶部的最新基线为准；下方日期条目保留其发生当时的结果，不代表当前工作区全量验收。
 
+## 过账特殊单据（2026-10-28，源码、Pg IT、四道门禁已执行；未做现场验收）
+
+按 D-1028-16 落地隐藏式财务虚拟单据，迁移 V207–V209。
+
+- **口径**：过账只留痕，不生成应收/应付、不参与核销、不改客户余额与账龄；过账表 append-only，登记错了追加一条作废事实（原因必填），有效状态由「有没有作废行」推导，不落 `status`。税点按纸质单据原样记录为百分比，不计算税额，也不存税额列。
+- **命令与查询**：`POST /scm/finance/posting/add|update|void|query|export`、`GET /scm/finance/posting/{id}`；登记/修改/作废各带幂等键，修改与作废另用 `version` 乐观锁；每次动作按「过账 + id」写财务操作日志（`POSTING_ADD / POSTING_UPDATE / POSTING_VOID`），改前改后进快照，详情抽屉可看变更前后。修改不允许换客户（换客户等于换一张单）；作废后不可修改、不可重复作废。数据范围按客户负责业务员（`xsy_customer.seller_id`）。
+- **页面**：`/finance/postings`（`finance-posting-list.vue`）提供日期、客户、单号/客户关键字、返款状态、有效状态筛选，登记/修改/作废弹窗，详情抽屉（含操作日志与差异表），导出与列表同源；窄屏回落卡片列表。工具栏常驻一句「不生成应收应付，不参与核销」，避免财务把过账当成给客户挂账。
+- **权限**：菜单 1506、权限 1532–1535（`scm:finance:posting:query|add|update|void`），只授超级管理员与 `SCM_FINANCE`；导出沿用 `scm:finance:export`。「隐藏」靠授权范围实现，不靠 `visible_flag` 对已授权的人隐藏入口。
+- **对账单可选包含**：`POST /scm/report/customer/statement/freeze` 新增 `includePosting`（默认 false）。勾选后过账行按单据日期进入明细时间线，只带「过账金额」一列，应收/收款/核销/退款变动恒为 0，期初/期末净应收与未分配资金不变；作废过账不出现。`include_posting` 随冻结版本保存，打印、导出、详情按同一口径读取；默认打印模板补 `postingAmount` 列。
+- **迁移**：V207 过账表、作废事实表、单号序列与财务日志 CHECK 放行；V208 页面菜单与四个权限；V209 对账单 `include_posting`、明细 `posting_amount` 与默认打印模板列。
+- **验证（已执行）**：
+  - `python tools/verify.py quality` PASS（含错误码注册、跨域 DAO、阶段注释、Checkstyle）；`python tools/verify.py frontend` PASS（ESLint、`npm test` 553 项、`vue-tsc`、构建）。
+  - 新增 `FinancePostingIT` 7 项：登记不产生应收/应付/核销、金额/税点/返款状态/客户校验、幂等、修改前后快照与 40921、作废必填原因且终态、数据范围、按返款状态与有效状态筛选。
+  - 新增 `StatementPostingOptionPgIT` 3 项：不勾选无过账行、勾选后余额口径不变且过账金额落库、作废过账不进对账单、冻结版本记住选项。
+  - 定向复跑 `StatementPrintContractTest` 5、`ScmFinanceSchemaPgIT` 17、`FinanceWaiverIT` 3、`ScmFinanceReadPgIT` 6、`SmartAdminMenuComponentPgIT` 3、`ScmFinancePaymentPermissionPgIT` 3、`ScmFinanceReceiptPermissionPgIT` 3，全部通过。
+  - 代码层面：登记取价错误码改用未占用号段 41184–41191（原拟 41166–41173 与电子秤错误码撞号）；`ScmFinanceSchemaPgIT` 财务段菜单 21 → 26 行、授权 42 → 52、页面 5 → 6、权限 15 → 19；`SmartAdminMenuComponentPgIT` 与两个权限 IT 的页面数同步为 6。
+  - 新增 E2E `e2e/scm-finance-posting-2026-10-28.spec.ts` 2 项，在本机 18080/18081 通过：弹窗常驻「不生成应收应付」说明，登记后按客户查得到 `PD` 单号、未返款、`NORMAL`，同客户当天应收仍为 0；修改金额留痕（日志 `POSTING_ADD → POSTING_UPDATE`），作废不填原因被拦，作废后为终态、金额不被改写、修改/作废入口消失。
+  - 开发库 `xsy_scm` 已由 Flyway 应用 V207–V209（`Successfully applied 3 migrations`），后端 dev jar 重建并重启 18080；迁移快照已按应用后的校验和同步。
+  - 页面样式巡检（1440×900 / 390×844 截图）：修掉三处问题——详情抽屉日志表未给 `scroll.x`，窄屏（抽屉被 `96vw` 限制）时「原因/快照」被裁掉且无法滚动；日志原因列没有宽度，在可滚动表里被压成 0；状态标签与返款状态标签没走 `ScmStatusTag`，返款三态也看不出轻重（现为未返款=warning、部分=processing、已返款=success）。详情抽屉同时按其它详情页拆成「单据信息 / 操作日志」两段。
+- **未执行**：现场财务岗位对「隐藏」范围与返款状态的确认；过账单打印（当前只有导出，没有单独纸质模板）。
+
 ## 2026-10-28 现场确认后的 P0 第一批（源码完成；后端编译、定向单测、新增 Pg IT 与前端静态检查已执行）
 
 本批按 [2026-10-28 客户现场确认](requirements/2026-10-28-客户现场确认.md) 与 `docs/decisions.md` 的 D-1028 系列落地，迁移 V186–V198 已写入源码；2026-10-28 已在本地演示环境把 V186–V198 应用到开发库 `xsy_v2`，并刷新后端 test profile jar 与 Web 构建产物。未做 E2E、电子秤或现场验收。
@@ -36,6 +57,30 @@
   - **E2E 抗数据累积（2026-10-28，三处失败改为用例侧修法）**：上面这轮后端改动后复跑全量，出现 154 通过 / 3 失败 / 9 跳过 / 8 未运行（失败所在 serial 块的后继用例不再跑）。三处失败都不是产品缺陷，而是开发库里 E2E 自己建的数据越积越多：①起点仓库下拉没有搜索框且是虚拟列表，只渲染首屏十几项，早期仓「鲜蔬源仓库」被挤出 DOM，按文本 click 反复 detached；改为方向键把激活项逐项下移（虚拟列表会跟着滚动），命中后回车确认。②盘点页仓库筛选同样点不到；`WarehouseSelect` 本身有 `show-search`，改为先输入名称过滤再点过滤后的选项。③线路列表按配送日期倒序分页，新线路掉出第一页；改用列表自己的「线路名称 / 编号」筛选收敛。三处单独复跑均通过，`npm run typecheck:e2e`、`npm run lint:e2e` 通过。
   - **未完成**：修完后再跑全量时，后台任务因本机内存不足被系统中断（不是用例失败），这一轮没有新的全量数字；下次有内存余量时重跑 `XSY_V2_PG_DB=xsy_scm npx playwright test` 确认。
 - **未执行**：`tools/verify.ps1` 总入口、云存储模式（`XSY_FILE_STORAGE_MODE=cloud`）的 E2E、电子秤代理 `verify.ps1` 与真实读重/去皮/断网/班次过期、打印纸张与批量 50+ 单、负库存实物盘点现场验收。
+
+## 独立退货单（2026-10-28，源码、Pg IT、E2E 与四道门禁已执行；未做现场验收）
+
+按 D-1028-15 落地「不关联原单」的独立退货单，迁移 V202–V204；同时补掉客户分组批次遗留的两条门禁红（V205 撤外键、V206 补菜单图标）。
+
+- **建单与取价**：`POST /scm/order/return/independent/create` 按「客户 + SKU + 销售单位」建行，退货单存客户名称快照、明细存商品/规格/单位快照，列表与详情不再联接原订单。价格优先取该客户该商品该单位最近一次已确认成交价，其次走既有取价链，仍无可用价格必须人工填价并写原因（人工价另需订单改价权限）；价格来源随行保存，审批时不再重新取价。`POST /scm/order/return/independent/price/preview` 在建单前给出建议价与来源，页面 `order-independent-return-modal.vue` 展示建议价、无价提示和人工填价原因。
+- **审批与入库**：`POST /scm/order/return/independent/approve` 按退货行 ID 提交批准数量，单价用建单时锁定的价格。实物接收沿用 `/receive`：独立退货按 SKU 回到指定仓库，不绑原出库行与批次；库存单位取该仓已有余额单位（无余额时取销售单位），不一致直接拒绝；入库成本取入库前该仓移动加权均价，没有余额按 0 计。退回列表新增「来源」筛选与列、详情显示来源、独立退货不提供换货入口。
+- **财务**：审批生成客户级红字（`order_id` 与 `original_receivable_id` 均为空），不生成退款单。账龄、应收列表与汇总、自动/手工核销、财务概览和对账单都按客户（含结算主体）先进先出抵减最早未结的正常应收，抵不完的部分留作贷方余额；对账单把未关联的红字作为负数事件。
+- **权限与日志**：沿用退货查询/建单/审批/接收/驳回/撤销权限，不新增权限码；数据范围按客户业务员落在订单业务员范围；操作日志允许挂在客户上（`customer_id`），审计页可按客户名称检索。
+- **迁移**：V202 退货单/明细/接收明细加 `source_type`、名称与单位快照、可空 `order_id`/`order_item_id` 与配套唯一约束；V203 红字 `order_id` 可空、来源配对与明细挂单约束；V204 操作日志 `customer_id` 与索引；V205 撤掉 V198 带入的两条外键，恢复全库零外键；V206 补客户分组与客户分组价两个菜单的图标。
+- **验证（已执行）**：
+  - `python tools/verify.py quality` PASS；`python tools/verify.py frontend` PASS（ESLint、E2E 类型检查、`npm test` 549 项、`npm run build`、TypeScript 棘轮 0 新增 / SCM 0 错误）；改动文件 Prettier 通过。
+  - 新增 `OrderReturnIndependentPgIT` 3 项（最近成交价锁价与客户级红字且无退款单、按仓库均价回库且不绑原出库行、账龄/自动核销/对账单 FIFO 口径一致）；定向复跑 `ScmFinanceReceivablePgIT`、`ScmFinanceWriteOffPgIT`、`ScmFinanceReceiptPgIT` 共 45 项，`ScmFinanceReportPgIT`、`ScmReportPgIT`、`AdminSettlementReturnCreditPgIT`、`ScmBundleReturnFlowPgIT`、`ScmFinanceSettleStatePgIT`、`ScmFinanceReceiptSettlementPgIT` 共 35 项，全部通过。
+  - 全量后端门禁 `python tools/verify.py backend`：1961 项、0 失败、6 跳过（`F0FileStorageCloudIT` 5 项需云存储模式，`MallOrderFlowPgIT` 1 项既有跳过）。
+  - 新增 E2E `e2e/scm-return-independent-2026-10-28.spec.ts` 2 项，在本机 18080/18081 通过：建单显示「最近成交价」建议价、列表标「独立退货」且原订单号为「—」、详情无换货入口；批准后状态推进到「已批准」。
+  - 本地演示环境：dev jar 重建并重启 18080，Docker 后端替换为 test profile jar 并重启；开发库 `xsy_scm` 由 Flyway 从 V201 应用到 V206（`Successfully applied 5 migrations`）；Web `dist` 重新构建并替换到演示容器。
+- **一并修掉的全量门禁红**（多为前几批遗留，只在跑全量时暴露）：
+  - V198 给客户分组加了两条数据库外键，违反全库零外键纪律 → V205 撤掉，`ScmMigrationTargetPgIT`/`ScmInventoryMigrationIT`/`ScmPurchaseMigrationIT`/`ScmBundleMigrationPgIT` 恢复通过。
+  - 客户分组两个二级菜单缺图标 → V206 补齐；`ScmMenuComponentExistencePgIT` 通过。
+  - 独立退货与订单日志新增的三条索引 → `ScmOrderMigrationIT` 31 → 34；采购待定价与自动锁单索引 → `ScmPurchaseMigrationIT` 索引 38 → 40、部分索引 34 → 36；抹零权限 → `ScmFinanceSchemaPgIT` 菜单清单补 1528/1529、授权行 38 → 42。
+  - `OrderWebTest` 订单端点 34 → 37（三个独立退货端点）；`ScmOrderCustomerDataScopePgIT` 夹具补 `source_type`/`customer_name_snapshot`；`SmartAdminMapperPgValidationIT` 跳过基线 658 → 678（客户分组、独立退货取价与电子秤会话等新增 MP DAO）。
+  - V186 起种子仓 WH001 允许负库存：`InventoryFulfillmentPgIT` 与 `ScmInventoryOutboundIT` 的「库存不足必须拒绝」改用独立的普通仓；`ScmInventoryMigrationIT` 改为断言负库存触发器，并另建普通仓验证负数余额被拒。
+  - `ScmInventoryLossGainIT` 的通知计数按 `message_type` 收敛，避免与订单确认消息的 `data_id` 撞号。
+- **未执行**：独立退货的实物接收与打印现场验收；电子秤现场项（真实读重、去皮、断网、班次过期）仍未验证；E2E 全量回归本次未重跑（只跑新增 2 项，上一轮全量因本机内存被中断）。
 
 ## 开发库数据被清空（2026-10-27，事故记录）
 

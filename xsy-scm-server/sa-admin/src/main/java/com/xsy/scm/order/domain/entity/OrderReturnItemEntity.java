@@ -24,6 +24,22 @@ public class OrderReturnItemEntity {
     private Long returnId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long orderItemId;
+    /**
+     * 退货商品与单位快照：原单退货与独立退货都写，避免列表/详情依赖订单明细。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long skuId;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String skuNameSnapshot;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String specNameSnapshot;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String saleUnitSnapshot;
+    /**
+     * 独立退货的取价来源（RECENT_TRANSACTION / 定价链来源 / MANUAL）；原单退货沿用订单行锁定价格，为空。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String priceSource;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal requestedQuantity;

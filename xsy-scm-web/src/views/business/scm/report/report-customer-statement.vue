@@ -3,6 +3,9 @@
     <a-form-item label="结算方" required><CustomerSelect v-model:value="settlementCustomerId" width="200px" /></a-form-item>
     <a-form-item label="原客户"><CustomerSelect v-model:value="customerId" width="200px" /></a-form-item>
     <a-form-item label="对账期间" required><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>
+    <a-form-item label="过账记录">
+      <a-checkbox v-model:checked="includePosting">包含过账记录</a-checkbox>
+    </a-form-item>
     <a-form-item>
       <a-space>
         <a-button v-privilege="PERM.CUSTOMER_STATEMENT_FREEZE" type="primary" :loading="busy" @click="freeze">生成对账单</a-button>
@@ -29,7 +32,10 @@
     </template>
     <div ref="printArea" class="statement-print">
       <h2>{{ selected.settlementCustomerName }} · 客户对账单</h2>
-      <p>版本 #{{ selected.id }}　期间 {{ selected.startDate }} 至 {{ selected.endDate }}　冻结时间 {{ selected.generatedAt }}</p>
+      <p>
+        版本 #{{ selected.id }}　期间 {{ selected.startDate }} 至 {{ selected.endDate }}　冻结时间 {{ selected.generatedAt }}
+        <a-tag v-if="selected.includePosting" color="blue">含过账记录</a-tag>
+      </p>
       <a-alert
         v-if="selected.partialScope"
         type="warning"
@@ -89,7 +95,9 @@ import PrintDocumentModal from '/@/views/business/scm/print/print-document-modal
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 
 const settlementCustomerId = ref<ReportId>(),
-  customerId = ref<ReportId>();
+  customerId = ref<ReportId>(),
+  // 默认不包含：过账不是财务事实，客户默认看到的应只是应收/收付时间线
+  includePosting = ref(false);
 const dateRange = ref<DateRange>(defaultDateRange());
 
 const selected = ref<CustomerStatement>(),
@@ -102,6 +110,7 @@ const printArea = ref<HTMLElement>(),
 const factLabels: Record<string, string> = {
   RECEIVABLE: '销售应收',
   RED: '退货红字',
+  POSTING: '过账',
   RECEIPT: '实际收款',
   RECEIPT_REVERSE: '反向收款',
   WRITE_OFF: '核销分配',
@@ -111,7 +120,7 @@ const factLabels: Record<string, string> = {
   REFUND: '实际退款',
   REFUND_REVERSE: '反向退款',
 };
-const moneyColumns = ['receivableDelta', 'receiptDelta', 'writeOffDelta', 'refundDelta', 'receivableBalance'];
+const moneyColumns = ['receivableDelta', 'receiptDelta', 'writeOffDelta', 'refundDelta', 'postingAmount', 'receivableBalance'];
 const historyColumns: TableColumnsType<CustomerStatement> = [
   {title: '版本', dataIndex: 'id'},
   {title: '结算方', dataIndex: 'settlementCustomerName'},
@@ -128,7 +137,7 @@ const lineColumns: TableColumnsType<CustomerStatementLine> = [
   {title: '关联单号', dataIndex: 'relatedNo', width: 170},
   {title: '原客户', dataIndex: 'customerName', width: 150},
   ...moneyColumns.map((key, index) => ({
-    title: ['应收变动', '收款变动', '核销变动', '退款变动', '滚动净应收'][index],
+    title: ['应收变动', '收款变动', '核销变动', '退款变动', '过账金额', '滚动净应收'][index],
     dataIndex: key,
     width: 135,
   })),
@@ -164,6 +173,7 @@ async function freeze() {
         customerId: customerId.value,
         startDate: dateRange.value[0],
         endDate: dateRange.value[1],
+        includePosting: includePosting.value,
       })
     ).data;
     await loadHistory();
@@ -208,7 +218,7 @@ function printVersion() {
   doc.body.appendChild(printArea.value.cloneNode(true));
   doc.body.querySelector('.statement-lines')?.remove();
   const table = doc.createElement('table');
-  const headings = ['业务时间', '类型', '单号', '关联单号', '原客户', '应收变动', '收款变动', '核销变动', '退款变动', '滚动净应收'];
+  const headings = ['业务时间', '类型', '单号', '关联单号', '原客户', '应收变动', '收款变动', '核销变动', '退款变动', '过账金额', '滚动净应收'];
   const header = table.insertRow();
   headings.forEach((label) => {
     const th = doc.createElement('th');

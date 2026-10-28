@@ -26,6 +26,14 @@ public class ScmCustomerStatementItemVO {
     private BigDecimal writeOffDelta;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal refundDelta;
+    /**
+     * 过账行的过账金额；其它事实类型为空。
+     *
+     * <p>
+     * 它不是应收/收款变动，也不参与滚动余额 —— 过账只是对外账目的留痕。
+     */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal postingAmount;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal receivableBalance;
 }

@@ -6,6 +6,7 @@ import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.common.time.ScmDateTimeRange;
 import com.xsy.scm.finance.domain.dto.FinanceAutoWriteOffTargetDto;
+import com.xsy.scm.finance.domain.dto.FinanceReceivableCreditContextDto;
 import com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableEntity;
 import com.xsy.scm.finance.domain.form.FinanceReceivableQueryForm;
@@ -59,6 +60,17 @@ public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity
         @Param("scope") ScmValueScope scope, @Param("limit") int limit);
 
     BigDecimal selectRedAmount(@Param("originalReceivableId") Long originalReceivableId);
+
+    /**
+     * 该客户该结算主体下未分配红字（独立退货客户级红字）的总额；自动核销按 FIFO 顺序依次抵扣。
+     */
+    BigDecimal selectCustomerLevelRedAmount(@Param("customerId") Long customerId,
+        @Param("settlementCustomerId") Long settlementCustomerId);
+
+    /**
+     * 某张正常应收的客户级红字抵扣上下文：未分配红字总额，以及排序在它之前的应收剩余未结额之和。
+     */
+    FinanceReceivableCreditContextDto selectCreditContextForTarget(@Param("targetId") Long targetId);
 
     FinanceReceivableEntity selectActiveById(@Param("receivableId") Long receivableId);
 

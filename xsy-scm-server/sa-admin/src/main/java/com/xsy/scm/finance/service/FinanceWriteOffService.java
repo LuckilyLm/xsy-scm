@@ -28,6 +28,7 @@ import com.xsy.scm.finance.dao.FinanceReceivableDao;
 import com.xsy.scm.finance.dao.FinanceWriteOffDao;
 import com.xsy.scm.finance.domain.dto.FinanceAutoWriteOffTargetDto;
 import com.xsy.scm.finance.domain.dto.FinancePayableTargetDto;
+import com.xsy.scm.finance.domain.dto.FinanceReceivableCreditContextDto;
 import com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto;
 import com.xsy.scm.finance.domain.entity.FinancePaymentEntity;
 import com.xsy.scm.finance.domain.entity.FinanceReceiptEntity;
@@ -408,19 +409,31 @@ public class FinanceWriteOffService {
             candidates = financePayableDao.selectAutoTargets(source.counterpartyId(), scope.getPurchaserScope(),
                 AUTO_TARGET_LIMIT);
         }
+        // 客户级红字按同一 FIFO 顺序（event_at, id）先抵最早未结应收；候选已按该顺序返回，这里顺序扣减即可。
+        BigDecimal creditPool = ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name().equals(targetType(sourceType))
+            ? financeReceivableDao.selectCustomerLevelRedAmount(source.counterpartyId(), source.counterpartyId())
+            : BigDecimal.ZERO;
+        if (creditPool == null) {
+            creditPool = BigDecimal.ZERO;
+        }
         List<PlannedAllocation> plan = new ArrayList<>(candidates.size());
         BigDecimal remaining = available;
         for (FinanceAutoWriteOffTargetDto candidate : candidates) {
             if (remaining.signum() <= 0) {
                 break;
             }
-            BigDecimal amount = candidate.getOpenAmount().min(remaining).setScale(FinanceConstant.AMOUNT_SCALE,
-                RoundingMode.HALF_UP);
+            BigDecimal openAmount = candidate.getOpenAmount();
+            if (creditPool.signum() > 0 && openAmount.signum() > 0) {
+                BigDecimal applied = openAmount.min(creditPool);
+                openAmount = openAmount.subtract(applied);
+                creditPool = creditPool.subtract(applied);
+            }
+            BigDecimal amount = openAmount.min(remaining).setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
             if (amount.signum() <= 0) {
                 continue;
             }
             plan.add(new PlannedAllocation(candidate.getTargetId(), candidate.getTargetNo(), candidate.getTargetName(),
-                candidate.getEventAt(), candidate.getOpenAmount(), amount));
+                candidate.getEventAt(), openAmount, amount));
             remaining = remaining.subtract(amount);
         }
         return plan;
@@ -498,7 +511,28 @@ public class FinanceWriteOffService {
             ? financeReceivableDao.selectRedAmount(target.id())
             : financePayableDao.selectRedAmount(target.id());
         BigDecimal writtenOffAmount = financeWriteOffDao.selectTargetWrittenOffAmount(target.type(), target.id());
-        return TargetBalance.from(target.amount().subtract(redAmount), writtenOffAmount);
+        BigDecimal netAmount = target.amount().subtract(redAmount);
+        // 客户级红字（独立退货）不挂单据，按 FIFO 抵减本客户最早未结的应收；不清掉这部分就会多收钱。
+        BigDecimal openBefore = netAmount.subtract(writtenOffAmount).max(BigDecimal.ZERO);
+        BigDecimal creditApplied = openBefore.signum() <= 0
+            ? BigDecimal.ZERO
+            : openBefore.min(customerLevelCreditRemaining(target));
+        return TargetBalance.from(netAmount.subtract(creditApplied), writtenOffAmount);
+    }
+
+    /**
+     * 本目标还能被客户级红字抵扣的上限 = 未分配红字总额 - 排在本单之前的应收剩余未结额；供应商应付永远为 0。
+     */
+    private BigDecimal customerLevelCreditRemaining(TargetFact target) {
+        if (!ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name().equals(target.type())) {
+            return BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE);
+        }
+        FinanceReceivableCreditContextDto context = financeReceivableDao.selectCreditContextForTarget(target.id());
+        if (context == null || context.getPoolAmount() == null) {
+            return BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE);
+        }
+        BigDecimal priorOpen = context.getPriorOpenAmount() == null ? BigDecimal.ZERO : context.getPriorOpenAmount();
+        return context.getPoolAmount().subtract(priorOpen).max(BigDecimal.ZERO);
     }
 
     private static List<Allocation> allocations(List<FinanceWriteOffAddItemForm> forms) {

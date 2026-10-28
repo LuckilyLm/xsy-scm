@@ -7,6 +7,7 @@ import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.util.ScmDecimalStrings;
+import com.xsy.scm.inventory.dao.InventoryBalanceDao;
 import com.xsy.scm.inventory.domain.InventorySalesReturnFact;
 import com.xsy.scm.inventory.service.InventoryCommandService;
 import com.xsy.scm.inventory.service.InventorySalesReturnQueryService;
@@ -21,6 +22,7 @@ import com.xsy.scm.inventory.domain.vo.BundleSalesOutAllocationVO;
 import com.xsy.scm.order.dao.OrderReturnReceiptDao;
 import com.xsy.scm.order.dao.OrderReturnReceiptItemDao;
 import com.xsy.scm.order.dao.SalesOrderItemDao;
+import com.xsy.scm.order.domain.entity.OrderReturnItemEntity;
 import com.xsy.scm.order.domain.entity.OrderReturnReceiptEntity;
 import com.xsy.scm.order.domain.entity.OrderReturnReceiptItemEntity;
 import com.xsy.scm.order.domain.form.OrderReturnReceiveForm;
@@ -55,6 +57,7 @@ public class OrderReturnReceiptService {
     private final OrderBundleComponentDao orderBundleComponentDao;
     private final InventorySalesReturnQueryService inventorySalesReturnQueryService;
     private final InventoryCommandService inventoryCommandService;
+    private final InventoryBalanceDao inventoryBalanceDao;
     private final ScmIdempotencyService idempotencyService;
     private final OrderOperationLogRecorder orderOperationLogRecorder;
     private final ScmDataScopeService dataScopeService;
@@ -110,8 +113,10 @@ public class OrderReturnReceiptService {
             if (quantity.signum() <= 0 || received.add(quantity).compareTo(returnItem.getApprovedQuantity()) > 0) {
                 throw new ScmBusinessException(ORDER_RETURN_APPROVAL_INVALID);
             }
-            var orderItem = salesOrderItemDao.selectById(returnItem.getOrderItemId());
-            if (orderItem == null) {
+            var orderItem = returnItem.getOrderItemId() == null
+                ? null
+                : salesOrderItemDao.selectById(returnItem.getOrderItemId());
+            if (returnItem.getOrderItemId() != null && orderItem == null) {
                 throw new ScmBusinessException(ORDER_RETURN_APPROVAL_INVALID);
             }
             ScmReturnReceiptDispositionEnum disposition;
@@ -119,6 +124,12 @@ public class OrderReturnReceiptService {
                 disposition = ScmReturnReceiptDispositionEnum.valueOf(input.getDisposition());
             } catch (RuntimeException exception) {
                 throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+            }
+            if (orderItem == null) {
+                // 独立退货没有原销售出库行：按 SKU 回仓，成本取入库前该仓均价。
+                resultItems.add(receiveIndependent(returnItem, receipt.getId(), form.getWarehouseId(), quantity,
+                    disposition, now, operator));
+                continue;
             }
             List<OrderBundleComponentEntity> bundle = orderBundleComponentDao.listByOrderItem(orderItem.getId());
             if (!bundle.isEmpty()) {
@@ -208,11 +219,65 @@ public class OrderReturnReceiptService {
         result.setReceivedAt(now);
         result.setOperator(operator);
         result.setItems(resultItems);
-        orderOperationLogRecorder.record(returned.getOrderId(), ScmOrderOperationTypeEnum.RETURN, "退货实物接收", null,
-            Map.of("receiptId", receipt.getId(), "warehouseId", receipt.getWarehouseId()));
+        Map<String,
+            Object> receiptSnapshot = Map.of("receiptId", receipt.getId(), "warehouseId", receipt.getWarehouseId());
+        if (returned.getOrderId() == null) {
+            orderOperationLogRecorder.recordForCustomer(returned.getCustomerId(), ScmOrderOperationTypeEnum.RETURN,
+                "退货实物接收", null, receiptSnapshot);
+        } else {
+            orderOperationLogRecorder.record(returned.getOrderId(), ScmOrderOperationTypeEnum.RETURN, "退货实物接收", null,
+                receiptSnapshot);
+        }
         idempotencyService.complete(claim, "ORDER_RETURN_RECEIPT", receipt.getId(), result);
         maskCost(result, scope.isCostVisible());
         return result;
+    }
+
+    /**
+     * 独立退货的实物接收：回指定仓库、不绑原出库行与批次，成本取入库前该仓该商品的移动加权均价。
+     *
+     * <p>
+     * 库存单位取该仓已有余额单位；没有余额时取销售单位。单位不一致说明无法在不做换算的前提下记账，直接拒绝而不是猜换算系数。
+     */
+    private OrderReturnReceiptVO.Item receiveIndependent(OrderReturnItemEntity returnItem, Long receiptId,
+        Long warehouseId, BigDecimal quantity, ScmReturnReceiptDispositionEnum disposition, OffsetDateTime now,
+        String operator) {
+        var balance = inventoryBalanceDao.selectByWarehouseAndSku(warehouseId, returnItem.getSkuId());
+        String saleUnit = returnItem.getSaleUnitSnapshot();
+        String stockUnit = balance == null ? saleUnit : balance.getUnit();
+        if (!stockUnit.equals(saleUnit)) {
+            throw new ScmBusinessException(com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_MISMATCH);
+        }
+        var costBasis = inventoryCommandService.lockCostBasis(warehouseId, List.of(returnItem.getSkuId()))
+            .get(returnItem.getSkuId());
+        BigDecimal unitCost = costBasis == null ? BigDecimal.ZERO.setScale(4) : costBasis.avgCostOrZero();
+        OrderReturnReceiptItemEntity item = new OrderReturnReceiptItemEntity();
+        item.setReceiptId(receiptId);
+        item.setReturnItemId(returnItem.getId());
+        item.setDisposition(disposition.name());
+        item.setQuantity(quantity);
+        item.setUnitSnapshot(saleUnit);
+        item.setStockQuantity(quantity);
+        item.setStockUnitSnapshot(stockUnit);
+        item.setUnitCost(unitCost);
+        item.setCreatedAt(now);
+        item.setCreatedBy(operator);
+        orderReturnReceiptItemDao.insert(item);
+        if (disposition == ScmReturnReceiptDispositionEnum.RETURN_TO_STOCK) {
+            inventoryCommandService
+                .postSalesReturnInbound(new InventorySalesReturnFact(warehouseId, returnItem.getSkuId(),
+                    returnItem.getReturnId(), item.getId(), quantity, stockUnit, unitCost, now, operator, null));
+        }
+        OrderReturnReceiptVO.Item vo = new OrderReturnReceiptVO.Item();
+        vo.setReceiptItemId(item.getId());
+        vo.setReturnItemId(returnItem.getId());
+        vo.setDisposition(disposition.name());
+        vo.setQuantity(quantity);
+        vo.setUnit(saleUnit);
+        vo.setStockQuantity(quantity);
+        vo.setStockUnit(stockUnit);
+        vo.setUnitCost(unitCost);
+        return vo;
     }
 
     private List<OrderReturnReceiptVO.Item> receiveBundle(List<OrderBundleComponentEntity> components,

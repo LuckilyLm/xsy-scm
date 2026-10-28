@@ -96,6 +96,46 @@
             AND rt.status = 'APPROVED'
     </select>
 
+    <!--
+      独立退货的红字来源：order_id 必须为空，客户级红字没有原订单可联。
+      结算主体取客户档案的 settlement_customer_id；共享结算时名称取结算客户，取不到再回退客户自己。
+    -->
+    <select id="selectApprovedIndependentReturn"
+            resultType="com.xsy.scm.finance.domain.dto.FinanceIndependentReturnSourceDto">
+        SELECT rt.id AS orderReturnId, rt.return_no AS returnNo, rt.customer_id AS customerId,
+            rt.customer_name_snapshot AS customerNameSnapshot,
+            COALESCE(c.settlement_customer_id, c.id) AS settlementCustomerId,
+            COALESCE(sc.name, c.name) AS settlementCustomerNameSnapshot,
+            rt.approved_at AS approvedAt, rt.updated_by AS approvedBy, rt.reason AS reason
+        FROM xsy_order_return rt
+        JOIN xsy_customer c ON c.id = rt.customer_id
+            AND c.deleted = FALSE
+        LEFT JOIN xsy_customer sc ON sc.id = c.settlement_customer_id
+            AND sc.deleted = FALSE
+        WHERE rt.id = #{orderReturnId}
+            AND rt.deleted = FALSE
+            AND rt.status = 'APPROVED'
+            AND rt.order_id IS NULL
+    </select>
+
+    <!--
+      独立退货的红字行：商品三件套与金额全部取退货行快照，不回查订单明细。
+      ordered_line_amount 为空表示不承担订单优惠（独立退货没有订单优惠可反向）。
+    -->
+    <select id="selectApprovedIndependentReturnLines"
+            resultType="com.xsy.scm.finance.domain.dto.FinanceReturnSourceLineDto">
+        SELECT ri.id AS orderReturnItemId, NULL::bigint AS orderItemId, ri.sku_id AS skuId,
+            ri.sku_name_snapshot AS skuNameSnapshot, ri.sale_unit_snapshot AS unitSnapshot,
+            ri.approved_quantity AS approvedQuantity, ri.locked_unit_price AS lockedUnitPrice,
+            ri.approved_amount AS approvedAmount, NULL::numeric AS orderedLineAmount
+        FROM xsy_order_return_item ri
+        WHERE ri.return_id = #{orderReturnId}
+            AND ri.deleted = FALSE
+            AND ri.approved_quantity &gt; 0
+            AND ri.approved_amount &gt; 0
+        ORDER BY ri.id
+    </select>
+
     <select id="selectApprovedReturnIds" resultType="long">
         SELECT rt.id
         FROM xsy_order_return rt

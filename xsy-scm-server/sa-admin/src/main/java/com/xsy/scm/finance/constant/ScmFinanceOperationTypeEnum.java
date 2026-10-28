@@ -58,7 +58,22 @@ public enum ScmFinanceOperationTypeEnum {
     /**
      * 反向抹零（{@code scm:finance:waiver:reverse}）：追加反向核销行，抹零事实置为已反向。
      */
-    WAIVER_REVERSE("抹零反向");
+    WAIVER_REVERSE("抹零反向"),
+
+    /**
+     * 登记过账（{@code scm:finance:posting:add}）：只留痕，不生成应收应付、不影响余额。
+     */
+    POSTING_ADD("过账登记"),
+
+    /**
+     * 修改过账（{@code scm:finance:posting:update}）：改前改后的内容都进日志。
+     */
+    POSTING_UPDATE("过账修改"),
+
+    /**
+     * 作废过账（{@code scm:finance:posting:void}）：追加作废事实，原记录保留。
+     */
+    POSTING_VOID("过账作废");
 
     private final String desc;
 }

@@ -6,6 +6,11 @@
         <result column="id" property="id"/>
         <result column="return_id" property="returnId"/>
         <result column="order_item_id" property="orderItemId"/>
+        <result column="sku_id" property="skuId"/>
+        <result column="sku_name_snapshot" property="skuNameSnapshot"/>
+        <result column="spec_name_snapshot" property="specNameSnapshot"/>
+        <result column="sale_unit_snapshot" property="saleUnitSnapshot"/>
+        <result column="price_source" property="priceSource"/>
         <result column="requested_quantity" property="requestedQuantity"/>
         <result column="approved_quantity" property="approvedQuantity"/>
         <result column="locked_unit_price" property="lockedUnitPrice"/>

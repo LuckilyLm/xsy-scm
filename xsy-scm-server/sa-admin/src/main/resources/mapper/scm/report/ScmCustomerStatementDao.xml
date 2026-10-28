@@ -28,6 +28,24 @@
         </choose>
     </sql>
 
+    <!-- 客户级红字没有订单，业务员范围改用客户负责业务员；无仓库范围时整行排除（单据无法按仓归属）。 -->
+    <sql id="customerRedScope">
+        <choose>
+            <when test="scope.orderSellerScope.all"/>
+            <when test="!scope.orderSellerScope.empty">
+                AND c.seller_id IN
+                <foreach collection="scope.orderSellerScope.ids" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <choose>
+            <when test="scope.warehouseScope.all"/>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+    </sql>
+
     <select id="selectEvents" resultType="com.xsy.scm.report.domain.vo.ScmCustomerStatementItemVO">
         WITH eligible AS(SELECT r.id, r.order_id,
             r.customer_id FROM xsy_finance_receivable r JOIN xsy_sales_order so ON so.id = r.order_id AND
@@ -73,7 +91,15 @@
             r.created_at FROM xsy_finance_receivable r JOIN eligible e ON e.id = r.original_receivable_id JOIN
             xsy_sales_order so ON so.id = r.order_id AND so.deleted = FALSE WHERE r.deleted = FALSE AND
             r.entry_type = 'RED' AND
-            r.settlement_customer_id = #{query.settlementCustomerId} UNION ALL SELECT CASE WHEN rc.entry_type = 'NORMAL'
+            r.settlement_customer_id = #{query.settlementCustomerId} UNION ALL SELECT 'RED', r.id, r.event_at,
+            r.receivable_no, NULL::varchar, r.customer_id, r.customer_name_snapshot, -r.amount, 0, 0, 0,
+            r.created_at FROM xsy_finance_receivable r JOIN xsy_customer c ON c.id = r.customer_id AND
+            c.deleted = FALSE WHERE r.deleted = FALSE AND r.entry_type = 'RED' AND
+            r.original_receivable_id IS NULL AND
+            r.settlement_customer_id = #{query.settlementCustomerId} <if test="query.customerId != null">AND
+            r.customer_id = #{query.customerId}</if>
+            <include refid="customerScope"/>
+            <include refid="customerRedScope"/> UNION ALL SELECT CASE WHEN rc.entry_type = 'NORMAL'
             THEN 'RECEIPT' ELSE 'RECEIPT_REVERSE' END, rc.id, rc.received_at, rc.receipt_no, original.receipt_no,
             rc.customer_id, rc.customer_name_snapshot, 0,
             CASE WHEN rc.entry_type = 'NORMAL' THEN rc.amount ELSE -rc.amount END, 0, 0,
@@ -135,6 +161,33 @@
         LIMIT #{limit}
     </select>
 
+    <!--
+      对账单可选的过账行。只读过账事实本身：未作废、按单据日期落在对账期间内。
+      三个资金变动列恒为 0 —— 过账不进应收、不参与核销，因此不会改变滚动余额。
+    -->
+    <select id="selectPostingEvents" resultType="com.xsy.scm.report.domain.vo.ScmCustomerStatementItemVO">
+        SELECT 'POSTING'::varchar AS factType, p.id AS factId,
+            (p.document_date::timestamp AT TIME ZONE 'Asia/Shanghai') AS eventAt,
+            p.posting_no AS documentNo, NULL::varchar AS relatedNo, p.customer_id AS customerId,
+            p.customer_name_snapshot AS customerName, 0::numeric AS receivableDelta,
+            0::numeric AS receiptDelta, 0::numeric AS writeOffDelta, 0::numeric AS refundDelta,
+            p.amount AS postingAmount
+        FROM xsy_finance_posting p
+        JOIN xsy_customer c ON c.id = p.customer_id
+            AND c.deleted = FALSE
+        LEFT JOIN xsy_finance_posting_void v ON v.posting_id = p.id
+            AND v.deleted = FALSE
+        WHERE p.deleted = FALSE
+            AND v.id IS NULL
+            AND p.settlement_customer_id = #{query.settlementCustomerId}
+        <if test="query.customerId != null">AND p.customer_id = #{query.customerId}</if>
+        <include refid="customerScope"/>
+            AND (p.document_date::timestamp AT TIME ZONE 'Asia/Shanghai') &lt; #{endAt}
+        <if test="asOfCreatedAt != null">AND p.created_at &lt;= #{asOfCreatedAt}</if>
+        ORDER BY eventAt, factType, factId
+        LIMIT #{limit}
+    </select>
+
     <select id="selectSettlementName" resultType="string">
         SELECT name
         FROM xsy_customer
@@ -144,22 +197,22 @@
 
     <insert id="insertStatement" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO xsy_customer_statement (settlement_customer_id, settlement_customer_name, customer_id, start_date,
-            end_date, partial_scope, generated_by_employee_id, generated_at, opening_receivable, receivable_increase,
-            receivable_red, write_off_net, closing_receivable, opening_unallocated, receipt_net, closing_unallocated,
-            refund_net)
+            end_date, partial_scope, include_posting, generated_by_employee_id, generated_at, opening_receivable,
+            receivable_increase, receivable_red, write_off_net, closing_receivable, opening_unallocated, receipt_net,
+            closing_unallocated, refund_net)
         VALUES (#{settlementCustomerId}, #{settlementCustomerName}, #{customerId}, #{startDate}, #{endDate},
-            #{partialScope}, #{generatedByEmployeeId}, #{generatedAt}, #{openingReceivable}, #{receivableIncrease},
-            #{receivableRed}, #{writeOffNet}, #{closingReceivable}, #{openingUnallocated}, #{receiptNet},
-            #{closingUnallocated}, #{refundNet})
+            #{partialScope}, COALESCE(#{includePosting}, FALSE), #{generatedByEmployeeId}, #{generatedAt},
+            #{openingReceivable}, #{receivableIncrease}, #{receivableRed}, #{writeOffNet}, #{closingReceivable},
+            #{openingUnallocated}, #{receiptNet}, #{closingUnallocated}, #{refundNet})
     </insert>
 
     <insert id="insertItem">
         INSERT INTO xsy_customer_statement_item (statement_id, line_no, fact_type, fact_id, event_at, document_no,
             related_no, customer_id, customer_name, receivable_delta, receipt_delta, write_off_delta, refund_delta,
-            receivable_balance)
+            posting_amount, receivable_balance)
         VALUES (#{statementId}, #{lineNo}, #{factType}, #{factId}, #{eventAt}, #{documentNo}, #{relatedNo},
             #{customerId}, #{customerName}, #{receivableDelta}, #{receiptDelta}, #{writeOffDelta}, #{refundDelta},
-            #{receivableBalance})
+            #{postingAmount}, #{receivableBalance})
     </insert>
 
     <insert id="insertSource">

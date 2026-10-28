@@ -42,7 +42,12 @@ public enum ScmFinanceBusinessTypeEnum {
     /**
      * 抹零事实（{@code xsy_finance_waiver}）。
      */
-    WAIVER("抹零");
+    WAIVER("抹零"),
+
+    /**
+     * 过账特殊单据（{@code xsy_finance_posting}）；虚拟单据，不参与收付与核销。
+     */
+    POSTING("过账");
 
     private final String desc;
 }

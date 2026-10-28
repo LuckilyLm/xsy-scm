@@ -54,7 +54,7 @@ import {readFileSync, existsSync} from 'node:fs';
     }
   });
 
-  test('列表、详情、写入、反向和五类导出 API 与后端路径一致', () => {
+  test('列表、详情、写入、反向和六类导出 API 与后端路径一致', () => {
     const paths = [
       '/receivable/query',
       '/receivable/${id}',
@@ -81,7 +81,7 @@ import {readFileSync, existsSync} from 'node:fs';
       '/log/query',
     ];
     for (const path of paths) assert.ok(API.includes(path), `API 缺少 ${path}`);
-    assert.equal((API.match(/postDownload\(/g) ?? []).length, 5, '五个导出都应走统一下载封装');
+    assert.equal((API.match(/postDownload\(/g) ?? []).length, 6, '六个导出都应走统一下载封装');
     assert.ok(!/new Blob|createObjectURL|\.xlsx['"]/.test(API), '不得在 API 层拼文件内容或硬编码文件名');
   });
 
@@ -368,5 +368,76 @@ import {readFileSync, existsSync} from 'node:fs';
     // 原来的两个独立 section 标题不得再作为顶级分区存在
     assert.ok(!/<h3>红字关联<\/h3>/.test(drawer), '红字关联仍是独立顶级分区');
     assert.ok(!/<h3>核销记录<\/h3>/.test(drawer), '核销记录仍是独立顶级分区');
+  });
+}
+
+// ---------------------------------------------------------------- 过账特殊单据（D-1028-16）
+{
+  const VIEW_DIR = '../src/views/business/scm/finance/';
+  const API_PATH = '../src/api/business/scm/finance-api.ts';
+  const CONST_PATH = '../src/constants/business/scm/finance-const.ts';
+
+  function code(path) {
+    return readFileSync(new URL(path, import.meta.url), 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+  }
+
+  const page = code(`${VIEW_DIR}finance-posting-list.vue`);
+  const api = code(API_PATH);
+  const constants = code(CONST_PATH);
+
+  test('过账页、API 与权限串都已落地', () => {
+    assert.ok(existsSync(new URL(`${VIEW_DIR}finance-posting-list.vue`, import.meta.url)), '缺少过账页面');
+    for (const path of [
+      '/posting/query',
+      '/posting/${id}',
+      '/posting/add',
+      '/posting/update',
+      '/posting/void',
+      '/posting/export',
+    ]) {
+      assert.ok(api.includes(path), `API 缺少 ${path}`);
+    }
+    for (const permission of [
+      'scm:finance:posting:query',
+      'scm:finance:posting:add',
+      'scm:finance:posting:update',
+      'scm:finance:posting:void',
+    ]) {
+      assert.ok(constants.includes(`'${permission}'`), `缺少 ${permission}`);
+    }
+    for (const key of ['POSTING_QUERY', 'POSTING_ADD', 'POSTING_UPDATE', 'POSTING_VOID']) {
+      assert.ok(page.includes(`PERM.${key}`), `页面未按权限控制 ${key}`);
+    }
+  });
+
+  test('过账页把虚拟单据口径写在界面上，并明确不进应收应付', () => {
+    assert.match(page, /不生成应收应付/);
+    assert.match(page, /不参与核销/);
+    // 税点只展示原值，不在前端算税额
+    assert.match(page, /percentText\(text\)/);
+    assert.doesNotMatch(page, /taxAmount|tax_amount/);
+  });
+
+  test('过账页的操作列居中固定，窄屏回落到卡片', () => {
+    assert.match(page, /dataIndex: 'action', fixed: actionColumnFixed, align: 'center'/);
+    assert.doesNotMatch(page, /fixed: 'left'/);
+    assert.match(page, /@media \(max-width: 768px\)[\s\S]*?\.finance-table\s*\{\s*display:\s*none/);
+    assert.ok(page.includes("id=\"scm-finance-posting-table\""), '缺少稳定的表格定位符');
+    const tableIds = code('../src/constants/support/table-id-const.ts');
+    assert.match(tableIds, /SCM_FINANCE_POSTING:\s*50062/);
+  });
+
+  test('过账菜单与权限迁移只授超管与正式财务岗位', () => {
+    const migration = readFileSync(
+      new URL('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V208__scm_finance_posting_permission.sql', import.meta.url),
+      'utf8'
+    );
+    assert.ok(migration.includes('/business/scm/finance/finance-posting-list.vue'));
+    assert.ok(migration.includes("r.role_code = 'SCM_FINANCE'"));
+    assert.match(migration, /SELECT 1, m\.menu_id/);
+    assert.match(migration, /'scm:finance:posting:query', 'scm:finance:posting:query'/);
   });
 }

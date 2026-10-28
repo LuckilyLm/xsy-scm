@@ -19,6 +19,11 @@ public class OrderOperationLogEntity {
     private Long id;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long orderId;
+    /**
+     * 独立退货没有订单，日志主体改为客户；orderId 与 customerId 至少有一个非空。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long customerId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String operationType;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
