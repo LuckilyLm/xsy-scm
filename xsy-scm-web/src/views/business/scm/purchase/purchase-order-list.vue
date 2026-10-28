@@ -319,11 +319,10 @@ const LOCKABLE_STATUSES = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 const SHAREABLE_STATUSES = ['SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED'];
 const canShare = computed(() => hasPermission('scm:purchase:share:create'));
 
-/** 当前状态可用的操作；低频动作收进“更多”。 */
+/** 当前状态可用的操作；低频动作收进“更多”。详情走第一列的采购单号。 */
 function moreActions(row: Order): ScmActionItem[] {
   const draft = row.status === 'DRAFT';
   return [
-    {key: 'detail', label: '详情', hidden: !draft},
     {key: 'print', label: '打印', hidden: !draft},
     {key: 'share', label: '分享', hidden: !(canShare.value && SHAREABLE_STATUSES.includes(row.status ?? ''))},
     {key: 'feedback', label: '现场回填', hidden: draft},
@@ -350,11 +349,6 @@ function onRowAction(key: string, row: Order) {
   } else if (key === 'share') {
     if (row.id != null) {
       shareModal.value?.openFor(row.id, row.orderNo);
-    }
-  } else if (key === 'detail') {
-    // 详情抽屉需要确定的 id，先判空
-    if (row.id != null) {
-      detail.value?.open(row.id);
     }
   } else if (key === 'print') {
     printRow(row);

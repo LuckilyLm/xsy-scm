@@ -57,8 +57,9 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
    *    而采购收货此前是 250px。
    * 2. 日志页的时间不能隐藏，裸 ID 不能上列：日志是审计凭据，
    *    「采购单 id」这种内部主键对排查没有价值，且会被误读成单号。
-   * 3. 危险动作不能与普通动作同排常驻：删除 / 停用必须进「更多」，
-   *    否则操作列里最显眼的永远是那排低价值或红色的文字。
+   * 3. 危险动作不能与普通动作同排常驻：删除必须进「更多」，
+   *    否则操作列里最显眼的永远是那排低价值或红色的文字；两态状态（启用/停用）
+   *    则直接放状态列的开关，不再塞进「更多」。
    */
 
   /** 读源码并剥掉注释（先剥 HTML 注释再剥块注释，顺序不能反）。 */
@@ -133,7 +134,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.match(purchaseLog, /title: '原因'/);
   });
 
-  test('仓库：创建时间下沉，定位状态可见，启停进「更多」', () => {
+  test('仓库：创建时间下沉，定位状态可见，启停用状态列的开关', () => {
     assert.ok(!warehouse.includes(`title: '创建时间'`), '仓库列表仍默认展示创建时间');
     const width = actionWidth(warehouse, '仓库');
     assert.ok(width <= 160, `仓库操作列 ${width}px 超出 160px`);
@@ -145,8 +146,10 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     // 定位状态是「一眼要挑出来」的信号，用图标 + Tooltip
     assert.match(warehouse, /title: '定位'/);
     assert.match(warehouse, /isLocated\(record\)/);
-    // 启用 / 停用是状态机动作，不与普通动作同排常驻
-    assert.match(warehouse, /ScmActionMore/);
+    // 启用 / 停用是两态字段：状态列直接给开关，不再从「更多」里二选一点
+    assert.doesNotMatch(warehouse, /ScmActionMore/, '仓库列表仍把启停塞进「更多」');
+    assert.match(warehouse, /:checked="record\.status === 'ENABLED'"/);
+    assert.match(warehouse, /checked-children="启用"/);
     assert.match(warehouse, /hasPermission\('scm:warehouse:disable'\)/);
     assert.match(warehouse, /hasPermission\('scm:warehouse:enable'\)/);
   });
@@ -882,16 +885,15 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.match(receiptList, /scm:purchase:receipt:putaway/);
 
     const warehouseList = code('../src/views/business/scm/purchase/warehouse-list.vue');
-    // 启用 / 停用已从行内按钮移入「更多」菜单（状态机动作不与普通动作同排常驻），
-    // 因此条件与权限码不再彼此相邻。断言改成分别检查两者的存在与绑定关系：
-    // 菜单项由 `rowActions` 按当前状态二选一生成，权限码由 `hasPermission` 显式裁剪
-    //（`v-privilege` 指令对「更多」里的菜单项不生效，这是必须换写法的原因）。
-    assert.match(warehouseList, /row\.status === 'ENABLED'/);
+    // 启用 / 停用停在状态列的开关上：开关值由数据驱动，权限由 hasPermission 显式裁剪
+    //（`v-privilege` 指令对开关不生效，这是必须换写法的原因）。
+    assert.match(warehouseList, /:checked="record\.status === 'ENABLED'"/);
+    assert.match(warehouseList, /:disabled="record\.status === 'ENABLED' \? !canDisable : !canEnable"/);
     assert.match(warehouseList, /hasPermission\('scm:warehouse:disable'\)/);
     assert.match(warehouseList, /hasPermission\('scm:warehouse:enable'\)/);
-    // 状态机没有被改写：启用/停用的两个接口调用仍在同一分支里按状态二选一
-    assert.match(warehouseList, /onRowAction[\s\S]{0,400}disable\(row\)/);
-    assert.match(warehouseList, /onRowAction[\s\S]{0,400}else\s*\{\s*enable\(row\)/);
+    // 状态机没有被改写：启用/停用的两个接口调用仍在同一分支里按开关值二选一
+    assert.match(warehouseList, /onStatusSwitch[\s\S]{0,300}enable\(row\)/);
+    assert.match(warehouseList, /onStatusSwitch[\s\S]{0,300}else\s*\{\s*disable\(row\)/);
   });
 }
 

@@ -142,9 +142,15 @@
           <a-tooltip v-else-if="column.dataIndex === 'price'" :title="priceRange(record.minMarketPrice, record.maxMarketPrice)">
             <span class="scm-money">{{ priceRange(record.minMarketPrice, record.maxMarketPrice) }}</span>
           </a-tooltip>
-          <a-tag v-else-if="column.dataIndex === 'status'" :color="shelfStatusColor(record.status)">
-            {{ record.status === 'ON_SHELF' ? '上架' : '下架' }}
-          </a-tag>
+          <!-- 在售状态只有上架/下架两态，用开关直接表达并就地切换 -->
+          <a-switch
+            v-else-if="column.dataIndex === 'status'"
+            :checked="record.status === 'ON_SHELF'"
+            :disabled="!canUpdateStatus"
+            checked-children="上架"
+            un-checked-children="下架"
+            @change="(checked: unknown) => onStatusSwitch(record, Boolean(checked))"
+          />
           <a-tag v-else-if="column.dataIndex === 'masterStatus'" :color="MASTER_STATUS_COLOR[record.masterStatus]">
             {{ enumText(MASTER_STATUS_ENUM, record.masterStatus) }}
           </a-tag>
@@ -155,11 +161,6 @@
           <span v-else-if="column.dataIndex === 'taxExempt'">{{ record.taxExempt ? '是' : '否' }}</span>
           <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
             <a-button v-privilege="'scm:product:update'" type="link" size="small" @click="drawer?.open(record.spuId)"> 编辑 </a-button>
-            <a-popconfirm :title="`确认${record.status === 'ON_SHELF' ? '下架' : '上架'}此商品？`" @confirm="toggleStatus(record)">
-              <a-button v-privilege="'scm:product:status'" type="link" size="small">
-                {{ record.status === 'ON_SHELF' ? '下架' : '上架' }}
-              </a-button>
-            </a-popconfirm>
             <a-popconfirm title="确认删除商品及其规格和图集？" @confirm="remove(record)">
               <a-button v-privilege="'scm:product:delete'" type="link" danger size="small">删除</a-button>
             </a-popconfirm>
@@ -188,7 +189,7 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
-import {message} from 'ant-design-vue';
+import {message, Modal} from 'ant-design-vue';
 import {EyeOutlined, PictureOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType, TableProps} from 'ant-design-vue';
 import {productApi} from '/@/api/business/scm/product-api';
@@ -202,7 +203,6 @@ import {
   priceRange,
   PRODUCT_TYPE_ENUM,
   SHELF_STATUS_ENUM,
-  shelfStatusColor,
   STORAGE_METHOD_ENUM,
   YES_NO_ENUM,
 } from '/@/constants/business/scm/product-const';
@@ -217,6 +217,7 @@ import ProductImportModal from './components/product-import-modal.vue';
 import ProductExportModal from './components/product-export-modal.vue';
 import SkuTable from './components/product-sku-table.vue';
 import {productError} from './product-errors';
+import {hasPermission} from '../common/scm-permission';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const router = useRouter();
@@ -407,6 +408,22 @@ async function openExport() {
 function batchDone() {
   message.success('批量维护已完成');
   void load();
+}
+
+/** 开关不能挂 v-privilege，用 hasPermission 判断。 */
+const canUpdateStatus = computed(() => hasPermission('scm:product:status'));
+
+/** 状态开关：先确认再改；取消或失败时开关保持原状态（值由 record.status 驱动）。 */
+function onStatusSwitch(row: ProductRow, checked: boolean) {
+  const next = checked ? '上架' : '下架';
+  Modal.confirm({
+    title: `${next}商品`,
+    content: `确认${next}「${row.name}」？`,
+    okText: next,
+    okType: checked ? 'primary' : 'danger',
+    cancelText: '取消',
+    onOk: () => toggleStatus(row),
+  });
 }
 
 async function toggleStatus(row: ProductRow) {

@@ -849,6 +849,20 @@ import ts from 'typescript';
     assert.doesNotMatch(COLUMN_MODAL, /recommendedColumns/);
   });
 
+  test('列设置每个字段都能改列宽：输入写回 width，清空回落到页面默认', () => {
+    // 2026-10-21 的网格改版把宽度输入框弄丢了，用户只能勾显隐：这里把能力钉回来
+    assert.match(COLUMN_MODAL, /<a-input-number[\s\S]*?class="scm-column-grid__width"/);
+    // 参数类型可有可无（类型棘轮会用显式类型替换隐式 any）
+    assert.match(COLUMN_MODAL, /@update:value="\(value(?::\s*[^)]+)?\) => changeWidth\(item, value\)"/);
+    assert.match(COLUMN_MODAL, /function changeWidth\(item: ColumnGridItem/);
+    assert.match(COLUMN_MODAL, /delete item\.width/);
+    // 保存时沿用既有契约：有 width 才写，清空即跟随页面默认
+    assert.match(COLUMN_MODAL, /if \(item\.width\) \{\s*column\.width = item\.width;/);
+    // 宽度输入不能触发列的显隐切换
+    assert.match(COLUMN_MODAL, /scm-column-grid__toggle/);
+    assert.doesNotMatch(COLUMN_MODAL, /class="scm-column-grid__cell"[\s\S]{0,200}@click="toggleColumn\(item\)"/);
+  });
+
   test('商品表格铺满内容区，但只让仍在使用默认宽度的文本列吸收宽屏额外空间', () => {
     assert.match(SCM_COLUMN, /moneyRange:\s*156/);
     assert.match(SCM_COLUMN, /status:\s*88/);

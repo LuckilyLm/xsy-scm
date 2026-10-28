@@ -26,7 +26,12 @@
       </a-alert>
     </div>
     <div v-else>
-      <FormNote :lines="['勾选需要显示的列；拖动左侧手柄可调整顺序。带图钉标记的固定列不可拖动或取消。']" />
+      <FormNote
+        :lines="[
+          '勾选需要显示的列；拖动左侧手柄可调整顺序。带图钉标记的固定列不可拖动或取消。',
+          '右侧数字是这一列的宽度（像素），清空后跟随页面默认宽度并在宽屏上自动铺满。',
+        ]"
+      />
       <!-- 网格勾选而不是表格：一屏能看完全部列，不必为了勾一项反复滚动。 -->
       <div ref="gridRef" class="scm-column-grid">
         <div
@@ -37,30 +42,46 @@
             'is-fixed': item.fixed,
             'is-off': !isColumnShown(item) && !item.fixed,
           }"
-          role="checkbox"
-          :aria-checked="isColumnShown(item)"
-          :aria-disabled="item.fixed ? true : undefined"
-          :tabindex="item.fixed ? -1 : 0"
-          @click="toggleColumn(item)"
-          @keydown.space.prevent="toggleColumn(item)"
-          @keydown.enter.prevent="toggleColumn(item)"
         >
-          <span class="scm-column-grid__handle" :class="{'is-locked': item.fixed}">
-            <pushpin-outlined v-if="item.fixed" />
-            <span v-else class="scm-column-grid__grip" aria-hidden="true"></span>
-          </span>
+          <!-- 勾选与拖拽放在同一个可聚焦区域；列宽输入框是并列控件，不能触发显隐切换 -->
           <span
-            class="scm-column-grid__check"
-            :class="{
-              'is-on': isColumnShown(item) && !item.fixed,
-              'is-off': !isColumnShown(item) && !item.fixed,
-              'is-locked': item.fixed,
-            }"
-            aria-hidden="true"
+            class="scm-column-grid__toggle"
+            role="checkbox"
+            :aria-checked="isColumnShown(item)"
+            :aria-disabled="item.fixed ? true : undefined"
+            :tabindex="item.fixed ? -1 : 0"
+            @click="toggleColumn(item)"
+            @keydown.space.prevent="toggleColumn(item)"
+            @keydown.enter.prevent="toggleColumn(item)"
           >
-            <check-outlined v-if="isColumnShown(item) && !item.fixed" />
+            <span class="scm-column-grid__handle" :class="{'is-locked': item.fixed}">
+              <pushpin-outlined v-if="item.fixed" />
+              <span v-else class="scm-column-grid__grip" aria-hidden="true"></span>
+            </span>
+            <span
+              class="scm-column-grid__check"
+              :class="{
+                'is-on': isColumnShown(item) && !item.fixed,
+                'is-off': !isColumnShown(item) && !item.fixed,
+                'is-locked': item.fixed,
+              }"
+              aria-hidden="true"
+            >
+              <check-outlined v-if="isColumnShown(item) && !item.fixed" />
+            </span>
+            <span class="scm-column-grid__label" :title="item.title">{{ item.title }}</span>
           </span>
-          <span class="scm-column-grid__label" :title="item.title">{{ item.title }}</span>
+          <a-input-number
+            class="scm-column-grid__width"
+            :value="widthOf(item)"
+            :min="COLUMN_WIDTH_MIN"
+            :max="COLUMN_WIDTH_MAX"
+            :step="10"
+            size="small"
+            placeholder="默认"
+            :aria-label="'列宽（像素）：' + (item.title ?? '')"
+            @update:value="(value: number | string | null) => changeWidth(item, value)"
+          />
         </div>
       </div>
     </div>
@@ -165,8 +186,28 @@ interface ColumnGridItem {
 
 const tableData = ref<ColumnGridItem[]>([]);
 
+/** 列宽范围：小于 60px 文字没法读，大于 800px 一屏放不下其他列。 */
+const COLUMN_WIDTH_MIN = 60;
+const COLUMN_WIDTH_MAX = 800;
+
 function isColumnShown(item: ColumnGridItem) {
   return selectedRowKeyList.value.indexOf(item.columnKey) > -1;
+}
+
+/** 输入框只接受数字；列宽可能是历史保存的字符串，统一转成数字再绑定。 */
+function widthOf(item: ColumnGridItem): number | undefined {
+  const width = Number(item.width);
+  return Number.isFinite(width) && width > 0 ? width : undefined;
+}
+
+/** 清空表示「跟随页面默认宽度」，保存时不写 width，由页面默认值与自动铺满接管。 */
+function changeWidth(item: ColumnGridItem, value: number | string | null) {
+  const width = Number(value);
+  if (value == null || value === '' || !Number.isFinite(width) || width <= 0) {
+    delete item.width;
+    return;
+  }
+  item.width = Math.min(COLUMN_WIDTH_MAX, Math.max(COLUMN_WIDTH_MIN, Math.round(width)));
 }
 
 /**
@@ -311,22 +352,39 @@ async function save(closeFlag = true) {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  padding: 7px 8px;
+  padding: 5px 8px;
   border-radius: 6px;
-  cursor: pointer;
   transition: background-color 0.2s;
+}
+
+/* 勾选区：手柄 + 勾选框 + 列名，整块可点击 */
+.scm-column-grid__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  cursor: pointer;
+  border-radius: 4px;
 
   &:hover {
     background-color: #f0f9eb;
   }
+}
 
-  &.is-fixed {
-    cursor: default;
+.scm-column-grid__cell.is-fixed .scm-column-grid__toggle {
+  cursor: default;
 
-    &:hover {
-      background-color: transparent;
-    }
+  &:hover {
+    background-color: transparent;
   }
+}
+
+/* 列宽输入框：不参与勾选，清空即跟随默认宽度 */
+.scm-column-grid__width {
+  flex: none;
+  width: 76px;
 }
 
 .scm-column-grid__cell--ghost {

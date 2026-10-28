@@ -339,10 +339,9 @@ const canPromotion = computed(() => hasPermission('scm:customer:promotion:manage
 const promotionModal = ref<InstanceType<typeof CustomerPromotionModal>>();
 const canDelete = computed(() => hasPermission('scm:customer:delete'));
 
-/** 低频和危险动作收进「更多」。 */
+/** 低频和危险动作收进「更多」；详情走第一列的客户名称，不再重复放一项。 */
 function rowActions(): ScmActionItem[] {
   return [
-    {key: 'detail', label: '详情'},
     {key: 'promotion', label: '推广二维码', hidden: !canPromotion.value},
     {key: 'reassign', label: '改派业务员', hidden: !canAssign.value},
     {key: 'delete', label: '删除', danger: true, hidden: !canDelete.value},
@@ -350,9 +349,7 @@ function rowActions(): ScmActionItem[] {
 }
 
 function onRowAction(key: string, row: CustomerRow) {
-  if (key === 'detail') {
-    detail(row.customerId);
-  } else if (key === 'promotion') {
+  if (key === 'promotion') {
     promotionModal.value?.openFor(row.customerId, row.name);
   } else if (key === 'reassign') {
     openReassign(row);

@@ -303,8 +303,8 @@ function lockTip(row: Order): string {
 function rowActions(row: Order): ScmActionItem[] {
   const draft = row.status === 'DRAFT';
   const confirmed = row.status === 'CONFIRMED';
+  // 详情走第一列的订单号，行内按钮也各有入口，这里不再重复放一项
   return [
-    {key: 'detail', label: '详情', hidden: !draft},
     {key: 'reuse', label: '复用为新单', hidden: !(confirmed && canAdd.value)},
     {key: 'lock', label: '锁单', hidden: !(confirmed && !row.lockedFlag && canLock.value)},
     {key: 'unlock', label: '解锁', hidden: !(confirmed && row.lockedFlag && canUnlock.value)},
@@ -316,9 +316,7 @@ function rowActions(row: Order): ScmActionItem[] {
 
 function onRowAction(key: string, row: Order) {
   // orderId 在响应里是可选的，用之前先判空
-  if (row.orderId != null && key === 'detail') {
-    openDetail(row.orderId);
-  } else if (row.orderId != null && key === 'reuse') {
+  if (row.orderId != null && key === 'reuse') {
     drawer?.value?.openFromHistory(row.orderId);
   } else if (row.orderId != null && key === 'tag') {
     tagModal.value?.open([row.orderId]);

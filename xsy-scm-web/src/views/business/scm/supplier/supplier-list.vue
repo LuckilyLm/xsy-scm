@@ -65,7 +65,15 @@
           >
             {{ record.skuCount ?? 0 }}
           </a-button>
-          <ScmStatusTag v-else-if="column.dataIndex === 'status'" :tone="statusTone(record.status)" :label="statusText(record.status)" />
+          <!-- 启用/停用是两态字段，用开关直接表达当前状态；点击时先确认，取消则保持原样 -->
+          <a-switch
+            v-else-if="column.dataIndex === 'status'"
+            :checked="record.status === 'ENABLED'"
+            :disabled="!canUpdateStatus"
+            checked-children="启用"
+            un-checked-children="停用"
+            @change="(checked: unknown) => onStatusSwitch(record, Boolean(checked))"
+          />
           <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
             <a-button v-privilege="'scm:supplier:update'" type="link" size="small" @click="drawer?.open(record.supplierId)">编辑 </a-button>
             <a-button v-privilege="'scm:supplier:sku:update'" type="link" size="small" @click="openSku(record)"> 关联商品 </a-button>
@@ -99,12 +107,9 @@ import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType, TableProps} from 'ant-design-vue';
 import {supplierApi} from '/@/api/business/scm/supplier-api';
 import type {EnableStatus, ScmId, SupplierQuery, SupplierRow} from '/@/types/business/scm/supplier';
-import {SUPPLIER_STATUS_ENUM} from '/@/constants/business/scm/supplier-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import BusinessCategoryTreeSelect from '/@/components/business/scm/business-category-tree-select/index.vue';
@@ -122,10 +127,6 @@ const loading = ref(false);
 const error = ref('');
 const drawer = ref<InstanceType<typeof SupplierDrawer>>();
 const skuDrawer = ref<InstanceType<typeof SupplierSkuDrawer>>();
-
-const statusText = (value: EnableStatus): string => SUPPLIER_STATUS_ENUM[value]?.desc || value;
-/** 启用=正常（绿），停用=失效（灰）。 */
-const statusTone = (value: EnableStatus): ScmStatusTone => (value === 'ENABLED' ? 'success' : 'neutral');
 
 // 更新时间不上列表，可在详情里查看。
 const columns = ref<TableColumnsType<SupplierRow>>([
@@ -218,30 +219,26 @@ async function remove(row: SupplierRow) {
 const canUpdateStatus = computed(() => hasPermission('scm:supplier:status'));
 const canDelete = computed(() => hasPermission('scm:supplier:delete'));
 
-/** 低频和危险动作收进「更多」。 */
+/** 只在「更多」留危险动作：详情走第一列，启停走状态列的开关。 */
 function rowActions(): ScmActionItem[] {
-  return [
-    {key: 'detail', label: '详情'},
-    {key: 'toggle', label: '启用 / 停用', hidden: !canUpdateStatus.value},
-    {key: 'delete', label: '删除', danger: true, hidden: !canDelete.value},
-  ];
+  return [{key: 'delete', label: '删除', danger: true, hidden: !canDelete.value}];
+}
+
+/** 状态开关：先确认再改，取消时开关回到原状态（值由数据驱动，不会先翻过去）。 */
+function onStatusSwitch(row: SupplierRow, checked: boolean) {
+  const next = checked ? '启' : '停';
+  Modal.confirm({
+    title: `${next}用供应商`,
+    content: `确认${next}用「${row.name}」？`,
+    okText: next + '用',
+    okType: checked ? 'primary' : 'danger',
+    cancelText: '取消',
+    onOk: () => toggleStatus(row),
+  });
 }
 
 function onRowAction(key: string, row: SupplierRow) {
-  if (key === 'detail') {
-    detail(row.supplierId);
-  } else if (key === 'toggle') {
-    const next = row.status === 'ENABLED' ? '停用' : '启用';
-    // 菜单项不能挂 a-popconfirm，改用 Modal 确认。
-    Modal.confirm({
-      title: `${next}供应商`,
-      content: `确认${next}「${row.name}」？`,
-      okText: next,
-      okType: row.status === 'ENABLED' ? 'danger' : 'primary',
-      cancelText: '取消',
-      onOk: () => toggleStatus(row),
-    });
-  } else if (key === 'delete') {
+  if (key === 'delete') {
     Modal.confirm({
       title: '删除供应商',
       content: `确认删除「${row.name}」（${row.supplierCode}）？`,

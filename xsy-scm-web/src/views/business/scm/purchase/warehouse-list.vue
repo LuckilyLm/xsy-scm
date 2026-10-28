@@ -48,10 +48,15 @@
       :scroll="{x: scrollX}"
     >
       <template #bodyCell="{record, column}">
+        <!-- 启用/停用是两态字段，用开关直接表达当前状态；停用仍走后端严格校验 -->
         <template v-if="column.dataIndex === 'status'">
-          <a-tag :color="record.status === 'ENABLED' ? 'green' : 'default'">
-            {{ SCM_WAREHOUSE_STATUS_ENUM[record.status]?.desc || record.status }}
-          </a-tag>
+          <a-switch
+            :checked="record.status === 'ENABLED'"
+            :disabled="record.status === 'ENABLED' ? !canDisable : !canEnable"
+            checked-children="启用"
+            un-checked-children="停用"
+            @change="(checked: unknown) => onStatusSwitch(record, Boolean(checked))"
+          />
         </template>
         <template v-else-if="column.dataIndex === 'areaText'">{{ areaText(record) }}</template>
         <template v-else-if="column.dataIndex === 'allowNegativeStock'">
@@ -67,13 +72,12 @@
         </template>
         <template v-else-if="column.dataIndex === 'remark'">{{ record.remark || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 编辑和授权员工常驻，启用/停用收进“更多” -->
+          <!-- 启用/停用走状态列的开关，这里只留编辑与授权 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:warehouse:update'" @click="open(record)">编辑</a-button>
             <a-button type="link" size="small" v-privilege="'scm:warehouse:scope:query'" @click="scopeModal?.openEmployees(record.id, record.name)">
               授权员工
             </a-button>
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
       </template>
@@ -139,13 +143,11 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
 import type {AreaNode} from '/@/types/business/scm/area';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
-import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import WarehouseScopeModal from './components/warehouse-scope-modal.vue';
 import MallDistrictWarehouseModal from './components/mall-district-warehouse-modal.vue';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {SCM_PURCHASE_TABLE_ID, SCM_WAREHOUSE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
+import {SCM_PURCHASE_TABLE_ID} from '/@/constants/business/scm/purchase-const';
 import type {Warehouse, WarehouseFormModel, WarehouseQuery} from './purchase-types';
 import {toWarehousePayload} from './warehouse-form-model';
 import {purchaseError} from './purchase-errors';
@@ -209,24 +211,16 @@ function areaText(record: Warehouse): string {
   return nodes.length ? nodes.map((node) => node.label).join(' / ') : '—';
 }
 
-/** 更多菜单无法使用 `v-privilege`，改用 `hasPermission` 判断。 */
+/** 开关不能挂 `v-privilege`，改用 `hasPermission` 判断。 */
 const canEnable = computed(() => hasPermission('scm:warehouse:enable'));
 const canDisable = computed(() => hasPermission('scm:warehouse:disable'));
 
-/** 按当前状态显示启用或停用。 */
-function rowActions(row: Warehouse): ScmActionItem[] {
-  const enabled = row.status === 'ENABLED';
-  return [{key: 'state', label: enabled ? '停用' : '启用', danger: enabled, hidden: enabled ? !canDisable.value : !canEnable.value}];
-}
-
-function onRowAction(key: string, row: Warehouse) {
-  if (key !== 'state') {
-    return;
-  }
-  if (row.status === 'ENABLED') {
-    disable(row);
+/** 开关值由数据驱动：确认框取消或请求失败时，开关保持原状态。 */
+function onStatusSwitch(row: Warehouse, checked: boolean) {
+  if (checked) {
+    void enable(row);
   } else {
-    enable(row);
+    disable(row);
   }
 }
 
@@ -339,10 +333,13 @@ function disable(row: Warehouse) {
     content: '停用后不能再用于新的采购需求、采购单与收货单。',
     okType: 'danger',
     onOk: async () => {
-      // 失败原因由全局提示给出
-      await warehouseApi.disable({id: row.id, version: row.version!});
-      message.success('仓库已停用');
-      await queryData();
+      try {
+        await warehouseApi.disable({id: row.id, version: row.version!});
+        message.success('仓库已停用');
+        await queryData();
+      } catch {
+        // 失败原因由全局提示给出；开关仍显示原状态
+      }
     },
   });
 }

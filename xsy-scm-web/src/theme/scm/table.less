@@ -35,6 +35,32 @@
 }
 
 /*
+ * 表头右边缘的列宽拖拽区：和 Excel 一样，鼠标移到列边界变成左右箭头，按住拖动改列宽。
+ * 只在最后 8px 命中（与 useScmTableFill 的 RESIZE_HIT_ZONE 一致），不影响点击排序。
+ * 固定列是 sticky 定位，本身就是定位元素，伪元素不需要再给 th 加 relative。
+ */
+/* 固定列是 sticky，本身已经是定位元素：不能在这里改回 relative，否则固定列会失去吸附 */
+.ant-table-wrapper th.scm-resize-header:not(.ant-table-cell-fix-left):not(.ant-table-cell-fix-right) {
+  position: relative;
+}
+
+.ant-table-wrapper th.scm-resize-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* 悬停时给一道细线，告诉用户这里可以拖 */
+.ant-table-wrapper th.scm-resize-header:hover::after {
+  background: linear-gradient(to right, transparent 3px, var(--scm-primary) 3px, var(--scm-primary) 5px, transparent 5px);
+}
+
+/*
  * 固定列必须自带底色。主题把表头、表体底色显式设为透明，横向滚动时被固定的操作列会与
  * 下方滚过的列重叠，看起来像「核销金额操作」这样两列文字粘在一起。
  * 选择器要压过 shell.less 里的透明背景规则，否则只修好一半。
