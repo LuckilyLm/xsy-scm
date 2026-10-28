@@ -7,13 +7,12 @@
  * - 服务端重验客户、地址、商品和价格后写 sales_order；库存仍按「先接单、后采购」由后台显式预留；
  * - cancel 只能成功于服务端状态机允许的状态，客户端不做「能不能取消」的最终判断，只按 cancelable 置灰；
  * - reorder 由服务端按当前可见性与客户价重新校验，客户端不得回传或复用历史成交价；
- * - pay 必带 Idempotency-Key 且不带金额：扣多少只有服务端知道（应付净额 − 已付），客户端不算钱。
  */
-import { getRequest, postRequest } from '@/lib/smart-request';
+import {getRequest, postRequest} from '@/lib/smart-request';
 
 export const mallOrderApi = {
   /** 按当前客户和收货地址列出允许选择的配送仓。 */
-  getWarehouses: (addressId) => getRequest('/scm/mall/warehouses', { addressId }),
+  getWarehouses: (addressId) => getRequest('/scm/mall/warehouses', {addressId}),
 
   /**
    * 当前客户的订单分页
@@ -37,7 +36,7 @@ export const mallOrderApi = {
    *          priceFingerprint: string, remark?: string, expectDeliveryDate?: string, couponInstanceId?: number}} param
    * @param {string} idempotencyKey 内容不变时复用
    */
-  submit: (param, idempotencyKey) => postRequest('/scm/mall/orders', param, { idempotencyKey }),
+  submit: (param, idempotencyKey) => postRequest('/scm/mall/orders', param, {idempotencyKey}),
 
   /**
    * 取消订单
@@ -45,20 +44,13 @@ export const mallOrderApi = {
    * @param {string} reason 取消原因，必填
    * @param {string} idempotencyKey 同一订单同一原因重试时复用
    */
-  cancel: (orderId, reason, idempotencyKey) => postRequest(`/scm/mall/orders/${orderId}/cancel`, { reason }, { idempotencyKey }),
+  cancel: (orderId, reason, idempotencyKey) => postRequest(`/scm/mall/orders/${orderId}/cancel`, {reason}, {idempotencyKey}),
 
   /**
    * 再来一单：服务端按当前可见性与客户价重新校验后写入购物车
    * @param {number} orderId
    */
   reorder: (orderId) => postRequest(`/scm/mall/orders/${orderId}/reorder`),
-
-  /**
-   * 余额支付：仅已确认且约定余额结算的订单；扣款金额由服务端按应付净额与已付计算，客户端不传金额。
-   * @param {number} orderId
-   * @param {string} idempotencyKey 必带：重复点击返回首次结果，不会二次扣款
-   */
-  pay: (orderId, idempotencyKey) => postRequest(`/scm/mall/orders/${orderId}/pay`, {}, { idempotencyKey }),
 
   /**
    * 下单商品汇总：按商品规格聚合当前客户自己的历史下单。

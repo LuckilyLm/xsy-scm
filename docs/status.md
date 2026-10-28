@@ -18,14 +18,14 @@
   - 新增 `StatementPostingOptionPgIT` 3 项：不勾选无过账行、勾选后余额口径不变且过账金额落库、作废过账不进对账单、冻结版本记住选项。
   - 定向复跑 `StatementPrintContractTest` 5、`ScmFinanceSchemaPgIT` 17、`FinanceWaiverIT` 3、`ScmFinanceReadPgIT` 6、`SmartAdminMenuComponentPgIT` 3、`ScmFinancePaymentPermissionPgIT` 3、`ScmFinanceReceiptPermissionPgIT` 3，全部通过。
   - 代码层面：登记取价错误码改用未占用号段 41184–41191（原拟 41166–41173 与电子秤错误码撞号）；`ScmFinanceSchemaPgIT` 财务段菜单 21 → 26 行、授权 42 → 52、页面 5 → 6、权限 15 → 19；`SmartAdminMenuComponentPgIT` 与两个权限 IT 的页面数同步为 6。
-  - 新增 E2E `e2e/scm-finance-posting-2026-10-28.spec.ts` 2 项，在本机 18080/18081 通过：弹窗常驻「不生成应收应付」说明，登记后按客户查得到 `PD` 单号、未返款、`NORMAL`，同客户当天应收仍为 0；修改金额留痕（日志 `POSTING_ADD → POSTING_UPDATE`），作废不填原因被拦，作废后为终态、金额不被改写、修改/作废入口消失。
-  - 开发库 `xsy_scm` 已由 Flyway 应用 V207–V209（`Successfully applied 3 migrations`），后端 dev jar 重建并重启 18080；迁移快照已按应用后的校验和同步。
+  - 新增 E2E `e2e/scm-finance-posting-2026-10-28.spec.ts` 2 项，全部通过：弹窗常驻「不生成应收应付」说明，登记后按客户查得到 `PD` 单号、未返款、`NORMAL`，同客户当天应收仍为 0；修改金额留痕（日志 `POSTING_ADD → POSTING_UPDATE`），作废不填原因被拦，作废后为终态、金额不被改写、修改/作废入口消失。
+  - 迁移 V207–V209 已应用，迁移快照按应用后的校验和同步。
   - 页面样式巡检（1440×900 / 390×844 截图）：修掉三处问题——详情抽屉日志表未给 `scroll.x`，窄屏（抽屉被 `96vw` 限制）时「原因/快照」被裁掉且无法滚动；日志原因列没有宽度，在可滚动表里被压成 0；状态标签与返款状态标签没走 `ScmStatusTag`，返款三态也看不出轻重（现为未返款=warning、部分=processing、已返款=success）。详情抽屉同时按其它详情页拆成「单据信息 / 操作日志」两段。
 - **未执行**：现场财务岗位对「隐藏」范围与返款状态的确认；过账单打印（当前只有导出，没有单独纸质模板）。
 
 ## 2026-10-28 现场确认后的 P0 第一批（源码完成；后端编译、定向单测、新增 Pg IT 与前端静态检查已执行）
 
-本批按 [2026-10-28 客户现场确认](requirements/2026-10-28-客户现场确认.md) 与 `docs/decisions.md` 的 D-1028 系列落地，迁移 V186–V198 已写入源码；2026-10-28 已在本地演示环境把 V186–V198 应用到开发库 `xsy_v2`，并刷新后端 test profile jar 与 Web 构建产物。未做 E2E、电子秤或现场验收。
+本批按 [2026-10-28 客户现场确认](requirements/2026-10-28-客户现场确认.md) 与 `docs/decisions.md` 的 D-1028 系列落地，迁移 V186–V198 已写入源码。未做电子秤或现场验收。
 
 - **订单整单录入与整单粘贴**：订单抽屉明细改为纸面列序（序号/商品/规格/单位/数量/单价/金额/备注），新增 `POST /scm/order/import/paste-preview` 与 `order-paste-modal.vue`；订单仍是一客户一单多行，最终走 `create/update`，不绕过定价与幂等。
 - **客户分拣单 / 客户送货单 + 批量打印 + 采购汇总**：新增 `CUSTOMER_SORTING_SHEET`（无价格、实数量留空）与 `CUSTOMER_DELIVERY_NOTE`（含实数量、金额、签字栏），批量接口按配送日期/线路取当日已确认订单，单张独立事务与幂等键，服务端上限 200 单；销售订单批量打印的 10 单限制已去掉。采购需求汇总增加打印/导出与批次展示。
@@ -35,9 +35,9 @@
 - **财务自动 FIFO 核销 + 抹零**：`FinanceWriteOffService` 抽出「锁目标—校验—幂等—写入」公共段，新增 `autoPreview`/`autoAdd`（按账单日期、单据 id 分配，单次最多 100 单，剩余留在资金单待核销额），接口 `POST /scm/finance/write-off/auto/preview|auto`，幂等 scope 与手工核销分开。抹零新增 `xsy_finance_waiver`（V194，只存金额与原因，**不落状态列**：是否已反向由该核销行有没有 `REVERSE` 推导），核销来源扩展 `WAIVER`（V195），`POST /scm/finance/waiver/add|reverse` 与独立权限（V196）。对账单 SQL 增加 `WAIVER`/`WAIVER_REVERSE` 事实，抹零只减应收、不并进核销净额，新增「本期抹零净额」（打印合计字段 `waiverNet` 与导出列）；通用核销反向接口拒绝撤销抹零，必须走抹零反向。
 - **客户分组价**（V198）：新增客户分组主数据（`xsy_customer_group`，客户档案上的 `customer_group_id`）与分组价表（`xsy_customer_group_price`，唯一键为分组 + 商品 + 销售单位 + 开始时刻）、分组价操作日志；客户分组页 `/customer/customer-group-list`，分组价页 `/pricing/customer-group-price-list`，权限拆到 `scm:customer:group:*` 与 `scm:pricing:group-price:*`。分组保存必须至少一个客户；把客户移入其它分组或移出分组时，若原分组会归零则拒绝；删除分组先把客户移出再软删除。`PriceResolver` 在逐客协议价之后、客户类型价之前按「客户所属分组 + 商品 + 销售单位」取价，停用分组不参与；订单行 `CUSTOMER_GROUP` 来源已放开数据库 CHECK 与前端枚举。价格变更历史并入分组价日志，详情页用首个同单位规格回填编辑。
 - **已验证**（仅以下项目）：`mvn -pl sa-admin -am compile`、`test-compile` 通过；新增 `FinanceWriteOffAutoTest` 4 项、`FinanceWaiverServiceTest` 5 项与既有 `FinanceReadOnlyContractTest` 4 项共 13 项通过（含 FIFO 顺序与不超额、预览不写库、无未结目标拒绝、客户退款付款不查应付、抹零超额/无原因拒绝、反向只追加）。`FinanceReadOnlyContractTest` 与 `ScmFinanceSchemaPgIT`/`ScmFinanceRoleMatrixPgIT` 已按第九张财务表、抹零权限与「无状态列」口径更新断言。客户分组价补充 `PriceResolverAgreementFormulaTest` 两项（分组价按商品 + 单位命中并压过客户类型价、跨单位不命中回落市场价）、`PriceResolverTest` 来源数量断言与 `CustomerGroupServiceTest` 三项（唯一成员移出拒绝、留有余量放行、空名单不查库），四个单测类全部通过。前端全量契约单测 `npm test` 549 项全部通过（本轮先红后修：表格列对齐、表格数字 id 撞号、报表导出端点清单、采购待定价校验与载荷、采购操作类型枚举、报表常驻口径说明与 `hint` 基线、抽屉宽度与操作列宽度、`a-form-item name` 缺 `:model`、服务端/快照等黑名单文案）；改动文件 Prettier、ESLint 通过，`vue-tsc` 全仓基线仍有既有 1516 条错误、改动文件 0 条；`npm run build`（vite production）通过。
-- **本地演示实测（2026-10-28）**：后端 test profile jar 与 Web `dist` 已替换到运行中的容器；Flyway 从 V185 依次应用 V186–V198 成功（`Successfully applied 13 migrations`）。浏览器实测：客户分组页可新增「鲜蔬源演示组」（2 个成员，成员数正确）；分组价页可新增「上海青 / 斤 / ¥2.00」，列表状态为生效中；价格试算对组内客户「余杭区未来科技城食堂」命中 `¥2.00 / 客户分组价`，对已有逐客协议价的客户仍优先命中客户协议价；价格历史按 `CUSTOMER_GROUP` 返回分组名、商品与操作日志。演示数据保留在开发库，便于继续查看。
+- **浏览器实测（2026-10-28）**：客户分组页可新增分组并显示成员数；分组价页可新增「商品 / 单位 / 价格」，列表状态为生效中；价格试算对组内客户命中「客户分组价」，对已有逐客协议价的客户仍优先命中客户协议价；价格历史按 `CUSTOMER_GROUP` 返回分组名、商品与操作日志。
 - **新增 Pg IT（2026-10-28，重置 `xsy_v2_it` 后执行）**：`CustomerGroupPricePgIT` 5 项、`InventoryNegativeStockIT` 4 项、`PurchasePriceWindowIT` 4 项、`FinanceFifoWriteOffIT` 2 项、`FinanceWaiverIT` 3 项、`ScmPrintBatchIT` 2 项、`SalesOrderPastePreviewIT` 3 项，合计 23 项全部通过。覆盖：分组内同单位规格共用价格与组外回退、区间重叠/停用分组/唯一成员移出/删除分组后历史可查；负库存出库建零余额行、数据库守卫、关闭开关前检查与损耗报表；待定价补价、补价前收货拦截、窗口过期拒绝、最近采购价自动回填、锁单/解锁与到期自动锁单；自动 FIFO 顺序与幂等、抹零/反向/超未结额；按配送日期批量预览与打印、同批次键重放、单张失败隔离；整单粘贴匹配、未知商品/单位不符/重复规格/无改价权限保留报错。IT 发现并修复 `PurchaseOrderLockService` 锁单快照直接写 `OffsetDateTime`、JSONB typeHandler 未注册 `JavaTimeModule` 导致锁单/解锁/自动锁单写日志失败的问题（改为 ISO 字符串）。
-- **E2E 全量回归（2026-10-28，本机 18080/18081 + 夹具 18083）**：`XSY_V2_PG_DB=xsy_scm npx playwright test` 跑完 174 项，165 通过、9 跳过、0 失败（12.4 分钟）。本轮把 P0 第一批的页面行为补成可重复的用例，并修掉套件暴露的真实缺陷：
+- **E2E 全量回归（2026-10-28）**：`npx playwright test` 跑完 174 项，165 通过、9 跳过、0 失败。本轮把 P0 第一批的页面行为补成可重复的用例，并修掉套件暴露的真实缺陷：
   - 新增 `e2e/scm-p0-2026-10-28.spec.ts`（6 项）：客户分组价命中、整单粘贴匹配与未匹配报错、客户分拣单/送货单批量打印（分拣单无价格、送货单带实数量与金额）、负库存损耗报表、自动 FIFO 核销、抹零与反向。`playwright.config.ts` 增加 `webServer` 自动拉起夹具用的第二个 Vite（18083），干净机器不再需要人工启动。
   - **权限 getter 自赋值导致无限重渲染**：`src/store/modules/system/user.ts` 的 `getPointList` 在 `pointsList` 为空时把 `[]` 写回自身依赖，Pinia getter（computed）永远“脏”，读它的抽屉会无限重入（浏览器报 `Maximum recursive updates exceeded in component <ASpace>`）。改为只有从本地缓存读到非空权限才回填，空列表保持原引用。
   - **商品导入模式**：页面已取消“新增/更新”开关，但接口仍写死 `mode=CREATE`，更新模板被当成新增解析。后端改为未显式传 mode 时按表头判定（更新模板第 2 列为「商品ID」），前端不再强制传 CREATE，结果文案区分「成功更新 / 成功导入」。
@@ -53,9 +53,9 @@
   - **跨域 DAO 写入**：`DeliveryRouteService` 直接调 `SalesOrderDao.markDispatched`（跨域写）。新增订单域 `SalesOrderDispatchService`（`Propagation.MANDATORY`），配送域改为调用它并按自己的 `STATE_INVALID` 拒绝；其余 9 处跨域读（客户/商品/业务分类/采购最近价/按配送日期取单）都是 `<select>`，补进 `tools/quality/cross-domain-dao-allowlist.tsv` 并写明理由。
   - **代码规范**：`PurchasePriceService` 的 `"MANUAL"` / `"AUTO_LAST_PRICE"` 收敛为 `ScmPurchasePriceSourceEnum`，对账单的 `"WAIVER"` / `"WAIVER_REVERSE"` 取 `ScmStatementFactType`；去掉两处未使用 import、两处引用决策编号的注释。
   - **上一批遗留的红测试一并修正**：`PurchaseOrderVO.lockedBy` 补 `ScmOperatorNameSerializer`（否则页面显示 `1:1`）；`PurchaseErrorCodeTest` 由 53/8 改为 61/9 并锁定 8 个新采购价码与 41010；`PurchaseOrderWebTest` 42 端点 + 新服务打桩；`ScmPurchasePermissionMigrationIT` 42 端点 / 31 权限码；`OrderWebTest` 34 端点 + 粘贴服务打桩；`OrderRulesTest` 取价链补 `CUSTOMER_GROUP`/`TIME_PRICE`；`ScmPurchaseStatusEnumTest` 改从 V200 读 19 种操作类型。
-  - **验证**：`python tools/verify.py quality` PASS；后端单测 884 项全过（`-Dtest='*Test'`）；重置 `xsy_v2_it` 后跑受影响 IT — `InventoryNegativeStockIT` 4、`DeliveryDispatchPgIT` 9、`DeliveryRouteServiceIT` 2、`FinanceFifoWriteOffIT` 2、`FinanceWaiverIT` 3、`SalesOrderServiceIT` 17、`OrderLockPgIT` 6、`PurchasePriceWindowIT` 4、`ScmPurchasePermissionMigrationIT` 2，合计 49 项全过（IT 需要 `XSY_V2_DB_URL`/`XSY_V2_DB_PASSWORD` 与 `SPRING_DATA_REDIS_PASSWORD`，只给数据库地址不给 Redis 口令时上下文加载会失败）。开发库 `xsy_scm` 已重建 dev jar 并重启 18080。
+  - **验证**：`python tools/verify.py quality` PASS；后端单测 884 项全过（`-Dtest='*Test'`）；重置 `xsy_v2_it` 后跑受影响 IT — `InventoryNegativeStockIT` 4、`DeliveryDispatchPgIT` 9、`DeliveryRouteServiceIT` 2、`FinanceFifoWriteOffIT` 2、`FinanceWaiverIT` 3、`SalesOrderServiceIT` 17、`OrderLockPgIT` 6、`PurchasePriceWindowIT` 4、`ScmPurchasePermissionMigrationIT` 2，合计 49 项全过（IT 需要 `XSY_V2_DB_URL`/`XSY_V2_DB_PASSWORD` 与 `SPRING_DATA_REDIS_PASSWORD`，只给数据库地址不给 Redis 口令时上下文加载会失败）。
   - **E2E 抗数据累积（2026-10-28，三处失败改为用例侧修法）**：上面这轮后端改动后复跑全量，出现 154 通过 / 3 失败 / 9 跳过 / 8 未运行（失败所在 serial 块的后继用例不再跑）。三处失败都不是产品缺陷，而是开发库里 E2E 自己建的数据越积越多：①起点仓库下拉没有搜索框且是虚拟列表，只渲染首屏十几项，早期仓「鲜蔬源仓库」被挤出 DOM，按文本 click 反复 detached；改为方向键把激活项逐项下移（虚拟列表会跟着滚动），命中后回车确认。②盘点页仓库筛选同样点不到；`WarehouseSelect` 本身有 `show-search`，改为先输入名称过滤再点过滤后的选项。③线路列表按配送日期倒序分页，新线路掉出第一页；改用列表自己的「线路名称 / 编号」筛选收敛。三处单独复跑均通过，`npm run typecheck:e2e`、`npm run lint:e2e` 通过。
-  - **未完成**：修完后再跑全量时，后台任务因本机内存不足被系统中断（不是用例失败），这一轮没有新的全量数字；下次有内存余量时重跑 `XSY_V2_PG_DB=xsy_scm npx playwright test` 确认。
+  - **未完成**：修完后这一轮全量没有跑完（不是用例失败），没有新的全量数字；后续需重跑 `npx playwright test` 确认。
 - **未执行**：`tools/verify.ps1` 总入口、云存储模式（`XSY_FILE_STORAGE_MODE=cloud`）的 E2E、电子秤代理 `verify.ps1` 与真实读重/去皮/断网/班次过期、打印纸张与批量 50+ 单、负库存实物盘点现场验收。
 
 ## 独立退货单（2026-10-28，源码、Pg IT、E2E 与四道门禁已执行；未做现场验收）
@@ -71,8 +71,8 @@
   - `python tools/verify.py quality` PASS；`python tools/verify.py frontend` PASS（ESLint、E2E 类型检查、`npm test` 549 项、`npm run build`、TypeScript 棘轮 0 新增 / SCM 0 错误）；改动文件 Prettier 通过。
   - 新增 `OrderReturnIndependentPgIT` 3 项（最近成交价锁价与客户级红字且无退款单、按仓库均价回库且不绑原出库行、账龄/自动核销/对账单 FIFO 口径一致）；定向复跑 `ScmFinanceReceivablePgIT`、`ScmFinanceWriteOffPgIT`、`ScmFinanceReceiptPgIT` 共 45 项，`ScmFinanceReportPgIT`、`ScmReportPgIT`、`AdminSettlementReturnCreditPgIT`、`ScmBundleReturnFlowPgIT`、`ScmFinanceSettleStatePgIT`、`ScmFinanceReceiptSettlementPgIT` 共 35 项，全部通过。
   - 全量后端门禁 `python tools/verify.py backend`：1961 项、0 失败、6 跳过（`F0FileStorageCloudIT` 5 项需云存储模式，`MallOrderFlowPgIT` 1 项既有跳过）。
-  - 新增 E2E `e2e/scm-return-independent-2026-10-28.spec.ts` 2 项，在本机 18080/18081 通过：建单显示「最近成交价」建议价、列表标「独立退货」且原订单号为「—」、详情无换货入口；批准后状态推进到「已批准」。
-  - 本地演示环境：dev jar 重建并重启 18080，Docker 后端替换为 test profile jar 并重启；开发库 `xsy_scm` 由 Flyway 从 V201 应用到 V206（`Successfully applied 5 migrations`）；Web `dist` 重新构建并替换到演示容器。
+  - 新增 E2E `e2e/scm-return-independent-2026-10-28.spec.ts` 2 项，全部通过：建单显示「最近成交价」建议价、列表标「独立退货」且原订单号为「—」、详情无换货入口；批准后状态推进到「已批准」。
+  - 迁移 V202–V206 已应用。
 - **一并修掉的全量门禁红**（多为前几批遗留，只在跑全量时暴露）：
   - V198 给客户分组加了两条数据库外键，违反全库零外键纪律 → V205 撤掉，`ScmMigrationTargetPgIT`/`ScmInventoryMigrationIT`/`ScmPurchaseMigrationIT`/`ScmBundleMigrationPgIT` 恢复通过。
   - 客户分组两个二级菜单缺图标 → V206 补齐；`ScmMenuComponentExistencePgIT` 通过。
@@ -80,15 +80,17 @@
   - `OrderWebTest` 订单端点 34 → 37（三个独立退货端点）；`ScmOrderCustomerDataScopePgIT` 夹具补 `source_type`/`customer_name_snapshot`；`SmartAdminMapperPgValidationIT` 跳过基线 658 → 678（客户分组、独立退货取价与电子秤会话等新增 MP DAO）。
   - V186 起种子仓 WH001 允许负库存：`InventoryFulfillmentPgIT` 与 `ScmInventoryOutboundIT` 的「库存不足必须拒绝」改用独立的普通仓；`ScmInventoryMigrationIT` 改为断言负库存触发器，并另建普通仓验证负数余额被拒。
   - `ScmInventoryLossGainIT` 的通知计数按 `message_type` 收敛，避免与订单确认消息的 `data_id` 撞号。
-- **未执行**：独立退货的实物接收与打印现场验收；电子秤现场项（真实读重、去皮、断网、班次过期）仍未验证；E2E 全量回归本次未重跑（只跑新增 2 项，上一轮全量因本机内存被中断）。
+- **未执行**：独立退货的实物接收与打印现场验收；电子秤现场项（真实读重、去皮、断网、班次过期）仍未验证；E2E 全量回归本次未重跑（只跑新增 2 项）。
 
-## 开发库数据被清空（2026-10-27，事故记录）
+## 微信小程序仅下单（2026-10-28，源码交付，未运行验证）
 
-- 为清理集成测试库时误对开发库 `xsy_scm` 的 `xsy_v2` schema 执行了 `DROP SCHEMA ... CASCADE`。该库没有备份，除迁移自带的种子（管理员账号、角色、菜单、权限）外的业务演示数据（客户、商品、供应商、订单、收货、财务等）已全部丢失。
-- 已重启后端，由 Flyway 从空 schema 重建到 V184，表结构、菜单与权限种子恢复；集成测试库 `xsy_v2_it` 与其它数据库未受影响。
-- `xsy_v2_final`（428 客户 / 409 商品 / 418 订单）等历史库仍在，可作为恢复来源；但未经确认不导入开发库，以免混入来源与版本不明的数据。
-- 恢复情况：已用管理员会话按真实接口重建一套最小基础资料（1 个客户「联调体验客户」并置为合作中、1 个供货商「联调鲜蔬供货商」、3 个上架商品：上海青/土豆/鸡蛋），Playwright 复核商品、客户、供应商列表与新建订单抽屉均正常。原记录无法恢复，金额与单据数据需要重新录入。
-- 防复发：新增 `tools/reset-it-db.sh`，只接受以 `_it` 结尾的库，清空前打印目标并等待 5 秒；开发库/演示库直接拒绝。
+- 小程序确认订单不再选择余额、账期或货到付款；提交不查询资金资格。保留客户归属、报价、数量、配送地址/仓库、优惠试算、价格指纹和幂等校验，零库存仍可按原预订规则下单。
+- 新增 V210（原 V181，因与本分支已应用的 V181 业务分类撞号，合并时顺延）：正式销售订单追加 `mall_order_only`，历史记录默认 false，新商城订单由服务端固定 true；不新建同步订单表。标品、非标品均提交为 `PENDING`，按既有负责人范围显示在后台销售订单或待分配池，确认、库存与资金动作不在客户下单时执行。
+- 后台订单确认增加结算约定选择，必须在既有权限、订单锁和版本检查后补齐；缺失或试图改变历史约定均拒绝。正式确认仍执行原钱包授权、账期、COD、实重、优惠及单位换算规则。
+- 小程序支付按钮/API 方法及资金菜单入口移除，钱包与账单历史只读路由保留但不预加载。旧 `/scm/mall/orders/{id}/pay` 路由和商城支付服务统一返回明确停用错误，不产生扣款。后台支付、财务、历史资金及退款事实保留。
+- 同步修改 mock 和旧支付选择相关契约用例源码，增加无结算方式下单、旧客户端结算值不传入新订单、后台补齐与历史约定保护断言。订单、优惠、售后与余额结算集成夹具已按“下单待处理 → 后台选择结算并确认”调整，补齐地址坐标、地图桩和配送仓；余额扣款用例转入后台正式支付入口，保留金额、幂等、并发与资金事务断言，并增加旧客户端支付拒绝及标准商品无资金资格订货、后台同单可见的断言。以上用例均未执行，仍待授权开展全链验证。
+- 合并处理：`ORDER_SETTLEMENT_METHOD_REQUIRED` 由 41204 顺延为 41205（与待确认改单拦截 `ORDER_PENDING_EDIT_BLOCKED` 撞号），商城售后 IT 里重复的地图桩合并为一份并保留区县→配送仓绑定。
+- V210 尚未应用；部署时须先通过正式 Flyway 流程应用新增迁移，再更新服务端、后台和小程序。按用户要求未运行测试、编译/构建、数据库迁移、服务或真机验证；仅作源码及格式处理。
 
 ## 质量门禁告警清零（2026-10-27）
 
@@ -105,7 +107,7 @@
 - 待确认订单、标品行、已发车订单不回写；称出 0 因数据库要求实发量大于 0 而不回写。
 - 手工实发量命令放宽到已确认订单：已发车返回 40917，锁单后需「锁单后改单」权限；修改后同步重算结算金额。
 - 已验证：`SortingTaskPgIT` 30 项全部通过（新增 3 项：回写实发量与结算、发车/标品跳过、缺货 0 不写）；同时修正该类既有用例对无权限场景的错误断言——30005 抛的是底座 `BusinessException`，原用例用只认 `ScmBusinessException` 的 `expectCode` 断言，导致 `standardConfirmation…` 与 `standardPreview…` 一直失败。`SalesOrderServiceIT` 17 项全部通过，其中 `lifecycleRetainsSnapshotsAndLockedPricesAndAudit` 已按现行「报价依据变化必须显式核价」口径补上 40975 断言与核价步骤。
-- 未验证：页面/电子秤实测未做；开发库数据已清空（见下条），端到端复测需先补基础资料。
+- 未验证：页面/电子秤实测未做。
 
 ## 订单锁单与发车后改单（2026-10-27，源码与本地环境已验证）
 
@@ -114,14 +116,14 @@
 - 改单放宽到已确认订单：未发车未锁可直接改；已发车要「发车后改单」权限（错误码 40913），已锁单要「锁单后改单」权限（40912）；已冻结优惠的订单拒绝改单（40914），已分拣或已出库不能增删商品（40915），已确认订单不能直接新增需称重商品（40916）。改单重锁单价并按实数量重算结算金额，非标品称重实数量与原因保留。
 - 订单列表与详情返回 `editable`/`editBlockedReason`，列表的编辑按钮改为按它启用，并新增「已锁/已发车」标记与锁单/解锁入口。
 - 已验证：新增 `OrderLockPgIT` 6 项通过（锁单改单拒绝与解锁、发车后改单权限、自动锁单选单范围与幂等、锁后改单留痕）；`OrderWebTest` 9 项、`DeliveryRouteServiceIT` 2 项、`DeliveryDispatchPgIT` 9 项、`DeliveryDispatchConcurrencyPgIT` 2 项通过；`SalesOrderServiceIT` 17 项全部通过（`lifecycleRetainsSnapshotsAndLockedPricesAndAudit` 已按现行核价口径修正）。前端 `npm test` 549 项、Prettier、ESLint、TypeScript 棘轮与 `npm run build` 通过。
-- 运行中的后端（test profile jar）与 Web 静态资源已换成含本次改动的构建产物，V184 已在开发库执行；Playwright 登录实测订单列表编辑按钮、「更多 → 锁单」确认文案、锁后「已锁」标记、管理员持「锁单后改单」仍可编辑、解锁后标记消失，共 8 项通过，操作日志记到 `1:1`。
+- 页面实测：订单列表编辑按钮、「更多 → 锁单」确认文案、锁后「已锁」标记、管理员持「锁单后改单」仍可编辑、解锁后标记消失，共 8 项通过。
 
 ## 待确认订单可改单（2026-10-27，源码与本地环境已验证）
 
 - 订单列表对「待确认」行显示「编辑」，抽屉保存后订单仍为待确认，并提示未改动行沿用提交时报价、按最新价格重算请用「批量核价」。
 - 后端可改单状态放宽到草稿与待确认；待确认订单存在支付意图、应收、库存预留、出库或分拣事实时，改单返回新错误码 41204 并整笔拒绝。改单沿用行上报价重新锁定单价，标品实数量同步下单量，非标品称重结果保留。
 - 已验证：`SalesOrderServiceIT` 新增 2 个用例（改单后仍待确认且单价不变、存在支付意图时拒绝改单）通过；该类 16 项中 15 项通过，`lifecycleRetainsSnapshotsAndLockedPricesAndAudit` 仍为既有失败（已在 HEAD 复现）。顺带修正该 IT 中真提交用例的幂等键与请求体共用问题，使重跑不再撞上历史幂等记录。前端 `npm test` 547 项通过。
-- 未验证：页面上的编辑动作尚未做 Playwright 实测；运行中容器仍是本次改动前的构建。
+- 未验证：页面上的编辑动作尚未做 Playwright 实测。
 
 ## 销售订单导入改为客户送货单版式（2026-10-27，源码与本地环境已验证）
 
@@ -129,7 +131,7 @@
 - 一张送货单生成一张订单；收货单位按客户名称匹配有效客户，商品按商品名称、规格、单位匹配，实数量作为下单数量；收货人、电话、地址取客户档案，缺项时拒绝导入。
 - 送货单单价按人工改价导入：需要订单改价权限，改价原因由服务端固定记为“送货单导入”；单价留空回退系统定价，系统无价则拒绝。销售金额仅用于核对数量×单价。
 - 已验证：后端 `SalesOrderImportServiceTest` 30 项、`OrderWebTest` 9 项通过；`SalesOrderServiceIT` 14 项中 13 项通过（`excelImportIsAtomicAndKeepsNonStandardPending` 覆盖新模板的标品确认、称重品待确认、幂等重放与整批拒绝），`lifecycleRetainsSnapshotsAndLockedPricesAndAudit` 在 HEAD 同样以“订单价格依据已变化”失败，属既有问题，与本次改动无关。前端 `npm test` 547 项、Prettier、ESLint、TypeScript 棘轮与 `npm run build` 通过。
-- 运行中的后端与 Web 已换成含本次改动的构建产物（Docker Hub 不可达，仍以覆盖 `/app/app.jar` 与 Nginx 静态目录的方式刷新）。Playwright 登录实测：导入弹窗规则文案、模板下载文件名与内容、上传错误单据后按「收货单位 / 商品名称」定位错误且不写入订单，共 10 项全部通过；成功导入未在联调库制造订单。
+- 页面实测：导入弹窗规则文案、模板下载文件名与内容、上传错误单据后按「收货单位 / 商品名称」定位错误且不写入订单，共 10 项全部通过。
 
 ## 客户确认需求阶段一（2026-10-27，源码与本地环境已验证）
 
@@ -138,9 +140,9 @@
 - 录单新增只读最近采购价：`GET /scm/order/reference/last-purchase-prices` 按采购员数据范围返回采购价、采购单位、单号与供应商；录单页浮层显示单位，单位不一致时不比较高低。
 - 协议价新增 `PURCHASE_COST_LOSS_TAX_MARKUP`：最近采购价按已配置的库存换算关系折算到销售单位后计算；无法换算时退回仓库销售单位成本；损耗率、税率缺失或越界时整行未定价，不以 0 兜底。
 - 打印中心新增对账单类型与 `StatementPrintSourceProvider`（V182），打印前按当前数据范围重校验；新增客户专属模板绑定表与接口，解析顺序为显式模板 → 客户绑定 → 类型默认模板；每日采购清单增加浏览器打印。
-- 迁移：V181、V182、V183 已在本地开发库执行（Flyway 当前版本 183）。
-- 已验证：新增与受影响的后端单元测试、`OrderLastPurchasePriceIT`、`ScmPrintCenterPgIT`、`ScmArchitectureTest` 及客户/供应商/商品/打印相关集成测试通过；前端 `npm test` 547 项全部通过，Prettier、ESLint、TypeScript 棘轮与 `npm run build` 通过；Playwright 登录实测商品列表与默认单位、客户/供应商分类、分类维护页、客户专属模板抽屉、录单最近采购价、协议价新公式、每日清单打印入口。
-- 未完成：Docker 镜像重建因本机无法访问 Docker Hub 未成功，当前运行容器通过覆盖 `/app/app.jar` 与 Web 静态目录后重启完成验证；阶段二尚未开始。
+- 迁移：V181、V182、V183。
+- 已验证：新增与受影响的后端单元测试、`OrderLastPurchasePriceIT`、`ScmPrintCenterPgIT`、`ScmArchitectureTest` 及客户/供应商/商品/打印相关集成测试通过；前端 `npm test` 547 项全部通过，Prettier、ESLint、TypeScript 棘轮与 `npm run build` 通过；页面实测商品列表与默认单位、客户/供应商分类、分类维护页、客户专属模板抽屉、录单最近采购价、协议价新公式、每日清单打印入口。
+- 未完成：阶段二尚未开始。
 
 ## 商城装修控制台（2026-10-25，本地环境已验收，真机待验）
 

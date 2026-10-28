@@ -57,6 +57,7 @@
             <a-descriptions-item v-if="order.settlementMethod" label="订单结算约定">
               {{ settlementMethodText(order.settlementMethod) }}
             </a-descriptions-item>
+            <a-descriptions-item v-else-if="order.mallOrderOnly" label="订单结算约定">待后台确认</a-descriptions-item>
             <a-descriptions-item label="收货人">{{ order.address?.receiverName }} / {{ order.address?.receiverPhone }} </a-descriptions-item>
             <a-descriptions-item label="收货地址">{{ order.address?.address }}</a-descriptions-item>
           </a-descriptions>
@@ -163,10 +164,24 @@
       :confirm-loading="saving"
       @ok="confirmWithCredit"
       @cancel="creditOpen = false"
-      :ok-button-props="{disabled: !usesMallSettlement && !creditCheck?.allowed && !creditOverride}"
+      :ok-button-props="{
+        disabled: (requiresSettlement && !confirmationSettlementMethod) || (!usesMallSettlement && !creditCheck?.allowed && !creditOverride),
+      }"
     >
       <a-alert v-if="error" :message="error" type="error" show-icon />
       <p v-if="usesMallSettlement" class="scm-note">确认时将按订单的结算方式、实际数量和优惠重新校验，确认订单不会自动扣款。</p>
+      <a-form-item v-if="requiresSettlement" label="结算约定" required>
+        <a-select
+          v-model:value="confirmationSettlementMethod"
+          placeholder="请选择后台结算方式"
+          :options="[
+            {value: 'CREDIT', label: '账期结算'},
+            {value: 'COD', label: '货到付款'},
+            {value: 'WALLET', label: '后台余额结算'},
+          ]"
+        />
+        <span class="scm-cell-hint">客户已提交订货；确认前请核对客户结算约定，确认不会自动扣款。</span>
+      </a-form-item>
       <template v-if="creditCheck">
         <a-alert
           :type="creditCheck.allowed ? 'success' : 'warning'"
@@ -259,7 +274,7 @@ function openCodCollection() {
 }
 
 function settlementMethodText(method: 'WALLET' | 'CREDIT' | 'COD') {
-  return {WALLET: '余额支付', CREDIT: '账期结算', COD: '货到付款'}[method];
+  return {WALLET: '余额结算', CREDIT: '账期结算', COD: '货到付款'}[method];
 }
 
 const emit = defineEmits<{saved: []}>();
@@ -403,7 +418,11 @@ const creditOpen = ref(false),
   creditCheck = ref<CreditCheck>(),
   creditOverride = ref(false),
   creditOverrideReason = ref('');
-const usesMallSettlement = computed(() => order.value?.orderSource === 'MALL' && !!order.value?.settlementMethod);
+const usesMallSettlement = computed(
+  () => order.value?.orderSource === 'MALL' && (!!order.value?.settlementMethod || order.value?.mallOrderOnly === true)
+);
+const requiresSettlement = computed(() => order.value?.mallOrderOnly === true && !order.value?.settlementMethod);
+const confirmationSettlementMethod = ref<'WALLET' | 'CREDIT' | 'COD'>();
 
 /** 优惠券要显式选择，服务端不自动挑券；优惠金额由服务端计算。 */
 const couponInstanceId = ref<Id | undefined>();
@@ -498,6 +517,7 @@ async function confirm() {
   try {
     // 商城订单和钱包、货到付款不走旧授信额度检查，确认时由服务端复核
     creditCheck.value = undefined;
+    confirmationSettlementMethod.value = order.value.settlementMethod ?? undefined;
     if (!usesMallSettlement.value) {
       creditCheck.value = (await orderApi.orderCreditCheck(order.value.orderId, {suppressGlobalErrorMessage: true})).data;
     }
@@ -516,6 +536,10 @@ async function confirm() {
 
 async function confirmWithCredit() {
   if (!order.value || saving.value) return;
+  if (requiresSettlement.value && !confirmationSettlementMethod.value) {
+    message.warning('请先选择后台结算方式');
+    return;
+  }
   if (!usesMallSettlement.value && !creditCheck.value?.allowed && (!creditOverride.value || !creditOverrideReason.value.trim())) {
     message.error('授信未通过；例外放行必须填写原因');
     return;
@@ -523,6 +547,7 @@ async function confirmWithCredit() {
   saving.value = true;
   try {
     await orderApi.confirm({
+      settlementMethod: requiresSettlement.value ? confirmationSettlementMethod.value : undefined,
       orderId: order.value.orderId,
       version: order.value.version,
       creditOverride: !usesMallSettlement.value && creditOverride.value,

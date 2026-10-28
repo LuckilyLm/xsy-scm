@@ -4,14 +4,14 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 商城只展示能够完成支付的余额、账期和货到付款选项。在线支付未接入完整渠道前不开放，结算方式本身不直接执行资金操作。
+ * 正式订单的结算约定。新商城订单由后台确认时选择，结算方式本身不直接执行资金操作。
  */
 @Getter
 @RequiredArgsConstructor
 public enum ScmSettlementMethodEnum {
 
     /**
-     * 余额支付：下单前用余额直接支付。
+     * 余额结算：资金由后台正式支付命令扣减，不在商城下单时扣减。
      */
     WALLET("余额支付"),
 

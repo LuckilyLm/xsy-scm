@@ -29,6 +29,7 @@ public class SalesOrderVO {
     private BigDecimal settlementTotalAmount;
     private String settleModeSnapshot;
     private String settlementMethod;
+    private Boolean mallOrderOnly;
     private OffsetDateTime expectDeliveryTime;
     private Long sellerId;
     private String remark;

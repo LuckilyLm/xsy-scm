@@ -15,6 +15,8 @@ export const SCM_AUDIT_FIELD_LABELS: Record<string, string> = {
   orderId: '订单 ID',
   orderNo: '订单编号',
   orderSource: '订单来源',
+  mallOrderOnly: '仅下单模式',
+  settlementMethod: '结算约定',
   status: '状态',
   customerId: '客户 ID',
   customerCodeSnapshot: '客户编码',

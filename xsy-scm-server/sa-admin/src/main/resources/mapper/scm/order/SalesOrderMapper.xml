@@ -114,6 +114,8 @@
         <result column="customer_code_snapshot" property="customerCodeSnapshot"/>
         <result column="customer_name_snapshot" property="customerNameSnapshot"/>
         <result column="order_source" property="orderSource"/>
+        <result column="mall_order_only" property="mallOrderOnly"/>
+        <result column="settlement_method" property="settlementMethod"/>
         <result column="original_order_id" property="originalOrderId"/>
         <result column="supplement_reason" property="supplementReason"/>
         <result column="status" property="status"/>

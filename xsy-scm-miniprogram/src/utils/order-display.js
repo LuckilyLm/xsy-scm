@@ -6,24 +6,24 @@
  * 这样列表与详情不共享类名，样式仍各自独立。
  */
 
-import { shanghaiDateTime } from './mall-date';
+import {shanghaiDateTime} from './mall-date';
 
 /** 展示分类文案（与后端 MallOrderDisplayStatusEnum 一一对应） */
 const DISPLAY_STATUS_MAP = {
-  PENDING: { text: '待处理', level: 'warn' },
-  PREPARING: { text: '备货中', level: 'primary' },
-  DELIVERING: { text: '配送中', level: 'primary' },
-  COMPLETED: { text: '已完成', level: 'ok' },
-  CANCELLED: { text: '已取消', level: 'off' },
+  PENDING: {text: '待处理', level: 'warn'},
+  PREPARING: {text: '备货中', level: 'primary'},
+  DELIVERING: {text: '配送中', level: 'primary'},
+  COMPLETED: {text: '已完成', level: 'ok'},
+  CANCELLED: {text: '已取消', level: 'off'},
 };
 
 /** 列表页签；value 为空表示「全部」 */
 export const ORDER_TABS = [
-  { value: '', label: '全部' },
-  { value: 'PENDING', label: '待处理' },
-  { value: 'PREPARING', label: '备货中' },
-  { value: 'DELIVERING', label: '配送中' },
-  { value: 'COMPLETED', label: '已完成' },
+  {value: '', label: '全部'},
+  {value: 'PENDING', label: '待处理'},
+  {value: 'PREPARING', label: '备货中'},
+  {value: 'DELIVERING', label: '配送中'},
+  {value: 'COMPLETED', label: '已完成'},
 ];
 
 /** 取消原因快捷选项（仍允许自定义填写） */
@@ -31,7 +31,7 @@ export const CANCEL_REASONS = ['下错单了', '数量需要调整', '暂时不�
 
 /** 结算方式文案（与后端 ScmSettlementMethodEnum 一一对应；客户端不推导资金，只翻译服务端约定） */
 const SETTLEMENT_METHOD_MAP = {
-  WALLET: '余额支付',
+  WALLET: '余额结算',
   CREDIT: '账期结算',
   COD: '货到付款',
 };
@@ -54,13 +54,6 @@ export function dueAmount(order) {
   const int = Math.floor(clamped / 10000);
   const frac = String(clamped % 10000).padStart(4, '0');
   return `${int}.${frac}`;
-}
-
-/** 是否可以出现「余额支付」入口：结算约定为余额且服务端算出的待付大于零 */
-export function canPayByWallet(order) {
-  if (!order || order.settlementMethod !== 'WALLET') return false;
-  const due = dueAmount(order);
-  return due !== null && Number(due) > 0;
 }
 
 /** 订单处理记录文案（只覆盖服务端白名单内的类型；未覆盖的类型不原样透出内部枚举名） */

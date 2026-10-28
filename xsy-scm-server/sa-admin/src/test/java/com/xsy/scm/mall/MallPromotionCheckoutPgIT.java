@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.common.ScmW5PgITBase;
 import com.xsy.scm.common.exception.ScmBusinessException;
-import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.form.MallAccountCreateForm;
 import com.xsy.scm.mall.account.domain.form.MallLoginForm;
 import com.xsy.scm.mall.account.domain.form.MallPasswordChangeForm;
@@ -29,9 +28,10 @@ import com.xsy.scm.mall.order.domain.vo.MallCheckoutPreviewVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderVO;
 import com.xsy.scm.mall.order.domain.vo.MallSettlementOptionVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
+import com.xsy.scm.mall.order.service.MallSettlementService;
 import com.xsy.scm.mall.order.service.MallOrderQueryService;
 import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
-import com.xsy.scm.order.domain.form.OrderVersionForm;
+import com.xsy.scm.order.domain.form.OrderConfirmForm;
 import com.xsy.scm.order.constant.OrderErrorCode;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.service.OrderCreditService;
@@ -54,6 +54,7 @@ import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,6 +86,9 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
     private MallAddressService mallAddressService;
     @Autowired
     private MallCheckoutService mallCheckoutService;
+
+    @Autowired
+    private MallSettlementService mallSettlementService;
     @Autowired
     private MallOrderQueryService mallOrderQueryService;
     @Autowired
@@ -125,7 +129,6 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
                         + " ON CONFLICT (district_code, warehouse_id) WHERE deleted = FALSE DO NOTHING",
                 310115, seedWarehouseId());
     }
-
 
     /** 建一张「可自助领取 + 立即生效」的定额券。 */
     private Long activeClaimableCoupon(String tag, String discountValue) {
@@ -177,7 +180,8 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         assertThat(preview.getPromotion()).as("预览必须返回优惠明细").isNotNull();
         assertThat(preview.getPromotion().getCouponDiscount()).isEqualByComparingTo("0.5000");
         assertThat(preview.getPromotion().getPayableAmount()).isEqualByComparingTo("1.9000");
-        MallSettlementOptionVO creditOption = preview.getSettlementOptions().stream()
+        assertThat(preview.getSettlementOptions()).as("订货预览不查询资金资格").isEmpty();
+        MallSettlementOptionVO creditOption = mallSettlementService.options(customer, preview.getPromotion().getPayableAmount()).stream()
                 .filter(option -> "CREDIT".equals(option.getMethod())).findFirst().orElseThrow();
         assertThat(creditOption.getEnabled())
                 .as("账期按优惠后 1.9 占用（额度 2.0 够），不再按优惠前 2.4 保守判定")
@@ -189,7 +193,6 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         // 5. 下单携带预选券：写入订单，但券仍不被冻结
         MallOrderSubmitForm submitForm = submitForm(skuId, addressId, preview.getPriceFingerprint());
         submitForm.setCouponInstanceId(instanceId);
-        submitForm.setSettlementMethod(ScmSettlementMethodEnum.COD.name());
         var submitted = mallCheckoutService.submit(customer, submitForm, prefix + ":submit");
         assertThat(submitted.getStatus()).isEqualTo("PENDING");
         assertThat(jdbc.queryForObject("SELECT mall_coupon_instance_id FROM xsy_sales_order WHERE id = ?",
@@ -208,7 +211,8 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         actual.setActualQuantity("2.0000");
         actual.setReason("营销闭环 IT 实重");
         SalesOrderDetailVO weighted = salesOrderService.actualQuantity(actual, prefix + ":actual");
-        OrderVersionForm confirm = new OrderVersionForm();
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setSettlementMethod(ScmSettlementMethodEnum.CREDIT.name());
         confirm.setOrderId(weighted.getOrderId());
         confirm.setVersion(weighted.getVersion());
         salesOrderService.confirm(confirm, prefix + ":confirm");
@@ -230,58 +234,47 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("结算方式：按配置给出可用性，选定后随订单持久化，不可用的方式被拒绝")
-    void settlementOptionsFollowCustomerConfiguration() {
+    @DisplayName("无余额、授信与COD资格仍可订货；结算约定只在后台确认时保存")
+    void orderIntakeIsIndependentOfSettlementEligibility() {
         Long skuId = newOnShelfSku("settle");
         Long customerId = newCustomer();
-        MallAccount account = openMallAccount(customerId);
-        RequestMallCustomer customer = signIn(account);
+        RequestMallCustomer customer = signIn(openMallAccount(customerId));
         Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
-
-        // 1. 初始：未配置授信、钱包为空、货到付款未开通 → 三种方式都不可选
         MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
-        Map<String, MallSettlementOptionVO> options = preview.getSettlementOptions().stream()
+        assertThat(preview.getSettlementOptions()).isEmpty();
+
+        Map<String, MallSettlementOptionVO> options = mallSettlementService.options(customer, preview.getEstimatedAmount()).stream()
                 .collect(Collectors.toMap(MallSettlementOptionVO::getMethod, Function.identity()));
         assertThat(options).containsOnlyKeys("WALLET", "CREDIT", "COD");
-        assertThat(options.get("CREDIT").getEnabled()).as("未配置授信额度时账期不可选").isFalse();
-        assertThat(options.get("CREDIT").getDisabledReason()).isNotBlank();
-        assertThat(options.get("WALLET").getEnabled()).as("钱包余额不足时不可选").isFalse();
+        assertThat(options.get("CREDIT").getEnabled()).isFalse();
+        assertThat(options.get("WALLET").getEnabled()).isFalse();
+        assertThat(options.get("COD").getEnabled()).isFalse();
         assertThat(options.get("WALLET").getAvailableAmount()).isEqualByComparingTo("0.0000");
-        assertThat(options.get("COD").getEnabled()).as("货到付款默认关闭").isFalse();
-        assertThat(options.get("COD").getDisabledReason()).contains("未开通");
-        assertThat(options.get("CREDIT").getAmountVisible()).as("独立结算客户可见自己的额度").isTrue();
-        assertThat(options.get("WALLET").getAmountVisible()).isTrue();
 
-        // 2. 不可用的方式直接拒绝下单（服务端按当前金额重算，不采信旧预览结论）
-        MallOrderSubmitForm blocked = submitForm(skuId, addressId, preview.getPriceFingerprint());
-        blocked.setSettlementMethod(ScmSettlementMethodEnum.CREDIT.name());
-        assertThatThrownBy(() -> mallCheckoutService.submit(customer, blocked, prefix + ":settle-blocked"))
-                .isInstanceOfSatisfying(ScmBusinessException.class,
-                        failure -> assertThat(failure.getErrorCode())
-                                .isEqualTo(MallErrorCode.CHECKOUT_SETTLEMENT_METHOD_UNAVAILABLE));
+        var submitted = mallCheckoutService.submit(customer,
+                submitForm(skuId, addressId, preview.getPriceFingerprint()), prefix + ":order-only");
+        assertThat(submitted.getStatus()).isEqualTo("PENDING");
+        assertThat(jdbc.queryForObject("SELECT mall_order_only FROM xsy_sales_order WHERE id=?", Boolean.class,
+                submitted.getOrderId())).isTrue();
+        assertThat(jdbc.queryForObject("SELECT settlement_method FROM xsy_sales_order WHERE id=?", String.class,
+                submitted.getOrderId())).isNull();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_payment_intent WHERE source_type='SALES_ORDER' AND source_id=?",
+                Integer.class, submitted.getOrderId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_order_discount WHERE sales_order_id=?",
+                Integer.class, submitted.getOrderId())).isZero();
 
-        // 3. 配好授信后账期可选，并给出可用额度
-        jdbc.update("UPDATE xsy_customer SET credit_limit = ? WHERE id = ?", new BigDecimal("100.0000"),
-                customerId);
+        asAdmin();
+        jdbc.update("UPDATE xsy_customer SET cod_allowed=TRUE WHERE id=?", customerId);
         evictMybatisCache();
-        MallCheckoutPreviewVO withCredit = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
-        MallSettlementOptionVO credit = withCredit.getSettlementOptions().stream()
-                .filter(option -> "CREDIT".equals(option.getMethod())).findFirst().orElseThrow();
-        assertThat(credit.getEnabled()).isTrue();
-        assertThat(credit.getAvailableAmount()).isEqualByComparingTo("100.0000");
-
-        // 4. 后台明确开通后才可选货到付款；下单仅持久化约定，不产生资金事实
-        jdbc.update("UPDATE xsy_customer SET cod_allowed = TRUE WHERE id = ?", customerId);
-        evictMybatisCache();
-        assertThat(mallCheckoutService.preview(customer, previewForm(skuId, addressId)).getSettlementOptions())
-                .filteredOn(option -> "COD".equals(option.getMethod()))
-                .singleElement().extracting(MallSettlementOptionVO::getEnabled).isEqualTo(true);
-        MallOrderSubmitForm submit = submitForm(skuId, addressId, withCredit.getPriceFingerprint());
-        submit.setSettlementMethod(ScmSettlementMethodEnum.COD.name());
-        var submitted = mallCheckoutService.submit(customer, submit, prefix + ":settle-cod");
-        assertThat(jdbc.queryForObject("SELECT settlement_method FROM xsy_sales_order WHERE id = ?",
-                String.class, submitted.getOrderId())).isEqualTo("COD");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_order_discount WHERE sales_order_id = ?",
+        SalesOrderDetailVO weighted = recordActualQuantity(submitted.getOrderId(), "settle");
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setOrderId(weighted.getOrderId());
+        confirm.setVersion(weighted.getVersion());
+        confirm.setSettlementMethod(ScmSettlementMethodEnum.COD.name());
+        salesOrderService.confirm(confirm, prefix + ":settle-confirm");
+        assertThat(jdbc.queryForObject("SELECT settlement_method FROM xsy_sales_order WHERE id=?", String.class,
+                submitted.getOrderId())).isEqualTo("COD");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_payment_intent WHERE source_type='SALES_ORDER' AND source_id=?",
                 Integer.class, submitted.getOrderId())).isZero();
     }
 
@@ -303,14 +296,15 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         RequestMallCustomer customer = signIn(openMallAccount(customerId));
         Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
         MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
-        assertThat(preview.getSettlementOptions()).filteredOn(option -> "WALLET".equals(option.getMethod()))
+        assertThat(preview.getSettlementOptions()).isEmpty();
+        assertThat(mallSettlementService.options(customer, preview.getEstimatedAmount())).filteredOn(option -> "WALLET".equals(option.getMethod()))
                 .singleElement().extracting(MallSettlementOptionVO::getEnabled).isEqualTo(true);
         MallOrderSubmitForm form = submitForm(skuId, addressId, preview.getPriceFingerprint());
-        form.setSettlementMethod(ScmSettlementMethodEnum.WALLET.name());
         Long orderId = mallCheckoutService.submit(customer, form, prefix + ":wallet-submit").getOrderId();
 
         SalesOrderDetailVO weighted = recordActualQuantity(orderId, "wallet");
-        OrderVersionForm confirm = new OrderVersionForm();
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setSettlementMethod(ScmSettlementMethodEnum.WALLET.name());
         confirm.setOrderId(orderId);
         confirm.setVersion(weighted.getVersion());
         assertThat(salesOrderService.confirm(confirm, prefix + ":wallet-confirm").getStatus())
@@ -341,11 +335,11 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
 
         MallOrderSubmitForm submitForm = submitForm(skuId, addressId, preview.getPriceFingerprint());
         submitForm.setCouponInstanceId(instanceId);
-        submitForm.setSettlementMethod(ScmSettlementMethodEnum.CREDIT.name());
         Long orderId = mallCheckoutService.submit(customer, submitForm, prefix + ":credit-submit").getOrderId();
 
         SalesOrderDetailVO weighted = recordActualQuantity(orderId, "mkt-credit");
-        OrderVersionForm confirm = new OrderVersionForm();
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setSettlementMethod(ScmSettlementMethodEnum.CREDIT.name());
         confirm.setOrderId(orderId);
         confirm.setVersion(weighted.getVersion());
         assertThat(salesOrderService.confirm(confirm, prefix + ":credit-confirm").getStatus())
@@ -373,12 +367,12 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
         MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
         MallOrderSubmitForm form = submitForm(skuId, addressId, preview.getPriceFingerprint());
-        form.setSettlementMethod(ScmSettlementMethodEnum.COD.name());
         Long orderId = mallCheckoutService.submit(customer, form, prefix + ":cod-submit").getOrderId();
         SalesOrderDetailVO weighted = recordActualQuantity(orderId, "cod");
         jdbc.update("UPDATE xsy_customer SET cod_allowed = FALSE WHERE id = ?", customerId);
         evictMybatisCache();
-        OrderVersionForm confirm = new OrderVersionForm();
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setSettlementMethod(ScmSettlementMethodEnum.COD.name());
         confirm.setOrderId(orderId);
         confirm.setVersion(weighted.getVersion());
         assertThatThrownBy(() -> salesOrderService.confirm(confirm, prefix + ":cod-confirm"))
@@ -399,7 +393,6 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
         MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
         MallOrderSubmitForm form = submitForm(skuId, addressId, preview.getPriceFingerprint());
-        form.setSettlementMethod(ScmSettlementMethodEnum.COD.name());
         Long orderId = mallCheckoutService.submit(customer, form, prefix + ":cod-overdue-submit").getOrderId();
         SalesOrderDetailVO weighted = recordActualQuantity(orderId, "cod-overdue");
         Long receivableId = jdbc.queryForObject("""
@@ -412,7 +405,8 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
                 """, Long.class, prefix + "-COD-OVERDUE", oldOrderId);
         jdbc.update("UPDATE xsy_finance_receivable SET due_date = CURRENT_DATE - 1 WHERE id = ?", receivableId);
         evictMybatisCache();
-        OrderVersionForm confirm = new OrderVersionForm();
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setSettlementMethod(ScmSettlementMethodEnum.COD.name());
         confirm.setOrderId(orderId);
         confirm.setVersion(weighted.getVersion());
         assertThatThrownBy(() -> salesOrderService.confirm(confirm, prefix + ":cod-overdue-confirm"))
@@ -432,12 +426,12 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
         MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
         MallOrderSubmitForm form = submitForm(skuId, addressId, preview.getPriceFingerprint());
-        form.setSettlementMethod(ScmSettlementMethodEnum.CREDIT.name());
         Long orderId = mallCheckoutService.submit(customer, form, prefix + ":credit-submit").getOrderId();
         SalesOrderDetailVO weighted = recordActualQuantity(orderId, "credit");
         jdbc.update("UPDATE xsy_customer SET credit_limit = 0 WHERE id = ?", customerId);
         evictMybatisCache();
-        OrderVersionForm confirm = new OrderVersionForm();
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setSettlementMethod(ScmSettlementMethodEnum.CREDIT.name());
         confirm.setOrderId(orderId);
         confirm.setVersion(weighted.getVersion());
         assertThatThrownBy(() -> salesOrderService.confirm(confirm, prefix + ":credit-confirm"))
@@ -461,6 +455,9 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
     // 商城侧辅助
     // ------------------------------------------------------------------
     private MallAccount openMallAccount(Long customerId) {
+        jdbc.update("UPDATE xsy_customer SET mall_delivery_warehouse_id = ? WHERE id = ?",
+                seedWarehouseId(), customerId);
+        evictMybatisCache();
         String phone = newPhone();
         MallAccountCreateForm form = new MallAccountCreateForm();
         form.setCustomerId(customerId);
@@ -514,6 +511,8 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         form.setLongitude(new BigDecimal("121.544000"));
         form.setLatitude(new BigDecimal("31.221000"));
         form.setIsDefault(true);
+        form.setLongitude(new BigDecimal("121.544000"));
+        form.setLatitude(new BigDecimal("31.221000"));
         return form;
     }
 
@@ -529,6 +528,7 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         form.setItems(List.of(checkoutItem(skuId, "2.0000")));
         form.setAddressId(addressId);
         form.setPriceFingerprint(priceFingerprint);
+        form.setWarehouseId(seedWarehouseId());
         form.setRemark("营销闭环 IT");
         // 商城下单必须给出本次使用的配送仓；夹具统一用本类入库的那个仓。
         form.setWarehouseId(seedWarehouseId());

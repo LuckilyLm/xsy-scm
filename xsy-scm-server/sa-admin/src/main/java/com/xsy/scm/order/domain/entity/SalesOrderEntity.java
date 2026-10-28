@@ -67,11 +67,14 @@ public class SalesOrderEntity {
     private Long mallCouponInstanceId;
 
     /**
-     * 商城客户选定的结算方式（{@code WALLET} / {@code CREDIT} / {@code COD}），仅商城来源的订单会带。
+     * 商城结算约定（{@code WALLET} / {@code CREDIT} / {@code COD}）。历史订单沿用原约定，新仅下单订单由后台确认时确定。
      * 它只是结算约定，不代表资金已处理：余额扣减、账期占用、货到付款收款分别由对应模块在各自节点完成。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String settlementMethod;
+    /** 创建时由商城服务决定，不允许编辑订单时改变历史业务模式。 */
+    @TableField(updateStrategy = FieldStrategy.NEVER)
+    private Boolean mallOrderOnly = false;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime submittedAt;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

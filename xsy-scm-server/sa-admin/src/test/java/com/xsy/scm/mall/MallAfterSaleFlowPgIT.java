@@ -45,7 +45,8 @@ import com.xsy.scm.order.domain.form.OrderReturnApproveForm;
 import com.xsy.scm.order.domain.form.OrderReturnApproveItemForm;
 import com.xsy.scm.order.domain.form.OrderReturnReceiveForm;
 import com.xsy.scm.order.domain.form.OrderReturnReceiveItemForm;
-import com.xsy.scm.order.domain.form.OrderVersionForm;
+import com.xsy.scm.order.domain.form.OrderConfirmForm;
+import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 import com.xsy.scm.order.domain.vo.OrderReturnDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.service.OrderRefundService;
@@ -72,6 +73,7 @@ import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * 商城售后全链路（PG IT）：客户申请 → 配额守卫 → 后台审批与收货 → 退款完成 → 客户侧投影与审计。
@@ -417,7 +419,8 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         confirmReceipt(inbound.receipt().getId(), "10.0000");
 
         Long customerId = newCustomer();
-        jdbc.update("UPDATE xsy_customer SET cod_allowed = TRUE WHERE id = ?", customerId);
+        jdbc.update("UPDATE xsy_customer SET cod_allowed = TRUE, mall_delivery_warehouse_id = ? WHERE id = ?",
+                fixtureWarehouseId(), customerId);
         evictMybatisCache();
         MallAccount account = openMallAccount(customerId);
         RequestMallCustomer customer = signIn(account);
@@ -674,7 +677,8 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         actual.setReason("实重复核");
         SalesOrderDetailVO weighted = salesOrderService.actualQuantity(actual, prefix + ":actual:" + orderId);
 
-        OrderVersionForm confirm = new OrderVersionForm();
+        OrderConfirmForm confirm = new OrderConfirmForm();
+        confirm.setSettlementMethod(ScmSettlementMethodEnum.COD.name());
         confirm.setOrderId(weighted.getOrderId());
         confirm.setVersion(weighted.getVersion());
         salesOrderService.confirm(confirm, prefix + ":confirm:" + orderId);
@@ -791,6 +795,8 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         form.setLongitude(new BigDecimal("121.544000"));
         form.setLatitude(new BigDecimal("31.221000"));
         form.setIsDefault(true);
+        form.setLongitude(new BigDecimal("121.544000"));
+        form.setLatitude(new BigDecimal("31.221000"));
         return form;
     }
 
@@ -807,7 +813,7 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         form.setAddressId(addressId);
         form.setPriceFingerprint(priceFingerprint);
         form.setRemark("商城售后 IT");
-        form.setSettlementMethod("COD");
+        // 结算约定改由后台确认时补齐，提交不再带 settlementMethod
         // 商城下单必须给出本次使用的配送仓；夹具统一用本类入库的那个仓。
         form.setWarehouseId(fixtureWarehouseId());
         return form;

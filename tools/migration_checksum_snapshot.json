@@ -836,6 +836,10 @@
     "209": {
       "file": "V209__scm_statement_posting_option.sql",
       "checksum": -1701284565
+    },
+    "210": {
+      "file": "V210__scm_mall_order_only.sql",
+      "checksum": 1483492169
     }
   }
 }

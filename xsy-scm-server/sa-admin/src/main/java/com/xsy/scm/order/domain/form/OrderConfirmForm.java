@@ -3,9 +3,14 @@ package com.xsy.scm.order.domain.form;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 
 @Data
 public class OrderConfirmForm extends OrderVersionForm {
+    /** 仅新模式商城订单首次确认时补齐，不能改写已有结算约定。 */
+    @ScmEnumValue(enumClass = ScmSettlementMethodEnum.class, message = "请选择有效的结算方式")
+    private String settlementMethod;
     private Boolean creditOverride;
     @Size(max = 500, message = "授信例外原因不能超过500个字符")
     private String creditOverrideReason;

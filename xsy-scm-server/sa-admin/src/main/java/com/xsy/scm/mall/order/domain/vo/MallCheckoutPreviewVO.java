@@ -48,7 +48,7 @@ public class MallCheckoutPreviewVO {
      */
     private String promotionError;
     /**
-     * 可选结算方式（余额 / 账期 / 货到付款）及其实时可用性；只读投影，真正校验在下单与确认时。
+     * 旧客户端兼容字段；仅下单模式固定为空，不查询资金可用性。
      */
     private List<MallSettlementOptionVO> settlementOptions = new ArrayList<>();
 }
