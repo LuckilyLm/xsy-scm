@@ -114,6 +114,16 @@ def business_role_login_name(role_code: str) -> str:
     return f"{NAME}_{short[:max(budget, 1)]}"
 
 
+def temp_role_code(kind: str) -> str:
+    """临时角色码带上本轮随机 NAME，而不是只按 wave 派生。
+
+    同一 wave 会被同一个 spec 文件里的多个 describe 各 provision 一次；角色码若只按 wave，
+    前一个 describe 的 cleanup 会删掉后一个 describe 只读/扣权账号挂的角色行。
+    账号上的 role_id 还在，登录时左连接拿到一整行 NULL，`getLoginResult` 直接 NPE（10001）。
+    """
+    return f"E2E_{NAME}_{kind}" if NAME else f"E2E_{kind}"
+
+
 def deny_codes() -> list[str]:
     """本次要扣掉的权限码；空列表表示不建扣权账号。"""
     return [token.strip() for token in DENY.split(",") if token.strip()]
@@ -331,7 +341,7 @@ def ensure_read_only_role(read_login_name: str) -> str:
     刻意**不授** add/update/delete/status 等写权限，这样前端 v-privilege 会隐藏写入按钮，
     后端 @SaCheckPermission 也会真的返回 30005。
     """
-    role_code = f"{PREFIX.upper()}READ" if PREFIX else "E2E_READ"
+    role_code = temp_role_code("READ")
     # 注意 t_role.role_name 是 varchar(20)，不能塞进 login_name 之类的长字符串。
     role_name = f"E2E只读角色"
 
@@ -401,7 +411,7 @@ def ensure_deny_role() -> str:
     deny = deny_codes()
     if not deny:
         raise SystemExit("[e2e-accounts] ensure_deny_role 需要非空 DENY 权限码列表")
-    role_code = f"{PREFIX.upper()}DENY" if PREFIX else "E2E_DENY"
+    role_code = temp_role_code("DENY")
     role_name = "E2E扣权角色"
 
     psql(
@@ -525,8 +535,7 @@ def cleanup() -> None:
         """
     )
     # 临时角色及其授权也要一起回收，否则会在 t_role / t_role_menu 里越积越多。
-    role_codes = [f"{PREFIX.upper()}READ" if PREFIX else "E2E_READ",
-                  f"{PREFIX.upper()}DENY" if PREFIX else "E2E_DENY"]
+    role_codes = [temp_role_code("READ"), temp_role_code("DENY")]
     for role_code in role_codes:
         psql(
             f"""

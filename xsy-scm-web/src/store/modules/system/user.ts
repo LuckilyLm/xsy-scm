@@ -83,9 +83,15 @@ export const useUserStore = defineStore({
     },
     // 功能点
     getPointList(state) {
+      // getter 是 computed：在里面给 pointsList 重新赋 [] 等于让计算属性永远“脏”，
+      // 读它的渲染会无限重入（权限为空时直接 Maximum recursive updates）。
+      // 只有真的从本地缓存读到内容才回填，空列表保持原引用。
       if (_.isEmpty(state.pointsList)) {
-        let localUserPoints = localRead(localKey.USER_POINTS) || '';
-        state.pointsList = localUserPoints ? JSON.parse(localUserPoints) : [];
+        const localUserPoints = localRead(localKey.USER_POINTS) || '';
+        const cachedPoints = localUserPoints ? JSON.parse(localUserPoints) : [];
+        if (!_.isEmpty(cachedPoints)) {
+          state.pointsList = cachedPoints;
+        }
       }
       return state.pointsList;
     },

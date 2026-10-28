@@ -101,7 +101,8 @@ test.describe('scm-customer', () => {
     expect(typeBody.code, JSON.stringify(typeBody)).toBe(0);
     typeIds.push(typeBody.data);
     await expect(modal).not.toBeVisible();
-    await expect(page.getByRole('row').filter({hasText: prefix + 'T'})).toBeVisible();
+    // 列表只展示类型名称，编码不再占列；按名称定位这一行
+    await expect(page.getByRole('row').filter({hasText: prefix + '类型'})).toBeVisible();
 
     // ------------------------------------------------------------------ 新建客户
     await page.goto('/#/customer/customer-list');
@@ -202,9 +203,10 @@ test.describe('scm-customer', () => {
     await button(row, prefix + '客户甲').click();
     await expect(page).toHaveURL(new RegExp(`customer-detail.*customerId=${customerId}`));
     await page.reload();
-    // 编码在页头与「系统信息」卡片各出现一次，按 exact 取第一条即可（避免 strict mode 多命中）。
-    await expect(page.getByText(customerCode, {exact: true}).first()).toBeVisible();
+    // 实体编码不进入详情页（列表/详情只展示业务字段）；深链能稳定回读靠的是 URL 里的 customerId
+    await expect(page.getByText(prefix + '客户甲', {exact: true}).first()).toBeVisible();
     await expect(page.getByText('按时间', {exact: true})).toBeVisible();
+    await expect(page.getByText('客户编码', {exact: true})).toHaveCount(0);
     await page.screenshot({path: '../.runtime/w2-customer-detail.png', fullPage: true});
 
     // ------------------------------------------------------------------ 删除
@@ -223,7 +225,7 @@ test.describe('scm-customer', () => {
 
     // 客户已删除，客户类型这时才能删（否则后端 40938）。
     await page.goto('/#/customer/customer-type-list');
-    const typeRow = page.getByRole('row').filter({hasText: prefix + 'T'});
+    const typeRow = page.getByRole('row').filter({hasText: prefix + '类型'});
     await button(typeRow, '删除').click();
     await page
       .locator('.ant-popover:visible')
@@ -713,6 +715,7 @@ test.describe('scm-product', () => {
     await expect(drawer.getByLabel('第 1 个商品规格的第 1 个规格值', {exact: true})).toHaveValue('大果');
     // 编辑态必须回显字典值，否则停用单位会让历史商品看不出原值
     await expect(selectBox(drawer.getByLabel('第 1 个商品规格的单位', {exact: true}))).toHaveText(/kg/);
+    // 负责人口径：销售侧金额两位小数，市场价输入四位会被收敛到 12.3500
     await drawer.getByLabel('第 1 个商品规格的市场价', {exact: true}).fill('12.3456');
     await drawer.getByLabel('将第 2 个商品规格设为默认商品规格').check();
     await button(drawer, '保存商品').click();
@@ -720,7 +723,7 @@ test.describe('scm-product', () => {
     const after = (await (await api.get(`/scm/product/detail/${id}`)).json()).data;
     expect(after.skuList.map((s: {skuId: string}) => s.skuId)).toEqual(before.skuList.map((s: {skuId: string}) => s.skuId));
     expect(after.defaultSku.skuCode).toMatch(/^SKU\d{6,}$/);
-    expect(after.skuList[0].marketPrice).toBe('12.3456');
+    expect(after.skuList[0].marketPrice).toBe('12.3500');
     row = page.locator('.ant-table-tbody tr.ant-table-row').filter({hasText: prefix + '苹果'});
     await button(row, '下架').click();
     await page
@@ -728,11 +731,11 @@ test.describe('scm-product', () => {
       .getByRole('button', {name: /确.*定/})
       .click();
     await expect(button(row, '上架')).toBeVisible();
-    await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + 'BAR');
+    await page.getByPlaceholder('商品名称 / 条码').fill(prefix + 'BAR');
     await button(page, '查询').click();
     await expect(row).toBeVisible();
     // 助记码进入同一个关键字模糊搜索，运营不需要记住编码
-    await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + 'PG');
+    await page.getByPlaceholder('商品名称 / 条码').fill(prefix + 'PG');
     await button(page, '查询').click();
     await expect(row).toBeVisible();
     await button(page, '高级筛选').click();
@@ -756,7 +759,7 @@ test.describe('scm-product', () => {
     await page.screenshot({path: '../.runtime/w1-product-detail.png', fullPage: true});
     await button(page, '返回商品列表').click();
     await button(page, '重置').click();
-    await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + '苹果');
+    await page.getByPlaceholder('商品名称 / 条码').fill(prefix + '苹果');
     await button(page, '查询').click();
     row = page.locator('.ant-table-tbody tr.ant-table-row').filter({hasText: prefix + '苹果'});
 
@@ -767,7 +770,7 @@ test.describe('scm-product', () => {
     expect(tag.code).toBe(0);
     tagIds.push(tag.data);
     await page.reload();
-    await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + '苹果');
+    await page.getByPlaceholder('商品名称 / 条码').fill(prefix + '苹果');
     await button(page, '查询').click();
     row = page.locator('.ant-table-tbody tr.ant-table-row').filter({hasText: prefix + '苹果'});
     await expect(row.first()).toBeVisible();
@@ -858,7 +861,7 @@ test.describe('scm-product', () => {
     expect(kgRef.code, JSON.stringify(kgRef)).toBe(0);
     productIds.push(kgRef.data);
     await page.reload();
-    await page.getByPlaceholder('编码 / 名称').fill('kg');
+    await page.getByPlaceholder('单位名称').fill('kg');
     await button(page, '查询').click();
     const kgRow = page.getByRole('row').filter({hasText: 'kg'});
     await expect(button(kgRow, '删除')).toBeDisabled();
@@ -977,14 +980,14 @@ test.describe('scm-product', () => {
     await expect(page).toHaveURL(/product-image-center|image-center/);
     const noImage = page.locator('.ant-checkbox-wrapper', {hasText: '仅无主图'});
     await noImage.click();
-    await page.getByPlaceholder('商品编码 / 名称 / 助记码').fill(prefix + '无图商品');
+    await page.getByPlaceholder('商品名称').fill(prefix + '无图商品');
     await button(page, '查询').click();
     const row = page.getByRole('row').filter({hasText: prefix + '无图商品'});
     await expect(row).toBeVisible();
     // 「仅无主图」命中后，目标行必须显性标记为无主图
     await expect(row.getByText('无主图', {exact: true})).toBeVisible();
     await row.click();
-    const batchEntry = button(page, '按文件名批量导入');
+    const batchEntry = button(page, '批量导入图片');
     await expect(batchEntry).toBeVisible();
     // 上传入口的可见文案含前置加号（虚线新增卡片）。a-upload 会把 children 包进同名的
     // <span class="ant-upload" role="button">，按角色选会命中两个节点，因此定位真实的那个 <button>。
@@ -992,10 +995,12 @@ test.describe('scm-product', () => {
     await expect(page.locator('button.add-tile')).toHaveText('+ 上传图片');
     await batchEntry.click();
     const modal = page.locator('.ant-modal:visible');
-    await expect(modal.getByText('文件名（去扩展名）需等于目标商品的商品编码')).toBeVisible();
-    // 预览优先：没有选择任何文件时命中为 0，绑定按钮必须禁用，绝不静默写入
-    await expect(modal.getByText(/命中 0 · 歧义 0 · 未匹配 0/)).toBeVisible();
-    await expect(button(modal, '绑定 0 张')).toBeDisabled();
+    await expect(modal.getByText('批量导入商品图片', {exact: true})).toBeVisible();
+    // 两步式：先选图再指定商品。没有选择任何文件时「已指定/待指定」都是 0，
+    // 提交入口保持禁用，绝不静默写入。
+    await expect(modal.getByText('0 已指定')).toBeVisible();
+    await expect(modal.getByText('0 待指定')).toBeVisible();
+    await expect(button(modal, '请先指定商品')).toBeDisabled();
     await button(modal, '取消').click();
     await expect(modal).not.toBeVisible();
     expect(errors).toEqual([]);
@@ -1275,7 +1280,8 @@ test.describe('scm-product', () => {
       // 页面闭环：新增结果必须能在列表里查到，而不只是接口回一个 id
       await modal.getByRole('button', {name: 'Close'}).click();
       await expect(modal).not.toBeVisible();
-      await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(spuName);
+      // 商品编码由后端发号、不可搜索，列表搜索框只认名称与条码
+      await page.getByPlaceholder('商品名称 / 条码').fill(spuName);
       await button(page, '查询').click();
       await expect(page.getByRole('row').filter({hasText: spuName})).toHaveCount(1);
 
@@ -1368,11 +1374,12 @@ test.describe('scm-supplier', () => {
   const buttonName = (text: string) => new RegExp('^' + [...text].map(escapeRe).join('\\s*') + '$');
   const button = (root: Page | Locator, text: string) => root.getByRole('button', {name: buttonName(text)});
 
-  async function searchSupplier(page: Page, keyword: string): Promise<Locator> {
+  async function searchSupplier(page: Page, keyword: string, rowText = keyword): Promise<Locator> {
     // 编码由服务端生成，夹具只能按「创建后回读的真实编码」或名称搜索；helper 本身与关键字无关。
+    // 表格不常驻「供应商编码」列，所以按编码搜索时要用名称来定位那一行（结果集本来就只有一行）。
     await page.getByPlaceholder('编码 / 名称 / 联系人 / 电话').fill(keyword);
     await button(page, '查询').click();
-    const row = page.getByRole('row').filter({hasText: keyword}).first();
+    const row = page.getByRole('row').filter({hasText: rowText}).first();
     await expect(row).toBeVisible();
     return row;
   }
@@ -1551,7 +1558,7 @@ test.describe('scm-supplier', () => {
     expect(supplierCode).toMatch(/^SUP\d{6,}$/);
 
     // ------------------------------------------------- 关联两个 SKU，且都为默认来源
-    let row = await searchSupplier(page, supplierCode);
+    let row = await searchSupplier(page, supplierCode, prefix + '供应商甲');
     await button(row, '关联商品').click();
     drawer = currentDrawer(page);
     await expect(drawer.getByText('关联商品 · ' + prefix + '供应商甲')).toBeVisible();
@@ -1589,20 +1596,21 @@ test.describe('scm-supplier', () => {
     // 列表「关联商品数」必须反映活动关联数量。
     // `exact: true` 不能省：前缀（时间戳 base36）里可能含「2」，供应商名称按钮会被一并命中。
     await page.reload();
-    row = await searchSupplier(page, supplierCode);
+    row = await searchSupplier(page, supplierCode, prefix + '供应商甲');
     await expect(row.getByRole('button', {name: '2', exact: true})).toBeVisible();
 
     // ------------------------------------------------- 深链详情：只读快照表
     await button(row, prefix + '供应商甲').click();
     await expect(page).toHaveURL(new RegExp(`supplier-detail.*supplierId=${supplierId}`));
     await page.reload();
-    await expect(page.getByText(firstSkuCode, {exact: true})).toBeVisible();
-    await expect(page.getByText(secondSkuCode, {exact: true})).toBeVisible();
+    // 详情页只展示快照里的名称/规格；编码快照由上面接口断言保证，不进页面
+    await expect(page.getByText(prefix + '商品').first()).toBeVisible();
+    await expect(page.getByText(secondSkuCode, {exact: true})).toHaveCount(0);
     await page.screenshot({path: '../.runtime/w2-supplier-detail.png', fullPage: true});
 
     // ------------------------------------------------------------------ 编辑
     await button(page, '返回供应商列表').click();
-    row = await searchSupplier(page, supplierCode);
+    row = await searchSupplier(page, supplierCode, prefix + '供应商甲');
     await button(row, '编辑').click();
     drawer = currentDrawer(page);
     // 编辑态与创建态一致：编码字段不进表单，内部发号只在列表 / 详情只读展示。
@@ -1651,7 +1659,7 @@ test.describe('scm-supplier', () => {
 
     // ------------------------------------------------------------------ 删除
     await page.reload();
-    row = await searchSupplier(page, supplierCode);
+    row = await searchSupplier(page, supplierCode, prefix + '供应商甲');
     await openRowAction(page, row, '删除');
     await page
       .locator('.ant-modal-confirm:visible')

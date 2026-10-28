@@ -200,7 +200,7 @@ class InventoryFulfillmentPgIT extends ScmW6PgITBase {
         int movementsBefore = movementCount(warehouseId, skuId);
         int outboundBefore = outboundHeaderCount();
 
-        expectCode(() -> transactionTemplate.executeWithoutResult(status -> fulfill(9005L, warehouseId,
+        expectCode(() -> transactionTemplate.executeWithoutResult(status -> fulfill(nextRouteId(), warehouseId,
                 line(firstOrder, firstItem, skuId, "4.0000"),
                 line(secondOrder, secondItem, skuId, "4.0000"))), INVENTORY_INSUFFICIENT_AVAILABLE.getCode());
 
@@ -255,6 +255,18 @@ class InventoryFulfillmentPgIT extends ScmW6PgITBase {
     private Result fulfill(Long routeId, Long warehouseId, Line... lines) {
         return fulfillment.dispatchOutbound(new Command(routeId, warehouseId, OffsetDateTime.now(), "履约 IT",
                 List.of(lines)));
+    }
+
+    /**
+     * 真提交的用例要自己换来源单据 id：{@code (来源类型, 来源 id)} 上有出库单部分唯一索引，
+     * 用固定的 9005 在同一个库上跑第二次就会被 41066「该来源单据已产生出库单」拒绝，
+     * 看起来像业务规则回归，其实只是测试自己撞了上次运行留下的行。与 {@code prefix} 同一口径。
+     */
+    private static final java.util.concurrent.atomic.AtomicLong ROUTE_ID_SEQ = new java.util.concurrent.atomic.AtomicLong(
+            System.currentTimeMillis() % 1_000_000_000L);
+
+    private Long nextRouteId() {
+        return ROUTE_ID_SEQ.incrementAndGet();
     }
 
     private Line line(Long orderId, Long orderItemId, Long skuId, String quantity) {

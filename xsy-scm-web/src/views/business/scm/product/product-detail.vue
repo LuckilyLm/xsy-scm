@@ -3,7 +3,7 @@
   <a-card size="small" :bordered="false" :loading="loading">
     <header class="scm-detail-header">
       <div class="scm-detail-header__main">
-        <a-button type="link" class="scm-detail-header__back" @click="router.push('/product/product-list')">
+        <a-button type="link" class="scm-detail-header__back" aria-label="返回商品列表" @click="router.push('/product/product-list')">
           <ArrowLeftOutlined />
           返回商品列表
         </a-button>
@@ -51,6 +51,10 @@
           <section class="scm-detail-card">
             <h3 class="scm-detail-card__title">主档扩展</h3>
             <dl class="scm-field-list scm-field-list--2">
+              <div class="scm-field">
+                <dt class="scm-field__label">助记码</dt>
+                <dd class="scm-field__value">{{ product.mnemonicCode || '—' }}</dd>
+              </div>
               <div class="scm-field">
                 <dt class="scm-field__label">品牌</dt>
                 <dd class="scm-field__value">{{ product.brandName || '—' }}</dd>

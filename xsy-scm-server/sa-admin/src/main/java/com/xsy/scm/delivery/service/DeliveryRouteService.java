@@ -410,12 +410,15 @@ public class DeliveryRouteService {
                     throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
                 List<OrderBundleComponentEntity> components = bundles.get(line.getSalesOrderItemId());
                 if (components == null) {
+                    // 商城换算快照成对写入；后台单没有快照，等于「一个销售单位就是一个库存单位」。
+                    // 单位与换算因子必须成对给出：只给单位不给因子会被换算器判成残缺快照（41001），
+                    // 所以这里显式写 1，而不是让换算器去猜「没有因子」是什么意思。
+                    boolean mallConversion = line.getMallStockUnitSnapshot() != null
+                        && line.getMallStockUnitsPerSaleUnit() != null;
                     lines.add(new InventoryFulfillmentService.Line(orderId, line.getSalesOrderItemId(), line.getSkuId(),
                         line.getSortedQuantity(),
-                        line.getMallStockUnitSnapshot() != null
-                            ? line.getMallStockUnitSnapshot()
-                            : line.getSaleUnitSnapshot(),
-                        line.getMallStockUnitsPerSaleUnit()));
+                        mallConversion ? line.getMallStockUnitSnapshot() : line.getSaleUnitSnapshot(),
+                        mallConversion ? line.getMallStockUnitsPerSaleUnit() : java.math.BigDecimal.ONE));
                     continue;
                 }
                 for (OrderBundleComponentEntity component : components) {

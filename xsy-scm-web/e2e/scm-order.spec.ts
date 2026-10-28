@@ -552,14 +552,28 @@ test.describe('scm-data-scope', () => {
     await grantWarehouses(narrowEmployeeId, []);
     expect((await reportQuery(narrowClient)).list, '收回全部授权后不应仍有报表行').toHaveLength(0);
 
-    // 财务：一条授权行都不覆盖 B 仓，但因为显式持有全部仓库范围而两个仓都看得到
+    // 财务：一条授权行都不覆盖 B 仓，但因为显式持有全部仓库范围，直接按 B 仓筛选也能拿到行。
+    // 不用「第一页里出现过哪些仓」来证明：开发库 A 仓的库存金额行早就超过一页，B 仓会被分页挤掉。
     await grantWarehouses(employeeIdOf('SCM_FINANCE'), [whA]);
-    const finance = await reportQuery(clients.SCM_FINANCE);
-    expect(finance.list.length, '财务在授权仓 A 应有库存金额行').toBeGreaterThan(0);
-    expect(
-      warehouseIdsOf(finance.list).sort((x, y) => x - y),
-      '财务的「全部仓库」是 V57 的显式授权，不是遗漏收窄'
-    ).not.toEqual([whA]);
+    const financeOnB = await ok<Page1>(clients.SCM_FINANCE, 'post', '/scm/report/inventory/value/query', {
+      warehouseId: whB,
+      pageNum: 1,
+      pageSize: 100,
+      startDate: `${monthAgo}`,
+      endDate: `${today}`,
+    });
+    expect(financeOnB.list.length, '财务的「全部仓库」是 V57 的显式授权，不是遗漏收窄').toBeGreaterThan(0);
+
+    // 同一条查询换回只有 A 仓授权的账号：B 仓必须查不到行，说明放宽来自权限而不是报表不过滤仓
+    await grantWarehouses(narrowEmployeeId, [whA]);
+    const narrowedOnB = await ok<Page1>(narrowClient, 'post', '/scm/report/inventory/value/query', {
+      warehouseId: whB,
+      pageNum: 1,
+      pageSize: 100,
+      startDate: `${monthAgo}`,
+      endDate: `${today}`,
+    });
+    expect(narrowedOnB.list, '授权被收回后按授权行收窄').toHaveLength(0);
   });
 });
 
@@ -576,10 +590,10 @@ test.describe('scm-order', () => {
     customerId: string,
     customerCode: string,
     skuId: string,
-    standardSkuId: string,
-    standardSkuCode: string,
-    weightSkuCode: string;
+    standardSkuId: string;
   let confirmedOrder: any;
+  /** 第 1 条用例改价过的订单：第 5 条用例要按它去日志页取那条「修改」记录。 */
+  let modifiedOrderNo: string;
   test.describe.configure({mode: 'serial'});
   async function login(account: string) {
     const c = await request.newContext({baseURL: apiUrl});
@@ -620,12 +634,23 @@ test.describe('scm-order', () => {
     await page.goto('/#' + path);
   }
   /**
-   * 用模板自身作为载体写数据行：保留 C/E/H 列的文本格式，
-   * 否则 Excel/openpyxl 会把客户编码、SKU 编码、手机号转成数值。
+   * 送货单模板的填写：抬头在 B3（收货单位）与 H3（日期），明细从第 5 行起，
+   * 列固定为 序号 / 商品名称 / 单位 / 规格 / 实数量 / 销售单价 / 销售金额 / 备注。
+   * 用模板自身作为载体写值，保留单元格文本格式，否则 openpyxl 会把数量、单价转成数值。
    */
-  const writeRowsScript = `from openpyxl import load_workbook\nimport sys,json\np=sys.argv[1]; rows=json.loads(sys.argv[2])\nwb=load_workbook(p); ws=wb.active\nfor r in range(2,ws.max_row+1):\n    for c in range(1,13): ws.cell(r,c).value=None\nfor i,row in enumerate(rows,2):\n    for j,v in enumerate(row,1): ws.cell(i,j).value=v\nwb.save(p)`;
-  function fillRows(path: string, rows: unknown[][]) {
-    execFileSync('python', ['-c', writeRowsScript, path, JSON.stringify(rows)]);
+  const deliveryDate = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Asia/Shanghai'}).format(
+    new Date(Date.now() + 86_400_000)
+  );
+  const writeNoteScript = `from openpyxl import load_workbook\nimport sys,json\np=sys.argv[1]; meta=json.loads(sys.argv[2]); rows=json.loads(sys.argv[3])\nwb=load_workbook(p); ws=wb.active\nws['B3']=meta['customer']; ws['H3']=meta['date']\nfor r in range(5,67):\n    for c in range(1,9): ws.cell(r,c).value=None\nfor i,row in enumerate(rows,5):\n    for j,v in enumerate(row,1): ws.cell(i,j).value=v\nwb.save(p)`;
+  /** 送货单行：序号 / 商品名称 / 单位 / 规格 / 实数量 / 销售单价 / 销售金额 / 备注。 */
+  function fillNote(path: string, rows: unknown[][]) {
+    execFileSync('python', [
+      '-c',
+      writeNoteScript,
+      path,
+      JSON.stringify({customer: name, date: deliveryDate}),
+      JSON.stringify(rows),
+    ]);
   }
   async function select(page: Page, label: string, value: string) {
     const box = page.locator(`.ant-form-item:has(#form_item_${label}) .ant-select-selector`);
@@ -688,8 +713,6 @@ test.describe('scm-order', () => {
     const options = (await (await api.post('/scm/product/sku/option-list', {data: {keyword: name, limit: 10}})).json()).data.options;
     skuId = options.find((x: any) => x.specName === '散装').skuId;
     standardSkuId = options.find((x: any) => x.specName === '整箱').skuId;
-    weightSkuCode = String(options.find((x: any) => x.specName === '散装').skuCode);
-    standardSkuCode = String(options.find((x: any) => x.specName === '整箱').skuCode);
   });
   test.afterAll(async () => {
     if (api) {
@@ -724,6 +747,7 @@ test.describe('scm-order', () => {
       items: [{itemId: item.itemId, version: item.version, skuId, orderedQuantity: '3.0000', manualPriceOverride: false}],
     });
     expect(o.items[0].itemId).toBe(item.itemId);
+    modifiedOrderNo = String(o.orderNo);
     o = await post('/scm/order/submit', {orderId: o.orderId, version: o.version});
     expect(o.status).toBe('PENDING');
     expect(o.items[0].lockedUnitPrice).toBe('3.5000');
@@ -740,9 +764,9 @@ test.describe('scm-order', () => {
       await api.post('/scm/order/confirm', {data: {orderId: o.orderId, version: o.version}, headers: {'Idempotency-Key': randomUUID()}})
     ).json();
     expect(denied.code).toBe(40963);
-    // 确认前弹的是 ADM-04 的「确认订单与授信检查」业务弹窗（根类名 .ant-modal、按钮「确定」），
-    // 不是 antd 的 Modal.confirm，所以 .ant-modal-confirm 永远等不到；这里连标题一起断言，
-    // 保证改的只是选择器，「确认前必须看到授信影响」这条语义反而更严。
+    // 确认前弹的是 ADM-04 的「确认订单」业务弹窗（根类名 .ant-modal、按钮「确定」），
+    // 不是 antd 的 Modal.confirm，所以 .ant-modal-confirm 永远等不到；
+    // 标题里的「授信检查」已改成正文第一句「当前授信检查通过」，仍要断言授信影响可见。
     await browse(page);
     await page.getByPlaceholder('名称或订单号').fill(o.orderNo);
     await page.getByRole('button', {name: /^查\s*询$/}).click();
@@ -755,10 +779,12 @@ test.describe('scm-order', () => {
     await expect(page.locator('.ant-modal:visible')).toHaveCount(0);
     await page.getByRole('button', {name: '确认订单', exact: true}).click();
     const confirmModal = page.locator('.ant-modal-content:visible').last();
-    await expect(confirmModal).toContainText('确认订单与授信检查');
+    await expect(confirmModal).toContainText('当前授信检查通过');
     await expect(confirmModal).toContainText('本次实重结算金额');
     await confirmModal.getByRole('button', {name: /^确\s*定$/}).click();
-    await expect(page.locator('.ant-drawer-body').getByText('已确认', {exact: true})).toBeVisible();
+    // 订单详情已是独立页面：状态在「核心摘要」的字段里，不在抽屉正文里
+    const statusField = page.locator('.scm-field').filter({hasText: '订单状态'}).first();
+    await expect(statusField).toContainText('已确认');
     confirmedOrder = await detail(o.orderId);
     expect(confirmedOrder.settlementTotalAmount).toBe('4.3750');
     await expect(page.locator('.ant-modal-content:visible')).toHaveCount(0);
@@ -771,11 +797,17 @@ test.describe('scm-order', () => {
     await page.getByPlaceholder('名称或订单号').fill(o.orderNo);
     await page.getByRole('button', {name: /^查\s*询$/}).click();
     await page.getByText(o.orderNo, {exact: true}).click();
+    // 订单详情是独立页面：等页面头出现再点操作按钮，否则会点在列表页残影上
+    await expect(page.locator('.scm-detail-header')).toBeVisible();
     await page.getByRole('button', {name: '订单操作', exact: true}).click();
-    await page.getByRole('button', {name: '取消订单', exact: true}).click();
+    const drawer = page.locator('.ant-drawer-open').first();
+    await expect(drawer).toBeVisible();
+    // 草稿单可做的动作不止一个，低频动作收进「更多」，取消订单不在首屏
+    await drawer.getByRole('button', {name: /更多/}).click();
+    await page.locator('.ant-dropdown:visible').getByText('取消订单', {exact: true}).click();
     await page.locator('#form_item_cancelReason').fill('客户取消');
     await page.locator('.ant-modal:visible').getByRole('button', {name: '确 定'}).click();
-    await expect(page.locator('.ant-drawer-body').getByText('已取消', {exact: true})).toBeVisible();
+    await expect(page.locator('.scm-field').filter({hasText: '订单状态'}).first()).toContainText('已取消');
     const denied = await (
       await api.post('/scm/order/cancel', {
         data: {orderId: confirmedOrder.orderId, version: confirmedOrder.version, reason: '不可取消'},
@@ -799,7 +831,13 @@ test.describe('scm-order', () => {
   test('5 audit page, error retry, empty results and read-only permission', async ({page}) => {
     await browse(page, '/order/order-log-list');
     await expect(page.locator('#order-log-table')).toBeVisible();
+    // 日志按时间倒序但跨订单混排，开发库里早已超过一页；必须按本轮那张订单收窄，
+    // 否则「第一条修改记录」取决于别人什么时候跑过用例，而不是这次改了什么。
+    const orderKeyword = page.getByPlaceholder('订单号 / 客户');
+    await orderKeyword.fill(modifiedOrderNo);
+    await orderKeyword.press('Enter');
     const changedLog = page.locator('#order-log-table tr').filter({hasText: '修改'}).first();
+    await expect(changedLog).toBeVisible();
     await changedLog.getByRole('button', {name: '变更前后'}).click();
     const diff = page.locator('.ant-modal:visible .scm-diff'); // 审计快照按「旧值 → 新值」逐字段展示，不再有「变更前 / 变更后」两块表头
     await expect(diff).toContainText('已变更');
@@ -867,40 +905,62 @@ test.describe('scm-order', () => {
     expect((await detail(confirmedOrder.orderId)).status).toBe('CONFIRMED');
   });
 
-  test('7 download template and import standard/nonstandard orders atomically', async ({page}) => {
+  test('7 download the delivery-note template and import one note per order', async ({page}) => {
     await browse(page);
     await page.getByRole('button', {name: '导入订单', exact: true}).click();
     const downloadPromise = page.waitForEvent('download');
-    await page.getByRole('button', {name: /下载\s*Excel\s*模板/}).click();
+    // 模板已改为客户送货单版式：一张纸一个收货单位，落库就是一张订单
+    await page.getByRole('button', {name: /下载\s*送货单\s*模板/}).click();
     const download = await downloadPromise;
-    expect(download.suggestedFilename()).toBe('销售订单导入模板.xlsx');
-    const valid = '../.runtime/w4-order-import-valid.xlsx';
-    await download.saveAs(valid);
-    // 客户编码列必须填服务端回读的真实编码；SKU 编码仍是人工码，可继续拼前缀。
-    const standardCode = standardSkuCode,
-      weightCode = weightSkuCode;
-    const fillScript = `from openpyxl import load_workbook\nimport sys\np=sys.argv[1]; customer=sys.argv[2]; standard=sys.argv[3]; weight=sys.argv[4]; bad=sys.argv[5]=='bad'\nwb=load_workbook(p); ws=wb.active\nfor row in range(2,ws.max_row+1):\n    for col in range(1,13): ws.cell(row,col).value=None\nrows=[['1.0','IMPORT-STANDARD',customer,'W4验收','13800000000','验收地址',None,standard,'2.0000',None,None,'页面联调'],['1.0','IMPORT-WEIGHT',customer,'W4验收','13800000000','验收地址',None,weight,'3.0000',None,None,'页面联调']]\nif bad: rows.append(['1.0','IMPORT-BAD',customer,'W4验收','13800000000','验收地址',None,'SKU-NOT-FOUND','1.0000',None,None,'错误行'])\nfor r,row in enumerate(rows,2):\n    for c,v in enumerate(row,1): ws.cell(r,c).value=v\nwb.save(p)`;
-    execFileSync('python', ['-c', fillScript, valid, customerCode, standardCode, weightCode, 'valid']);
-    await page.locator('.ant-modal:visible input[type=file]').setInputFiles(valid);
+    expect(download.suggestedFilename()).toBe('销售订单送货单导入模板.xlsx');
+    const mixed = '../.runtime/w4-order-import-mixed.xlsx';
+    await download.saveAs(mixed);
+    // 散装是非标品：整单要等电子秤回写实重，所以混装单只能是待称重
+    fillNote(mixed, [
+      ['1', `${name}商品`, 'kg', '散装', '3.0000', null, null, '页面联调-混装'],
+      ['2', `${name}商品`, '箱', '整箱', '2.0000', null, null, '页面联调-混装'],
+    ]);
+    await page.locator('.ant-modal:visible input[type=file]').setInputFiles(mixed);
     await page.getByRole('button', {name: '开始导入', exact: true}).click();
     await expect(page.locator('.ant-modal:visible .ant-result-title')).toHaveText('订单导入完成');
-    await expect(page.locator('.ant-modal:visible .ant-result-subtitle')).toContainText('已确认 1 张，待称重 1 张');
-    const imported = await post('/scm/order/query', {pageNum: 1, pageSize: 20, customerId, orderSource: 'IMPORT'});
-    const importedRows = imported.list.filter((x: any) => x.remark === '页面联调');
-    expect(importedRows.map((x: any) => x.status).sort()).toEqual(['CONFIRMED', 'PENDING']);
+    await expect(page.locator('.ant-modal:visible .ant-result-subtitle')).toContainText('共 1 张：已确认 0 张，待称重 1 张');
+    const mixedOrder = (await post('/scm/order/query', {pageNum: 1, pageSize: 20, customerId, orderSource: 'IMPORT'})).list.find(
+      (x: any) => x.remark === '页面联调-混装'
+    );
+    const mixedDetail = await detail(mixedOrder.orderId);
+    expect(mixedDetail.status).toBe('PENDING');
+    // 送货单的「实数量」就是下单数量，行序与纸面一致
+    expect(mixedDetail.items.map((x: any) => x.orderedQuantity)).toEqual(['3.0000', '2.0000']);
+    // 抬头「收货单位：」按客户档案名称匹配，「日期：」落为期期望送货时间
+    expect(String(mixedDetail.expectDeliveryTime)).toContain(deliveryDate);
+
+    // 纯标品整单直接确认，不进入待称重
+    const standardOnly = '../.runtime/w4-order-import-standard.xlsx';
+    copyFileSync(mixed, standardOnly);
+    fillNote(standardOnly, [['1', `${name}商品`, '箱', '整箱', '2.0000', null, null, '页面联调-标品']]);
+    await page.getByRole('button', {name: '取 消'}).click();
+    await page.getByRole('button', {name: '导入订单', exact: true}).click();
+    await page.locator('.ant-modal:visible input[type=file]').setInputFiles(standardOnly);
+    await page.getByRole('button', {name: '开始导入', exact: true}).click();
+    await expect(page.locator('.ant-modal:visible .ant-result-subtitle')).toContainText('共 1 张：已确认 1 张，待称重 0 张');
+
+    // 一行规格写错：整张送货单都不写库，而不是丢掉那行继续导入
     const bad = '../.runtime/w4-order-import-bad.xlsx';
-    copyFileSync(valid, bad);
-    execFileSync('python', ['-c', fillScript, bad, customerCode, standardCode, weightCode, 'bad']);
+    copyFileSync(mixed, bad);
+    fillNote(bad, [
+      ['1', `${name}商品`, 'kg', '散装', '1.0000', null, null, '错误行'],
+      ['2', `${name}商品`, 'kg', '不存在的规格', '1.0000', null, null, '错误行'],
+    ]);
     await page.getByRole('button', {name: '取 消'}).click();
     await page.getByRole('button', {name: '导入订单', exact: true}).click();
     const before = (await post('/scm/order/query', {pageNum: 1, pageSize: 100, customerId, orderSource: 'IMPORT'})).total;
     await page.locator('.ant-modal:visible input[type=file]').setInputFiles(bad);
     await page.getByRole('button', {name: '开始导入', exact: true}).click();
     await expect(page.getByText(/发现 1 个问题，订单未写入/)).toBeVisible();
-    await expect(page.locator('.ant-modal:visible')).toContainText('商品规格编码不存在');
+    await expect(page.locator('.ant-modal:visible')).toContainText('商品名称与规格不匹配');
     const after = (await post('/scm/order/query', {pageNum: 1, pageSize: 100, customerId, orderSource: 'IMPORT'})).total;
     expect(after).toBe(before);
-    const bytes = readFileSync(valid);
+    const bytes = readFileSync(mixed);
     const key = randomUUID();
     const first = await api.post('/scm/order/import', {
       multipart: {file: {name: 'retry.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: bytes}},
@@ -915,8 +975,7 @@ test.describe('scm-order', () => {
     expect(two).toEqual(one);
   });
 
-  test('8 sample row and manual override rules block the whole batch', async ({page}) => {
-    const standardCode = standardSkuCode;
+  test('8 empty note, delivery-note unit and manual price rules block the whole note', async ({page}) => {
     const importFile = async (path: string) => {
       await page.locator('.ant-modal:visible input[type=file]').setInputFiles(path);
       await page.getByRole('button', {name: '开始导入', exact: true}).click();
@@ -929,31 +988,22 @@ test.describe('scm-order', () => {
     await browse(page);
     await page.getByRole('button', {name: '导入订单', exact: true}).click();
 
-    // A) 原样上传刚下载的模板（示例行未替换）→ 整批失败、零写入，错误指到具体字段
+    // A) 原样上传刚下载的模板（没填收货单位、没有明细）→ 失败、零写入
     const raw = '../.runtime/w4-order-import-raw.xlsx';
     const downloadPromise = page.waitForEvent('download');
-    await page.getByRole('button', {name: /下载\s*Excel\s*模板/}).click();
+    await page.getByRole('button', {name: /下载\s*送货单\s*模板/}).click();
     await (await downloadPromise).saveAs(raw);
     const baseline = await importedTotal();
     await importFile(raw);
-    await expect(page.locator('.ant-modal:visible')).toContainText('发现 2 个问题，订单未写入');
-    const sampleErrors = page.locator('.ant-modal:visible .ant-table tbody tr.ant-table-row');
-    await expect(sampleErrors).toHaveCount(2);
-    // 实际行号（Excel 第 2 行）+ 订单标识 + 字段 + 原因
-    await expect(sampleErrors.first().locator('td').first()).toHaveText('2');
-    await expect(sampleErrors.first()).toContainText('ORDER-001');
-    await expect(sampleErrors.first()).toContainText('客户编码');
-    await expect(sampleErrors.first()).toContainText('客户编码不存在');
-    await expect(sampleErrors.nth(1)).toContainText('商品规格编码');
-    await expect(sampleErrors.nth(1)).toContainText('商品规格编码不存在');
+    await expect(page.locator('.ant-modal:visible')).toContainText('发现 1 个问题，订单未写入');
+    await expect(page.locator('.ant-modal:visible .ant-table')).toContainText('送货单没有商品明细');
     expect(await importedTotal()).toBe(baseline);
 
-    // B) 人工单价 + 改价原因（账号同时持有 scm:order:import 与 scm:order:price-override）→ 成功且按人工价成交
+    // B) 送货单上填了单价（账号同时持有 scm:order:import 与 scm:order:price-override）
+    //    → 成功且按纸面单价成交；改价原因由系统统一记为「送货单导入」，不再要求操作员填写
     const manual = '../.runtime/w4-order-import-manual.xlsx';
     copyFileSync(raw, manual);
-    fillRows(manual, [
-      ['1.0', 'IMPORT-MANUAL', customerCode, 'W4验收', '13800000000', '验收地址', null, standardCode, '2.0000', '1.2345', '客户议价', '人工改价'],
-    ]);
+    fillNote(manual, [['1', `${name}商品`, '箱', '整箱', '2.0000', '1.2345', null, '人工改价']]);
     await reopen();
     await importFile(manual);
     await expect(page.locator('.ant-modal:visible .ant-result-title')).toHaveText('订单导入完成');
@@ -963,19 +1013,19 @@ test.describe('scm-order', () => {
     const manualDetail = await detail(manualOrder.orderId);
     expect(manualDetail.status).toBe('CONFIRMED');
     expect(manualDetail.items[0].lockedUnitPrice).toBe('1.2345');
+    // 改价原因由系统统一记为「送货单导入」，不再要求操作员在 Excel 里填原因
+    expect(manualDetail.items[0].manualPriceReason).toBe('送货单导入');
     expect(manualDetail.orderedTotalAmount).toBe('2.4690');
 
-    // C) 填了人工单价却不填改价原因 → 整批失败、零写入
-    const noReason = '../.runtime/w4-order-import-noreason.xlsx';
-    copyFileSync(raw, noReason);
-    fillRows(noReason, [
-      ['1.0', 'IMPORT-NOREASON', customerCode, 'W4验收', '13800000000', '验收地址', null, standardCode, '2.0000', '1.2345', null, '缺原因'],
-    ]);
+    // C) 单位与商品规格的销售单位不一致 → 整张送货单拒绝，零写入
+    const wrongUnit = '../.runtime/w4-order-import-wrong-unit.xlsx';
+    copyFileSync(raw, wrongUnit);
+    fillNote(wrongUnit, [['1', `${name}商品`, 'kg', '整箱', '2.0000', null, null, '单位不符']]);
     const beforeC = await importedTotal();
     await reopen();
-    await importFile(noReason);
+    await importFile(wrongUnit);
     await expect(page.locator('.ant-modal:visible')).toContainText('发现 1 个问题，订单未写入');
-    await expect(page.locator('.ant-modal:visible .ant-table')).toContainText('填写人工单价时必须填写改价原因');
+    await expect(page.locator('.ant-modal:visible .ant-table')).toContainText('单位应为“箱”');
     expect(await importedTotal()).toBe(beforeC);
   });
 
@@ -993,10 +1043,12 @@ test.describe('scm-order', () => {
     await expect(drawer.getByRole('button', {name: '创建订单'})).toBeVisible();
     // 横向滚动表格的 tbody 还含一行零高度测量行，只数真实数据行
     await expect(page.locator('#order-item-table tbody tr.ant-table-row')).toHaveCount(1);
-    // 历史价只读旁证：点开后展示该客户该 SKU 的最近已确认订单价与来源订单
-    await page.locator('#order-item-table .recent-btn').click();
+    // 历史价只读旁证：点开后展示该客户该 SKU 的最近已确认订单价与来源订单。
+    // 明细行现在有两个价签（最近已确认订单价 / 最近采购价），这里只验客户侧那一个。
+    await page.locator('#order-item-table').getByRole('button', {name: '最近已确认订单价'}).click();
     const pop = page.locator('.ant-popover:visible');
-    await expect(pop).toContainText('3.5000');
+    // 价签展示为「¥ 3.50/kg」：两位小数带销售单位，不再输出四位定标数字
+    await expect(pop).toContainText('¥ 3.50/kg');
     await expect(pop.locator('.recent-meta')).toContainText(confirmedOrder.orderNo);
     // 价签必须挂在抽屉内部：浮层此前挂在 body 上，抽屉关了它还飘在列表页。
     // 这里刻意在浮层开着的状态下关抽屉，直接复现该缺陷。
@@ -1037,7 +1089,7 @@ test.describe('scm-order', () => {
     await expect(confirmBox).toContainText('未提交的订单草稿');
     await confirmBox.getByRole('button', {name: /^恢\s*复$/}).click();
     await expect(page.locator('#order-item-table tbody tr.ant-table-row')).toHaveCount(1);
-    await expect(page.locator('#order-item-table .price-cell').first()).toContainText('3.5000');
+    await expect(page.locator('#order-item-table .price-cell').first()).toContainText('¥ 3.50');
     await page
       .locator('.ant-drawer:visible')
       .locator('.ant-drawer-footer')
@@ -1072,7 +1124,7 @@ test.describe('scm-order', () => {
       await confirmBox.getByRole('button', {name: /^恢\s*复$/}).click();
       // 恢复后按当前价重新解析，价格与明细行都在
       await expect(page.locator('#order-item-table tbody tr.ant-table-row')).toHaveCount(1);
-      await expect(page.locator('#order-item-table .price-cell').first()).toContainText('3.5000');
+      await expect(page.locator('#order-item-table .price-cell').first()).toContainText('¥ 3.50');
     };
     await browse(page);
     await fillDraft();
@@ -1175,27 +1227,27 @@ test.describe('scm-order', () => {
     await pickSku(page, '整箱');
     await openRecentPopover(page);
     // 客户 A + 整箱：只有自建的那一档，不能出现同客户散装档的价
-    await expect(pop).toContainText('1.3579');
+    await expect(pop).toContainText('¥ 1.36/箱');
     await expect(pop.locator('.recent-meta')).toContainText(boxA.orderNo);
-    await expect(pop).not.toContainText('3.5000');
+    await expect(pop).not.toContainText('¥ 3.50');
     await expect(pop).not.toContainText(kgA.orderNo);
     // 同一行换商品 → 必须按新 SKU 重新取数，不能沿用行序号缓存
     await pickSku(page, '散装');
     await openRecentPopover(page);
-    await expect(pop).toContainText('3.5000');
+    await expect(pop).toContainText('¥ 3.50/kg');
     await expect(pop.locator('.recent-meta')).toContainText(kgA.orderNo);
-    await expect(pop).not.toContainText('1.3579');
+    await expect(pop).not.toContainText('¥ 1.36');
     // 换回整箱 → 同一 (客户,SKU) 组合仍然命中，且不是「还没查」的空态
     await pickSku(page, '整箱');
     await openRecentPopover(page);
-    await expect(pop).toContainText('1.3579');
+    await expect(pop).toContainText('¥ 1.36/箱');
     // 换客户、SKU 不动 → 只能看到该客户自己的历史成交价
     await select(page, 'customerId', customerB.customerName);
     await openRecentPopover(page);
-    await expect(pop).toContainText('9.8700');
+    await expect(pop).toContainText('¥ 9.87/箱');
     await expect(pop.locator('.recent-meta')).toContainText(boxB.orderNo);
-    await expect(pop).not.toContainText('1.3579');
-    await expect(pop).not.toContainText('3.5000');
+    await expect(pop).not.toContainText('¥ 1.36');
+    await expect(pop).not.toContainText('¥ 3.50');
     await expect(pop).not.toContainText(boxA.orderNo);
     await expect(pop).not.toContainText(kgA.orderNo);
     await page.screenshot({path: '../.runtime/w4-recent-price.png', fullPage: true});
@@ -1269,7 +1321,7 @@ test.describe('scm-wave8-log-context', () => {
 
   async function createPilotCustomer() {
     const typeList = await (await adminApi.post('/scm/customer/type/query', {data: {pageSize: 1, pageNum: 1}})).json();
-    const employee = await (await adminApi.post('/scm/employee/query', {data: {pageNum: 1, pageSize: 1}})).json();
+    const employee = await (await adminApi.post('/employee/query', {data: {pageNum: 1, pageSize: 1}})).json();
     // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码。
     const form = {
       name: account.toUpperCase() + '日志客户',

@@ -3,7 +3,7 @@
   <a-card size="small" :bordered="false" :loading="loading">
     <header class="scm-detail-header">
       <div class="scm-detail-header__main">
-        <a-button type="link" class="scm-detail-header__back" @click="router.push('/supplier/supplier-list')">
+        <a-button type="link" class="scm-detail-header__back" aria-label="返回供应商列表" @click="router.push('/supplier/supplier-list')">
           <ArrowLeftOutlined />
           返回供应商列表
         </a-button>

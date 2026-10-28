@@ -4,7 +4,7 @@
     <!-- 页头在 Tabs 之外，切页签后仍可见 -->
     <header class="scm-detail-header">
       <div class="scm-detail-header__main">
-        <a-button type="link" class="scm-detail-header__back" @click="backToList">
+        <a-button type="link" class="scm-detail-header__back" aria-label="客户档案" @click="backToList">
           <ArrowLeftOutlined />
           客户档案
         </a-button>

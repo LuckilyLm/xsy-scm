@@ -81,10 +81,6 @@ public class ProductExcelController {
     @OperateLog
     public ResponseDTO<ProductImportResultVO> importProducts(@RequestParam MultipartFile file,
         @RequestParam(required = false) ImportMode mode) throws Exception {
-        ImportMode selectedMode = mode == null ? ImportMode.CREATE : mode;
-        // 更新模式直接改写既存商品，导入权不等于编辑权，必须服务端兜底
-        if (selectedMode == ImportMode.UPDATE)
-            StpUtil.checkPermission(ProductPermission.UPDATE);
         if (file.isEmpty())
             return ResponseDTO.userErrorParam("导入文件不能为空");
         var name = file.getOriginalFilename();
@@ -95,6 +91,11 @@ public class ProductExcelController {
         var security = securityFileService.checkFile(file);
         if (!security.getOk())
             return ResponseDTO.error(security);
+        // 页面已取消模式开关：没有显式 mode 时按模板表头判定，再由真正的模式决定权限
+        ImportMode selectedMode = mode == null ? productImportService.detectMode(file.getBytes()) : mode;
+        // 更新模式直接改写既存商品，导入权不等于编辑权，必须服务端兜底
+        if (selectedMode == ImportMode.UPDATE)
+            StpUtil.checkPermission(ProductPermission.UPDATE);
         return ResponseDTO.ok(productImportService.importFile(file, selectedMode));
     }
 

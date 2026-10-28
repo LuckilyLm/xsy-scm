@@ -1455,7 +1455,7 @@ test.describe('scm-sorting', () => {
     orderId: string;
     orderNo: string;
     itemId: string;
-    /** 建单前抓的基线：分拣之后必须逐字不变。 */
+    /** 确认时算出的基线；非标品分拣后会按实称量重算（见「实称量回写订单」决策）。 */
     actualQuantity: string;
     settlementLineAmount: string | null;
   };
@@ -1645,11 +1645,13 @@ test.describe('scm-sorting', () => {
     await pickOption('受指派人', accounts.roleAccounts.SCM_SORTER, true);
     await modal.getByPlaceholder('可选').fill(REMARK);
 
+    // 一次查询里勾两行：筛选条件一变，页面会清空已勾选项（隐藏的行不能继续计入创建数量），
+    // 所以按单号查一次勾一次是勾不到两行的。两张单同属一个客户，按客户名筛即可同时命中。
+    await modal.getByPlaceholder('订单 / 客户 / 商品').fill(`${tag}客户S`);
+    await button(modal, '查询候选行').click();
     for (const orderNo of [taskOne.orderNo, taskTwo.orderNo]) {
-      await modal.getByPlaceholder('订单 / 客户 / 商品').fill(orderNo);
-      await button(modal, '查询候选行').click();
       const line = modal.locator('.ant-table-tbody tr').filter({hasText: orderNo}).first();
-      await expect(line, `候选行里应筛到订单 ${orderNo}`).toBeVisible();
+      await expect(line, `按客户筛候选行后应看到订单 ${orderNo}`).toBeVisible();
       await line.locator('input[type=checkbox]').check();
     }
     await button(modal, '创建任务（2 行）').click();
@@ -1731,14 +1733,21 @@ test.describe('scm-sorting', () => {
     expect(stale.code, '已完成任务不接受再录入，且过期版本必被拒').not.toBe(0);
   });
 
-  test('分拣不回写订单、不写库存；完成后的订单成为配送候选并可排线', async () => {
-    for (const order of [taskOne, taskTwo]) {
-      const detail = await get<Row>(`/scm/order/detail/${order.orderId}`);
-      const line = (detail.items as Row[]).find((i) => String(i.itemId) === order.itemId);
-      expect(String(line.actualQuantity), `订单 ${order.orderNo} 实发量不得被分拣改写`).toBe(order.actualQuantity);
-      expect(String(line.settlementLineAmount ?? null), '结算额同样不得被分拣改写').toBe(order.settlementLineAmount ?? null);
-    }
+  test('分拣不写库存；非标品实称量回写订单行与结算额，完成后的订单成为配送候选并可排线', async () => {
+    // 2026-10-27 决策：分拣录入（手工与秤端走同一条命令）把非标品实称量写回已确认订单行，
+    // 并重算行结算额与订单合计。分拣本身仍然绝不写库存流水。
     expect(await movementTotal(), '整条分拣链不得产生任何库存流水').toBe(movementsAtStart);
+    const completed = await taskDetail(sorterClient, (await taskOf(sorterClient, taskNo)).id);
+    for (const item of (completed.items as Row[]).filter((row) => row.sourceType !== 'PROMOTION_GIFT')) {
+      const detail = await get<Row>(`/scm/order/detail/${item.salesOrderId}`);
+      const line = (detail.items as Row[]).find((row) => String(row.itemId) === String(item.salesOrderItemId));
+      expect(line, `订单 ${item.orderNoSnapshot} 应能回读到分拣行对应的明细`).toBeTruthy();
+      expect(String(line.actualQuantity), `订单 ${item.orderNoSnapshot} 实发量应为分拣实称量`).toBe(
+        String(item.sortedQuantity)
+      );
+      const expected = (Number(item.sortedQuantity) * Number(line.lockedUnitPrice)).toFixed(4);
+      expect(String(line.settlementLineAmount), '结算额按实称量 × 锁定单价重算').toBe(expected);
+    }
 
     expect(await candidateOf(taskOne.orderNo), '分拣完成后应成为候选').toHaveLength(1);
     await ok(api, 'post', `/scm/delivery/routes/${routeId}/orders`, {
@@ -1857,7 +1866,8 @@ test.describe('scm-sorting', () => {
     await button(page.locator('.ant-drawer-content'), '标品一键分拣').click();
     const modal = page.locator('.ant-modal-content:visible').last();
     await expect(modal).toContainText('2.0000');
-    await expect(modal).toContainText('不会自动完成任务');
+    // 文案里不再写「不会自动完成任务」，改由后面的任务状态断言证明；这里只钉「没勾选就没有可确认的行」
+    await expect(modal).toContainText('已选择 0 条明细');
     await expect(button(modal, '确认所选标品')).toBeDisabled();
     await modal.locator('.ant-table-tbody input[type=checkbox]').first().check();
     await button(modal, '确认所选标品').click();

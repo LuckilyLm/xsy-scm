@@ -92,7 +92,10 @@ const errorColumns = [
 ];
 const groups = computed(() => (result.value ? groupErrorsByRow(result.value.errors) : []));
 const hasErrors = computed(() => !!result.value && hasBlockingErrors(result.value));
-const doneTitle = computed(() => `成功导入 ${result.value?.importedProducts ?? 0} 个商品`);
+// 更新导入只改既存商品，文案必须与新增区分，否则运营无法从结果判断「有没有多建商品」。
+const doneTitle = computed(() =>
+  result.value?.mode === 'UPDATE' ? `成功更新 ${result.value?.updatedProducts ?? 0} 个商品` : `成功导入 ${result.value?.importedProducts ?? 0} 个商品`
+);
 
 function show() {
   open.value = true;
@@ -127,7 +130,8 @@ async function doImport() {
   if (!file.value) return;
   importing.value = true;
   try {
-    const response = await productApi.importProducts(file.value, 'CREATE');
+    // 不传模式：新增/更新由模板表头决定，页面不做第二套判断
+    const response = await productApi.importProducts(file.value);
     result.value = response.data;
     done.value = true;
     if (!hasBlockingErrors(response.data)) {

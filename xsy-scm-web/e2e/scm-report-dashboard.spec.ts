@@ -446,7 +446,11 @@ test.describe('scm-report', () => {
   }
 
   async function chooseDailyWarehouse(page: Page, nameToSelect: string) {
-    await page.locator('.daily-filters .ant-select').first().click();
+    const select = page.locator('.daily-filters .ant-select').first();
+    await select.click();
+    // 开发库里启用仓可能有几十个，下拉是虚拟列表且只渲染首屏；先按名称过滤再点，
+    // 否则排在后面但确实存在的仓会被误判成「选项不存在」。
+    await select.locator('input').fill(nameToSelect);
     await page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({hasText: nameToSelect}).first().click();
   }
 
@@ -501,7 +505,12 @@ test.describe('scm-report', () => {
     const options = (await post('/scm/product/sku/option-list', {limit: 200, status: 'ON_SHELF'})).options;
     const orderableOptions = options.filter((x: any) => x.spuStatus === 'ON_SHELF');
     // 优先挑可采购的标准品：下架 SKU/商品虽然可能出现在选择器里，但无法配置给供应商。
-    const sku = orderableOptions.find((x: any) => x.productType === 'STANDARD') ?? orderableOptions[0];
+    // 必须与销售单位同为 kg：采购价、成本与价格趋势断言都按 kg 计价，库存记账单位又必须
+    // 与采购单位一致（41001），拿箱装的鸡蛋 SKU 进来会在入库那一步被正确拒绝。
+    const sku =
+      orderableOptions.find((x: any) => x.productType === 'STANDARD' && x.saleUnit === 'kg') ??
+      orderableOptions.find((x: any) => x.saleUnit === 'kg') ??
+      orderableOptions[0];
     expect(sku, '报表夹具需要至少一个已上架且 SPU 同样上架的 SKU').toBeTruthy();
     skuId = String(sku.skuId);
     standardSku = sku.productType === 'STANDARD';
@@ -833,8 +842,8 @@ test.describe('scm-report', () => {
       expect((await purchaseDailyQuery(emptyDate)).products.total).toBe(0);
 
       const options = (await post('/scm/product/sku/option-list', {limit: 200, status: 'ON_SHELF'})).options;
-      const dailySkus = options.filter((option: any) => option.spuStatus === 'ON_SHELF').slice(0, 11);
-      expect(dailySkus, '分页验收需要至少 11 个可采购 SKU').toHaveLength(11);
+      const dailySkus = options.filter((option: any) => option.spuStatus === 'ON_SHELF').slice(0, 21);
+      expect(dailySkus, '分页验收需要至少 21 个可采购 SKU（每页 20 条，第二页才有行）').toHaveLength(21);
       await post('/scm/supplier/sku/replace', {
         supplierId,
         items: dailySkus.map((option: any, index: number) => ({
@@ -885,13 +894,13 @@ test.describe('scm-report', () => {
       await generatePurchaseDailyReport(dataDate);
       const generated = await purchaseDailyQuery(dataDate);
       expect(generated.generatedAt).toBeTruthy();
-      expect(generated.products.total).toBe(11);
+      expect(generated.products.total).toBe(21);
 
       await chooseDailyDate(page, dataDate);
       await chooseDailyWarehouse(page, warehouseName);
       await searchButton.click();
-      await expect(dailyCard.locator('.daily-meta')).toContainText('11 项');
-      await expect(dailyRows).toHaveCount(11);
+      await expect(dailyCard.locator('.daily-meta')).toContainText('21 项');
+      await expect(dailyRows).toHaveCount(20);
 
       if (secondWarehouse) {
         await chooseDailyWarehouse(page, secondWarehouse.name);
@@ -902,19 +911,15 @@ test.describe('scm-report', () => {
         await searchButton.click();
       }
 
-      const keyword = dailyCard.getByPlaceholder('商品名称 / 商品编码 / 商品规格编码');
+      const keyword = dailyCard.getByPlaceholder('商品名称 / 商品规格');
       await keyword.fill(String(dailySkus[0].skuCode));
       await searchButton.click();
       await expect(dailyRows).toHaveCount(1);
       await keyword.fill('');
       await searchButton.click();
 
-      await dailyCard.locator('.daily-pagination .ant-select-selector').click();
-      await page
-        .locator('.ant-select-dropdown:visible .ant-select-item-option')
-        .filter({hasText: /^10 条\/页$/})
-        .click();
-      await expect(dailyRows).toHaveCount(10);
+      // 报表类列表的每页条数选项收敛为 20 / 50，默认 20 即可翻页（21 条 → 第二页 1 条）
+      await expect(dailyRows).toHaveCount(20);
       await dailyCard.locator('.daily-pagination .ant-pagination-next').click();
       await expect(dailyRows).toHaveCount(1);
 

@@ -42,6 +42,15 @@
         <if test="query.operationType != null and query.operationType != ''">
             AND operation_type = #{query.operationType}
         </if>
+        <!--
+          日志行没有单号，关键词落回父订单：单号/客户名称与订单列表同一口径。
+          审计页若只能按操作类型过滤，跨订单混排下根本缩不到一张订单——开发库已经几百行。
+        -->
+        <if test="query.keyword != null and query.keyword != ''">
+            AND order_id IN (SELECT so.id FROM xsy_sales_order so WHERE so.deleted = FALSE
+            AND (so.order_no ILIKE '%' || #{query.keyword} || '%'
+            OR so.customer_name_snapshot ILIKE '%' || #{query.keyword} || '%'))
+        </if>
         <if test="query.orderId != null">AND order_id = #{query.orderId}</if>
         <if test="query.startTime != null">AND created_at &gt;= #{query.startTime}</if>
         <if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if>

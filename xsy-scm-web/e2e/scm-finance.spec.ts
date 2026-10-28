@@ -4,6 +4,7 @@
  */
 import {test, expect} from './scm-test-base';
 import {readFileSync} from 'node:fs';
+import {randomUUID} from 'node:crypto';
 import {accessibleName, authenticate, apiClient, login} from './scm-e2e-account';
 import {
   call,
@@ -55,6 +56,12 @@ test.describe('scm-finance-overview', () => {
     );
   }
 
+  /** 指标卡走 finance-form-model 的 moneyText：¥ + 千分位 + 四位小数，与接口原值不同形。 */
+  function kpiMoney(value: string) {
+    const [whole, fraction] = value.split('.');
+    return `¥ ${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
+  }
+
   /** Aging-free detail endpoints expose all normal documents before endDate; paginate for stock totals. */
   async function financeStockRows(path: string, range: Record<string, string>): Promise<Row[]> {
     const rows: Row[] = [];
@@ -87,39 +94,26 @@ test.describe('scm-finance-overview', () => {
     await createWriteOff(harness, receipt.receiptId, [{targetId: facts.receivable.receivableId, amount: '12.0000'}]);
 
     const range = reportDateRange();
+    // 列表接口单页上限 100，开发库的往来单据早已超过一页；这里按页取全量再对账，
+    // 断言才不会因为「库里碰巧少于 100 条」而通过。
     const [receivables, payables, writeOffs, receivableStock, payableStock] = await Promise.all([
-      call<Row>(harness.finance, 'post', '/scm/finance/receivable/query', {
-        ...range,
-        pageNum: 1,
-        pageSize: 100,
-      }),
-      call<Row>(harness.finance, 'post', '/scm/finance/payable/query', {
-        ...range,
-        pageNum: 1,
-        pageSize: 100,
-      }),
-      call<Row>(harness.finance, 'post', '/scm/finance/write-off/query', {
-        ...range,
-        pageNum: 1,
-        pageSize: 100,
-      }),
+      financeStockRows('/scm/finance/receivable/query', range),
+      financeStockRows('/scm/finance/payable/query', range),
+      financeStockRows('/scm/finance/write-off/query', range),
       financeStockRows('/scm/report/finance/receivable/aging-free-detail', range),
       financeStockRows('/scm/report/finance/payable/aging-free-detail', range),
     ]);
-    expect(receivables.list.length).toBe(receivables.total);
-    expect(payables.list.length).toBe(payables.total);
-    expect(writeOffs.list.length).toBe(writeOffs.total);
 
-    const targetWriteOffs = (targetType: string) => (writeOffs.list as Row[]).filter((item) => item.targetType === targetType);
+    const targetWriteOffs = (targetType: string) => writeOffs.filter((item) => item.targetType === targetType);
     const expected = {
-      receivableOccurredAmount: signedTotal(receivables.list as Row[], 'RED'),
+      receivableOccurredAmount: signedTotal(receivables, 'RED'),
       receivableWrittenOffAmount: signedTotal(targetWriteOffs('RECEIVABLE'), 'REVERSE'),
       endingReceivableAmount: fixed(receivableStock.reduce((sum, item) => sum + scaled(String(item.openAmount)), 0n)),
-      payableOccurredAmount: signedTotal(payables.list as Row[], 'RED'),
+      payableOccurredAmount: signedTotal(payables, 'RED'),
       payableWrittenOffAmount: signedTotal(targetWriteOffs('PAYABLE'), 'REVERSE'),
       endingPayableAmount: fixed(payableStock.reduce((sum, item) => sum + scaled(String(item.openAmount)), 0n)),
     };
-    const orderReceivables = (receivables.list as Row[]).filter((item) => Number(item.orderId) === Number(facts.orderId));
+    const orderReceivables = receivables.filter((item) => Number(item.orderId) === Number(facts.orderId));
     expect(signedTotal(orderReceivables, 'RED')).toBe('31.5000');
     const report = await call<Row>(harness.finance, 'post', '/scm/report/finance/overview', range);
     expect(report).toMatchObject(expected);
@@ -136,7 +130,7 @@ test.describe('scm-finance-overview', () => {
       ['期末待付', expected.endingPayableAmount],
     ]) {
       const card = page.locator('.report-kpi').filter({hasText: label}).first();
-      await expect(card.locator('.report-kpi-value')).toHaveText(amount);
+      await expect(card.locator('.report-kpi-value')).toHaveText(kpiMoney(amount));
     }
     // 「已核销」的口径说明属于常驻长句，已被文案契约清退；口径本身由上面的 KPI 断言覆盖。
     await captureDownload(page, '导出概览', '往来概览.xlsx');
@@ -567,23 +561,41 @@ test.describe('scm-finance-receivable-red', () => {
     if (harness) await harness.close();
   });
 
-  test('批准累计超过少拣应收的退货，红字全额生成并显示待处理余额', async ({page}) => {
+  test('退货上限按实发量，累计获批超过已核销后的未结应收时红字全额生成', async ({page}) => {
     const facts = await createSignedOrder(harness, 'RED', [{quantity: '10.0000', sortedQuantity: '7.0000', sortedResult: 'SHORT'}]);
     expect(facts.receivable.amount).toBe('24.5000');
 
+    // 可退数量是已签收的实发 7.0000：少拣的 3.0000 货没出门，退不了。
+    // 先把 3.5000 核销掉，未结降到 21.0000，之后退回全部 7.0000（24.5000）才会出现超额。
+    const receipt = await createReceipt(harness, facts.customerId, '3.5000', 'RED-WO');
+    await createWriteOff(harness, receipt.receiptId, [{targetId: facts.receivable.receivableId, amount: '3.5000'}]);
+    const overCap = await (
+      await harness.admin.post('/scm/order/return/create', {
+        data: {
+          orderId: Number(facts.orderId),
+          reason: `${harness.runTag} 超量退货`,
+          items: [{orderItemId: Number((facts.orderDetail.items as Row[])[0].itemId), requestedQuantity: '7.0001'}],
+        },
+        headers: {'Idempotency-Key': randomUUID()},
+      })
+    ).json();
+    expect(overCap.code, '超过实发量的退货必须被拒').toBe(40969);
+
     const first = await createApprovedReturn(harness, facts, '4.0000', 'RED-A');
-    const second = await createApprovedReturn(harness, facts, '4.0000', 'RED-B');
+    const second = await createApprovedReturn(harness, facts, '3.0000', 'RED-B');
     expect(first.approved.status).toBe('APPROVED');
     expect(second.approved.status).toBe('APPROVED');
     expect(first.refund.refundAmount).toBe('14.0000');
-    expect(second.refund.refundAmount).toBe('14.0000');
+    expect(second.refund.refundAmount).toBe('10.5000');
 
     const current = await call<Row>(harness.finance, 'get', `/scm/finance/receivable/${facts.receivable.receivableId}`);
-    expect(current.receivable.netAmount).toBe('-3.5000');
+    // 净应收只扣红字（24.5 - 24.5 = 0）；核销的 3.5 收多了，由「超额核销」单独表达，
+    // 不再混进净应收，避免同一件事在两列里重复出现。
+    expect(current.receivable.netAmount).toBe('0.0000');
     expect(current.receivable.openAmount).toBe('0.0000');
     expect(current.receivable.overAppliedAmount).toBe('3.5000');
     expect(current.redEntries).toHaveLength(2);
-    expect(current.redEntries.reduce((sum: number, item: Row) => sum + Number(item.amount), 0)).toBe(28);
+    expect(current.redEntries.reduce((sum: number, item: Row) => sum + Number(item.amount), 0)).toBe(24.5);
 
     await authenticate(page, harness.financeToken);
     await page.goto('/#/finance/receivables');
@@ -592,9 +604,8 @@ test.describe('scm-finance-receivable-red', () => {
     await expect(row).toContainText('3.5000');
     await row.getByRole('button', {name: accessibleName('明细')}).click();
     const drawer = page.locator('.ant-drawer-open').filter({hasText: '应收明细'}).first();
-    await expect(drawer).toContainText('净应收为负数');
-    await expect(drawer).toContainText('-3.5000');
     await expect(drawer).toContainText('超额核销待处理');
+    await expect(drawer).toContainText('3.5000');
   });
 });
 
@@ -635,7 +646,8 @@ test.describe('scm-finance-write-off', () => {
     await page.goto('/#/finance/write-offs');
     await expect(page.locator('#scm-finance-write-off-table')).toBeVisible();
     await page.getByRole('button', {name: accessibleName('登记核销')}).click();
-    const drawer = page.locator('.ant-drawer-open').filter({hasText: '登记多目标核销'}).first();
+    // 自动 FIFO 上线后弹窗标题改成「登记核销」（多目标已不是唯一入口）
+    const drawer = page.locator('.ant-drawer-open').filter({hasText: '登记核销'}).first();
     await selectInDrawer(page, drawer, '资金类型', '收款');
     await drawer
       .locator('.ant-form-item')
@@ -644,6 +656,8 @@ test.describe('scm-finance-write-off', () => {
       .click();
     await chooseRecord(page, '选择待核销收款', receipt.receiptNo);
 
+    // 自动 FIFO 之后默认是自动分配；这条用例验的是手工多目标，先切回手工选择
+    await drawer.locator('.ant-radio-button-wrapper').filter({hasText: '手工选择'}).click();
     await drawer.getByRole('button', {name: accessibleName('添加目标单')}).click();
     await chooseRecord(page, '选择未结清应收', first.receivable.receivableNo);
     await drawer.getByRole('button', {name: accessibleName('添加目标单')}).click();

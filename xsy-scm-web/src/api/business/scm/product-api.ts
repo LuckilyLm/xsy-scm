@@ -65,10 +65,11 @@ export const productApi = {
     }),
   // 导入 0 错误才写入，失败整批回滚；UPDATE 需要 scm:product:update，隐藏入口不等于有权限。
   downloadImportTemplate: (mode: ProductImportMode) => getDownload('/scm/product/import/template', {mode}),
-  importProducts: (file: File, mode: ProductImportMode) => {
+  // 模式由模板表头决定（更新模板带「商品ID」定位键）；只有显式传 mode 时才作为覆盖项提交。
+  importProducts: (file: File, mode?: ProductImportMode) => {
     const data = new FormData();
     data.append('file', file);
-    data.append('mode', mode);
+    if (mode) data.append('mode', mode);
     return postRequest<ProductImportResult>('/scm/product/import', data);
   },
   exportProducts: (form: ProductQuery) => postDownload('/scm/product/export', form),

@@ -106,6 +106,11 @@ public class ProductImportService {
         UPDATE
     }
 
+    /** 页面不再传模式时，由模板表头决定；见 {@link ProductImportWorkbookSupport#detectMode}。 */
+    public ImportMode detectMode(byte[] bytes) {
+        return productImportWorkbookSupport.detectMode(bytes);
+    }
+
     public ProductImportResultVO importFile(MultipartFile file, ImportMode mode) throws Exception {
         var result = new ProductImportResultVO();
         result.setMode(mode.name());

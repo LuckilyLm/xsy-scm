@@ -128,7 +128,7 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
-import {computed, onBeforeUnmount, ref, watch} from 'vue';
+import {computed, onBeforeUnmount, reactive, ref, watch} from 'vue';
 import {onBeforeRouteLeave} from 'vue-router';
 import {message, Modal, type FormInstance} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
@@ -168,8 +168,18 @@ const exchangeReturnId = ref<Id>();
 const pasteOpen = ref(false);
 const formRef = ref<FormInstance>();
 const existingSkuIds = computed(() => form.value.items.map((item) => item.skuId).filter((skuId): skuId is Id => skuId != null && skuId !== ''));
-/** 收货信息在 `form.address.*` 里，展平一份给表单校验用（顶层 `address` 就是详细地址）。 */
-const flatModel = computed(() => ({...form.value, ...form.value.address}));
+/**
+ * 收货信息在 `form.address.*` 里，展平一份给表单校验用（顶层 `address` 就是详细地址）。
+ *
+ * 必须是稳定的 reactive 对象、并在 form 变化时同步刷新：antd 校验读的是 form 的 `model` prop，
+ * 而 prop 要等重新渲染才更新。若这里写成 computed，每次重算都是新对象，change 事件里拿到的仍是
+ * 上一轮的 model，客户已经选好也会挂着「请选择客户」。
+ */
+const flatModel = reactive<Record<string, unknown>>({});
+function syncFlatModel() {
+  Object.assign(flatModel, form.value, form.value.address);
+}
+watch(form, syncFlatModel, {deep: true, flush: 'sync', immediate: true});
 const warehouseValue = computed<Id | undefined>({
   get: () => form.value.deliveryWarehouseId ?? undefined,
   set: (value) => {

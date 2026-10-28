@@ -16,4 +16,12 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     trace: 'off',
   },
+  // 合同夹具页（e2e/fixtures/adm-ui.html）是 .ts 模块，必须由 Vite 编译并解析 /@/ 别名；
+  // 以前这第二个 Vite（18083）靠人工启动，干净机器上 scm-platform 整组 ERR_CONNECTION_REFUSED。
+  webServer: {
+    command: 'node node_modules/vite/bin/vite.js --port 18083 --strictPort',
+    url: 'http://127.0.0.1:18083/e2e/fixtures/adm-ui.html',
+    reuseExistingServer: true,
+    timeout: 120000,
+  },
 });

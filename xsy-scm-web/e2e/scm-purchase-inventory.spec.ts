@@ -61,8 +61,16 @@ test.describe('scm-inventory', () => {
   async function search(page: Page) {
     await page.getByRole('button', {name: /^查\s*询$/}).click();
   }
-  /** 低频动作已收进操作列「更多」，菜单项渲染在 portal 里，不在行内。 */
+  /**
+   * 操作列有两种形态：唯一的普通动作直接外露，其余（含危险动作）收进「更多」，
+   * 菜单项渲染在 portal 里，不在行内。
+   */
   async function rowMenu(page: Page, row: Locator, label: string) {
+    const inline = row.getByRole('button', {name: new RegExp(label.split('').join('\s*'))});
+    if ((await inline.count()) > 0) {
+      await inline.click();
+      return;
+    }
     await row.getByRole('button', {name: /更多/}).click();
     await page.locator('.ant-dropdown:visible').getByText(label, {exact: true}).click();
   }
@@ -203,7 +211,8 @@ test.describe('scm-inventory', () => {
     // 页面层
     await browse(page, '/inventory/inventory-balance-list');
     await expect(page.locator('#scm-inventory-balance-table')).toBeVisible();
-    await page.getByPlaceholder('商品规格编码').fill(skuCode);
+    // 余额列表的筛选只有仓库与商品名称：编码不参与查询，按名称收窄到这一行
+    await page.getByPlaceholder('商品名称').fill(name + '商品A');
     await search(page);
     const row = balanceRows(page, name + '商品A');
     await expect(row).toHaveCount(1);
@@ -237,11 +246,11 @@ test.describe('scm-inventory', () => {
 
     await browse(page, '/inventory/inventory-movement-list');
     await expect(page.locator('#scm-inventory-movement-table')).toBeVisible();
-    await page.getByPlaceholder('商品规格编码').fill(skuCode);
-    await search(page);
-    const rows = movementRows(page, '散装');
-    await expect(rows).toHaveCount(2);
-    await expect(rows.first()).toContainText('采购入库');
+    // 流水页只按仓库/类型/发生区间筛选（内部编码不再对外展示），用业务单号定位本次收货那条
+    const currentMovement = movementRows(page, receipt.receiptNo);
+    await expect(currentMovement).toHaveCount(1);
+    await expect(currentMovement.first()).toContainText('采购入库');
+    await expect(currentMovement.first()).toContainText('15.0000');
     await page.screenshot({path: '../.runtime/w6-inventory-movement.png', fullPage: true});
 
     // 来源单号 → 收货单列表（带 receiptNo 查询参数）
@@ -259,7 +268,7 @@ test.describe('scm-inventory', () => {
     expect(empty.total).toBe(0);
 
     await browse(page, '/inventory/inventory-balance-list');
-    await page.getByPlaceholder('商品规格编码').fill(emptySkuCode);
+    await page.getByPlaceholder('商品名称').fill(name + '商品E');
     await search(page);
     await expect(page.locator('#scm-inventory-balance-table')).toContainText('暂无库存余额');
     // 空态不是错误：不得出现错误提示
@@ -310,7 +319,7 @@ test.describe('scm-inventory', () => {
     expect(paged.total).toBeGreaterThanOrEqual(1);
 
     await browse(page, '/inventory/inventory-balance-list');
-    await page.getByPlaceholder('商品规格编码').fill(skuCode);
+    await page.getByPlaceholder('商品名称').fill(name + '商品A');
     await search(page);
     await expect(balanceRows(page, name + '商品A')).toHaveCount(1);
 
@@ -323,12 +332,15 @@ test.describe('scm-inventory', () => {
     const ancient = await movementQuery({skuId, occurredFrom: '2020-01-01T00:00:00+08:00', occurredTo: '2020-01-02T00:00:00+08:00'});
     expect(ancient.total).toBe(0);
 
+    // 流水页不提供商品筛选（内部编码不展示），用接口里这两条流水的业务单号回证页面行
+    const uiReceiptNos = ((await movementQuery({skuId})).list as any[]).map((row) => row.receiptNo);
+    expect(uiReceiptNos).toHaveLength(2);
     await browse(page, '/inventory/inventory-movement-list');
     await expect(page.locator('#scm-inventory-movement-table')).toBeVisible();
-    await page.getByPlaceholder('商品规格编码').fill(skuCode);
-    await expect(page.getByPlaceholder('商品规格编码')).toHaveValue(skuCode);
     await search(page);
-    await expect(movementRows(page, '散装')).toHaveCount(2);
+    for (const receiptNo of uiReceiptNos) {
+      await expect(movementRows(page, receiptNo)).toHaveCount(1);
+    }
     // 区间选择器：设到 2020 年 → 空态
     const picker = page.locator('.ant-picker-input input');
     await picker.first().click();
@@ -341,9 +353,10 @@ test.describe('scm-inventory', () => {
     // 清空筛选后仍可查询（枚举清空必须送 undefined，不能送空串，否则 40000）。
     // 按钮名用正则：antd 会在两个中文字之间插入空格，可访问名实际是「重 置」。
     await page.getByRole('button', {name: /^重\s*置$/}).click();
-    await page.getByPlaceholder('商品规格编码').fill(skuCode);
     await search(page);
-    await expect(movementRows(page, '散装')).toHaveCount(2);
+    for (const receiptNo of uiReceiptNos) {
+      await expect(movementRows(page, receiptNo)).toHaveCount(1);
+    }
   });
 
   // ------------------------------------------------------------------
@@ -455,10 +468,13 @@ test.describe('scm-inventory', () => {
     const isolatedCode = String((await get('/scm/warehouse/detail/' + isolatedId)).warehouseCode);
     expect(isolatedCode).toMatch(/^WH\d{6,}$/);
 
+    // 仓库列表只按名称筛选（内部编码不再展示），默认仓名称从详情回读
+    const defaultWarehouse = await get('/scm/warehouse/detail/' + warehouseId);
+    const defaultName = String(defaultWarehouse.name);
     await browse(page, '/purchase/warehouse-list');
-    await page.getByPlaceholder('仓库编码').fill('WH001');
+    await page.getByPlaceholder('仓库名称').fill(defaultName);
     await search(page);
-    const defaultRow = page.locator('#scm-warehouse-table tr').filter({hasText: 'WH001'});
+    const defaultRow = page.locator('#scm-warehouse-table tr').filter({hasText: defaultName});
     await expect(defaultRow).toHaveCount(1);
     await rowMenu(page, defaultRow, '停用');
     await page
@@ -472,9 +488,9 @@ test.describe('scm-inventory', () => {
       .getByRole('button', {name: /取\s*消/})
       .click();
 
-    await page.getByPlaceholder('仓库编码').fill(isolatedCode);
+    await page.getByPlaceholder('仓库名称').fill(name + '隔离仓');
     await search(page);
-    const isolatedRow = page.locator('#scm-warehouse-table tr').filter({hasText: isolatedCode});
+    const isolatedRow = page.locator('#scm-warehouse-table tr').filter({hasText: name + '隔离仓'});
     await expect(isolatedRow).toHaveCount(1);
     await rowMenu(page, isolatedRow, '停用');
     await page
@@ -1711,7 +1727,8 @@ test.describe('scm-purchase', () => {
     await page.getByPlaceholder('采购单号').fill(orderA.orderNo);
     const orderRow = await row(page, 'scm-purchase-order-table', orderA.orderNo);
     await expect(orderRow).toContainText('草稿');
-    await expect(orderRow).toContainText('62.0000');
+    // 金额列统一走 moneyText：¥ + 千分位 + 两位小数
+    await expect(orderRow).toContainText('¥ 62.00');
     await page.screenshot({path: '../.runtime/w5-order-list.png', fullPage: true});
   });
   test('3 first partial receipt moves the order to PARTIALLY_RECEIVED', async () => {
@@ -2353,8 +2370,10 @@ test.describe('scm-stocktake-import', () => {
         if (w.lotTrackingEnabled === true) {
           continue;
         }
-        const bal = await ok<any>(admin.post('/scm/inventory/balance/query', {data: {warehouseId: w.id, pageNum: 1, pageSize: 1}}));
-        if ((bal.list ?? []).length > 0) {
+        const bal = await ok<any>(admin.post('/scm/inventory/balance/query', {data: {warehouseId: w.id, pageNum: 1, pageSize: 20}}));
+        // 负库存仓（余额全为负）跳过：模板按「余额 +1」填充会把实盘量算成负数，
+        // 与「账实差异」这个场景不是一回事；本组要的是有正常正余额的仓。
+        if ((bal.list ?? []).some((line: any) => Number(line.quantity) > 0)) {
           warehouseId = String(w.id);
           warehouseName = (w.name ?? w.warehouseName ?? String(w.id)) as string;
           break;
@@ -2480,9 +2499,14 @@ test.describe('scm-stocktake-import', () => {
       const row = page.locator(`tr`).filter({hasText: importedStocktakeNo}).first();
       await expect(row).toBeVisible();
 
-      // 复制到新建属低频动作，已收进操作列「更多」
-      await row.getByRole('button', {name: /更多/}).click();
-      await page.locator('.ant-dropdown:visible').getByText('复制到新建', {exact: true}).click();
+      // 只有一个可用动作时操作列直接外露（不再套一层「更多」）；多动作时才走下拉菜单
+      const inlineCopy = row.getByRole('button', {name: /复制到新建/});
+      if (await inlineCopy.count()) {
+        await inlineCopy.click();
+      } else {
+        await row.getByRole('button', {name: /更多/}).click();
+        await page.locator('.ant-dropdown:visible').getByText('复制到新建', {exact: true}).click();
+      }
       const drawer = page.locator('.ant-drawer-open');
       // 抽屉提示语已随文案治理清退，改为断言抽屉里确实是新建的盘点单
       await expect(drawer.getByText(/实盘量/).first()).toBeVisible();

@@ -147,8 +147,10 @@
         <EmployeeSelect v-model:value="sessionForm.employeeId" width="100%" />
       </a-form-item>
       <a-form-item label="有效时长（分钟）" required>
-        <a-input-number v-model:value="sessionForm.validMinutes" :min="5" :max="720" :step="5" style="width: 100%" />
-        <div class="scale-hint">一个班次通常不超过 12 小时；到期后重新签发，不提供无限续期。</div>
+        <!-- 口径收进悬停提示：录一次班次不需要常驻一行解释（常驻解释受棘轮约束） -->
+        <a-tooltip title="一个班次通常不超过 12 小时；到期后重新签发，不提供无限续期。">
+          <a-input-number v-model:value="sessionForm.validMinutes" :min="5" :max="720" :step="5" style="width: 100%" />
+        </a-tooltip>
       </a-form-item>
     </a-form>
   </a-modal>
@@ -191,7 +193,7 @@
         <template v-else-if="column.dataIndex === 'expiresAt'">{{ datetime(record.expiresAt) }}</template>
         <template v-else-if="column.dataIndex === 'endedAt'">
           {{ record.endedAt ? datetime(record.endedAt) : '—' }}
-          <div v-if="record.endReason" class="scale-hint">{{ record.endReason }}</div>
+          <span v-if="record.endReason"> · {{ record.endReason }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-button v-if="record.active" type="link" size="small" danger v-privilege="PERM.SESSION_ISSUE" @click="endSession(record)">
@@ -260,7 +262,7 @@ const columns = ref<TableColumnsType<ScaleDevice>>([
   {title: '在线', dataIndex: 'online', width: 220},
   {title: '有效会话', dataIndex: 'activeSessionCount', width: 85},
   {title: '凭证到期', dataIndex: 'credentialExpiresAt', width: 150},
-  {title: '操作', dataIndex: 'action', align: 'center', width: 190, fixed: 'right'},
+  {title: '操作', dataIndex: 'action', align: 'center', width: 180, fixed: 'right'},
 ]);
 const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
@@ -507,11 +509,4 @@ onMounted(queryData);
   word-break: break-all;
 }
 
-.scale-hint {
-  margin-top: 4px;
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-  font-size: 12px;
-  line-height: 18px;
-  white-space: normal;
-}
 </style>

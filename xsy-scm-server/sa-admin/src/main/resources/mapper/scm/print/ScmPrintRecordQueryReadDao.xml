@@ -40,6 +40,20 @@
                     OR (document_type = 'SORTING_TICKET' AND
                     EXISTS (SELECT 1 FROM xsy_sorting_task t WHERE t.id = r.business_id AND t.deleted = FALSE
                 <include refid="com.xsy.scm.sorting.dao.SortingQueryDao.taskScopeGuard"/>
+                ))
+                    <!-- 客户分拣单/送货单按订单归属收口：business_id 是销售订单 id，范围与订单列表一致。
+                         漏掉这两个分支会让 20:00 批量打印出来的单据查不到、也重印不了。 -->
+                    OR (document_type IN ('CUSTOMER_SORTING_SHEET', 'CUSTOMER_DELIVERY_NOTE') AND
+                    EXISTS (SELECT 1 FROM xsy_sales_order o WHERE o.id = r.business_id AND o.deleted = FALSE
+                <choose>
+                    <when test="scope.orderSellerScope.empty">AND FALSE</when>
+                    <when test="scope.orderSellerScope.all == false">
+                        AND o.seller_id IN
+                        <foreach collection="scope.orderSellerScope.ids" item="seller" open="(" separator="," close=")">
+                            #{seller}
+                        </foreach>
+                    </when>
+                </choose>
                 )))
             </otherwise>
         </choose>

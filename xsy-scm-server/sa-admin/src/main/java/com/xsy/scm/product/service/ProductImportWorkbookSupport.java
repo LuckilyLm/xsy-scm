@@ -117,6 +117,27 @@ public class ProductImportWorkbookSupport {
         }
     }
 
+    /**
+     * 页面已取消模式开关，只靠模板区分：更新模板第 2 列是「商品ID」定位键，新增模板是「导入商品分组」。 不做这一步判断，更新文件会按 CREATE 解析——表头校验整批报错，或被当成新增静默多建商品。
+     */
+    public ProductImportService.ImportMode detectMode(byte[] bytes) {
+        try (var workbook = org.apache.poi.ss.usermodel.WorkbookFactory
+            .create(new java.io.ByteArrayInputStream(bytes))) {
+            var sheet = workbook.getSheetAt(0);
+            var header = sheet.getRow(0);
+            var second = header == null
+                ? null
+                : trim(new DataFormatter(Locale.ROOT).formatCellValue(header.getCell(1)));
+            return "商品ID".equals(second)
+                ? ProductImportService.ImportMode.UPDATE
+                : ProductImportService.ImportMode.CREATE;
+        } catch (Exception exception) {
+            // 读不出来交给 readRows 统一报 FILE_INVALID，这里不吞成用户可见错误
+            log.warn("商品导入文件无法预判模式，按新增处理", exception);
+            return ProductImportService.ImportMode.CREATE;
+        }
+    }
+
     public List<ProductImportRow> readRows(byte[] bytes, ProductImportService.ImportMode mode,
         ProductImportResultVO result) {
         var rows = new ArrayList<ProductImportRow>();

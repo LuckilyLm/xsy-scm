@@ -199,7 +199,13 @@ export async function createSignedOrder(
   suffix: string,
   lineInputs: ReceivableLineInput[],
   existingCustomerId?: string,
-  confirmExtras?: {couponInstanceId?: number}
+  confirmExtras?: {couponInstanceId?: number},
+  options?: {
+    /** 批量打印按配送日期取单，需要订单带上期望配送时间；不传则沿用服务端的空值。 */
+    expectDeliveryTime?: string;
+    /** 负库存验收：故意不备货，让发车出库把余额打成负数。 */
+    skipStock?: boolean;
+  }
 ): Promise<SignedOrderFacts> {
   const address = `${harness.runTag}${suffix} 验收路`;
   const customerId = existingCustomerId ?? (await createLocatedCustomer(harness.admin, harness.runTag, suffix, address));
@@ -212,13 +218,14 @@ export async function createSignedOrder(
     const picked = Number(line.sortedQuantity ?? line.quantity);
     return (Math.ceil(Math.max(planned, picked)) + 20).toFixed(4);
   });
-  await stockIn(harness, supplierId, skus, stockQuantities);
+  if (!options?.skipStock) await stockIn(harness, supplierId, skus, stockQuantities);
 
   let order = await call<Row>(harness.admin, 'post', '/scm/order/create', {
     customerId,
     orderSource: 'ADMIN',
     address: {receiverName: `${harness.runTag}收货人`, receiverPhone: '13800000000', address},
     remark: `${harness.runTag} ${suffix} Finance E2E`,
+    ...(options?.expectDeliveryTime ? {expectDeliveryTime: options.expectDeliveryTime} : {}),
     items: skus.map((skuId, index) => ({
       skuId,
       orderedQuantity: lineInputs[index].quantity,

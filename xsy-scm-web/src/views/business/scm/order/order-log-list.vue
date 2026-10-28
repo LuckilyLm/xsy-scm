@@ -1,6 +1,15 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
+      <a-form-item label="订单" class="smart-query-form-item">
+        <a-input
+          v-model:value="queryForm.keyword"
+          placeholder="订单号 / 客户"
+          allow-clear
+          style="width: 200px"
+          @press-enter="onSearch"
+        />
+      </a-form-item>
       <a-form-item label="操作类型" class="smart-query-form-item">
         <SmartEnumSelect enum-name="SCM_ORDER_OPERATION_ENUM" v-model:value="queryForm.operationType" width="160px" />
       </a-form-item>
