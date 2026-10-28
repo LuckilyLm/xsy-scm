@@ -27,6 +27,14 @@
   - **用例与现行口径对齐**：余额/流水/仓库/单位字典/商品列表按现行筛选文案与字段（不再有内部编码筛选、分页 20 条、仓库下拉按名称过滤）；更新导入、复制历史盘点改用「唯一动作外露、多动作才进更多」的现行交互；财务概览的往来列表按每页 100 分页取全量再对账，不再假设开发库少于 100 条。
   - **同一轮执行**：`npm run typecheck:e2e`、`npm run lint`（0 error，3 条既有 unused-disable 警告）、`npm test` 549/549、`npm run build` 通过；后端 `ProductImportServiceTest` + `ProductControllerTest` 32 项通过。
 - **界面样式巡检（2026-10-28）**：用临时 Playwright 脚本遍历 60 个 SCM 列表页，量了 `.ant-table-content` 的 `clientWidth/scrollWidth` 与固定操作列的位置，按截图逐页核对。修掉两类真实缺陷：①主题把表头/表体底色设为透明，固定操作列在横向滚动时与滚过的列叠字（核销管理出现「核销金额操作」粘在一起），改为固定列自带 `--scm-surface` 底色并在悬停/选中跟随行底色；②`useScmTableFill` 只压缩声明了 `ellipsis` 的列，腾不出宽度就整表横向滚动，客户、仓库、采购订单、电子秤、分拣任务、退货、批次库存、调拨、协议价、活动等列表的右侧列被固定操作列压住。改为压缩全部左对齐文本列并自动补 `ellipsis`，长公司名用 `max-width` 省略；订单抽屉明细按抽屉宽度重排列宽，整单粘贴/重新解析价格两个按钮改为 flex 间距。修复后同脚本复测：上述页面表格宽度不再超出内容区；财务核销、价格历史等 13 列以上的宽表按设计保留横向滚动，但固定列已不透字。改动文件 Prettier、ESLint 通过，`vue-tsc` 改动文件 0 条错误，`npm run build` 通过，构建产物已替换到本地演示容器的 Web 目录。
+- **质量门禁修复（2026-10-28，`tools/verify.py quality` 由 FAIL 转 PASS）**：提交 E2E 改动后跑统一门禁，暴露出三处上一批遗留的阻断项，逐项修掉：
+  - **错误码撞号**：`ORDER_PENDING_EDIT_BLOCKED` 40976 撞 `ProductErrorCode.BUNDLE_COMPONENT_IN_USE`、`WAREHOUSE_HAS_NEGATIVE_STOCK` 41019 撞 `INVENTORY_STOCKTAKE_NOT_FOUND`（前端错误文案表已把 41019 映射为盘点单不存在）、`AUTO_WRITE_OFF_NO_OPEN_TARGET` 41160 与 `WAIVER_REVERSE_VIA_WAIVER` 41161 撞 `DeliveryErrorCode.PLAN_PROPOSAL_*`。改为 41204 / 41010 / 41164 / 41165，并同步改 IT 与文档里的引用；撞号码由 `tools/quality/baseline/scm-error-code-collisions.json` 记录，不允许把新撞号写进基线。
+  - **跨域 DAO 写入**：`DeliveryRouteService` 直接调 `SalesOrderDao.markDispatched`（跨域写）。新增订单域 `SalesOrderDispatchService`（`Propagation.MANDATORY`），配送域改为调用它并按自己的 `STATE_INVALID` 拒绝；其余 9 处跨域读（客户/商品/业务分类/采购最近价/按配送日期取单）都是 `<select>`，补进 `tools/quality/cross-domain-dao-allowlist.tsv` 并写明理由。
+  - **代码规范**：`PurchasePriceService` 的 `"MANUAL"` / `"AUTO_LAST_PRICE"` 收敛为 `ScmPurchasePriceSourceEnum`，对账单的 `"WAIVER"` / `"WAIVER_REVERSE"` 取 `ScmStatementFactType`；去掉两处未使用 import、两处引用决策编号的注释。
+  - **上一批遗留的红测试一并修正**：`PurchaseOrderVO.lockedBy` 补 `ScmOperatorNameSerializer`（否则页面显示 `1:1`）；`PurchaseErrorCodeTest` 由 53/8 改为 61/9 并锁定 8 个新采购价码与 41010；`PurchaseOrderWebTest` 42 端点 + 新服务打桩；`ScmPurchasePermissionMigrationIT` 42 端点 / 31 权限码；`OrderWebTest` 34 端点 + 粘贴服务打桩；`OrderRulesTest` 取价链补 `CUSTOMER_GROUP`/`TIME_PRICE`；`ScmPurchaseStatusEnumTest` 改从 V200 读 19 种操作类型。
+  - **验证**：`python tools/verify.py quality` PASS；后端单测 884 项全过（`-Dtest='*Test'`）；重置 `xsy_v2_it` 后跑受影响 IT — `InventoryNegativeStockIT` 4、`DeliveryDispatchPgIT` 9、`DeliveryRouteServiceIT` 2、`FinanceFifoWriteOffIT` 2、`FinanceWaiverIT` 3、`SalesOrderServiceIT` 17、`OrderLockPgIT` 6、`PurchasePriceWindowIT` 4、`ScmPurchasePermissionMigrationIT` 2，合计 49 项全过（IT 需要 `XSY_V2_DB_URL`/`XSY_V2_DB_PASSWORD` 与 `SPRING_DATA_REDIS_PASSWORD`，只给数据库地址不给 Redis 口令时上下文加载会失败）。开发库 `xsy_scm` 已重建 dev jar 并重启 18080。
+  - **E2E 抗数据累积（2026-10-28，三处失败改为用例侧修法）**：上面这轮后端改动后复跑全量，出现 154 通过 / 3 失败 / 9 跳过 / 8 未运行（失败所在 serial 块的后继用例不再跑）。三处失败都不是产品缺陷，而是开发库里 E2E 自己建的数据越积越多：①起点仓库下拉没有搜索框且是虚拟列表，只渲染首屏十几项，早期仓「鲜蔬源仓库」被挤出 DOM，按文本 click 反复 detached；改为方向键把激活项逐项下移（虚拟列表会跟着滚动），命中后回车确认。②盘点页仓库筛选同样点不到；`WarehouseSelect` 本身有 `show-search`，改为先输入名称过滤再点过滤后的选项。③线路列表按配送日期倒序分页，新线路掉出第一页；改用列表自己的「线路名称 / 编号」筛选收敛。三处单独复跑均通过，`npm run typecheck:e2e`、`npm run lint:e2e` 通过。
+  - **未完成**：修完后再跑全量时，后台任务因本机内存不足被系统中断（不是用例失败），这一轮没有新的全量数字；下次有内存余量时重跑 `XSY_V2_PG_DB=xsy_scm npx playwright test` 确认。
 - **未执行**：`tools/verify.ps1` 总入口、云存储模式（`XSY_FILE_STORAGE_MODE=cloud`）的 E2E、电子秤代理 `verify.ps1` 与真实读重/去皮/断网/班次过期、打印纸张与批量 50+ 单、负库存实物盘点现场验收。
 
 ## 开发库数据被清空（2026-10-27，事故记录）
@@ -66,7 +74,7 @@
 ## 待确认订单可改单（2026-10-27，源码与本地环境已验证）
 
 - 订单列表对「待确认」行显示「编辑」，抽屉保存后订单仍为待确认，并提示未改动行沿用提交时报价、按最新价格重算请用「批量核价」。
-- 后端可改单状态放宽到草稿与待确认；待确认订单存在支付意图、应收、库存预留、出库或分拣事实时，改单返回新错误码 40976 并整笔拒绝。改单沿用行上报价重新锁定单价，标品实数量同步下单量，非标品称重结果保留。
+- 后端可改单状态放宽到草稿与待确认；待确认订单存在支付意图、应收、库存预留、出库或分拣事实时，改单返回新错误码 41204 并整笔拒绝。改单沿用行上报价重新锁定单价，标品实数量同步下单量，非标品称重结果保留。
 - 已验证：`SalesOrderServiceIT` 新增 2 个用例（改单后仍待确认且单价不变、存在支付意图时拒绝改单）通过；该类 16 项中 15 项通过，`lifecycleRetainsSnapshotsAndLockedPricesAndAudit` 仍为既有失败（已在 HEAD 复现）。顺带修正该 IT 中真提交用例的幂等键与请求体共用问题，使重跑不再撞上历史幂等记录。前端 `npm test` 547 项通过。
 - 未验证：页面上的编辑动作尚未做 Playwright 实测；运行中容器仍是本次改动前的构建。
 

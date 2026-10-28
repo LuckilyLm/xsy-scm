@@ -58,6 +58,7 @@ import com.xsy.scm.finance.service.FinanceReceivableService;
 import com.xsy.scm.inventory.service.InventoryFulfillmentService;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.service.OrderBundleSnapshotQueryService;
+import com.xsy.scm.order.service.SalesOrderDispatchService;
 import com.xsy.scm.order.domain.entity.OrderBundleComponentEntity;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.promotion.service.PromotionDiscountService;
@@ -93,6 +94,7 @@ public class DeliveryRouteService {
     private final DeliveryVehicleDao deliveryVehicleDao;
     private final WarehouseDao warehouseDao;
     private final SalesOrderDao salesOrderDao;
+    private final SalesOrderDispatchService salesOrderDispatchService;
     private final DeliveryEligibilityPolicy eligibility;
     private final ScmIdempotencyService idempotencyService;
     private final DeliveryRoutePrintService deliveryRoutePrintService;
@@ -469,7 +471,7 @@ public class DeliveryRouteService {
             throw new ScmBusinessException(STATE_INVALID);
         // 发车出库时间直接记在订单上：7 天自动锁单从这里起算，不靠配送履约状态反推。
         for (var orderId : orderIds) {
-            if (salesOrderDao.markDispatched(orderId, now, operator) != 1)
+            if (!salesOrderDispatchService.markDispatched(orderId, now, operator))
                 throw new ScmBusinessException(STATE_INVALID);
         }
 

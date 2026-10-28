@@ -109,12 +109,12 @@ public enum FinanceErrorCode implements ScmErrorCode {
     WAIVER_ALREADY_REVERSED(41159, "该抹零记录已反向，不能重复反向"),
 
     // ---- 自动核销 ----
-    AUTO_WRITE_OFF_NO_OPEN_TARGET(41160, "该收付款对方没有可按顺序核销的未结单据"),
+    AUTO_WRITE_OFF_NO_OPEN_TARGET(41164, "该收付款对方没有可按顺序核销的未结单据"),
 
     /**
      * 抹零的核销行不能走通用「反向核销」：它还必须把抹零事实置为 REVERSED，否则状态与余额会不一致。
      */
-    WAIVER_REVERSE_VIA_WAIVER(41161, "抹零核销请通过抹零反向接口撤销");
+    WAIVER_REVERSE_VIA_WAIVER(41165, "抹零核销请通过抹零反向接口撤销");
 
     private final int code;
     private final String msg;

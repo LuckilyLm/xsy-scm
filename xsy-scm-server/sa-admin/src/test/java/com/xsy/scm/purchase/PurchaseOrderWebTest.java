@@ -12,7 +12,9 @@ import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
 import com.xsy.scm.purchase.service.PurchaseDemandCalculationBatchService;
 import com.xsy.scm.purchase.service.PurchaseDemandService;
+import com.xsy.scm.purchase.service.PurchaseOrderLockService;
 import com.xsy.scm.purchase.service.PurchaseOrderService;
+import com.xsy.scm.purchase.service.PurchasePriceService;
 import com.xsy.scm.purchase.service.PurchaseQueryService;
 import com.xsy.scm.purchase.service.PurchaseReceiptService;
 import com.xsy.scm.warehouse.controller.WarehouseController;
@@ -69,7 +71,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(classes = {PurchaseDemandController.class, PurchaseOrderController.class,
         PurchaseReceiptController.class, WarehouseController.class,
         ScmExceptionHandler.class, GlobalExceptionHandler.class})
-@DisplayName("W5 Web 层：38 端点 + 权限注解 + 定点数字符串序列化")
+@DisplayName("W5 Web 层：42 端点 + 权限注解 + 定点数字符串序列化")
 class PurchaseOrderWebTest {
 
     @Autowired
@@ -93,6 +95,13 @@ class PurchaseOrderWebTest {
     @MockitoBean
     private WarehouseService warehouseService;
 
+    /** 采购价后置与锁单是独立服务，控制器构造器直接依赖，切片测试必须显式给桩。 */
+    @MockitoBean
+    private PurchasePriceService purchasePriceService;
+
+    @MockitoBean
+    private PurchaseOrderLockService purchaseOrderLockService;
+
     /**
      * {@code WarehouseController} 的构造器是 {@code (WarehouseService, WarehouseQueryService)}。
      *
@@ -111,11 +120,12 @@ class PurchaseOrderWebTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("38 个端点全部声明 @SaCheckPermission，且权限码都在 scm: 命名空间内")
+    @DisplayName("42 个端点全部声明 @SaCheckPermission，且权限码都在 scm: 命名空间内")
     void allEndpointsHaveNativePermissions() {
         // 计数只是登记端点个数；真正的不变量是下面逐方法的断言 —— 新增公开端点漏声明权限会立刻失败。
         // 改派归属是独立端点 /scm/purchase/reassign（权限码 scm:purchase:assign）：
         // 归属同时是数据范围依据，混在 /update 里就无法单独授权。
+        // 采购价补价/改价与锁单/解锁各有独立端点与独立权限，因此比早期多 4 个。
         int count = 0;
         for (Class<?> controller : List.of(PurchaseDemandController.class, PurchaseOrderController.class,
                 PurchaseReceiptController.class, WarehouseController.class)) {
@@ -132,7 +142,7 @@ class PurchaseOrderWebTest {
                 count++;
             }
         }
-        assertThat(count).isEqualTo(38);
+        assertThat(count).isEqualTo(42);
     }
 
     // ------------------------------------------------------------------

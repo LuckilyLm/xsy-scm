@@ -102,9 +102,27 @@ test.describe('scm-delivery', () => {
     await control.press('Enter').catch((): undefined => undefined);
   }
 
+  /**
+   * 仓库下拉没有搜索框，选项又是虚拟列表：只渲染首屏那十几个。
+   *
+   * <p>开发库里 E2E 建过的仓库越积越多，`鲜蔬源仓库` 这类早期数据会排到几十项之后，
+   * 按文本 click 永远等不到（元素不在 DOM）；滚动过程中节点还会被回收，点了就 detached。
+   * 这里改用方向键把激活项逐项下移，虚拟列表会把激活项滚进窗口，命中文本后回车选中。
+   */
   async function pickOption(page: any, scope: any, label: string, optionText: string) {
-    await field(scope, label).locator('.ant-select-selector').first().click();
-    await page.locator('.ant-select-dropdown:visible').locator('.ant-select-item-option-content').filter({hasText: optionText}).first().click();
+    const control = field(scope, label).locator('.ant-select-selector').first();
+    await control.click();
+    const dropdown = page.locator('.ant-select-dropdown:visible');
+    const input = control.locator('input').first();
+    for (let step = 0; step < 500; step++) {
+      await page.keyboard.press('ArrowDown');
+      const activeId = await input.getAttribute('aria-activedescendant').catch((): string | null => null);
+      if (!activeId) continue;
+      const text = await dropdown.locator(`#${activeId}`).innerText().catch((): string => '');
+      if (text.includes(optionText)) break;
+    }
+    await page.keyboard.press('Enter');
+    await expect(control.locator('.ant-select-selection-item')).toContainText(optionText);
   }
 
   test.beforeAll(async () => {
@@ -1054,6 +1072,11 @@ test.describe('scm-delivery-l3', () => {
     // 令牌必须在 goto 之前注入 localStorage，否则页面停在登录路由上什么都找不到。
     await authenticate(page, adminToken);
     await page.goto('/#/delivery/routes');
+    // 列表按配送日期倒序分页，开发库线路越积越多，新线路不一定落在第一页；
+    // 用列表自己的关键字筛选收敛到本轮这一张，别把「没翻到」当成「没建出来」。
+    const routeKeyword = page.getByPlaceholder('线路名称 / 编号');
+    await routeKeyword.fill(`${tag} 发车验收线路`);
+    await routeKeyword.press('Enter');
     const row = page
       .locator('tr')
       .filter({hasText: `${tag} 发车验收线路`})

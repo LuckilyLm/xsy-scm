@@ -59,7 +59,7 @@ class FinanceFifoWriteOffIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("#2 同一幂等键重放不重复核销；金额分完后再次自动核销返回 41160")
+    @DisplayName("#2 同一幂等键重放不重复核销；金额分完后再次自动核销返回 41164")
     void replayIsIdempotentAndExhaustedReceiptIsRejected() {
         Long customerId = newCustomer();
         normalReceivable(customerId, "40.0000", EVENT_AT.minusDays(3));
@@ -75,7 +75,7 @@ class FinanceFifoWriteOffIT extends ScmW5PgITBase {
         assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'RECEIPT' "
             + "AND source_id = ? AND entry_type = 'NORMAL'", receipt.getReceiptId())).isEqualTo(1);
 
-        expectCode(() -> financeWriteOffService.autoAdd(form, key("fifo-exhausted")), 41160);
+        expectCode(() -> financeWriteOffService.autoAdd(form, key("fifo-exhausted")), 41164);
     }
 
     private FinanceWriteOffAutoForm autoForm(Long receiptId) {

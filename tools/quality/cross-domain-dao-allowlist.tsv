@@ -1,5 +1,6 @@
 # source file<TAB>target DAO FQCN<TAB>allowed read methods<TAB>reason
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerQueryService.java	com.xsy.scm.supplier.dao.SupplierDao	selectList	Customer query presents supplier names for linked records.
+xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerQueryService.java	com.xsy.scm.businesscategory.dao.BusinessCategoryDao	selectList	Customer query shows the business category name of linked records.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerSkuVisibilityService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Customer visibility validates requested product identifiers.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerTypeService.java	com.xsy.scm.pricing.dao.CustomerTypePriceDao	lockParent	Customer-type deletion serializes against pricing references.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/service/DeliveryRouteService.java	com.xsy.scm.order.dao.SalesOrderDao	lock	Dispatch and sign serialize with order state changes.
@@ -8,16 +9,21 @@ xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/service/InventoryWar
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/support/WarehouseDisableGuardImpl.java	com.xsy.scm.purchase.dao.PurchaseOrderDao	selectCount	Warehouse disable checks for active purchase orders.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/support/WarehouseDisableGuardImpl.java	com.xsy.scm.purchase.dao.PurchaseReceiptDao	selectCount	Warehouse disable checks for confirmed receipts awaiting putaway.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/home/service/MallHomeLayoutValidator.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Mall home layout rejects blocks that reference SKUs which no longer exist.
-xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderImportService.java	com.xsy.scm.customer.dao.CustomerDao	selectActiveByCodes	Order import resolves customer codes to active customer records.
-xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderImportService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByCodes	Order import resolves SKU codes and snapshots.
+xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderImportService.java	com.xsy.scm.customer.dao.CustomerDao	selectActiveByCodes,selectActiveByNames	Order import resolves customer codes or names to active customer records.
+xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderImportService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByCodes,selectByProductNames	Order import resolves SKU codes or product names and snapshots.
+xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderPasteService.java	com.xsy.scm.customer.dao.CustomerDao	selectById	Whole-order paste validates the selected customer stays active.
+xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderPasteService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByProductNames	Whole-order paste resolves pasted product names to SKU snapshots.
+xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderQueryService.java	com.xsy.scm.purchase.dao.PurchaseOrderItemDao	latestPurchasePrices	Order detail shows the latest submitted purchase price as a costing hint.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Order commands resolve product options for snapshots.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderService.java	com.xsy.scm.product.dao.ProductSpuDao	selectBatchIds	Order commands resolve SPU snapshots.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/manager/PriceValidation.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Price validation resolves the requested product option.
+xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/CustomerGroupPriceService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Group price entry resolves product option snapshots.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceBatchWriter.java	com.xsy.scm.customer.dao.CustomerTypeDao	selectByIds	Price batch writing validates referenced customer types.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceBatchWriter.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Price batch writing validates referenced product options.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	com.xsy.scm.customer.dao.CustomerTypeDao	selectById	Price resolution loads customer-type context.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	com.xsy.scm.customer.dao.CustomerSkuVisibilityDao	policy,visibleIds	Price resolution applies customer SKU visibility.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Price resolution loads product option snapshots.
+xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/service/ScmPrintBatchService.java	com.xsy.scm.order.dao.SalesOrderDao	selectForCustomerSheet	Customer sheet batch printing reads the confirmed orders of the delivery day.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/promotion/service/PromotionDiscountService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Promotion freezes gift SKU snapshots from the activity rule.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseDemandService.java	com.xsy.scm.order.dao.SalesOrderDao	selectBatchIds	Purchase demand generation consumes confirmed sales-order facts.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseOrderAllocationService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Purchase allocation resolves product option snapshots.
@@ -42,3 +48,4 @@ xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/order/service/MallOrderQu
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/order/service/MallOrderQueryService.java	com.xsy.scm.order.dao.SalesOrderDao	listByCustomer,selectByIdAndCustomer	Mall order queries are scoped by the logged-in customer id.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/order/service/MallOrderQueryService.java	com.xsy.scm.order.dao.SalesOrderItemDao	list,listByOrderIds	Mall order projection reads order items of owned orders.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/order/service/MallOrderService.java	com.xsy.scm.order.dao.SalesOrderItemDao	list	Mall reorder reads historical order items to restock the cart.
+xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/service/SupplierQueryService.java	com.xsy.scm.businesscategory.dao.BusinessCategoryDao	selectById,selectList	Supplier query shows the business category name of linked records.

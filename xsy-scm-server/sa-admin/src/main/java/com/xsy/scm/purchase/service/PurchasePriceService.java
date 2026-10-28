@@ -5,6 +5,7 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.purchase.constant.ScmPurchaseIdempotencyResourceTypeEnum;
 import com.xsy.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
+import com.xsy.scm.purchase.constant.ScmPurchasePriceSourceEnum;
 import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import com.xsy.scm.purchase.dao.PurchaseOperationLogDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderDao;
@@ -49,7 +50,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_PRICE_WIN
  * 采购价后置：补价、改价与超期自动回填。
  *
  * <p>
- * 边界（docs/decisions.md D-1028-06/07）：
+ * 边界：
  * <ul>
  * <li>补价只对「待定价且未锁单且窗口未过期」的行生效，是日常路径；</li>
  * <li>改价是带原因、带独立权限的例外路径，可在锁单后使用，但收货一经确认就不再改写库存成本；</li>
@@ -63,10 +64,6 @@ public class PurchasePriceService {
 
     /** 自动回填在日志与审计里的系统操作人。 */
     public static final String AUTO_FILL_OPERATOR = "system:purchase-price-auto-fill";
-
-    public static final String SOURCE_MANUAL = "MANUAL";
-
-    public static final String SOURCE_AUTO_LAST_PRICE = "AUTO_LAST_PRICE";
 
     private final PurchaseOrderDao purchaseOrderDao;
 
@@ -105,18 +102,17 @@ public class PurchasePriceService {
         OffsetDateTime now = OffsetDateTime.now();
         assertWindowOpen(locked, now);
 
-        applyPrice(locked, PurchaseOrderValidator.decimal(form.getPrice(), false), now, SOURCE_MANUAL,
-            ScmOperator.current());
-        recordAudit(order, locked, null, locked.getPurchasePrice(), SOURCE_MANUAL, form.getReason(),
-            ScmOperator.current(), idempotencyKey);
+        applyPrice(locked, PurchaseOrderValidator.decimal(form.getPrice(), false), now,
+            ScmPurchasePriceSourceEnum.MANUAL.name(), ScmOperator.current());
+        recordAudit(order, locked, null, locked.getPurchasePrice(), ScmPurchasePriceSourceEnum.MANUAL.name(),
+            form.getReason(), ScmOperator.current(), idempotencyKey);
 
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao
             .append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.PRICE_FILL, order.getId(), null,
                 form.getReason(), priceSnapshot(null, true), priceSnapshot(locked.getPurchasePrice(), false)));
-        purchaseIdempotencyService.complete(claim,
-            com.xsy.scm.purchase.constant.ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(), order.getId(),
-            result);
+        purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
+            order.getId(), result);
         return result;
     }
 
@@ -145,18 +141,17 @@ public class PurchasePriceService {
         BigDecimal oldPrice = locked.getPurchasePrice();
         boolean wasPending = Boolean.TRUE.equals(locked.getPricePending());
         OffsetDateTime now = OffsetDateTime.now();
-        applyPrice(locked, PurchaseOrderValidator.decimal(form.getPrice(), false), now, SOURCE_MANUAL,
-            ScmOperator.current());
-        recordAudit(order, locked, oldPrice, locked.getPurchasePrice(), SOURCE_MANUAL, form.getReason(),
-            ScmOperator.current(), idempotencyKey);
+        applyPrice(locked, PurchaseOrderValidator.decimal(form.getPrice(), false), now,
+            ScmPurchasePriceSourceEnum.MANUAL.name(), ScmOperator.current());
+        recordAudit(order, locked, oldPrice, locked.getPurchasePrice(), ScmPurchasePriceSourceEnum.MANUAL.name(),
+            form.getReason(), ScmOperator.current(), idempotencyKey);
 
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.PRICE_ADJUST,
             order.getId(), null, form.getReason(), priceSnapshot(oldPrice, wasPending),
             priceSnapshot(locked.getPurchasePrice(), false)));
-        purchaseIdempotencyService.complete(claim,
-            com.xsy.scm.purchase.constant.ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(), order.getId(),
-            result);
+        purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
+            order.getId(), result);
         return result;
     }
 
@@ -198,8 +193,9 @@ public class PurchasePriceService {
                     row.getSkuId());
                 continue;
             }
-            applyPrice(row, reference.getPurchasePrice(), now, SOURCE_AUTO_LAST_PRICE, AUTO_FILL_OPERATOR);
-            recordAudit(order, row, null, row.getPurchasePrice(), SOURCE_AUTO_LAST_PRICE,
+            applyPrice(row, reference.getPurchasePrice(), now, ScmPurchasePriceSourceEnum.AUTO_LAST_PRICE.name(),
+                AUTO_FILL_OPERATOR);
+            recordAudit(order, row, null, row.getPurchasePrice(), ScmPurchasePriceSourceEnum.AUTO_LAST_PRICE.name(),
                 "提交满 " + PurchaseOrderLockService.PRICE_WINDOW_DAYS + " 天，按最近已提交采购价回填", AUTO_FILL_OPERATOR, null);
             filled = true;
         }

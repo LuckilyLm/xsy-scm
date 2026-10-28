@@ -156,7 +156,7 @@ class FinanceWriteOffAutoTest {
     }
 
     @Test
-    @DisplayName("对方没有未结单据时返回 41160，不写空核销")
+    @DisplayName("对方没有未结单据时返回 41164，不写空核销")
     void emptyCandidatesRejected() {
         when(receivables.selectAutoTargets(eq(3L), any(), anyInt())).thenReturn(List.of());
 

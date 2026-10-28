@@ -10,7 +10,6 @@ import com.xsy.scm.purchase.domain.entity.PurchaseOperationLogEntity;
 import com.xsy.scm.purchase.domain.entity.PurchaseOrderEntity;
 import com.xsy.scm.purchase.domain.form.PurchaseOrderLockForm;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
-import com.xsy.scm.purchase.manager.PurchaseOrderAuditSnapshotFactory;
 import com.xsy.scm.purchase.manager.PurchaseOrderValidator;
 import com.xsy.scm.purchase.manager.PurchaseSnapshotFactory;
 import com.xsy.scm.purchase.support.PurchaseOwnerResolver;

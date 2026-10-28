@@ -93,7 +93,7 @@ class InventoryNegativeStockIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("#3 关闭负库存开关前必须先补平负余额（41019）")
+    @DisplayName("#3 关闭负库存开关前必须先补平负余额（41010）")
     void cannotDisableWhileNegativeBalanceExists() {
         Long skuId = newSkuOfType("NS3", "NON_STANDARD", "ON_SHELF");
         inventoryCommandService.postSalesOutbound(new InventoryOutboundFact(
@@ -105,7 +105,7 @@ class InventoryNegativeStockIT extends ScmW6PgITBase {
         update.setVersion(warehouseService.require(negativeWarehouseId).getVersion());
         update.setName(prefix + "负库存仓");
         update.setAllowNegativeStock(false);
-        expectCode(() -> warehouseService.update(update), 41019);
+        expectCode(() -> warehouseService.update(update), 41010);
         assertThat(warehouseService.require(negativeWarehouseId).getAllowNegativeStock()).isTrue();
     }
 

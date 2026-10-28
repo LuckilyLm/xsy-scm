@@ -2421,10 +2421,15 @@ test.describe('scm-stocktake-import', () => {
       await expect(page.getByRole('button', {name: accessibleName('导入盘点')}).last()).toBeVisible();
 
       // 导出绑定查询条件里的仓库：未选仓库时只给提示、不发请求，所以必须先在页面上真的选中。
-      const warehouseItem = page.locator('.smart-query-form-item').filter({hasText: '仓库'}).first();
-      await warehouseItem.locator('.ant-select').click();
-      // 选项文本是「名称（编码）」且被拆成多个文本节点，只能按 option 元素包含匹配
-      await page.locator('.ant-select-dropdown:visible .ant-select-item').filter({hasText: warehouseName}).first().click();
+      // WarehouseSelect 带 show-search；开发库里 E2E 仓库越积越多，下拉是虚拟列表只渲染首屏，
+      // 直接按文本点会落在 DOM 之外。先输入名称过滤，再点过滤后的那一项。
+      const warehouseSelect = page.locator('.smart-query-form-item').filter({hasText: '仓库'}).first().locator('.ant-select');
+      await warehouseSelect.locator('.ant-select-selector').click();
+      await warehouseSelect.locator('input').first().fill(warehouseName);
+      const warehouseOption = page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({hasText: warehouseName}).first();
+      await expect(warehouseOption).toBeVisible();
+      await warehouseOption.click();
+      await expect(warehouseSelect.locator('.ant-select-selection-item')).toContainText(warehouseName);
 
       const download = page.waitForResponse((r) => r.url().includes('/stocktake/import/template'));
       await page.getByRole('button', {name: accessibleName('导出盘点模板')}).click();

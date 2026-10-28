@@ -215,7 +215,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         u.getItems().getFirst().setItemId(pending.getItems().getFirst().getItemId());
         u.getItems().getFirst().setVersion(pending.getItems().getFirst().getVersion());
         u.getItems().getFirst().setOrderedQuantity("5.0000");
-        expectCode(() -> orders.update(u), 40976);
+        expectCode(() -> orders.update(u), 41204);
         assertThat(jdbc.queryForObject("SELECT ordered_quantity FROM xsy_sales_order_item WHERE id=?",
                 java.math.BigDecimal.class, pending.getItems().getFirst().getItemId()))
                 .isEqualByComparingTo("2.0000");

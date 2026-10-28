@@ -95,7 +95,9 @@ class OrderRulesTest {
     void numberingExpandsNaturallyAndPriceEnumHasNoUnpriced() {
         assertThat(OrderNumberGenerator.format("SO", 999999)).matches("SO[0-9]{8}999999");
         assertThat(OrderNumberGenerator.format("RT", 1000000)).matches("RT[0-9]{8}1000000");
-        assertThat(ScmOrderPriceSourceEnum.values()).extracting(Enum::name).containsExactly("AGREEMENT", "CUSTOMER_TYPE", "MARKET", "OVERRIDE");
+        // 枚举顺序就是取价链顺序：逐客协议价 → 客户分组价 → 客户类型价 → 时价 → 市场价，人工改价最后兜底。
+        assertThat(ScmOrderPriceSourceEnum.values()).extracting(Enum::name).containsExactly("AGREEMENT", "CUSTOMER_GROUP",
+                "CUSTOMER_TYPE", "TIME_PRICE", "MARKET", "OVERRIDE");
     }
 
     @Test

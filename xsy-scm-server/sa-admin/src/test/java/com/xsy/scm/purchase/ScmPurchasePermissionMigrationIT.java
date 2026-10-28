@@ -124,16 +124,17 @@ class ScmPurchasePermissionMigrationIT extends ScmW5PgITBase {
         }
 
         // 7（需求：原 4 条含缺口预览 + ADM-05 冻结批次的 create / generate / detail）
-        // + 14（采购单，含单笔/批量少收关单与 reassign 改派归属）
-        // + 10（收货，含 putaway）+ 7（仓库，含 enable/disable）= 38 个端点
-        assertThat(endpointCount).isEqualTo(38);
+        // + 18（采购单：14 条含单笔/批量少收关单与 reassign 改派归属，再加补价/改价/锁单/解锁 4 条）
+        // + 10（收货，含 putaway）+ 7（仓库，含 enable/disable）= 42 个端点
+        assertThat(endpointCount).isEqualTo(42);
         // 权限码去重后 24 个：3 + 9 + 6 + 5 + 1（缺口预览叠加 scm:inventory:balance:query，AND 模式）；
         // 改派只多出一个 scm:purchase:assign —— 它是「能把单据换成谁」的分配权，
         // 与 putaway / enable 一样是新增动作而非新维度，所以端点与权限码同步 +1
         // 端点 35 → 38 带来 3 个新权限码（ADM-05 冻结批次 batch:create / batch:generate / batch:query），
         // 去重后 24 → 27。下面紧身的 containsAll(declared) 才是关键：
         // 只要有一个码没进 V16 种子，接口对所有人不可用，这条会直接点名。
-        assertThat(declared).hasSize(27);
+        // 采购价后置与锁单再补 4 个：price:fill / price:adjust / lock / unlock，去重后 27 → 31
+        assertThat(declared).hasSize(31);
         assertThat(declared).contains("scm:inventory:balance:query");
 
         List<String> seeded = jdbc.queryForList(

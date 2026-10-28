@@ -19,15 +19,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>不硬编码白名单：直接读取迁移文件里各 {@code CONSTRAINT ck_* CHECK (... IN (...))}
  * 的取值集合，与 Java 枚举逐一比对。这样 DDL 或枚举任何一侧漂移都会立刻失败。
  *
- * <p>操作日志类型追加了 {@code RECEIPT_PUTAWAY}，因此该白名单与归属 CHECK 从
- * {@code V22__scm_receipt_putaway_warehouse.sql} 读取（V22 是 {@code ck_purchase_operation_log_type}
- * / {@code ck_purchase_operation_log_owner} 的最终形态），其余状态白名单仍读 V15。
+ * <p>操作日志类型追加了收货入库与采购价后置/锁单两组类型，该白名单与归属 CHECK 从
+ * {@code V200__scm_purchase_log_receipt_putaway.sql} 读取（V200 是
+ * {@code ck_purchase_operation_log_type} / {@code ck_purchase_operation_log_owner} 的最终形态），
+ * 其余状态白名单仍读 V15。
  */
 class ScmPurchaseStatusEnumTest {
 
     private static final String MIGRATION = "/db/migration/V15__scm_purchase.sql";
 
-    private static final String V22_MIGRATION = "/db/migration/V22__scm_receipt_putaway_warehouse.sql";
+    private static final String V200_MIGRATION = "/db/migration/V200__scm_purchase_log_receipt_putaway.sql";
 
     @Test
     @DisplayName("采购单 6 态与 ck_purchase_order_status 白名单一致")
@@ -57,26 +58,27 @@ class ScmPurchaseStatusEnumTest {
     }
 
     @Test
-    @DisplayName("操作日志 13 型与 ck_purchase_operation_log_type 一致，且归属 CHECK 覆盖全部 13 型")
+    @DisplayName("操作日志 19 型与 ck_purchase_operation_log_type 一致，且归属 CHECK 覆盖全部 19 型")
     void operationTypeMatchesDdlAndOwnerConstraintCoversAll() {
-        // 追加 RECEIPT_PUTAWAY 之后，白名单与归属 CHECK 的最终形态在 V22。
-        Set<String> fromDdl = whitelist(V22_MIGRATION, "ck_purchase_operation_log_type");
+        // 补回收货入库、再加采购价后置/锁单之后，白名单与归属 CHECK 的最终形态在 V200。
+        Set<String> fromDdl = whitelist(V200_MIGRATION, "ck_purchase_operation_log_type");
         assertThat(names(ScmPurchaseOperationTypeEnum.values())).isEqualTo(fromDdl);
-        assertThat(ScmPurchaseOperationTypeEnum.values()).hasSize(13);
+        assertThat(ScmPurchaseOperationTypeEnum.values()).hasSize(19);
 
         // 归属由 operation_type 决定，因此每一种类型都必须出现在归属 CHECK 里，
         //      否则该类型的日志会既不被接受也不被拒绝（约束整体求值为 NULL 而放行）。
-        String sql = migrationSql(V22_MIGRATION);
-        String owner = between(sql, "ck_purchase_operation_log_owner", "COMMENT ON COLUMN purchase_receipt");
+        String sql = migrationSql(V200_MIGRATION);
+        String owner = sql.substring(sql.indexOf("ck_purchase_operation_log_owner"));
         for (ScmPurchaseOperationTypeEnum type : ScmPurchaseOperationTypeEnum.values()) {
             assertThat(owner)
                     .as("归属 CHECK 未覆盖 operation_type=%s", type.name())
                     .contains("'" + type.name() + "'");
         }
-        // 四个分支的分组口径固定，收货分支含 RECEIPT_PUTAWAY
+        // 五个分支的分组口径固定：采购单类含采购价后置/锁单，收货分支含 RECEIPT_PUTAWAY
         assertThat(owner).contains("operation_type = 'DEMAND_GENERATE'");
         assertThat(owner).contains("operation_type = 'DEMAND_ALLOCATE'");
         assertThat(owner).contains("'CREATE','UPDATE','SUBMIT','CANCEL','SHORT_CLOSE','DELETE'");
+        assertThat(owner).contains("'PRICE_FILL','PRICE_ADJUST','PRICE_AUTO_FILL',");
         assertThat(owner).contains("'RECEIPT_CREATE','RECEIPT_UPDATE','RECEIPT_CONFIRM','RECEIPT_DELETE','RECEIPT_PUTAWAY'");
     }
 

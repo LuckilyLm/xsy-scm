@@ -71,7 +71,7 @@ class FinanceWaiverIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("#3 通用核销反向接口不能撤销抹零（41161）")
+    @DisplayName("#3 通用核销反向接口不能撤销抹零（41165）")
     void genericWriteOffReverseCannotReverseWaiver() {
         Long receivableId = normalReceivable("50.0000");
         FinanceWaiverVO waiver = financeWaiverService.add(waiverForm(receivableId, "0.2000", "分角抹零"),
@@ -80,7 +80,7 @@ class FinanceWaiverIT extends ScmW5PgITBase {
         FinanceWriteOffReverseForm form = new FinanceWriteOffReverseForm();
         form.setWriteOffId(waiver.getWriteOffId());
         form.setReason("误操作");
-        expectCode(() -> financeWriteOffService.reverse(form, key("waiver-generic-reverse")), 41161);
+        expectCode(() -> financeWriteOffService.reverse(form, key("waiver-generic-reverse")), 41165);
         assertThat(netAllocated(receivableId)).isEqualByComparingTo("0.2000");
     }
 

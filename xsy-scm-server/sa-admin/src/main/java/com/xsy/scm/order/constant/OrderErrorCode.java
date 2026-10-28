@@ -43,7 +43,8 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_ALREADY_ASSIGNED(40973, "订单已被接单或指派，请刷新待分配列表"),
     ORDER_ASSIGN_TARGET_INVALID(40974, "目标业务员不存在、已停用或没有订单查看权限"),
     ORDER_REPRICE_REQUIRED(40975, "订单价格依据已变化，请授权人员手动重算并填写原因"),
-    ORDER_PENDING_EDIT_BLOCKED(40976, "待确认订单已产生支付、应收、预留、出库或分拣事实，不能再改单"),
+    // 40977–40982 属采购/商城域，订单新码走自己的 412xx 段，原因见下方 409xx 段说明。
+    ORDER_PENDING_EDIT_BLOCKED(41204, "待确认订单已产生支付、应收、预留、出库或分拣事实，不能再改单"),
     // 40912–40917 是 409xx 段中现查未占用的连续空位：40977–40982 与采购/商城域撞码，
     // 由 PurchaseErrorCodeTest 撞码门禁拦下后整体迁移。
     ORDER_LOCKED(40912, "订单已锁单，请新建加单而不是修改原单"),

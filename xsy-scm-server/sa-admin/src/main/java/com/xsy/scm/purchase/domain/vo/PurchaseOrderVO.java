@@ -9,6 +9,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 /**
  * 采购单展示提交、取消、短关等业务时间；收货完成时间取各收货单。收货进度是查询时计算的值，采购明细和需求分配在详情中展示。
@@ -46,6 +47,8 @@ public class PurchaseOrderVO {
     /** 锁单开关：只阻止补价，不改变采购状态；收货与应付照常。 */
     private Boolean lockedFlag;
     private OffsetDateTime lockedAt;
+    /** 锁单人写成“姓名(userType:userId)”，与其它操作人字段一致。 */
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String lockedBy;
     /** MANUAL / AUTO_7_DAYS。 */
     private String lockReason;

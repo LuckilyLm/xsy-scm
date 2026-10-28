@@ -57,6 +57,8 @@ class OrderWebTest {
     @MockitoBean
     SalesOrderImportService imports;
     @MockitoBean
+    SalesOrderPasteService paste;
+    @MockitoBean
     net.lab1024.sa.base.module.support.securityprotect.service.SecurityFileService securityFiles;
     @MockitoBean(name = "systemEnvironment")
     SystemEnvironment environment;
@@ -70,7 +72,7 @@ class OrderWebTest {
                     assertThat(m.getAnnotation(SaCheckPermission.class)).as(m.getName()).isNotNull();
                     count++;
                 }
-        assertThat(count).isEqualTo(33);
+        assertThat(count).isEqualTo(34);
     }
 
     @Test

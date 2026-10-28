@@ -272,7 +272,7 @@ public class PurchaseReceiptService {
         Map<Long, PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.lockByOrderId(order.getId()).stream()
             .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
         // 收货确认是库存成本入账的时点：任何一行还没价就停在这里。允许无价入库会把成本记成 0，
-        // 之后再改价也无法回冲（已确认收货的单不再改成本，见 D-1028-06）。
+        // 之后再改价也无法回冲——已确认收货的单不再改库存成本，价格差异另立成本更正需求。
         if (orderItems.values().stream().anyMatch(item -> Boolean.TRUE.equals(item.getPricePending()))) {
             throw new ScmBusinessException(PURCHASE_PRICE_PENDING);
         }

@@ -16,6 +16,7 @@ import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceEntryTypeEnum;
+import com.xsy.scm.print.constant.ScmStatementFactType;
 import com.xsy.scm.report.constant.ReportErrorCode;
 import com.xsy.scm.report.dao.ScmCustomerStatementDao;
 import com.xsy.scm.report.domain.form.ScmCustomerStatementForm;
@@ -39,8 +40,8 @@ public class ScmCustomerStatementService {
      * <p>
      * 单列出来是因为抹零没有资金流入：它是应收减少，不是核销分配，不能并进 {@code writeOffNet}。
      */
-    private static final String FACT_WAIVER = "WAIVER";
-    private static final String FACT_WAIVER_REVERSE = "WAIVER_REVERSE";
+    private static final String FACT_WAIVER = ScmStatementFactType.WAIVER.name();
+    private static final String FACT_WAIVER_REVERSE = ScmStatementFactType.WAIVER_REVERSE.name();
     private final ScmCustomerStatementDao statementDao;
     private final ScmDataScopeService dataScopeService;
 
