@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.purchase.dao.PurchaseCostAdjustmentDao">
+    <select id="nextNumber" resultType="long">SELECT nextval('purchase_cost_adjustment_no_seq')</select>
+    <sql id="source">
+        SELECT ri.id AS receipt_item_id, r.id AS receipt_id, r.receipt_no, r.purchase_order_id,
+            ri.purchase_order_item_id, r.warehouse_id, r.supplier_id, r.supplier_name_snapshot,
+            ri.sku_id, oi.product_name_snapshot, ri.purchase_unit_snapshot AS unit_snapshot,
+            ri.received_quantity AS quantity, po.purchaser_id, latest.id AS previous_adjustment_id,
+            COALESCE(latest.new_price, oi.purchase_price) AS previous_price
+        FROM xsy_purchase_receipt_item ri
+        JOIN xsy_purchase_receipt r ON r.id = ri.purchase_receipt_id AND r.status = 'CONFIRMED' AND r.deleted = FALSE
+        JOIN xsy_purchase_order po ON po.id = r.purchase_order_id AND po.deleted = FALSE
+        JOIN xsy_purchase_order_item oi ON oi.id = ri.purchase_order_item_id
+        LEFT JOIN LATERAL (SELECT a.id, a.new_price FROM xsy_purchase_cost_adjustment a
+            WHERE a.receipt_item_id = ri.id ORDER BY a.id DESC LIMIT 1) latest ON TRUE
+        WHERE ri.deleted = FALSE AND ri.received_quantity &gt; 0
+    </sql>
+    <select id="source" resultType="com.xsy.scm.purchase.domain.vo.PurchaseCostAdjustmentVO">
+        <include refid="source"/> AND ri.id = #{receiptItemId}
+    </select>
+    <select id="options" resultType="com.xsy.scm.purchase.domain.vo.PurchaseCostAdjustmentVO">
+        <include refid="source"/> AND r.purchase_order_id = #{orderId} ORDER BY r.id, ri.id
+    </select>
+    <select id="history" resultType="com.xsy.scm.purchase.domain.vo.PurchaseCostAdjustmentVO">
+        SELECT a.*, r.receipt_no FROM xsy_purchase_cost_adjustment a
+        JOIN xsy_purchase_receipt r ON r.id = a.receipt_id
+        WHERE a.purchase_order_id = #{orderId} ORDER BY a.id DESC
+    </select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO xsy_purchase_cost_adjustment(adjustment_no, receipt_item_id, receipt_id, purchase_order_id,
+            purchase_order_item_id, warehouse_id, supplier_id, supplier_name_snapshot, sku_id, product_name_snapshot,
+            unit_snapshot, quantity, previous_adjustment_id, previous_price, new_price, direction, amount, reason,
+            occurred_at, created_by)
+        VALUES (#{adjustmentNo}, #{receiptItemId}, #{receiptId}, #{purchaseOrderId}, #{purchaseOrderItemId},
+            #{warehouseId}, #{supplierId}, #{supplierNameSnapshot}, #{skuId}, #{productNameSnapshot}, #{unitSnapshot},
+            #{quantity}, #{previousAdjustmentId}, #{previousPrice}, #{newPrice}, #{direction}, #{amount}, #{reason},
+            #{occurredAt}, #{createdBy})
+    </insert>
+</mapper>
+

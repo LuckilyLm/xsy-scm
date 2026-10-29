@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.finance.dao.FinancePayableSourceDao">
+    <select id="selectPurchaserByOrderId" resultType="long">
+        SELECT purchaser_id FROM xsy_purchase_order WHERE id = #{purchaseOrderId} AND deleted = FALSE
+    </select>
 
     <!--
       财务域对采购表只读：本文件只有 SELECT。

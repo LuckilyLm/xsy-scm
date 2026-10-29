@@ -94,7 +94,7 @@ public class FinanceOperationLogQueryService {
                 if (normal == null || !scope.getPurchaserScope()
                     .allows(normal.getSourceId() == null
                         ? null
-                        : financePayableSourceDao.selectPurchaserId(normal.getSourceId()))) {
+                        : financePayableSourceDao.selectPurchaserByOrderId(normal.getPurchaseOrderId()))) {
                     throw new ScmDataScopeException();
                 }
                 return businessId;
@@ -145,7 +145,7 @@ public class FinanceOperationLogQueryService {
                     require(scope.getPurchaserScope()
                         .allows(payable.getSourceId() == null
                             ? null
-                            : financePayableSourceDao.selectPurchaserId(payable.getSourceId())));
+                            : financePayableSourceDao.selectPurchaserByOrderId(payable.getPurchaseOrderId())));
                 } else {
                     throw new ScmBusinessException(VALIDATION_ERROR);
                 }

@@ -83,13 +83,119 @@
         </choose>
     </sql>
 
+    <!-- 零余额首次销售的 0 只是缺省成本；只有出库前已有同单位采购成本依据时才视为已知零成本。 -->
+    <sql id="movementCostKnown">
+        ${movement}.unit_cost IS NOT NULL AND (${movement}.unit_cost &lt;&gt; 0 OR EXISTS (
+            SELECT 1 FROM xsy_inventory_movement cost_source
+            WHERE cost_source.warehouse_id = ${movement}.warehouse_id
+                AND cost_source.sku_id = ${movement}.sku_id
+                AND cost_source.unit_snapshot = ${movement}.unit_snapshot
+                AND cost_source.movement_type = 'PURCHASE_IN'
+                AND cost_source.unit_cost IS NOT NULL
+                AND cost_source.deleted = FALSE
+                AND cost_source.id &lt; ${movement}.id
+                AND cost_source.occurred_at &lt;= ${movement}.occurred_at))
+    </sql>
+
+    <sql id="independentReturnDimensions">
+        CASE #{query.dimension} WHEN 'CUSTOMER' THEN return_doc.customer_id WHEN 'PRODUCT' THEN return_item.sku_id
+            WHEN 'CATEGORY' THEN cat.id WHEN 'SELLER' THEN c.seller_id WHEN 'WAREHOUSE' THEN w.id
+            ELSE NULL::BIGINT END AS dimension_id,
+        CASE #{query.dimension} WHEN 'CUSTOMER' THEN return_doc.customer_name_snapshot
+            WHEN 'PRODUCT' THEN return_item.sku_name_snapshot WHEN 'CATEGORY' THEN COALESCE(cat.name, '未分类')
+            WHEN 'SELLER' THEN COALESCE(e.actual_name, '未分配销售员')
+            WHEN 'WAREHOUSE' THEN COALESCE(w.name, '未归属仓库')
+            ELSE TO_CHAR((return_event.event_at AT TIME ZONE 'Asia/Shanghai')::date, 'YYYY-MM-DD') END AS dimension_name,
+        CASE #{query.dimension} WHEN 'CUSTOMER' THEN c.customer_code WHEN 'PRODUCT' THEN sku.sku_code
+            WHEN 'CATEGORY' THEN CAST(cat.id AS VARCHAR) WHEN 'SELLER' THEN CAST(c.seller_id AS VARCHAR)
+            WHEN 'WAREHOUSE' THEN w.warehouse_code ELSE NULL::VARCHAR END AS dimension_code,
+        CASE WHEN #{query.dimension} = 'DAY' THEN (return_event.event_at AT TIME ZONE 'Asia/Shanghai')::date
+            ELSE NULL::DATE END AS biz_date
+    </sql>
+
+    <sql id="independentReturnFilters">
+        <choose>
+            <when test="scope != null and scope.orderSellerScope.all"/>
+            <when test="scope != null and !scope.orderSellerScope.empty">
+                AND c.seller_id IN
+                <foreach collection="scope.orderSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <choose>
+            <when test="scope != null and scope.customerSellerScope.all"/>
+            <when test="scope != null and !scope.customerSellerScope.empty">
+                AND c.seller_id IN
+                <foreach collection="scope.customerSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <if test="query.customerId != null">AND return_doc.customer_id = #{query.customerId}</if>
+        <if test="query.sellerId != null">AND c.seller_id = #{query.sellerId}</if>
+        <if test="query.skuId != null">AND return_item.sku_id = #{query.skuId}</if>
+        <if test="query.categoryId != null">
+            AND (cat.id = #{query.categoryId} OR cat2.id = #{query.categoryId} OR cat3.id = #{query.categoryId})
+        </if>
+        <if test="query.warehouseId != null">AND w.id = #{query.warehouseId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (return_doc.return_no ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR return_doc.customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR return_item.sku_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR sku.sku_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR ps.spu_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR COALESCE(w.name, '') ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        <include refid="warehouseScope"/>
+    </sql>
+
     <sql id="facts">
         WITH return_allocations AS(SELECT receipt_item.return_item_id, receipt_item.source_sales_out_movement_id,
             SUM(receipt_item.quantity) AS allocated_quantity FROM xsy_order_return_receipt_item receipt_item WHERE
             receipt_item.bundle_receipt_counted = TRUE GROUP BY receipt_item.return_item_id,
             receipt_item.source_sales_out_movement_id),
             return_allocation_totals AS(SELECT return_item_id,
-            SUM(allocated_quantity) AS allocated_quantity FROM return_allocations GROUP BY return_item_id), facts AS(
+            SUM(allocated_quantity) AS allocated_quantity FROM return_allocations GROUP BY return_item_id),
+        independent_allocations AS (
+            SELECT item.return_item_id, receipt.warehouse_id, SUM(item.quantity) AS quantity
+            FROM xsy_order_return_receipt_item item
+            JOIN xsy_order_return_receipt receipt ON receipt.id = item.receipt_id
+            JOIN xsy_order_return doc ON doc.id = receipt.return_id
+                AND doc.source_type = 'INDEPENDENT' AND doc.deleted = FALSE
+            WHERE item.source_sales_out_movement_id IS NULL AND item.bundle_receipt_counted = TRUE
+            GROUP BY item.return_item_id, receipt.warehouse_id
+        ), independent_revenue AS (
+            SELECT r.source_id AS return_id, ri.source_id AS return_item_id, r.event_at, ri.amount,
+                item.approved_quantity
+            FROM xsy_finance_receivable r
+            JOIN xsy_finance_receivable_item ri ON ri.receivable_id = r.id
+                AND ri.source_type = 'ORDER_RETURN_ITEM' AND ri.deleted = FALSE
+            JOIN xsy_order_return_item item ON item.id = ri.source_id AND item.deleted = FALSE
+            WHERE r.deleted = FALSE AND r.entry_type = 'RED' AND r.source_type = 'ORDER_RETURN'
+                AND r.order_id IS NULL AND r.event_at &gt;= #{startAt} AND r.event_at &lt; #{endAt}
+        ), independent_events AS (
+            SELECT r.return_id, r.return_item_id, a.warehouse_id, r.event_at,
+                -r.amount * a.quantity / NULLIF(r.approved_quantity, 0) AS revenue_amount,
+                0::NUMERIC AS sales_cost_amount, 0::BIGINT AS cost_missing_count
+            FROM independent_revenue r JOIN independent_allocations a ON a.return_item_id = r.return_item_id
+            UNION ALL
+            SELECT r.return_id, r.return_item_id, NULL::BIGINT, r.event_at,
+                -r.amount * GREATEST(r.approved_quantity - COALESCE(a.quantity, 0), 0)
+                    / NULLIF(r.approved_quantity, 0), 0::NUMERIC, 0::BIGINT
+            FROM independent_revenue r
+            LEFT JOIN (SELECT return_item_id, SUM(quantity) AS quantity FROM independent_allocations
+                GROUP BY return_item_id) a ON a.return_item_id = r.return_item_id
+            WHERE r.approved_quantity &gt; COALESCE(a.quantity, 0)
+            UNION ALL
+            SELECT receipt.return_id, item.return_item_id, receipt.warehouse_id, receipt.received_at,
+                0::NUMERIC, -COALESCE(item.stock_quantity, item.quantity) * item.unit_cost,
+                CASE WHEN item.unit_cost IS NULL THEN 1::BIGINT ELSE 0::BIGINT END
+            FROM xsy_order_return_receipt receipt
+            JOIN xsy_order_return_receipt_item item ON item.receipt_id = receipt.id
+            JOIN xsy_order_return doc ON doc.id = receipt.return_id
+                AND doc.source_type = 'INDEPENDENT' AND doc.deleted = FALSE
+            WHERE item.source_sales_out_movement_id IS NULL
+                AND receipt.received_at &gt;= #{startAt} AND receipt.received_at &lt; #{endAt}
+        ), facts AS(
         -- Revenue is recognized from NORMAL Finance receivables at their event time.
         SELECT
         <include refid="dimensionFields"/>
@@ -101,8 +207,10 @@
             movement.movement_type = 'SALES_OUT' AND
             movement.deleted = FALSE WHERE child.outbound_id = outbound_item.outbound_id AND
             child.bundle_component_id = bc.id AND child.deleted = FALSE AND
-            movement.unit_cost IS NOT NULL)) THEN 1::BIGINT ELSE 0::BIGINT END ELSE CASE WHEN sales_out.id IS NULL
-            OR sales_out.unit_cost IS NULL THEN 1::BIGINT ELSE 0::BIGINT END END AS cost_missing_count
+            <include refid="movementCostKnown"><property name="movement" value="movement"/></include>
+            )) THEN 1::BIGINT ELSE 0::BIGINT END ELSE CASE WHEN sales_out.id IS NULL OR NOT (
+            <include refid="movementCostKnown"><property name="movement" value="sales_out"/></include>
+            ) THEN 1::BIGINT ELSE 0::BIGINT END END AS cost_missing_count
         FROM xsy_finance_receivable receivable
         JOIN xsy_finance_receivable_item receivable_item ON receivable_item.receivable_id = receivable.id
             AND receivable_item.deleted = FALSE
@@ -211,7 +319,8 @@
         SELECT
         <include refid="dimensionFields"/>
         , 0::NUMERIC AS revenue_amount, COALESCE(sales_out.quantity * sales_out.unit_cost, 0) AS sales_cost_amount,
-            0::NUMERIC AS gift_cost_amount, CASE WHEN sales_out.unit_cost IS NULL
+            0::NUMERIC AS gift_cost_amount, CASE WHEN NOT (
+            <include refid="movementCostKnown"><property name="movement" value="sales_out"/></include>)
             AND NOT EXISTS (SELECT 1 FROM xsy_finance_receivable receivable JOIN xsy_finance_receivable_item
             receivable_item ON receivable_item.receivable_id = receivable.id AND receivable_item.deleted = FALSE AND
             receivable_item.source_type = 'INVENTORY_OUTBOUND_ITEM' WHERE receivable.deleted = FALSE AND
@@ -285,7 +394,9 @@
         <include refid="dimensionFields"/>
         , 0::NUMERIC AS revenue_amount, 0::NUMERIC AS sales_cost_amount,
             COALESCE(gift_out.quantity * gift_out.unit_cost, 0) AS gift_cost_amount,
-            CASE WHEN gift_out.unit_cost IS NULL THEN 1::BIGINT ELSE 0::BIGINT END AS cost_missing_count
+            CASE WHEN NOT (
+            <include refid="movementCostKnown"><property name="movement" value="gift_out"/></include>
+            ) THEN 1::BIGINT ELSE 0::BIGINT END AS cost_missing_count
         FROM xsy_inventory_movement gift_out
         JOIN xsy_order_promotion_gift gift ON gift.id = gift_out.source_document_item_id
         JOIN xsy_sales_order so ON so.id = gift.sales_order_id
@@ -305,6 +416,71 @@
             AND gift_out.occurred_at &lt; #{endAt}
         <include refid="businessFilters"/>
         <include refid="warehouseScope"/>
+        UNION ALL
+        SELECT <include refid="independentReturnDimensions"/>, return_event.revenue_amount,
+            return_event.sales_cost_amount, 0::NUMERIC AS gift_cost_amount, return_event.cost_missing_count
+        FROM independent_events return_event
+        JOIN xsy_order_return return_doc ON return_doc.id = return_event.return_id
+            AND return_doc.source_type = 'INDEPENDENT' AND return_doc.deleted = FALSE
+        JOIN xsy_order_return_item return_item ON return_item.id = return_event.return_item_id
+            AND return_item.return_id = return_doc.id AND return_item.deleted = FALSE
+        JOIN xsy_customer c ON c.id = return_doc.customer_id AND c.deleted = FALSE
+        LEFT JOIN t_employee e ON e.employee_id = c.seller_id AND e.deleted_flag = FALSE
+        LEFT JOIN xsy_product_sku sku ON sku.id = return_item.sku_id
+        LEFT JOIN xsy_product_spu ps ON ps.id = sku.spu_id AND ps.deleted = FALSE
+        LEFT JOIN xsy_product_category cat ON cat.id = ps.category_id AND cat.deleted = FALSE
+        LEFT JOIN xsy_product_category cat2 ON cat2.id = cat.parent_id AND cat2.deleted = FALSE
+        LEFT JOIN xsy_product_category cat3 ON cat3.id = cat2.parent_id AND cat3.deleted = FALSE
+        LEFT JOIN xsy_warehouse w ON w.id = return_event.warehouse_id AND w.deleted = FALSE
+        WHERE TRUE
+        <include refid="independentReturnFilters"/>
+        UNION ALL
+        SELECT CASE #{query.dimension} WHEN 'PRODUCT' THEN adjustment.sku_id WHEN 'CATEGORY' THEN cat.id
+            WHEN 'WAREHOUSE' THEN w.id ELSE NULL::BIGINT END AS dimension_id,
+            CASE #{query.dimension} WHEN 'PRODUCT' THEN adjustment.product_name_snapshot
+                WHEN 'CATEGORY' THEN COALESCE(cat.name, '未分类') WHEN 'WAREHOUSE' THEN w.name
+                WHEN 'DAY' THEN TO_CHAR((adjustment.occurred_at AT TIME ZONE 'Asia/Shanghai')::date, 'YYYY-MM-DD')
+                ELSE '未分摊采购价差' END AS dimension_name,
+            CASE #{query.dimension} WHEN 'PRODUCT' THEN sku.sku_code WHEN 'CATEGORY' THEN CAST(cat.id AS VARCHAR)
+                WHEN 'WAREHOUSE' THEN w.warehouse_code ELSE NULL::VARCHAR END AS dimension_code,
+            CASE WHEN #{query.dimension} = 'DAY' THEN (adjustment.occurred_at AT TIME ZONE 'Asia/Shanghai')::date
+                ELSE NULL::DATE END AS biz_date,
+            0::NUMERIC AS revenue_amount,
+            CASE WHEN adjustment.direction = 'INCREASE' THEN adjustment.amount ELSE -adjustment.amount END AS sales_cost_amount,
+            0::NUMERIC AS gift_cost_amount, 0::BIGINT AS cost_missing_count
+        FROM xsy_purchase_cost_adjustment adjustment
+        JOIN xsy_purchase_order po ON po.id = adjustment.purchase_order_id AND po.deleted = FALSE
+        JOIN xsy_warehouse w ON w.id = adjustment.warehouse_id AND w.deleted = FALSE
+        LEFT JOIN xsy_product_sku sku ON sku.id = adjustment.sku_id
+        LEFT JOIN xsy_product_spu ps ON ps.id = sku.spu_id AND ps.deleted = FALSE
+        LEFT JOIN xsy_product_category cat ON cat.id = ps.category_id AND cat.deleted = FALSE
+        LEFT JOIN xsy_product_category cat2 ON cat2.id = cat.parent_id AND cat2.deleted = FALSE
+        LEFT JOIN xsy_product_category cat3 ON cat3.id = cat2.parent_id AND cat3.deleted = FALSE
+        WHERE adjustment.occurred_at &gt;= #{startAt} AND adjustment.occurred_at &lt; #{endAt}
+        <!-- 无客户归属的价差不向部分客户或部分业务员范围披露，也不按销售额猜测分摊。 -->
+        <choose>
+            <when test="scope != null and scope.customerSellerScope.all and scope.orderSellerScope.all"/>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <choose>
+            <when test="scope != null and scope.purchaserScope.all"/>
+            <when test="scope != null and !scope.purchaserScope.empty">
+                AND po.purchaser_id IN
+                <foreach collection="scope.purchaserScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <include refid="warehouseScope"/>
+        <if test="query.customerId != null or query.sellerId != null">AND FALSE</if>
+        <if test="query.warehouseId != null">AND w.id = #{query.warehouseId}</if>
+        <if test="query.skuId != null">AND adjustment.sku_id = #{query.skuId}</if>
+        <if test="query.categoryId != null">
+            AND (cat.id = #{query.categoryId} OR cat2.id = #{query.categoryId} OR cat3.id = #{query.categoryId})
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (adjustment.adjustment_no ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR adjustment.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
         )
     </sql>
 
@@ -343,4 +519,77 @@
         FROM facts
     </select>
 
+    <sql id="monthlyFacts">
+        <include refid="facts"/>, monthly_profit AS (
+            SELECT dimension_id, MAX(dimension_name) AS dimension_name, SUM(revenue_amount) AS revenue_amount,
+                SUM(sales_cost_amount) AS sales_cost_amount, SUM(gift_cost_amount) AS gift_cost_amount,
+                SUM(cost_missing_count) AS cost_missing_count
+            FROM facts GROUP BY dimension_id
+        ), monthly_expenses AS (
+            SELECT expense.customer_id, SUM(expense.tax_amount) AS tax_amount,
+                SUM(expense.service_amount) AS service_amount, SUM(expense.freight_amount) AS freight_amount,
+                SUM(expense.commission_amount) AS commission_amount
+            FROM xsy_finance_customer_expense expense
+            WHERE expense.expense_month = #{query.startDate}
+                AND NOT EXISTS (SELECT 1 FROM xsy_finance_customer_expense_void v WHERE v.expense_id = expense.id)
+            GROUP BY expense.customer_id
+        ), monthly_base AS (
+            SELECT c.id AS dimension_id, COALESCE(p.dimension_name, c.name) AS dimension_name,
+                COALESCE(p.revenue_amount, 0) AS revenue_amount, COALESCE(p.sales_cost_amount, 0) AS sales_cost_amount,
+                COALESCE(p.gift_cost_amount, 0) AS gift_cost_amount, COALESCE(p.cost_missing_count, 0) AS cost_missing_count,
+                COALESCE(e.tax_amount, 0) AS tax_amount, COALESCE(e.service_amount, 0) AS service_amount,
+                COALESCE(e.freight_amount, 0) AS freight_amount, COALESCE(e.commission_amount, 0) AS commission_amount
+            FROM monthly_profit p FULL JOIN monthly_expenses e ON e.customer_id = p.dimension_id
+            JOIN xsy_customer c ON c.id = COALESCE(p.dimension_id, e.customer_id) AND c.deleted = FALSE
+            WHERE TRUE
+            <choose>
+                <when test="scope != null and scope.customerSellerScope.all"/>
+                <when test="scope != null and !scope.customerSellerScope.empty">
+                    AND c.seller_id IN
+                    <foreach collection="scope.customerSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+                </when>
+                <otherwise>AND FALSE</otherwise>
+            </choose>
+            <choose>
+                <when test="scope != null and scope.orderSellerScope.all"/>
+                <when test="scope != null and !scope.orderSellerScope.empty">
+                    AND c.seller_id IN
+                    <foreach collection="scope.orderSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+                </when>
+                <otherwise>AND FALSE</otherwise>
+            </choose>
+            <if test="query.customerId != null">AND c.id = #{query.customerId}</if>
+            <if test="query.keyword != null and query.keyword != ''">AND c.name ILIKE CONCAT('%', #{query.keyword}, '%')</if>
+            UNION ALL
+            SELECT p.dimension_id, p.dimension_name, p.revenue_amount, p.sales_cost_amount,
+                p.gift_cost_amount, p.cost_missing_count, 0::NUMERIC, 0::NUMERIC, 0::NUMERIC, 0::NUMERIC
+            FROM monthly_profit p WHERE p.dimension_id IS NULL
+        ), monthly_rows AS (
+            SELECT *, tax_amount + service_amount + freight_amount + commission_amount AS expense_amount,
+                CASE WHEN cost_missing_count &gt; 0 THEN NULL
+                    ELSE revenue_amount - sales_cost_amount - gift_cost_amount END AS gross_profit,
+                CASE WHEN cost_missing_count &gt; 0 THEN NULL
+                    ELSE revenue_amount - sales_cost_amount - gift_cost_amount
+                        - tax_amount - service_amount - freight_amount - commission_amount END AS net_profit
+            FROM monthly_base
+        )
+    </sql>
+
+    <select id="monthlyQuery" resultType="com.xsy.scm.report.domain.vo.ScmCustomerMonthlyProfitVO">
+        <include refid="monthlyFacts"/>
+        SELECT * FROM monthly_rows ORDER BY net_profit DESC NULLS LAST, dimension_id
+    </select>
+
+    <select id="monthlySummary" resultType="com.xsy.scm.report.domain.vo.ScmCustomerMonthlyProfitVO">
+        <include refid="monthlyFacts"/>
+        SELECT COALESCE(SUM(revenue_amount), 0) AS revenue_amount,
+            COALESCE(SUM(sales_cost_amount), 0) AS sales_cost_amount,
+            COALESCE(SUM(gift_cost_amount), 0) AS gift_cost_amount,
+            COALESCE(SUM(tax_amount), 0) AS tax_amount, COALESCE(SUM(service_amount), 0) AS service_amount,
+            COALESCE(SUM(freight_amount), 0) AS freight_amount, COALESCE(SUM(commission_amount), 0) AS commission_amount,
+            COALESCE(SUM(expense_amount), 0) AS expense_amount, COALESCE(SUM(cost_missing_count), 0) AS cost_missing_count,
+            CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL ELSE COALESCE(SUM(gross_profit), 0) END AS gross_profit,
+            CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL ELSE COALESCE(SUM(net_profit), 0) END AS net_profit
+        FROM monthly_rows
+    </select>
 </mapper>

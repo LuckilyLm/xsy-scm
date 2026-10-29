@@ -18,6 +18,7 @@ import java.util.List;
  */
 @Mapper
 public interface FinancePayableSourceDao {
+    Long selectPurchaserByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
     /**
      * 收货确认数据（单头维度）。

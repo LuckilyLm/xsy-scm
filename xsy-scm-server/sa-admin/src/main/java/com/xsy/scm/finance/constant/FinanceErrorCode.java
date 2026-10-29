@@ -123,7 +123,12 @@ public enum FinanceErrorCode implements ScmErrorCode {
     POSTING_VOID_REASON_REQUIRED(41187, "作废过账必须填写作废原因"),
     POSTING_AMOUNT_INVALID(41189, "过账金额必须大于 0"),
     POSTING_TAX_RATE_INVALID(41190, "税点必须在 0 到 100 之间"),
-    POSTING_REFUND_STATUS_INVALID(41191, "返款状态只能是未返款、部分返款或已返款");
+    POSTING_REFUND_STATUS_INVALID(41191, "返款状态只能是未返款、部分返款或已返款"),
+
+    EXPENSE_NOT_FOUND(41290, "客户或费用记录不存在"),
+    EXPENSE_AMOUNT_INVALID(41291, "费用金额不能为负，且合计必须大于0"),
+    EXPENSE_MONTH_INVALID(41292, "请选择有效的费用月份"),
+    EXPENSE_ALREADY_VOIDED(41293, "该费用记录已作废");
 
     private final int code;
     private final String msg;

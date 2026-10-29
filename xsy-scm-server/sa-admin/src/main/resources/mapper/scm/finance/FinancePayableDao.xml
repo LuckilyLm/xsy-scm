@@ -34,9 +34,7 @@
             p.supplier_id AS supplierId, p.supplier_name_snapshot AS supplierNameSnapshot, p.entry_type AS entryType,
             p.amount, po.purchaser_id AS purchaserId
         FROM xsy_finance_payable p
-        LEFT JOIN xsy_purchase_receipt pr ON pr.id = p.source_id
-            AND pr.deleted = FALSE
-        LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id
+        LEFT JOIN xsy_purchase_order po ON po.id = p.purchase_order_id
             AND po.deleted = FALSE
         WHERE p.id IN
         <foreach collection="targetIds" item="targetId" open="(" separator="," close=")">#{targetId}</foreach>
@@ -51,9 +49,7 @@
             p.supplier_id AS supplierId, p.supplier_name_snapshot AS supplierNameSnapshot, p.entry_type AS entryType,
             p.amount, po.purchaser_id AS purchaserId
         FROM xsy_finance_payable p
-        LEFT JOIN xsy_purchase_receipt pr ON pr.id = p.source_id
-            AND pr.deleted = FALSE
-        LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id
+        LEFT JOIN xsy_purchase_order po ON po.id = p.purchase_order_id
             AND po.deleted = FALSE
         WHERE p.id = #{targetId}
             AND p.entry_type = 'NORMAL'
@@ -73,9 +69,7 @@
                 p.event_at AS eventAt, po.purchaser_id AS ownerId,
                 p.amount - COALESCE(red.red_amount, 0) - COALESCE(wo.written_off_amount, 0) AS openAmount
             FROM xsy_finance_payable p
-            LEFT JOIN xsy_purchase_receipt pr ON pr.id = p.source_id
-                AND pr.deleted = FALSE
-            LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id
+            LEFT JOIN xsy_purchase_order po ON po.id = p.purchase_order_id
                 AND po.deleted = FALSE
             LEFT JOIN (SELECT original_payable_id, SUM(amount) AS red_amount
                 FROM xsy_finance_payable
@@ -142,9 +136,7 @@
             p.original_payable_id ELSE p.id END
             AND normalSource.entry_type = 'NORMAL'
             AND normalSource.deleted = FALSE
-        LEFT JOIN xsy_purchase_receipt pr ON pr.id = normalSource.source_id
-            AND pr.deleted = FALSE
-        LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id
+        LEFT JOIN xsy_purchase_order po ON po.id = p.purchase_order_id
             AND po.deleted = FALSE
         LEFT JOIN LATERAL (SELECT COALESCE(SUM(red.amount),
             0) AS redAmount FROM xsy_finance_payable red WHERE red.original_payable_id = p.id AND

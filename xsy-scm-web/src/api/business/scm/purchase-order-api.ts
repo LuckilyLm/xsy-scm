@@ -1,6 +1,7 @@
 import {getRequest, postDownload, postRequest, request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
+  PurchaseCostAdjustment,
   Id,
   LogRow,
   Order,
@@ -38,6 +39,17 @@ export async function purchaseCommand<T>(path: string, data: unknown, options?: 
 }
 
 export const purchaseOrderApi = {
+  costAdjustmentOptions: (id: Id, options?: RequestOptions) =>
+    getRequest<PurchaseCostAdjustment[]>(`/scm/purchase/cost-adjustment/options/${id}`, {}, options),
+  costAdjustmentHistory: (id: Id, options?: RequestOptions) =>
+    getRequest<PurchaseCostAdjustment[]>(`/scm/purchase/cost-adjustment/history/${id}`, {}, options),
+  costAdjustmentAdd: (data: {receiptItemId: Id; previousAdjustmentId?: Id | null; expectedPrice: string; newPrice: string; reason: string}) =>
+    purchaseCommand<PurchaseCostAdjustment>('/scm/purchase/cost-adjustment/add', data),
+  financeConfirm: (data: {
+    purchaseOrderId: Id;
+    version: number;
+    items: {orderItemId: Id; version: number; quantity: string; expectedPrice: string; purchaseUnit: string}[];
+  }) => purchaseCommand('/scm/purchase/finance-confirm', data),
   query: (data: OrderQuery, options?: RequestOptions) => postRequest<ScmPage<Order>>('/scm/purchase/query', data, options),
   detail: (id: Id, options?: RequestOptions) => getRequest<Order>(`/scm/purchase/detail/${id}`, {}, options),
   /** 单张采购单的操作日志（按 `created_at DESC` 返回，最新在前）。 */

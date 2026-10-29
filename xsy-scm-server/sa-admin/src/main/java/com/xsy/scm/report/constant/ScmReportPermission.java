@@ -6,6 +6,7 @@ import com.xsy.scm.common.permission.ScmCrossDomainPermission;
  * 报表接口使用的权限码（稳定标识）。
  */
 public final class ScmReportPermission {
+    public static final String INVENTORY_SNAPSHOT_CREATE = "scm:report:inventory:snapshot:create";
 
     public static final String OVERVIEW_QUERY = "scm:report:overview:query";
     public static final String ORDER_EXCEPTION_QUERY = "scm:report:order:exception:query";

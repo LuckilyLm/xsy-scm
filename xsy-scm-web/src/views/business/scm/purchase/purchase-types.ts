@@ -630,3 +630,21 @@ export interface OrderReassignPayload {
   purchaserId: Id | null;
   reason?: string | null;
 }
+export interface PurchaseCostAdjustment {
+  id?: number | string;
+  adjustmentNo?: string;
+  receiptItemId: number | string;
+  receiptId: number | string;
+  receiptNo: string;
+  purchaseOrderId: number | string;
+  productNameSnapshot: string;
+  unitSnapshot: string;
+  quantity: string;
+  previousAdjustmentId?: number | string | null;
+  previousPrice: string;
+  newPrice?: string;
+  direction?: 'INCREASE' | 'DECREASE';
+  amount?: string;
+  reason?: string;
+  occurredAt?: string;
+}

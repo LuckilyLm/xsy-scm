@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.report.dao.ScmNegativeStockSnapshotDao">
+    <select id="nextNumber" resultType="long">SELECT nextval('report_negative_stock_snapshot_no_seq')</select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO xsy_report_negative_stock_snapshot(snapshot_no, warehouse_id, warehouse_name, snapshot_month,
+            captured_at, row_count, zero_cost_row_count, estimated_amount, row_data, remark, created_by)
+        VALUES (#{snapshotNo}, #{warehouseId}, #{warehouseName}, #{snapshotMonth}, #{capturedAt}, #{rowCount},
+            #{zeroCostRowCount}, #{estimatedAmount}, CAST(#{payloadJson} AS JSONB), #{remark}, #{createdBy})
+    </insert>
+    <select id="find" resultType="com.xsy.scm.report.domain.vo.ScmNegativeStockSnapshotVO">
+        SELECT id, snapshot_no, warehouse_id, warehouse_name, snapshot_month, captured_at, row_count,
+            zero_cost_row_count, estimated_amount, row_data::text AS payload_json, remark, created_by
+        FROM xsy_report_negative_stock_snapshot WHERE id = #{id}
+    </select>
+    <select id="query" resultType="com.xsy.scm.report.domain.vo.ScmNegativeStockSnapshotVO">
+        SELECT id, snapshot_no, warehouse_id, warehouse_name, snapshot_month, captured_at, row_count,
+            zero_cost_row_count, estimated_amount, remark, created_by
+        FROM xsy_report_negative_stock_snapshot WHERE snapshot_month = #{query.month}
+        <if test="query.warehouseId != null">AND warehouse_id = #{query.warehouseId}</if>
+        <choose>
+            <when test="scope != null and scope.all"/>
+            <when test="scope != null and !scope.empty">
+                AND warehouse_id IN <foreach collection="scope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        ORDER BY captured_at DESC, id DESC
+    </select>
+</mapper>
+

@@ -24,7 +24,7 @@
         FROM xsy_finance_payable_item
         WHERE payable_id = #{payableId}
             AND purchase_order_item_id = #{purchaseOrderItemId}
-            AND source_type = 'PURCHASE_RECEIPT_ITEM'
+            AND source_type IN ('PURCHASE_RECEIPT_ITEM', 'PURCHASE_COST_ADJUSTMENT')
             AND deleted = FALSE
         ORDER BY id
         LIMIT 1

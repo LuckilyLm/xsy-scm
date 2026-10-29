@@ -1,123 +1,129 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="分析日期"><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>
-      <a-form-item label="分析维度">
-        <a-select v-model:value="filters.dimension" :options="dimensionOptions" style="width: 130px" />
-      </a-form-item>
-      <a-form-item label="客户"><CustomerSelect v-model:value="filters.customerId" width="190px" /></a-form-item>
-      <a-form-item label="销售员"><EmployeeSelect v-model:value="filters.sellerId" width="150px" /></a-form-item>
-      <a-form-item label="仓库"><WarehouseSelect v-model:value="filters.warehouseId" width="170px" /></a-form-item>
-    </a-row>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="商品分类">
-        <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
-      </a-form-item>
-      <a-form-item label="商品 / 单号"
-        ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称或订单号" @pressEnter="search"
-      /></a-form-item>
-      <!-- 按钮放在表单最后一项之后，窄屏换行时不会被夹在字段中间 -->
-      <a-form-item>
-        <a-space>
-          <a-button type="primary" :loading="loading" v-privilege="PERM.FINANCE_PROFIT_QUERY" @click="search">查询</a-button>
-          <a-button @click="reset">重置</a-button>
-        </a-space>
-      </a-form-item>
-    </a-row>
-  </a-form>
+  <a-tabs v-model:active-key="profitView">
+    <a-tab-pane key="gross" tab="销售毛利">
+      <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
+        <a-row class="smart-query-form-row">
+          <a-form-item label="分析日期"><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>
+          <a-form-item label="分析维度">
+            <a-select v-model:value="filters.dimension" :options="dimensionOptions" style="width: 130px" />
+          </a-form-item>
+          <a-form-item label="客户"><CustomerSelect v-model:value="filters.customerId" width="190px" /></a-form-item>
+          <a-form-item label="销售员"><EmployeeSelect v-model:value="filters.sellerId" width="150px" /></a-form-item>
+          <a-form-item label="仓库"><WarehouseSelect v-model:value="filters.warehouseId" width="170px" /></a-form-item>
+        </a-row>
+        <a-row class="smart-query-form-row">
+          <a-form-item label="商品分类">
+            <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
+          </a-form-item>
+          <a-form-item label="商品 / 单号"
+            ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称或订单号" @pressEnter="search"
+          /></a-form-item>
+          <!-- 按钮放在表单最后一项之后，窄屏换行时不会被夹在字段中间 -->
+          <a-form-item>
+            <a-space>
+              <a-button type="primary" :loading="loading" v-privilege="PERM.FINANCE_PROFIT_QUERY" @click="search">查询</a-button>
+              <a-button @click="reset">重置</a-button>
+            </a-space>
+          </a-form-item>
+        </a-row>
+      </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon class="profit-alert">
-    <template #action><a-button @click="load">重试</a-button></template>
-  </a-alert>
-  <a-alert
-    v-if="(summary?.costMissingCount ?? 0) > 0"
-    type="warning"
-    show-icon
-    class="profit-alert"
-    :message="`有 ${summary?.costMissingCount} 行历史销售成本缺失，毛利和毛利率暂不完整`"
-    description="销售成本金额仅显示已知部分；毛利相关指标显示为 —，请先核对对应出库流水的成本数据。"
-  />
-
-  <a-row :gutter="12" class="profit-kpis">
-    <a-col :xs="24" :sm="12" :lg="8"
-      ><a-card size="small"
-        ><div class="kpi-label">销售收入</div>
-        <div class="kpi-value">{{ moneyText(summary?.revenueAmount) }}</div></a-card
-      ></a-col
-    >
-    <a-col :xs="24" :sm="12" :lg="8"
-      ><a-card size="small"
-        ><div class="kpi-label">商品销售成本（净额）</div>
-        <div class="kpi-value">{{ moneyText(summary?.salesCostAmount) }}</div></a-card
-      ></a-col
-    >
-    <a-col :xs="24" :sm="12" :lg="8"
-      ><a-card size="small"
-        ><div class="kpi-label">促销赠品成本</div>
-        <div class="kpi-value">{{ moneyText(summary?.giftCostAmount) }}</div></a-card
-      ></a-col
-    >
-    <a-col :xs="24" :sm="12" :lg="8"
-      ><a-card size="small"
-        ><div class="kpi-label">销售毛利</div>
-        <div class="kpi-value">{{ moneyText(summary?.grossProfit) }}</div></a-card
-      ></a-col
-    >
-    <a-col :xs="24" :sm="12" :lg="8"
-      ><a-card size="small"
-        ><div class="kpi-label">毛利率</div>
-        <div class="kpi-value">{{ rateText(summary?.grossMarginRate) }}</div></a-card
-      ></a-col
-    >
-  </a-row>
-
-  <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-        <a-button v-privilege="PERM.EXPORT" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
-          >导出当前结果</a-button
-        >
-      </div>
-    </a-row>
-    <a-table
-      id="scm-report-finance-profit-table"
-      size="small"
-      :data-source="rows"
-      :columns="columns"
-      :row-key="rowKey"
-      bordered
-      :pagination="false"
-      :loading="loading"
-      :scroll="{x: scmColumnsWidth(columns)}"
-      :locale="{emptyText: '当前筛选范围没有销售毛利数据'}"
-    >
-      <template #bodyCell="{record, column}">
-        <template v-if="column.dataIndex === 'bizDate'">{{ record.bizDate || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'revenueAmount'">{{ moneyText(record.revenueAmount) }}</template>
-        <template v-else-if="column.dataIndex === 'salesCostAmount'">{{ moneyText(record.salesCostAmount) }}</template>
-        <template v-else-if="column.dataIndex === 'giftCostAmount'">{{ moneyText(record.giftCostAmount) }}</template>
-        <template v-else-if="column.dataIndex === 'grossProfit'">{{ moneyText(record.grossProfit) }}</template>
-        <template v-else-if="column.dataIndex === 'grossMarginRate'">{{ rateText(record.grossMarginRate) }}</template>
-        <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-      </template>
-    </a-table>
-    <div class="smart-query-table-page">
-      <a-pagination
-        v-model:current="pageNum"
-        v-model:page-size="pageSize"
-        :total="total"
-        show-size-changer
-        :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
-        show-quick-jumper
-        :show-total="(n: number) => `共 ${n} 条`"
-        @change="load"
+      <a-alert v-if="error" :message="error" type="error" show-icon class="profit-alert">
+        <template #action><a-button @click="load">重试</a-button></template>
+      </a-alert>
+      <a-alert
+        v-if="(summary?.costMissingCount ?? 0) > 0"
+        type="warning"
+        show-icon
+        class="profit-alert"
+        :message="`有 ${summary?.costMissingCount} 行销售成本待确认，毛利和毛利率暂不完整`"
+        description="销售成本金额仅显示已知部分；毛利相关指标显示为 —，请核对采购及成本更正记录。"
       />
-    </div>
-  </a-card>
+
+      <a-row :gutter="12" class="profit-kpis">
+        <a-col :xs="24" :sm="12" :lg="8"
+          ><a-card size="small"
+            ><div class="kpi-label">销售收入</div>
+            <div class="kpi-value">{{ moneyText(summary?.revenueAmount) }}</div></a-card
+          ></a-col
+        >
+        <a-col :xs="24" :sm="12" :lg="8"
+          ><a-card size="small"
+            ><div class="kpi-label">商品销售成本（净额）</div>
+            <div class="kpi-value">{{ moneyText(summary?.salesCostAmount) }}</div></a-card
+          ></a-col
+        >
+        <a-col :xs="24" :sm="12" :lg="8"
+          ><a-card size="small"
+            ><div class="kpi-label">促销赠品成本</div>
+            <div class="kpi-value">{{ moneyText(summary?.giftCostAmount) }}</div></a-card
+          ></a-col
+        >
+        <a-col :xs="24" :sm="12" :lg="8"
+          ><a-card size="small"
+            ><div class="kpi-label">销售毛利</div>
+            <div class="kpi-value">{{ moneyText(summary?.grossProfit) }}</div></a-card
+          ></a-col
+        >
+        <a-col :xs="24" :sm="12" :lg="8"
+          ><a-card size="small"
+            ><div class="kpi-label">毛利率</div>
+            <div class="kpi-value">{{ rateText(summary?.grossMarginRate) }}</div></a-card
+          ></a-col
+        >
+      </a-row>
+
+      <a-card size="small" :bordered="false">
+        <a-row class="smart-table-btn-block">
+          <div class="smart-table-operate-block">
+            <a-button v-privilege="PERM.EXPORT" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
+              >导出当前结果</a-button
+            >
+          </div>
+        </a-row>
+        <a-table
+          id="scm-report-finance-profit-table"
+          size="small"
+          :data-source="rows"
+          :columns="columns"
+          :row-key="rowKey"
+          bordered
+          :pagination="false"
+          :loading="loading"
+          :scroll="{x: scmColumnsWidth(columns)}"
+          :locale="{emptyText: '当前筛选范围没有销售毛利数据'}"
+        >
+          <template #bodyCell="{record, column}">
+            <template v-if="column.dataIndex === 'bizDate'">{{ record.bizDate || '—' }}</template>
+            <template v-else-if="column.dataIndex === 'revenueAmount'">{{ moneyText(record.revenueAmount) }}</template>
+            <template v-else-if="column.dataIndex === 'salesCostAmount'">{{ moneyText(record.salesCostAmount) }}</template>
+            <template v-else-if="column.dataIndex === 'giftCostAmount'">{{ moneyText(record.giftCostAmount) }}</template>
+            <template v-else-if="column.dataIndex === 'grossProfit'">{{ moneyText(record.grossProfit) }}</template>
+            <template v-else-if="column.dataIndex === 'grossMarginRate'">{{ rateText(record.grossMarginRate) }}</template>
+            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
+          </template>
+        </a-table>
+        <div class="smart-query-table-page">
+          <a-pagination
+            v-model:current="pageNum"
+            v-model:page-size="pageSize"
+            :total="total"
+            show-size-changer
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
+            show-quick-jumper
+            :show-total="(n: number) => `共 ${n} 条`"
+            @change="load"
+          />
+        </div>
+      </a-card>
+    </a-tab-pane>
+    <a-tab-pane key="monthly" tab="客户月利润"><CustomerMonthlyProfit v-if="profitView === 'monthly'" /></a-tab-pane>
+  </a-tabs>
 </template>
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import CustomerMonthlyProfit from './report-customer-monthly-profit.vue';
 import {onMounted, reactive, ref} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {financeProfitApi} from '/@/api/business/scm/finance-profit-api';
@@ -144,6 +150,7 @@ const dimensionOptions: Array<{value: FinanceProfitDimension; label: string}> = 
   {value: 'SELLER', label: '按销售员'},
   {value: 'WAREHOUSE', label: '按仓库'},
 ];
+const profitView = ref('gross');
 const dateRange = ref<DateRange>();
 const filters = reactive<Omit<FinanceProfitQuery, 'startDate' | 'endDate' | 'pageNum' | 'pageSize'>>({dimension: 'PRODUCT'});
 const pageNum = ref(1),
@@ -166,7 +173,7 @@ const columns: TableColumnsType<FinanceProfitRow> = [
   {title: '促销赠品成本', dataIndex: 'giftCostAmount', width: 150},
   {title: '销售毛利', dataIndex: 'grossProfit', width: 150},
   {title: '毛利率', dataIndex: 'grossMarginRate', width: 108},
-  {title: '缺失成本流水数', dataIndex: 'costMissingCount', width: 92},
+  {title: '待确认成本数', dataIndex: 'costMissingCount', width: 110},
 ];
 
 function queryPayload(): FinanceProfitQuery {

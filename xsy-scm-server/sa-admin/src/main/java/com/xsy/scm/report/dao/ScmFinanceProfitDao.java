@@ -11,12 +11,21 @@ import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.report.domain.form.ScmFinanceProfitQueryForm;
 import com.xsy.scm.report.domain.vo.ScmFinanceProfitRowVO;
 import com.xsy.scm.report.domain.vo.ScmFinanceProfitSummaryVO;
+import com.xsy.scm.report.domain.vo.ScmCustomerMonthlyProfitVO;
 
 /**
  * 基于财务、订单与库存数据的只读毛利查询。
  */
 @Mapper
 public interface ScmFinanceProfitDao {
+
+    List<ScmCustomerMonthlyProfitVO> monthlyQuery(Page<?> page, @Param("startAt") OffsetDateTime startAt,
+        @Param("endAt") OffsetDateTime endAt, @Param("query") ScmFinanceProfitQueryForm query,
+        @Param("scope") ScmDataScopeContext scope);
+
+    ScmCustomerMonthlyProfitVO monthlySummary(@Param("startAt") OffsetDateTime startAt,
+        @Param("endAt") OffsetDateTime endAt, @Param("query") ScmFinanceProfitQueryForm query,
+        @Param("scope") ScmDataScopeContext scope);
 
     List<ScmFinanceProfitRowVO> query(Page<?> page, @Param("startAt") OffsetDateTime startAt,
         @Param("endAt") OffsetDateTime endAt, @Param("query") ScmFinanceProfitQueryForm query,

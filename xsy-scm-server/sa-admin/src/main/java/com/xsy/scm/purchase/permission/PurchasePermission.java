@@ -6,6 +6,8 @@ import com.xsy.scm.common.permission.ScmCrossDomainPermission;
  * 采购接口对外发布的权限码（稳定标识）。
  */
 public final class PurchasePermission {
+    public static final String FINANCE_CONFIRM = "scm:purchase:finance-confirm";
+    public static final String COST_ADJUSTMENT = "scm:purchase:cost-adjustment";
 
     public static final String DEMAND_QUERY = "scm:purchase:demand:query";
 

@@ -18,7 +18,8 @@ public enum ScmFinancePayableSourceTypeEnum {
     /**
      * 手工红字应付：{@code source_id} 必须为 {@code null}，{@code original_payable_id} 与 {@code reason} 必填。
      */
-    MANUAL("手工登记");
+    MANUAL("手工登记"),
+    PURCHASE_COST_ADJUSTMENT("采购价差更正");
 
     private final String desc;
 }

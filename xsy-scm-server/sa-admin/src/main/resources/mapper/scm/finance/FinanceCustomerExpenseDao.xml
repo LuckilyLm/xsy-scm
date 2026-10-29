@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.finance.dao.FinanceCustomerExpenseDao">
+    <sql id="fields">
+        e.id AS expense_id, e.expense_no, e.customer_id, e.customer_name_snapshot AS customer_name,
+        e.expense_month, e.tax_amount, e.service_amount, e.freight_amount, e.commission_amount, e.reason,
+        e.created_at, e.created_by, c.seller_id, (v.id IS NOT NULL) AS voided,
+        v.reason AS void_reason, v.created_at AS voided_at, v.created_by AS voided_by
+    </sql>
+    <sql id="joins">
+        FROM xsy_finance_customer_expense e
+        JOIN xsy_customer c ON c.id = e.customer_id AND c.deleted = FALSE
+        LEFT JOIN xsy_finance_customer_expense_void v ON v.expense_id = e.id
+    </sql>
+    <select id="nextNumber" resultType="long">SELECT nextval('finance_customer_expense_no_seq')</select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO xsy_finance_customer_expense(expense_no, customer_id, customer_name_snapshot, expense_month,
+            tax_amount, service_amount, freight_amount, commission_amount, reason, created_at, created_by)
+        VALUES (#{expenseNo}, #{customerId}, #{customerNameSnapshot}, #{expenseMonth}, #{taxAmount}, #{serviceAmount},
+            #{freightAmount}, #{commissionAmount}, #{reason}, #{createdAt}, #{createdBy})
+    </insert>
+    <select id="find" resultType="com.xsy.scm.finance.domain.vo.FinanceCustomerExpenseVO">
+        SELECT <include refid="fields"/> <include refid="joins"/> WHERE e.id = #{id}
+    </select>
+    <select id="lock" resultType="com.xsy.scm.finance.domain.vo.FinanceCustomerExpenseVO">
+        SELECT <include refid="fields"/> <include refid="joins"/> WHERE e.id = #{id} FOR UPDATE OF e
+    </select>
+    <insert id="insertVoid">
+        INSERT INTO xsy_finance_customer_expense_void(expense_id, reason, created_by)
+        VALUES (#{id}, #{reason}, #{operator}) ON CONFLICT (expense_id) DO NOTHING
+    </insert>
+    <select id="query" resultType="com.xsy.scm.finance.domain.vo.FinanceCustomerExpenseVO">
+        SELECT <include refid="fields"/> <include refid="joins"/>
+        WHERE e.expense_month = #{query.expenseMonth}
+        <if test="query.customerId != null">AND e.customer_id = #{query.customerId}</if>
+        <choose>
+            <when test="scope != null and scope.all"/>
+            <when test="scope != null and !scope.empty">
+                AND c.seller_id IN
+                <foreach collection="scope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        ORDER BY e.created_at DESC, e.id DESC
+    </select>
+</mapper>
+

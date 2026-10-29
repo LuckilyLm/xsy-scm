@@ -124,6 +124,7 @@ export const SCM_AUDIT_FIELD_LABELS: Record<string, string> = {
   supplierNameSnapshot: '供应商名称',
   receivableNo: '应收单号',
   payableNo: '应付单号',
+  adjustmentNo: '采购成本更正单号',
   paymentNo: '付款单号',
   returnNo: '退货单号',
   sourceId: '来源单据 ID',

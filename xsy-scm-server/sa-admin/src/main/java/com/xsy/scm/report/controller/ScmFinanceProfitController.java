@@ -31,7 +31,7 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 @RequiredArgsConstructor
 public class ScmFinanceProfitController {
     private static final List<
-        String> TITLES = List.of("分析维度", "维度名称", "编码", "日期", "销售收入", "商品销售成本", "促销赠品成本", "销售毛利", "毛利率（%）", "缺失成本流水数");
+        String> TITLES = List.of("分析维度", "维度名称", "编码", "日期", "销售收入", "商品销售成本", "促销赠品成本", "销售毛利", "毛利率（%）", "待确认成本数");
 
     private final ScmFinanceProfitService financeProfitService;
 

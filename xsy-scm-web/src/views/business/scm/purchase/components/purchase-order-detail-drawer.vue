@@ -9,6 +9,20 @@
     <a-spin :spinning="loading">
       <template v-if="order">
         <div class="actions scm-detail-actions">
+          <a-button
+            v-if="['PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED'].includes(order.status ?? '')"
+            v-privilege="'scm:purchase:cost-adjustment'"
+            @click="order.id != null && costAdjustmentModal?.open(order.id)"
+            >成本更正</a-button
+          >
+          <a-button
+            v-if="order.status === 'SUBMITTED'"
+            type="primary"
+            v-privilege="'scm:purchase:finance-confirm'"
+            :disabled="!!order.pendingPriceCount"
+            @click="order.id != null && financeConfirmModal?.open(order.id)"
+            >确认采购</a-button
+          >
           <template v-if="order.status === 'DRAFT'">
             <a-button type="primary" :loading="submitting" v-privilege="'scm:purchase:submit'" @click="submit"> 提交 </a-button>
           </template>
@@ -175,11 +189,15 @@
       </a-form>
       <p class="scm-note">采购单提交后 7 天内可补录价格；收货确认后改价不会重算库存成本，改价须填写原因。</p>
     </a-modal>
+    <PurchaseFinanceConfirmModal ref="financeConfirmModal" @saved="onFinanceConfirmed" />
+    <PurchaseCostAdjustmentModal ref="costAdjustmentModal" />
   </a-drawer>
 </template>
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import PurchaseFinanceConfirmModal from './purchase-finance-confirm-modal.vue';
+import PurchaseCostAdjustmentModal from './purchase-cost-adjustment-modal.vue';
 import {ref} from 'vue';
 import {Modal, message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -193,6 +211,12 @@ import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{saved: []}>();
+const financeConfirmModal = ref<InstanceType<typeof PurchaseFinanceConfirmModal>>();
+const costAdjustmentModal = ref<InstanceType<typeof PurchaseCostAdjustmentModal>>();
+async function onFinanceConfirmed() {
+  emit('saved');
+  await load();
+}
 
 /** 操作类型配色：终态动作（取消）用红，推进类动作用蓝，其余中性。 */
 const OPERATION_COLOR: Record<string, string> = {

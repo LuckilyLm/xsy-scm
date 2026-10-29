@@ -9,6 +9,7 @@ export const SCM_REPORT_LOSS_TYPE_ENUM: SmartEnum<string> = {
 
 /** 报表导出需同时具备页面查询和导出权限；成本字段需要独立成本权限。无权查看的成本不返回数值，也不能显示为零。 */
 export const SCM_REPORT_PERMISSION = {
+  INVENTORY_SNAPSHOT_CREATE: 'scm:report:inventory:snapshot:create',
   OVERVIEW_QUERY: 'scm:report:overview:query',
   SALES_QUERY: 'scm:report:sales:query',
   ORDER_EXCEPTION_QUERY: 'scm:report:order:exception:query',

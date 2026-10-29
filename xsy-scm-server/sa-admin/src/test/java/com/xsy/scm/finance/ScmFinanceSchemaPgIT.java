@@ -57,7 +57,8 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
             "xsy_finance_payable", "xsy_finance_payable_item",
             "xsy_finance_receipt", "xsy_finance_payment",
             "xsy_finance_write_off", "xsy_finance_operation_log",
-            "xsy_finance_waiver", "xsy_finance_posting", "xsy_finance_posting_void");
+            "xsy_finance_waiver", "xsy_finance_posting", "xsy_finance_posting_void",
+            "xsy_finance_customer_expense", "xsy_finance_customer_expense_void", "xsy_finance_purchase_cost_entry");
 
     /**
      * 带 {@code deleted} 列的事实表；{@code xsy_finance_operation_log} 不在其中 ——
@@ -72,7 +73,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     private static final List<String> FINANCE_SEQUENCES = List.of(
             "finance_receivable_no_seq", "finance_payable_no_seq", "finance_receipt_no_seq",
             "finance_payment_no_seq", "finance_write_off_no_seq", "finance_waiver_no_seq",
-            "finance_posting_no_seq");
+            "finance_posting_no_seq", "finance_customer_expense_no_seq");
 
     private String no(String prefix) {
         return prefix + UUID.randomUUID().toString().substring(0, 16).toUpperCase(java.util.Locale.ROOT);
@@ -166,6 +167,10 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
             List<String> tableForbidden = new ArrayList<>(forbidden);
             if ("xsy_finance_posting".equals(table)) {
                 tableForbidden.remove("tax_rate");
+            }
+            if ("xsy_finance_customer_expense".equals(table)) {
+                // 记录负责人确认的实际税费金额，不保存或推导计税费率。
+                tableForbidden.remove("tax_amount");
             }
             assertThat(columnsOf(table))
                     .as("表 %s 不得出现派生态或越界列", table)

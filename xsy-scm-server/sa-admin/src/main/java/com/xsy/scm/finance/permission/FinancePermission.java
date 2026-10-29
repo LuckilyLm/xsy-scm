@@ -5,6 +5,10 @@ package com.xsy.scm.finance.permission;
  */
 public final class FinancePermission {
 
+    public static final String EXPENSE_QUERY = "scm:finance:expense:query";
+    public static final String EXPENSE_ADD = "scm:finance:expense:add";
+    public static final String EXPENSE_VOID = "scm:finance:expense:void";
+
     public static final String RECEIVABLE_QUERY = "scm:finance:receivable:query";
     public static final String PAYABLE_QUERY = "scm:finance:payable:query";
     public static final String RECEIPT_QUERY = "scm:finance:receipt:query";

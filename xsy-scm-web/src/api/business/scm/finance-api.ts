@@ -3,6 +3,8 @@ import {getRequest, postDownload, postRequest, request} from '/@/lib/axios';
 import type {RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
+  CustomerExpense,
+  CustomerExpenseAdd,
   FinanceBusinessType,
   FinanceCodCollectionForm,
   FinanceCodCollectionPreview,
@@ -60,6 +62,10 @@ async function command<T>(path: string, data: unknown): Promise<ScmResponse<T>> 
 }
 
 export const financeApi = {
+  customerExpenseQuery: (data: {expenseMonth: string; customerId?: FinanceId; pageNum: number; pageSize: number}, options?: RequestOptions) =>
+    postRequest<ScmPage<CustomerExpense>>(`${BASE}/customer-expense/query`, data, options),
+  customerExpenseAdd: (data: CustomerExpenseAdd) => command<CustomerExpense>(`${BASE}/customer-expense/add`, data),
+  customerExpenseVoid: (data: {expenseId: FinanceId; reason: string}) => command<CustomerExpense>(`${BASE}/customer-expense/void`, data),
   receivableQuery: (data: ReceivableQuery, options?: RequestOptions) =>
     postRequest<ScmPage<FinanceReceivable>>(`${BASE}/receivable/query`, data, options),
   receivableDetail: (id: FinanceId, options?: RequestOptions) => getRequest<FinanceReceivableDetail>(`${BASE}/receivable/${id}`, {}, options),

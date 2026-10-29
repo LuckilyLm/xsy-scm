@@ -14,6 +14,7 @@
   <a-card size="small" :bordered="false" class="smart-margin-top10">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
+        <a-button v-if="canViewCost" @click="historyModal?.open()">月度留存</a-button>
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')">导出</a-button>
       </div>
       <div class="smart-table-setting-block">
@@ -72,10 +73,12 @@
       />
     </div>
   </a-card>
+  <InventoryNegativeStockHistory ref="historyModal" />
 </template>
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import InventoryNegativeStockHistory from './inventory-negative-stock-history.vue';
 import {computed, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -88,6 +91,7 @@ import {costText, countText, filterCostColumns} from '../report-model';
 import type {InventoryNegativeStockRow, InventoryNegativeStockSummary} from '../report-types';
 import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
+const historyModal = ref<InstanceType<typeof InventoryNegativeStockHistory>>();
 const props = defineProps<{
   summary?: InventoryNegativeStockSummary;
   rows: InventoryNegativeStockRow[];

@@ -1,6 +1,27 @@
 import type {ScmId, ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 
 export type FinanceId = ScmId;
+
+export interface CustomerExpenseAdd {
+  customerId: FinanceId;
+  expenseMonth: string;
+  taxAmount: string;
+  serviceAmount: string;
+  freightAmount: string;
+  commissionAmount: string;
+  reason: string;
+}
+export interface CustomerExpense extends CustomerExpenseAdd {
+  expenseId: FinanceId;
+  expenseNo: string;
+  customerName: string;
+  voided: boolean;
+  createdAt: string;
+  createdBy: string;
+  voidReason?: string;
+  voidedAt?: string;
+  voidedBy?: string;
+}
 export type FinanceEntryType = 'NORMAL' | 'RED' | 'REVERSE';
 export type FinancePaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'OTHER';
 export type FinanceBusinessType = 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT' | 'WRITE_OFF' | 'WAIVER' | 'POSTING';

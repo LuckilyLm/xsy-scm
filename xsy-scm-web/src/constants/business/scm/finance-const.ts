@@ -2,6 +2,9 @@
 import type {SmartEnum} from '/@/types/smart-enum';
 
 export const SCM_FINANCE_PERMISSION = {
+  EXPENSE_QUERY: 'scm:finance:expense:query',
+  EXPENSE_ADD: 'scm:finance:expense:add',
+  EXPENSE_VOID: 'scm:finance:expense:void',
   RECEIVABLE_QUERY: 'scm:finance:receivable:query',
   PAYABLE_QUERY: 'scm:finance:payable:query',
   RECEIPT_QUERY: 'scm:finance:receipt:query',
@@ -108,6 +111,7 @@ export const SCM_FINANCE_ITEM_SOURCE_TYPE_ENUM: SmartEnum<string> = {
   INVENTORY_OUTBOUND_ITEM: {value: 'INVENTORY_OUTBOUND_ITEM', desc: '库存出库明细'},
   ORDER_RETURN_ITEM: {value: 'ORDER_RETURN_ITEM', desc: '销售退货明细'},
   PURCHASE_RECEIPT_ITEM: {value: 'PURCHASE_RECEIPT_ITEM', desc: '采购收货明细'},
+  PURCHASE_COST_ADJUSTMENT: {value: 'PURCHASE_COST_ADJUSTMENT', desc: '采购价差更正'},
   MANUAL: {value: 'MANUAL', desc: '手工登记'},
 };
 

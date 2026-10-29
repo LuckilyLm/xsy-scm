@@ -123,9 +123,7 @@
         LEFT JOIN xsy_finance_payable ap ON wo.target_type = 'PAYABLE'
             AND ap.id = wo.target_id
             AND ap.deleted = FALSE
-        LEFT JOIN xsy_purchase_receipt pr ON pr.id = ap.source_id
-            AND pr.deleted = FALSE
-        LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id
+        LEFT JOIN xsy_purchase_order po ON po.id = ap.purchase_order_id
             AND po.deleted = FALSE
     </sql>
 

@@ -147,3 +147,7 @@ export default {
   SCM_PURCHASE_OPERATION_ENUM,
   SCM_PURCHASE_EXPORT_COLUMNS,
 };
+export const SCM_PURCHASE_COST_DIRECTION_ENUM: SmartEnum<string> = {
+  INCREASE: {value: 'INCREASE', desc: '调增'},
+  DECREASE: {value: 'DECREASE', desc: '调减'},
+};

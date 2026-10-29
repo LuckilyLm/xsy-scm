@@ -34,7 +34,20 @@ export interface FinanceProfitSummary {
   costMissingCount: number | null;
 }
 const base = '/scm/report/finance/profit';
+export interface CustomerMonthlyProfitRow extends FinanceProfitRow {
+  taxAmount: string;
+  serviceAmount: string;
+  freightAmount: string;
+  commissionAmount: string;
+  expenseAmount: string;
+  netProfit: string | null;
+}
 export const financeProfitApi = {
+  monthlyQuery: (data: FinanceProfitQuery, options?: RequestOptions) =>
+    postRequest<ScmPage<CustomerMonthlyProfitRow>>(`${base}/monthly/query`, data, options),
+  monthlySummary: (data: FinanceProfitQuery, options?: RequestOptions) =>
+    postRequest<CustomerMonthlyProfitRow>(`${base}/monthly/summary`, data, options),
+  monthlyExport: (data: FinanceProfitQuery & {exportColumns: string[]}) => postDownload(`${base}/monthly/export`, data),
   query: (data: FinanceProfitQuery, options?: RequestOptions) => postRequest<ScmPage<FinanceProfitRow>>(`${base}/query`, data, options),
   summary: (data: Partial<FinanceProfitQuery>, options?: RequestOptions) => postRequest<FinanceProfitSummary>(`${base}/summary`, data, options),
   export: (data: Partial<FinanceProfitQuery>) => postDownload(`${base}/export`, data),

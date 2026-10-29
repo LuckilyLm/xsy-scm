@@ -106,7 +106,7 @@ public class FinancePayableQueryService {
         ScmDataScopeContext scope = dataScopeService.resolve();
         Long purchaserId = normal.getSourceId() == null
             ? null
-            : financePayableSourceDao.selectPurchaserId(normal.getSourceId());
+            : financePayableSourceDao.selectPurchaserByOrderId(normal.getPurchaseOrderId());
         if (!scope.getPurchaserScope().allows(purchaserId)) {
             throw new ScmDataScopeException();
         }
