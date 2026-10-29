@@ -1,5 +1,44 @@
 # 第一代秤端交付说明
 
+## 2026-10-29 GitHub 最新源码对照与本分支交付
+
+本次用户授权：fetch最新代码、审查差异、提交并推送到 `feat/sohe-scale-agent`。检查时主线为 `6d61cc0e35625df4306a67426add6ea5a1db2a42`；目标分支仍为 `8805eb4378191a4b9358aa23e90fcf14a2e510d1`（0.3.6），与本地提交起点相同，没有其他人新增提交需在目标分支上整合。主线自共同平台基线有333个提交，秤端涉及4个提交：5a5e8ed4、f9e48366、93b9d47b、cd3f381f。
+
+本次交付为当前0.4.1现场程序源码及测试，保留原分支历史，仅追加本模块；未合并main、未覆盖深圳最新平台/秤端主线，也未将源码存在视为正式联调通过。主线源码已fetch到本地Git对象，本地平台工作树没有更新或运行。本分支仍使用隔离待同步队列；下列深圳新能力属于后续合并接入项，当前0.4.1安装包不会因此自动具备真实上传能力。
+
+| 对照项 | 深圳最新main | 本分支0.4.1与合并要求 |
+| --- | --- | --- |
+| 多筐同步 | 新增BasketSync/SyncWorker派发及服务端measurements/集合完成，含SENT、SYNC_RETRY、NEEDS_REVIEW | 当前现场版仍本地排队；合并时保留顺序、依赖、错误停放和真正回执，不能硬改成已同步 |
+| 市斤与量程 | 秤端默认配置仍MinimumKg=1/MaximumKg=150，原同单位校验 | 保留本地sj/斤/市斤同单位别名及原始数值，取消固定软件上下限；不能恢复原公斤门槛或将kg直接改标斤 |
+| 手工净重 | PlatformBasketUpload未含entrySource/entryNote | 保留MANUAL/稳定false/NOT_APPLICABLE事实，正式接口字段与审计映射须补齐核对，不能冒充设备稳定采样 |
+| 每次打印选择 | 记录仍按全局票策略；新增正式包装码另一路发码打印 | 保留printRequested=false/NOT_REQUESTED、原号重试冻结、无票不补打；正式发码打印须作为明确人工动作，不能让只上传自动出纸 |
+| 溯源码与标签 | 新增TraceLabelService/TraceLabelStore/TraceLabelDialog，平台返回包装码/批次/公开链接，TicketSnapshot末尾新增LotNo | 本地同一位置新增EntrySource，存在位置参数冲突；须合并为两个独立字段并校正所有构造/旧JSON/补打快照，不能把来源写成批次号 |
+| API/SQL文档 | 主线将本模块说明从.codex-api-spec/.codex-sql迁到docs/docs/db | 本分支仍按现有本地发布脚本复制.codex目录；合并时同时更新路径与发布脚本，避免漏包，不产生两份“最新接口” |
+
+代码审查另发现一项应在后续接入时修正的集合摘要问题：main的SyncWorker.DispatchBasketCommand对COMPLETE_ITEM调用 `PlatformItemCompletion.From(completion, pending.RequestHash)`；该RequestHash来自完整CompleteItemRequest摘要，而平台completeBaskets验证的是有序eventKeys的manifest摘要，应保留/传递 `completion.ManifestHash`。本次只读记录，未修改深圳源码，未经真实平台运行复现。
+
+验证依据：本地0.4.1已85/85后台回归、构建、发布EXE HTTP、五组浏览器通过；本轮仅Git交付与差异文档，不重复全部测试。深圳main新增派发/包装码路径本轮仅静态阅读，未部署或做正式接口/实纸验收。当前源码与0.4.1程序包的业务逻辑一致，后续整合应重新验证组合后的程序。
+
+审查来源（固定SHA）：
+- https://github.com/LuckilyLm/xsy-scm/tree/6d61cc0e35625df4306a67426add6ea5a1db2a42/xsy-scale-agent
+- https://github.com/LuckilyLm/xsy-scm/blob/6d61cc0e35625df4306a67426add6ea5a1db2a42/xsy-scale-agent/src/Xsy.Scale.Agent/SyncWorker.cs
+- https://github.com/LuckilyLm/xsy-scm/blob/6d61cc0e35625df4306a67426add6ea5a1db2a42/xsy-scale-agent/src/Xsy.Scale.Agent/BasketStore.cs
+- https://github.com/LuckilyLm/xsy-scm/blob/6d61cc0e35625df4306a67426add6ea5a1db2a42/xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/sorting/service/SortingScaleEventService.java
+
+2026-10-29，Codex，0.4.1 最新：称重页上方“记录上传并打印”，下方“记录上传”。每条可选择是否打印，手工录入同样提供两动作。只上传仍保存、累计并加入待同步队列，但不生成打印任务，记录标记“未要求打印”；无凭条，不能补打。要求打印的原记录仍可按原快照补打。断线重试固定原操作号和打印选择。正式多筐上传接口仍未接通，当前显示待平台同步，不能把按钮名称理解为已上传成功。
+
+0.4.1本地验证：85/85后台回归、Vue/TypeScript构建、发布EXE接口冒烟及五组浏览器通过。新增只上传/打印混合、断网且断秤手输、未到服务端与响应丢失的原选择重试、无票记录及完成集合；1024×768/1366×768截图已检查。均为隔离验证，未开办公COM1或向真实队列发纸。
+
+0.4.1 沿用 0.4.0 市斤测试数据目录，保留原记录；先在旧包 Stop 导出并停止，再完整解压新包到新文件夹，运行 Start-HardwareTest.cmd（33630）。称重已恢复按用户反馈记载，不把本地自动验证当作新版 Win10 实纸通过。
+
+2026-10-29，Codex：0.4.0 在既有 feat/sohe-scale-agent 本地继续开发，本轮未提交、推送、同步或部署平台。当前变更：全程按斤；取消固定软件重量上下限；独立手工净重入口，共享逐笔累计、打印及完成集合。
+
+手工新增本机 POST /api/agent/manual-baskets，完整说明见唯一接口文档。Measurement 增加 entrySource（DEVICE/MANUAL）和 entryNote；新冻结票增加可空 entrySource，旧 JSON 无字段时为null，不推断来源。手工 stableFlag=false、stabilitySource=NOT_APPLICABLE、protocolType=MANUAL_ENTRY，无设备采样序号/原始帧/独立皮重。请勿把人工净重当成传感器稳定读数。
+
+本机 JSON 载荷扩展，不新增表或改字段，不迁移历史重量。平台端需确认手工来源/说明持久化、员工权限及打印溯源策略，并按现有设备上传入口做真实兼容验证。原分支多筐队列继续 WAITING_CONTRACT，未用旧覆盖式人工 entry 替代逐笔上传。本地通过不代表正式平台联调或Win10实机出纸通过。
+
+0.4.0本地81/81回归、工作台构建、四组浏览器流程以及发布EXE的HTTP/手输流程通过。覆盖混合累计、有效授权下的断网/断秤录入、丢失响应后原号重试及完成集合；两分辨率与手输标签预览已检查。启动/停止默认改用带0.4.0版本号的新测试目录，保留旧公斤记录；旧包先Stop、新包完整解压到新目录。未提交或推送本次变更。
+
 2026-10-20更新，执行者 Codex；版本0.3.6，交付分支feat/sohe-scale-agent。用户已授权提交和推送本模块；分支以9052a69c为开发基线，仅增加xsy-scale-agent目录，不包含平台其他模块的修改。基线之后平台main的改动由深圳在接手时结合当前代码评审，本分支不自动pull或覆盖平台更新。
 
 ## 深圳接入快速开始

@@ -25,8 +25,6 @@ internal sealed class AgentOptions
     public string HttpStableField { get; set; } = "";
     public bool AllowScaleControl { get; set; }
     public int ReadingMaxAgeSeconds { get; set; } = 2;
-    public decimal MinimumKg { get; set; } = 1;
-    public decimal MaximumKg { get; set; } = 150;
     /// <summary>铭牌标称分度，仅作为设备资料展示，不限制原始净重的小数或步进。</summary>
     public decimal DivisionKg { get; set; } = 0.05m;
     public string PrinterName { get; set; } = "";
@@ -42,7 +40,8 @@ internal sealed record WeightReading(string SampleId, string ReadingSequence, de
 
 /// <summary>界面引用采样和任务，不能自行填写最终业务重量。</summary>
 internal sealed record CaptureRequest(string OperationId, string SampleId, string TaskId,
-    string TaskItemId, string OperatorSessionId, string JobId, string JobVersion, [property: JsonRequired] long TaskItemVersion);
+    string TaskItemId, string OperatorSessionId, string JobId, string JobVersion, [property: JsonRequired] long TaskItemVersion,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? PrintRequested = null);
 
 /// <summary>拟议 v1 上报结构；数值以十进制字符串传输，不混用员工上报 DTO。</summary>
 internal sealed record Measurement(string ProtocolVersion, string EventKey, string DeviceCode,
@@ -50,7 +49,8 @@ internal sealed record Measurement(string ProtocolVersion, string EventKey, stri
     string TaskItemId, long TaskItemVersion, string OperatorSessionId, DateTimeOffset CapturedAt,
     string RawValue, string RawUnit, string NetWeight, string BusinessUnit, string WeightKind,
     bool StableFlag, string StabilitySource, string ConversionRule,
-    string? TareWeight, string ReadingSequence, string ProtocolType, string AgentVersion);
+    string? TareWeight, string ReadingSequence, string ProtocolType, string AgentVersion,
+    string? EntrySource = null, string? EntryNote = null);
 
 /// <summary>本机记录保留原始报文和请求摘要；上报后仍不代表业务已接受。</summary>
 internal sealed record LocalEvent(string EventKey, string OperationId, string RequestHash,
@@ -96,7 +96,7 @@ internal sealed class AgentFault(string code, string message) : Exception(messag
 internal static class WireJson
 {
     internal static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
-    internal const string Version = "0.3.6";
+    internal const string Version = "0.4.1";
     internal static string Encode<T>(T value) => JsonSerializer.Serialize(value, Options);
     internal static T Decode<T>(string json) => JsonSerializer.Deserialize<T>(json, Options)
         ?? throw new AgentFault("INVALID_RESPONSE", "接口数据为空");

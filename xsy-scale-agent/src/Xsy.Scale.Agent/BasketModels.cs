@@ -9,6 +9,12 @@ internal sealed record BasketScope(string OperatorSessionId, string JobId, strin
 internal sealed record BasketRecord(string EventKey, string OperationId, int BasketNumber, string SampleId,
     Measurement Measurement, string PrintIntentId, string PrintState, string QueueState);
 
+/// <summary>其他大秤称好后的人工净重；每次形成独立记录，不注入或替代设备采样。</summary>
+internal sealed record ManualBasketRequest(string OperationId, string TaskId, string TaskItemId,
+    string OperatorSessionId, string JobId, string JobVersion, [property: JsonRequired] long TaskItemVersion,
+    string NetWeight, [property: JsonRequired] bool ConfirmedNetWeight, string? Note = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? PrintRequested = null);
+
 /// <summary>完成商品只引用已保存筐集合，不接受手填累计或再次读取设备。</summary>
 internal sealed record CompleteItemRequest(string OperationId, string TaskId, string TaskItemId,
     string OperatorSessionId, string JobId, string JobVersion, [property: JsonRequired] long TaskItemVersion,

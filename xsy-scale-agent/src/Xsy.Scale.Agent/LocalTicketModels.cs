@@ -14,11 +14,11 @@ internal sealed class WorkstationOptions
     public string TraceUrlTemplate { get; set; } = "";
 }
 
-/// <summary>每筐的冻结凭条；只从任务快照和真实采集事实生成，补打不取新重量。</summary>
+/// <summary>逐笔冻结凭条；任务、重量和设备/人工来源一起保存，补打不取新重量。</summary>
 internal sealed record TicketSnapshot(string EventKey, string TaskNo, string ProductName, string SpecName,
     string? CustomerName, string? OrderNo, int BasketNumber, string NetWeight, string Unit,
     string? TareWeight, string DeviceCode, DateTimeOffset CapturedAt, bool TestOnly, string TemplateVersion = "LOCAL_PENDING_V1",
-    string? TraceReference = null, string? TraceUrl = null);
+    string? TraceReference = null, string? TraceUrl = null, string? EntrySource = null);
 
 /// <summary>本地纸票的一次执行尝试；未知或失败不会自动再次发纸。</summary>
 internal sealed record LocalTicket(string AttemptId, string OperationId, string ScopeKey, TicketSnapshot Snapshot,

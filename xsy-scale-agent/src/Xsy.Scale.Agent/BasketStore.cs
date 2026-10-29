@@ -45,17 +45,19 @@ internal sealed partial class StateStore
     }
 
     /// <summary>保存一筐、上传命令及打印意图，任何一步失败均回滚。</summary>
-    /// <param name="request">已经过员工/任务校验的完整采集请求；同操作必须保持原请求。</param>
-    /// <param name="create">新操作才调用的真实样本冻结函数，不可为空；抛错时不落记录。</param>
-    /// <param name="ticketFactory">显式启用本地凭条时提供的冻结函数；null保持等待授权且不建立打印任务。</param>
+    /// <param name="request">已经过员工/任务校验的完整采集请求；PrintRequested=false不建立打印任务，同操作必须保持原请求。</param>
+    /// <param name="create">新操作才调用的记录冻结函数，设备采样或明确标识的人工输入；抛错不落记录。</param>
+    /// <param name="ticketFactory">本筐要求打印且启用本地凭条时提供；null不建立打印任务。</param>
+    /// <param name="requestHash">手工入口传完整请求摘要，覆盖重量和说明；null沿用设备请求摘要。</param>
     /// <returns>新建或幂等复用的筐记录；状态明确等待正式扩展契约。</returns>
     /// <exception cref="AgentFault">请求冲突、重复样本、明细已完成或上下文变化。</exception>
-    internal BasketRecord RecordBasket(CaptureRequest request, Func<LocalEvent> create, Func<BasketRecord, LocalTicket>? ticketFactory = null)
+    internal BasketRecord RecordBasket(CaptureRequest request, Func<LocalEvent> create, Func<BasketRecord, LocalTicket>? ticketFactory = null,
+        string? requestHash = null)
     {
         lock (gate)
         {
             var scope = new BasketScope(request.OperatorSessionId, request.JobId, request.TaskId, request.TaskItemId);
-            string scopeKey = WireJson.Digest(scope), digest = WireJson.Digest(request);
+            string scopeKey = WireJson.Digest(scope), digest = requestHash ?? WireJson.Digest(request);
             using var db = Open(); using var transaction = db.BeginTransaction();
             using var command = db.CreateCommand(); command.Transaction = transaction;
             command.CommandText = "SELECT request_hash,kind FROM basket_commands WHERE operation_id=$op";
@@ -80,11 +82,11 @@ internal sealed partial class StateStore
             if (records.Length > 0) RequireBasketContext(records[0].Measurement, frozen.Measurement);
             string intentId = Guid.NewGuid().ToString("N");
             var record = new BasketRecord(frozen.EventKey, request.OperationId, records.Length + 1,
-                request.SampleId, frozen.Measurement, intentId, "WAITING_AUTHORIZATION", "WAITING_CONTRACT");
+                request.SampleId, frozen.Measurement, intentId, request.PrintRequested == false ? "NOT_REQUESTED" : "WAITING_AUTHORIZATION", "WAITING_CONTRACT");
             command.CommandText = """
                 INSERT INTO basket_records(event_key,operation_id,request_hash,scope_key,basket_number,sample_id,
                   payload,raw_frame,print_intent_id,print_state)
-                VALUES($event,$op,$hash,$scope,$number,$sample,$payload,$raw,$intent,'WAITING_AUTHORIZATION')
+                VALUES($event,$op,$hash,$scope,$number,$sample,$payload,$raw,$intent,$print)
                 """;
             command.Parameters.Clear();
             command.Parameters.AddWithValue("$event", record.EventKey);
@@ -96,10 +98,11 @@ internal sealed partial class StateStore
             command.Parameters.AddWithValue("$payload", WireJson.Encode(frozen.Measurement));
             command.Parameters.AddWithValue("$raw", frozen.RawFrameHex);
             command.Parameters.AddWithValue("$intent", intentId);
+            command.Parameters.AddWithValue("$print", record.PrintState);
             command.ExecuteNonQuery();
             InsertBasketCommand(db, transaction, request.OperationId, scopeKey, "CAPTURE_BASKET", record.EventKey,
                 digest, WireJson.Encode(record));
-            if (ticketFactory != null)
+            if (request.PrintRequested != false && ticketFactory != null)
             {
                 LocalTicket ticket = ticketFactory(record);
                 InsertLocalTicket(db, transaction, ticket, digest);

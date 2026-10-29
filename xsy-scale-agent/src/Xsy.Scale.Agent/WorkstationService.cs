@@ -51,8 +51,6 @@ internal sealed class WorkstationService(AgentOptions options, WorkstationOption
         protocol = options.Protocol, serialPort = options.SerialPort, baudRate = options.BaudRate,
         httpScaleUrl = options.HttpScaleUrl, httpUnit = options.HttpUnit, httpStableField = options.HttpStableField,
         printerName = options.PrinterName, paperWidthMm = policy.PaperWidthMm, paperHeightMm = policy.PaperHeightMm,
-        minimumKg = options.MinimumKg.ToString(System.Globalization.CultureInfo.InvariantCulture),
-        maximumKg = options.MaximumKg.ToString(System.Globalization.CultureInfo.InvariantCulture),
         divisionKg = options.DivisionKg.ToString(System.Globalization.CultureInfo.InvariantCulture),
         allowScaleControl = options.AllowScaleControl,
         traceUrlTemplate = policy.TraceUrlTemplate, traceConfigured = !string.IsNullOrWhiteSpace(policy.TraceUrlTemplate)

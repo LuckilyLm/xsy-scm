@@ -1,6 +1,6 @@
-﻿param([string]$StateDirectory = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'XSY/ScaleAgent-Exercise'), [switch]$HardwareTest)
+﻿param([string]$StateDirectory = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'XSY/ScaleAgent-Exercise-0.4.0'), [switch]$HardwareTest)
 $ErrorActionPreference = 'Stop'
-if ($HardwareTest -and -not $PSBoundParameters.ContainsKey('StateDirectory')) { $StateDirectory = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'XSY/ScaleAgent-HardwareWorkflow' }
+if ($HardwareTest -and -not $PSBoundParameters.ContainsKey('StateDirectory')) { $StateDirectory = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'XSY/ScaleAgent-HardwareWorkflow-0.4.0' }
 $ownerFile = Join-Path ([IO.Path]::GetFullPath($StateDirectory)) 'local-test-processes.json'
 if (-not (Test-Path -LiteralPath $ownerFile)) { Write-Output '没有本脚本记录的演练实例'; exit 0 }
 $owner = Get-Content -LiteralPath $ownerFile -Encoding UTF8 -Raw | ConvertFrom-Json

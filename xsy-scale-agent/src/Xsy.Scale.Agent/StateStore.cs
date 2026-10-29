@@ -244,22 +244,22 @@ internal sealed class CaptureService(AgentOptions options, ScaleState state, Sta
 
     /// <summary>冻结一笔真实采样但不写库，由调用方把事实和关联意图一起提交。</summary>
     /// <param name="request">已校验的非空采集请求；SampleId 必须引用当前有效采样。</param>
-    /// <param name="target">与请求关联的有效平台明细，不允许为空；单位必须与设备相同。</param>
+    /// <param name="target">与请求关联的有效平台明细，不允许为空；单位须相同或为市斤编码别名。</param>
     /// <returns>尚未持久化的不可变采集事实。</returns>
     /// <exception cref="AgentFault">样本失效、不稳、非净重或单位不符。</exception>
     internal LocalEvent CreateEvent(CaptureRequest request, TaskItem target)
     {
             WeightReading reading = state.Freeze(request.SampleId, options);
-            if (target.SaleUnit != reading.RawUnit)
-                throw new AgentFault("UNIT_MISMATCH", "设备单位与任务销售单位不一致，尚未启用业务单位换算");
+            if (!MassUnits.Matches(reading.RawUnit, target.SaleUnit))
+                throw new AgentFault("UNIT_MISMATCH", "请将电子秤切换为任务对应单位；sj表示市斤，不将公斤数值直接作为斤");
             string eventKey = $"{options.DeviceCode}:{Guid.NewGuid():N}";
             string weight = reading.RawWeight.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var measurement = new Measurement("1", eventKey, options.DeviceCode, options.StationCode, store.SessionId,
                 request.JobId, request.JobVersion, request.TaskId, request.TaskItemId, request.TaskItemVersion,
-                request.OperatorSessionId, reading.CapturedAt, weight, reading.RawUnit, weight, reading.RawUnit, "NET",
+                request.OperatorSessionId, reading.CapturedAt, weight, reading.RawUnit, weight, target.SaleUnit, "NET",
                 true, reading.StabilitySource is "DEVICE_FRAME" or "DEVICE_HTTP" ? "DEVICE" : reading.StabilitySource, "IDENTITY",
                 reading.TareWeight?.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                reading.ReadingSequence, options.Protocol, WireJson.Version);
+                reading.ReadingSequence, options.Protocol, WireJson.Version, "DEVICE");
             return new LocalEvent(eventKey, request.OperationId, "", measurement, reading.RawFrameHex,
                 "CAPTURED_LOCAL", 0, DateTimeOffset.UtcNow, null, null);
     }

@@ -140,10 +140,10 @@ internal sealed partial class ScaleState(TimeProvider? timeProvider = null)
                 throw new AgentFault("STALE_READING", "重量数据已过期");
             if (reading.StableFlag != true || reading.NetGrossFlag != "NET" || selected.StableFlag != true || selected.NetGrossFlag != "NET")
                 throw new AgentFault("WEIGHT_UNACCEPTABLE", "请等待可信的稳定净重");
-            decimal kg = SoheFrameDecoder.InKg(reading.RawWeight, reading.RawUnit);
-            // 按设备原始净重记录；铭牌分度不用于过滤读数，也不能据此舍入重量。
-            if (kg < options.MinimumKg || kg > options.MaximumKg)
-                throw new AgentFault("METROLOGY_LIMIT", "重量超出已配置的称量范围");
+            SoheFrameDecoder.ValidateUnit(reading.RawUnit);
+            // 用户取消软件量程门槛；零/负数不是本次商品净重，仍不能产生业务记录。
+            if (reading.RawWeight <= 0)
+                throw new AgentFault("WEIGHT_NOT_POSITIVE", "请称得大于零的净重后记录");
             return selected;
         }
     }

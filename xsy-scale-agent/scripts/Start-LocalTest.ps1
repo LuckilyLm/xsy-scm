@@ -1,6 +1,6 @@
 ﻿param(
     [string]$DotnetPath = 'dotnet',
-    [string]$StateDirectory = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'XSY/ScaleAgent-Exercise'),
+    [string]$StateDirectory = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'XSY/ScaleAgent-Exercise-0.4.0'),
     [int]$AgentPort = 33610,
     [int]$PlatformPort = 33611,
     [switch]$Development,
@@ -14,13 +14,13 @@
 $ErrorActionPreference = 'Stop'
 $agentRoot = if (Test-Path -LiteralPath (Join-Path $PSScriptRoot '../src/Xsy.Scale.Agent')) { Split-Path $PSScriptRoot -Parent } else { $PSScriptRoot }
 if ($HardwareTest) {
-    if (-not $PSBoundParameters.ContainsKey('StateDirectory')) { $StateDirectory = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'XSY/ScaleAgent-HardwareWorkflow' }
+    if (-not $PSBoundParameters.ContainsKey('StateDirectory')) { $StateDirectory = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'XSY/ScaleAgent-HardwareWorkflow-0.4.0' }
     if (-not $PSBoundParameters.ContainsKey('AgentPort')) { $AgentPort = 33630 }
     if (-not $PSBoundParameters.ContainsKey('PlatformPort')) { $PlatformPort = 33631 }
-    # 只检查指定队列，不发纸、不回退默认打印机，旧任务由现场核查。
+    # 无打印需求也可称重保存；仅提示打印问题，不清队列或回退默认打印机。
     $printer = @(Get-CimInstance Win32_Printer | Where-Object { $_.Name -eq $PrinterName })
-    if ($printer.Count -ne 1 -or $printer[0].WorkOffline) { throw '指定打印队列不存在或处于脱机状态，请先检查X7' }
-    if (@(Get-CimInstance Win32_PrintJob | Where-Object { $_.Name.StartsWith($PrinterName + ',') }).Count -gt 0) { throw '打印队列还有旧任务，请先核对，程序不会清空或重打' }
+    if ($printer.Count -ne 1 -or $printer[0].WorkOffline) { Write-Warning '指定打印队列不存在或脱机，可以使用“记录上传”；打印前请检查X7' }
+    if (@(Get-CimInstance Win32_PrintJob | Where-Object { $_.Name.StartsWith($PrinterName + ',') }).Count -gt 0) { Write-Warning '打印队列还有旧任务，可以使用“记录上传”；打印前请先核对，程序不会清空或重打' }
     if (-not ([IO.Ports.SerialPort]::GetPortNames() -contains $SerialPort)) { throw ('找不到串口：' + $SerialPort) }
 }
 $stateRoot = [IO.Path]::GetFullPath($StateDirectory)
@@ -76,7 +76,7 @@ try {
         'XSY_Agent__DeviceCode'='TEST-SCALE-01'; 'XSY_Agent__StationCode'='TEST-STATION-01'
         'XSY_Agent__DataDirectory'=(Join-Path $stateRoot 'agent'); 'XSY_Agent__PlatformBaseUrl'=$platformUrl
         'XSY_Agent__AllowLoopbackPlatform'='true'; 'XSY_Agent__Protocol'='SOHE_HTTP'
-        'XSY_Agent__HttpScaleUrl'=$platformUrl; 'XSY_Agent__HttpUnit'='kg'; 'XSY_Agent__HttpStableField'='stable'
+        'XSY_Agent__HttpScaleUrl'=$platformUrl; 'XSY_Agent__HttpUnit'='sj'; 'XSY_Agent__HttpStableField'='stable'
         'XSY_Agent__AllowScaleControl'=$(if ($HardwareTest -or $EnableScaleControl) { 'true' } else { 'false' })
         'XSY_Agent__PrinterName'='EXERCISE-NO-PHYSICAL-PRINTER'; 'XSY_Workstation__LocalTest'='true'
         'XSY_Workstation__LocalTicketsEnabled'='true'; 'XSY_Workstation__InitialOperatorSession'='MOCK-OPERATOR'
@@ -88,7 +88,7 @@ try {
         $variables['XSY_Agent__DeviceCode']='TEST-HW-01'; $variables['XSY_Agent__StationCode']='TEST-HW-STATION'
         $variables['XSY_Agent__Protocol']='SOHE_RS232_V101'; $variables['XSY_Agent__SerialPort']=$SerialPort
         $variables['XSY_Agent__BaudRate']='9600'; $variables['XSY_Agent__PrinterName']=$PrinterName
-        $variables['XSY_Agent__MinimumKg']='1'; $variables['XSY_Agent__MaximumKg']='150'; $variables['XSY_Agent__DivisionKg']='0.05'
+        $variables['XSY_Agent__DivisionKg']='0.05'
         $variables['XSY_Workstation__HardwareTest']='true'
     }
     $agent = Start-OwnedProcess $agentFile $agentArgs $variables 'agent'
@@ -102,7 +102,7 @@ try {
     @{processes=$owned; agentUrl=$agentUrl; platformUrl=$platformUrl; mode=$mode} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $ownerFile -Encoding UTF8
     if (-not $NoBrowser) { Start-Process -FilePath $agentUrl }
     [pscustomobject]@{Mode=$mode; Workstation=$agentUrl; ControlPanel=$platformUrl; State=$stateRoot}
-    if ($HardwareTest) { Write-Output '实机联动测试已启动：空秤置零、放空筐后去皮，等待设备稳定零值；稳定净重1至150kg按原数记录，不要求50g倍数。手动保存后打印测试标签；结束请双击Stop-HardwareTest.cmd导出结果。' }
+    if ($HardwareTest) { Write-Output '实机联动测试已启动：空秤置零、放空筐后去皮，等待设备稳定零值；将秤切换市斤，稳定正净重按原数记录，不设软件固定量程；也可手工录入其他大秤的净重。手动保存后打印测试标签；结束请双击Stop-HardwareTest.cmd导出结果。' }
 } catch {
     foreach ($entry in $owned) {
         $running = Get-Process -Id $entry.id -ErrorAction SilentlyContinue

@@ -12,7 +12,7 @@ var workstationOptions = builder.Configuration.GetSection("Workstation").Get<Wor
 string urls = builder.Configuration["Urls"] ?? "http://127.0.0.1:33600";
 if (urls.Split(';').Any(url => !Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || !uri.IsLoopback || uri.Scheme != "http"))
     throw new InvalidOperationException("本机服务仅允许监听回环 HTTP 地址");
-if (options.DivisionKg <= 0 || options.MinimumKg < 0 || options.MaximumKg < options.MinimumKg
+if (options.DivisionKg <= 0
     || options.ReadingMaxAgeSeconds is < 1 or > 30 || options.PlatformPollSeconds < 1 || options.HeartbeatSeconds < 1
     || options.PlatformTimeoutSeconds is < 1 or > 120
     || options.MaxPrintBytes is < 1 or > 10485760)
@@ -181,6 +181,8 @@ app.MapGet("/api/agent/events", (HttpContext context) =>
 });
 app.MapPost("/api/agent/baskets", (CaptureRequest input, HttpContext context, BasketService baskets) =>
     Results.Ok(baskets.Record(input, Session(context))));
+app.MapPost("/api/agent/manual-baskets", (ManualBasketRequest input, HttpContext context, BasketService baskets) =>
+    Results.Ok(baskets.RecordManual(input, Session(context))));
 app.MapGet("/api/agent/baskets", (string jobId, string taskId, string taskItemId, int? after, int? limit,
     HttpContext context, BasketService baskets) =>
     Results.Ok(baskets.Records(new(Session(context), jobId, taskId, taskItemId), after ?? 0, limit ?? 50)));

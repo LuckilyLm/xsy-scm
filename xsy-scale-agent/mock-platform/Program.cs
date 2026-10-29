@@ -13,7 +13,7 @@ var app = builder.Build();
 bool grouping = builder.Configuration.GetValue<bool>("Grouping");
 bool fixture = builder.Configuration.GetValue<bool>("Fixture");
 decimal fixtureWeight = 5m;
-bool fixtureStable = true, fixtureOnline = true;
+bool fixtureStable = true, fixtureOnline = true, fixtureConnected = true;
 bool fixtureControlChangesWeight = true;
 int fixtureTareCalls = 0, fixtureZeroCalls = 0;
 var fixtureGate = new object();
@@ -93,16 +93,20 @@ if (fixture)
     // 显式隔离演练才启用厂家HTTP替身；真实Agent没有任何注入重量的路由。
     app.MapGet("/api/Weight", () =>
     {
-        lock (fixtureGate) return Results.Json(new { Code = 1,
+        lock (fixtureGate) {
+        if (!fixtureConnected) return (IResult)Results.StatusCode(503);
+        return Results.Json(new { Code = 1,
             netWeight = fixtureWeight.ToString(System.Globalization.CultureInfo.InvariantCulture), tareWeight = "0.500", stable = fixtureStable },
             new JsonSerializerOptions { PropertyNamingPolicy = null });
+        }
     });
     app.MapPost("/test/scale", (JsonElement body) =>
     {
         if (!body.TryGetProperty("weight", out var weight) || !decimal.TryParse(weight.GetString(),
             System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowLeadingSign,
             System.Globalization.CultureInfo.InvariantCulture, out decimal number)) return Results.BadRequest();
-        lock (fixtureGate) { fixtureWeight = number; fixtureStable = body.TryGetProperty("stable", out var stable) && stable.GetBoolean(); }
+        lock (fixtureGate) { fixtureWeight = number; fixtureStable = body.TryGetProperty("stable", out var stable) && stable.GetBoolean();
+            if (body.TryGetProperty("connected", out var connected)) fixtureConnected = connected.GetBoolean(); }
         return Results.Ok(new { mode = "LOCAL_TEST", physicalScale = false });
     });
     app.MapPost("/test/network", (JsonElement body) =>
@@ -111,7 +115,7 @@ if (fixture)
         <!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>鲜蔬园隔离演练控制台</title>
         <style>body{font:18px 'Microsoft YaHei';max-width:700px;margin:60px auto;background:#f5f7fa}button,input{font:inherit;padding:16px;margin:8px;border:1px solid #ccd7e5;border-radius:6px}button{cursor:pointer;background:white}</style>
         <h1>隔离演练控制台</h1><p>仅改变测试替身，不读取真实秤、不发纸、不连接正式平台。</p>
-        <input id="weight" value="5.000" aria-label="演练重量"><button onclick="scale(true)">设置稳定重量</button><button onclick="scale(false)">设置不稳定</button>
+        <input id="weight" value="5.000" aria-label="演练重量（斤）"><button onclick="scale(true)">设置稳定重量</button><button onclick="scale(false)">设置不稳定</button>
         <p><button onclick="network(false)">模拟平台断网</button><button onclick="network(true)">恢复模拟平台</button></p><p id="result"></p>
         <script>async function scale(stable){await fetch('/test/scale',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({weight:document.getElementById('weight').value,stable})});document.getElementById('result').textContent='演练读数已调整'}async function network(online){await fetch('/test/network',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({online})});document.getElementById('result').textContent=online?'模拟平台已恢复':'模拟平台已断网，本机秤读数保持'}</script></html>
         """, "text/html; charset=utf-8"));
@@ -143,7 +147,7 @@ static object[] MockItems(bool grouping)
 
 static object MockItem(string id, string name, string spec, string? sku, string? customer, string customerName, string planned) => new
 {
-    taskItemId = id, taskItemVersion = 0, productName = name, specName = spec, saleUnit = "kg",
+    taskItemId = id, taskItemVersion = 0, productName = name, specName = spec, saleUnit = "斤",
     plannedQuantity = planned, sortedQuantity = "0.000", productType = "NON_STANDARD", active = true,
     customerName, orderNo = "TEST-20261016-001", skuId = sku, customerId = customer
 };

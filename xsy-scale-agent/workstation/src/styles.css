@@ -16,3 +16,10 @@
 @media(max-width:1190px){.task-overview{gap:12px}.sorting-entry{padding:24px 18px;gap:12px}.sorting-icon{padding:10px;font-size:24px}.sorting-groups{padding:18px;gap:12px}}
 
 .ticket-trace{border:1px dashed var(--border);padding:12px;margin-top:14px;text-align:center}.ticket-trace strong{font-size:14px}
+
+/* manual-entry：沿用触屏按钮与蓝白面板，输入和来源不与实时读数混排。 */
+.weight-entry-actions{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px}.weight-entry-actions .manual-entry-button{margin-left:auto}.weight-entry-actions>span{flex-basis:100%;max-width:none;margin-left:0}
+.weight-entry-actions button{min-height:48px}.manual-task{display:flex;flex-direction:column;gap:6px;margin:8px 0 12px;color:var(--ink)}.manual-task span{font-size:14px;color:var(--muted)}
+.manual-weight-label{display:block;font-size:16px;color:var(--ink);margin:16px 0 8px}.manual-weight-input{font-size:32px;font-variant-numeric:tabular-nums;min-height:60px;text-align:right}
+.manual-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}.manual-keypad button{height:48px;font-size:22px}.manual-validation{font-size:14px;color:var(--muted);min-height:24px;margin:10px 0}.manual-dialog-actions{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap}.manual-dialog-actions button{min-height:48px}.basket-source{display:block;color:var(--muted);margin-bottom:4px}
+.basket-capture-actions{display:grid;gap:12px}

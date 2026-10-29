@@ -17,7 +17,7 @@ test('软件去皮置零、未确认采集门禁与不重复发送', {skip:!base
   page.on('request',request=>{if(new URL(request.url()).hostname!=='127.0.0.1')external.push(request.url());});
   const scope={jobId:'mock-job',taskId:'9007199254740993',taskItemId:'9007199254740994'};
   const query='?'+new URLSearchParams(scope),hint=page.getByTestId('scale-control-status');
-  const save=page.getByRole('button',{name:'记录本筐并打印'}),tare=page.getByRole('button',{name:/^去\s*皮$/}),zero=page.getByRole('button',{name:/^置\s*零$/});
+  const save=page.getByRole('button',{name:'记录上传并打印'}),tare=page.getByRole('button',{name:/^去\s*皮$/}),zero=page.getByRole('button',{name:/^置\s*零$/});
   const note=text=>{checks.push(text);console.log('PASS '+text);};
   async function api(route,data){const response=await context.request[ data===undefined?'get':'post'](base+'/api/agent'+route,{headers,...(data===undefined?{}:{data})});assert.equal(response.status(),200,await response.text());return response.json();}
   async function set(route,data){const response=await context.request.post(fixture+route,{data});assert.equal(response.status(),200);}
@@ -37,7 +37,7 @@ test('软件去皮置零、未确认采集门禁与不重复发送', {skip:!base
     await page.screenshot({path:path.join(output,name+'.png'),fullPage:true,animations:'disabled'});
   }
   try{
-    await page.goto(base);const boot=await api('/workstation');assert.equal(boot.version,'0.3.6');assert.equal(boot.localTest,true);assert.equal(boot.hardwareTest,false);assert.equal(boot.allowScaleControl,true);
+    await page.goto(base);const boot=await api('/workstation');assert.equal(boot.version,'0.4.1');assert.equal(boot.localTest,true);assert.equal(boot.hardwareTest,false);assert.equal(boot.allowScaleControl,true);
     const denied=await context.request.post(base+'/api/agent/scale/tare',{headers:{'X-Workstation-Request':'1','X-Operator-Session':'not-authorized'},data:{}});
     assert.equal(denied.status(),409);assert.equal((await denied.json()).code,'OPERATOR_SESSION_EXPIRED');assert.deepEqual(await counts(),{tareCalls:0,zeroCalls:0});
     await page.getByRole('link',{name:/按商品分拣/}).click();
@@ -49,13 +49,15 @@ test('软件去皮置零、未确认采集门禁与不重复发送', {skip:!base
     assert.equal((await api('/status')).control.command,'zero');assert.deepEqual(await counts(),{tareCalls:0,zeroCalls:1});
     note('无授权/不稳定拒绝控制；置零双击只发送一次，真实零重量不作为商品记录');
     await weight('0.28');await expect(tare).toBeEnabled();await tare.click({clickCount:2,delay:10});
+    // 前次置零的成功文案可能暂留；必须核对本次去皮的最终真实观测，不能读到WAITING中的null。
+    await expect.poll(async()=>{const control=(await api('/status')).control;return [control.command,control.state,control.observedMode];}).toEqual(['tare','ZERO_OBSERVED','NET']);
     await expect(hint).toHaveText('已收到设备稳定零读数');assert.deepEqual(await counts(),{tareCalls:1,zeroCalls:1});
     assert.equal((await api('/status')).control.observedMode,'NET');
     await weight('8.84');await expect(save).toBeEnabled();await shot('control-normal-1366',1366);await shot('control-normal-1024',1024);await page.setViewportSize({width:1366,height:768});
     await save.click();await expect.poll(async()=>(await api('/basket-summary'+query)).basketCount).toBe(1);
     await expect.poll(async()=>(await api('/local-tickets'+query))[0].state).toBe('TEST_ONLY');
     assert.equal(Number((await api('/local-tickets'+query))[0].snapshot.netWeight),8.84);
-    note('去皮后稳定NET零值解锁；8.84kg原值保存与演练票一致，1024/1366布局通过');
+    note('去皮后稳定NET零值解锁；8.84斤原值保存与演练票一致，1024/1366布局通过');
     await page.getByRole('button',{name:'已换筐，继续称重'}).click();
     await weight('8.86');await set('/test/control',{changesWeight:false});await tare.click();
     await expect(hint).toHaveText('等待稳定零读数，暂不能记录');

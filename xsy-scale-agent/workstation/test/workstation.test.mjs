@@ -21,8 +21,8 @@ test('秤端任务、多筐、离线、打印尝试与触屏布局', {skip:!base
   async function fixture(route,data){const response=await context.request.post(control+route,{data});assert.equal(response.status(),200);}
   async function layout(name,width){
     await page.setViewportSize({width,height:768});
-    await expect(page.getByRole('button',{name:'记录本筐并打印'})).toBeVisible();
-    const capture=await page.getByRole('button',{name:'记录本筐并打印'}).boundingBox();
+    await expect(page.getByRole('button',{name:'记录上传并打印'})).toBeVisible();
+    const capture=await page.getByRole('button',{name:'记录上传并打印'}).boundingBox();
     const finish=await page.getByRole('button',{name:'完成商品',exact:true}).boundingBox();
     assert(capture&&finish&&capture.y>=0&&capture.y+capture.height<=768&&finish.y+finish.height<=768,'主操作须在首屏可触达');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
@@ -30,7 +30,7 @@ test('秤端任务、多筐、离线、打印尝试与触屏布局', {skip:!base
   }
   try{
     await page.goto(base);const boot=await api('/workstation');assert.equal(boot.localTest,true);
-    assert.equal(boot.version,'0.3.6');assert.equal(boot.hardwareTest,false);assert.equal(JSON.stringify(boot).includes('LOCAL-TEST-MAINTENANCE'),false);
+    assert.equal(boot.version,'0.4.1');assert.equal(boot.hardwareTest,false);assert.equal(JSON.stringify(boot).includes('LOCAL-TEST-MAINTENANCE'),false);
     const cookies=await context.cookies();assert.equal(cookies.find(c=>c.name==='XSY-Workstation').httpOnly,true);
     assert.equal((await context.request.get(base+'/api/agent/workstation')).status(),401);
     assert.equal((await context.request.get(base+'/api/agent/workstation',{headers:{'X-Workstation-Request':'1',Origin:'https://wrong.example'}})).status(),401);
@@ -40,16 +40,18 @@ test('秤端任务、多筐、离线、打印尝试与触屏布局', {skip:!base
     await page.getByRole('link',{name:/按商品分拣/}).click();
     await page.locator('.sorting-group').filter({hasText:'测试散装'}).click();
     await page.getByRole('button',{name:'领取并称重'}).first().click();
-    await expect(page.getByRole('button',{name:'记录本筐并打印'})).toBeEnabled();
+    await expect(page.getByRole('button',{name:'记录上传并打印'})).toBeEnabled();
     await layout('weigh-1366',1366);await layout('weigh-1024',1024);await page.setViewportSize({width:1366,height:768});
     await fixture('/test/scale',{weight:'5.000',stable:false});
-    await expect(page.getByRole('button',{name:'记录本筐并打印'})).toBeDisabled();note('不稳定读数禁止记录');
+    await expect(page.getByRole('button',{name:'记录上传并打印'})).toBeDisabled();note('不稳定读数禁止记录');
     await fixture('/test/scale',{weight:'151.000',stable:true});
-    await expect(page.getByText('重量超出可记录范围')).toBeVisible();
-    await expect(page.getByRole('button',{name:'记录本筐并打印'})).toBeDisabled();note('超量程禁止记录');
+    await expect(page.getByRole('button',{name:'记录上传并打印'})).toBeEnabled();note('151斤不再受固定软件量程门槛限制');
+    await fixture('/test/scale',{weight:'0',stable:true});
+    await expect(page.getByText('净重须大于零')).toBeVisible();
+    await expect(page.getByRole('button',{name:'记录上传并打印'})).toBeDisabled();note('零净重仍禁止生成商品记录');
     await fixture('/test/scale',{weight:'5.000',stable:true});
-    await expect(page.getByRole('button',{name:'记录本筐并打印'})).toBeEnabled();
-    await page.getByRole('button',{name:'记录本筐并打印'}).click({clickCount:2,delay:10});
+    await expect(page.getByRole('button',{name:'记录上传并打印'})).toBeEnabled();
+    await page.getByRole('button',{name:'记录上传并打印'}).click({clickCount:2,delay:10});
     await expect.poll(async()=>(await api('/basket-summary'+query)).basketCount).toBe(1);
     await expect(page.getByRole('button',{name:'已换筐，继续称重'})).toBeVisible();
     await expect.poll(async()=>(await api('/local-tickets'+query))[0].state).toBe('TEST_ONLY');
@@ -61,14 +63,14 @@ test('秤端任务、多筐、离线、打印尝试与触屏布局', {skip:!base
     await expect(page.locator('.weight-display')).toContainText('4');
     // 已落盘的响应被丢弃，页面须用原操作号核对，不能追加第三筐。
     await page.route('**/api/agent/baskets',async route=>{if(route.request().method()==='POST'){await route.fetch();await route.abort('failed');}else await route.continue();},{times:1});
-    await page.getByRole('button',{name:'记录本筐并打印'}).click();
+    await page.getByRole('button',{name:'记录上传并打印'}).click();
     await expect.poll(async()=>(await api('/basket-summary'+query)).basketCount).toBe(2);
     await expect(page.getByRole('button',{name:'已换筐，继续称重'})).toBeVisible({timeout:10000});
     assert.equal(Number((await api('/basket-summary'+query)).totalQuantity),9);note('断网刷新后继续称重5＋4＝9；保存响应丢失未重复记重');
     await page.getByRole('button',{name:'完成商品',exact:true}).click();
     const dialog=page.getByRole('dialog');await dialog.getByRole('combobox').click();
     await page.getByText('短少',{exact:true}).click();
-    await dialog.getByRole('textbox').fill('演练缺少1kg');
+    await dialog.getByRole('textbox').fill('演练缺少1斤');
     await dialog.getByRole('button',{name:'确认完成商品',exact:true}).click();
     await expect(page.getByText('本地已完成',{exact:true})).toBeVisible();
     const summary=await api('/basket-summary'+query);assert.equal(summary.basketCount,2);assert.equal(summary.completion.eventKeys.length,2);
@@ -88,7 +90,7 @@ test('秤端任务、多筐、离线、打印尝试与触屏布局', {skip:!base
     await expect.poll(async()=>(await api('/local-tickets'+query)).length).toBe(3);
     assert.equal((await api('/basket-summary'+query)).basketCount,2);assert.equal(Number((await api('/basket-summary'+query)).totalQuantity),9);
     await page.getByRole('button',{name:'刷新记录'}).click();
-    await page.screenshot({path:path.join(output,'records.png'),fullPage:true,animations:'disabled'});note('原凭条预览与理由补打只增加打印尝试，累计仍9kg');
+    await page.screenshot({path:path.join(output,'records.png'),fullPage:true,animations:'disabled'});note('原凭条预览与理由补打只增加打印尝试，累计仍9斤');
     await page.getByRole('link',{name:'设备设置'}).click();
     await expect(page.getByRole('button',{name:'进入配置编辑'})).toBeDisabled();
     await page.screenshot({path:path.join(output,'settings.png'),fullPage:true,animations:'disabled'});note('日常设备配置只读，维护动作受码保护');

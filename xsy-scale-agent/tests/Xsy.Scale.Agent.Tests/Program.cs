@@ -69,12 +69,12 @@ var cases = new (string Name, Func<Task> Run)[]
         Equal<WeightReading?>(null, state.Snapshot().Reading);
         Throws("SCALE_UNAVAILABLE", () => state.Freeze(sample.SampleId, Options()));
     })),
-    ("取消分度过滤后仍保留最小称量和最大量程守卫", () => Sync(() =>
+    ("取消固定量程门槛但拒绝零和负净重", () => Sync(() =>
     {
-        foreach (decimal weight in new[] { 0m, 0.5m, 0.95m, 150.01m, 151m, -1m })
+        foreach (decimal weight in new[] { 0m, -1m })
         {
             var state = new ScaleState(); var sample = Reading() with { RawWeight = weight }; state.Set(sample);
-            Throws("METROLOGY_LIMIT", () => state.Freeze(sample.SampleId, Options()));
+            Throws("WEIGHT_NOT_POSITIVE", () => state.Freeze(sample.SampleId, Options()));
         }
     })),
     ("同一操作重试只落一条事件并持久保留键", () => Sync(() =>
@@ -275,7 +275,7 @@ var cases = new (string Name, Func<Task> Run)[]
     })
 };
 
-cases = cases.Concat(BasketTests.Cases(testRoot)).ToArray();
+cases = cases.Concat(BasketTests.Cases(testRoot)).Concat(ManualBasketTests.Cases(testRoot)).ToArray();
 cases = cases.Concat(LocalTicketTests.Cases(testRoot)).ToArray();
 cases = cases.Concat(TicketLayoutTests.Cases(testRoot)).ToArray();
 cases = cases.Concat(ScaleControlTests.Cases()).ToArray();
