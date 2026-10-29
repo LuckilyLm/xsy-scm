@@ -20,7 +20,7 @@
       </a-descriptions>
     </template>
 
-    <!-- 有前后态：一行一处变化 -->
+    <!-- 有前后态：字段 / 修改前 / 修改后 三列，和纸质变更单的读法一致 -->
     <template v-else>
       <div class="scm-diff-head">
         <a-tag :color="changedCount ? 'orange' : 'default'">已变更 {{ changedCount }} 项</a-tag>
@@ -28,23 +28,22 @@
           {{ showQuiet ? '只看变更项' : `显示未变更的 ${quietFields.length} 项` }}
         </a-button>
       </div>
-      <div v-if="diffFields.length" class="scm-diff-lines">
-        <template v-for="field in diffFields" :key="field.key">
-          <span class="scm-diff-label" :class="{'is-quiet': !field.changed}" :title="field.key">
-            {{ field.label }}
-          </span>
-          <span
-            class="scm-diff-value scm-cell-wrap"
-            :class="{'is-empty': field.before === '—', 'is-quiet': !field.changed}"
-            :title="field.beforeRaw"
-            >{{ field.before }}</span
-          >
-          <span class="scm-diff-arrow" :class="{'is-quiet': !field.changed}">→</span>
-          <span class="scm-diff-value scm-cell-wrap" :class="{'is-empty': field.after === '—', 'is-quiet': !field.changed}" :title="field.afterRaw">{{
-            field.after
-          }}</span>
-        </template>
-      </div>
+      <table v-if="diffFields.length" class="scm-diff-grid">
+        <thead>
+          <tr>
+            <th class="scm-diff-key" scope="col">字段</th>
+            <th scope="col">修改前</th>
+            <th scope="col">修改后</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="field in diffFields" :key="field.key" :class="{'is-quiet': !field.changed}">
+            <th class="scm-diff-key" scope="row" :title="field.label">{{ field.label }}</th>
+            <td class="scm-diff-value" :class="{'is-empty': field.before === '—'}" :title="field.beforeRaw">{{ field.before }}</td>
+            <td class="scm-diff-value" :class="{'is-empty': field.after === '—'}" :title="field.afterRaw">{{ field.after }}</td>
+          </tr>
+        </tbody>
+      </table>
       <p v-if="!diffFields.length && !changedInArrays()" class="scm-diff-more">本次操作没有字段发生变化</p>
     </template>
 
@@ -81,16 +80,22 @@
             <a-tag v-if="!row.beforeExists" color="green">新增</a-tag>
             <a-tag v-else-if="!row.afterExists" color="red">移除</a-tag>
           </div>
-          <div class="scm-diff-lines">
-            <template v-for="field in visibleRowFields(row)" :key="field.key">
-              <span class="scm-diff-label" :title="field.key">{{ field.label }}</span>
-              <span class="scm-diff-value scm-cell-wrap" :class="{'is-empty': field.before === '—'}" :title="field.beforeRaw">{{
-                field.before
-              }}</span>
-              <span class="scm-diff-arrow">→</span>
-              <span class="scm-diff-value scm-cell-wrap" :class="{'is-empty': field.after === '—'}" :title="field.afterRaw">{{ field.after }}</span>
-            </template>
-          </div>
+          <table class="scm-diff-grid">
+            <thead>
+              <tr>
+                <th class="scm-diff-key" scope="col">字段</th>
+                <th scope="col">修改前</th>
+                <th scope="col">修改后</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="field in visibleRowFields(row)" :key="field.key">
+                <th class="scm-diff-key" scope="row" :title="field.label">{{ field.label }}</th>
+                <td class="scm-diff-value" :class="{'is-empty': field.before === '—'}" :title="field.beforeRaw">{{ field.before }}</td>
+                <td class="scm-diff-value" :class="{'is-empty': field.after === '—'}" :title="field.afterRaw">{{ field.after }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </template>
     </section>
@@ -294,34 +299,47 @@ function visibleRowFields(row: DiffChild): FieldRow[] {
   margin-bottom: 4px;
 }
 
-/* 四列网格：字段、旧值、箭头、新值；列宽随内容变化。 */
-.scm-diff-lines {
-  display: grid;
-  grid-template-columns: max-content max-content max-content minmax(0, 1fr);
-  gap: 6px 10px;
-  align-items: baseline;
+/* 变更明细：字段 / 修改前 / 修改后 三列，按表格读比一行串箭头更容易对照。 */
+.scm-diff-grid {
+  width: 100%;
   margin-bottom: 12px;
+  border-collapse: collapse;
+  font-size: 13px;
 }
 
-.scm-diff-label {
+.scm-diff-grid th,
+.scm-diff-grid td {
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--scm-border, rgba(0, 0, 0, 0.06));
+}
+
+.scm-diff-grid thead th {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* 字段名只做定位，不抢数值的视觉重量 */
+.scm-diff-grid .scm-diff-key {
+  width: 150px;
+  font-weight: 400;
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
   white-space: nowrap;
 }
 
-.scm-diff-arrow {
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-}
-
 /* 未变更项弱化显示 */
-.scm-diff-label.is-quiet,
-.scm-diff-value.is-quiet,
-.scm-diff-arrow.is-quiet {
+.scm-diff-grid tr.is-quiet th,
+.scm-diff-grid tr.is-quiet td {
   color: rgba(0, 0, 0, 0.3);
 }
 
 .scm-diff-value {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
 }
 
 /* 空值弱化，避免误读成破折号 */
@@ -340,11 +358,11 @@ function visibleRowFields(row: DiffChild): FieldRow[] {
   max-width: 100%;
 }
 
-/* 分组左边框 + 缩进，区分层级。 */
+/* 明细分组用一条细分割线起头，比左侧色条更像「下一段」，也不与表格边框抢视觉。 */
 .scm-diff-group {
-  margin: 16px 0;
-  padding-left: 12px;
-  border-left: 3px solid #d9d9d9;
+  margin: 20px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--scm-border, rgba(0, 0, 0, 0.06));
 }
 
 .scm-diff-group-title {

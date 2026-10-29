@@ -9,6 +9,7 @@ import com.xsy.scm.purchase.service.PurchaseQueryService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -55,7 +56,8 @@ public class PurchaseOrderPrintSourceProvider implements ScmPrintSourceProvider 
             Map<String, String> row = ScmPrintSource.row();
             row.put("productName", ScmPrintText.text(item.getProductName()));
             row.put("skuCode", ScmPrintText.text(item.getSkuCode()));
-            row.put("skuName", ScmPrintText.text(item.getSkuName()));
+            // 采购明细的快照名称是商品名，模板里的「规格」取规格值，不能印成商品名
+            row.put("skuName", specName(item));
             row.put("purchaseUnit", ScmPrintText.text(item.getPurchaseUnit()));
             row.put("plannedQuantity", ScmPrintText.fixed(item.getPlannedQuantity()));
             row.put("receivedQuantity", ScmPrintText.fixed(item.getReceivedQuantity()));
@@ -69,5 +71,16 @@ public class PurchaseOrderPrintSourceProvider implements ScmPrintSourceProvider 
         totals.put("totalAmount", ScmPrintText.fixed(order.getTotalAmount()));
 
         return new ScmPrintSource(order.getOrderNo(), header, rows, totals);
+    }
+
+    /** 规格取规格值（例如「散装」）；没有规格值时退回快照名称，避免打印空白。 */
+    private static String specName(PurchaseOrderItemVO item) {
+        Map<String, Object> values = item.getSpecValues();
+        if (values == null || values.isEmpty()) {
+            return ScmPrintText.text(item.getSkuName());
+        }
+        String text = values.values().stream().filter(value -> value != null).map(value -> String.valueOf(value).trim())
+            .filter(value -> !value.isEmpty()).collect(Collectors.joining(" / "));
+        return text.isEmpty() ? ScmPrintText.text(item.getSkuName()) : text;
     }
 }

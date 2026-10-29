@@ -173,7 +173,7 @@
           <a-textarea v-model:value="priceReason" :maxlength="500" :rows="2" show-count />
         </a-form-item>
       </a-form>
-      <a-alert type="warning" show-icon message="补价只在提交后 7 天内可用；已确认收货的采购价不会回改库存成本；改价必须说明原因并留审计。" />
+      <p class="scm-note">采购单提交后 7 天内可补录价格；收货确认后改价不会重算库存成本，改价须填写原因。</p>
     </a-modal>
   </a-drawer>
 </template>

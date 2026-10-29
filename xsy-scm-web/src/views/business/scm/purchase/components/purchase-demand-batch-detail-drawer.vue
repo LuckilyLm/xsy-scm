@@ -11,22 +11,23 @@
     <a-spin :spinning="loading">
       <template v-if="detail">
         <a-descriptions bordered size="small" :column="3" class="head">
-          <a-descriptions-item label="冻结批次">{{ detail.batchId }}</a-descriptions-item>
-          <a-descriptions-item label="状态">{{ detail.status }}</a-descriptions-item>
-          <a-descriptions-item label="冻结时间">{{ detail.createdAt || '—' }}</a-descriptions-item>
-          <a-descriptions-item label="统计时间段" :span="2"> {{ detail.startAt || '—' }} ~ {{ detail.endAt || '—' }} </a-descriptions-item>
+          <a-descriptions-item label="批次编号"><span class="scm-mono">#{{ detail.batchId }}</span></a-descriptions-item>
+          <a-descriptions-item label="状态">{{ batchStatusText(detail.status) }}</a-descriptions-item>
+          <a-descriptions-item label="冻结时间">{{ datetime(detail.createdAt) }}</a-descriptions-item>
+          <a-descriptions-item label="统计时间段" :span="2">{{ datetime(detail.startAt) }} ~ {{ datetime(detail.endAt) }}</a-descriptions-item>
           <a-descriptions-item label="冻结人">{{ detail.createdBy || '—' }}</a-descriptions-item>
           <a-descriptions-item label="仓库">{{ detail.warehouseName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="供应商">{{ detail.supplierName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="采购员">{{ detail.purchaserName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="来源行数">{{ detail.sourceLineCount }}</a-descriptions-item>
-          <a-descriptions-item label="候选行数">{{ detail.candidateLineCount }}</a-descriptions-item>
+          <a-descriptions-item label="建议采购行数">{{ detail.candidateLineCount }}</a-descriptions-item>
           <a-descriptions-item label="已生成需求">{{ detail.generatedCount }}</a-descriptions-item>
           <a-descriptions-item label="已跳过">{{ detail.skippedCount }}</a-descriptions-item>
         </a-descriptions>
+        <p v-if="!detail.candidateLineCount" class="scm-note banner">本批订单所需商品现有库存已覆盖，无需采购。</p>
         <a-button type="primary" style="margin: 12px 0" v-privilege="'scm:purchase:inquiry:query'" @click="openInquiry">查看本批次询价</a-button>
 
-        <a-divider orientation="left">商品规格需求解释行</a-divider>
+        <a-divider orientation="left">各规格的计算依据</a-divider>
         <a-table
           size="small"
           :data-source="detail.summary ?? []"
@@ -49,7 +50,7 @@
           </template>
         </a-table>
 
-        <a-divider orientation="left">逐行建议（净缺口摊到哪张订单行）</a-divider>
+        <a-divider orientation="left">缺口分摊到订单行</a-divider>
         <a-table
           size="small"
           :data-source="detail.items ?? []"
@@ -67,7 +68,7 @@
               <span class="scm-quantity">{{ quantity(record.requiredQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'existingDemandId'">
-              <span v-if="record.existingDemandId">已有需求 {{ record.existingDemandId }}</span>
+              <a-tag v-if="record.existingDemandId" color="orange">已有未完成需求</a-tag>
               <span v-else class="hint">—</span>
             </template>
             <template v-else-if="column.dataIndex === 'demandUnit'">{{ record.demandUnit || '—' }}</template>
@@ -86,9 +87,10 @@ import {ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
-import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
+import {SCM_DEMAND_BATCH_STATUS_ENUM, SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 import type {DemandBatchDetail, DemandBatchItem, DemandBatchSummaryRow, Id} from '../purchase-types';
 import {quantity} from '../purchase-form-model';
+import {datetime} from '../../common/scm-display';
 import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
@@ -116,39 +118,43 @@ const numericColumns = [
   'netPurchaseGap',
 ];
 
+/** 批次状态用中文展示，不把枚举值直接抛给用户。 */
+const batchStatusText = (status?: string) => SCM_DEMAND_BATCH_STATUS_ENUM[status ?? '']?.desc ?? status ?? '—';
+
 const detail = ref<DemandBatchDetail>();
 const loading = ref(false);
 const error = ref('');
 let requestId = 0;
 
+// 列名用采购员的口头说法（需要买多少、仓里还有多少），不直接搬字段名
 const summaryColumns: TableColumnsType<DemandBatchSummaryRow> = [
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 130},
-  {title: '需求单位', dataIndex: 'demandUnit', width: 95},
-  {title: '订单需求量', dataIndex: 'orderDemandQuantity', width: 120},
-  {title: '现有量', dataIndex: 'onHandQuantity', width: 110},
-  {title: '全仓预留', dataIndex: 'reservedQuantity', width: 110},
-  {title: '其中本批预留', dataIndex: 'selectedOrderReservedQuantity', width: 130},
-  {title: '其他业务预留', dataIndex: 'otherReservedQuantity', width: 130},
-  {title: '全仓净可用', dataIndex: 'availableQuantity', width: 110},
+  {title: '单位', dataIndex: 'demandUnit', width: 85},
+  {title: '订单需求', dataIndex: 'orderDemandQuantity', width: 110},
+  {title: '现有库存', dataIndex: 'onHandQuantity', width: 110},
+  {title: '已预留（全仓）', dataIndex: 'reservedQuantity', width: 125},
+  {title: '其中本批', dataIndex: 'selectedOrderReservedQuantity', width: 110},
+  {title: '其他预留', dataIndex: 'otherReservedQuantity', width: 110},
+  {title: '全仓可用', dataIndex: 'availableQuantity', width: 110},
   {title: '本批可用', dataIndex: 'stockAvailableForSelectedOrders', width: 110},
-  {title: '库存对比差额', dataIndex: 'stockComparisonGap', width: 130},
-  {title: '有效在途未收', dataIndex: 'inTransitQuantity', width: 130},
-  {title: '已有采购覆盖', dataIndex: 'purchaseCoverageQuantity', width: 130},
-  {title: '净采购缺口', dataIndex: 'netPurchaseGap', width: 125},
-  {title: '计算状态', dataIndex: 'calculationStatus', align: 'center', width: 120},
+  {title: '差额', dataIndex: 'stockComparisonGap', width: 100},
+  {title: '在途未收', dataIndex: 'inTransitQuantity', width: 110},
+  {title: '已采购未收', dataIndex: 'purchaseCoverageQuantity', width: 115},
+  {title: '需采购', dataIndex: 'netPurchaseGap', width: 100},
+  {title: '结论', dataIndex: 'calculationStatus', align: 'center', width: 110},
 ];
 
 const itemColumns: TableColumnsType<DemandBatchItem> = [
   {title: '行号', dataIndex: 'lineNo', width: 70},
-  {title: '来源销售单号', dataIndex: 'salesOrderNo', width: 190},
-  {title: '确认时间', dataIndex: 'sourceConfirmedAt', width: 180},
+  {title: '销售单号', dataIndex: 'salesOrderNo', width: 190},
+  {title: '确认时间', dataIndex: 'sourceConfirmedAt', width: 180, customRender: ({text}) => datetime(text)},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 130},
-  {title: '需求单位', dataIndex: 'demandUnit', width: 95},
-  {title: '来源实发量', dataIndex: 'sourceQuantity', width: 120},
-  {title: '本批建议量', dataIndex: 'requiredQuantity', width: 120},
-  {title: '冻结时已有需求', dataIndex: 'existingDemandId', width: 150},
+  {title: '单位', dataIndex: 'demandUnit', width: 85},
+  {title: '订单实发量', dataIndex: 'sourceQuantity', width: 120},
+  {title: '建议采购量', dataIndex: 'requiredQuantity', width: 120},
+  {title: '已有需求', dataIndex: 'existingDemandId', width: 130},
 ];
 
 async function load() {

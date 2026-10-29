@@ -135,12 +135,7 @@
 
   <!-- 签发员工会话 -->
   <a-modal :open="sessionOpen" title="签发员工会话" :confirm-loading="issuing" ok-text="签发" @ok="submitSession" @cancel="sessionOpen = false">
-    <a-alert
-      message="会话只代表该员工在这台秤上工作，不携带后台菜单权限；业务写入仍按该员工的真实数据范围校验。"
-      type="info"
-      show-icon
-      class="smart-margin-bottom10"
-    />
+    <p class="scm-note">该会话仅代表员工使用本台电子秤，不包含后台菜单权限；可查看与可操作的范围仍按本人账号权限校验。</p>
     <a-alert v-if="sessionError" :message="sessionError" type="error" show-icon class="smart-margin-bottom10" />
     <a-form layout="vertical">
       <a-form-item label="操作员工" required>

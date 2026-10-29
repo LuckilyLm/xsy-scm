@@ -89,7 +89,7 @@
           <!-- 撤销核销是追加反向记录，不是编辑，所以用危险样式并单独确认 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button
-              v-if="record.entryType === 'NORMAL' && record.sourceType !== 'WAIVER'"
+              v-if="record.entryType === 'NORMAL' && !record.reversed && record.sourceType !== 'WAIVER'"
               type="link"
               size="small"
               danger
@@ -97,7 +97,16 @@
               @click="openReverse(record)"
               >撤销核销</a-button
             >
-            <!-- 抹零的反向登记在应收页，这里不提供入口 -->
+            <!-- 抹零必须走抹零接口反向：它还要把抹零事实置为已反向，和普通核销反向不能共用一个动作 -->
+            <a-button
+              v-else-if="record.entryType === 'NORMAL' && !record.reversed && record.sourceType === 'WAIVER'"
+              type="link"
+              size="small"
+              danger
+              v-privilege="PERM.WAIVER_REVERSE"
+              @click="openWaiverReverse(record)"
+              >反向抹零</a-button
+            >
             <span v-else class="scm-cell-hint">—</span>
           </a-space>
         </template>
@@ -148,7 +157,7 @@
         <h3>自动分配预览</h3>
         <a-button :disabled="!source" :loading="planLoading" @click="previewAuto">预览分配</a-button>
       </div>
-      <a-alert type="info" show-icon message="按账单日期、单据编号从早到晚分配，不超额；单次最多 100 单，剩余金额留在资金单的待核销额里。" />
+      <p class="scm-note">按账单日期由早到晚自动分配，单张单据不会超额核销；单次最多处理 100 张，未分配完的金额保留在收款单的待核销额中。</p>
       <a-empty v-if="!plan.length" description="点击「预览分配」查看将要核销的单据" />
       <a-table
         v-else
@@ -209,12 +218,23 @@
   </a-drawer>
 
   <a-modal v-model:open="reverseOpen" title="撤销核销" :confirm-loading="reverseSaving" @ok="submitReverse">
-    <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一条反向核销，金额 ${moneyText(reverseRow.amount)}。`" />
+    <p v-if="reverseRow" class="scm-note">确认后该核销记录将作废，{{ moneyText(reverseRow.amount) }} 将退回对应单据的未结金额。</p>
     <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError" />
     <a-form ref="reverseFormRef" :model="reverseModel" :rules="reverseRules" layout="vertical"
       ><a-form-item label="撤销原因" name="reverseReason"
         ><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count /></a-form-item
     ></a-form>
+  </a-modal>
+
+  <a-modal v-model:open="waiverReverseOpen" title="反向抹零" :confirm-loading="waiverReverseSaving" @ok="submitWaiverReverse">
+    <p v-if="waiverReverseRow" class="scm-note">
+      确认后本次抹零将作废，应收未结金额恢复 {{ moneyText(waiverReverseRow.amount) }}。
+    </p>
+    <a-form ref="waiverReverseFormRef" :model="waiverReverseModel" :rules="waiverReverseRules" layout="vertical">
+      <a-form-item label="反向原因" name="waiverReverseReason">
+        <a-textarea v-model:value="waiverReverseReason" :maxlength="500" :rows="3" show-count />
+      </a-form-item>
+    </a-form>
   </a-modal>
 
   <BalanceMovementDetail ref="movementDetail" />
@@ -272,8 +292,13 @@ const reverseOpen = ref(false),
   reverseError = ref(''),
   reverseReason = ref(''),
   reverseRow = ref<FinanceWriteOff | null>(null);
+const waiverReverseOpen = ref(false),
+  waiverReverseSaving = ref(false),
+  waiverReverseReason = ref(''),
+  waiverReverseRow = ref<FinanceWriteOff | null>(null);
 const addFormRef = ref<FormInstance>();
 const reverseFormRef = ref<FormInstance>();
+const waiverReverseFormRef = ref<FormInstance>();
 /** 必填项逐项校验，错误显示在输入框下方。 */
 const addRules = {
   sourceType: [{required: true, message: '请选择资金类型', trigger: 'change'}],
@@ -285,9 +310,11 @@ const addRules = {
   ],
 };
 const reverseRules = {reverseReason: [{required: true, message: '请填写撤销原因', trigger: 'blur'}]};
+const waiverReverseRules = {waiverReverseReason: [{required: true, message: '请填写反向原因', trigger: 'blur'}]};
 /** 校验模型必须是稳定对象；reactive 会解包内部 ref，值仍是响应式的。 */
 const addModel = reactive({sourceType, source});
 const reverseModel = reactive({reverseReason});
+const waiverReverseModel = reactive({waiverReverseReason});
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const sourceOptions = Object.values(SCM_FINANCE_SOURCE_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
@@ -504,6 +531,33 @@ async function submitReverse() {
 }
 
 onMounted(queryData);
+
+/** 抹零反向走抹零接口：核销反向会把 WAIVER 当普通资金单拒绝，且抹零事实不会置为已反向。 */
+function openWaiverReverse(row: FinanceWriteOff) {
+  waiverReverseRow.value = row;
+  waiverReverseReason.value = '';
+  waiverReverseOpen.value = true;
+}
+async function submitWaiverReverse() {
+  if (!waiverReverseRow.value) return;
+  try {
+    await waiverReverseFormRef.value?.validate();
+  } catch (err) {
+    notifyFormInvalid(err, waiverReverseFormRef.value);
+    return;
+  }
+  waiverReverseSaving.value = true;
+  try {
+    await financeApi.waiverReverse({waiverId: waiverReverseRow.value.sourceId, reason: waiverReverseReason.value.trim()});
+    message.success('抹零已反向');
+    waiverReverseOpen.value = false;
+    await queryData();
+  } catch {
+    // 失败由全局 toast 提示
+  } finally {
+    waiverReverseSaving.value = false;
+  }
+}
 </script>
 
 <style scoped>

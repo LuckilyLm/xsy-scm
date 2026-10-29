@@ -99,7 +99,8 @@ const itemOptions = computed(() =>
 const quantityKeys = new Set(['shippedQuantity', 'previousReceivedQuantity', 'receivedQuantity']);
 const columns: TableColumnsType<ReceivedCorrection> = [
   {title: '记录时间', dataIndex: 'createdAt', width: 180, customRender: ({text}) => datetime(text)},
-  {title: '订单明细', dataIndex: 'orderItemId', width: 130},
+  {title: '商品名称', dataIndex: 'productName', width: 160},
+  {title: '商品规格', dataIndex: 'skuName', width: 140},
   {title: '已出库', dataIndex: 'shippedQuantity', width: 150, align: 'left'},
   {title: '更正前', dataIndex: 'previousReceivedQuantity', width: 150, align: 'left'},
   {title: '更正后', dataIndex: 'receivedQuantity', width: 150, align: 'left'},

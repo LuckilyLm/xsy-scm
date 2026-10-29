@@ -72,7 +72,7 @@
       />
     </div>
   </a-card>
-  <a-modal :open="visible" title="订单变更前后" width="900px" :footer="null" @cancel="visible = false">
+  <a-modal :open="visible" title="订单变更前后" width="min(760px, 92vw)" :footer="null" @cancel="visible = false">
     <ScmDiffTable :before="active?.beforeData" :after="active?.afterData" :scope="active?.operationType" />
   </a-modal>
 </template>

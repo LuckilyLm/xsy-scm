@@ -1,13 +1,7 @@
 <template>
   <!-- workspace：称重记录要并排核对读数、已接受分拣量、设备状态与处理操作，属于多面板业务工作台。 -->
   <a-drawer :open="open" title="订单称重工作台" :width="scmDrawerWidth('workspace')" @close="close">
-    <a-alert
-      type="info"
-      show-icon
-      class="workbench-alert"
-      message="电子秤采集接口待接入"
-      description="先选择订单和商品规格；设备接入后，稳定读数将在下方出现。只有人工接受才会写入分拣结果。"
-    />
+    <p class="scm-note">选择订单与商品规格后，秤上的读数会显示在下方称重记录中；仅点击「接受」才写入分拣数量。</p>
     <a-alert v-if="scaleError" type="error" show-icon :message="scaleError" class="workbench-alert" />
     <a-spin :spinning="scaleLoading">
       <a-row :gutter="[12, 12]" class="select-row">
@@ -74,7 +68,7 @@
             v-if="latestPending && latestPending.unit !== selectedItem.saleUnitSnapshot"
             type="warning"
             show-icon
-            message="设备单位与商品销售单位不一致。当前不自动换算，禁止直接接受这笔读数。"
+            :message="`设备重量单位为「${latestPending.unit}」，该商品按「${selectedItem.saleUnitSnapshot}」销售，系统不做自动换算。请先将设备单位调整一致后再称重。`"
           />
         </template>
         <a-empty v-else description="当前任务没有可称重的订单明细" />

@@ -34,10 +34,12 @@
     </select>
 
     <select id="list" resultType="com.xsy.scm.order.domain.vo.OrderReceivedCorrectionVO">
-        SELECT *
-        FROM xsy_order_received_quantity_correction
-        WHERE order_id = #{orderId}
-        ORDER BY id DESC
+        SELECT c.*, i.product_name_snapshot AS productName, i.spec_name_snapshot AS skuName
+        FROM xsy_order_received_quantity_correction c
+        LEFT JOIN xsy_sales_order_item i ON i.id = c.order_item_id
+            AND i.deleted = FALSE
+        WHERE c.order_id = #{orderId}
+        ORDER BY c.id DESC
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="correction.id">

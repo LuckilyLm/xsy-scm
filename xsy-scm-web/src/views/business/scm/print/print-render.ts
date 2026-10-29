@@ -32,8 +32,8 @@ function traceLine(render: PrintRender): string {
 /** 一张单据的打印片段。 */
 export function renderPrintHtml(render: PrintRender): string {
   const header = render.headerFields
-    // traceUrl 只用于二维码，不印在纸上
-    .filter((field) => field.key !== 'traceUrl')
+    // traceUrl 只用于二维码，不印在纸上；空值字段不印，避免纸面留下「采购员：」这种空标签
+    .filter((field) => field.key !== 'traceUrl' && String(field.value ?? '').trim() !== '')
     .map((field) => `<span class="f"><b>${esc(field.label)}</b>：${esc(field.value)}</span>`)
     .join('');
   const head = '<tr>' + render.columns.map((column) => `<th${column.numeric ? ' class="r"' : ''}>${esc(column.label)}</th>`).join('') + '</tr>';

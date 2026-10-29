@@ -224,9 +224,9 @@ defineExpose({load});
 
 .home-kpi .home-kpi__number {
   min-width: 0;
-  overflow-wrap: anywhere;
-  /* 5 列时单卡只有 ~185px，用 clamp 让长金额自己缩，不靠换行撑高卡片 */
-  font-size: clamp(24px, 2vw, 38px);
+  /* 5 列时单卡只有 ~185px：长金额靠字号自适应缩小，不在数字中间换行，也不撑高卡片 */
+  font-size: clamp(22px, 1.6vw, 34px);
+  white-space: nowrap;
   letter-spacing: -0.5px;
   font-variant-numeric: tabular-nums;
   color: var(--scm-text);

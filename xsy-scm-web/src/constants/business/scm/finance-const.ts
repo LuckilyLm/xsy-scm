@@ -103,6 +103,14 @@ export const SCM_FINANCE_SOURCE_TYPE_ENUM: SmartEnum<string> = {
   PAYMENT: {value: 'PAYMENT', desc: '付款'},
 };
 
+/** 应收/应付明细行的来源单据类型：明细行只带来源主键，展示时要换成这层业务含义。 */
+export const SCM_FINANCE_ITEM_SOURCE_TYPE_ENUM: SmartEnum<string> = {
+  INVENTORY_OUTBOUND_ITEM: {value: 'INVENTORY_OUTBOUND_ITEM', desc: '库存出库明细'},
+  ORDER_RETURN_ITEM: {value: 'ORDER_RETURN_ITEM', desc: '销售退货明细'},
+  PURCHASE_RECEIPT_ITEM: {value: 'PURCHASE_RECEIPT_ITEM', desc: '采购收货明细'},
+  MANUAL: {value: 'MANUAL', desc: '手工登记'},
+};
+
 export const SCM_FINANCE_BUSINESS_TYPE_ENUM: SmartEnum<string> = {
   RECEIVABLE: {value: 'RECEIVABLE', desc: '应收'},
   PAYABLE: {value: 'PAYABLE', desc: '应付'},

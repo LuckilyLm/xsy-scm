@@ -118,7 +118,7 @@
   </a-card>
 
   <a-modal v-model:open="formOpen" :title="editing ? '修改过账' : '新建过账'" :confirm-loading="formSaving" :width="620" @ok="submitForm">
-    <a-alert type="info" show-icon message="过账单据只做对外账目留痕：不生成应收应付、不参与核销、不影响客户余额与账龄。" />
+    <p class="scm-note">过账仅用于留存对外账目记录，不生成应收应付，也不影响客户余额与账龄。</p>
     <a-form layout="vertical" class="posting-form">
       <a-form-item label="客户" required>
         <a-select
@@ -234,7 +234,7 @@
     </a-spin>
   </a-drawer>
 
-  <a-modal :open="auditOpen" title="变更前后" width="900px" :footer="null" @cancel="auditOpen = false">
+  <a-modal :open="auditOpen" title="变更前后" width="min(760px, 92vw)" :footer="null" @cancel="auditOpen = false">
     <ScmDiffTable :before="auditLog?.beforeData" :after="auditLog?.afterData" :scope="auditLog?.operationType" />
   </a-modal>
 </template>

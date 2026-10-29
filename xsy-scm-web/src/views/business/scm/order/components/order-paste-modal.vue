@@ -1,11 +1,8 @@
 <template>
   <a-modal :open="open" title="整单粘贴" :width="960" :mask-closable="false" destroy-on-close @cancel="close">
-    <a-alert
-      type="info"
-      show-icon
-      message="从 Excel / 送货单复制多行，一次追加到当前客户订单"
-      description="有表头时按「商品名称 / 规格 / 单位 / 数量(实数量) / 销售单价 / 备注」识别；没有表头时按送货单顺序「商品名称 / 单位 / 规格 / 实数量 / 销售单价 / 销售金额 / 备注」读取，首列序号可有可无。单价留空按系统定价。"
-    />
+    <p class="scm-note">
+      可从 Excel 或送货单复制多行粘贴，一次追加到当前客户订单。带表头时按「商品名称 / 规格 / 单位 / 数量 / 销售单价 / 备注」识别；无表头时按送货单列顺序识别，首列序号可省略。单价留空按系统定价。
+    </p>
     <a-textarea
       v-model:value="text"
       class="paste-input"

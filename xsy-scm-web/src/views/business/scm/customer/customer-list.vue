@@ -4,19 +4,19 @@
     <a-form class="smart-query-form" layout="inline">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input v-model:value="filters.keyword" allow-clear placeholder="客户名称 / 联系人 / 电话" style="width: 240px" />
+          <a-input v-model:value="filters.keyword" allow-clear placeholder="客户名称 / 联系人 / 电话" style="width: 200px" />
         </a-form-item>
         <a-form-item label="客户类型" class="smart-query-form-item">
-          <CustomerTypeSelect v-model:value="filters.customerTypeId" width="180px" />
+          <CustomerTypeSelect v-model:value="filters.customerTypeId" width="160px" />
         </a-form-item>
         <a-form-item label="客户分类" class="smart-query-form-item">
-          <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="CUSTOMER" style="width: 160px" />
+          <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="CUSTOMER" style="width: 150px" />
         </a-form-item>
         <a-form-item label="客户分组" class="smart-query-form-item">
-          <CustomerGroupSelect v-model:value="filters.customerGroupId" width="160px" />
+          <CustomerGroupSelect v-model:value="filters.customerGroupId" width="150px" />
         </a-form-item>
         <a-form-item label="状态" class="smart-query-form-item">
-          <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_STATUS_ENUM" width="130px" />
+          <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_STATUS_ENUM" width="120px" />
         </a-form-item>
         <a-form-item class="smart-query-form-item">
           <a-space :size="10" wrap>

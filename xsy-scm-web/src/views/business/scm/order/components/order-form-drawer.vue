@@ -7,30 +7,15 @@
   >
     <a-alert v-if="error" :message="error" type="error" show-icon />
     <p v-if="exchangeReturnId" class="scm-note">原货已接收。替换订单重新定价并从草稿开始；后续提交、预留和配送按正常订单办理，不自动抵扣退款。</p>
-    <a-alert
-      v-if="form.status === 'PENDING'"
-      type="warning"
-      show-icon
-      class="pending-edit-note"
-      message="该订单已提交、等待确认：保存后仍为待确认，未改动的商品沿用提交时的报价；需要按最新价格重算请用「批量核价」。"
-    />
-    <a-alert
-      v-if="form.status === 'CONFIRMED' && form.lockedFlag"
-      type="error"
-      show-icon
-      class="pending-edit-note"
-      message="该订单已锁单：保存需要「锁单后改单」权限；普通用户请新建加单。"
-    />
-    <a-alert
-      v-else-if="form.status === 'CONFIRMED'"
-      type="warning"
-      show-icon
-      class="pending-edit-note"
-      :message="
-        (form.dispatchedAt ? '该订单已发车出库，保存需要「发车后改单」权限。' : '该订单已确认：') +
-        '改单沿用原有的锁定单价重算金额，不静默改价；需称重的新增商品请新建加单。'
-      "
-    />
+    <p v-if="form.status === 'PENDING'" class="scm-note pending-edit-note">
+      该订单已提交，等待确认。保存后仍为待确认；未修改的商品沿用提交时报价，如需按最新价格重算请使用「批量核价」。
+    </p>
+    <p v-if="form.status === 'CONFIRMED' && form.lockedFlag" class="scm-note pending-edit-note">
+      该订单已锁单，修改需具备「锁单后改单」权限；无权限时请新建加单。
+    </p>
+    <p v-else-if="form.status === 'CONFIRMED'" class="scm-note pending-edit-note">
+      {{ form.dispatchedAt ? '该订单已发车出库，改单需具备「发车后改单」权限。' : '' }}改单按原锁定单价重算金额，不会自动改价；需称重的新增商品请新建加单。
+    </p>
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical" class="app-drawer-form">
         <a-row :gutter="20">

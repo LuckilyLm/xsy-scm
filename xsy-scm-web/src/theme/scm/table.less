@@ -32,6 +32,13 @@
   width: 100%;
   align-items: center;
   justify-content: center;
+  /* 文字按钮本身的左右内边距只有 3px，再留一点间隙，相邻动作才不会连成一串 */
+  gap: 4px;
+}
+
+/* a-space 用内联 gap:0 排版，会盖掉上面的 gap；相邻动作改由外边距提供间距 */
+.scm-table-actions.ant-space > .ant-space-item + .ant-space-item {
+  margin-left: 4px;
 }
 
 /*

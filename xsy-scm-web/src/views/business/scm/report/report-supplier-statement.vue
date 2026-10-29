@@ -28,13 +28,13 @@
     </template>
     <div ref="printArea" class="statement-print">
       <h2>{{ selected.supplierName }} · 供应商对账单</h2>
-      <p>版本 #{{ selected.id }}　期间 {{ selected.startDate }} 至 {{ selected.endDate }}　冻结时间 {{ selected.generatedAt }}</p>
+      <p>版本 #{{ selected.id }}　期间 {{ selected.startDate }} 至 {{ selected.endDate }}　冻结时间 {{ datetime(selected.generatedAt) }}</p>
       <a-alert
         v-if="selected.partialScope"
         type="warning"
         show-icon
         class="statement-note"
-        message="这份对账单仅包含部分仓库或采购员的应付，付款金额则按整个供应商计算。请勿据此判断完整应付或未分配付款。"
+        message="本对账单仅包含部分仓库或采购员的应付，付款金额按整个供应商计算，请勿据此判断完整应付及未分配付款。"
       />
       <a-descriptions bordered size="small" :column="{xs: 1, sm: 2, lg: 4}">
         <a-descriptions-item label="期初净应付">{{ moneyText(selected.openingPayable) }}</a-descriptions-item>
@@ -74,6 +74,7 @@ import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-mo
 import {moneyText} from '../finance/finance-form-model';
 import {reportError} from './report-errors';
 import {useScmExport} from '../common/use-scm-export';
+import {datetime} from '../common/scm-display';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';

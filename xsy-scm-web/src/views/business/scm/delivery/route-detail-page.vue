@@ -187,12 +187,9 @@
   <a-modal v-model:open="signVisible" :title="signResults[signForm.result].label" ok-text="确认登记" :confirm-loading="busy" @ok="submitSign">
     <template v-if="signTarget">
       <p>{{ signTarget.orderNoSnapshot }} · {{ signTarget.customerName }}</p>
-      <a-alert
-        v-if="signForm.result === 'EXCEPTION'"
-        message="异常签收（含拒收）只登记到货情况：库存已按实发出库，此处不冲减，也不改动订单结算量。"
-        type="warning"
-        show-icon
-      />
+      <p v-if="signForm.result === 'EXCEPTION'" class="scm-note">
+        异常签收（含拒收）仅登记到货情况：库存已按实发出库，此处不冲减，也不改动订单结算量。
+      </p>
       <a-form layout="vertical">
         <a-form-item label="原因" :required="signForm.result === 'EXCEPTION'">
           <a-textarea

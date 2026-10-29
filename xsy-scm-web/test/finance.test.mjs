@@ -220,7 +220,9 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.match(pageCode.writeOff, /BALANCE_MOVEMENT: '余额消费'/);
     // 撤销核销是追加反向事实：danger 视觉 + 独立二次确认弹窗（不能与普通编辑同权重）
     assert.match(pageCode.writeOff, /title="撤销核销"/);
-    assert.match(pageCode.writeOff, /将追加一条反向核销/);
+    // 弹窗里要写清楚「这笔核销会作废、金额退回哪张单」，不能只放一个确认按钮
+    assert.match(pageCode.writeOff, /核销记录将作废/);
+    assert.match(pageCode.writeOff, /退回对应单据的未结金额/);
   });
 
   test('付款页不再展示裸的技术主键，往来方与往来方类型各自成列', () => {

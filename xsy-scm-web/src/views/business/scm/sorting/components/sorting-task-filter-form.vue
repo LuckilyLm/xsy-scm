@@ -50,7 +50,7 @@
     <a-form-item label="供应商" class="smart-query-form-item">
       <SupplierSelect :value="supplierId" width="200px" placeholder="全部" @update:value="emit('update:supplierId', $event)" />
     </a-form-item>
-    <a-form-item class="smart-query-form-item">
+    <a-form-item class="smart-query-form-item scm-query-actions">
       <a-button-group>
         <a-button type="primary" v-privilege="'scm:sorting:task:query'" @click="emit('search')">查询</a-button>
         <a-button @click="emit('reset')">重置</a-button>
@@ -102,3 +102,10 @@ const statusOptions = Object.values(SCM_SORTING_TASK_STATUS_ENUM).map((item) => 
   label: item.desc,
 }));
 </script>
+
+<style scoped>
+/* 筛选字段多、必然换行：让查询 / 重置停在行的右端，不在左下方单独挂一行 */
+.scm-query-actions {
+  margin-left: auto;
+}
+</style>

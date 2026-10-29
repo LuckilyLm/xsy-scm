@@ -22,6 +22,7 @@
           string-mode
           :precision="4"
           :min="'0.0001'"
+          style="width: 108px"
           v-model:value="record.plannedQuantity"
           :aria-label="'采购数量 ' + (index + 1)"
           @blur="normalizeNumber(record, 'plannedQuantity')"
@@ -33,6 +34,7 @@
           :precision="4"
           :min="'0'"
           :allow-clear="true"
+          style="width: 132px"
           :disabled="record.pricePending"
           :placeholder="record.pricePending ? '待定价' : ''"
           v-model:value="record.purchasePrice"
@@ -72,6 +74,7 @@
                 string-mode
                 :precision="4"
                 :min="'0.0001'"
+                style="width: 108px"
                 v-model:value="alloc.quantity"
                 aria-label="分配数量"
                 @blur="normalizeNumber(alloc, 'quantity')"
@@ -175,7 +178,6 @@ function removeAllocation(item: OrderItem, index: number) {
   item.allocations = (item.allocations ?? []).filter((_row, i) => i !== index);
 }
 
-/** 失焦时补成四位小数（"2" → "2.0000"）。input-number 只有在值实际变化时才回写显示。 */
 /** 勾上待定价就清空价格：两者互斥，留着旧价会被服务端判为矛盾。 */
 function onPendingChange(item: OrderItem, event: CheckboxChangeEvent) {
   item.pricePending = event.target.checked === true;
@@ -184,6 +186,7 @@ function onPendingChange(item: OrderItem, event: CheckboxChangeEvent) {
   }
 }
 
+/** 失焦时补成四位小数（"2" → "2.0000"）。input-number 只有在值实际变化时才回写显示。 */
 function normalizeNumber(target: object, key: 'plannedQuantity' | 'purchasePrice' | 'quantity') {
   const self = target as Record<string, string | null | undefined>;
   const normalized = normalizeTyped(self[key]);

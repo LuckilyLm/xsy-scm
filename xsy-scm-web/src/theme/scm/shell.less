@@ -23,6 +23,11 @@
   margin-bottom: 14px;
 }
 
+/* 行距只由 flex 的 row-gap 提供；框架默认再给第二行 margin-top:8px，会叠成 16px */
+.scm-module .admin-layout .smart-query-form .smart-query-form-row:not(:first-child) {
+  margin-top: 0;
+}
+
 /* ---------- 侧栏 ---------- */
 
 .scm-module .admin-layout .ant-layout-sider-light {

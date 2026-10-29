@@ -6,7 +6,7 @@
     <FormNote title="含开始日，不含结束日" :lines="['只汇总区间内「已确认」的销售订单行']" />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>
-        <a-range-picker v-model:value="form.range" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" />
+        <a-range-picker v-model:value="form.range" value-format="YYYY-MM-DD" style="width: 100%" />
       </a-form-item>
       <a-form-item label="收货仓库" name="warehouseId" required>
         <a-select
@@ -27,10 +27,10 @@
     </a-form>
 
     <a-descriptions v-if="batch" bordered size="small" :column="2">
-      <a-descriptions-item label="冻结批次">{{ batch.batchId }}</a-descriptions-item>
-      <a-descriptions-item label="候选行">{{ batch.candidateLineCount }}</a-descriptions-item>
-      <a-descriptions-item label="状态">{{ batch.status }}</a-descriptions-item>
-      <a-descriptions-item label="冻结解释行">{{ batch.summary?.length ?? 0 }} 个商品规格</a-descriptions-item>
+      <a-descriptions-item label="批次编号"><span class="scm-mono">#{{ batch.batchId }}</span></a-descriptions-item>
+      <a-descriptions-item label="状态">{{ batchStatusText(batch.status) }}</a-descriptions-item>
+      <a-descriptions-item label="建议采购行">{{ batch.candidateLineCount }}</a-descriptions-item>
+      <a-descriptions-item label="汇总商品规格">{{ batch.summary?.length ?? 0 }}</a-descriptions-item>
     </a-descriptions>
     <div v-if="batch" class="batch-actions">
       <a-button v-privilege="'scm:purchase:demand:batch:query'" @click="viewBatch"> 查看冻结批次明细 </a-button>
@@ -38,9 +38,9 @@
     <a-descriptions v-if="result" bordered size="small" :column="2">
       <a-descriptions-item label="区间内来源行">{{ result.sourceLineCount }}</a-descriptions-item>
       <a-descriptions-item label="本次新建需求">{{ result.createdCount }}</a-descriptions-item>
-      <a-descriptions-item label="已跳过（已存在需求）">{{ result.skippedCount }}</a-descriptions-item>
-      <a-descriptions-item label="涉及需求 id 数">{{ result.demandIds?.length ?? 0 }}</a-descriptions-item>
+      <a-descriptions-item label="已跳过">{{ result.skippedCount }}</a-descriptions-item>
     </a-descriptions>
+    <p v-if="result && result.skippedCount" class="skip-note">已跳过：库存已覆盖、无净缺口，或该订单行已有未完成需求。</p>
   </a-modal>
 </template>
 
@@ -55,6 +55,8 @@ import type {DemandCalculationBatch, GenerateResult, Id} from '../purchase-types
 import {purchaseError} from '../purchase-errors';
 import FormNote from '/@/components/framework/form-note/index.vue';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {dayStart} from '../purchase-form-model';
+import {SCM_DEMAND_BATCH_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 
 const props = defineProps<{open: boolean}>();
 const emit = defineEmits<{close: []; generated: []; viewBatch: [batchId: Id]}>();
@@ -85,6 +87,9 @@ const warehouseLoading = ref(false);
 const warehouses = ref<{id: Id; warehouseCode?: string; name?: string}[]>([]);
 
 const warehouseOptions = computed(() => warehouses.value.map((w) => ({value: w.id, label: w.name ?? ''})));
+
+/** 批次状态用中文展示，不把枚举值直接抛给用户。 */
+const batchStatusText = (status?: string) => SCM_DEMAND_BATCH_STATUS_ENUM[status ?? '']?.desc ?? status ?? '—';
 
 /** 员工选择器的 value 只接受数字，这里把 id 转成 number；清空时回写 undefined。 */
 const purchaserValue = computed<number | undefined>({
@@ -141,8 +146,8 @@ async function generate() {
   saving.value = true;
   try {
     const r = await purchaseDemandApi.createBatch({
-      startAt: form.range[0],
-      endAt: form.range[1],
+      startAt: dayStart(form.range[0]),
+      endAt: dayStart(form.range[1]),
       warehouseId: form.warehouseId,
       supplierId: form.supplierId ?? null,
       purchaserId: form.purchaserId ?? null,
@@ -181,5 +186,10 @@ function viewBatch() {
   align-items: center;
   gap: 8px;
   margin: 12px 0;
+}
+
+.skip-note {
+  margin: 8px 0 0;
+  color: var(--scm-text-secondary, #86909c);
 }
 </style>

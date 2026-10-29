@@ -38,7 +38,7 @@
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'templateName'">{{ record.templateName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'templateVersion'">{{ record.templateVersion ?? '—' }}</template>
-        <template v-else-if="column.dataIndex === 'printedAt'">{{ record.printedAt || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'printedAt'">{{ datetime(record.printedAt) }}</template>
         <template v-else-if="column.dataIndex === 'printedBy'">{{ record.printedBy || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -72,6 +72,7 @@ import {printApi} from '/@/api/business/scm/print-api';
 import type {Id, PrintDocumentTypeOption, PrintRecord, PrintRecordQuery} from './print-types';
 import {printRenders} from './print-render';
 import {printError} from './print-errors';
+import {datetime} from '../common/scm-display';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<PrintRecordQuery>({pageNum: 1, pageSize: 20});

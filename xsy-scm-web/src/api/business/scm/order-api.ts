@@ -96,6 +96,9 @@ export interface ReceivedCorrection {
   id: Id;
   orderId: Id;
   orderItemId: Id;
+  /** 明细行快照：页面展示商品与规格，不展示明细主键。 */
+  productName?: string | null;
+  skuName?: string | null;
   saleUnitSnapshot: string;
   shippedQuantity: string;
   previousReceivedQuantity: string;

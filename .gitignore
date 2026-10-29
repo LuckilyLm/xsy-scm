@@ -64,6 +64,8 @@ __pycache__/
 !/xsy-scm-web/.env.production
 *.log
 .playwright-cli/
+# Playwright MCP 的截图、页面快照等本地测试产物统一放这里，不入库。
+.playwright-mcp/
 **/test-results/
 **/playwright-report/
 **/playwright/.auth/

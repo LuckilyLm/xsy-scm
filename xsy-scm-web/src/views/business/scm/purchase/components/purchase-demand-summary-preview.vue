@@ -3,7 +3,7 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="统计时间段" class="smart-query-form-item">
-        <a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 380px" />
+        <a-range-picker v-model:value="range" value-format="YYYY-MM-DD" style="width: 380px" />
       </a-form-item>
       <a-form-item label="仓库" class="smart-query-form-item">
         <WarehouseSelect v-model:value="warehouseId" width="200px" placeholder="请选择仓库" />
@@ -81,7 +81,7 @@ import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 import type {DemandSummaryRow, Id} from '../purchase-types';
-import {quantity} from '../purchase-form-model';
+import {dayStart, quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
@@ -155,8 +155,8 @@ async function queryData() {
     // 加载失败由页头的 Alert 提示并可重试
     const r = await purchaseDemandApi.summaryPreview(
       {
-        startAt: range.value[0],
-        endAt: range.value[1],
+        startAt: dayStart(range.value[0]),
+        endAt: dayStart(range.value[1]),
         warehouseId: warehouseId.value,
         keyword: keyword.value || null,
         pageNum: pageNum.value,
@@ -199,8 +199,8 @@ async function fetchAllForPrint(rangeValue: [string, string], warehouse: Id): Pr
   const size = 200;
   for (let page = 1; page <= 50; page++) {
     const r = await purchaseDemandApi.summaryPreview({
-      startAt: rangeValue[0],
-      endAt: rangeValue[1],
+      startAt: dayStart(rangeValue[0]),
+      endAt: dayStart(rangeValue[1]),
       warehouseId: warehouse,
       keyword: keyword.value || null,
       pageNum: page,

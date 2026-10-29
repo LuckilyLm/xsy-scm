@@ -79,7 +79,8 @@
             :scroll="{x: scmColumnsWidth(receivableColumns)}"
           >
             <template #bodyCell="{record, column}">
-              <span v-if="column.dataIndex === 'quantity'" class="scm-quantity">{{ numberText(record.quantity) }}</span>
+              <span v-if="column.dataIndex === 'sourceType'">{{ itemSourceTypeText(record.sourceType) }}</span>
+              <span v-else-if="column.dataIndex === 'quantity'" class="scm-quantity">{{ numberText(record.quantity) }}</span>
               <span v-else-if="isMoneyColumn(column.dataIndex)" class="scm-money">{{ moneyText(record[column.dataIndex]) }}</span>
             </template>
           </a-table>
@@ -93,7 +94,8 @@
             :scroll="{x: scmColumnsWidth(payableColumns)}"
           >
             <template #bodyCell="{record, column}">
-              <span v-if="column.dataIndex === 'quantity'" class="scm-quantity">{{ numberText(record.quantity) }}</span>
+              <span v-if="column.dataIndex === 'sourceType'">{{ itemSourceTypeText(record.sourceType) }}</span>
+              <span v-else-if="column.dataIndex === 'quantity'" class="scm-quantity">{{ numberText(record.quantity) }}</span>
               <span v-else-if="isMoneyColumn(column.dataIndex)" class="scm-money">{{ moneyText(record[column.dataIndex]) }}</span>
             </template>
           </a-table>
@@ -175,7 +177,7 @@
   </a-drawer>
 
   <!-- 差异表在抽屉里放不下，改用弹窗展示 -->
-  <a-modal :open="auditOpen" title="变更前后" width="900px" :footer="null" @cancel="auditOpen = false">
+  <a-modal :open="auditOpen" title="变更前后" width="min(760px, 92vw)" :footer="null" @cancel="auditOpen = false">
     <ScmDiffTable :before="auditLog?.beforeData" :after="auditLog?.afterData" :scope="auditLog?.operationType" />
   </a-modal>
 </template>
@@ -198,7 +200,7 @@ import type {
   FinanceReceiptDetail,
   FinanceWriteOff,
 } from './finance-types';
-import {dateTimeText, entryTypeText, moneyText, numberText, operationTypeText} from './finance-form-model';
+import {dateTimeText, entryTypeText, itemSourceTypeText, moneyText, numberText, operationTypeText} from './finance-form-model';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 type FinanceDetail = FinanceReceivableDetail | FinancePayableDetail | FinanceReceiptDetail | FinancePaymentDetail;
@@ -254,7 +256,8 @@ const relationText = computed(() => {
 });
 
 const receivableColumns: TableColumnsType<FinanceReceivableItem> = [
-  {title: '出库来源', dataIndex: 'sourceId', width: 120},
+  // 明细行只带来源主键，展示业务含义即可；主键对使用者没有信息量
+  {title: '来源', dataIndex: 'sourceType', width: 140, align: 'center'},
   {title: '商品', dataIndex: 'skuName', width: 200},
   {title: '数量', dataIndex: 'quantity', width: 112},
   {title: '单价', dataIndex: 'unitPrice', width: 136},
@@ -264,7 +267,7 @@ const receivableColumns: TableColumnsType<FinanceReceivableItem> = [
   {title: '净额', dataIndex: 'amount', width: 148},
 ];
 const payableColumns: TableColumnsType<FinancePayableItem> = [
-  {title: '收货来源', dataIndex: 'sourceId', width: 120},
+  {title: '来源', dataIndex: 'sourceType', width: 140, align: 'center'},
   {title: '商品', dataIndex: 'skuName', width: 200},
   {title: '数量', dataIndex: 'quantity', width: 112},
   {title: '单价', dataIndex: 'unitPrice', width: 136},

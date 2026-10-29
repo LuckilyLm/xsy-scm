@@ -39,6 +39,9 @@ public class FinanceWriteOffVO {
 
     private String entryType;
 
+    /** 这笔核销是否已被反向；已反向的记录不能再反向一次。 */
+    private Boolean reversed;
+
     private Long reverseOfId;
 
     private String reason;

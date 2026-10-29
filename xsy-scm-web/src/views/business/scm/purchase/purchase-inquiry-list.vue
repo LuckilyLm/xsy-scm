@@ -63,19 +63,14 @@
             <a-descriptions-item label="需求量">{{ detail.inquiry.requiredQuantity }} {{ detail.inquiry.demandUnit }}</a-descriptions-item>
             <a-descriptions-item label="报价截止">{{ detail.inquiry.deadlineAt }}</a-descriptions-item>
             <a-descriptions-item label="状态">{{ detail.inquiry.status === 'ACCEPTED' ? '已确认报价' : '未确认' }}</a-descriptions-item>
-            <a-descriptions-item label="确认报价">{{ detail.inquiry.acceptedQuoteId || '—' }}</a-descriptions-item>
+            <a-descriptions-item label="确认报价">{{ acceptedQuoteText }}</a-descriptions-item>
             <a-descriptions-item label="确认人">{{ detail.inquiry.acceptedBy || '—' }}</a-descriptions-item>
           </a-descriptions>
           <a-space class="scm-inquiry__toolbar">
             <a-button type="primary" v-if="canQuote" v-privilege="'scm:purchase:inquiry:quote'" @click="quoteOpen = true">登记供应商报价</a-button>
             <a-button @click="openDetail(detail.inquiry.id)">刷新报价</a-button>
           </a-space>
-          <a-alert
-            type="info"
-            show-icon
-            message="报价接收截止后仍可确认有效报价；报价由采购员代为登记，不代表供应商在线签署。"
-            class="scm-inquiry__alert"
-          />
+          <p class="scm-note scm-inquiry__alert">报价截止后仍可确认有效报价；报价由采购员代录，不代表供应商在线确认。</p>
           <a-divider orientation="left">当前有效报价（单价从低到高）</a-divider>
           <a-table
             :data-source="detail.currentOffers"
@@ -180,7 +175,8 @@ const quoteValidUntil = ref<string>();
 const quoteRemark = ref('');
 
 const columns: TableColumnsType<PurchaseInquiry> = [
-  {title: '询价编号', dataIndex: 'id', width: 115},
+  // 询价没有业务单号，主键前面加 # 表明它是流水号而不是可当单号引用的编号
+  {title: '编号', dataIndex: 'id', width: 90, customRender: ({text}) => `#${text}`},
   {title: '商品', dataIndex: 'productNameSnapshot', width: 210},
   {title: '需求量', dataIndex: 'requiredQuantity', width: 150},
   {title: '截止时间', dataIndex: 'deadlineAt', width: 180},
@@ -206,6 +202,14 @@ const historyColumns: TableColumnsType<PurchaseInquiryQuote> = [
   {title: '登记人', dataIndex: 'recordedBy', width: 120},
   {title: '备注', dataIndex: 'remark', width: 150},
 ];
+/** 已确认的报价用「供应商 · 单价」表达；报价主键对使用者没有信息量。 */
+const acceptedQuoteText = computed(() => {
+  const current = detail.value;
+  if (!current?.inquiry.acceptedQuoteId) return '—';
+  const quote = [...current.currentOffers, ...current.quotes].find((item) => item.id === current.inquiry.acceptedQuoteId);
+  return quote ? `${quote.supplierNameSnapshot} · ${quote.unitPrice} 元/${quote.purchaseUnit}` : '—';
+});
+
 const candidateOptions = computed(() =>
   candidates.value.map((c) => ({
     value: candidateIdentifier(c),

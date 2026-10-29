@@ -69,7 +69,7 @@
                 v-privilege="'scm:purchase:demand:batch:query'"
                 @click="openBatch(record.calculationBatchId)"
               >
-                批次 {{ record.calculationBatchId }}
+                净需求批次 #{{ record.calculationBatchId }}
               </a-button>
               <span v-else>手工毛需求</span>
             </template>

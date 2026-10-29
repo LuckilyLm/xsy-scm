@@ -34,14 +34,14 @@
     <div ref="printArea" class="statement-print">
       <h2>{{ selected.settlementCustomerName }} · 客户对账单</h2>
       <p>
-        版本 #{{ selected.id }}　期间 {{ selected.startDate }} 至 {{ selected.endDate }}　冻结时间 {{ selected.generatedAt }}
+        版本 #{{ selected.id }}　期间 {{ selected.startDate }} 至 {{ selected.endDate }}　冻结时间 {{ datetime(selected.generatedAt) }}
         <a-tag v-if="selected.includePosting" color="blue">含过账记录</a-tag>
       </p>
       <a-alert
         v-if="selected.partialScope"
         type="warning"
         show-icon
-        message="这份对账单仅包含你有权查看的客户数据，不代表整个集团的完整金额。"
+        message="本对账单仅包含当前账号有权查看的客户数据，不代表集团完整金额。"
         class="statement-note"
       />
       <a-descriptions bordered size="small" :column="{xs: 1, sm: 2, lg: 4}">
@@ -90,6 +90,7 @@ import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-mo
 import {moneyText} from '../finance/finance-form-model';
 import {reportError} from './report-errors';
 import {useScmExport} from '../common/use-scm-export';
+import {datetime} from '../common/scm-display';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import {SCM_FINANCE_PERMISSION as FINANCE_PERM} from '/@/constants/business/scm/finance-const';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';

@@ -8,11 +8,7 @@
         核对并确认收货
       </a-button>
     </a-space>
-    <a-alert
-      type="info"
-      show-icon
-      message="以下为现场回填记录，尚未计入收货和库存。请核对数量及单价后，在正式收货单中登记；同一明细的多次回填不能直接相加。"
-    />
+    <p class="scm-note">以下为现场回填记录，尚未计入收货与库存。请核对数量、单价后在正式收货单中登记；同一明细的多次回填不可累加。</p>
     <a-alert v-if="error" type="error" show-icon :message="error" />
     <a-table :columns="columns" :data-source="rows" row-key="id" :loading="loading" :pagination="false" :scroll="{x: 1060}">
       <template #bodyCell="{column, record}">

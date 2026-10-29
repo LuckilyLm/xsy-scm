@@ -224,6 +224,8 @@ export interface FinanceWriteOff {
   targetName: string;
   amount: string;
   entryType: FinanceEntryType;
+  /** 这笔核销是否已被反向；已反向后不再提供撤销 / 反向抹零入口。 */
+  reversed?: boolean | null;
   reverseOfId?: FinanceId | null;
   reason?: string | null;
   writtenOffAt: string;

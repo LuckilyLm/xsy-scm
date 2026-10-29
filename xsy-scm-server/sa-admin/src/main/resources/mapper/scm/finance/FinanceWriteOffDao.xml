@@ -93,7 +93,10 @@
             wo.target_type AS targetType, wo.target_id AS targetId,
             COALESCE(ar.receivable_no, ap.payable_no) AS targetNo,
             COALESCE(ar.customer_name_snapshot, ap.supplier_name_snapshot) AS targetName, wo.amount,
-            wo.entry_type AS entryType, wo.reverse_of_id AS reverseOfId, wo.reason, wo.written_off_at AS writtenOffAt,
+            wo.entry_type AS entryType, wo.reverse_of_id AS reverseOfId,
+            EXISTS (SELECT 1 FROM xsy_finance_write_off rv WHERE rv.reverse_of_id = wo.id
+                AND rv.entry_type = 'REVERSE' AND rv.deleted = FALSE) AS reversed,
+            wo.reason, wo.written_off_at AS writtenOffAt,
             wo.operator
         FROM xsy_finance_write_off wo
         LEFT JOIN xsy_finance_receipt r ON wo.source_type = 'RECEIPT'

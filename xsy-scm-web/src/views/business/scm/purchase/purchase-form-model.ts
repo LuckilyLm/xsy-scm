@@ -151,6 +151,11 @@ export function priceFilled(value: string | null | undefined): boolean {
   return normalized !== '' && FIXED.test(normalized) && new Decimal(normalized).gte(0);
 }
 
+/** 需求统计按「天」选择区间；接口要 `yyyy-MM-dd HH:mm:ss`，统一补成当天零点。 */
+export function dayStart(day: string): string {
+  return `${day} 00:00:00`;
+}
+
 /**
  * 提交前检查必填、正数、重复商品规格、单位及数量上限，返回第一条错误。
  * 先把尚未失焦的数字输入归一化；并发占用等冲突仍由服务端判断。

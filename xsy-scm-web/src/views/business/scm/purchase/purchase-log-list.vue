@@ -62,7 +62,7 @@
     <a-empty v-if="!loading && !tableData.length" description="请先输入采购单号查询操作日志" />
   </a-card>
 
-  <a-modal :open="visible" title="变更前后" width="900px" :footer="null" @cancel="visible = false">
+  <a-modal :open="visible" title="变更前后" width="min(760px, 92vw)" :footer="null" @cancel="visible = false">
     <ScmDiffTable :before="active?.beforeData" :after="active?.afterData" :scope="active?.operationType" />
   </a-modal>
 </template>

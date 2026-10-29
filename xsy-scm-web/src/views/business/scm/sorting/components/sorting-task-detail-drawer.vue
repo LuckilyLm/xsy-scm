@@ -71,11 +71,10 @@
           <a-descriptions-item label="取消时间">{{ datetime(detail.task.cancelledAt) }}</a-descriptions-item>
           <a-descriptions-item label="打印次数">{{ detail.task.printCount ? detail.task.printCount : '—' }}</a-descriptions-item>
           <a-descriptions-item label="最近打印">{{ datetime(detail.task.lastPrintedAt) }}</a-descriptions-item>
-          <a-descriptions-item label="版本">{{ detail.task.version }}</a-descriptions-item>
           <a-descriptions-item label="备注" :span="3">{{ detail.task.remark || '—' }}</a-descriptions-item>
         </a-descriptions>
 
-        <a-alert v-if="!canEditItems" type="warning" show-icon :message="readOnlyReason" />
+        <p v-if="!canEditItems" class="scm-note">{{ readOnlyReason }}</p>
         <a-alert v-if="entryError" type="error" show-icon :message="entryError" />
 
         <a-table

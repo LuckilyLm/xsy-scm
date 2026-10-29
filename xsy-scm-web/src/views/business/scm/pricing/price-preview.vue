@@ -8,22 +8,24 @@
     <a-form layout="inline" class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="客户" required class="smart-query-form-item">
-          <CustomerSelect v-model:value="customerId" width="220px" />
+          <CustomerSelect v-model:value="customerId" width="200px" />
         </a-form-item>
         <a-form-item label="商品规格" required class="smart-query-form-item">
-          <SkuSelect v-model:value="skuIds" mode="multiple" width="380px" :disabled-statuses="[]" />
+          <SkuSelect v-model:value="skuIds" mode="multiple" width="280px" :disabled-statuses="[]" />
         </a-form-item>
         <a-form-item label="价格生效时间" class="smart-query-form-item">
-          <a-date-picker v-model:value="at" show-time value-format="YYYY-MM-DD HH:mm:ss" placeholder="当前时点" />
+          <a-date-picker v-model:value="at" show-time value-format="YYYY-MM-DD HH:mm:ss" placeholder="当前时点" style="width: 200px" />
         </a-form-item>
         <a-form-item label="配送仓" class="smart-query-form-item">
-          <WarehouseSelect v-model:value="warehouseId" width="180px" />
+          <WarehouseSelect v-model:value="warehouseId" width="170px" />
         </a-form-item>
         <a-form-item class="smart-query-form-item">
-          <a-button type="primary" @click="resolve" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算 </a-button>
-          <a-button v-if="hasPermission('scm:pricing:resolve:query') && hasPermission('scm:report:cost:query')" :loading="trialLoading" @click="trial"
-            >查看计算依据</a-button
-          >
+          <a-space>
+            <a-button type="primary" @click="resolve" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算</a-button>
+            <a-button v-if="hasPermission('scm:pricing:resolve:query') && hasPermission('scm:report:cost:query')" :loading="trialLoading" @click="trial"
+              >查看计算依据</a-button
+            >
+          </a-space>
         </a-form-item>
       </a-row>
     </a-form>

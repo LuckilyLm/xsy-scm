@@ -42,8 +42,8 @@ export function useSortingTaskEntry(options: {busy: Ref<boolean>; refreshTaskLis
     const task = detail.value?.task;
     if (!task) return '';
     if (!isWorking(task.status)) return `任务当前为「${options.statusDesc(task.status)}」，不再接受录入；已完成的任务需先重开。`;
-    if (!isAssignee.value) return '只有受指派人本人可以录入分拣量；需要变更执行人请使用「改派」。';
-    return '当前账号没有分拣明细编辑权限（scm:sorting:item:update），只能查看。';
+    if (!isAssignee.value) return '只有受指派人本人可以录入分拣量；需要指定或变更执行人，请用上方「指派 / 改派」。';
+    return '当前账号没有分拣录入权限，仅可查看；如需录入请联系管理员开通。';
   });
 
   function isWorking(status: string) {

@@ -151,7 +151,7 @@
         class="banner"
         type="warning"
         show-icon
-        message="你没有该单据类型的金额权限，金额字段即使勾选也不会打印出来"
+        message="你没有查看金额的权限，金额字段勾选了也不会打印。"
       />
       <a-checkbox-group v-model:value="form.model.headerFields" :options="headerOptions" />
 

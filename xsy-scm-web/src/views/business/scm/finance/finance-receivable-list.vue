@@ -124,12 +124,9 @@
   />
 
   <a-modal v-model:open="waiverOpen" title="抹零" :confirm-loading="waiverSaving" @ok="submitWaiver">
-    <a-alert
-      v-if="waiverRow"
-      type="info"
-      show-icon
-      :message="`应收 ${waiverRow.receivableNo} · ${waiverRow.customerName}，未结 ${moneyText(waiverRow.openAmount)}`"
-    />
+    <p v-if="waiverRow" class="scm-note">
+      {{ waiverRow.receivableNo }} · {{ waiverRow.customerName }}，目前未结 {{ moneyText(waiverRow.openAmount) }}
+    </p>
     <a-form layout="vertical" class="waiver-form">
       <a-form-item label="抹零金额" required>
         <a-input-number
@@ -146,7 +143,7 @@
         <a-textarea v-model:value="waiverReason" :maxlength="500" :rows="3" show-count placeholder="例如：对账抹零" />
       </a-form-item>
     </a-form>
-    <a-alert type="warning" show-icon message="抹零会追加一条冲减应收的核销记录；撤销抹零需单独的「反向抹零」权限。" />
+    <p class="scm-note">确认后，该应收的未结金额将相应减少；如需撤销，请在「核销管理」中执行反向抹零。</p>
   </a-modal>
 </template>
 

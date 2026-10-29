@@ -60,7 +60,14 @@
           </template>
           <template v-else-if="column.dataIndex === 'receivedQuantity'">
             <a-space :size="4">
-              <a-input-number string-mode :precision="4" :min="'0'" v-model:value="lineOf(record.id).receivedQuantity" aria-label="本次声明数量" />
+              <a-input-number
+                string-mode
+                :precision="4"
+                :min="'0'"
+                v-model:value="lineOf(record.id).receivedQuantity"
+                aria-label="本次声明数量"
+                @blur="normalizeLine(lineOf(record.id), 'receivedQuantity')"
+              />
               <a-tag v-if="record.pricePending" color="orange">待定价</a-tag>
             </a-space>
           </template>
@@ -73,6 +80,8 @@
               :min="'0'"
               v-model:value="lineOf(record.id).actualWeight"
               aria-label="实重"
+              @change="(value: string | number | null) => onWeightChange(lineOf(record.id), value)"
+              @blur="normalizeLine(lineOf(record.id), 'actualWeight')"
             />
             <span v-else class="hint">标品按声明数量结算</span>
           </template>
@@ -122,7 +131,7 @@ import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
 import type {Id, Receipt, ReceiptConfirmItemPayload, ReceiptConfirmLot, ReceiptItem} from '../purchase-types';
-import {confirmPayload, fixed, isNonStandard, newConfirmLines, quantity, validateConfirm} from '../purchase-form-model';
+import {confirmPayload, fixed, isNonStandard, newConfirmLines, normalizeTyped, quantity, validateConfirm} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 import FormNote from '/@/components/framework/form-note/index.vue';
 
@@ -200,6 +209,23 @@ async function open(id: Id) {
 async function load() {
   if (receipt.value?.id) {
     await open(receipt.value.id);
+  }
+}
+
+/** 实重只能人工录入：填写/清空时同步来源标记，确认前的校验不依赖提交时的推导。 */
+function onWeightChange(line: ReceiptConfirmItemPayload, value: string | number | null): void {
+  line.weightSource = value === null || value === '' ? null : 'MANUAL';
+}
+
+/** input-number 失焦不回写归一后的值，这里补成四位小数（"5" → "5.0000"）。 */
+function normalizeLine(line: ReceiptConfirmItemPayload, key: 'receivedQuantity' | 'actualWeight'): void {
+  const current = line[key];
+  if (current === null || current === undefined || current === '') {
+    return;
+  }
+  const normalized = normalizeTyped(current);
+  if (normalized !== current) {
+    line[key] = normalized;
   }
 }
 

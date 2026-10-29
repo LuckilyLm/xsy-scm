@@ -23,6 +23,12 @@ export const SCM_DEMAND_STATUS_ENUM: SmartEnum<string> = {
   ALLOCATED: {value: 'ALLOCATED', desc: '已分配'},
 };
 
+/** 净需求计算批次状态：冻结后待生成 → 已按批次生成需求。 */
+export const SCM_DEMAND_BATCH_STATUS_ENUM: SmartEnum<string> = {
+  READY: {value: 'READY', desc: '待生成'},
+  GENERATED: {value: 'GENERATED', desc: '已生成'},
+};
+
 /** 仓库状态。 */
 export const SCM_WAREHOUSE_STATUS_ENUM: SmartEnum<string> = {
   ENABLED: {value: 'ENABLED', desc: '启用'},

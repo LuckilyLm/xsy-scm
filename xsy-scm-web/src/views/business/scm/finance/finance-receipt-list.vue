@@ -183,13 +183,14 @@
         />
         <a-button :loading="codLoading" :disabled="codSaving" style="margin-top: 8px" @click="() => loadCodPreview()">查询订单</a-button>
       </a-form-item>
-      <a-alert v-if="codPreview" type="info" show-icon>
-        <template #message>{{ codPreview.orderNo }} · {{ codPreview.customerName }}</template>
-        <template #description>
-          应收单 {{ codPreview.receivableNo }}；结算主体 {{ codPreview.settlementCustomerName }}； 净应收
-          {{ moneyText(codPreview.netAmount) }}；当前待收 {{ moneyText(codPreview.openAmount) }}。 可分笔登记，提交时将再次核对剩余应收金额。
-        </template>
-      </a-alert>
+      <a-descriptions v-if="codPreview" size="small" :column="2" class="cod-preview">
+        <a-descriptions-item label="订单">{{ codPreview.orderNo }} · {{ codPreview.customerName }}</a-descriptions-item>
+        <a-descriptions-item label="应收单">{{ codPreview.receivableNo }}</a-descriptions-item>
+        <a-descriptions-item label="结算主体">{{ codPreview.settlementCustomerName }}</a-descriptions-item>
+        <a-descriptions-item label="净应收">{{ moneyText(codPreview.netAmount) }}</a-descriptions-item>
+        <a-descriptions-item label="当前待收">{{ moneyText(codPreview.openAmount) }}</a-descriptions-item>
+      </a-descriptions>
+      <p v-if="codPreview" class="scm-note">可分批登记，提交时将再次核对剩余应收金额。</p>
       <a-form-item label="本次实收金额" required>
         <a-input-number
           v-model:value="codForm.amount"

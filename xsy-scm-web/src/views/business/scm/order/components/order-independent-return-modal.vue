@@ -1,11 +1,6 @@
 <template>
   <a-modal :open="visible" title="新建独立退货" width="min(980px,96vw)" :confirm-loading="saving" :mask-closable="!saving" @ok="save" @cancel="close">
-    <a-alert
-      message="独立退货不关联原订单：单价优先取该客户该商品最近一次成交价，没有成交价时按定价链取价，仍无价格需人工填价并填写原因。"
-      type="info"
-      show-icon
-      class="block-gap"
-    />
+    <p class="scm-note block-gap">独立退货不关联原订单。单价优先取该客户该商品最近一次成交价，无成交价时按客户价目表取价，仍无价格时须人工填价并填写原因。</p>
     <a-alert v-if="error" :message="error" type="error" show-icon class="block-gap" />
     <a-form layout="vertical">
       <a-row :gutter="12">

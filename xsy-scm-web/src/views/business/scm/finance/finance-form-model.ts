@@ -1,7 +1,7 @@
 import Decimal from 'decimal.js';
 import dayjs from 'dayjs';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
-import {SCM_FINANCE_OPERATION_TYPE_ENUM} from '/@/constants/business/scm/finance-const';
+import {SCM_FINANCE_ITEM_SOURCE_TYPE_ENUM, SCM_FINANCE_OPERATION_TYPE_ENUM} from '/@/constants/business/scm/finance-const';
 
 // 先保留完整乘积，再按金额精度舍入。
 const LineAmountDecimal = Decimal.clone({precision: 40});
@@ -56,6 +56,11 @@ export function nowDateTimeValue(): string {
 
 export function entryTypeText(value: string | null | undefined): string {
   return value === 'RED' ? '红字' : value === 'REVERSE' ? '反向' : value === 'NORMAL' ? '正常' : value || '—';
+}
+
+/** 应收/应付明细的来源类型落成中文，页面不展示来源主键。 */
+export function itemSourceTypeText(value: string | null | undefined): string {
+  return SCM_FINANCE_ITEM_SOURCE_TYPE_ENUM[value ?? '']?.desc ?? (value || '—');
 }
 
 export function settleStateText(value: string | null | undefined): string {
