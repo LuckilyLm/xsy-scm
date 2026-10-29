@@ -63,21 +63,19 @@ internal sealed partial class StateStore
 
     /// <summary>原子取出下一次首次执行，提交前落盘SUBMITTING，崩溃后只恢复UNKNOWN。</summary>
     /// <returns>没有待执行尝试时为null；返回后不得按同尝试再次调用驱动。</returns>
-    internal LocalTicket? TakeLocalTicket(bool includeLocal = true)
+    internal LocalTicket? TakeLocalTicket()
     {
         lock (gate)
         {
             using var db = Open(); using var transaction = db.BeginTransaction();
             using var command = db.CreateCommand(); command.Transaction = transaction;
-            command.CommandText = "SELECT payload,state,spooler_job_id,error_code FROM local_tickets WHERE state='QUEUED' AND ($local=1 OR json_extract(payload,'$.snapshot.templateVersion')='PLATFORM_TRACE_V1') ORDER BY rowid LIMIT 1";
-            command.Parameters.AddWithValue("$local", includeLocal ? 1 : 0);
+            command.CommandText = "SELECT payload,state,spooler_job_id,error_code FROM local_tickets WHERE state='QUEUED' ORDER BY rowid LIMIT 1";
             LocalTicket ticket;
             using (var row = command.ExecuteReader()) { if (!row.Read()) return null; ticket = ReadTicket(row); }
             command.CommandText = """
                 UPDATE local_tickets SET state='SUBMITTING' WHERE attempt_id=$id;
                 UPDATE basket_records SET print_state='SUBMITTING' WHERE event_key=$event;
                 """;
-            command.Parameters.Clear();
             command.Parameters.AddWithValue("$id", ticket.AttemptId);
             command.Parameters.AddWithValue("$event", ticket.Snapshot.EventKey);
             command.ExecuteNonQuery(); transaction.Commit();

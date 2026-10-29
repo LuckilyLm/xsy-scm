@@ -28,6 +28,8 @@ test('商品客户分组、同名身份隔离和跨入口共用记录', {skip:!b
     await page.setViewportSize({width,height:768});
     const button=page.getByRole('button',{name:'返回上级',exact:true});
     await expect(button).toHaveCount(1);await expect(button).toBeVisible();await expect(button).toBeEnabled();
+    // 完成后页面可能保留滚动位置，先按实际点击行为滚入视口，再检验触屏尺寸和父级。
+    await button.scrollIntoViewIfNeeded();
     const box=await button.boundingBox();assert(box&&box.height>=48&&box.width>=48&&box.x>=0&&box.y>=0&&box.x+box.width<=width&&box.y+box.height<=768);
     await button.click();await expect.poll(()=>new URL(page.url()).hash).toBe('#'+expected);
   }
@@ -39,6 +41,8 @@ test('商品客户分组、同名身份隔离和跨入口共用记录', {skip:!b
     await expect(page.getByRole('button',{name:'返回上级',exact:true})).toHaveCount(0);
     await screenshot('task-home-1366');await screenshot('task-home-1024',1024);
     await page.getByRole('link',{name:/按商品分拣/}).click();
+    // RouterLink异步导航完成后再刷新，避免reload抢在路由提交前仍刷新首页。
+    await expect.poll(()=>new URL(page.url()).hash).toBe('#/tasks/products');
     await page.reload();await parent('/tasks');await page.getByRole('link',{name:/按商品分拣/}).click();
     await expect(page.locator('.sorting-group')).toHaveCount(6);
     await expect(group('测试散装')).toContainText('2 项任务');
@@ -54,8 +58,8 @@ test('商品客户分组、同名身份隔离和跨入口共用记录', {skip:!b
     await page.getByPlaceholder('搜索客户、订单或商品').fill('清风');await expect(page.locator('.task-row')).toHaveCount(1);
     await page.getByPlaceholder('搜索客户、订单或商品').fill('');await screenshot('product-customer-tasks-1366');await screenshot('product-customer-tasks-1024',1024);
     await page.getByRole('button',{name:'领取并称重'}).first().click();
-    await expect(page.getByRole('button',{name:'记录本筐并打印'})).toBeEnabled();
-    await weight('8.84');await page.getByRole('button',{name:'记录本筐并打印'}).click();
+    await expect(page.getByRole('button',{name:'记录上传并打印'})).toBeEnabled();
+    await weight('8.84');await page.getByRole('button',{name:'记录上传并打印'}).click();
     await expect.poll(async()=>(await api('/basket-summary'+query)).basketCount).toBe(1);
     await screenshot('product-weigh-1024',1024);await page.reload();await expect(page.getByTestId('current-weight')).toBeVisible();
     await parent(new URL(productPath).hash.slice(1));assert.equal(page.url(),productPath);
@@ -72,7 +76,7 @@ test('商品客户分组、同名身份隔离和跨入口共用记录', {skip:!b
     await expect(page.getByRole('button',{name:'已换筐，继续称重'})).toBeVisible();
     assert.equal((await api('/basket-summary'+query)).basketCount,1);
     await page.getByRole('button',{name:'已换筐，继续称重'}).click();await weight('8.86');
-    await page.getByRole('button',{name:'记录本筐并打印'}).click();
+    await page.getByRole('button',{name:'记录上传并打印'}).click();
     await expect.poll(async()=>(await api('/basket-summary'+query)).basketCount).toBe(2);
     const summary=await api('/basket-summary'+query);assert.equal(Number(summary.totalQuantity),17.7);
     const tickets=await api('/local-tickets'+query);assert.equal(tickets.length,2);assert(tickets.every(t=>t.snapshot.traceUrl===null&&t.snapshot.traceReference===t.snapshot.eventKey));
@@ -81,12 +85,12 @@ test('商品客户分组、同名身份隔离和跨入口共用记录', {skip:!b
     await page.getByRole('button',{name:'确认完成商品',exact:true}).click();await expect(page.getByText('本地已完成',{exact:true})).toBeVisible();
     await screenshot('customer-weigh-1366');await parent(new URL(customerPath).hash.slice(1),1366);
     await parent('/tasks/customers');await parent('/tasks');
-    note('商品路径8.84加客户路径8.86仍为原任务两筐17.70kg，未生成双份记录');
+    note('商品路径8.84加客户路径8.86仍为原任务两筐17.70斤，未生成双份记录');
     await page.goto(base+'/#/tasks/products');await group('测试散装').click();
     await page.locator('.task-row').filter({hasText:'悦来餐厅'}).getByRole('button',{name:'进入称重'}).click();
     await expect(page.getByText('本地已完成',{exact:true})).toBeVisible();
     // 原页面完成后用完成面板替换采集按钮，同时核实服务端仍拒绝新增筐。
-    await expect(page.getByRole('button',{name:'记录本筐并打印'})).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'记录上传并打印'})).toHaveCount(0);
     const status=await api('/status');
     const denied=await context.request.post(base+'/api/agent/baskets',{headers,data:{jobId:'mock-job',taskId:'9007199254740993',taskItemId:'9007199254740994',jobVersion:'0',taskItemVersion:0,operatorSessionId:'MOCK-OPERATOR',operationId:crypto.randomUUID(),sampleId:status.reading.sampleId}});
     assert.equal(denied.status(),409);assert.equal((await denied.json()).code,'ITEM_LOCALLY_COMPLETED');

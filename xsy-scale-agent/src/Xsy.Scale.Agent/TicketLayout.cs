@@ -35,11 +35,12 @@ internal static class TicketLayout
     {
         graphics.PageUnit = GraphicsUnit.Millimeter;
         var snapshot = ticket.Snapshot;
-        if (snapshot.TemplateVersion is "LOCAL_PENDING_TRACE_V2" or "HARDWARE_TEST_6040_TRACE_V2" or "PLATFORM_TRACE_V1")
+        if (snapshot.TemplateVersion is "LOCAL_PENDING_TRACE_V2" or "HARDWARE_TEST_6040_TRACE_V2")
         { DrawTrace(graphics, ticket); return; }
         bool compact = ticket.PaperWidthMm == 60 && ticket.PaperHeightMm == 40;
         string status = snapshot.TemplateVersion == "HARDWARE_TEST_6040_V1" ? "设备联动测试 · 非业务记录"
             : snapshot.TestOnly ? "演练样张 · 不出纸" : "待同步 · 非平台正式单据";
+        status += SourceSuffix(snapshot.EntrySource);
         using var normal = new Font("Microsoft YaHei", compact ? 7 : 8);
         // 真实记录号包含设备前缀，须预留两行；保留7pt正文，避免只用短测试编号时漏掉高度溢出。
         using var title = new Font("Microsoft YaHei", compact ? 7.5f : 11, FontStyle.Bold);
@@ -79,6 +80,9 @@ internal static class TicketLayout
         foreach (var line in measured) graphics.DrawString(line.Text, line.Font, Brushes.Black, line.Bounds, format);
     }
 
+    // 来源缺失的旧快照不增加文字，保证历史补打版式保持不变。
+    private static string SourceSuffix(string? source) => source == "MANUAL" ? " · 手工录入" : source == "DEVICE" ? " · 电子秤" : "";
+
     /// <summary>新票为二维码独立保留静区；旧票仍由原模板渲染，不因升级改变补打。</summary>
     /// <param name="graphics">调用方提供的非空毫米绘图上下文。</param>
     /// <param name="ticket">新模板冻结票；完整字段溢出时拒绝，不裁切。</param>
@@ -97,7 +101,7 @@ internal static class TicketLayout
         // 先完成所有测量，最后一次性画内容，避免发生半张票。
         foreach (var line in new[] {
             ($"鲜蔬园 · 第{s.BasketNumber}筐" + (ticket.Reprint ? " · 补打" : ""), title),
-            (s.TemplateVersion == "PLATFORM_TRACE_V1" ? "包装码标签 · 不代表出库" : s.TemplateVersion == "HARDWARE_TEST_6040_TRACE_V2" ? "设备联动测试 · 非业务记录" : s.TestOnly ? "演练样张 · 不出纸" : "待同步 · 非平台正式单据", normal),
+            ((s.TemplateVersion == "HARDWARE_TEST_6040_TRACE_V2" ? "设备联动测试 · 非业务记录" : s.TestOnly ? "演练样张 · 不出纸" : "待同步 · 非平台正式单据") + SourceSuffix(s.EntrySource), normal),
             ("客户：" + (s.CustomerName ?? "平台未提供"), normal),
             (s.ProductName + " / " + s.SpecName, title) })
             Add(line.Item1, line.Item2, 2, fullWidth);
@@ -108,7 +112,7 @@ internal static class TicketLayout
             (s.DeviceCode + " 皮重" + (s.TareWeight ?? "未知"), normal) })
             Add(line.Item1, line.Item2, 2, leftWidth);
         y = Math.Max(y, qrTop + 15.5f);
-        Add(s.TemplateVersion == "PLATFORM_TRACE_V1" ? "码：" + s.TraceReference + " 批次：" + s.LotNo : "记录：" + s.EventKey, normal, 2, fullWidth);
+        Add("记录：" + s.EventKey, normal, 2, fullWidth);
         using var qr = s.TraceUrl == null ? null : TraceLink.Matrix(s.TraceUrl);
         float qrLeft = ticket.PaperWidthMm - 17.5f;
         // 15.5mm含标准四模块白边，文字始终位于该区域以外。

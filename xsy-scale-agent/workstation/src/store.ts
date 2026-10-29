@@ -74,4 +74,4 @@ export function time(value:string|undefined,full=false):string {
   if (!value) return '—';
   return new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',...(full?{month:'2-digit',day:'2-digit'}:{}),hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(value));
 }
-export const printLabels:Record<string,string>={WAITING_AUTHORIZATION:'等待打印授权',QUEUED:'等待打印',SUBMITTING:'正在提交',SUBMITTED_TO_SPOOLER:'已交打印队列',FAILED:'打印失败',UNKNOWN:'结果未知，需核查',TEST_ONLY:'演练输出 · 未出纸'};
+export const printLabels:Record<string,string>={NOT_REQUESTED:'未要求打印',WAITING_AUTHORIZATION:'等待打印授权',QUEUED:'等待打印',SUBMITTING:'正在提交',SUBMITTED_TO_SPOOLER:'已交打印队列',FAILED:'打印失败',UNKNOWN:'结果未知，需核查',TEST_ONLY:'演练输出 · 未出纸'};

@@ -14,22 +14,65 @@ internal sealed class BasketService(CaptureService captures, StateStore store, A
         TaskItem item = captures.ValidateContext(request);
         WorkstationOptions policy = workstation ?? new();
         return store.RecordBasket(request, () => captures.CreateEvent(request, captures.ValidateContext(request)),
-            policy.LocalTicketsEnabled ? record =>
-            {
-                if (!policy.LocalTest && string.IsNullOrWhiteSpace(options.PrinterName))
-                    throw new AgentFault("PRINTER_NOT_CONFIGURED", "请先配置凭条打印机，或关闭本地凭条后只保存重量");
-                string taskNo = store.CachedTasks(request.OperatorSessionId)!.Tasks.First(t => t.JobId == request.JobId).TaskNo;
-                var snapshot = new TicketSnapshot(record.EventKey, taskNo, item.ProductName, item.SpecName,
-                    item.CustomerName, item.OrderNo, record.BasketNumber, record.Measurement.NetWeight,
-                    record.Measurement.BusinessUnit, record.Measurement.TareWeight, options.DeviceCode,
-                    record.Measurement.CapturedAt, policy.LocalTest,
-                    policy.HardwareTest ? "HARDWARE_TEST_6040_TRACE_V2" : "LOCAL_PENDING_TRACE_V2",
-                    record.EventKey, TraceLink.Build(policy.TraceUrlTemplate, record.EventKey));
-                return new(record.PrintIntentId, record.OperationId,
-                    WireJson.Digest(new BasketScope(request.OperatorSessionId, request.JobId, request.TaskId, request.TaskItemId)),
-                    snapshot, "QUEUED", options.PrinterName, policy.PaperWidthMm, policy.PaperHeightMm,
-                    false, null, DateTimeOffset.UtcNow);
-            } : null);
+            policy.LocalTicketsEnabled && request.PrintRequested != false ? record => CreateTicket(record, item, request) : null);
+    }
+
+    /// <summary>保存其他大秤已称好的人工净重，不读取本机秤，不伪造设备稳定事实。</summary>
+    /// <param name="input">完整任务上下文；净重为正数市斤、最多四位小数，必须显式确认已扣皮重；备注可空。</param>
+    /// <param name="session">有效员工会话，非空且必须与请求体一致。</param>
+    /// <returns>与设备记录共享序号、累计和打印事务的独立记录；重复请求返回原记录。</returns>
+    /// <exception cref="AgentFault">数字非法、未确认净重、单位错误、越权、操作号冲突或明细已完成。</exception>
+    internal BasketRecord RecordManual(ManualBasketRequest input, string session)
+    {
+        MatchSession(session, input.OperatorSessionId);
+        // 这是人工记录键，不是设备采样编号；完整手工请求参与摘要，改重量重试必须报冲突。
+        var context = new CaptureRequest(input.OperationId, "MANUAL:" + WireJson.Digest(input.OperationId), input.TaskId,
+            input.TaskItemId, input.OperatorSessionId, input.JobId, input.JobVersion, input.TaskItemVersion, input.PrintRequested);
+        TaskItem item = captures.ValidateContext(context);
+        if (!MassUnits.IsJin(item.SaleUnit))
+            throw new AgentFault("MANUAL_UNIT_MISMATCH", "手工录入仅用于按斤核算的任务，请核对商品销售单位");
+        if (!input.ConfirmedNetWeight)
+            throw new AgentFault("NET_WEIGHT_CONFIRMATION_REQUIRED", "请核对客户、商品，并确认输入的是已扣除筐重的净重");
+        string text = input.NetWeight?.Trim() ?? "";
+        if (!System.Text.RegularExpressions.Regex.IsMatch(text, @"^[0-9]{1,14}(\.[0-9]{1,4})?$")
+            || !decimal.TryParse(text, System.Globalization.NumberStyles.AllowDecimalPoint,
+                System.Globalization.CultureInfo.InvariantCulture, out decimal weight) || weight <= 0)
+            throw new AgentFault("INVALID_MANUAL_WEIGHT", "请输入大于零的净重，最多14位整数和4位小数，不自动舍入");
+        if (input.Note?.Length > 200)
+            throw new AgentFault("INVALID_MANUAL_NOTE", "称重说明不能超过200字");
+        WorkstationOptions policy = workstation ?? new();
+        return store.RecordBasket(context, () =>
+        {
+            captures.ValidateContext(context);
+            string eventKey = $"{options.DeviceCode}:{Guid.NewGuid():N}";
+            string value = weight.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var measurement = new Measurement("1", eventKey, options.DeviceCode, options.StationCode, store.SessionId,
+                input.JobId, input.JobVersion, input.TaskId, input.TaskItemId, input.TaskItemVersion, session,
+                DateTimeOffset.UtcNow, value, "斤", value, item.SaleUnit, "NET", false, "NOT_APPLICABLE",
+                "IDENTITY", null, "", "MANUAL_ENTRY", WireJson.Version, "MANUAL",
+                string.IsNullOrWhiteSpace(input.Note) ? "其他大秤称重" : input.Note.Trim());
+            return new LocalEvent(eventKey, input.OperationId, "", measurement, "", "CAPTURED_LOCAL", 0,
+                DateTimeOffset.UtcNow, null, null);
+        }, policy.LocalTicketsEnabled && input.PrintRequested != false ? record => CreateTicket(record, item, context) : null, WireJson.Digest(input));
+    }
+
+    // 两种来源共用同一冻结模板；来源随票保存，补打和升级不会改写历史。
+    private LocalTicket CreateTicket(BasketRecord record, TaskItem item, CaptureRequest request)
+    {
+        WorkstationOptions policy = workstation ?? new();
+        if (!policy.LocalTest && string.IsNullOrWhiteSpace(options.PrinterName))
+            throw new AgentFault("PRINTER_NOT_CONFIGURED", "请先配置凭条打印机，或关闭本地凭条后只保存重量");
+        string taskNo = store.CachedTasks(request.OperatorSessionId)!.Tasks.First(t => t.JobId == request.JobId).TaskNo;
+        var snapshot = new TicketSnapshot(record.EventKey, taskNo, item.ProductName, item.SpecName,
+            item.CustomerName, item.OrderNo, record.BasketNumber, record.Measurement.NetWeight,
+            MassUnits.Display(record.Measurement.BusinessUnit), record.Measurement.TareWeight, options.DeviceCode,
+            record.Measurement.CapturedAt, policy.LocalTest,
+            policy.HardwareTest ? "HARDWARE_TEST_6040_TRACE_V2" : "LOCAL_PENDING_TRACE_V2",
+            record.EventKey, TraceLink.Build(policy.TraceUrlTemplate, record.EventKey), record.Measurement.EntrySource);
+        return new(record.PrintIntentId, record.OperationId,
+            WireJson.Digest(new BasketScope(request.OperatorSessionId, request.JobId, request.TaskId, request.TaskItemId)),
+            snapshot, "QUEUED", options.PrinterName, policy.PaperWidthMm, policy.PaperHeightMm,
+            false, null, DateTimeOffset.UtcNow);
     }
 
     /// <summary>保存商品完成意图，不取新重量、不调用员工接受接口。</summary>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {unitLabel} from '../units';
 import {SearchOutlined,ArrowRightOutlined,InboxOutlined} from '@ant-design/icons-vue';
 import {boot,batch,session,loading,quantity,authorized,now} from '../store';
 import type {TaskRow} from '../sorting';
@@ -15,7 +16,7 @@ defineEmits<{(event:'update:search',value:string):void;(event:'choose',row:TaskR
       <article v-for="row in rows" :key="JSON.stringify([row.job.jobId,row.item.taskItemId])" class="task-row">
         <div class="product-symbol">{{row.item.productName.slice(-2)}}</div>
         <div class="task-product"><h3>{{row.item.productName}} <span>{{row.item.specName||'默认规格'}}</span></h3><p>{{row.item.customerName||'客户资料未提供'}}<span class="divider">/</span>{{row.item.orderNo||row.job.taskNo}}</p></div>
-        <div class="task-quantity"><span>计划数量</span><strong>{{quantity(row.item.plannedQuantity)}} <small>{{row.item.saleUnit}}</small></strong></div>
+        <div class="task-quantity"><span>计划数量</span><strong>{{quantity(row.item.plannedQuantity)}} <small>{{unitLabel(row.item.saleUnit)}}</small></strong></div>
         <div class="task-status"><a-tag :color="row.job.claimedByDeviceCode===boot?.deviceCode?'blue':'default'">{{row.job.claimedByDeviceCode===boot?.deviceCode?'本机已领取':'待领取'}}</a-tag></div>
         <a-button type="primary" :loading="busy===JSON.stringify([row.job.jobId,row.item.taskItemId])" :disabled="!!busy||!authorized||new Date(row.job.expiresAt).getTime()<=now" @click="$emit('choose',row)">{{row.job.claimedByDeviceCode===boot?.deviceCode?'进入称重':'领取并称重'}}<arrow-right-outlined class="workstation-icon"/></a-button>
       </article>

@@ -42,7 +42,7 @@ internal static class ScaleControlTests
             state.Set(Reading(clock, 0, "GROSS")); Equal("WAITING", state.ControlSnapshot()!.State);
             state.Set(Reading(clock, 0, stable: false)); Equal("WAITING", state.ControlSnapshot()!.State);
             state.Set(Reading(clock, 0)); Equal("ZERO_OBSERVED", state.ControlSnapshot()!.State);
-            Throws("METROLOGY_LIMIT", () => state.Freeze(state.Snapshot().Reading!.SampleId, new()));
+            Throws("WEIGHT_NOT_POSITIVE", () => state.Freeze(state.Snapshot().Reading!.SampleId, new()));
         })),
         ("置零可观察毛重零但不放行毛重采集", () => Run(() =>
         {
