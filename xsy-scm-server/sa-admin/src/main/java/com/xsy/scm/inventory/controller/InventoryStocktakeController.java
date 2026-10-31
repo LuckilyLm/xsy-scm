@@ -64,7 +64,7 @@ public class InventoryStocktakeController {
     }
 
     /**
-     * 新建草稿盘点单，返回新单 id。
+     * 新建盘点单（新建即待确认），返回新单 id。
      */
     @PostMapping("/create")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_ADD)
@@ -89,10 +89,10 @@ public class InventoryStocktakeController {
     }
 
     /**
-     * 导入填好实盘量的 Excel → 新建草稿盘点单。
+     * 导入填好实盘量的 Excel → 新建待确认盘点单。
      *
      * <p>
-     * 只建草稿，不改动库存；整批校验或快照核验任一不过即整批拒绝、不写入。 {@code Idempotency-Key} 让响应丢失后的同请求重试不产生第二张草稿。
+     * 只建待确认单，不改动库存；整批校验或快照核验任一不过即整批拒绝、不写入。 {@code Idempotency-Key} 让响应丢失后的同请求重试不产生第二张盘点单。
      */
     @PostMapping("/import")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_IMPORT)
@@ -117,7 +117,7 @@ public class InventoryStocktakeController {
     }
 
     /**
-     * 改草稿（仅 DRAFT）；会重新记录账面量。
+     * 修改待确认盘点单（仅 PENDING）；会重新记录账面量。
      */
     @PostMapping("/update/{id}")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_UPDATE)
@@ -143,7 +143,7 @@ public class InventoryStocktakeController {
     }
 
     /**
-     * 取消草稿（不产生任何库存影响）。
+     * 取消待确认盘点单（不产生任何库存影响）。
      */
     @PostMapping("/cancel/{id}")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_UPDATE)
@@ -154,7 +154,7 @@ public class InventoryStocktakeController {
     }
 
     /**
-     * 删除草稿（逻辑删）。已确认的单不可删。
+     * 删除待确认盘点单（逻辑删）。已确认的单不可删。
      */
     @PostMapping("/delete/{id}")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_DELETE)

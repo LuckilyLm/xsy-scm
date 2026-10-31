@@ -53,7 +53,7 @@ export function removeSkuDraft(drafts: SkuDraft[], index: number): SkuDraft[] {
   return drafts.filter((_, position) => position !== index);
 }
 
-/** 接口行转草稿；保留 id 和 version。 */
+/** 接口行转表单行；保留 id 和 version。 */
 export function fromRows(rows: SupplierSkuRow[]): SkuDraft[] {
   return rows.map((row) => ({
     id: row.id,
@@ -107,7 +107,7 @@ export function validateSkuDrafts(drafts: SkuDraft[]): string | undefined {
   return undefined;
 }
 
-/** 草稿转替换请求体；不限制默认行数量。 */
+/** 表单行转替换请求体；不限制默认行数量。 */
 export function toReplaceItems(drafts: SkuDraft[]): SupplierSkuItem[] {
   const blankToNull = (value?: string | null): string | null => {
     const text = value == null ? '' : String(value).trim();

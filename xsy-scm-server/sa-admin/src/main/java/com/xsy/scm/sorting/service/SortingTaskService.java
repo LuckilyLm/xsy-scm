@@ -193,7 +193,7 @@ public class SortingTaskService {
         var event = partEvent(id, row.getId(), "APPEND", quantity, total, form.getNote());
         if (sortingPartRecordDao.insert(event) != 1)
             throw new IllegalStateException("分次分拣事件写入失败");
-        // 版本递增防止浏览器用分次追加前的草稿直接提交最终结果。
+        // 版本递增防止浏览器用分次追加前的临时结果直接提交最终结果。
         stamp(row, false);
         if (sortingTaskItemDao.updateById(row) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);

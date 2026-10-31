@@ -30,13 +30,13 @@
           <span class="scm-quantity" :class="deltaClass(record.deltaQuantity)">{{ deltaText(record.deltaQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unitSnapshot'">
-          {{ record.unitSnapshot || '（草稿未确认）' }}
+          {{ record.unitSnapshot || '（待确认）' }}
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
     </a-table>
     <a-typography-text v-if="detail.status === 'CONFIRMED'" type="secondary" style="display: block; margin-top: 8px">
-      差异按确认时的账面量计算；草稿保存后若有收货或出库，确认结果以当时账面为准。
+      差异按确认时的账面量计算；保存后若有收货或出库，确认结果以当时账面为准。
     </a-typography-text>
   </a-drawer>
 </template>

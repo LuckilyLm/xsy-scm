@@ -138,7 +138,7 @@ public interface ScmBusinessMetricsDao {
         @Param("scope") ScmDataScopeContext scope);
 
     /**
-     * 收货单数：按确认时间，且 {@code status = 'CONFIRMED'}。草稿收货单不算，与报表的「已确认收货单数」一致。
+     * 收货单数：按确认时间，且 {@code status = 'CONFIRMED'}。待确认收货单不算，与报表的「已确认收货单数」一致。
      */
     Long countReceipts(@Param("startTime") OffsetDateTime startTime, @Param("endTime") OffsetDateTime endTime,
         @Param("scope") ScmDataScopeContext scope);

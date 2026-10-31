@@ -13,7 +13,7 @@ import java.util.List;
  * 出库单明细读写。
  *
  * <p>
- * 明细整行替换只发生在草稿态（先逻辑删旧行再插新行，同一事务内）。确认出库后不再有任何写方法被调用 —— 由服务层状态机保证，本接口不额外设卡。
+ * 明细整行替换只发生在待出库状态（先逻辑删旧行再插新行，同一事务内）。确认出库后不再有任何写方法被调用 —— 由服务层状态机保证，本接口不额外设卡。
  */
 @Mapper
 public interface InventoryOutboundItemDao extends BaseMapper<InventoryOutboundItemEntity> {
@@ -32,7 +32,7 @@ public interface InventoryOutboundItemDao extends BaseMapper<InventoryOutboundIt
     List<Long> listOrderLinesWithConfirmedOutbound(@Param("salesOrderItemIds") Collection<Long> salesOrderItemIds);
 
     /**
-     * 软删某单下的全部明细（草稿重存时用）。
+     * 软删某单下的全部明细（待出库单重存时用）。
      */
     int deleteByOutboundId(@Param("outboundId") Long outboundId, @Param("operator") String operator);
 

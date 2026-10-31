@@ -40,7 +40,7 @@ public class ScmWarehouseScopeGuard {
     }
 
     /**
-     * 任一端授权即可，和调拨查询同一个 OR 规则，只用于草稿取消 / 删除这种不改库存的动作。调拨三个动作判断不同：查询看任一端，发出只看 {@code from}，收货只看 {@code to}。
+     * 任一端授权即可，和调拨查询同一个 OR 规则，只用于待发货 / 待出库 / 待确认单的取消或删除这种不改库存的动作。调拨三个动作判断不同：查询看任一端，发出只看 {@code from}，收货只看 {@code to}。
      */
     public void requireAny(Long... warehouseIds) {
         ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();

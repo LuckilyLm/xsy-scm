@@ -248,7 +248,7 @@ const emit = defineEmits<{
   standardSaved: [];
 }>();
 
-/** 关闭前拦截未提交的手工录入，避免整批草稿被静默丢弃。 */
+/** 关闭前拦截未提交的手工录入，避免整批录入结果被静默丢弃。 */
 function close() {
   if (props.dirtyCount > 0) {
     Modal.confirm({

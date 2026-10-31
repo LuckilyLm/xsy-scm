@@ -56,7 +56,7 @@ public class InventoryStocktakeService {
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     /**
-     * 新建盘点单（待确认），只要求对应仓库和商品规格存在余额记录。草稿不检查调整后是否缺货或低于预留量，这些条件在确认时校验。
+     * 新建盘点单（待确认），只要求对应仓库和商品规格存在余额记录。待确认单不检查调整后是否缺货或低于预留量，这些条件在确认时校验。
      *
      * @return 新单 ID
      */
@@ -84,7 +84,7 @@ public class InventoryStocktakeService {
     }
 
     /**
-     * Excel 导入建待确认盘点单：在同一事务内先按 {@code (warehouseId, skuId)} 升序锁定并逐项核对每条来源余额，全部与导出时记录一致后才复用 {@link #create} 建草稿。
+     * Excel 导入建待确认盘点单：在同一事务内先按 {@code (warehouseId, skuId)} 升序锁定并逐项核对每条来源余额，全部与导出时记录一致后才复用 {@link #create} 建待确认单。
      *
      * <p>
      * 为什么加锁与创建必须在同一事务：{@code create} 会在保存时重新读取账面量（不加锁）。若「先校验、再另起事务保存」，两次之间任何入出库都会让保存的账面量偏离被核对的值 ——
@@ -127,7 +127,7 @@ public class InventoryStocktakeService {
     }
 
     /**
-     * 导入建草稿的一行：既携带受保护的导出数据（核对用），又携带用户填写的实盘量与备注。
+     * 导入建待确认单的一行：既携带受保护的导出数据（核对用），又携带用户填写的实盘量与备注。
      *
      * <p>
      * {@code actualQuantity} / {@code remark} 来自用户在 Excel 里的编辑；其余四项来自签名凭证，导入方不得信任单元格。
@@ -161,7 +161,7 @@ public class InventoryStocktakeService {
      * 确认盘点：把每行差异转成盘盈 / 盘亏流水并调整余额，全部在同一事务内。
      *
      * <p>
-     * 先锁单据再锁余额；余额按 {@code (warehouseId, skuId)} 升序处理。明细行的 {@code unitSnapshot} 在此刻按余额记账单位回写 —— 草稿态它为空。
+     * 先锁单据再锁余额；余额按 {@code (warehouseId, skuId)} 升序处理。明细行的 {@code unitSnapshot} 在此刻按余额记账单位回写 —— 待确认时它为空。
      *
      * <p>
      * 差异为 0 的行不写流水（数量恒为正），但仍会回写单位。
@@ -196,7 +196,7 @@ public class InventoryStocktakeService {
     }
 
     /**
-     * 取消草稿：不产生任何库存影响。
+     * 取消待确认盘点单：不产生任何库存影响。
      */
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long stocktakeId) {
@@ -210,7 +210,7 @@ public class InventoryStocktakeService {
     }
 
     /**
-     * 删除草稿（逻辑删）。已确认的单不可删 —— 它已产生流水，必须留痕。
+     * 删除待确认盘点单（逻辑删）。已确认的单不可删 —— 它已产生流水，必须留痕。
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long stocktakeId) {

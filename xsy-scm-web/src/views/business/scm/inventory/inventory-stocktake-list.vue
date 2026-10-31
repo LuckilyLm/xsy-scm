@@ -249,12 +249,12 @@ const canDelete = computed(() => hasPermission('scm:inventory:stocktake:delete')
 
 /** 复制到新建对所有状态可用，其余动作只在待确认态。 */
 function rowActions(row: InventoryStocktake): ScmActionItem[] {
-  const draft = row.status === 'PENDING';
+  const pending = row.status === 'PENDING';
   return [
     {key: 'copy', label: '复制到新建', hidden: !canAdd.value},
-    {key: 'edit', label: '编辑', hidden: !(draft && canUpdate.value)},
-    {key: 'cancel', label: '取消单据', hidden: !(draft && canUpdate.value)},
-    {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
+    {key: 'edit', label: '编辑', hidden: !(pending && canUpdate.value)},
+    {key: 'cancel', label: '取消单据', hidden: !(pending && canUpdate.value)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
   ];
 }
 

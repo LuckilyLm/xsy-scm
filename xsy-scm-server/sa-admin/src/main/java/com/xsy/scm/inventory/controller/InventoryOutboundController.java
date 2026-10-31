@@ -25,11 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
  * SCM 库存出库单（独立出库单）。
  *
  * <p>
- * 共 7 个端点：分页 / 详情 / 新建 / 改草稿 / 确认出库 / 取消 / 删除。
+ * 共 7 个端点：分页 / 详情 / 新建 / 修改待出库单 / 确认出库 / 取消 / 删除。
  *
  * <p>
- * 权限划分：查询 {@code scm:inventory:outbound:query}、新建 {@code :add}、改草稿 {@code :update}、确认出库 {@code :confirm}、删除
- * {@code :delete}。「确认出库」是独立的权限而不是复用 {@code :update}：确认会真实扣减库存并写不可逆流水，与「改个草稿」不是 同一量级的操作，允许仓管录单但由主管确认是完全合理的分工。
+ * 权限划分：查询 {@code scm:inventory:outbound:query}、新建 {@code :add}、修改待出库单 {@code :update}、确认出库 {@code :confirm}、删除
+ * {@code :delete}。「确认出库」是独立的权限而不是复用 {@code :update}：确认会真实扣减库存并写不可逆流水，与「改个待出库单」不是同一量级的操作，允许仓管录单但由主管确认是完全合理的分工。
  */
 @RestController
 @RequestMapping("/scm/inventory/outbound")
@@ -54,7 +54,7 @@ public class InventoryOutboundController {
     }
 
     /**
-     * 新建草稿出库单，返回新单 id。
+     * 新建出库单（新建即待出库），返回新单 id。
      */
     @PostMapping("/create")
     @SaCheckPermission(InventoryPermission.OUTBOUND_ADD)
@@ -90,7 +90,7 @@ public class InventoryOutboundController {
     }
 
     /**
-     * 取消草稿（不产生任何库存影响）。
+     * 取消待出库单（不产生任何库存影响）。
      */
     @PostMapping("/cancel/{id}")
     @SaCheckPermission(InventoryPermission.OUTBOUND_UPDATE)
@@ -101,7 +101,7 @@ public class InventoryOutboundController {
     }
 
     /**
-     * 删除草稿（逻辑删）。已确认的单不可删。
+     * 删除待出库单（逻辑删）。已确认的单不可删。
      */
     @PostMapping("/delete/{id}")
     @SaCheckPermission(InventoryPermission.OUTBOUND_DELETE)

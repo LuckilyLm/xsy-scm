@@ -37,7 +37,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOU
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_RESERVATION_INVALID;
 
 /**
- * 配送发车时确认出库，没有出库草稿。必须先释放预留量，再按实发量扣减库存，否则可能触发预留量不能大于库存量的约束。先锁配送单据，再按仓库和商品规格顺序锁余额。少拣时释放整笔预留，只扣实际发货仓的库存。
+ * 配送发车时直接确认出库，不经过待出库单。必须先释放预留量，再按实发量扣减库存，否则可能触发预留量不能大于库存量的约束。先锁配送单据，再按仓库和商品规格顺序锁余额。少拣时释放整笔预留，只扣实际发货仓的库存。
  */
 @Service
 @RequiredArgsConstructor

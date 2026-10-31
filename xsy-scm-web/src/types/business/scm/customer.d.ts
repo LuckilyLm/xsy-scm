@@ -237,7 +237,7 @@ export interface CustomerSellerReassignPayload {
  *
  * 按 (skuId, unit) 分组：同 SKU 历史单位改变时分行展示，绝不跨单位求和。
  * orderedQuantity 是订购量（非实重 / 结算量）；recentUnitPrice 是最近已确认订单价，
- * 锁定单价缺失时为 null（前端不兜底为草稿价 / 当前价）。
+ * 锁定单价缺失时为 null（前端不兜底为录单价 / 当前价）。
  */
 export interface CustomerFrequentSku {
   skuId: ScmId;

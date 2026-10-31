@@ -16,7 +16,7 @@ import java.util.List;
  * 盘点单头读写。
  *
  * <p>
- * 与出库单 DAO 结构相同：本表是普通有状态单据（草稿可改、可取消），因此有 update 方法。真正不可修改的是 {@code xsy_inventory_movement}，不在这里。
+ * 与出库单 DAO 结构相同：本表是普通有状态单据（待确认可改、可取消），因此有 update 方法。真正不可修改的是 {@code xsy_inventory_movement}，不在这里。
  */
 @Mapper
 public interface InventoryStocktakeDao extends BaseMapper<InventoryStocktakeEntity> {
@@ -51,12 +51,12 @@ public interface InventoryStocktakeDao extends BaseMapper<InventoryStocktakeEnti
         @Param("operator") String operator);
 
     /**
-     * 置为已取消（带状态条件，只有草稿能取消）。
+     * 置为已取消（带状态条件，只有待确认能取消）。
      */
     int markCancelled(@Param("id") Long id, @Param("operator") String operator);
 
     /**
-     * 回写草稿头（仓库 / 备注）。
+     * 回写盘点单头（仓库 / 备注）。
      */
     int updateDraft(@Param("id") Long id, @Param("warehouseId") Long warehouseId, @Param("remark") String remark,
         @Param("operator") String operator);

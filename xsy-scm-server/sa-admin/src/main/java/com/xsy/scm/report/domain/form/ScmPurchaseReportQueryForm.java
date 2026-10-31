@@ -14,7 +14,7 @@ import net.lab1024.sa.base.common.domain.PageParam;
 import com.xsy.scm.report.support.ScmReportDateFilter;
 
 /**
- * 采购分析按提交日期统计已提交的有效采购单，不包含草稿和已取消单据。分页端点与概览端点共用日期和业务筛选，分页参数只用于分页查询。
+ * 采购分析按提交日期统计已提交的有效采购单，不包含已取消单据。分页端点与概览端点共用日期和业务筛选，分页参数只用于分页查询。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

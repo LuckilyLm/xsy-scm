@@ -52,7 +52,7 @@
     <template #footer>
       <a-space>
         <a-button @click="visible = false">关闭</a-button>
-        <a-button type="primary" :loading="saving" :disabled="loading" @click="save">保存草稿</a-button>
+        <a-button type="primary" :loading="saving" :disabled="loading" @click="save">保存</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -186,7 +186,7 @@ async function save() {
     } else {
       await purchaseOrderApi.update(body);
     }
-    message.success('草稿已保存');
+    message.success('已保存');
     visible.value = false;
     emit('saved');
   } catch {

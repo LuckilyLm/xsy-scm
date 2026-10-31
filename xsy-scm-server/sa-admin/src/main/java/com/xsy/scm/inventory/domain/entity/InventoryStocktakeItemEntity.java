@@ -29,7 +29,7 @@ public class InventoryStocktakeItemEntity {
     private Long skuId;
 
     /**
-     * 账面量（保存草稿那一刻的余额数量），差异基线；允许为 0。
+     * 账面量（保存那一刻的余额数量），差异基线；允许为 0。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal bookQuantity;
@@ -41,7 +41,7 @@ public class InventoryStocktakeItemEntity {
     private BigDecimal actualQuantity;
 
     /**
-     * 确认时写入的记账单位；草稿态为空。
+     * 确认时写入的记账单位；待确认时为空。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unitSnapshot;

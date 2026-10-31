@@ -247,11 +247,11 @@ const canDelete = computed(() => hasPermission('scm:inventory:outbound:delete'))
 
 /** 只有待出库可写。 */
 function rowActions(row: InventoryOutbound): ScmActionItem[] {
-  const draft = row.status === 'PENDING';
+  const pending = row.status === 'PENDING';
   return [
-    {key: 'edit', label: '编辑', hidden: !(draft && canUpdate.value)},
-    {key: 'cancel', label: '取消单据', hidden: !(draft && canUpdate.value)},
-    {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
+    {key: 'edit', label: '编辑', hidden: !(pending && canUpdate.value)},
+    {key: 'cancel', label: '取消单据', hidden: !(pending && canUpdate.value)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
   ];
 }
 

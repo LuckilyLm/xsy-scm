@@ -14,7 +14,7 @@ interface EntryDraft {
   reason: string;
 }
 
-/** 负责分拣任务详情读取、行草稿和批量录入校验。 */
+/** 负责分拣任务详情读取、行临时数据和批量录入校验。 */
 export function useSortingTaskEntry(options: {busy: Ref<boolean>; refreshTaskList: () => void; statusDesc: (status?: string | null) => string}) {
   const userStore = useUserStore();
   const detailOpen = ref(false);
@@ -83,7 +83,7 @@ export function useSortingTaskEntry(options: {busy: Ref<boolean>; refreshTaskLis
   const dirtyCount = computed(() => (detail.value?.items ?? []).filter(isDirty).length);
 
   function resetDrafts(items: SortingTaskItem[]) {
-    // 每次服务端刷新都重建草稿，避免把上次编辑的残值误当成新修改提交。
+    // 每次服务端刷新都重建临时数据，避免把上次编辑的残值误当成新修改提交。
     Object.keys(drafts).forEach((key) => delete drafts[key]);
     Object.keys(entryErrors).forEach((key) => delete entryErrors[key]);
     items.forEach((item) => {

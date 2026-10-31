@@ -205,7 +205,7 @@ public class FinancePayableService {
      * 收货确认 → 正常应付。
      *
      * <p>
-     * 必须与触发它的事务同成败，因此传播级别是 {@code MANDATORY} 而不是 {@code REQUIRED}：后者在没有外层事务时会自己提交， 造出「收货单还是草稿、应付已经入账」的孤立记录，而
+     * 必须与触发它的事务同成败，因此传播级别是 {@code MANDATORY} 而不是 {@code REQUIRED}：后者在没有外层事务时会自己提交， 造出「收货单还待确认、应付已经入账」的孤立记录，而
      * {@code confirm} 后续库存写入失败时也没有回滚它的机会。
      *
      * <p>

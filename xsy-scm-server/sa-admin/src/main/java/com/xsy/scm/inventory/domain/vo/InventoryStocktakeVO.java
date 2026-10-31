@@ -74,7 +74,7 @@ public class InventoryStocktakeVO {
         private Map<String, String> specValues;
 
         /**
-         * 账面量（保存草稿时记录）。
+         * 账面量（保存时记录）。
          */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal bookQuantity;
@@ -92,7 +92,7 @@ public class InventoryStocktakeVO {
         private BigDecimal deltaQuantity;
 
         /**
-         * 确认时写入的记账单位；草稿态为空。
+         * 确认时写入的记账单位；待确认时为空。
          */
         private String unitSnapshot;
 

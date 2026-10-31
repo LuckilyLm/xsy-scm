@@ -28,7 +28,7 @@ public enum ScmPrintDocumentTypeEnum {
             new ScmPrintField("saleUnit", "销售单位", false, false),
             new ScmPrintField("orderedQuantity", "订购数量", false, true),
             new ScmPrintField("actualQuantity", "实数量", false, true),
-            new ScmPrintField("draftUnitPrice", "草稿单价", true, true),
+            new ScmPrintField("draftUnitPrice", "解析单价", true, true),
             new ScmPrintField("lockedUnitPrice", "锁定单价", true, true),
             new ScmPrintField("orderedLineAmount", "下单行金额", true, true),
             new ScmPrintField("settlementLineAmount", "结算行金额", true, true)),

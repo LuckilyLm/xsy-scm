@@ -16,7 +16,7 @@ import java.util.List;
  * 出库单头读写。
  *
  * <p>
- * 与余额 DAO 的关键差别：本表是普通有状态单据（草稿可改、可取消），因此有 update 方法。真正不可改的是 {@code xsy_inventory_movement}，不在这里。
+ * 与余额 DAO 的关键差别：本表是普通有状态单据（待出库可改、可取消），因此有 update 方法。真正不可改的是 {@code xsy_inventory_movement}，不在这里。
  */
 @Mapper
 public interface InventoryOutboundDao extends BaseMapper<InventoryOutboundEntity> {
@@ -54,12 +54,12 @@ public interface InventoryOutboundDao extends BaseMapper<InventoryOutboundEntity
         @Param("operator") String operator);
 
     /**
-     * 置为已取消（带状态条件，只有草稿能取消）。
+     * 置为已取消（带状态条件，只有待出库能取消）。
      */
     int markCancelled(@Param("id") Long id, @Param("operator") String operator);
 
     /**
-     * 回写草稿头（仓库 / 备注）。
+     * 回写出库单头（仓库 / 备注）。
      */
     int updateDraft(@Param("id") Long id, @Param("warehouseId") Long warehouseId, @Param("remark") String remark,
         @Param("operator") String operator);

@@ -16,7 +16,7 @@ import java.time.OffsetDateTime;
  * 出库单明细行。
  *
  * <p>
- * {@code unitSnapshot} 在确认出库时写入（= 该 (仓库, SKU) 的记账单位），草稿态允许为空——因为草稿还没校验单位， 提前写入反而会误导。确认时若与余额记账单位不一致，直接失败（41001），不静默换算。
+ * {@code unitSnapshot} 在确认出库时写入（= 该 (仓库, SKU) 的记账单位），待出库时允许为空——因为此时还没校验单位， 提前写入反而会误导。确认时若与余额记账单位不一致，直接失败（41001），不静默换算。
  */
 @Data
 @TableName(value = "xsy_inventory_outbound_item", autoResultMap = true)
@@ -42,7 +42,7 @@ public class InventoryOutboundItemEntity {
     private BigDecimal stockQuantity;
 
     /**
-     * 确认出库时写入的记账单位；草稿态为空。
+     * 确认出库时写入的记账单位；待出库时为空。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unitSnapshot;

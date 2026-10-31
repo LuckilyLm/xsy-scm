@@ -76,7 +76,7 @@ public class InventoryOutboundVO {
         private BigDecimal quantity;
 
         /**
-         * 确认出库时写入的记账单位；草稿态为空。
+         * 确认出库时写入的记账单位；待出库时为空。
          */
         private String unitSnapshot;
 

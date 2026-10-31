@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 排线建议只供查看和选择，不自动改变线路或发车。仅草稿线路可应用建议，并保留计算规则与距离来源。
+ * 排线建议只供查看和选择，不自动改变线路或发车。仅待排线线路可应用建议，并保留计算规则与距离来源。
  */
 @Service
 @RequiredArgsConstructor
@@ -138,7 +138,7 @@ public class DeliveryPlanProposalService {
         if (!Objects.equals(route.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT);
         }
-        // 已规划 / 已发车的线路不再接受顺序改写：建议可能是在线路还是草稿时生成的
+        // 已规划 / 已发车的线路不再接受顺序改写：建议可能是在线路还是待排线时生成的
         requireDraft(route);
 
         List<Long> orderedStopIds = orderedStopIds(proposal);

@@ -31,7 +31,7 @@
         </a-form-item>
       </a-form>
       <a-button v-if="canAppend && totalQuantity != null" size="small" style="margin-bottom: 12px" @click="useTotal"
-        >将当前累计量填入最终分拣草稿</a-button
+        >将当前累计量填入最终分拣结果</a-button
       >
       <a-table
         size="small"

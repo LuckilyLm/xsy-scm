@@ -138,7 +138,7 @@ export interface InventoryOutboundItem {
   productName?: string;
   specValues?: Record<string, unknown> | null;
   quantity?: string | null;
-  /** 确认出库时的记账单位，草稿为空。 */
+  /** 确认出库时的记账单位，待出库时为空。 */
   unitSnapshot?: string | null;
   remark?: string;
 }
@@ -150,7 +150,7 @@ export interface InventoryOutboundQuery extends Page {
   status?: string;
 }
 
-/** 新建和修改草稿共用。数量必须传定点字符串（如 `"1.0000"`），后端不接受 JSON 数字。 */
+/** 新建和修改待出库单共用。数量必须传定点字符串（如 `"1.0000"`），后端不接受 JSON 数字。 */
 export interface InventoryOutboundAdd {
   warehouseId: Id;
   remark?: string;
@@ -203,7 +203,7 @@ export interface InventoryReservationQuery extends Page {
 // ------------------------------------------------------------------
 
 /**
- * 盘点差异 = 实盘量 − 保存草稿时的账面量。
+ * 盘点差异 = 实盘量 − 保存时的账面量。
  * 确认时把差异加到最新账面量上，所以确认后的库存不一定等于实盘量。
  * 前端只展示后端结果，不重新计算。
  */
@@ -234,13 +234,13 @@ export interface InventoryStocktakeItem {
   skuName?: string;
   productName?: string;
   specValues?: Record<string, unknown> | null;
-  /** 保存草稿时的账面量。 */
+  /** 保存时的账面量。 */
   bookQuantity?: string | null;
   /** 实盘量。 */
   actualQuantity?: string | null;
   /** 差异 = 实盘量 − 账面量，由后端计算。 */
   deltaQuantity?: string | null;
-  /** 确认盘点时的记账单位，草稿为空。 */
+  /** 确认盘点时的记账单位，待确认时为空。 */
   unitSnapshot?: string | null;
   remark?: string;
 }
@@ -252,7 +252,7 @@ export interface InventoryStocktakeQuery extends Page {
   status?: string;
 }
 
-/** 新建或修改盘点草稿只提交实盘量，账面量由后端读取；实盘量必须是非负定点字符串。 */
+/** 新建或修改待确认盘点单只提交实盘量，账面量由后端读取；实盘量必须是非负定点字符串。 */
 export interface InventoryStocktakeAdd {
   warehouseId: Id;
   remark?: string;
@@ -272,7 +272,7 @@ export interface StocktakeImportError {
   message: string;
 }
 
-/** 盘点 Excel 导入结果（后端 `InventoryStocktakeImportResultVO`）。成功时 `stocktakeId` 为新 DRAFT。 */
+/** 盘点 Excel 导入结果（后端 `InventoryStocktakeImportResultVO`）。成功时 `stocktakeId` 为新建待确认盘点单。 */
 export interface StocktakeImportResult {
   totalRows: number;
   totalErrors: number;
