@@ -159,7 +159,7 @@ class SalesOrderImportServiceTest {
         assertThat(item.getOrderedQuantity()).isEqualTo("2.0000");
         assertThat(item.getManualPriceOverride()).isTrue();
         assertThat(item.getUnitPrice()).isEqualTo("1.2000");
-        assertThat(item.getOverrideReason()).isEqualTo("送货单导入");
+        assertThat(item.getOverrideReason()).isEqualTo("客户订单导入");
     }
 
     @Test

@@ -17,20 +17,20 @@
 
     <!-- 模板下载按钮和文件格式说明 -->
     <div class="import-template">
-      <a-button :loading="downloading" :disabled="loading" @click="downloadTemplate">
+      <a-button class="scm-btn-secondary import-template__download" :loading="downloading" :disabled="loading" @click="downloadTemplate">
         <template #icon>
           <DownloadOutlined />
         </template>
-        下载送货单模板
+        下载客户订单模板
       </a-button>
-      <span class="import-template__note">仅支持 .xlsx，最大 5 MiB · 任一错误均不会创建订单</span>
+      <span class="import-template__note">仅支持 .xlsx，最大 5 MiB</span>
     </div>
 
     <a-upload-dragger :file-list="fileList" :before-upload="beforeUpload" :disabled="loading" :max-count="1" accept=".xlsx" @remove="removeFile">
       <p class="ant-upload-drag-icon">
         <InboxOutlined />
       </p>
-      <p class="ant-upload-text">点击或拖拽送货单 Excel 到此处</p>
+      <p class="ant-upload-text">点击或拖拽客户订单 Excel 到此处</p>
       <p class="ant-upload-hint">请使用最新模板：收货单位填客户名称，商品名称、规格、单位须与商品档案一致</p>
     </a-upload-dragger>
 
@@ -50,18 +50,6 @@
         </a-table>
       </template>
     </a-result>
-    <div v-else-if="result?.totalErrors" class="import-errors">
-      <a-alert type="error" show-icon :message="`发现 ${result.totalErrors} 个问题，订单未写入`" class="error-summary" />
-      <a-table
-        size="small"
-        bordered
-        :pagination="false"
-        :data-source="result.errors"
-        :columns="columns"
-        :scroll="{y: 300}"
-        :row-key="(row: ImportError) => `${row.rowNumber}-${row.column}-${row.code}`"
-      />
-    </div>
   </a-modal>
   <OrderForm ref="reviewForm" @saved="emit('saved')" />
 </template>
@@ -70,15 +58,15 @@ import {computed, nextTick, ref} from 'vue';
 import OrderForm from './order-form-drawer.vue';
 import {message, Upload} from 'ant-design-vue';
 import {DownloadOutlined, InboxOutlined} from '@ant-design/icons-vue';
-import type {UploadFile, UploadProps, TableColumnsType} from 'ant-design-vue';
+import type {UploadFile, UploadProps} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
 import FormNote from '/@/components/framework/form-note/index.vue';
 import type {Id, ImportError, ImportResult} from '../order-types';
 
 const IMPORT_RULES = [
-  '一张送货单生成一张订单：收货单位填客户档案里的客户名称，日期即期望送货日期。',
+  '一份客户订单生成一张销售订单：收货单位填客户档案里的客户名称，日期即期望送货日期。',
   '商品按「商品名称 + 规格 + 单位」匹配商品档案，实数量作为下单数量；合计行与签字栏不导入。',
-  '填写销售单价即按送货单单价下单，需要订单改价权限，改价原因由系统记为「送货单导入」；留空按系统定价。',
+  '填写销售单价即按客户订单单价下单，需要订单改价权限，改价原因由系统记为「客户订单导入」；留空按系统定价。',
   '纯标品自动确认；含非标品时整单待确认，等待电子秤回写实重。',
 ];
 
@@ -102,16 +90,6 @@ async function reviewImported(id: Id) {
 }
 
 const imported = computed(() => !!result.value && result.value.totalErrors === 0);
-const columns: TableColumnsType<ImportError> = [
-  {title: '行号', dataIndex: 'rowNumber', width: 72},
-  {
-    title: '收货单位',
-    dataIndex: 'orderKey',
-    width: 130,
-  },
-  {title: '字段', dataIndex: 'column', width: 120},
-  {title: '问题', dataIndex: 'message'},
-];
 
 function open() {
   reset();
@@ -157,6 +135,16 @@ function removeFile() {
   return true;
 }
 
+/** 导入错误只在 toast 里给出首条定位；完整问题清单以文件为准，修正后重试。 */
+function notifyImportErrors(errors: ImportError[], totalErrors: number) {
+  const first = errors[0];
+  const where = first ? (first.rowNumber > 0 ? `第 ${first.rowNumber} 行${first.column ? `「${first.column}」` : ''}` : first.column) : '';
+  const position = where ? `${where}：` : '';
+  const detail = first?.message ?? '请检查导入文件';
+  const rest = totalErrors > 1 ? `（共 ${totalErrors} 处问题）` : '';
+  message.error({content: `订单未写入：${position}${detail}${rest}`, duration: 6});
+}
+
 async function submit() {
   if (loading.value || imported.value) return;
   const file = selectedFile.value;
@@ -167,11 +155,11 @@ async function submit() {
   loading.value = true;
   try {
     const response = await orderApi.importOrders(file);
-    result.value = response.data;
     if (response.data.totalErrors) {
-      message.error('导入文件存在错误，请修正后重试');
+      notifyImportErrors(response.data.errors, response.data.totalErrors);
       return;
     }
+    result.value = response.data;
     message.success('订单导入完成');
     emit('saved');
   } catch {
@@ -197,11 +185,14 @@ defineExpose({open});
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
 }
 
-.import-errors {
-  margin-top: 14px;
+.import-template__download {
+  flex: none;
 }
 
-.error-summary {
-  margin-bottom: 12px;
+.import-template__download:disabled,
+.import-template__download.ant-btn-disabled {
+  color: var(--scm-text-disabled, rgba(0, 0, 0, 0.25));
+  background: var(--scm-fill, rgba(0, 0, 0, 0.04));
+  border-color: var(--scm-border, rgba(0, 0, 0, 0.06));
 }
 </style>

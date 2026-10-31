@@ -909,10 +909,10 @@ test.describe('scm-order', () => {
     await browse(page);
     await page.getByRole('button', {name: '导入订单', exact: true}).click();
     const downloadPromise = page.waitForEvent('download');
-    // 模板已改为客户送货单版式：一张纸一个收货单位，落库就是一张订单
-    await page.getByRole('button', {name: /下载\s*送货单\s*模板/}).click();
+    // 模板为客户订单版式：一张纸一个收货单位，落库就是一张订单
+    await page.getByRole('button', {name: /下载\s*客户订单\s*模板/}).click();
     const download = await downloadPromise;
-    expect(download.suggestedFilename()).toBe('销售订单送货单导入模板.xlsx');
+    expect(download.suggestedFilename()).toBe('客户订单导入模板.xlsx');
     const mixed = '../.runtime/w4-order-import-mixed.xlsx';
     await download.saveAs(mixed);
     // 散装是非标品：整单要等电子秤回写实重，所以混装单只能是待称重
@@ -956,8 +956,8 @@ test.describe('scm-order', () => {
     const before = (await post('/scm/order/query', {pageNum: 1, pageSize: 100, customerId, orderSource: 'IMPORT'})).total;
     await page.locator('.ant-modal:visible input[type=file]').setInputFiles(bad);
     await page.getByRole('button', {name: '开始导入', exact: true}).click();
-    await expect(page.getByText(/发现 1 个问题，订单未写入/)).toBeVisible();
-    await expect(page.locator('.ant-modal:visible')).toContainText('商品名称与规格不匹配');
+    await expect(page.locator('.ant-message')).toContainText('订单未写入');
+    await expect(page.locator('.ant-message')).toContainText('商品名称与规格不匹配');
     const after = (await post('/scm/order/query', {pageNum: 1, pageSize: 100, customerId, orderSource: 'IMPORT'})).total;
     expect(after).toBe(before);
     const bytes = readFileSync(mixed);
@@ -991,16 +991,16 @@ test.describe('scm-order', () => {
     // A) 原样上传刚下载的模板（没填收货单位、没有明细）→ 失败、零写入
     const raw = '../.runtime/w4-order-import-raw.xlsx';
     const downloadPromise = page.waitForEvent('download');
-    await page.getByRole('button', {name: /下载\s*送货单\s*模板/}).click();
+    await page.getByRole('button', {name: /下载\s*客户订单\s*模板/}).click();
     await (await downloadPromise).saveAs(raw);
     const baseline = await importedTotal();
     await importFile(raw);
-    await expect(page.locator('.ant-modal:visible')).toContainText('发现 1 个问题，订单未写入');
-    await expect(page.locator('.ant-modal:visible .ant-table')).toContainText('送货单没有商品明细');
+    await expect(page.locator('.ant-message')).toContainText('订单未写入');
+    await expect(page.locator('.ant-message')).toContainText('客户订单没有商品明细');
     expect(await importedTotal()).toBe(baseline);
 
-    // B) 送货单上填了单价（账号同时持有 scm:order:import 与 scm:order:price-override）
-    //    → 成功且按纸面单价成交；改价原因由系统统一记为「送货单导入」，不再要求操作员填写
+    // B) 客户订单上填了单价（账号同时持有 scm:order:import 与 scm:order:price-override）
+    //    → 成功且按纸面单价成交；改价原因由系统统一记为「客户订单导入」，不再要求操作员填写
     const manual = '../.runtime/w4-order-import-manual.xlsx';
     copyFileSync(raw, manual);
     fillNote(manual, [['1', `${name}商品`, '箱', '整箱', '2.0000', '1.2345', null, '人工改价']]);
@@ -1013,19 +1013,19 @@ test.describe('scm-order', () => {
     const manualDetail = await detail(manualOrder.orderId);
     expect(manualDetail.status).toBe('CONFIRMED');
     expect(manualDetail.items[0].lockedUnitPrice).toBe('1.2345');
-    // 改价原因由系统统一记为「送货单导入」，不再要求操作员在 Excel 里填原因
-    expect(manualDetail.items[0].manualPriceReason).toBe('送货单导入');
+    // 改价原因由系统统一记为「客户订单导入」，不再要求操作员在 Excel 里填原因
+    expect(manualDetail.items[0].manualPriceReason).toBe('客户订单导入');
     expect(manualDetail.orderedTotalAmount).toBe('2.4690');
 
-    // C) 单位与商品规格的销售单位不一致 → 整张送货单拒绝，零写入
+    // C) 单位与商品规格的销售单位不一致 → 整张客户订单拒绝，零写入
     const wrongUnit = '../.runtime/w4-order-import-wrong-unit.xlsx';
     copyFileSync(raw, wrongUnit);
     fillNote(wrongUnit, [['1', `${name}商品`, 'kg', '整箱', '2.0000', null, null, '单位不符']]);
     const beforeC = await importedTotal();
     await reopen();
     await importFile(wrongUnit);
-    await expect(page.locator('.ant-modal:visible')).toContainText('发现 1 个问题，订单未写入');
-    await expect(page.locator('.ant-modal:visible .ant-table')).toContainText('单位应为“箱”');
+    await expect(page.locator('.ant-message')).toContainText('订单未写入');
+    await expect(page.locator('.ant-message')).toContainText('单位应为“箱”');
     expect(await importedTotal()).toBe(beforeC);
   });
 

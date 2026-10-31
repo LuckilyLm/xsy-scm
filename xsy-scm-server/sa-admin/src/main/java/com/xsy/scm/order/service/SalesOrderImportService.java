@@ -52,11 +52,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 送货单版式的销售订单导入：一张送货单生成一张订单。
+ * 客户订单版式的销售订单导入：一份客户订单生成一张销售订单。
  *
  * <p>
- * 表头位于「收货单位 / 日期」下方的第一行，列固定为 序号、商品名称、单位、规格、实数量、销售单价、销售金额、备注； 合计行与签字栏不参与导入。客户按送货单上的收货单位名称匹配，商品按商品名称 + 规格 + 单位匹配，
- * 实数量作为下单数量。送货单单价属于人工定价：导入账号必须有订单改价权限，服务端统一记录改价原因“送货单导入”。
+ * 表头位于「收货单位 / 日期」下方的第一行，列固定为 序号、商品名称、单位、规格、实数量、销售单价、销售金额、备注； 合计行与签字栏不参与导入。客户按客户订单上的收货单位名称匹配，商品按商品名称 + 规格 + 单位匹配，
+ * 实数量作为下单数量。客户订单单价属于人工定价：导入账号必须有订单改价权限，服务端统一记录改价原因“客户订单导入”。
  */
 @Slf4j
 @Service
@@ -65,8 +65,8 @@ public class SalesOrderImportService {
     private static final int MAX_ROWS = 2000;
     private static final int MAX_ITEMS_PER_ORDER = 100;
     private static final int MAX_ERRORS = 1000;
-    private static final String IMPORT_PRICE_REASON = "送货单导入";
-    private static final String DEFAULT_ORDER_KEY = "送货单";
+    private static final String IMPORT_PRICE_REASON = "客户订单导入";
+    private static final String DEFAULT_ORDER_KEY = "客户订单";
     private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
     private static final String DECIMAL_PATTERN = "[0-9]{1,14}(\\.[0-9]{1,4})?";
     private static final List<String> HEADERS = List.of("序号", "商品名称", "单位", "规格", "实数量", "销售单价", "销售金额", "备注");
@@ -124,7 +124,7 @@ public class SalesOrderImportService {
             var headerRowIndex = findHeaderRow(sheet, formatter);
             if (headerRowIndex < 0) {
                 addError(result, 1, null, "表头", "HEADER_INVALID",
-                    "未找到送货单表头，应包含：" + String.join("、", HEADERS) + "；请使用最新模板");
+                    "未找到客户订单表头，应包含：" + String.join("、", HEADERS) + "；请使用最新模板");
                 return new DeliveryNote(null, 0, null, 0, List.of());
             }
             validateHeader(sheet.getRow(headerRowIndex), formatter, headerRowIndex, result);
@@ -135,7 +135,7 @@ public class SalesOrderImportService {
             var lines = readLines(sheet, headerRowIndex, formatter, result);
             result.setTotalRows(lines.size());
             if (lines.isEmpty())
-                addError(result, headerRowIndex + 2, null, "商品名称", "FILE_EMPTY", "送货单没有商品明细");
+                addError(result, headerRowIndex + 2, null, "商品名称", "FILE_EMPTY", "客户订单没有商品明细");
             if (lines.size() > MAX_ROWS)
                 addError(result, lines.get(MAX_ROWS).rowNumber(), null, "商品名称", "ROW_LIMIT",
                     "数据行不能超过 " + MAX_ROWS + " 行");
@@ -146,7 +146,7 @@ public class SalesOrderImportService {
             // 对调用方仍返回 FILE_INVALID，但服务端要留下原因：解析异常若只改写成「请使用最新模板」，
             // 用户会反复重导模板，运维也拿不到线索。
             log.error("订单导入文件解析失败，整批按 FILE_INVALID 拒绝", exception);
-            addError(result, 0, null, "文件", "FILE_INVALID", "Excel 文件无法读取，请使用最新送货单模板");
+            addError(result, 0, null, "文件", "FILE_INVALID", "Excel 文件无法读取，请使用最新客户订单模板");
             return new DeliveryNote(null, 0, null, 0, List.of());
         }
     }
@@ -174,7 +174,7 @@ public class SalesOrderImportService {
             var actual = header == null ? null : cellText(header.getCell(column), formatter);
             if (!HEADERS.get(column).equals(actual))
                 addError(result, headerRowIndex + 1, null, CellReference.convertNumToColString(column),
-                    "HEADER_INVALID", "表头应为“" + HEADERS.get(column) + "”，请使用最新送货单模板");
+                    "HEADER_INVALID", "表头应为“" + HEADERS.get(column) + "”，请使用最新客户订单模板");
         }
     }
 
@@ -470,7 +470,7 @@ public class SalesOrderImportService {
                 }
                 if (line.unitPrice() != null && !priceOverrideAllowed) {
                     addError(result, indexed.rowNumber(), key, "销售单价", "PRICE_OVERRIDE_FORBIDDEN",
-                        "当前账号没有订单改价权限，无法按送货单单价导入");
+                        "当前账号没有订单改价权限，无法按客户订单单价导入");
                     continue;
                 }
                 if (line.unitPrice() == null && price.getPriceStatus() == ScmPriceStatusEnum.UNPRICED) {
@@ -512,7 +512,7 @@ public class SalesOrderImportService {
             var item = new SalesOrderItemForm();
             item.setSkuId(lines.get(index).sku().getSkuId());
             item.setOrderedQuantity(fixed(line.quantity()));
-            // 送货单的备注是行备注：随商品打印到分拣单/送货单，不再汇总到整单备注
+            // 客户订单的备注是行备注：随商品打印到分拣单/送货单，不再汇总到整单备注
             item.setRemark(trim(line.remark()));
             item.setSortOrder(index);
             var manual = line.unitPrice() != null;

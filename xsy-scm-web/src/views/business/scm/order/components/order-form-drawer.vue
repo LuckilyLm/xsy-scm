@@ -96,7 +96,7 @@
           <a-button :disabled="!form.customerId" @click="pasteOpen = true">整单粘贴</a-button>
           <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
         </div>
-        <p class="item-actions__hint">粘贴失败的行不会追加；也可继续用 Excel 导入整张送货单。</p>
+        <p class="item-actions__hint">粘贴失败的行不会追加；也可继续用 Excel 导入整张客户订单。</p>
         <OrderPasteModal v-model:open="pasteOpen" :customer-id="form.customerId" :existing-sku-ids="existingSkuIds" @append="appendPasted" />
       </a-form>
     </a-spin>

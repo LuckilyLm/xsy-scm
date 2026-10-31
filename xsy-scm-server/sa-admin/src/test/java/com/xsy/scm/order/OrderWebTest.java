@@ -80,7 +80,7 @@ class OrderWebTest {
         var response = mvc.perform(get("/scm/order/import/template")).andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")))
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString(
-                        "%E9%94%80%E5%94%AE%E8%AE%A2%E5%8D%95%E9%80%81%E8%B4%A7%E5%8D%95%E5%AF%BC%E5%85%A5%E6%A8%A1%E6%9D%BF.xlsx")))
+                        "%E5%AE%A2%E6%88%B7%E8%AE%A2%E5%8D%95%E5%AF%BC%E5%85%A5%E6%A8%A1%E6%9D%BF.xlsx")))
                 // RFC 6266：中文名以 filename*=UTF-8'' 为准，filename= 仅作 ASCII 回退。
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("filename*=UTF-8''")))
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.startsWith("attachment;")))
@@ -89,7 +89,7 @@ class OrderWebTest {
         assertThat(response.getHeader("Content-Length")).isEqualTo(String.valueOf(response.getContentAsByteArray().length));
         try (var workbook = org.apache.poi.ss.usermodel.WorkbookFactory.create(new java.io.ByteArrayInputStream(response.getContentAsByteArray()))) {
             var sheet = workbook.getSheetAt(0);
-            assertThat(sheet.getRow(1).getCell(0).getStringCellValue()).isEqualTo("送货单");
+            assertThat(sheet.getRow(1).getCell(0).getStringCellValue()).isEqualTo("客户订单");
             assertThat(sheet.getRow(2).getCell(0).getStringCellValue()).isEqualTo("收货单位：");
             assertThat(sheet.getRow(2).getCell(6).getStringCellValue()).isEqualTo("日期：");
             var headerRow = sheet.getRow(3);

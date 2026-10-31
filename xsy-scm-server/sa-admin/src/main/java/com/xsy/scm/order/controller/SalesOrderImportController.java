@@ -35,10 +35,10 @@ import java.io.IOException;
 public class SalesOrderImportController {
     private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
     /**
-     * 模板固定在 sa-admin 的 classpath 下，随 JAR 一起发布，运行时不依赖开发机绝对路径。 当前模板为客户送货单版式：一张送货单生成一张订单。
+     * 模板固定在 sa-admin 的 classpath 下，随 JAR 一起发布，运行时不依赖开发机绝对路径。 当前模板为客户订单版式：一份客户订单生成一张销售订单。
      */
     private static final String TEMPLATE_RESOURCE = "template/sales-order-import.xlsx";
-    private static final String TEMPLATE_FILE_NAME = "销售订单送货单导入模板.xlsx";
+    private static final String TEMPLATE_FILE_NAME = "客户订单导入模板.xlsx";
 
     private final SalesOrderImportService salesOrderImportService;
     private final SalesOrderPasteService salesOrderPasteService;

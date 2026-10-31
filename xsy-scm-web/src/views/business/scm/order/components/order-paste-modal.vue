@@ -1,7 +1,8 @@
 <template>
   <a-modal :open="open" title="整单粘贴" :width="960" :mask-closable="false" destroy-on-close @cancel="close">
     <p class="scm-note">
-      可从 Excel 或送货单复制多行粘贴，一次追加到当前客户订单。带表头时按「商品名称 / 规格 / 单位 / 数量 / 销售单价 / 备注」识别；无表头时按送货单列顺序识别，首列序号可省略。单价留空按系统定价。
+      可从 Excel 或客户订单复制多行粘贴，一次追加到当前客户订单。带表头时按「商品名称 / 规格 / 单位 / 数量 / 销售单价 /
+      备注」识别；无表头时按客户订单列顺序识别，首列序号可省略。单价留空按系统定价。
     </p>
     <a-textarea
       v-model:value="text"
@@ -135,7 +136,7 @@ function parseText(value: string): PasteRow[] {
       remark: indexOf(['备注']),
     };
   } else {
-    // 送货单顺序：商品名称、单位、规格、实数量、销售单价、销售金额、备注；首列序号可选。
+    // 客户订单顺序：商品名称、单位、规格、实数量、销售单价、销售金额、备注；首列序号可选。
     const offset = /^\d+$/.test(cells[0][0] ?? '') && cells[0].length >= 6 ? 1 : 0;
     indexes = {productName: offset, unit: offset + 1, specName: offset + 2, quantity: offset + 3, unitPrice: offset + 4, remark: offset + 6};
   }
