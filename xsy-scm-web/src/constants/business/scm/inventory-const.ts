@@ -64,7 +64,7 @@ export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
 /**
  * 出库单状态（与后端 `ScmInventoryOutboundStatusEnum` 逐字对应）。
  *
- * `DRAFT → CONFIRMED`，草稿可 `CANCELLED`。已确认不可回退 ——
+ * `PENDING → CONFIRMED`，待确认可 `CANCELLED`。已确认不可回退 ——
  * 流水 append-only，冲销必须新增反向流水。
  */
 export const SCM_INVENTORY_OUTBOUND_STATUS_ENUM: SmartEnum<string> = {
@@ -84,10 +84,10 @@ export const SCM_INVENTORY_RESERVATION_STATUS_ENUM: SmartEnum<string> = {
  * 盘点单状态（与后端 `ScmInventoryStocktakeStatusEnum` 逐字对应）。
  *
  * 状态机与出库单刻意同构。没有独立的「盘点中」状态：
- * 录入实盘数就是草稿态的编辑动作，`DRAFT` 即「盘点进行中」。
+ * 录入实盘数就是待确认态的编辑动作，`PENDING` 即「盘点进行中」。
  */
 export const SCM_INVENTORY_STOCKTAKE_STATUS_ENUM: SmartEnum<string> = {
-  DRAFT: {value: 'DRAFT', desc: '草稿'},
+  PENDING: {value: 'PENDING', desc: '待确认'},
   CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
   CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };

@@ -117,7 +117,7 @@ class ScmInventoryStocktakeRollbackIT extends ScmW6PgITBase {
         // 单据仍是草稿、明细仍在 —— 用户修掉冲突行之后可以直接重试
         assertThat(jdbc.queryForObject(
                 "SELECT status FROM xsy_inventory_stocktake WHERE id = ?", String.class, id))
-                .isEqualTo("DRAFT");
+                .isEqualTo("PENDING");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM xsy_inventory_stocktake_item WHERE stocktake_id = ? AND deleted = FALSE",
                 Integer.class, id)).isEqualTo(2);
@@ -158,6 +158,6 @@ class ScmInventoryStocktakeRollbackIT extends ScmW6PgITBase {
         assertThat(stocktakeMovements(wh, sku)).isEmpty();
         assertThat(jdbc.queryForObject(
                 "SELECT status FROM xsy_inventory_stocktake WHERE id = ?", String.class, id))
-                .isEqualTo("DRAFT");
+                .isEqualTo("PENDING");
     }
 }

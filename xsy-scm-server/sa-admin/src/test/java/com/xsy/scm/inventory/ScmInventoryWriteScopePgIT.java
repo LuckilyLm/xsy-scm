@@ -331,7 +331,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
         assertDataScopeDenied(() -> asRun(keeper, () -> stocktakeService.delete(foreignDoc)));
         assertDataScopeDenied(() -> asRun(keeper,
                 () -> stocktakeService.update(foreignDoc, stocktakeForm(foreign, "8.0000"))));
-        assertThat(statusOf("xsy_inventory_stocktake", foreignDoc)).isEqualTo(DRAFT);
+        assertThat(statusOf("xsy_inventory_stocktake", foreignDoc)).isEqualTo(PENDING);
         assertThat(movementTypes(foreign)).as("盘盈/盘亏都没写进乙仓").containsExactly("PURCHASE_IN");
         assertThat(quantityOf(foreign)).isEqualByComparingTo(STOCKED);
         assertThat(bookQuantityOfFirstItem(foreignDoc)).as("失败的改单没换掉账面量快照")

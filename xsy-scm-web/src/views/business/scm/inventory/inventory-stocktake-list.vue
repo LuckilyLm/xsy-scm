@@ -1,4 +1,4 @@
-<!-- 库存盘点单：确认时把“实盘量 − 账面量”的差异计入库存。确认时的账面量可能与保存草稿时不同。 -->
+<!-- 库存盘点单：确认时把“实盘量 − 账面量”的差异计入库存。确认时的账面量可能与保存时不同。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -65,7 +65,7 @@
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
-              v-if="record.status === 'DRAFT'"
+              v-if="record.status === 'PENDING'"
               type="link"
               size="small"
               @click="onConfirm(record)"
@@ -94,7 +94,7 @@
     </div>
   </a-card>
 
-  <!-- 新建 / 编辑草稿 -->
+  <!-- 新建 / 编辑待确认盘点单 -->
   <a-drawer :open="drawerOpen" :title="form.id ? `编辑盘点单 ${form.stocktakeNo}` : '新建盘点单'" :width="scmDrawerWidth('l')" @close="closeDrawer">
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="盘点仓库" name="warehouseId">
@@ -134,7 +134,7 @@
     <template #footer>
       <a-space>
         <a-button @click="closeDrawer">取消</a-button>
-        <a-button type="primary" :loading="saving" @click="onSubmit">保存草稿</a-button>
+        <a-button type="primary" :loading="saving" @click="onSubmit">保存</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -147,13 +147,13 @@
       v-if="importResult && importResult.stocktakeId"
       type="success"
       show-icon
-      :message="`已创建草稿（${importResult.importedItems} 条明细）`"
+      :message="`已创建待确认盘点单（${importResult.importedItems} 条明细）`"
     />
     <a-alert
       v-else-if="importResult"
       type="error"
       show-icon
-      :message="`整批未导入：${importResult.totalErrors} / ${importResult.totalRows} 行存在问题，未生成任何草稿`"
+      :message="`整批未导入：${importResult.totalErrors} / ${importResult.totalRows} 行存在问题，未生成任何盘点单`"
       description="来源行按导出时的盘点清单锁定，不能增删或替换；实盘量不能为空；清单过期或账面已变动时请重新导出。"
     />
     <a-table
@@ -234,9 +234,9 @@ const itemColumns: TableColumnsType = [
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
 
-/** 草稿 = 盘点进行中（橙），已确认 = 已完成（绿），已取消 = 失效（灰）。 */
+/** 待确认 = 盘点进行中（橙），已确认 = 已完成（绿），已取消 = 失效（灰）。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {
-  DRAFT: 'warning',
+  PENDING: 'warning',
   CONFIRMED: 'success',
   CANCELLED: 'neutral',
 };
@@ -247,9 +247,9 @@ const canAdd = computed(() => hasPermission('scm:inventory:stocktake:add'));
 const canUpdate = computed(() => hasPermission('scm:inventory:stocktake:update'));
 const canDelete = computed(() => hasPermission('scm:inventory:stocktake:delete'));
 
-/** 复制到新建对所有状态可用，其余动作只在草稿态。 */
+/** 复制到新建对所有状态可用，其余动作只在待确认态。 */
 function rowActions(row: InventoryStocktake): ScmActionItem[] {
-  const draft = row.status === 'DRAFT';
+  const draft = row.status === 'PENDING';
   return [
     {key: 'copy', label: '复制到新建', hidden: !canAdd.value},
     {key: 'edit', label: '编辑', hidden: !(draft && canUpdate.value)},
@@ -534,10 +534,10 @@ async function onSubmit() {
   try {
     if (form.id) {
       await inventoryStocktakeApi.update(form.id, payload);
-      message.success('已保存草稿（账面量已更新）');
+      message.success('已保存（账面量已更新）');
     } else {
       await inventoryStocktakeApi.create(payload);
-      message.success('已创建草稿');
+      message.success('已创建，待确认');
     }
     drawerOpen.value = false;
     queryData();
@@ -606,7 +606,7 @@ function onCancel(record: InventoryStocktake) {
 function onDelete(record: InventoryStocktake) {
   Modal.confirm({
     title: '删除盘点单',
-    content: `确认删除草稿「${record.stocktakeNo}」？已确认的单据不可删除。`,
+    content: `确认删除待确认盘点单「${record.stocktakeNo}」？已确认的单据不可删除。`,
     okText: '删除',
     okType: 'danger',
     cancelText: '返回',

@@ -4,16 +4,16 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 盘点单由草稿确认后写入库存差异流水并成为终态；草稿可取消。确认后不能回到草稿或删除流水，需另建调整业务更正。
+ * 盘点单待确认后写入库存差异流水并成为终态；待确认可取消。确认后不能回退或删除流水，需另建调整业务更正。
  */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryStocktakeStatusEnum {
 
     /**
-     * 草稿：可录/改实盘量，未产生任何库存影响。
+     * 待确认：可录/改实盘量，未产生任何库存影响。
      */
-    DRAFT("草稿"),
+    PENDING("待确认"),
 
     /**
      * 已确认：差异已转流水并调整余额，不可再改明细、不可取消。
@@ -21,31 +21,31 @@ public enum ScmInventoryStocktakeStatusEnum {
     CONFIRMED("已确认"),
 
     /**
-     * 已取消：仅草稿可取消，未产生任何库存影响。
+     * 已取消：仅待确认可取消，未产生任何库存影响。
      */
     CANCELLED("已取消");
 
     private final String desc;
 
     /**
-     * 是否允许编辑明细（只有草稿可以）。
+     * 是否允许编辑明细（只有待确认可以）。
      */
     public boolean isEditable() {
-        return this == DRAFT;
+        return this == PENDING;
     }
 
     /**
-     * 是否允许确认盘点（只有草稿可以）。
+     * 是否允许确认盘点（只有待确认可以）。
      */
     public boolean isConfirmable() {
-        return this == DRAFT;
+        return this == PENDING;
     }
 
     /**
-     * 是否允许取消（只有草稿可以）。
+     * 是否允许取消（只有待确认可以）。
      */
     public boolean isCancellable() {
-        return this == DRAFT;
+        return this == PENDING;
     }
 
     /**

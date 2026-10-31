@@ -37,7 +37,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKT
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_STATUS_INVALID;
 
 /**
- * 管理盘点草稿、确认和取消。已确认盘点不能退回草稿。确认时先锁盘点单，再按仓库和商品规格顺序锁余额；任一明细失败则整单回滚。账面数量在每次保存草稿时重新读取，确认后通过库存流水保留调整记录。
+ * 管理盘点待确认单、确认和取消。已确认盘点不能回退。确认时先锁盘点单，再按仓库和商品规格顺序锁余额；任一明细失败则整单回滚。账面数量在每次保存时重新读取，确认后通过库存流水保留调整记录。
  */
 @Service
 @RequiredArgsConstructor
@@ -56,7 +56,7 @@ public class InventoryStocktakeService {
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     /**
-     * 新建盘点草稿，只要求对应仓库和商品规格存在余额记录。草稿不检查调整后是否缺货或低于预留量，这些条件在确认时校验。
+     * 新建盘点单（待确认），只要求对应仓库和商品规格存在余额记录。草稿不检查调整后是否缺货或低于预留量，这些条件在确认时校验。
      *
      * @return 新单 ID
      */
@@ -71,7 +71,7 @@ public class InventoryStocktakeService {
         InventoryStocktakeEntity entity = new InventoryStocktakeEntity();
         entity.setStocktakeNo(ScmDocumentNumbers.next());
         entity.setWarehouseId(form.getWarehouseId());
-        entity.setStatus(ScmInventoryStocktakeStatusEnum.DRAFT.name());
+        entity.setStatus(ScmInventoryStocktakeStatusEnum.PENDING.name());
         entity.setRemark(form.getRemark());
         entity.setVersion(0);
         entity.setDeleted(false);
@@ -84,7 +84,7 @@ public class InventoryStocktakeService {
     }
 
     /**
-     * Excel 导入建草稿：在同一事务内先按 {@code (warehouseId, skuId)} 升序锁定并逐项核对每条来源余额，全部与导出时记录一致后才复用 {@link #create} 建草稿。
+     * Excel 导入建待确认盘点单：在同一事务内先按 {@code (warehouseId, skuId)} 升序锁定并逐项核对每条来源余额，全部与导出时记录一致后才复用 {@link #create} 建草稿。
      *
      * <p>
      * 为什么加锁与创建必须在同一事务：{@code create} 会在保存时重新读取账面量（不加锁）。若「先校验、再另起事务保存」，两次之间任何入出库都会让保存的账面量偏离被核对的值 ——
@@ -92,9 +92,9 @@ public class InventoryStocktakeService {
      *
      * <p>
      * 任一条不一致即整批失败：只要有一条来源余额的 id / 版本 / 单位 / 账面量与导出时记录不符，就抛 {@link StocktakeSnapshotDriftException}
-     * 回滚，不产生任何草稿（版本变化不可忽略，即便数量变动后又恢复，版本也已在 {@link #confirm} 链路自增）。
+     * 回滚，不产生任何盘点单（版本变化不可忽略，即便数量变动后又恢复，版本也已在 {@link #confirm} 链路自增）。
      *
-     * @return 新草稿单 id
+     * @return 新盘点单 id
      */
     @Transactional(rollbackFor = Exception.class)
     public Long createFromSnapshot(Long warehouseId, List<SnapshotLine> lines) {
@@ -137,7 +137,7 @@ public class InventoryStocktakeService {
     }
 
     /**
-     * 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新），并重新记录账面量。
+     * 改单：只允许待确认；明细整表替换（逻辑删旧 + 插新），并重新记录账面量。
      */
     @Transactional(rollbackFor = Exception.class)
     public void update(Long stocktakeId, InventoryStocktakeAddForm form) {
@@ -146,9 +146,9 @@ public class InventoryStocktakeService {
         warehouseService.require(form.getWarehouseId());
 
         InventoryStocktakeEntity locked = lockAndRequire(stocktakeId);
-        // 行上的旧仓与表单的新仓都要授权：否则可以把一张草稿盘点单挪到自己管不着的仓
+        // 行上的旧仓与表单的新仓都要授权：否则可以把一张待确认盘点单挪到自己管不着的仓
         warehouseScopeGuard.requireAll(locked.getWarehouseId(), form.getWarehouseId());
-        requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryStocktakeStatusEnum.PENDING);
 
         if (inventoryStocktakeDao.updateDraft(stocktakeId, form.getWarehouseId(), form.getRemark(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -174,7 +174,7 @@ public class InventoryStocktakeService {
         InventoryStocktakeEntity locked = lockAndRequire(stocktakeId);
         // 授权判定取锁到的行上的仓库：盘盈盘亏流水按这一行记账，不取表单值
         warehouseScopeGuard.require(locked.getWarehouseId());
-        requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryStocktakeStatusEnum.PENDING);
 
         List<InventoryStocktakeItemVO> items = inventoryStocktakeItemDao.listByStocktakeId(stocktakeId);
         if (items == null || items.isEmpty()) {
@@ -203,7 +203,7 @@ public class InventoryStocktakeService {
         String operator = ScmOperator.current();
         InventoryStocktakeEntity locked = lockAndRequire(stocktakeId);
         warehouseScopeGuard.require(locked.getWarehouseId());
-        requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryStocktakeStatusEnum.PENDING);
         if (inventoryStocktakeDao.markCancelled(stocktakeId, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
@@ -217,7 +217,7 @@ public class InventoryStocktakeService {
         String operator = ScmOperator.current();
         InventoryStocktakeEntity locked = lockAndRequire(stocktakeId);
         warehouseScopeGuard.require(locked.getWarehouseId());
-        requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryStocktakeStatusEnum.PENDING);
         inventoryStocktakeItemDao.deleteByStocktakeId(stocktakeId, operator);
         if (inventoryStocktakeDao.deleteById(stocktakeId) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);

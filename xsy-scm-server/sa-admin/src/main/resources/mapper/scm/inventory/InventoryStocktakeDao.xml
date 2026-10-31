@@ -38,7 +38,7 @@
             updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
             AND deleted = FALSE
-            AND status = 'DRAFT'
+            AND status = 'PENDING'
     </update>
 
     <update id="markCancelled">
@@ -46,7 +46,7 @@
         SET status = 'CANCELLED', version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id}
             AND deleted = FALSE
-            AND status = 'DRAFT'
+            AND status = 'PENDING'
     </update>
 
     <update id="updateDraft">
@@ -55,7 +55,7 @@
             updated_by = #{operator}
         WHERE id = #{id}
             AND deleted = FALSE
-            AND status = 'DRAFT'
+            AND status = 'PENDING'
     </update>
 
     <!-- 展示字段实时联表；排序写死，不接受客户端排序（联表列名会歧义） -->
