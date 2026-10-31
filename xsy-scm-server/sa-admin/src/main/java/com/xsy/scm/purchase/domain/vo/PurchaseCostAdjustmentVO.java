@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import lombok.Data;
 
 @Data
@@ -37,6 +38,7 @@ public class PurchaseCostAdjustmentVO {
     private BigDecimal amount;
     private String reason;
     private OffsetDateTime occurredAt;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
     @JsonIgnore
     private Long purchaserId;
