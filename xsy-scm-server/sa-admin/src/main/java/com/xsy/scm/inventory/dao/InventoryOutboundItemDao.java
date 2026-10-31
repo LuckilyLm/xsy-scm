@@ -27,7 +27,7 @@ public interface InventoryOutboundItemDao extends BaseMapper<InventoryOutboundIt
      * 在给定销售订单行里查出已产生真实出库的那些行（父单 {@code CONFIRMED}）。
      *
      * <p>
-     * 分拣任务重新打开前检查已确认的出库行；仅存在未确认的出库行不表示库存已扣减 —— 出库单的取消只在 DRAFT 可用且不发任何流水，未确认的行没有扣过库存，不构成「货已出去」。
+     * 分拣任务重新打开前检查已确认的出库行；仅存在未确认的出库行不表示库存已扣减 —— 出库单的取消只在待出库状态可用且不发任何流水，未确认的行没有扣过库存，不构成「货已出去」。
      */
     List<Long> listOrderLinesWithConfirmedOutbound(@Param("salesOrderItemIds") Collection<Long> salesOrderItemIds);
 

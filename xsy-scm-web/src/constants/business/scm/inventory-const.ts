@@ -68,7 +68,7 @@ export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
  * 流水 append-only，冲销必须新增反向流水。
  */
 export const SCM_INVENTORY_OUTBOUND_STATUS_ENUM: SmartEnum<string> = {
-  DRAFT: {value: 'DRAFT', desc: '草稿'},
+  PENDING: {value: 'PENDING', desc: '待出库'},
   CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
   CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };

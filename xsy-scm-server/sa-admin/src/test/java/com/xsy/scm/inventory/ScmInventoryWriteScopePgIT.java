@@ -98,6 +98,8 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
     /** 反例单据的初始状态：拒绝后必须仍是它。 */
     private static final String DRAFT = "DRAFT";
+    /** 出库单新建后的初始状态。 */
+    private static final String OUTBOUND_INITIAL = "PENDING";
     private static final String PENDING = "PENDING";
 
     @Autowired
@@ -141,7 +143,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
         // 反例：乙仓一张状态合法、版本正确的草稿，只因为仓库不在范围内被挡
         Long foreignId = asAdmin(() -> outboundService.create(outboundForm(foreign, MOVE)));
         assertDataScopeDenied(() -> asRun(keeper, () -> outboundService.confirm(foreignId)));
-        assertThat(statusOf("xsy_inventory_outbound", foreignId)).as("确认没落进状态机").isEqualTo(DRAFT);
+        assertThat(statusOf("xsy_inventory_outbound", foreignId)).as("确认没落进状态机").isEqualTo(OUTBOUND_INITIAL);
         assertThat(movementTypes(foreign)).as("一条 SALES_OUT 都没写下").containsExactly("PURCHASE_IN");
         assertThat(quantityOf(foreign)).as("余额一分未动").isEqualByComparingTo(STOCKED);
         assertDataScopeDenied(() -> asRun(keeper, () -> outboundService.cancel(foreignId)));

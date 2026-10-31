@@ -26,7 +26,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOU
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOUND_STATUS_INVALID;
 
 /**
- * 手工出库单可创建和修改草稿，确认时扣减库存并写流水，草稿可取消。确认后的出库记录不能回退或删除历史流水。
+ * 手工出库单新建后处于待出库，可修改、取消或删除；确认时扣减库存并写流水。确认后的出库记录不能回退或删除历史流水。
  */
 @Service
 @RequiredArgsConstructor
@@ -41,10 +41,10 @@ public class InventoryOutboundService {
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     /**
-     * 新建草稿出库单。
+     * 新建出库单（待出库）。
      *
      * <p>
-     * 草稿阶段不校验可用量与单位 —— 那是确认出库时的判断。草稿允许「先录单再补货」，提前卡住反而让录单不可用。
+     * 待出库阶段不校验可用量与单位 —— 那是确认出库时的判断，允许「先录单再补货」。
      *
      * @return 新单 id
      */
@@ -58,7 +58,7 @@ public class InventoryOutboundService {
         InventoryOutboundEntity entity = new InventoryOutboundEntity();
         entity.setOutboundNo(ScmDocumentNumbers.next());
         entity.setWarehouseId(form.getWarehouseId());
-        entity.setStatus(ScmInventoryOutboundStatusEnum.DRAFT.name());
+        entity.setStatus(ScmInventoryOutboundStatusEnum.PENDING.name());
         entity.setRemark(form.getRemark());
         entity.setVersion(0);
         entity.setDeleted(false);
@@ -71,7 +71,7 @@ public class InventoryOutboundService {
     }
 
     /**
-     * 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新）。
+     * 改单：只允许待出库；明细整表替换（逻辑删旧 + 插新）。
      */
     @Transactional(rollbackFor = Exception.class)
     public void update(Long outboundId, InventoryOutboundAddForm form) {
@@ -81,7 +81,7 @@ public class InventoryOutboundService {
         InventoryOutboundEntity locked = lockAndRequire(outboundId);
         // 旧仓与新仓都要授权：只判旧仓等于允许把一张单搬进自己管不着的仓
         warehouseScopeGuard.requireAll(locked.getWarehouseId(), form.getWarehouseId());
-        requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryOutboundStatusEnum.PENDING);
 
         if (inventoryOutboundDao.updateDraft(outboundId, form.getWarehouseId(), form.getRemark(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -94,7 +94,7 @@ public class InventoryOutboundService {
      * 确认出库：写 SALES_OUT 流水并扣减余额，全部在同一事务内。
      *
      * <p>
-     * 先锁单据再锁余额；余额按 {@code (warehouseId, skuId)} 升序处理。明细行的 {@code unitSnapshot} 在此刻按余额记账单位回写 —— 草稿态它为空。
+     * 先锁单据再锁余额；余额按 {@code (warehouseId, skuId)} 升序处理。明细行的 {@code unitSnapshot} 在此刻按余额记账单位回写 —— 待出库态它为空。
      */
     @Transactional(rollbackFor = Exception.class)
     public void confirm(Long outboundId) {
@@ -104,7 +104,7 @@ public class InventoryOutboundService {
         InventoryOutboundEntity locked = lockAndRequire(outboundId);
         // 授权判定取锁到的行上的仓库，不取任何入参：SALES_OUT 流水按这一行记账
         warehouseScopeGuard.require(locked.getWarehouseId());
-        requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryOutboundStatusEnum.PENDING);
 
         List<InventoryOutboundItemVO> items = inventoryOutboundItemDao.listByOutboundId(outboundId);
         if (items == null || items.isEmpty()) {
@@ -126,28 +126,28 @@ public class InventoryOutboundService {
     }
 
     /**
-     * 取消草稿：不产生任何库存影响。
+     * 取消待出库单：不产生任何库存影响。
      */
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long outboundId) {
         String operator = ScmOperator.current();
         InventoryOutboundEntity locked = lockAndRequire(outboundId);
         warehouseScopeGuard.require(locked.getWarehouseId());
-        requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryOutboundStatusEnum.PENDING);
         if (inventoryOutboundDao.markCancelled(outboundId, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
 
     /**
-     * 删除草稿（逻辑删）。已确认的单不可删 —— 它已产生流水，必须留痕。
+     * 删除待出库单（逻辑删）。已确认的单不可删 —— 它已产生流水，必须留痕。
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long outboundId) {
         String operator = ScmOperator.current();
         InventoryOutboundEntity locked = lockAndRequire(outboundId);
         warehouseScopeGuard.require(locked.getWarehouseId());
-        requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryOutboundStatusEnum.PENDING);
         inventoryOutboundItemDao.deleteByOutboundId(outboundId, operator);
         if (inventoryOutboundDao.deleteById(outboundId) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);

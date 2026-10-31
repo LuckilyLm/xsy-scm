@@ -1,4 +1,4 @@
-<!-- 库存出库单：草稿确认后扣减库存并写流水，确认后不可撤销。 -->
+<!-- 库存出库单：待出库确认后扣减库存并写流水，确认后不可撤销。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -59,7 +59,7 @@
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
-              v-if="record.status === 'DRAFT'"
+              v-if="record.status === 'PENDING'"
               type="link"
               size="small"
               @click="onConfirm(record)"
@@ -88,7 +88,7 @@
     </div>
   </a-card>
 
-  <!-- 新建 / 编辑草稿 -->
+  <!-- 新建 / 编辑待出库单 -->
   <a-drawer :open="drawerOpen" :title="form.id ? `编辑出库单 ${form.outboundNo}` : '新建出库单'" :width="scmDrawerWidth('l')" @close="closeDrawer">
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="出库仓库" name="warehouseId">
@@ -125,7 +125,7 @@
     <template #footer>
       <a-space>
         <a-button @click="closeDrawer">取消</a-button>
-        <a-button type="primary" :loading="saving" @click="onSubmit">保存草稿</a-button>
+        <a-button type="primary" :loading="saving" @click="onSubmit">保存</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -156,7 +156,7 @@
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unitSnapshot'">
-          {{ record.unitSnapshot || '（草稿未确认）' }}
+          {{ record.unitSnapshot || '（待出库未确认）' }}
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -218,9 +218,9 @@ const columns = ref<InventoryOutboundColumn[]>([
 ]);
 const scrollX = computed(() => scmColumnsWidth(columns.value));
 
-/** 草稿 = 待处理（橙），已确认 = 已完成（绿），已取消 = 失效（灰）。 */
+/** 待出库 = 待处理（橙），已确认 = 已完成（绿），已取消 = 失效（灰）。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {
-  DRAFT: 'warning',
+  PENDING: 'warning',
   CONFIRMED: 'success',
   CANCELLED: 'neutral',
 };
@@ -245,9 +245,9 @@ const detailItemColumns: TableColumnsType = [
 const canUpdate = computed(() => hasPermission('scm:inventory:outbound:update'));
 const canDelete = computed(() => hasPermission('scm:inventory:outbound:delete'));
 
-/** 只有草稿可写。 */
+/** 只有待出库可写。 */
 function rowActions(row: InventoryOutbound): ScmActionItem[] {
-  const draft = row.status === 'DRAFT';
+  const draft = row.status === 'PENDING';
   return [
     {key: 'edit', label: '编辑', hidden: !(draft && canUpdate.value)},
     {key: 'cancel', label: '取消单据', hidden: !(draft && canUpdate.value)},
@@ -436,10 +436,10 @@ async function onSubmit() {
   try {
     if (form.id) {
       await inventoryOutboundApi.update(form.id, payload);
-      message.success('已保存草稿');
+      message.success('已保存');
     } else {
       await inventoryOutboundApi.create(payload);
-      message.success('已创建草稿');
+      message.success('已创建，待确认出库');
     }
     drawerOpen.value = false;
     queryData();
@@ -507,7 +507,7 @@ function onCancel(record: InventoryOutbound) {
 function onDelete(record: InventoryOutbound) {
   Modal.confirm({
     title: '删除出库单',
-    content: `确认删除草稿「${record.outboundNo}」？已确认的单据不可删除。`,
+    content: `确认删除待出库单「${record.outboundNo}」？已确认的单据不可删除。`,
     okText: '删除',
     okType: 'danger',
     cancelText: '返回',

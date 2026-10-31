@@ -80,7 +80,7 @@ class InventoryFulfillmentPgIT extends ScmW6PgITBase {
         assertThat(outboundItemCount(result.outboundId())).isEqualTo(1);
         assertThat(outboundItemOrderLine(result.outboundId())).isEqualTo(orderItemId);
         assertThat(outboundStatus(result.outboundId()))
-                .as("发车出库直接是 CONFIRMED，不经过 DRAFT").isEqualTo("CONFIRMED");
+                .as("发车出库直接是 CONFIRMED，不经过待出库").isEqualTo("CONFIRMED");
         assertThat(outboundSource(result.outboundId()))
                 .containsEntry("source_document_type", ScmInventorySourceDocumentTypeEnum.DELIVERY_ROUTE.name())
                 .containsEntry("source_document_id", 9001L);

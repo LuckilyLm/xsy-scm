@@ -64,7 +64,7 @@ public class InventoryOutboundController {
     }
 
     /**
-     * 改草稿（仅 DRAFT）。
+     * 改单（仅待出库）。
      */
     @PostMapping("/update/{id}")
     @SaCheckPermission(InventoryPermission.OUTBOUND_UPDATE)
