@@ -836,7 +836,7 @@ public class InventoryCommandService {
             throw new ScmBusinessException(INVENTORY_TRANSFER_SOURCE_BALANCE_MISSING);
         }
 
-        if (fact.stockUnit() != null && !fact.stockUnit().equals(balance.getUnit())) {
+        if (fact.unitSnapshot() != null && !fact.unitSnapshot().equals(balance.getUnit())) {
             throw new ScmBusinessException(INVENTORY_UNIT_MISMATCH);
         }
         String unit = balance.getUnit();
