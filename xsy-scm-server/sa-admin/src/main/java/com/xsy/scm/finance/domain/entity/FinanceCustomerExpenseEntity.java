@@ -14,6 +14,7 @@ public class FinanceCustomerExpenseEntity {
     private Long customerId;
     private String customerNameSnapshot;
     private LocalDate expenseMonth;
+    private BigDecimal goodsCostAmount;
     private BigDecimal taxAmount;
     private BigDecimal serviceAmount;
     private BigDecimal freightAmount;

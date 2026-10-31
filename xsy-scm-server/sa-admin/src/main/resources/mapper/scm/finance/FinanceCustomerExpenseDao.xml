@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.finance.dao.FinanceCustomerExpenseDao">
     <sql id="fields">
         e.id AS expense_id, e.expense_no, e.customer_id, e.customer_name_snapshot AS customer_name,
-        e.expense_month, e.tax_amount, e.service_amount, e.freight_amount, e.commission_amount, e.reason,
+        e.expense_month, e.goods_cost_amount, e.tax_amount, e.service_amount, e.freight_amount, e.commission_amount, e.reason,
         e.created_at, e.created_by, c.seller_id, (v.id IS NOT NULL) AS voided,
         v.reason AS void_reason, v.created_at AS voided_at, v.created_by AS voided_by
     </sql>
@@ -15,8 +15,8 @@
     <select id="nextNumber" resultType="long">SELECT nextval('finance_customer_expense_no_seq')</select>
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO xsy_finance_customer_expense(expense_no, customer_id, customer_name_snapshot, expense_month,
-            tax_amount, service_amount, freight_amount, commission_amount, reason, created_at, created_by)
-        VALUES (#{expenseNo}, #{customerId}, #{customerNameSnapshot}, #{expenseMonth}, #{taxAmount}, #{serviceAmount},
+            goods_cost_amount, tax_amount, service_amount, freight_amount, commission_amount, reason, created_at, created_by)
+        VALUES (#{expenseNo}, #{customerId}, #{customerNameSnapshot}, #{expenseMonth}, #{goodsCostAmount}, #{taxAmount}, #{serviceAmount},
             #{freightAmount}, #{commissionAmount}, #{reason}, #{createdAt}, #{createdBy})
     </insert>
     <select id="find" resultType="com.xsy.scm.finance.domain.vo.FinanceCustomerExpenseVO">

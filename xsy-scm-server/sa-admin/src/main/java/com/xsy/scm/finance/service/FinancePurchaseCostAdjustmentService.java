@@ -47,7 +47,7 @@ public class FinancePurchaseCostAdjustmentService {
         }
         BigDecimal remaining = source.getAmount();
         var targets = entryDao.lockTargets(source.getReceiptItemId(), source.getReceiptId(),
-            source.getPurchaseOrderItemId());
+            source.getPurchaseOrderItemId(), source.getAccountItemId(), source.getAccountId());
         for (var locked : targets) {
             // 等待行锁期间可能新增红字，取得全部锁后用新语句重新读取可冲余额。
             var target = entryDao.capacity(locked.getPayableId(), source.getPurchaseOrderItemId());
@@ -72,6 +72,7 @@ public class FinancePurchaseCostAdjustmentService {
         FinancePurchaseCostEntryEntity entry = new FinancePurchaseCostEntryEntity();
         entry.setAdjustmentId(source.getId());
         entry.setReceiptItemId(source.getReceiptItemId());
+        entry.setAccountItemId(source.getAccountItemId());
         entry.setOriginalPayableId(originalPayableId);
         entry.setAmount(amount);
         entry.setCreatedBy(source.getCreatedBy());

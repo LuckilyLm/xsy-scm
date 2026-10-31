@@ -1,6 +1,7 @@
 <template>
   <a-tabs v-model:active-key="profitView">
-    <a-tab-pane key="gross" tab="销售毛利">
+    <a-tab-pane key="monthly" tab="客户月利润"><CustomerMonthlyProfit v-if="profitView === 'monthly'" /></a-tab-pane>
+    <a-tab-pane key="gross" tab="库存成本毛利">
       <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
         <a-row class="smart-query-form-row">
           <a-form-item label="分析日期"><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>
@@ -117,14 +118,13 @@
         </div>
       </a-card>
     </a-tab-pane>
-    <a-tab-pane key="monthly" tab="客户月利润"><CustomerMonthlyProfit v-if="profitView === 'monthly'" /></a-tab-pane>
   </a-tabs>
 </template>
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import CustomerMonthlyProfit from './report-customer-monthly-profit.vue';
-import {onMounted, reactive, ref} from 'vue';
+import {onMounted, reactive, ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {financeProfitApi} from '/@/api/business/scm/finance-profit-api';
 import type {FinanceProfitDimension, FinanceProfitQuery, FinanceProfitRow, FinanceProfitSummary} from '/@/api/business/scm/finance-profit-api';
@@ -150,7 +150,7 @@ const dimensionOptions: Array<{value: FinanceProfitDimension; label: string}> = 
   {value: 'SELLER', label: '按销售员'},
   {value: 'WAREHOUSE', label: '按仓库'},
 ];
-const profitView = ref('gross');
+const profitView = ref('monthly');
 const dateRange = ref<DateRange>();
 const filters = reactive<Omit<FinanceProfitQuery, 'startDate' | 'endDate' | 'pageNum' | 'pageSize'>>({dimension: 'PRODUCT'});
 const pageNum = ref(1),
@@ -256,6 +256,9 @@ async function exportRows() {
   }
 }
 
+watch(profitView, (view) => {
+  if (view === 'gross') void load();
+});
 onMounted(async () => {
   dateRange.value = defaultDateRange();
   try {
@@ -264,7 +267,7 @@ onMounted(async () => {
   } catch {
     categories.value = [];
   }
-  void load();
+  if (profitView.value === 'gross') void load();
 });
 </script>
 

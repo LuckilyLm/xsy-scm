@@ -14,7 +14,9 @@
       该订单已锁单，修改需具备「锁单后改单」权限；无权限时请新建加单。
     </p>
     <p v-else-if="form.status === 'CONFIRMED'" class="scm-note pending-edit-note">
-      {{ form.dispatchedAt ? '该订单已发车出库，改单需具备「发车后改单」权限。' : '' }}改单按原锁定单价重算金额，不会自动改价；需称重的新增商品请新建加单。
+      {{
+        form.dispatchedAt ? '该订单已发车出库，改单需具备「发车后改单」权限。' : ''
+      }}改单按原锁定单价重算金额，不会自动改价；需称重的新增商品请新建加单。
     </p>
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical" class="app-drawer-form">
@@ -89,7 +91,7 @@
             </a-form-item>
           </a-col>
         </a-row>
-        <ItemTable ref="itemTableRef" :items="form.items" :customer-id="form.customerId" @price="preview" />
+        <ItemTable ref="itemTableRef" :items="form.items" :customer-id="form.customerId" :order-id="form.orderId" @price="preview" />
         <div class="item-actions">
           <a-button :disabled="!form.customerId" @click="pasteOpen = true">整单粘贴</a-button>
           <a-button @click="preview" :loading="pricing">重新解析价格</a-button>

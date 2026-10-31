@@ -520,27 +520,30 @@
     </select>
 
     <sql id="monthlyFacts">
-        <include refid="facts"/>, monthly_profit AS (
-            SELECT dimension_id, MAX(dimension_name) AS dimension_name, SUM(revenue_amount) AS revenue_amount,
-                SUM(sales_cost_amount) AS sales_cost_amount, SUM(gift_cost_amount) AS gift_cost_amount,
-                SUM(cost_missing_count) AS cost_missing_count
-            FROM facts GROUP BY dimension_id
+        WITH monthly_revenue AS (
+            SELECT r.customer_id, SUM(CASE WHEN r.entry_type = 'NORMAL' THEN r.amount ELSE -r.amount END) AS revenue_amount
+            FROM xsy_finance_receivable r
+            WHERE NOT r.deleted AND r.entry_type IN ('NORMAL', 'RED')
+                AND r.event_at &gt;= #{startAt} AND r.event_at &lt; #{endAt}
+            GROUP BY r.customer_id
         ), monthly_expenses AS (
-            SELECT expense.customer_id, SUM(expense.tax_amount) AS tax_amount,
-                SUM(expense.service_amount) AS service_amount, SUM(expense.freight_amount) AS freight_amount,
-                SUM(expense.commission_amount) AS commission_amount
+            SELECT expense.customer_id, SUM(expense.goods_cost_amount) AS goods_cost_amount,
+                SUM(expense.tax_amount) AS tax_amount, SUM(expense.service_amount) AS service_amount,
+                SUM(expense.freight_amount) AS freight_amount, SUM(expense.commission_amount) AS commission_amount
             FROM xsy_finance_customer_expense expense
             WHERE expense.expense_month = #{query.startDate}
                 AND NOT EXISTS (SELECT 1 FROM xsy_finance_customer_expense_void v WHERE v.expense_id = expense.id)
             GROUP BY expense.customer_id
         ), monthly_base AS (
-            SELECT c.id AS dimension_id, COALESCE(p.dimension_name, c.name) AS dimension_name,
-                COALESCE(p.revenue_amount, 0) AS revenue_amount, COALESCE(p.sales_cost_amount, 0) AS sales_cost_amount,
-                COALESCE(p.gift_cost_amount, 0) AS gift_cost_amount, COALESCE(p.cost_missing_count, 0) AS cost_missing_count,
+            SELECT c.id AS dimension_id, c.name AS dimension_name, COALESCE(p.revenue_amount, 0) AS revenue_amount,
+                CASE WHEN p.customer_id IS NOT NULL AND e.goods_cost_amount IS NULL THEN NULL
+                    ELSE COALESCE(e.goods_cost_amount, 0) END AS sales_cost_amount,
+                0::NUMERIC AS gift_cost_amount,
+                CASE WHEN p.customer_id IS NOT NULL AND e.goods_cost_amount IS NULL THEN 1::BIGINT ELSE 0::BIGINT END AS cost_missing_count,
                 COALESCE(e.tax_amount, 0) AS tax_amount, COALESCE(e.service_amount, 0) AS service_amount,
                 COALESCE(e.freight_amount, 0) AS freight_amount, COALESCE(e.commission_amount, 0) AS commission_amount
-            FROM monthly_profit p FULL JOIN monthly_expenses e ON e.customer_id = p.dimension_id
-            JOIN xsy_customer c ON c.id = COALESCE(p.dimension_id, e.customer_id) AND c.deleted = FALSE
+            FROM monthly_revenue p FULL JOIN monthly_expenses e ON e.customer_id = p.customer_id
+            JOIN xsy_customer c ON c.id = COALESCE(p.customer_id, e.customer_id) AND NOT c.deleted
             WHERE TRUE
             <choose>
                 <when test="scope != null and scope.customerSellerScope.all"/>
@@ -550,27 +553,15 @@
                 </when>
                 <otherwise>AND FALSE</otherwise>
             </choose>
-            <choose>
-                <when test="scope != null and scope.orderSellerScope.all"/>
-                <when test="scope != null and !scope.orderSellerScope.empty">
-                    AND c.seller_id IN
-                    <foreach collection="scope.orderSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
-                </when>
-                <otherwise>AND FALSE</otherwise>
-            </choose>
+            <!-- 整月实际成本不能与局部订单收入相减。DAO 同样失败关闭，避免绕过服务误用。 -->
+            <if test="scope == null or !scope.orderSellerScope.all or !scope.costVisible">AND FALSE</if>
             <if test="query.customerId != null">AND c.id = #{query.customerId}</if>
-            <if test="query.keyword != null and query.keyword != ''">AND c.name ILIKE CONCAT('%', #{query.keyword}, '%')</if>
-            UNION ALL
-            SELECT p.dimension_id, p.dimension_name, p.revenue_amount, p.sales_cost_amount,
-                p.gift_cost_amount, p.cost_missing_count, 0::NUMERIC, 0::NUMERIC, 0::NUMERIC, 0::NUMERIC
-            FROM monthly_profit p WHERE p.dimension_id IS NULL
         ), monthly_rows AS (
             SELECT *, tax_amount + service_amount + freight_amount + commission_amount AS expense_amount,
                 CASE WHEN cost_missing_count &gt; 0 THEN NULL
-                    ELSE revenue_amount - sales_cost_amount - gift_cost_amount END AS gross_profit,
+                    ELSE revenue_amount - sales_cost_amount END AS gross_profit,
                 CASE WHEN cost_missing_count &gt; 0 THEN NULL
-                    ELSE revenue_amount - sales_cost_amount - gift_cost_amount
-                        - tax_amount - service_amount - freight_amount - commission_amount END AS net_profit
+                    ELSE revenue_amount - sales_cost_amount - tax_amount - service_amount - freight_amount - commission_amount END AS net_profit
             FROM monthly_base
         )
     </sql>
@@ -583,7 +574,7 @@
     <select id="monthlySummary" resultType="com.xsy.scm.report.domain.vo.ScmCustomerMonthlyProfitVO">
         <include refid="monthlyFacts"/>
         SELECT COALESCE(SUM(revenue_amount), 0) AS revenue_amount,
-            COALESCE(SUM(sales_cost_amount), 0) AS sales_cost_amount,
+            CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL ELSE COALESCE(SUM(sales_cost_amount), 0) END AS sales_cost_amount,
             COALESCE(SUM(gift_cost_amount), 0) AS gift_cost_amount,
             COALESCE(SUM(tax_amount), 0) AS tax_amount, COALESCE(SUM(service_amount), 0) AS service_amount,
             COALESCE(SUM(freight_amount), 0) AS freight_amount, COALESCE(SUM(commission_amount), 0) AS commission_amount,

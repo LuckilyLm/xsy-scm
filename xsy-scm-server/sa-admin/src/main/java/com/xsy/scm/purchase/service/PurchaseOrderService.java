@@ -9,6 +9,7 @@ import com.xsy.scm.purchase.constant.ScmPurchaseIdempotencyResourceTypeEnum;
 import com.xsy.scm.purchase.dao.PurchaseDemandAllocationDao;
 import com.xsy.scm.purchase.dao.PurchaseOperationLogDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderDao;
+import com.xsy.scm.purchase.dao.PurchaseAccountDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderItemDao;
 import com.xsy.scm.purchase.domain.entity.PurchaseDemandAllocationEntity;
 import com.xsy.scm.purchase.domain.entity.PurchaseDemandEntity;
@@ -69,6 +70,7 @@ public class PurchaseOrderService {
     private static final String SCOPE_CREATE = "PURCHASE_ORDER_CREATE";
 
     private final PurchaseOrderDao purchaseOrderDao;
+    private final PurchaseAccountDao purchaseAccountDao;
 
     private final PurchaseOrderItemDao purchaseOrderItemDao;
 
@@ -305,6 +307,9 @@ public class PurchaseOrderService {
 
         PurchaseOrderEntity order = lockOrder(form.getId());
         version(order.getVersion(), form.getVersion());
+        if (purchaseAccountDao.accountId(order.getId()) != null) {
+            throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
+        }
         PurchaseOrderStateMachine.transition(order.getStatus(), ScmPurchaseStatusEnum.CANCELLED.name());
         PurchaseOrderValidator.reason(form.getCancelReason(), PURCHASE_CANCEL_REASON_REQUIRED);
 

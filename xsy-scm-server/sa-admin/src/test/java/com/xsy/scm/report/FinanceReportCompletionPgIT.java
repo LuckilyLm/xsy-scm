@@ -125,18 +125,72 @@ class FinanceReportCompletionPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    void oneConfirmationPostsStockAndPayableAndPriceCorrectionsOnlyAppend() {
+    void monthlyActualCostDoesNotDependOnStockAndDistinguishesMissingFromZero() {
+        Long customer = newCustomer();
+        Long sku = newOnShelfSku("MONTH-COST");
+        Long order = confirmedSalesOrder(customer, sku, "1.0000", "1000.0000");
+        // 用不可变应收事实指定月内确认收入；不构造任何库存成本。
+        jdbc.update("INSERT INTO xsy_finance_receivable(receivable_no, source_type, source_id, order_id, customer_id,"
+            + " customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at)"
+            + " VALUES (?, 'SALES_ORDER', ?, ?, ?, '客户', ?, '客户', 'NORMAL', 1000, ?)",
+            prefix + "-manual-month", order, order, customer, customer, OffsetDateTime.now());
+        evictMybatisCache();
+        var query = monthlyQuery(customer);
+        assertThat(monthlyProfitService.summary(query).getRevenueAmount()).isEqualByComparingTo("1000");
+        assertThat(monthlyProfitService.summary(query).getNetProfit()).isNull();
+        assertThat(monthlyProfitService.summary(query).getSalesCostAmount()).isNull();
+        var form = new FinanceCustomerExpenseForm.Add();
+        form.setCustomerId(customer);
+        form.setExpenseMonth(month());
+        form.setGoodsCostAmount("100.0000");
+        form.setTaxAmount("10.0000");
+        form.setServiceAmount("0.0000");
+        form.setFreightAmount("0.0000");
+        form.setCommissionAmount("0.0000");
+        form.setReason("按客户实际成本登记");
+        var first = expenseService.add(form, prefix + ":goods");
+        assertThat(monthlyProfitService.summary(query).getNetProfit()).isEqualByComparingTo("890");
+        var range = ScmReportTimeRangeResolver.resolve(query);
+        assertThat(profitDao.monthlySummary(range.startAt(), range.endAt(), query,
+            scope(ScmValueScope.none(), ScmValueScope.all(), ScmValueScope.all())).getNetProfit()).isEqualByComparingTo("890");
+        assertThat(profitDao.monthlySummary(range.startAt(), range.endAt(), query,
+            scope(ScmValueScope.all(), ScmValueScope.none(), ScmValueScope.all())).getRevenueAmount()).isEqualByComparingTo("0");
+        var correction = new FinanceCustomerExpenseForm.Void();
+        correction.setExpenseId(first.getExpenseId());
+        correction.setReason("原成本登记错误");
+        expenseService.voidExpense(correction, prefix + ":goods-void");
+        assertThat(monthlyProfitService.summary(query).getNetProfit()).isNull();
+        form.setGoodsCostAmount("0.0000");
+        form.setTaxAmount("0.0000");
+        form.setReason("核实为零成本");
+        expenseService.add(form, prefix + ":zero-cost");
+        assertThat(monthlyProfitService.summary(query).getCostMissingCount()).isZero();
+        assertThat(monthlyProfitService.summary(query).getNetProfit()).isEqualByComparingTo("1000");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_movement WHERE sku_id = ?", Integer.class, sku)).isZero();
+    }
+
+    @Test
+    void oneConfirmationPostsPayableWithoutStockAndPriceCorrectionsOnlyAppend() {
         Long skuId = newOnShelfSku("FIN-CONFIRM");
         PurchaseOrderVO order = submittedPurchase(skuId, "5.0000");
         var form = confirmationForm(order);
         var receipt = confirmationService.confirm(form, prefix + ":confirm");
         assertThat(confirmationService.confirm(form, prefix + ":confirm").getId()).isEqualTo(receipt.getId());
-        assertThat(balanceRow(warehouseId, skuId).getQuantity()).isEqualByComparingTo("10.0000");
+        assertThat(balanceRow(warehouseId, skuId)).isNull();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_purchase_receipt WHERE purchase_order_id = ?",
+            Integer.class, order.getId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_movement WHERE sku_id = ?",
+            Integer.class, skuId)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_purchase_account WHERE purchase_order_id = ?",
+            Integer.class, order.getId())).isEqualTo(1);
+        assertThatThrownBy(() -> confirmationService.confirm(form, prefix + ":duplicate")).isInstanceOf(com.xsy.scm.common.exception.ScmBusinessException.class);
+        assertThatThrownBy(() -> submittedOrderReceipt(order.getId())).isInstanceOf(com.xsy.scm.common.exception.ScmBusinessException.class);
         assertThat(payableNet(order.getId())).isEqualByComparingTo("50.0000");
+        assertThat(purchaseQueryService.orderDetail(order.getId()).getStatus()).isEqualTo("ACCOUNTED");
 
         var source = costAdjustmentService.options(order.getId()).getFirst();
         PurchaseCostAdjustmentForm adjustment = new PurchaseCostAdjustmentForm();
-        adjustment.setReceiptItemId(source.getReceiptItemId());
+        adjustment.setAccountItemId(source.getAccountItemId());
         adjustment.setExpectedPrice("5.0000");
         adjustment.setNewPrice("6.0000");
         adjustment.setReason("供应商对账调增");
@@ -151,13 +205,16 @@ class FinanceReportCompletionPgIT extends ScmW6PgITBase {
         costAdjustmentService.add(adjustment, prefix + ":decrease");
         assertThat(payableNet(order.getId())).isEqualByComparingTo("0.0000");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_finance_purchase_cost_entry WHERE original_payable_id IS NOT NULL"
-            + " AND adjustment_id = (SELECT max(id) FROM xsy_purchase_cost_adjustment WHERE receipt_item_id = ?)",
-            Integer.class, source.getReceiptItemId())).isEqualTo(2);
-        assertThat(balanceRow(warehouseId, skuId).getAvgCost()).isEqualByComparingTo("5.0000");
+            + " AND adjustment_id = (SELECT max(id) FROM xsy_purchase_cost_adjustment WHERE account_item_id = ?)",
+            Integer.class, source.getAccountItemId())).isEqualTo(2);
+        assertThat(balanceRow(warehouseId, skuId)).isNull();
+        assertThat(jdbc.queryForObject("SELECT unit_price FROM xsy_purchase_account_item WHERE id = ?",
+            BigDecimal.class, source.getAccountItemId())).isEqualByComparingTo("5.0000");
         assertThat(jdbc.queryForObject("SELECT purchase_price FROM xsy_purchase_order_item WHERE id = ?",
             BigDecimal.class, source.getPurchaseOrderItemId())).isEqualByComparingTo("5.0000");
-        assertThat(jdbc.queryForObject("SELECT unit_cost FROM xsy_inventory_movement WHERE movement_type = 'PURCHASE_IN'"
-            + " AND source_document_item_id = ?", BigDecimal.class, source.getReceiptItemId())).isEqualByComparingTo("5.0000");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_movement WHERE sku_id = ?",
+            Integer.class, skuId)).isZero();
+        expectSqlFailure("UPDATE xsy_purchase_account_item SET unit_price = 1 WHERE id = ?", source.getAccountItemId());
 
         var profit = profitQuery();
         profit.setSkuId(skuId);
@@ -273,7 +330,10 @@ class FinanceReportCompletionPgIT extends ScmW6PgITBase {
     }
 
     private PurchaseReceiptVO confirmPurchase(Long skuId, String price) {
-        return confirmationService.confirm(confirmationForm(submittedPurchase(skuId, price)), prefix + ":c" + SOURCE_IDS.incrementAndGet());
+        // 库存成本历史用例仍显式走原收货链；采购确认不再隐式补库存。
+        var order = submittedPurchase(skuId, price);
+        var receipt = submittedOrderReceipt(order.getId());
+        return confirmReceipt(receipt.getId(), "10.0000");
     }
 
     private PurchaseFinanceConfirmForm confirmationForm(PurchaseOrderVO order) {

@@ -54,7 +54,7 @@
     <!-- ============ 采购口径片段：只认提交后的采购事实 ============ -->
     <sql id="purchaseSubmitted">
         o.deleted = FALSE
-            AND o.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED')
+            AND o.status IN ('SUBMITTED', 'ACCOUNTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED')
         <if test="query.status != null and query.status != ''">AND o.status = #{query.status}</if>
         AND o.submitted_at &gt;= #{startAt}
             AND o.submitted_at &lt; #{endAt}
@@ -204,7 +204,7 @@
             r.completed_at &lt; #{endAt} GROUP BY 1) rf ON rf.day = CAST(d.day AS date)
         LEFT JOIN (SELECT (o2.submitted_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
             SUM(o2.total_amount) AS purchase_amount FROM xsy_purchase_order o2 WHERE o2.deleted = FALSE AND
-            o2.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED') AND
+            o2.status IN ('SUBMITTED', 'ACCOUNTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED') AND
             o2.submitted_at &gt;= #{startAt} AND o2.submitted_at &lt; #{endAt}
         <if test="query.warehouseId != null">AND o2.warehouse_id = #{query.warehouseId}</if>
         <if test="scope != null and scope.all == false">

@@ -110,6 +110,8 @@ export const SCM_FINANCE_SOURCE_TYPE_ENUM: SmartEnum<string> = {
 export const SCM_FINANCE_ITEM_SOURCE_TYPE_ENUM: SmartEnum<string> = {
   INVENTORY_OUTBOUND_ITEM: {value: 'INVENTORY_OUTBOUND_ITEM', desc: '库存出库明细'},
   ORDER_RETURN_ITEM: {value: 'ORDER_RETURN_ITEM', desc: '销售退货明细'},
+  PURCHASE_ACCOUNT: {value: 'PURCHASE_ACCOUNT', desc: '采购确认'},
+  PURCHASE_ACCOUNT_ITEM: {value: 'PURCHASE_ACCOUNT_ITEM', desc: '采购确认明细'},
   PURCHASE_RECEIPT_ITEM: {value: 'PURCHASE_RECEIPT_ITEM', desc: '采购收货明细'},
   PURCHASE_COST_ADJUSTMENT: {value: 'PURCHASE_COST_ADJUSTMENT', desc: '采购价差更正'},
   MANUAL: {value: 'MANUAL', desc: '手工登记'},

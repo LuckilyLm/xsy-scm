@@ -50,4 +50,7 @@
         SELECT count(*) FROM xsy_trace_inspection_report r WHERE r.id = #{reportId}
         <include refid="com.xsy.scm.trace.dao.TraceInspectionReportDao.scope"/>
     </select>
+    <select id="countInspectionPhoto" resultType="int">
+        SELECT count(*) FROM xsy_trace_inspection_report WHERE id = #{reportId} AND lot_id IS NULL AND NOT removed
+    </select>
 </mapper>

@@ -126,7 +126,7 @@ public enum FinanceErrorCode implements ScmErrorCode {
     POSTING_REFUND_STATUS_INVALID(41191, "返款状态只能是未返款、部分返款或已返款"),
 
     EXPENSE_NOT_FOUND(41290, "客户或费用记录不存在"),
-    EXPENSE_AMOUNT_INVALID(41291, "费用金额不能为负，且合计必须大于0"),
+    EXPENSE_AMOUNT_INVALID(41291, "成本费用不能为负；请登记实际商品成本或至少一项费用"),
     EXPENSE_MONTH_INVALID(41292, "请选择有效的费用月份"),
     EXPENSE_ALREADY_VOIDED(41293, "该费用记录已作废");
 

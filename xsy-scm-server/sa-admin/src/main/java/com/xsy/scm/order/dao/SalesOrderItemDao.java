@@ -27,5 +27,5 @@ public interface SalesOrderItemDao extends BaseMapper<SalesOrderItemEntity> {
      * N 张订单而非行数。
      */
     List<OrderRecentPriceVO> recentPrices(@Param("customerId") Long customerId, @Param("skuId") Long skuId,
-        @Param("limit") int limit);
+        @Param("limit") int limit, @Param("scope") com.xsy.scm.common.scope.ScmValueScope scope);
 }

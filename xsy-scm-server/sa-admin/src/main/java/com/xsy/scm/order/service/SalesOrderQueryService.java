@@ -174,7 +174,7 @@ public class SalesOrderQueryService {
     public List<OrderRecentPriceVO> recentPrices(Long customerId, Long skuId, int limit) {
         customerService.requireInCurrentScope(customerId);
         int n = Math.min(Math.max(limit, RECENT_PRICE_MIN_LIMIT), RECENT_PRICE_MAX_LIMIT);
-        return salesOrderItemDao.recentPrices(customerId, skuId, n);
+        return salesOrderItemDao.recentPrices(customerId, skuId, n, dataScopeService.resolve().getOrderSellerScope());
     }
 
     /**

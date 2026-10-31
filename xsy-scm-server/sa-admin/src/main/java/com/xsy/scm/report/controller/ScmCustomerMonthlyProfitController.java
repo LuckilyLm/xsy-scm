@@ -29,10 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ScmCustomerMonthlyProfitController {
     private static final List<Column> COLUMNS = List.of(new Column("dimensionName", "客户名称"),
-        new Column("revenueAmount", "销售收入"), new Column("salesCostAmount", "商品销售成本"),
-        new Column("giftCostAmount", "赠品成本"), new Column("grossProfit", "销售毛利"), new Column("taxAmount", "税费"),
-        new Column("serviceAmount", "服务费"), new Column("freightAmount", "运费"), new Column("commissionAmount", "扣点金额"),
-        new Column("expenseAmount", "费用合计"), new Column("netProfit", "扣费后利润"),
+        new Column("revenueAmount", "销售收入"), new Column("salesCostAmount", "实际商品成本"), new Column("grossProfit", "销售毛利"),
+        new Column("taxAmount", "税费"), new Column("serviceAmount", "服务费"), new Column("freightAmount", "运费"),
+        new Column("commissionAmount", "扣点金额"), new Column("expenseAmount", "费用合计"), new Column("netProfit", "扣费后利润"),
         new Column("costMissingCount", "待确认成本数"));
     private final ScmCustomerMonthlyProfitService profitService;
 
@@ -69,9 +68,9 @@ public class ScmCustomerMonthlyProfitController {
         var titles = COLUMNS.stream().map(Column::title).toList();
         List<List<Object>> rows = profitService.export(form).stream()
             .map(row -> ScmReportExcel.row(titles, row.getDimensionName(), row.getRevenueAmount(),
-                row.getSalesCostAmount(), row.getGiftCostAmount(), row.getGrossProfit(), row.getTaxAmount(),
-                row.getServiceAmount(), row.getFreightAmount(), row.getCommissionAmount(), row.getExpenseAmount(),
-                row.getNetProfit(), row.getCostMissingCount()))
+                row.getSalesCostAmount(), row.getGrossProfit(), row.getTaxAmount(), row.getServiceAmount(),
+                row.getFreightAmount(), row.getCommissionAmount(), row.getExpenseAmount(), row.getNetProfit(),
+                row.getCostMissingCount()))
             .toList();
         ScmExportColumnSelection.writeSelected(response, "客户月利润.xlsx", "客户月利润", selection, rows);
     }

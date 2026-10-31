@@ -73,7 +73,8 @@ public class AdminFileAccessIdentity implements FileAccessIdentity {
             // 批次检测报告随包装码查看权：批次在召回与追溯里出现的地方都能读到报告。
             case LOT_INSPECTION -> StpUtil.hasPermission("scm:inventory:unit:query")
                     && visibilityDao.countTraceLot(bizId) > 0;
-            case TRACE_INSPECTION_REPORT -> (StpUtil.hasPermission(TracePermission.UNIT_QUERY)
+            case TRACE_INSPECTION_REPORT -> (StpUtil.hasPermission(TracePermission.PHOTO_QUERY)
+                    && visibilityDao.countInspectionPhoto(bizId) > 0) || (StpUtil.hasPermission(TracePermission.UNIT_QUERY)
                     || StpUtil.hasPermission(TracePermission.INSPECTION_MANAGE))
                     && visibilityDao.countVisibleInspectionReport(bizId,
                             dataScopeService.resolve().getWarehouseScope()) > 0;

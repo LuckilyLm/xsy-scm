@@ -9,7 +9,7 @@
     @cancel="requestId++"
   >
     <p class="scm-note">
-      按已确认的收货明细登记价差，更正计入当期应付与采购成本调整。原采购价、库存流水和历史报表保持原值；未归属客户的价差不自动分摊。
+      按已确认的采购明细登记价差，更正计入当期应付与采购成本调整。原采购价、库存流水和历史报表保持原值；未归属客户的价差不自动分摊。
     </p>
     <a-alert v-if="error" :message="error" type="error" show-icon
       ><template #action><a-button @click="load">重试</a-button></template></a-alert
@@ -17,14 +17,15 @@
     <a-table
       :columns="sourceColumns"
       :data-source="sources"
-      row-key="receiptItemId"
+      :row-key="(row: PurchaseCostAdjustment) => (row.accountItemId != null ? `ACCOUNT:${row.accountItemId}` : `RECEIPT:${row.receiptItemId}`)"
       :loading="loading"
       size="small"
       :pagination="false"
       :scroll="{x: scmColumnsWidth(sourceColumns)}"
     >
       <template #bodyCell="{column, record}">
-        <span v-if="column.dataIndex === 'quantity'" class="scm-quantity">{{ quantity(record.quantity) }}</span>
+        <span v-if="column.dataIndex === 'sourceNo'">{{ record.accountNo || record.receiptNo }}</span>
+        <span v-else-if="column.dataIndex === 'quantity'" class="scm-quantity">{{ quantity(record.quantity) }}</span>
         <span v-else-if="column.dataIndex === 'previousPrice'" class="scm-money">{{ price(record.previousPrice) }}</span>
         <template v-else-if="column.dataIndex === 'action'"
           ><a-button type="link" size="small" @click="openEdit(record)">更正单价</a-button></template
@@ -58,7 +59,7 @@
     @ok="submit"
   >
     <p v-if="target" class="scm-note">
-      {{ target.productNameSnapshot }}，实收 {{ quantity(target.quantity) }} {{ target.unitSnapshot }}，当前结算单价
+      {{ target.productNameSnapshot }}，实际采购 {{ quantity(target.quantity) }} {{ target.unitSnapshot }}，当前结算单价
       {{ price(target.previousPrice) }}。
     </p>
     <a-form ref="formRef" :model="form" layout="vertical" :disabled="saving">
@@ -95,10 +96,10 @@ const form = reactive({newPrice: '', reason: ''}),
   formRef = ref<FormInstance>();
 let requestId = 0;
 const sourceColumns: TableColumnsType<PurchaseCostAdjustment> = [
-  {title: '收货单号', dataIndex: 'receiptNo', width: 190},
+  {title: '确认单号', dataIndex: 'sourceNo', width: 190},
   {title: '商品名称', dataIndex: 'productNameSnapshot', width: 180},
   {title: '单位', dataIndex: 'unitSnapshot', width: 76, align: 'center'},
-  {title: '实收数量', dataIndex: 'quantity', width: 120, align: 'right'},
+  {title: '实际采购数量', dataIndex: 'quantity', width: 120, align: 'right'},
   {title: '当前结算单价', dataIndex: 'previousPrice', width: 144, align: 'right'},
   {title: '操作', dataIndex: 'action', width: 100, align: 'center', fixed: 'right'},
 ];
@@ -164,6 +165,7 @@ async function submit() {
   try {
     await purchaseOrderApi.costAdjustmentAdd({
       receiptItemId: target.value.receiptItemId,
+      accountItemId: target.value.accountItemId,
       previousAdjustmentId: target.value.previousAdjustmentId,
       expectedPrice: fixed(target.value.previousPrice),
       newPrice: fixed(form.newPrice),

@@ -34,6 +34,7 @@ public class OrderReturnPriceService {
     private static final int RECENT_ORDER_LIMIT = 20;
 
     private final SalesOrderItemDao salesOrderItemDao;
+    private final com.xsy.scm.common.scope.ScmDataScopeService dataScopeService;
     private final ProductSkuOptionDao productSkuOptionDao;
     private final PriceResolver priceResolver;
 
@@ -109,8 +110,9 @@ public class OrderReturnPriceService {
     }
 
     private ReturnPrice recentTransaction(Long customerId, Long skuId, String saleUnit) {
-        return salesOrderItemDao.recentPrices(customerId, skuId, RECENT_ORDER_LIMIT).stream()
-            .filter(row -> saleUnit.equals(row.getSaleUnit()) && row.getUnitPrice() != null).findFirst()
+        return salesOrderItemDao
+            .recentPrices(customerId, skuId, RECENT_ORDER_LIMIT, dataScopeService.resolve().getOrderSellerScope())
+            .stream().filter(row -> saleUnit.equals(row.getSaleUnit()) && row.getUnitPrice() != null).findFirst()
             .map(row -> new ReturnPrice(row.getUnitPrice(), ScmOrderReturnPriceSourceEnum.RECENT_TRANSACTION.name()))
             .orElse(null);
     }

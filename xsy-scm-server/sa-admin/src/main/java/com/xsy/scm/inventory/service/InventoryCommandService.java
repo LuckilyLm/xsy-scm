@@ -338,7 +338,7 @@ public class InventoryCommandService {
         boolean allowNegative = Boolean.TRUE.equals(warehouse.getAllowNegativeStock());
 
         // 未开启负库存时，没有余额行 = 从未入库 = 无货可出。
-        // 开启后允许先发货后补入库：用出库行的记账单位建零余额行，再扣成负数。
+        // 不要求采购入库：用出库行的记账单位建零余额行，再记录实际发货数量。
         InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
             if (!allowNegative || fact.stockUnit() == null) {
@@ -352,14 +352,17 @@ public class InventoryCommandService {
             }
         }
 
+        if (fact.stockUnit() != null && !fact.stockUnit().equals(balance.getUnit())) {
+            throw new ScmBusinessException(INVENTORY_UNIT_MISMATCH);
+        }
         String unit = balance.getUnit();
 
         // 持有行锁后再算可用量，避免并发下读到过期数据。
         BigDecimal onHand = balance.getQuantity();
         BigDecimal reserved = balance.getReservedQuantity() == null ? BigDecimal.ZERO : balance.getReservedQuantity();
         BigDecimal available = onHand.subtract(reserved);
-        // 负库存只放行“没有预留”的余额；已有预留的货仍不能被本单吃掉，否则会把别人的库存占成负数。
-        if (available.compareTo(fact.quantity()) < 0 && (!allowNegative || reserved.signum() > 0)) {
+        // 允许负库存的仓库不以账面余额拦截发货；其他订单的预留事实原样保留。
+        if (available.compareTo(fact.quantity()) < 0 && !allowNegative) {
             throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
         }
 
@@ -833,6 +836,9 @@ public class InventoryCommandService {
             throw new ScmBusinessException(INVENTORY_TRANSFER_SOURCE_BALANCE_MISSING);
         }
 
+        if (fact.stockUnit() != null && !fact.stockUnit().equals(balance.getUnit())) {
+            throw new ScmBusinessException(INVENTORY_UNIT_MISMATCH);
+        }
         String unit = balance.getUnit();
 
         // 持有行锁后再算可用量，避免并发下读到过期数据。

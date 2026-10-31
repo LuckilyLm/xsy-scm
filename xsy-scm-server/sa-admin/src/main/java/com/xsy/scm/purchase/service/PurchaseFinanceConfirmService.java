@@ -1,11 +1,18 @@
 package com.xsy.scm.purchase.service;
 
 import java.util.ArrayList;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.OffsetDateTime;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
+import com.xsy.scm.purchase.dao.PurchaseAccountDao;
+import com.xsy.scm.purchase.domain.vo.PurchaseAccountVO;
+import com.xsy.scm.finance.service.FinancePayableService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeException;
@@ -13,17 +20,13 @@ import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.purchase.constant.PurchaseErrorCode;
+import com.xsy.scm.purchase.constant.ScmPurchaseIdempotencyResourceTypeEnum;
 import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
-import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
-import com.xsy.scm.purchase.constant.ScmWeighingSourceEnum;
 import com.xsy.scm.purchase.dao.PurchaseOrderDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderItemDao;
 import com.xsy.scm.purchase.domain.form.PurchaseFinanceConfirmForm;
-import com.xsy.scm.purchase.domain.form.PurchaseReceiptConfirmForm;
-import com.xsy.scm.purchase.domain.form.PurchaseReceiptCreateForm;
-import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
-import com.xsy.scm.purchase.manager.PurchaseReceiptQuantityCalculator;
 import com.xsy.scm.purchase.support.PurchaseOwnerResolver;
+import com.xsy.scm.purchase.manager.PurchaseOrderStateMachine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,10 +40,11 @@ public class PurchaseFinanceConfirmService {
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
     private final ScmDataScopeService dataScopeService;
     private final PurchaseIdempotencyService idempotencyService;
-    private final PurchaseReceiptService receiptService;
+    private final PurchaseAccountDao accountDao;
+    private final FinancePayableService payableService;
 
     @Transactional(rollbackFor = Exception.class)
-    public PurchaseReceiptVO confirm(PurchaseFinanceConfirmForm form, String key) {
+    public PurchaseAccountVO confirm(PurchaseFinanceConfirmForm form, String key) {
         var order = orderDao.lock(form.getPurchaseOrderId());
         if (order == null) {
             throw new ScmBusinessException(PurchaseErrorCode.PURCHASE_ORDER_NOT_FOUND);
@@ -50,15 +54,16 @@ public class PurchaseFinanceConfirmService {
         if (!dataScopeService.resolve().isCostVisible()) {
             throw new ScmDataScopeException();
         }
-        var claim = idempotencyService.claim("PURCHASE_FINANCE_CONFIRM:" + order.getId(), key, form);
+        var claim = idempotencyService.claim("PURCHASE_ACCOUNT_CONFIRM:" + order.getId(), key, form);
         if (claim.replay()) {
-            return idempotencyService.replay(claim, PurchaseReceiptVO.class);
+            return idempotencyService.replay(claim, PurchaseAccountVO.class);
         }
         if (!Objects.equals(order.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(ScmCommonErrorCode.VERSION_CONFLICT);
         }
-        // 已经分批收货的采购仍走正式收货页，避免用整单快捷确认重复记录已经收到的数量。
-        if (!ScmPurchaseStatusEnum.SUBMITTED.name().equals(order.getStatus())) {
+        // 新确认与历史收货共用采购单行锁，防止同一采购通过两个入口重复挂账。
+        if (!ScmPurchaseStatusEnum.SUBMITTED.name().equals(order.getStatus())
+            || accountDao.accountId(order.getId()) != null || accountDao.hasConfirmedReceipt(order.getId())) {
             throw new ScmBusinessException(PurchaseErrorCode.PURCHASE_RECEIPT_ORDER_STATE_INVALID);
         }
         var lines = orderItemDao.lockByOrderId(order.getId());
@@ -84,33 +89,52 @@ public class PurchaseFinanceConfirmService {
                 .compareTo(ScmDecimalStrings.parseScale4Required(input.getExpectedPrice())) != 0) {
                 throw new ScmBusinessException(ScmCommonErrorCode.VERSION_CONFLICT);
             }
-            PurchaseReceiptQuantityCalculator.declared(input.getQuantity());
-        }
-        PurchaseReceiptCreateForm create = new PurchaseReceiptCreateForm();
-        create.setPurchaseOrderId(order.getId());
-        create.setReceiptMode(ScmReceiptModeEnum.DIRECT.name());
-        create.setRemark(form.getRemark());
-        PurchaseReceiptVO receipt = receiptService.create(create, key);
-        PurchaseReceiptConfirmForm confirmation = new PurchaseReceiptConfirmForm();
-        confirmation.setId(receipt.getId());
-        confirmation.setVersion(receipt.getVersion());
-        var receiptInputs = new ArrayList<PurchaseReceiptConfirmForm.Item>();
-        for (var line : receipt.getItems()) {
-            var input = inputs.get(line.getPurchaseOrderItemId());
-            PurchaseReceiptConfirmForm.Item confirmed = new PurchaseReceiptConfirmForm.Item();
-            confirmed.setReceiptItemId(line.getId());
-            confirmed.setVersion(line.getVersion());
-            confirmed.setReceivedQuantity(input.getQuantity());
-            if (ScmProductTypeEnum.NON_STANDARD.name().equals(line.getProductType())) {
-                confirmed.setActualWeight(input.getQuantity());
-                confirmed.setWeightSource(ScmWeighingSourceEnum.MANUAL.name());
+            if (ScmDecimalStrings.parseScale4Required(input.getQuantity()).signum() < 0) {
+                throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
             }
-            confirmed.setLots(input.getLots());
-            receiptInputs.add(confirmed);
         }
-        confirmation.setItems(receiptInputs);
-        PurchaseReceiptVO result = receiptService.confirm(confirmation, key);
-        idempotencyService.complete(claim, "PURCHASE_RECEIPT", result.getId(), result);
-        return result;
+        PurchaseAccountVO account = new PurchaseAccountVO();
+        account.setAccountNo(ScmDocumentNumbers.format("PAC", accountDao.nextNumber()));
+        account.setPurchaseOrderId(order.getId());
+        account.setSupplierId(order.getSupplierId());
+        account.setSupplierNameSnapshot(order.getSupplierNameSnapshot());
+        account.setWarehouseId(order.getWarehouseId());
+        account.setRemark(form.getRemark());
+        account.setConfirmedAt(OffsetDateTime.now());
+        account.setConfirmedBy(ScmOperator.current());
+        var items = new ArrayList<PurchaseAccountVO.Item>();
+        for (var line : lines) {
+            var item = new PurchaseAccountVO.Item();
+            item.setPurchaseOrderItemId(line.getId());
+            item.setSkuId(line.getSkuId());
+            item.setProductNameSnapshot(line.getProductNameSnapshot());
+            item.setSkuNameSnapshot(line.getSkuNameSnapshot());
+            item.setUnitSnapshot(line.getPurchaseUnitSnapshot());
+            item.setQuantity(ScmDecimalStrings.parseScale4Required(inputs.get(line.getId()).getQuantity()));
+            item.setUnitPrice(line.getPurchasePrice());
+            item.setAmount(item.getQuantity().multiply(item.getUnitPrice()).setScale(4, RoundingMode.HALF_UP));
+            items.add(item);
+        }
+        if (items.stream().map(PurchaseAccountVO.Item::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add)
+            .signum() <= 0) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+        }
+        accountDao.insert(account);
+        for (var item : items) {
+            item.setAccountId(account.getId());
+            accountDao.insertItem(item);
+        }
+        account.setItems(items);
+        PurchaseOrderStateMachine.transition(order.getStatus(), ScmPurchaseStatusEnum.ACCOUNTED.name());
+        order.setStatus(ScmPurchaseStatusEnum.ACCOUNTED.name());
+        order.setUpdatedAt(account.getConfirmedAt());
+        order.setUpdatedBy(account.getConfirmedBy());
+        if (orderDao.updateById(order) != 1) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VERSION_CONFLICT);
+        }
+        payableService.generateOnPurchaseAccount(account.getId());
+        idempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ACCOUNT.name(),
+            account.getId(), account);
+        return account;
     }
 }

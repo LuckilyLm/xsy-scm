@@ -8,7 +8,7 @@ import java.util.Set;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID;
 
 /**
- * 采购单草稿可提交或取消；已提交可取消或进入收货流程；部分收货后只能继续收货或少收关单。收货完成、少收关单和取消均不可再流转。
+ * 采购单草稿可提交或取消；已提交可取消、直接确认采购或进入收货流程；部分收货后只能继续收货或少收关单。采购确认、收货完成、少收关单和取消均不可再流转。
  */
 public final class PurchaseOrderStateMachine {
 
@@ -26,12 +26,12 @@ public final class PurchaseOrderStateMachine {
         }
         return switch (fromStatus) {
             case DRAFT -> Set.of(ScmPurchaseStatusEnum.SUBMITTED, ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
-            case SUBMITTED -> Set.of(ScmPurchaseStatusEnum.PARTIALLY_RECEIVED, ScmPurchaseStatusEnum.RECEIVED,
-                ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
+            case SUBMITTED -> Set.of(ScmPurchaseStatusEnum.ACCOUNTED, ScmPurchaseStatusEnum.PARTIALLY_RECEIVED,
+                ScmPurchaseStatusEnum.RECEIVED, ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
             // 同一状态到自身是合法的：第二次收货后仍是 PARTIALLY_RECEIVED
             case PARTIALLY_RECEIVED -> Set.of(ScmPurchaseStatusEnum.PARTIALLY_RECEIVED, ScmPurchaseStatusEnum.RECEIVED,
                 ScmPurchaseStatusEnum.SHORT_CLOSED).contains(toStatus);
-            default -> false; // RECEIVED / SHORT_CLOSED / CANCELLED 为终态
+            default -> false; // ACCOUNTED / RECEIVED / SHORT_CLOSED / CANCELLED 为终态
         };
     }
 
@@ -89,7 +89,8 @@ public final class PurchaseOrderStateMachine {
      * 是否终态（只读）。
      */
     public static boolean terminal(String purchaseOrderStatus) {
-        return ScmPurchaseStatusEnum.RECEIVED.name().equals(purchaseOrderStatus)
+        return ScmPurchaseStatusEnum.ACCOUNTED.name().equals(purchaseOrderStatus)
+            || ScmPurchaseStatusEnum.RECEIVED.name().equals(purchaseOrderStatus)
             || ScmPurchaseStatusEnum.SHORT_CLOSED.name().equals(purchaseOrderStatus)
             || ScmPurchaseStatusEnum.CANCELLED.name().equals(purchaseOrderStatus);
     }

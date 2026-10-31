@@ -43,9 +43,14 @@
         <div class="price-cell">
           <div class="price-main">
             <span>{{ amount(record.draftUnitPrice, true) }}</span>
-            <!-- 最近采购价常显：录单时不用点开浮层就能看到成本参考 -->
+            <span v-if="recentRows(record).length" class="purchase-line" :title="recentMetaText(record)">
+              上次售价 {{ recentPriceText(record) }}
+              <span v-if="recentRows(record)[0].saleUnit !== record.saleUnitSnapshot" class="purchase-mismatch">单位不同</span>
+            </span>
+            <span v-else-if="recentReady(record)" class="purchase-line purchase-line--empty">该客户暂无历史售价</span>
+            <!-- 采购价与客户售价分别展示，参考值不回写本次价格。 -->
             <span v-if="purchaseOf(record)" class="purchase-line" :title="purchaseMetaText(record)">
-              采购 {{ purchasePriceText(record) }}
+              采购参考 {{ purchasePriceText(record) }}
               <span v-if="purchaseUnitMismatch(record)" class="purchase-mismatch">单位不同</span>
             </span>
             <span v-else-if="purchaseReady(record)" class="purchase-line purchase-line--empty">暂无采购价</span>
@@ -60,7 +65,7 @@
             :get-popup-container="recentPopupContainer"
             :title="'最近已确认订单价 · ' + (record.skuCodeSnapshot || '商品规格')"
           >
-            <a-button type="link" size="small" class="recent-btn" aria-label="最近已确认订单价" @click="loadRecent(record)">历史价</a-button>
+            <a-button type="link" size="small" class="recent-btn" aria-label="最近已确认订单价" @click="loadRecent(record)">历史售价</a-button>
             <template #content>
               <a-spin :spinning="recentLoadingOf(record)">
                 <div class="recent-wrap">
@@ -92,7 +97,7 @@
             :get-popup-container="recentPopupContainer"
             :title="'最近采购价 · ' + (record.skuCodeSnapshot || '商品规格')"
           >
-            <a-button type="link" size="small" class="recent-btn" aria-label="最近采购价" @click="loadPurchase(record)">采购价</a-button>
+            <a-button type="link" size="small" class="recent-btn" aria-label="最近采购价" @click="loadPurchase(record)">采购参考</a-button>
             <template #content>
               <a-spin :spinning="purchaseLoadingOf(record)">
                 <div class="recent-wrap">
@@ -164,7 +169,7 @@ import {
 } from '../order-form-model';
 import {orderError} from '../order-errors';
 
-const props = defineProps<{items: Item[]; customerId?: Id}>();
+const props = defineProps<{items: Item[]; customerId?: Id; orderId?: Id}>();
 const emit = defineEmits<{price: []}>();
 const columns: TableColumnsType<Item> = [
   {title: '序号', dataIndex: 'rowNo', width: 50},
@@ -229,6 +234,29 @@ watch(
   {immediate: true}
 );
 
+watch(
+  () => [props.customerId, ...props.items.map((item) => item.skuId)],
+  () => {
+    if (!props.customerId) return;
+    const seen = new Set<string>();
+    for (const row of props.items) {
+      if (row.skuId == null || seen.has(String(row.skuId))) continue;
+      seen.add(String(row.skuId));
+      void loadRecent(row, true);
+    }
+  },
+  {immediate: true}
+);
+
+function recentPriceText(record: Item): string {
+  const previous = recentRows(record)[0];
+  return previous ? `${amount(previous.unitPrice)}${previous.saleUnit ? `/${previous.saleUnit}` : ''}` : '—';
+}
+function recentMetaText(record: Item): string {
+  const previous = recentRows(record)[0];
+  return previous ? `${previous.orderNo} · ${dayjs(previous.confirmedAt).format('YYYY-MM-DD')}` : '';
+}
+
 /** 浮层挂在抽屉内，抽屉关闭时一起消失。 */
 function recentPopupContainer(trigger: HTMLElement): HTMLElement {
   return (trigger.closest('.ant-drawer-body') ?? document.body) as HTMLElement;
@@ -244,7 +272,9 @@ function recentEmpty(record: Item): boolean {
 }
 
 function recentRows(record: Item): RecentPrice[] {
-  return recentPriceRows(recentCache, props.customerId, record.skuId);
+  return recentPriceRows(recentCache, props.customerId, record.skuId).filter(
+    (row) => props.orderId == null || String(row.orderId) !== String(props.orderId)
+  );
 }
 
 function recentLoadingOf(record: Item): boolean {
@@ -342,14 +372,15 @@ async function loadPurchase(record: Item) {
   await ensurePurchase(record.skuId as Id);
 }
 
-async function loadRecent(record: Item) {
+async function loadRecent(record: Item, silent = false) {
+  if (!props.customerId || record.skuId == null) return;
   try {
     await loadRecentPrices(recentCache, props.customerId, record.skuId, async () => {
-      const r = await orderApi.recentPrices(props.customerId as Id, record.skuId as Id, 5);
+      const r = await orderApi.recentPrices(props.customerId as Id, record.skuId as Id, 5, {suppressGlobalErrorMessage: true});
       return r.data;
     });
   } catch (e) {
-    message.error(orderError(e));
+    if (!silent) message.error(orderError(e));
   }
 }
 

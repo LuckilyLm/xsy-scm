@@ -40,5 +40,7 @@ public interface FileBizVisibilityDao {
      */
     int countTraceLot(@Param("lotId") Long lotId);
 
+    int countInspectionPhoto(@Param("reportId") Long reportId);
+
     int countVisibleInspectionReport(@Param("reportId") Long reportId, @Param("scope") ScmValueScope scope);
 }

@@ -171,13 +171,17 @@
     -->
     <select id="latestPurchasePrices" resultType="com.xsy.scm.purchase.domain.vo.PurchaseLastPriceVO">
         SELECT DISTINCT ON (poi.sku_id)
-            poi.sku_id AS skuId, poi.purchase_price AS purchasePrice,
+            poi.sku_id AS skuId, COALESCE(latest.new_price, account_item.unit_price, poi.purchase_price) AS purchasePrice,
             poi.purchase_unit_snapshot AS purchaseUnit, po.order_no AS purchaseOrderNo,
             po.submitted_at AS submittedAt, po.supplier_name_snapshot AS supplierName
         FROM xsy_purchase_order_item poi
         JOIN xsy_purchase_order po ON po.id = poi.purchase_order_id
             AND po.deleted = FALSE
+        LEFT JOIN xsy_purchase_account_item account_item ON account_item.purchase_order_item_id = poi.id
+        LEFT JOIN LATERAL (SELECT a.new_price FROM xsy_purchase_cost_adjustment a
+            WHERE a.purchase_order_item_id = poi.id ORDER BY a.id DESC LIMIT 1) latest ON TRUE
         WHERE poi.deleted = FALSE
+            AND (account_item.id IS NULL OR account_item.quantity > 0)
             AND poi.purchase_price IS NOT NULL
             AND poi.sku_id IN
             <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
@@ -197,13 +201,17 @@
     -->
     <select id="latestPurchasePricesByUnit" resultType="com.xsy.scm.purchase.domain.vo.PurchaseLastPriceVO">
         SELECT DISTINCT ON (poi.sku_id, poi.purchase_unit_snapshot)
-            poi.sku_id AS skuId, poi.purchase_price AS purchasePrice,
+            poi.sku_id AS skuId, COALESCE(latest.new_price, account_item.unit_price, poi.purchase_price) AS purchasePrice,
             poi.purchase_unit_snapshot AS purchaseUnit, po.order_no AS purchaseOrderNo,
             po.submitted_at AS submittedAt, po.supplier_name_snapshot AS supplierName
         FROM xsy_purchase_order_item poi
         JOIN xsy_purchase_order po ON po.id = poi.purchase_order_id
             AND po.deleted = FALSE
+        LEFT JOIN xsy_purchase_account_item account_item ON account_item.purchase_order_item_id = poi.id
+        LEFT JOIN LATERAL (SELECT a.new_price FROM xsy_purchase_cost_adjustment a
+            WHERE a.purchase_order_item_id = poi.id ORDER BY a.id DESC LIMIT 1) latest ON TRUE
         WHERE poi.deleted = FALSE
+            AND (account_item.id IS NULL OR account_item.quantity > 0)
             AND poi.purchase_price IS NOT NULL
             AND poi.purchase_unit_snapshot IS NOT NULL
             AND poi.sku_id IN

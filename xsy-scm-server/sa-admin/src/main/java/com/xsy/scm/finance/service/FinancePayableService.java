@@ -230,6 +230,19 @@ public class FinancePayableService {
 
         List<
             FinancePayableSourceLineDto> lines = financePayableSourceDao.selectConfirmedReceiptLines(purchaseReceiptId);
+        generate(source, lines);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
+    public void generateOnPurchaseAccount(Long accountId) {
+        var source = financePayableSourceDao.selectPurchaseAccount(accountId);
+        if (source == null) {
+            throw new IllegalStateException("采购确认事实不存在: " + accountId);
+        }
+        generate(source, financePayableSourceDao.selectPurchaseAccountLines(accountId));
+    }
+
+    private void generate(FinancePayableSourceDto source, List<FinancePayableSourceLineDto> lines) {
         List<FinancePayableItemEntity> items = toItems(lines);
         BigDecimal amount = items.stream().map(FinancePayableItemEntity::getAmount).reduce(BigDecimal.ZERO,
             BigDecimal::add);
@@ -267,8 +280,11 @@ public class FinancePayableService {
         FinancePayableEntity payable = new FinancePayableEntity();
         payable.setPayableNo(
             ScmDocumentNumbers.format(FinanceConstant.PAYABLE_NO_PREFIX, financePayableDao.nextPayableNo()));
-        payable.setSourceType(ScmFinancePayableSourceTypeEnum.PURCHASE_RECEIPT.name());
-        payable.setSourceId(source.getPurchaseReceiptId());
+        payable.setSourceType(source.getPurchaseAccountId() == null
+            ? ScmFinancePayableSourceTypeEnum.PURCHASE_RECEIPT.name()
+            : ScmFinancePayableSourceTypeEnum.PURCHASE_ACCOUNT.name());
+        payable.setSourceId(
+            source.getPurchaseAccountId() == null ? source.getPurchaseReceiptId() : source.getPurchaseAccountId());
         payable.setPurchaseOrderId(source.getPurchaseOrderId());
         payable.setSupplierId(source.getSupplierId());
         payable.setSupplierNameSnapshot(source.getSupplierNameSnapshot());
@@ -294,8 +310,12 @@ public class FinancePayableService {
                 RoundingMode.HALF_UP);
 
             FinancePayableItemEntity item = new FinancePayableItemEntity();
-            item.setSourceType(ScmFinancePayableItemSourceTypeEnum.PURCHASE_RECEIPT_ITEM.name());
-            item.setSourceId(line.getPurchaseReceiptItemId());
+            item.setSourceType(line.getPurchaseAccountItemId() == null
+                ? ScmFinancePayableItemSourceTypeEnum.PURCHASE_RECEIPT_ITEM.name()
+                : ScmFinancePayableItemSourceTypeEnum.PURCHASE_ACCOUNT_ITEM.name());
+            item.setSourceId(line.getPurchaseAccountItemId() == null
+                ? line.getPurchaseReceiptItemId()
+                : line.getPurchaseAccountItemId());
             item.setPurchaseOrderItemId(line.getPurchaseOrderItemId());
             item.setSkuId(line.getSkuId());
             item.setSkuNameSnapshot(line.getSkuNameSnapshot());

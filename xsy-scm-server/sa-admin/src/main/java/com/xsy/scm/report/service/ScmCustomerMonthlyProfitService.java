@@ -59,8 +59,8 @@ public class ScmCustomerMonthlyProfitService {
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
         ScmDataScopeContext scope = dataScopeService.resolve();
-        // 月费用属于客户整体，不能用局部仓库收入减去整月费用，伪装成完整客户利润。
-        if (!scope.isCostVisible() || !scope.getWarehouseScope().isAll() || !scope.getOrderSellerScope().isAll()) {
+        // 月成本与费用属于客户整体，不能用局部订单收入减去整月成本；不依赖仓库成本。
+        if (!scope.isCostVisible() || !scope.getOrderSellerScope().isAll()) {
             throw new ScmDataScopeException();
         }
         return scope;

@@ -11,6 +11,7 @@ import java.time.OffsetDateTime;
 public class FinancePayableSourceDto {
 
     private Long purchaseReceiptId;
+    private Long purchaseAccountId;
 
     private Long purchaseOrderId;
 

@@ -43,8 +43,5 @@ public class PurchaseFinanceConfirmForm {
         @NotBlank(message = "采购单位不能为空")
         @Size(max = 32, message = "采购单位过长")
         private String purchaseUnit;
-        @Valid
-        @Size(max = 100, message = "一行最多登记100个批次")
-        private List<PurchaseReceiptConfirmForm.Lot> lots;
     }
 }

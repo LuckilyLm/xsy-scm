@@ -43,7 +43,7 @@ public enum WarehouseErrorCode implements ScmErrorCode {
     /**
      * 41019 属盘点域（盘点单不存在），仓库只能用自己 410xx 段内未被占用的值。
      */
-    WAREHOUSE_HAS_NEGATIVE_STOCK(41010, "仓库仍有负库存余额，不能关闭负库存出库");
+    WAREHOUSE_HAS_NEGATIVE_STOCK(41010, "仓库存在负余额或预留量超过余额，不能关闭负库存出库");
 
     private final int code;
     private final String msg;

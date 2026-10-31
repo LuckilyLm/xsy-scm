@@ -181,7 +181,8 @@ export const orderApi = {
   lock: (data: {orderId: Id; version: number; reason?: string}) => postRequest<Order>('/scm/order/lock', data),
   unlock: (data: {orderId: Id; version: number; reason?: string}) => postRequest<Order>('/scm/order/unlock', data),
   /** 最近成交参考价：只作录单参考，不参与定价；limit 取 1~10，默认 5。 */
-  recentPrices: (customerId: Id, skuId: Id, limit = 5) => getRequest<RecentPrice[]>('/scm/order/reference/recent-prices', {customerId, skuId, limit}),
+  recentPrices: (customerId: Id, skuId: Id, limit = 5, options?: RequestOptions) =>
+    getRequest<RecentPrice[]>('/scm/order/reference/recent-prices', {customerId, skuId, limit}, options),
   /** 最近采购参考价：只读查询，一次最多 200 个商品规格；单次按逗号传递，避免数组参数序列化差异。 */
   lastPurchasePrices: (skuIds: Id[], options?: RequestOptions) =>
     getRequest<LastPurchasePrice[]>('/scm/order/reference/last-purchase-prices', {skuIds: skuIds.join(',')}, options),

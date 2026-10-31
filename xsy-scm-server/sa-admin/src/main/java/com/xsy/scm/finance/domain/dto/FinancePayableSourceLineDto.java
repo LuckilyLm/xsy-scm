@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 public class FinancePayableSourceLineDto {
 
     private Long purchaseReceiptItemId;
+    private Long purchaseAccountItemId;
 
     private Long purchaseOrderItemId;
 

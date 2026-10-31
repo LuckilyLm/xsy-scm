@@ -10,13 +10,13 @@
       <template v-if="order">
         <div class="actions scm-detail-actions">
           <a-button
-            v-if="['PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED'].includes(order.status ?? '')"
+            v-if="order.accountId != null || ['PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED'].includes(order.status ?? '')"
             v-privilege="'scm:purchase:cost-adjustment'"
             @click="order.id != null && costAdjustmentModal?.open(order.id)"
             >成本更正</a-button
           >
           <a-button
-            v-if="order.status === 'SUBMITTED'"
+            v-if="order.status === 'SUBMITTED' && order.accountId == null"
             type="primary"
             v-privilege="'scm:purchase:finance-confirm'"
             :disabled="!!order.pendingPriceCount"
@@ -26,7 +26,7 @@
           <template v-if="order.status === 'DRAFT'">
             <a-button type="primary" :loading="submitting" v-privilege="'scm:purchase:submit'" @click="submit"> 提交 </a-button>
           </template>
-          <template v-if="['DRAFT', 'SUBMITTED'].includes(order.status ?? '')">
+          <template v-if="order.accountId == null && ['DRAFT', 'SUBMITTED'].includes(order.status ?? '')">
             <a-button danger v-privilege="'scm:purchase:cancel'" @click="cancelOpen = true"> 取消采购单 </a-button>
           </template>
           <template v-if="order.status === 'PARTIALLY_RECEIVED'">
@@ -35,15 +35,17 @@
         </div>
 
         <a-descriptions bordered size="small" :column="2">
-          <a-descriptions-item label="采购单状态">{{ SCM_PURCHASE_STATUS_ENUM[order.status ?? '']?.desc ?? order.status }}</a-descriptions-item>
+          <a-descriptions-item label="采购单状态">{{
+            order.accountId != null ? '采购已确认' : SCM_PURCHASE_STATUS_ENUM[order.status ?? '']?.desc ?? order.status
+          }}</a-descriptions-item>
           <a-descriptions-item label="供应商">{{ order.supplierName }}</a-descriptions-item>
           <a-descriptions-item label="采购员">{{ order.purchaserName || '—' }}</a-descriptions-item>
-          <a-descriptions-item label="收货仓库">{{ order.warehouseName }}</a-descriptions-item>
+          <a-descriptions-item label="作业地点">{{ order.warehouseName }}</a-descriptions-item>
           <a-descriptions-item label="计划到货日期">{{ order.plannedArrivalDate || '—' }}</a-descriptions-item>
           <a-descriptions-item label="采购金额">
             <span class="scm-money">{{ amount(order.totalAmount) }}</span>
           </a-descriptions-item>
-          <a-descriptions-item label="收货进度">
+          <a-descriptions-item v-if="legacyReceipt" label="收货进度">
             <span class="scm-quantity">{{ progress(order.receivedProgress) }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="提交时间">{{ datetime(order.submittedAt) }}</a-descriptions-item>
@@ -67,6 +69,25 @@
           <a-descriptions-item label="备注">{{ order.remark || '—' }}</a-descriptions-item>
         </a-descriptions>
 
+        <section v-if="order.account" class="items">
+          <h3>已确认采购</h3>
+          <p>{{ order.account.accountNo }} · {{ datetime(order.account.confirmedAt) }} · {{ order.account.confirmedBy }}</p>
+          <a-table
+            :data-source="order.account.items"
+            :columns="accountColumns"
+            row-key="id"
+            :pagination="false"
+            size="small"
+            :scroll="{x: scmColumnsWidth(accountColumns)}"
+          >
+            <template #bodyCell="{record, column}">
+              <span v-if="column.dataIndex === 'quantity'" class="scm-quantity">{{ quantity(record.quantity) }}</span>
+              <span v-else-if="column.dataIndex === 'unitPrice'" class="scm-money">{{ price(record.unitPrice) }}</span>
+              <span v-else-if="column.dataIndex === 'amount'" class="scm-money">{{ amount(record.amount) }}</span>
+            </template>
+          </a-table>
+          <h3>原采购计划</h3>
+        </section>
         <a-table
           class="items"
           :data-source="order.items ?? []"
@@ -198,7 +219,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import PurchaseFinanceConfirmModal from './purchase-finance-confirm-modal.vue';
 import PurchaseCostAdjustmentModal from './purchase-cost-adjustment-modal.vue';
-import {ref} from 'vue';
+import {computed, ref} from 'vue';
 import {Modal, message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
@@ -267,12 +288,14 @@ function windowOpen(item: OrderItem): boolean {
 
 /** 补价只对待定价行，且提交后、未锁单、窗口未过期；这四条后端都会再校验。 */
 function canFill(item: OrderItem): boolean {
-  return Boolean(item.pricePending) && order.value?.status !== 'DRAFT' && !order.value?.lockedFlag && windowOpen(item);
+  return (
+    order.value?.accountId == null && Boolean(item.pricePending) && order.value?.status !== 'DRAFT' && !order.value?.lockedFlag && windowOpen(item)
+  );
 }
 
 /** 改价只对「还没有确认收货」的行：确认后库存成本已冻结，改价会造成账实不符。 */
 function canAdjust(item: OrderItem): boolean {
-  return !item.pricePending && Number(item.receivedQuantity ?? '0') === 0 && order.value?.status !== 'DRAFT';
+  return order.value?.accountId == null && !item.pricePending && Number(item.receivedQuantity ?? '0') === 0 && order.value?.status !== 'DRAFT';
 }
 
 function openPrice(mode: 'FILL' | 'ADJUST', item: OrderItem) {
@@ -320,20 +343,37 @@ function logColor(operationType: string | undefined): string {
   return OPERATION_COLOR[operationType ?? ''] ?? 'gray';
 }
 
-const itemColumns: TableColumnsType<OrderItem> = [
-  {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'skuName', width: 130},
-  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
-  {title: '采购数量', dataIndex: 'plannedQuantity', width: 120},
-  {title: '已收数量', dataIndex: 'receivedQuantity', width: 120},
-  {title: '剩余可收', dataIndex: 'remainingQuantity', width: 120},
-  {title: '超收数量', dataIndex: 'overReceiptQuantity', width: 120},
-  {title: '采购单价', dataIndex: 'purchasePrice', width: 130},
-  {title: '金额', dataIndex: 'lineAmount', width: 130},
-  {title: '需求来源', dataIndex: 'allocationCount', width: 92},
-  {title: '操作', dataIndex: 'action', align: 'center', width: 100},
-];
+const legacyReceipt = computed(() => ['PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED'].includes(order.value?.status ?? ''));
+const itemColumns = computed<TableColumnsType<OrderItem>>(() =>
+  (
+    [
+      {title: '商品', dataIndex: 'productName', width: 150},
+      {title: '商品规格', dataIndex: 'skuName', width: 130},
+      {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
+      {title: '采购数量', dataIndex: 'plannedQuantity', width: 120},
+      {title: '已收数量', dataIndex: 'receivedQuantity', width: 120},
+      {title: '剩余可收', dataIndex: 'remainingQuantity', width: 120},
+      {title: '超收数量', dataIndex: 'overReceiptQuantity', width: 120},
+      {title: '采购单价', dataIndex: 'purchasePrice', width: 130},
+      {title: '金额', dataIndex: 'lineAmount', width: 130},
+      {title: '需求来源', dataIndex: 'allocationCount', width: 92},
+      {title: '操作', dataIndex: 'action', align: 'center', width: 100},
+    ] as TableColumnsType<OrderItem>
+  ).filter(
+    (column) =>
+      legacyReceipt.value ||
+      !['receivedQuantity', 'remainingQuantity', 'overReceiptQuantity'].includes(String((column as {dataIndex?: string}).dataIndex))
+  )
+);
 
+const accountColumns = [
+  {title: '商品', dataIndex: 'productNameSnapshot', width: 180},
+  {title: '商品规格', dataIndex: 'skuNameSnapshot', width: 130},
+  {title: '单位', dataIndex: 'unitSnapshot', width: 76},
+  {title: '实际数量', dataIndex: 'quantity', width: 120},
+  {title: '确认单价', dataIndex: 'unitPrice', width: 130},
+  {title: '确认金额', dataIndex: 'amount', width: 130},
+];
 const allocationColumns: TableColumnsType<Allocation> = [
   {title: '来源销售单', dataIndex: 'salesOrderNo', width: 210},
   {title: '分配数量', dataIndex: 'quantity', width: 130},

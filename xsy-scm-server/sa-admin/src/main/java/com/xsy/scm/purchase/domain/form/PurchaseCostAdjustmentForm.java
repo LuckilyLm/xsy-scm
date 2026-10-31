@@ -2,7 +2,6 @@ package com.xsy.scm.purchase.domain.form;
 
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -10,7 +9,8 @@ import lombok.Data;
 
 @Data
 public class PurchaseCostAdjustmentForm {
-    @NotNull(message = "请选择已确认的收货明细")
+    @Positive(message = "采购确认明细编号无效")
+    private Long accountItemId;
     @Positive(message = "收货明细编号无效")
     private Long receiptItemId;
     @Positive(message = "前次更正编号无效")

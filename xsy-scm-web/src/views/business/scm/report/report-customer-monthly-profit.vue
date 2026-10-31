@@ -12,18 +12,11 @@
       >
     </a-row>
   </a-form>
-  <p class="scm-note">
-    费用按客户和月份登记实际金额，不参与应收核销。客户月利润按完整订单与仓库范围统计；未归属客户的采购价差单列，不自动分摊到客户。
-  </p>
+  <p class="scm-note">按客户和月份核对销售收入，登记实际商品成本与税费等费用后计算利润。商品成本包含赠品及已分摊的采购价差；未登记成本时利润留空。</p>
   <a-alert v-if="error" type="error" show-icon :message="error"
     ><template #action><a-button @click="load">重试</a-button></template></a-alert
   >
-  <a-alert
-    v-if="(summary?.costMissingCount ?? 0) > 0"
-    type="warning"
-    show-icon
-    message="部分销售成本尚未确认，相关客户的毛利及扣费后利润暂不完整，请核对采购成本。"
-  />
+  <a-alert v-if="(summary?.costMissingCount ?? 0) > 0" type="warning" show-icon message="部分客户尚未登记实际商品成本，请补齐后查看利润。" />
   <a-row :gutter="[12, 12]" class="monthly-summary">
     <a-col v-for="card in cards" :key="card.label" :xs="24" :sm="12" :lg="6"
       ><a-card size="small"
@@ -35,8 +28,8 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block" justify="space-between">
       <a-space>
-        <a-button v-if="canAdd" type="primary" @click="openAdd">登记费用</a-button>
-        <a-button v-if="canQueryExpenses" @click="openExpenses()">费用明细</a-button>
+        <a-button v-if="canAdd" type="primary" @click="openAdd">登记成本费用</a-button>
+        <a-button v-if="canQueryExpenses" @click="openExpenses()">成本费用明细</a-button>
         <a-button v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows">导出当前列</a-button>
       </a-space>
       <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_CUSTOMER_MONTHLY_PROFIT" :refresh="load" />
@@ -53,10 +46,10 @@
     >
       <template #bodyCell="{column, record}">
         <template v-if="column.dataIndex === 'dimensionName'">{{ record.dimensionName }}</template>
-        <template v-else-if="column.dataIndex === 'costMissingCount'">{{ record.costMissingCount || 0 }}</template>
+        <template v-else-if="column.dataIndex === 'costMissingCount'">{{ record.costMissingCount > 0 ? '待补成本' : '可核算' }}</template>
         <template v-else-if="column.dataIndex === 'action'"
           ><a-button v-if="canQueryExpenses && record.dimensionId != null" type="link" size="small" @click="openExpenses(record.dimensionId)"
-            >费用明细</a-button
+            >成本费用明细</a-button
           ></template
         >
         <span v-else class="scm-money">{{ moneyText(record[column.dataIndex]) }}</span>
@@ -76,7 +69,7 @@
 
   <a-modal
     v-model:open="addOpen"
-    title="登记客户月费用"
+    title="登记客户月成本与费用"
     :confirm-loading="saving"
     :mask-closable="!saving"
     :closable="!saving"
@@ -87,9 +80,20 @@
       <a-form-item name="customerId" label="客户" :rules="[{required: true, message: '请选择客户'}]"
         ><CustomerSelect v-model:value="expenseForm.customerId"
       /></a-form-item>
-      <a-form-item name="month" label="费用月份" :rules="[{required: true, message: '请选择费用月份'}]"
+      <a-form-item name="month" label="月份" :rules="[{required: true, message: '请选择月份'}]"
         ><a-date-picker v-model:value="expenseForm.month" picker="month" value-format="YYYY-MM" :allow-clear="false"
       /></a-form-item>
+      <a-form-item name="goodsCostAmount" label="实际商品成本（选填）">
+        <a-input-number
+          v-model:value="expenseForm.goodsCostAmount"
+          string-mode
+          :min="0"
+          :max="99999999999999"
+          :precision="4"
+          placeholder="未核实时留空，确认零成本填0"
+          style="width: 100%"
+        />
+      </a-form-item>
       <a-row :gutter="16">
         <a-col v-for="field in amountFields" :key="field.key" :span="12"
           ><a-form-item :name="field.key" :label="field.label" :rules="[{required: true, message: '请填写金额，无费用时填0'}]"
@@ -102,14 +106,14 @@
               style="width: 100%" /></a-form-item
         ></a-col>
       </a-row>
-      <a-form-item name="reason" label="费用说明" :rules="[{required: true, whitespace: true, message: '请填写费用说明'}]"
+      <a-form-item name="reason" label="登记说明" :rules="[{required: true, whitespace: true, message: '请填写登记说明'}]"
         ><a-textarea v-model:value="expenseForm.reason" :maxlength="500" :rows="3" show-count
       /></a-form-item>
     </a-form>
-    <p class="scm-note">填写实际费用金额。登记错误时请作废原记录，再重新登记。</p>
+    <p class="scm-note">填写本次登记的实际金额，多笔记录会累加。商品成本含赠品及分摊价差，不重复填写整月合计。登记错误时作废原记录，再重新登记。</p>
   </a-modal>
 
-  <a-modal v-model:open="expenseOpen" title="客户月费用明细" :width="1100" :footer="null" @cancel="expenseRequestId++">
+  <a-modal v-model:open="expenseOpen" title="客户月成本与费用明细" :width="1100" :footer="null" @cancel="expenseRequestId++">
     <a-alert v-if="expenseError" type="error" show-icon :message="expenseError"
       ><template #action><a-button @click="loadExpenses">重试</a-button></template></a-alert
     >
@@ -123,7 +127,9 @@
       :pagination="false"
     >
       <template #bodyCell="{column, record}">
-        <span v-if="amountKeys.includes(column.dataIndex)" class="scm-money">{{ moneyText(record[column.dataIndex]) }}</span>
+        <span v-if="column.dataIndex === 'goodsCostAmount' || amountKeys.includes(column.dataIndex)" class="scm-money">{{
+          moneyText(record[column.dataIndex])
+        }}</span>
         <template v-else-if="column.dataIndex === 'voided'">{{ record.voided ? '已作废' : '有效' }}</template>
         <template v-else-if="column.dataIndex === 'createdAt'">{{ dateTimeText(record.createdAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'"
@@ -138,7 +144,7 @@
   </a-modal>
   <a-modal
     v-model:open="voidOpen"
-    title="作废费用"
+    title="作废成本费用"
     :confirm-loading="voidSaving"
     :mask-closable="!voidSaving"
     :closable="!voidSaving"
@@ -203,14 +209,13 @@ const columns = ref<TableColumnsType<CustomerMonthlyProfitRow>>([
   {title: '客户名称', dataIndex: 'dimensionName', width: 200},
   ...[
     {key: 'revenueAmount', label: '销售收入'},
-    {key: 'salesCostAmount', label: '商品销售成本'},
-    {key: 'giftCostAmount', label: '赠品成本'},
+    {key: 'salesCostAmount', label: '实际商品成本'},
     {key: 'grossProfit', label: '销售毛利'},
     ...amountFields,
     {key: 'expenseAmount', label: '费用合计'},
     {key: 'netProfit', label: '扣费后利润'},
   ].map((field) => ({title: field.label, dataIndex: field.key, width: 144, align: 'right' as const})),
-  {title: '待确认成本数', dataIndex: 'costMissingCount', width: 110, align: 'right'},
+  {title: '成本状态', dataIndex: 'costMissingCount', width: 110, align: 'right'},
   {title: '操作', dataIndex: 'action', width: 100, fixed: 'right', align: 'center'},
 ]);
 function payload(): FinanceProfitQuery {
@@ -279,6 +284,7 @@ async function exportRows() {
 const expenseForm = reactive({
   customerId: undefined as FinanceId | undefined,
   month: filters.month,
+  goodsCostAmount: null as string | null,
   taxAmount: '0.0000',
   serviceAmount: '0.0000',
   freightAmount: '0.0000',
@@ -292,6 +298,7 @@ function openAdd() {
   Object.assign(expenseForm, {
     customerId: filters.customerId,
     month: filters.month,
+    goodsCostAmount: null as string | null,
     taxAmount: '0.0000',
     serviceAmount: '0.0000',
     freightAmount: '0.0000',
@@ -309,8 +316,8 @@ async function saveExpense() {
     return;
   }
   if (expenseForm.customerId == null) return;
-  if (!amountFields.some((field) => Number(expenseForm[field.key]) > 0)) {
-    message.warning('费用合计必须大于0');
+  if (expenseForm.goodsCostAmount == null && !amountFields.some((field) => Number(expenseForm[field.key]) > 0)) {
+    message.warning('请登记实际商品成本，或至少填写一项费用');
     return;
   }
   saving.value = true;
@@ -318,6 +325,7 @@ async function saveExpense() {
     await financeApi.customerExpenseAdd({
       customerId: expenseForm.customerId,
       expenseMonth: expenseForm.month + '-01',
+      goodsCostAmount: expenseForm.goodsCostAmount == null ? null : new Decimal(expenseForm.goodsCostAmount).toFixed(4),
       taxAmount: new Decimal(expenseForm.taxAmount).toFixed(4),
       serviceAmount: new Decimal(expenseForm.serviceAmount).toFixed(4),
       freightAmount: new Decimal(expenseForm.freightAmount).toFixed(4),
@@ -342,8 +350,9 @@ const expenseOpen = ref(false),
 let expenseRequestId = 0;
 const expenseQuery = reactive({expenseMonth: '', customerId: undefined as FinanceId | undefined});
 const expenseColumns: TableColumnsType<CustomerExpense> = [
-  {title: '费用单号', dataIndex: 'expenseNo', width: 190},
+  {title: '登记单号', dataIndex: 'expenseNo', width: 190},
   {title: '客户名称', dataIndex: 'customerName', width: 180},
+  {title: '实际商品成本', dataIndex: 'goodsCostAmount', width: 144, align: 'right'},
   ...amountFields.map((field) => ({title: field.label, dataIndex: field.key, width: 132, align: 'right' as const})),
   {title: '状态', dataIndex: 'voided', width: 80, align: 'center'},
   {title: '说明', dataIndex: 'reason', width: 180},

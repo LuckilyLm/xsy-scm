@@ -52,16 +52,21 @@ public class PurchaseCostAdjustmentService {
 
     @Transactional(rollbackFor = Exception.class)
     public PurchaseCostAdjustmentVO add(PurchaseCostAdjustmentForm form, String key) {
-        var probe = adjustmentDao.source(form.getReceiptItemId());
+        if ((form.getReceiptItemId() == null) == (form.getAccountItemId() == null)) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+        }
+        var probe = source(form);
         if (probe == null) {
             throw new ScmBusinessException(PurchaseErrorCode.PURCHASE_RECEIPT_NOT_FOUND);
         }
         requireVisible(orderDao.lock(probe.getPurchaseOrderId()));
-        var claim = idempotencyService.claim("PURCHASE_COST_ADJUSTMENT:" + form.getReceiptItemId(), key, form);
+        var claim = idempotencyService.claim("PURCHASE_COST_ADJUSTMENT:" + (form.getAccountItemId() == null
+            ? "RECEIPT:" + form.getReceiptItemId()
+            : "ACCOUNT:" + form.getAccountItemId()), key, form);
         if (claim.replay()) {
             return idempotencyService.replay(claim, PurchaseCostAdjustmentVO.class);
         }
-        var source = adjustmentDao.source(form.getReceiptItemId());
+        var source = source(form);
         if (source == null || !Objects.equals(source.getPreviousAdjustmentId(), form.getPreviousAdjustmentId())
             || source.getPreviousPrice()
                 .compareTo(ScmDecimalStrings.parseScale4Required(form.getExpectedPrice())) != 0) {
@@ -88,6 +93,12 @@ public class PurchaseCostAdjustmentService {
         financeAdjustmentService.generate(source.getId());
         idempotencyService.complete(claim, "PURCHASE_COST_ADJUSTMENT", source.getId(), source);
         return source;
+    }
+
+    private PurchaseCostAdjustmentVO source(PurchaseCostAdjustmentForm form) {
+        return form.getAccountItemId() == null
+            ? adjustmentDao.source(form.getReceiptItemId())
+            : adjustmentDao.accountSource(form.getAccountItemId());
     }
 
     private void requireVisible(PurchaseOrderEntity order) {

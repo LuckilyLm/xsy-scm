@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.purchase.dao.PurchaseCostAdjustmentDao">
     <select id="nextNumber" resultType="long">SELECT nextval('purchase_cost_adjustment_no_seq')</select>
     <sql id="source">
-        SELECT ri.id AS receipt_item_id, r.id AS receipt_id, r.receipt_no, r.purchase_order_id,
+        SELECT NULL::bigint AS account_item_id, NULL::bigint AS account_id, NULL::text AS account_no, ri.id AS receipt_item_id, r.id AS receipt_id, r.receipt_no, r.purchase_order_id,
             ri.purchase_order_item_id, r.warehouse_id, r.supplier_id, r.supplier_name_snapshot,
             ri.sku_id, oi.product_name_snapshot, ri.purchase_unit_snapshot AS unit_snapshot,
             ri.received_quantity AS quantity, po.purchaser_id, latest.id AS previous_adjustment_id,
@@ -16,23 +16,41 @@
             WHERE a.receipt_item_id = ri.id ORDER BY a.id DESC LIMIT 1) latest ON TRUE
         WHERE ri.deleted = FALSE AND ri.received_quantity &gt; 0
     </sql>
+    <sql id="accountSource">
+        SELECT ai.id AS account_item_id, a.id AS account_id, a.account_no, NULL::bigint AS receipt_item_id,
+            NULL::bigint AS receipt_id, NULL::text AS receipt_no, a.purchase_order_id, ai.purchase_order_item_id,
+            a.warehouse_id, a.supplier_id, a.supplier_name_snapshot, ai.sku_id, ai.product_name_snapshot,
+            ai.unit_snapshot, ai.quantity, po.purchaser_id, latest.id AS previous_adjustment_id,
+            COALESCE(latest.new_price, ai.unit_price) AS previous_price
+        FROM xsy_purchase_account_item ai JOIN xsy_purchase_account a ON a.id = ai.account_id
+        JOIN xsy_purchase_order po ON po.id = a.purchase_order_id AND NOT po.deleted
+        LEFT JOIN LATERAL (SELECT c.id, c.new_price FROM xsy_purchase_cost_adjustment c
+            WHERE c.account_item_id = ai.id ORDER BY c.id DESC LIMIT 1) latest ON TRUE
+        WHERE ai.quantity &gt; 0
+    </sql>
+    <select id="accountSource" resultType="com.xsy.scm.purchase.domain.vo.PurchaseCostAdjustmentVO">
+        <include refid="accountSource"/> AND ai.id = #{accountItemId}
+    </select>
     <select id="source" resultType="com.xsy.scm.purchase.domain.vo.PurchaseCostAdjustmentVO">
         <include refid="source"/> AND ri.id = #{receiptItemId}
     </select>
     <select id="options" resultType="com.xsy.scm.purchase.domain.vo.PurchaseCostAdjustmentVO">
-        <include refid="source"/> AND r.purchase_order_id = #{orderId} ORDER BY r.id, ri.id
+        <include refid="source"/> AND r.purchase_order_id = #{orderId}
+        UNION ALL <include refid="accountSource"/> AND a.purchase_order_id = #{orderId}
+        ORDER BY receipt_id, receipt_item_id, account_item_id
     </select>
     <select id="history" resultType="com.xsy.scm.purchase.domain.vo.PurchaseCostAdjustmentVO">
-        SELECT a.*, r.receipt_no FROM xsy_purchase_cost_adjustment a
-        JOIN xsy_purchase_receipt r ON r.id = a.receipt_id
+        SELECT a.*, r.receipt_no, pac.account_no FROM xsy_purchase_cost_adjustment a
+        LEFT JOIN xsy_purchase_receipt r ON r.id = a.receipt_id
+        LEFT JOIN xsy_purchase_account pac ON pac.id = a.account_id
         WHERE a.purchase_order_id = #{orderId} ORDER BY a.id DESC
     </select>
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_purchase_cost_adjustment(adjustment_no, receipt_item_id, receipt_id, purchase_order_id,
+        INSERT INTO xsy_purchase_cost_adjustment(adjustment_no, account_item_id, account_id, receipt_item_id, receipt_id, purchase_order_id,
             purchase_order_item_id, warehouse_id, supplier_id, supplier_name_snapshot, sku_id, product_name_snapshot,
             unit_snapshot, quantity, previous_adjustment_id, previous_price, new_price, direction, amount, reason,
             occurred_at, created_by)
-        VALUES (#{adjustmentNo}, #{receiptItemId}, #{receiptId}, #{purchaseOrderId}, #{purchaseOrderItemId},
+        VALUES (#{adjustmentNo}, #{accountItemId}, #{accountId}, #{receiptItemId}, #{receiptId}, #{purchaseOrderId}, #{purchaseOrderItemId},
             #{warehouseId}, #{supplierId}, #{supplierNameSnapshot}, #{skuId}, #{productNameSnapshot}, #{unitSnapshot},
             #{quantity}, #{previousAdjustmentId}, #{previousPrice}, #{newPrice}, #{direction}, #{amount}, #{reason},
             #{occurredAt}, #{createdBy})

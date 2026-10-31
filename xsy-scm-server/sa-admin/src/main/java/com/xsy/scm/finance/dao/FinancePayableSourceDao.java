@@ -18,6 +18,8 @@ import java.util.List;
  */
 @Mapper
 public interface FinancePayableSourceDao {
+    FinancePayableSourceDto selectPurchaseAccount(@Param("id") Long id);
+    List<FinancePayableSourceLineDto> selectPurchaseAccountLines(@Param("id") Long id);
     Long selectPurchaserByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
     /**

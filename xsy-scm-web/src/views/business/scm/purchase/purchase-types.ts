@@ -256,7 +256,16 @@ export interface OrderItem {
 }
 
 /** `PurchaseOrderVO`。 */
+export interface PurchaseAccount {
+  id: Id;
+  accountNo: string;
+  confirmedAt: string;
+  confirmedBy: string;
+  items: {id: Id; productNameSnapshot: string; skuNameSnapshot: string; unitSnapshot: string; quantity: string; unitPrice: string; amount: string}[];
+}
 export interface Order {
+  accountId?: Id | null;
+  account?: PurchaseAccount | null;
   id?: Id;
   orderNo?: string;
   supplierId?: Id;
@@ -633,9 +642,12 @@ export interface OrderReassignPayload {
 export interface PurchaseCostAdjustment {
   id?: number | string;
   adjustmentNo?: string;
-  receiptItemId: number | string;
-  receiptId: number | string;
-  receiptNo: string;
+  receiptItemId?: Id | null;
+  receiptId?: Id | null;
+  receiptNo?: string | null;
+  accountItemId?: Id | null;
+  accountId?: Id | null;
+  accountNo?: string | null;
   purchaseOrderId: number | string;
   productNameSnapshot: string;
   unitSnapshot: string;

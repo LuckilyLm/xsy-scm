@@ -24,6 +24,7 @@
             4) ELSE NULL END AS received_progress, o.remark, o.cancel_reason, o.short_close_reason, o.submitted_at,
             o.cancelled_at, o.short_closed_at, o.locked_flag, o.locked_at, o.locked_by, o.lock_reason,
             o.auto_lock_at, o.version, o.created_at, o.updated_at,
+            (SELECT a.id FROM xsy_purchase_account a WHERE a.purchase_order_id = o.id) AS account_id,
             COALESCE(agg.pending_price_count, 0) AS pending_price_count
         FROM xsy_purchase_order o
         LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id
@@ -65,6 +66,7 @@
             4) ELSE NULL END AS received_progress, o.remark, o.cancel_reason, o.short_close_reason, o.submitted_at,
             o.cancelled_at, o.short_closed_at, o.locked_flag, o.locked_at, o.locked_by, o.lock_reason,
             o.auto_lock_at, o.version, o.created_at, o.updated_at,
+            (SELECT a.id FROM xsy_purchase_account a WHERE a.purchase_order_id = o.id) AS account_id,
             COALESCE(agg.pending_price_count, 0) AS pending_price_count
         FROM xsy_purchase_order o
         LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id

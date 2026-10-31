@@ -43,8 +43,14 @@ export const purchaseOrderApi = {
     getRequest<PurchaseCostAdjustment[]>(`/scm/purchase/cost-adjustment/options/${id}`, {}, options),
   costAdjustmentHistory: (id: Id, options?: RequestOptions) =>
     getRequest<PurchaseCostAdjustment[]>(`/scm/purchase/cost-adjustment/history/${id}`, {}, options),
-  costAdjustmentAdd: (data: {receiptItemId: Id; previousAdjustmentId?: Id | null; expectedPrice: string; newPrice: string; reason: string}) =>
-    purchaseCommand<PurchaseCostAdjustment>('/scm/purchase/cost-adjustment/add', data),
+  costAdjustmentAdd: (data: {
+    receiptItemId?: Id | null;
+    accountItemId?: Id | null;
+    previousAdjustmentId?: Id | null;
+    expectedPrice: string;
+    newPrice: string;
+    reason: string;
+  }) => purchaseCommand<PurchaseCostAdjustment>('/scm/purchase/cost-adjustment/add', data),
   financeConfirm: (data: {
     purchaseOrderId: Id;
     version: number;

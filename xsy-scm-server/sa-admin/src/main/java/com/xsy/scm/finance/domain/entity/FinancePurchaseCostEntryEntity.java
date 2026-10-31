@@ -9,6 +9,7 @@ import lombok.Data;
 public class FinancePurchaseCostEntryEntity {
     private Long id;
     private Long adjustmentId;
+    private Long accountItemId;
     private Long receiptItemId;
     private Long originalPayableId;
     private BigDecimal amount;

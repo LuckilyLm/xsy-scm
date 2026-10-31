@@ -28,6 +28,8 @@ public class PurchaseOrderVO {
     private String warehouseName;
     private LocalDate plannedArrivalDate;
     private String status;
+    private Long accountId;
+    private PurchaseAccountVO account;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal totalAmount;
     /**

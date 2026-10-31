@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 /**
  * 负库存出库与损耗报表。
  *
- * <p>负库存只对开启开关的仓库、且没有预留的余额生效；关闭开关前必须先把负余额补平。
+ * <p>负库存只对开启开关的仓库生效，已有预留不会阻断发货；关闭开关前必须先把负余额补平。
  * 报表是查询时点快照，只读余额和流水，不生成报损单。
  */
 class InventoryNegativeStockIT extends ScmW6PgITBase {
@@ -107,6 +107,18 @@ class InventoryNegativeStockIT extends ScmW6PgITBase {
         update.setAllowNegativeStock(false);
         expectCode(() -> warehouseService.update(update), 41010);
         assertThat(warehouseService.require(negativeWarehouseId).getAllowNegativeStock()).isTrue();
+    }
+
+    @Test
+    void otherOrderReservationIsPreservedWhileShippingBelowZero() {
+        Long skuId = newSkuOfType("RESERVED-NEGATIVE", "NON_STANDARD", "ON_SHELF");
+        jdbc.update("INSERT INTO xsy_inventory_balance(warehouse_id, sku_id, unit, quantity, reserved_quantity, avg_cost)"
+            + " VALUES (?, ?, 'kg', 3, 2, 1)", negativeWarehouseId, skuId);
+        evictMybatisCache();
+        inventoryCommandService.postSalesOutbound(new InventoryOutboundFact(negativeWarehouseId, skuId, 0L,
+            950105L, new BigDecimal("5.0000"), null, OffsetDateTime.now(), "test:1", "kg"));
+        assertThat(balanceRow(negativeWarehouseId, skuId).getQuantity()).isEqualByComparingTo("-2");
+        assertThat(balanceRow(negativeWarehouseId, skuId).getReservedQuantity()).isEqualByComparingTo("2");
     }
 
     @Test

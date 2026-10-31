@@ -7,20 +7,21 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 采购单状态（6 值）。
+ * 采购单状态。
  *
  * <p>
  * 取值与 {@code ck_purchase_order_status} 一致。
  *
  * <p>
- * 终态为 {@code RECEIVED} / {@code SHORT_CLOSED} / {@code CANCELLED}； {@code PARTIALLY_RECEIVED} 不允许 cancel，需要终止时使用
- * {@code shortClose}。
+ * 终态为 {@code ACCOUNTED} / {@code RECEIVED} / {@code SHORT_CLOSED} / {@code CANCELLED}； {@code PARTIALLY_RECEIVED} 不允许
+ * cancel，需要终止时使用 {@code shortClose}。
  */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPurchaseStatusEnum {
     DRAFT("草稿"),
     SUBMITTED("已提交"),
+    ACCOUNTED("采购已确认"),
     PARTIALLY_RECEIVED("部分收货"),
     RECEIVED("已收货"),
     SHORT_CLOSED("少收关单"),
@@ -51,7 +52,7 @@ public enum ScmPurchaseStatusEnum {
      */
     public boolean committed() {
         return switch (this) {
-            case SUBMITTED, PARTIALLY_RECEIVED, RECEIVED, SHORT_CLOSED -> true;
+            case SUBMITTED, ACCOUNTED, PARTIALLY_RECEIVED, RECEIVED, SHORT_CLOSED -> true;
             case DRAFT, CANCELLED -> false;
         };
     }

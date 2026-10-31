@@ -5,6 +5,8 @@ import cn.dev33.satoken.annotation.SaMode;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.trace.domain.form.TraceInspectionReportActionForm;
 import com.xsy.scm.trace.domain.form.TraceInspectionReportSaveForm;
+import com.xsy.scm.trace.domain.form.TraceInspectionPhotoForm;
+import org.springframework.web.bind.annotation.RequestParam;
 import com.xsy.scm.trace.domain.vo.TraceInspectionReportVO;
 import com.xsy.scm.trace.permission.TracePermission;
 import com.xsy.scm.trace.service.TraceInspectionReportService;
@@ -26,6 +28,26 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class TraceInspectionReportController {
     private final TraceInspectionReportService traceInspectionReportService;
+
+    @GetMapping("/photos")
+    @SaCheckPermission(TracePermission.PHOTO_QUERY)
+    public ResponseDTO<List<TraceInspectionReportVO>> photos(@RequestParam(required = false) Long beforeId) {
+        return ResponseDTO.ok(traceInspectionReportService.photos(beforeId));
+    }
+
+    @PostMapping("/photos")
+    @SaCheckPermission(TracePermission.PHOTO_UPLOAD)
+    public ResponseDTO<TraceInspectionReportVO> uploadPhotos(@Valid @RequestBody TraceInspectionPhotoForm form) {
+        return ResponseDTO.ok(traceInspectionReportService.uploadPhotos(form, ScmOperator.current()));
+    }
+
+    @PostMapping("/photos/{id}/remove")
+    @SaCheckPermission(TracePermission.PHOTO_REMOVE)
+    public ResponseDTO<String> removePhotos(@PathVariable Long id,
+        @Valid @RequestBody TraceInspectionReportActionForm form) {
+        traceInspectionReportService.removePhotos(id, form.getVersion(), ScmOperator.current());
+        return ResponseDTO.ok();
+    }
 
     @GetMapping("/lot/{lotId}")
     @SaCheckPermission(value = {TracePermission.UNIT_QUERY, TracePermission.INSPECTION_MANAGE}, mode = SaMode.OR)

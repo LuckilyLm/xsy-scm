@@ -23,6 +23,8 @@ public final class FinanceCustomerExpenseForm {
         private Long customerId;
         @NotNull(message = "请选择费用月份")
         private LocalDate expenseMonth;
+        @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "实际商品成本格式无效")
+        private String goodsCostAmount;
         @NotBlank(message = "请填写税费，无费用时填0")
         @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "税费金额格式无效")
         private String taxAmount;

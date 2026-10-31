@@ -8,6 +8,9 @@ import lombok.Data;
 public class FinancePurchaseCostSourceDto {
     private Long id;
     private String adjustmentNo;
+    private Long accountItemId;
+    private Long accountId;
+    private String accountNo;
     private Long receiptItemId;
     private Long receiptId;
     private Long purchaseOrderId;

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.purchase.dao.PurchaseAccountDao">
+    <select id="nextNumber" resultType="long">SELECT nextval('purchase_account_no_seq')</select>
+    <select id="accountId" resultType="long">SELECT id FROM xsy_purchase_account WHERE purchase_order_id = #{orderId}</select>
+    <select id="hasConfirmedReceipt" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM xsy_purchase_receipt WHERE purchase_order_id = #{orderId} AND NOT deleted AND status = 'CONFIRMED')
+    </select>
+    <select id="byOrder" resultType="com.xsy.scm.purchase.domain.vo.PurchaseAccountVO">
+        SELECT * FROM xsy_purchase_account WHERE purchase_order_id = #{orderId}
+    </select>
+    <select id="items" resultType="com.xsy.scm.purchase.domain.vo.PurchaseAccountVO$Item">
+        SELECT * FROM xsy_purchase_account_item WHERE account_id = #{accountId} ORDER BY id
+    </select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO xsy_purchase_account(account_no, purchase_order_id, supplier_id, supplier_name_snapshot,
+            warehouse_id, remark, confirmed_at, confirmed_by)
+        VALUES (#{accountNo}, #{purchaseOrderId}, #{supplierId}, #{supplierNameSnapshot}, #{warehouseId},
+            #{remark}, #{confirmedAt}, #{confirmedBy})
+    </insert>
+    <insert id="insertItem" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO xsy_purchase_account_item(account_id, purchase_order_item_id, sku_id, product_name_snapshot,
+            sku_name_snapshot, unit_snapshot, quantity, unit_price, amount)
+        VALUES (#{accountId}, #{purchaseOrderItemId}, #{skuId}, #{productNameSnapshot}, #{skuNameSnapshot},
+            #{unitSnapshot}, #{quantity}, #{unitPrice}, #{amount})
+    </insert>
+</mapper>

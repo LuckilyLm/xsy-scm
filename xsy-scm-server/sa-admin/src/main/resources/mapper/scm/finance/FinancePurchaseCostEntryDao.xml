@@ -2,8 +2,8 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.finance.dao.FinancePurchaseCostEntryDao">
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO xsy_finance_purchase_cost_entry(adjustment_id, receipt_item_id, original_payable_id, amount, created_by)
-        VALUES (#{adjustmentId}, #{receiptItemId}, #{originalPayableId}, #{amount}, #{createdBy})
+        INSERT INTO xsy_finance_purchase_cost_entry(adjustment_id, account_item_id, receipt_item_id, original_payable_id, amount, created_by)
+        VALUES (#{adjustmentId}, #{accountItemId}, #{receiptItemId}, #{originalPayableId}, #{amount}, #{createdBy})
     </insert>
     <select id="lockTargets" resultType="com.xsy.scm.finance.domain.dto.FinancePurchaseCostTargetDto">
         SELECT p.id AS payable_id, p.amount, item.amount AS line_amount,
@@ -20,7 +20,10 @@
         WHERE p.entry_type = 'NORMAL' AND p.deleted = FALSE
             AND ((p.source_type = 'PURCHASE_RECEIPT' AND p.source_id = #{receiptId}
                 AND item.source_type = 'PURCHASE_RECEIPT_ITEM' AND item.source_id = #{receiptItemId})
-                OR (p.source_type = 'PURCHASE_COST_ADJUSTMENT' AND entry.receipt_item_id = #{receiptItemId}))
+                OR (p.source_type = 'PURCHASE_ACCOUNT' AND p.source_id = #{accountId}
+                    AND item.source_type = 'PURCHASE_ACCOUNT_ITEM' AND item.source_id = #{accountItemId})
+                OR (p.source_type = 'PURCHASE_COST_ADJUSTMENT'
+                    AND (entry.receipt_item_id = #{receiptItemId} OR entry.account_item_id = #{accountItemId})))
         ORDER BY p.id FOR UPDATE OF p
     </select>
     <select id="capacity" resultType="com.xsy.scm.finance.domain.dto.FinancePurchaseCostTargetDto">

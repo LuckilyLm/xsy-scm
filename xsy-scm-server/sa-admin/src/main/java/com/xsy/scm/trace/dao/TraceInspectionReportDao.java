@@ -10,6 +10,11 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface TraceInspectionReportDao {
+    Long nextPhotoNo();
+    List<TraceInspectionReportVO> photos(@Param("beforeId") Long beforeId);
+    TraceInspectionReportVO lockPhoto(@Param("id") Long id);
+    int removePhoto(TraceInspectionReportVO report);
+
     List<TraceInspectionReportVO> listByLot(@Param("lotId") Long lotId, @Param("scope") ScmValueScope scope);
 
     TraceInspectionReportVO lockById(@Param("id") Long id, @Param("scope") ScmValueScope scope);

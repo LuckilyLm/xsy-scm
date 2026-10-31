@@ -47,4 +47,13 @@
             AND pr.deleted = FALSE
     </select>
 
+    <select id="selectPurchaseAccount" resultType="com.xsy.scm.finance.domain.dto.FinancePayableSourceDto">
+        SELECT id AS purchase_account_id, purchase_order_id, supplier_id, supplier_name_snapshot, confirmed_at
+        FROM xsy_purchase_account WHERE id = #{id}
+    </select>
+    <select id="selectPurchaseAccountLines" resultType="com.xsy.scm.finance.domain.dto.FinancePayableSourceLineDto">
+        SELECT id AS purchase_account_item_id, purchase_order_item_id, sku_id, sku_name_snapshot,
+            unit_snapshot, quantity, unit_price
+        FROM xsy_purchase_account_item WHERE account_id = #{id} AND quantity &gt; 0 ORDER BY id
+    </select>
 </mapper>

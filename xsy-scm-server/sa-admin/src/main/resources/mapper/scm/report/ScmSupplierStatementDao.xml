@@ -32,10 +32,16 @@
 
     <select id="selectEvents" resultType="com.xsy.scm.report.domain.vo.ScmSupplierStatementItemVO">
         WITH eligible AS(SELECT p.id, p.supplier_id, po.order_no AS purchase_order_no,
-            pr.receipt_no FROM xsy_finance_payable p JOIN xsy_purchase_receipt pr ON p.source_type = 'PURCHASE_RECEIPT'
-            AND pr.id = p.source_id AND
-            pr.deleted = FALSE JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id AND
-            po.deleted = FALSE WHERE p.deleted = FALSE AND p.entry_type = 'NORMAL' AND
+            COALESCE(pr.receipt_no, pac.account_no, adjustment.adjustment_no, po.order_no) AS receipt_no
+            FROM xsy_finance_payable p
+            JOIN xsy_purchase_order po ON po.id = p.purchase_order_id AND po.deleted = FALSE
+            LEFT JOIN xsy_purchase_receipt pr ON p.source_type = 'PURCHASE_RECEIPT'
+                AND pr.id = p.source_id AND pr.deleted = FALSE
+            LEFT JOIN xsy_purchase_account pac ON p.source_type = 'PURCHASE_ACCOUNT' AND pac.id = p.source_id
+            LEFT JOIN xsy_finance_purchase_cost_entry cost_entry ON p.source_type = 'PURCHASE_COST_ADJUSTMENT'
+                AND cost_entry.id = p.source_id
+            LEFT JOIN xsy_purchase_cost_adjustment adjustment ON adjustment.id = cost_entry.adjustment_id
+            WHERE p.deleted = FALSE AND p.entry_type = 'NORMAL' AND
             p.supplier_id = #{query.supplierId}
         <include refid="purchaseScope"/>
         ), supplier_payments AS(
@@ -52,7 +58,7 @@
             p.event_at, p.payable_no, original.payable_no, -p.amount, 0, 0,
             p.created_at FROM xsy_finance_payable p JOIN eligible e ON e.id = p.original_payable_id JOIN
             xsy_finance_payable original ON original.id = e.id AND original.deleted = FALSE WHERE p.deleted = FALSE AND
-            p.entry_type = 'RED' AND p.source_type = 'MANUAL' AND
+            p.entry_type = 'RED' AND
             p.supplier_id = #{query.supplierId} UNION ALL SELECT CASE WHEN pm.entry_type = 'NORMAL' THEN 'PAYMENT' ELSE
             'PAYMENT_REVERSE' END, pm.id, pm.paid_at, pm.payment_no, original.payment_no, 0,
             CASE WHEN pm.entry_type = 'NORMAL' THEN pm.amount ELSE -pm.amount END, 0,

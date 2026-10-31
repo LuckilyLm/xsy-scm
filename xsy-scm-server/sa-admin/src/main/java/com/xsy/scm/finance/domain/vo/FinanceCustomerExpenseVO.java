@@ -16,6 +16,8 @@ public class FinanceCustomerExpenseVO {
     private Long customerId;
     private String customerName;
     private LocalDate expenseMonth;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal goodsCostAmount;
     @JsonSerialize(using = ScmFixedScale4Serializer.class)
     private BigDecimal taxAmount;
     @JsonSerialize(using = ScmFixedScale4Serializer.class)

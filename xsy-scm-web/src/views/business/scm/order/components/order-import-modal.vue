@@ -39,7 +39,17 @@
       status="success"
       title="订单导入完成"
       :sub-title="`共 ${result.totalOrders} 张：已确认 ${result.confirmedOrders} 张，待称重 ${result.pendingOrders} 张`"
-    />
+    >
+      <template #extra>
+        <a-table :data-source="result.orders" :columns="importedColumns" row-key="orderId" size="small" :pagination="{pageSize: 5}">
+          <template #bodyCell="{column, record}">
+            <a-button v-if="column.dataIndex === 'review'" v-privilege="'scm:order:update'" type="link" @click="reviewImported(record.orderId)"
+              >核对商品与价格</a-button
+            >
+          </template>
+        </a-table>
+      </template>
+    </a-result>
     <div v-else-if="result?.totalErrors" class="import-errors">
       <a-alert type="error" show-icon :message="`发现 ${result.totalErrors} 个问题，订单未写入`" class="error-summary" />
       <a-table
@@ -53,15 +63,17 @@
       />
     </div>
   </a-modal>
+  <OrderForm ref="reviewForm" @saved="emit('saved')" />
 </template>
 <script setup lang="ts">
-import {computed, ref} from 'vue';
+import {computed, nextTick, ref} from 'vue';
+import OrderForm from './order-form-drawer.vue';
 import {message, Upload} from 'ant-design-vue';
 import {DownloadOutlined, InboxOutlined} from '@ant-design/icons-vue';
 import type {UploadFile, UploadProps, TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
 import FormNote from '/@/components/framework/form-note/index.vue';
-import type {ImportError, ImportResult} from '../order-types';
+import type {Id, ImportError, ImportResult} from '../order-types';
 
 const IMPORT_RULES = [
   '一张送货单生成一张订单：收货单位填客户档案里的客户名称，日期即期望送货日期。',
@@ -77,6 +89,18 @@ const visible = ref(false),
   result = ref<ImportResult>(),
   fileList = ref<UploadFile[]>([]);
 const selectedFile = ref<File>();
+const reviewForm = ref<InstanceType<typeof OrderForm>>();
+const importedColumns = [
+  {title: '订单号', dataIndex: 'orderNo'},
+  {title: '客户', dataIndex: 'customerNameSnapshot'},
+  {title: '操作', dataIndex: 'review', width: 160},
+];
+async function reviewImported(id: Id) {
+  visible.value = false;
+  await nextTick();
+  await reviewForm.value?.open(id);
+}
+
 const imported = computed(() => !!result.value && result.value.totalErrors === 0);
 const columns: TableColumnsType<ImportError> = [
   {title: '行号', dataIndex: 'rowNumber', width: 72},

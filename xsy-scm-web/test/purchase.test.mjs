@@ -813,7 +813,15 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
   });
 
   test('purchase enums expose exactly the states the backend state machine allows', () => {
-    assert.deepEqual(Object.keys(SCM_PURCHASE_STATUS_ENUM), ['DRAFT', 'SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED', 'CANCELLED']);
+    assert.deepEqual(Object.keys(SCM_PURCHASE_STATUS_ENUM), [
+      'DRAFT',
+      'SUBMITTED',
+      'ACCOUNTED',
+      'PARTIALLY_RECEIVED',
+      'RECEIVED',
+      'SHORT_CLOSED',
+      'CANCELLED',
+    ]);
     assert.deepEqual(
       Object.values(SCM_PURCHASE_STATUS_ENUM).map((e) => e.value),
       Object.keys(SCM_PURCHASE_STATUS_ENUM)

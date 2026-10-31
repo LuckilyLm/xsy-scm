@@ -36,6 +36,9 @@ public class FinanceCustomerExpenseService {
     @Transactional(readOnly = true)
     public PageResult<FinanceCustomerExpenseVO> query(FinanceCustomerExpenseForm.Query form) {
         requireMonth(form.getExpenseMonth());
+        if (!dataScopeService.resolve().isCostVisible()) {
+            throw new ScmDataScopeException();
+        }
         var scope = dataScopeService.resolve().getCustomerSellerScope();
         if (scope.isEmpty()) {
             return ScmDataScopeService.emptyPage(form);
@@ -54,7 +57,8 @@ public class FinanceCustomerExpenseService {
         requireVisible(customer.getSellerId());
         List<BigDecimal> amounts = List.of(amount(form.getTaxAmount()), amount(form.getServiceAmount()),
             amount(form.getFreightAmount()), amount(form.getCommissionAmount()));
-        if (amounts.stream().reduce(BigDecimal.ZERO, BigDecimal::add).signum() <= 0) {
+        BigDecimal goodsCost = form.getGoodsCostAmount() == null ? null : amount(form.getGoodsCostAmount());
+        if (goodsCost == null && amounts.stream().reduce(BigDecimal.ZERO, BigDecimal::add).signum() <= 0) {
             throw new ScmBusinessException(FinanceErrorCode.EXPENSE_AMOUNT_INVALID);
         }
         var claim = idempotencyService.claim("FINANCE_CUSTOMER_EXPENSE_ADD", key, form);
@@ -66,6 +70,7 @@ public class FinanceCustomerExpenseService {
         expense.setCustomerId(customer.getCustomerId());
         expense.setCustomerNameSnapshot(customer.getCustomerName());
         expense.setExpenseMonth(form.getExpenseMonth());
+        expense.setGoodsCostAmount(goodsCost);
         expense.setTaxAmount(amounts.get(0));
         expense.setServiceAmount(amounts.get(1));
         expense.setFreightAmount(amounts.get(2));
@@ -98,7 +103,8 @@ public class FinanceCustomerExpenseService {
     }
 
     private void requireVisible(Long sellerId) {
-        if (!dataScopeService.resolve().getCustomerSellerScope().allows(sellerId)) {
+        if (!dataScopeService.resolve().isCostVisible()
+            || !dataScopeService.resolve().getCustomerSellerScope().allows(sellerId)) {
             throw new ScmDataScopeException();
         }
     }

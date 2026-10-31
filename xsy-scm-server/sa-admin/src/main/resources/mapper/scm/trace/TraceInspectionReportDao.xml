@@ -12,6 +12,7 @@
     </sql>
 
     <sql id="scope">
+        AND r.lot_id IS NOT NULL AND NOT r.removed
         <choose>
             <when test="scope == null or scope.empty">AND FALSE</when>
             <when test="!scope.all">
@@ -90,4 +91,22 @@
             AND version = #{version}
     </update>
 
+    <select id="nextPhotoNo" resultType="long">SELECT nextval('inspection_photo_no_seq')</select>
+    <select id="photos" resultType="com.xsy.scm.trace.domain.vo.TraceInspectionReportVO">
+        <include refid="columns"/>
+        WHERE r.lot_id IS NULL AND NOT r.removed
+        <if test="beforeId != null">AND r.id &lt; #{beforeId}</if>
+        ORDER BY r.id DESC LIMIT 50
+    </select>
+    <select id="lockPhoto" resultType="com.xsy.scm.trace.domain.vo.TraceInspectionReportVO">
+        <include refid="columns"/>
+        WHERE r.id = #{id} AND r.lot_id IS NULL AND NOT r.removed FOR UPDATE OF r
+    </select>
+    <update id="removePhoto">
+        UPDATE xsy_trace_inspection_report SET removed = TRUE, version = version + 1,
+            updated_by = #{updatedBy}, updated_at = CURRENT_TIMESTAMP,
+            operation_history = operation_history || jsonb_build_array(jsonb_build_object(
+                'action', 'REMOVE', 'operator', CAST(#{updatedBy} AS text), 'at', CURRENT_TIMESTAMP))
+        WHERE id = #{id} AND lot_id IS NULL AND NOT removed AND version = #{version}
+    </update>
 </mapper>

@@ -14,6 +14,7 @@ import com.xsy.scm.purchase.constant.ScmWeighingSourceEnum;
 import com.xsy.scm.finance.constant.ScmFinancePayableSourceTypeEnum;
 import com.xsy.scm.purchase.dao.PurchaseOperationLogDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderDao;
+import com.xsy.scm.purchase.dao.PurchaseAccountDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderItemDao;
 import com.xsy.scm.purchase.dao.PurchaseReceiptDao;
 import com.xsy.scm.purchase.dao.PurchaseReceiptItemDao;
@@ -90,6 +91,7 @@ public class PurchaseReceiptService {
     private final ReceiptWeighingRecordDao receiptWeighingRecordDao;
 
     private final PurchaseOrderDao purchaseOrderDao;
+    private final PurchaseAccountDao purchaseAccountDao;
 
     private final PurchaseOrderItemDao purchaseOrderItemDao;
 
@@ -160,7 +162,8 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
         purchaseOwnerResolver.requireVisible(order.getPurchaserId());
-        if (!PurchaseOrderStateMachine.receivable(order.getStatus())) {
+        if (purchaseAccountDao.accountId(order.getId()) != null
+            || !PurchaseOrderStateMachine.receivable(order.getStatus())) {
             // RECEIVED / SHORT_CLOSED / CANCELLED / DRAFT 都不允许新收货
             throw new ScmBusinessException(PURCHASE_RECEIPT_ORDER_STATE_INVALID);
         }
@@ -265,7 +268,8 @@ public class PurchaseReceiptService {
         if (!ScmReceiptStatusEnum.DRAFT.name().equals(receipt.getStatus())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_STATE_INVALID);
         }
-        if (!PurchaseOrderStateMachine.receivable(order.getStatus())) {
+        if (purchaseAccountDao.accountId(order.getId()) != null
+            || !PurchaseOrderStateMachine.receivable(order.getStatus())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_ORDER_STATE_INVALID);
         }
 

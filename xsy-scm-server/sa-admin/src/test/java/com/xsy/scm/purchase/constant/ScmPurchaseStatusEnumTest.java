@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>操作日志类型追加了收货入库与采购价后置/锁单两组类型，该白名单与归属 CHECK 从
  * {@code V200__scm_purchase_log_receipt_putaway.sql} 读取（V200 是
  * {@code ck_purchase_operation_log_type} / {@code ck_purchase_operation_log_owner} 的最终形态），
- * 其余状态白名单仍读 V15。
+ * 采购单状态读 V217，其余状态白名单仍读 V15。
  */
 class ScmPurchaseStatusEnumTest {
 
@@ -31,11 +31,16 @@ class ScmPurchaseStatusEnumTest {
     private static final String V200_MIGRATION = "/db/migration/V200__scm_purchase_log_receipt_putaway.sql";
 
     @Test
-    @DisplayName("采购单 6 态与 ck_purchase_order_status 白名单一致")
+    @DisplayName("采购单 7 态与 ck_purchase_order_status 白名单一致")
     void purchaseOrderStatusMatchesDdl() {
         assertThat(names(ScmPurchaseStatusEnum.values()))
-                .isEqualTo(whitelist(MIGRATION, "ck_purchase_order_status"));
-        assertThat(ScmPurchaseStatusEnum.values()).hasSize(6);
+                .isEqualTo(whitelist("/db/migration/V217__scm_purchase_account_without_stock.sql", "ck_purchase_order_status"));
+        assertThat(ScmPurchaseStatusEnum.values()).hasSize(7);
+        assertThat(ScmPurchaseStatusEnum.ACCOUNTED.committed()).isTrue();
+        assertThat(com.xsy.scm.purchase.manager.PurchaseOrderStateMachine.canTransition("SUBMITTED", "ACCOUNTED")).isTrue();
+        assertThat(com.xsy.scm.purchase.manager.PurchaseOrderStateMachine.terminal("ACCOUNTED")).isTrue();
+        assertThat(com.xsy.scm.purchase.manager.PurchaseOrderStateMachine.receivable("ACCOUNTED")).isFalse();
+        assertThat(com.xsy.scm.purchase.manager.PurchaseOrderStateMachine.cancellable("ACCOUNTED")).isFalse();
         // 终态判定：RECEIVED / SHORT_CLOSED / CANCELLED 不再有任何后继
         assertThat(ScmPurchaseStatusEnum.RECEIVED).isNotNull();
         assertThat(ScmPurchaseStatusEnum.SHORT_CLOSED).isNotNull();

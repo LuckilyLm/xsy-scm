@@ -4,6 +4,7 @@ import type {SmartEnum} from '/@/types/smart-enum';
 export const SCM_PURCHASE_STATUS_ENUM: SmartEnum<string> = {
   DRAFT: {value: 'DRAFT', desc: '草稿'},
   SUBMITTED: {value: 'SUBMITTED', desc: '已提交'},
+  ACCOUNTED: {value: 'ACCOUNTED', desc: '采购已确认'},
   PARTIALLY_RECEIVED: {value: 'PARTIALLY_RECEIVED', desc: '部分收货'},
   RECEIVED: {value: 'RECEIVED', desc: '已收货'},
   SHORT_CLOSED: {value: 'SHORT_CLOSED', desc: '少收关单'},

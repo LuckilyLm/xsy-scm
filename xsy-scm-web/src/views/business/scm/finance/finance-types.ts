@@ -3,6 +3,7 @@ import type {ScmId, ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 export type FinanceId = ScmId;
 
 export interface CustomerExpenseAdd {
+  goodsCostAmount?: string | null;
   customerId: FinanceId;
   expenseMonth: string;
   taxAmount: string;

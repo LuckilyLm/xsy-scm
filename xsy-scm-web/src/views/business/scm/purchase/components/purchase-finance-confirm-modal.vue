@@ -1,7 +1,7 @@
 <template>
   <a-modal
     v-model:open="visible"
-    title="财务确认采购"
+    title="确认采购"
     :width="960"
     :confirm-loading="saving"
     :closable="!saving"
@@ -14,7 +14,7 @@
     <a-alert v-if="error" :message="error" type="error" show-icon
       ><template #action><a-button @click="load">重试</a-button></template></a-alert
     >
-    <p class="scm-note">请核对实际采购数量与单价。确认后同时完成收货入库并生成供应商应付；已有分批收货记录的采购单请在收货页继续处理。</p>
+    <p class="scm-note">核对实际采购数量与单价后即可生成供应商应付。未采购的商品填写0，至少一项实际数量大于0。</p>
     <a-alert v-if="hasPendingPrice" type="warning" show-icon message="采购明细尚有待定价项，请返回采购单补价后重新打开。" />
     <a-table
       :data-source="lines"
@@ -29,8 +29,8 @@
         <template v-if="column.dataIndex === 'purchasePrice'"
           ><span class="scm-money">{{ record.pricePending ? '待定价' : price(record.purchasePrice) }}</span></template
         >
-        <template v-else-if="column.dataIndex === 'remainingQuantity'"
-          ><span class="scm-quantity">{{ quantity(record.remainingQuantity) }}</span></template
+        <template v-else-if="column.dataIndex === 'plannedQuantity'"
+          ><span class="scm-quantity">{{ quantity(record.plannedQuantity) }}</span></template
         >
         <template v-else-if="column.dataIndex === 'confirmedQuantity'"
           ><a-input-number
@@ -45,7 +45,7 @@
       </template>
     </a-table>
     <a-checkbox v-model:checked="acknowledged" :disabled="loading || saving || hasPendingPrice" class="confirmation-check"
-      >已核对实际数量和采购单价，确认生成入库与应付记录</a-checkbox
+      >已核对实际数量和采购单价，确认登记应付</a-checkbox
     >
   </a-modal>
 </template>
@@ -74,7 +74,7 @@ const columns: TableColumnsType<ConfirmLine> = [
   {title: '商品名称', dataIndex: 'productName', width: 200},
   {title: '规格', dataIndex: 'skuName', width: 140},
   {title: '单位', dataIndex: 'purchaseUnit', width: 76, align: 'center'},
-  {title: '未收数量', dataIndex: 'remainingQuantity', width: 120, align: 'right'},
+  {title: '计划采购数量', dataIndex: 'plannedQuantity', width: 120, align: 'right'},
   {title: '采购单价', dataIndex: 'purchasePrice', width: 132, align: 'right'},
   {title: '实际采购数量', dataIndex: 'confirmedQuantity', width: 160, align: 'right'},
 ];
@@ -95,12 +95,12 @@ async function load() {
   try {
     const response = await purchaseOrderApi.detail(orderId.value, {suppressGlobalErrorMessage: true});
     if (id !== requestId) return;
-    if (response.data.status !== 'SUBMITTED') {
-      error.value = '该采购单已有收货或已关闭，请刷新采购单并在收货页继续处理。';
+    if (response.data.status !== 'SUBMITTED' || response.data.accountId != null) {
+      error.value = '该采购单已确认、已有收货或已关闭，请刷新后查看。';
       return;
     }
     order.value = response.data;
-    lines.value = (response.data.items ?? []).map((line) => ({...line, confirmedQuantity: fixed(line.remainingQuantity)}));
+    lines.value = (response.data.items ?? []).map((line) => ({...line, confirmedQuantity: fixed(line.plannedQuantity)}));
   } catch (e) {
     if (id === requestId) error.value = purchaseError(e);
   } finally {
@@ -111,9 +111,18 @@ async function confirm() {
   if (saving.value || !order.value?.id || !acknowledged.value || hasPendingPrice.value) return;
   if (
     !lines.value.length ||
-    lines.value.some((line) => !line.id || line.version == null || !line.purchaseUnit || !(Number(line.confirmedQuantity) > 0))
+    lines.value.some(
+      (line) =>
+        !line.id ||
+        line.version == null ||
+        !line.purchaseUnit ||
+        line.confirmedQuantity == null ||
+        !Number.isFinite(Number(line.confirmedQuantity)) ||
+        Number(line.confirmedQuantity) < 0
+    ) ||
+    !lines.value.some((line) => Number(line.confirmedQuantity) > 0)
   ) {
-    message.warning('请为每行填写大于0的实际采购数量');
+    message.warning('请填写非负的实际采购数量，至少一项大于0');
     return;
   }
   saving.value = true;
@@ -129,7 +138,7 @@ async function confirm() {
         purchaseUnit: line.purchaseUnit!,
       })),
     });
-    message.success('采购已确认，入库与应付已生成');
+    message.success('采购已确认');
     visible.value = false;
     emit('saved');
   } catch {

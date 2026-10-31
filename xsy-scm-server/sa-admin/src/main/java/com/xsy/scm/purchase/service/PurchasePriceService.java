@@ -9,6 +9,7 @@ import com.xsy.scm.purchase.constant.ScmPurchasePriceSourceEnum;
 import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import com.xsy.scm.purchase.dao.PurchaseOperationLogDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderDao;
+import com.xsy.scm.purchase.dao.PurchaseAccountDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderItemDao;
 import com.xsy.scm.purchase.dao.PurchasePriceAdjustDao;
 import com.xsy.scm.purchase.domain.entity.PurchaseOrderEntity;
@@ -66,6 +67,7 @@ public class PurchasePriceService {
     public static final String AUTO_FILL_OPERATOR = "system:purchase-price-auto-fill";
 
     private final PurchaseOrderDao purchaseOrderDao;
+    private final PurchaseAccountDao purchaseAccountDao;
 
     private final PurchaseOrderItemDao purchaseOrderItemDao;
 
@@ -283,6 +285,10 @@ public class PurchasePriceService {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
         purchaseOwnerResolver.requireVisible(order.getPurchaserId());
+        if (purchaseAccountDao.accountId(order.getId()) != null) {
+            throw new ScmBusinessException(
+                com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID);
+        }
         return order;
     }
 

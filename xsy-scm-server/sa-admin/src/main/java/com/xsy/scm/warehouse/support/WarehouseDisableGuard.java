@@ -12,6 +12,6 @@ public interface WarehouseDisableGuard {
      */
     WarehouseErrorCode disableBlocker(Long warehouseId);
 
-    /** 该仓是否还有负库存余额；关闭负库存开关前检查，避免已发出的货失去账面对应。 */
+    /** 关闭开关前检查负余额及预留缺口，避免旧余额不再符合普通仓约束。 */
     boolean hasNegativeStock(Long warehouseId);
 }

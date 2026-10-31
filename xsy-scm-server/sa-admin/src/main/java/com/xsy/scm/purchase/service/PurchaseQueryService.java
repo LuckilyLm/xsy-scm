@@ -7,6 +7,7 @@ import com.xsy.scm.purchase.dao.PurchaseDemandAllocationDao;
 import com.xsy.scm.purchase.dao.PurchaseDemandDao;
 import com.xsy.scm.purchase.dao.PurchaseOperationLogDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderDao;
+import com.xsy.scm.purchase.dao.PurchaseAccountDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderItemDao;
 import com.xsy.scm.purchase.dao.PurchaseReceiptDao;
 import com.xsy.scm.purchase.dao.PurchaseReceiptItemDao;
@@ -65,6 +66,7 @@ public class PurchaseQueryService {
     private final PurchaseDemandAllocationDao purchaseDemandAllocationDao;
 
     private final PurchaseOrderDao purchaseOrderDao;
+    private final PurchaseAccountDao purchaseAccountDao;
 
     private final PurchaseOrderItemDao purchaseOrderItemDao;
 
@@ -222,6 +224,12 @@ public class PurchaseQueryService {
         // 归属已在本方法判定过，子读不再重复取父行
         List<PurchaseOrderItemVO> items = orderItems(purchaseOrderId, ScmValueScope.all());
         vo.setItems(items);
+        if (vo.getAccountId() != null && dataScopeService.resolve().isCostVisible()
+            && dataScopeService.resolve().getWarehouseScope().allows(vo.getWarehouseId())) {
+            var account = purchaseAccountDao.byOrder(purchaseOrderId);
+            account.setItems(purchaseAccountDao.items(account.getId()));
+            vo.setAccount(account);
+        }
         // 单级平铺：前端「分配明细」区直接消费，不需要自己扁平化 items[].allocations[]
         vo.setAllocations(items.stream().flatMap(item -> item.getAllocations().stream()).toList());
         vo.setLogs(orderLogs(purchaseOrderId, ScmValueScope.all()));

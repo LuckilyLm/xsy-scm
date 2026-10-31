@@ -8,6 +8,8 @@ import com.xsy.scm.trace.constant.ScmTraceInspectionStatusEnum;
 import com.xsy.scm.trace.dao.TraceInspectionReportDao;
 import com.xsy.scm.trace.dao.TraceUnitDao;
 import com.xsy.scm.trace.domain.form.TraceInspectionReportSaveForm;
+import com.xsy.scm.trace.domain.form.TraceInspectionPhotoForm;
+import com.xsy.scm.trace.constant.ScmTraceInspectionConclusionEnum;
 import com.xsy.scm.trace.domain.vo.TraceInspectionReportVO;
 
 import java.time.LocalDate;
@@ -113,6 +115,51 @@ public class TraceInspectionReportService {
         if (traceInspectionReportDao.withdraw(report) != 1) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_REPORT_STATE_INVALID);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<TraceInspectionReportVO> photos(Long beforeId) {
+        var reports = traceInspectionReportDao.photos(beforeId);
+        reports.forEach(this::fillAttachments);
+        return reports;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public TraceInspectionReportVO uploadPhotos(TraceInspectionPhotoForm form, String operator) {
+        var keys = validateFiles(form.getFileKeys(), true);
+        var files = fileService.getFileMetadata(keys);
+        if (files.stream().anyMatch(file -> file.getFileName().toLowerCase(Locale.ROOT).endsWith(".pdf"))) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_REPORT_FILE_INVALID);
+        }
+        var report = new TraceInspectionReportVO();
+        report.setReportNo("PHOTO-" + traceInspectionReportDao.nextPhotoNo());
+        String name = form.getReportName();
+        if (name == null || name.isBlank()) {
+            name = files.get(0).getFileName();
+        }
+        report.setReportName(name.trim().substring(0, Math.min(name.trim().length(), 200)));
+        report.setConclusion(ScmTraceInspectionConclusionEnum.UNDETERMINED.name());
+        report.setCreatedBy(operator);
+        report.setUpdatedBy(operator);
+        traceInspectionReportDao.insert(report);
+        fileRelationService.rebind(FileRelationBizTypeEnum.TRACE_INSPECTION_REPORT, report.getId(), keys);
+        var saved = traceInspectionReportDao.lockPhoto(report.getId());
+        fillAttachments(saved);
+        return saved;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void removePhotos(Long id, Integer version, String operator) {
+        var report = traceInspectionReportDao.lockPhoto(id);
+        if (report == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_REPORT_NOT_FOUND);
+        }
+        requireState(report, version, ScmTraceInspectionStatusEnum.DRAFT);
+        report.setUpdatedBy(operator);
+        if (traceInspectionReportDao.removePhoto(report) != 1) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_REPORT_STATE_INVALID);
+        }
+        fileRelationService.rebind(FileRelationBizTypeEnum.TRACE_INSPECTION_REPORT, id, List.of());
     }
 
     private TraceInspectionReportVO lock(Long id) {

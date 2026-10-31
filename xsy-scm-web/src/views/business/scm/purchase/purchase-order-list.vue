@@ -68,7 +68,10 @@
         <template v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'status'">
           <a-space :size="4" wrap>
-            <ScmStatusTag :tone="statusTone(record.status)" :label="SCM_PURCHASE_STATUS_ENUM[record.status]?.desc" />
+            <ScmStatusTag
+              :tone="record.accountId != null ? 'success' : statusTone(record.status)"
+              :label="record.accountId != null ? '采购已确认' : SCM_PURCHASE_STATUS_ENUM[record.status]?.desc"
+            />
             <a-tag v-if="record.pendingPriceCount" color="orange">待定价 {{ record.pendingPriceCount }}</a-tag>
             <a-tag v-if="record.lockedFlag" color="red">{{ record.lockReason === 'AUTO_7_DAYS' ? '自动锁单' : '已锁单' }}</a-tag>
           </a-space>
@@ -286,11 +289,10 @@ const columns = ref<TableColumnsType<Order>>([
   {title: '采购单号', dataIndex: 'orderNo', width: 160, ellipsis: true},
   {title: '供应商', dataIndex: 'supplierName', width: 180, ellipsis: true},
   {title: '采购员', dataIndex: 'purchaserName', width: 80, ellipsis: true},
-  {title: '收货仓库', dataIndex: 'warehouseName', width: 100, ellipsis: true},
+  {title: '作业地点', dataIndex: 'warehouseName', width: 100, ellipsis: true},
   {title: '状态', dataIndex: 'status', align: 'center', width: 130},
   {title: '计划到货', dataIndex: 'plannedArrivalDate', width: 110},
   {title: '采购金额', dataIndex: 'totalAmount', width: 130},
-  {title: '收货进度', dataIndex: 'receivedProgress', width: 95},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 170},
 ]);
 const {tableRef, displayColumns, scrollX} = useScmTableFill(columns, () => SCM_COLUMN_WIDTH.selection);
@@ -299,6 +301,7 @@ const {tableRef, displayColumns, scrollX} = useScmTableFill(columns, () => SCM_C
 const STATUS_TONE: Record<string, ScmStatusTone> = {
   DRAFT: 'warning',
   SUBMITTED: 'processing',
+  ACCOUNTED: 'success',
   PARTIALLY_RECEIVED: 'warning',
   RECEIVED: 'success',
   SHORT_CLOSED: 'neutral',
@@ -334,10 +337,10 @@ function moreActions(row: Order): ScmActionItem[] {
     {
       key: 'lock',
       label: '锁单',
-      hidden: !(canLock.value && !row.lockedFlag && LOCKABLE_STATUSES.includes(row.status ?? '')),
+      hidden: !(canLock.value && row.accountId == null && !row.lockedFlag && LOCKABLE_STATUSES.includes(row.status ?? '')),
     },
-    {key: 'unlock', label: '解锁', hidden: !(canUnlock.value && row.lockedFlag)},
-    {key: 'cancel', label: '取消', hidden: !(canCancel.value && ['DRAFT', 'SUBMITTED'].includes(row.status ?? ''))},
+    {key: 'unlock', label: '解锁', hidden: !(canUnlock.value && row.accountId == null && row.lockedFlag)},
+    {key: 'cancel', label: '取消', hidden: !(canCancel.value && row.accountId == null && ['DRAFT', 'SUBMITTED'].includes(row.status ?? ''))},
     {
       key: 'shortClose',
       label: '少收关单',

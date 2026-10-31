@@ -2,7 +2,7 @@ package com.xsy.scm.purchase.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.xsy.scm.purchase.domain.form.PurchaseFinanceConfirmForm;
-import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseAccountVO;
 import com.xsy.scm.purchase.permission.PurchasePermission;
 import com.xsy.scm.purchase.service.PurchaseFinanceConfirmService;
 import jakarta.validation.Valid;
@@ -22,7 +22,7 @@ public class PurchaseFinanceConfirmController {
     @PostMapping("/scm/purchase/finance-confirm")
     @SaCheckPermission(PurchasePermission.FINANCE_CONFIRM)
     @OperateLog
-    public ResponseDTO<PurchaseReceiptVO> confirm(@Valid @RequestBody PurchaseFinanceConfirmForm form,
+    public ResponseDTO<PurchaseAccountVO> confirm(@Valid @RequestBody PurchaseFinanceConfirmForm form,
         @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(confirmationService.confirm(form, key));
     }
