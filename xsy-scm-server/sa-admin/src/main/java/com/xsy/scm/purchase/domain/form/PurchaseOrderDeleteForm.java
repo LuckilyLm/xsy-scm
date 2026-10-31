@@ -4,7 +4,7 @@ import lombok.Data;
 import jakarta.validation.constraints.NotNull;
 
 /**
- * 删除采购单（仅 DRAFT，否则 40993）。
+ * 删除采购单（仅尚未采购确认且没有收货记录的已提交单，否则 40993）。
  */
 @Data
 public class PurchaseOrderDeleteForm {

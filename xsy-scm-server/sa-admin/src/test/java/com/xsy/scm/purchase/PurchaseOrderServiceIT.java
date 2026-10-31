@@ -54,7 +54,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
                 allocation(demand, "3.0000"));
 
         assertThat(order.getOrderNo()).matches("^XSY\\d{18,19}$");
-        assertThat(order.getStatus()).isEqualTo("DRAFT");
+        assertThat(order.getStatus()).isEqualTo("SUBMITTED");
 
         // 供应商 / 仓库快照在创建时固化：历史永不回读主数据
         assertThat(order.getSupplierId()).isEqualTo(supplierId);
@@ -258,8 +258,8 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
                 allocation(demand, "3.0000"));
         Long itemId = order.getItems().getFirst().getId();
 
-        // DRAFT 单的已收量现实中恒为 0，这里写入一个非零值：
-        // 若 update 依赖「DRAFT 已收恒为 0」这个可松动的隐含前提，就会把它静默清 0。
+        // 尚可编辑的单已收量现实中恒为 0，这里写入一个非零值：
+        // 若 update 依赖「已收恒为 0」这个可松动的隐含前提，就会把它静默清 0。
         assertThat(jdbc.update("UPDATE xsy_purchase_order_item SET received_quantity = 1.5000 "
                 + "WHERE id = ? AND deleted = FALSE", itemId)).isEqualTo(1);
         evictMybatisCache();
@@ -277,12 +277,12 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 7. submit
+    // 7. create 即提交
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("submit：DRAFT → SUBMITTED；再次 submit → 40982")
-    void submitMovesDraftToSubmittedAndRejectsSecondSubmit() {
+    @DisplayName("create：新建即 SUBMITTED，写提交时间并启动自动锁单计时")
+    void createStartsSubmittedWithLockCountdown() {
         Long skuId = newOnShelfSku("PO7");
         Long supplierId = newPurchasableSupplier("PO7", skuId);
         Long customerId = newCustomer();
@@ -292,22 +292,12 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         PurchaseOrderVO order = createDraftOrder("PO7", supplierId, skuId, "3.0000", "6.2000",
                 allocation(demand, "3.0000"));
 
-        PurchaseOrderVersionForm submit = new PurchaseOrderVersionForm();
-        submit.setId(order.getId());
-        submit.setVersion(order.getVersion());
-        PurchaseOrderVO submitted = purchaseOrderService.submit(submit, prefix + ":PO7:submit");
-
-        assertThat(submitted.getStatus()).isEqualTo("SUBMITTED");
-        assertThat(submitted.getSubmittedAt()).isNotNull();
+        assertThat(order.getStatus()).isEqualTo("SUBMITTED");
+        assertThat(order.getSubmittedAt()).isNotNull();
+        assertThat(order.getAutoLockAt()).isNotNull();
         assertThat(purchaseQueryService.orderLogs(order.getId()))
                 .extracting(PurchaseOperationLogVO::getOperationType)
-                .containsExactly("SUBMIT", "CREATE");
-
-        // SUBMITTED 是终态之外的「不可编辑、不可重复提交」状态
-        PurchaseOrderVersionForm again = new PurchaseOrderVersionForm();
-        again.setId(submitted.getId());
-        again.setVersion(submitted.getVersion());
-        expectCode(() -> purchaseOrderService.submit(again, prefix + ":PO7:submit2"), 40982);
+                .containsExactly("CREATE");
     }
 
     // ------------------------------------------------------------------
@@ -354,15 +344,15 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("delete：仅 DRAFT 可删（非草稿 → 40993），且删除本身幂等")
-    void deleteOnlyAllowsDraftAndIsIdempotent() {
+    @DisplayName("delete：仅尚可编辑的单可删（已收货 → 40993），且删除本身幂等")
+    void deleteOnlyAllowsEditableOrdersAndIsIdempotent() {
         Long skuId = newOnShelfSku("PO9");
         Long supplierId = newPurchasableSupplier("PO9", skuId);
         Long customerId = newCustomer();
         Long salesOrder = confirmedSalesOrder(customerId, skuId, "5.0000", "3.0000");
         PurchaseDemandEntity demand = generateDemandFor(supplierId, salesOrder);
 
-        // 草稿：可删，并释放分配
+        // 新建即提交、尚未收货：可删，并释放分配
         PurchaseOrderVO draft = createDraftOrder("PO9", supplierId, skuId, "3.0000", "6.2000",
                 allocation(demand, "3.0000"));
         PurchaseOrderDeleteForm delete = new PurchaseOrderDeleteForm();
@@ -374,14 +364,11 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         // 幂等：再删一次不报错
         purchaseOrderService.delete(delete);
 
-        // 非草稿：先 submit，再删 → 40993
+        // 已进入收货流程：删除 → 40993
         PurchaseDemandEntity secondDemand = generateDemandFor(supplierId, salesOrder);
         PurchaseOrderVO submitted = createDraftOrder("PO9b", supplierId, skuId, "1.0000", "6.2000",
                 allocation(secondDemand, "1.0000"));
-        PurchaseOrderVersionForm version = new PurchaseOrderVersionForm();
-        version.setId(submitted.getId());
-        version.setVersion(submitted.getVersion());
-        purchaseOrderService.submit(version, prefix + ":PO9:submit");
+        jdbc.update("UPDATE xsy_purchase_order SET status='PARTIALLY_RECEIVED' WHERE id=?", submitted.getId());
 
         PurchaseOrderDeleteForm blocked = new PurchaseOrderDeleteForm();
         blocked.setId(submitted.getId());
@@ -393,7 +380,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("状态机边界：DRAFT 不可少收关单（40982），非 DRAFT 不可编辑（40982）")
+    @DisplayName("状态机边界：未收货不可少收关单（40982），终态不可编辑（40982）")
     void stateMachineBlocksShortCloseAndEditOutsideAllowedStates() {
         Long skuId = newOnShelfSku("PO10");
         Long supplierId = newPurchasableSupplier("PO10", skuId);
@@ -411,14 +398,11 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         shortClose.setShortCloseReason("供应商只发一半");
         expectCode(() -> purchaseOrderService.shortClose(shortClose, prefix + ":PO10:sc"), 40982);
 
-        // 提交之后不可再编辑行 / 分配（只允许 DRAFT）
-        PurchaseOrderVersionForm submit = new PurchaseOrderVersionForm();
-        submit.setId(order.getId());
-        submit.setVersion(order.getVersion());
-        PurchaseOrderVO submitted = purchaseOrderService.submit(submit, prefix + ":PO10:submit");
+        // 采购确认之后不可再编辑行 / 分配
+        jdbc.update("UPDATE xsy_purchase_order SET status='ACCOUNTED' WHERE id=?", order.getId());
 
         PurchaseDemandEntity fresh = reloadDemand(demand.getId());
-        PurchaseOrderUpdateForm edit = editForm(submitted.getId(), "3.0000", "6.2000",
+        PurchaseOrderUpdateForm edit = editForm(order.getId(), "3.0000", "6.2000",
                 allocation(fresh, "3.0000"));
         expectCode(() -> purchaseOrderService.update(edit), 40982);
 
@@ -427,7 +411,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
 
         // 分配身份的唯一键：同一 (item, demand) 的第二条活动分配被库层拒绝
         PurchaseDemandAllocationEntity existing =
-                allocationOf(submitted.getItems().getFirst().getId(), demand.getId());
+                allocationOf(order.getItems().getFirst().getId(), demand.getId());
         expectSqlFailure(
                 "INSERT INTO xsy_purchase_demand_allocation (purchase_demand_id, purchase_order_item_id, "
                         + "sales_order_id, sales_order_item_id, sku_id, allocated_quantity, created_by) "

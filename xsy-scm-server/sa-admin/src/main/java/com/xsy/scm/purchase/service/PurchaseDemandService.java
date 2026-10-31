@@ -273,7 +273,7 @@ public class PurchaseDemandService {
         if (status == null) {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
-        // 只有 SUBMITTED 的采购单可以继续接需求：DRAFT 还没定稿，RECEIVED/SHORT_CLOSED/CANCELLED 已结束。
+        // 只有 SUBMITTED 的采购单可以继续接需求：RECEIVED/SHORT_CLOSED/CANCELLED 已结束。
         if (!ScmPurchaseStatusEnum.SUBMITTED.name().equals(status)) {
             throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
         }

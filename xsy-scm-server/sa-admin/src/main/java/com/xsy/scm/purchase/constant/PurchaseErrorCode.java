@@ -58,7 +58,7 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_IDEMPOTENCY_CONFLICT(40990, "相同幂等键的请求内容不一致"),
     PURCHASE_RECEIPT_ORDER_STATE_INVALID(40991, "当前采购单状态不允许创建或确认收货"),
     PURCHASE_SUPPLIER_SKU_DISABLED(40992, "该供应商未启用此商品规格的采购配置"),
-    PURCHASE_ORDER_DELETE_STATE_INVALID(40993, "仅草稿采购单可以删除"),
+    PURCHASE_ORDER_DELETE_STATE_INVALID(40993, "仅未确认且没有收货记录的采购单可以删除"),
     PURCHASE_RECEIPT_DELETE_STATE_INVALID(40994, "仅草稿收货单可以删除"),
     PURCHASE_DEMAND_ITEM_NOT_OWNED(40995, "采购明细与采购需求不匹配"),
     PURCHASE_ORDER_ITEM_DUPLICATE_SKU(40997, "采购单内商品规格不能重复"),

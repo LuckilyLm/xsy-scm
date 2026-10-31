@@ -642,7 +642,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
     // ==================== 10. 采购写路径的归属边界 ====================
 
     @Test
-    @DisplayName("采购单命令按归属收窄：别人名下的单编辑 / 提交都到不了，本人的照常")
+    @DisplayName("采购单命令按归属收窄：别人名下的单编辑 / 删除都到不了，本人的照常")
     void orderCommandsFollowPurchaserScope() {
         Purchasable goods = purchasable("WC");
         Long owner = newWarehouseScopedEmployee("WC1", seedWarehouseId());
@@ -653,8 +653,6 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
         PurchaseOrderUpdateForm edit = editForm(orderId, "5.0000", "6.2000");
 
         assertNoPermission(() -> as(other, Set.of(), () -> purchaseOrderService.update(edit)));
-        assertNoPermission(() -> as(other, Set.of(),
-                () -> purchaseOrderService.submit(orderVersionForm(orderId), prefix + ":wc:submit")));
         assertThat(orderVersion(orderId)).as("越权命令没有推进版本").isZero();
         assertThat(orderDeleted(orderId)).as("越权删除没有留下软删标记").isFalse();
         assertNoPermission(() -> as(other, Set.of(), () -> {
@@ -663,9 +661,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
         }));
         assertThat(orderDeleted(orderId)).isFalse();
 
-        assertThat(as(owner, Set.of(),
-                () -> purchaseOrderService.submit(orderVersionForm(orderId), prefix + ":wc:own")).getId())
-                .isEqualTo(orderId);
+        assertThat(as(owner, Set.of(), () -> purchaseOrderService.update(edit)).getId()).isEqualTo(orderId);
     }
 
     @Test
@@ -702,8 +698,6 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
         Long other = newWarehouseScopedEmployee("DA2", seedWarehouseId());
         Purchasable goods = new Purchasable(first.skuId(), first.supplierId());
         Long orderOfOther = createOrder(goods, "DA-O", other, other, Set.of());
-        as(other, Set.of(), () -> purchaseOrderService.submit(orderVersionForm(orderOfOther),
-                prefix + ":da:submit"));
 
         // 方向一：调用者拥有采购单，但需求在别人名下
         assertNoPermission(() -> as(other, Set.of(),

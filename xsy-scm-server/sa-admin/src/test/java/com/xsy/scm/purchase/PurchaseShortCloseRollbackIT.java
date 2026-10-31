@@ -70,7 +70,7 @@ class PurchaseShortCloseRollbackIT extends ScmW5PgITBase {
         assertThat(orderRow(written.getId())).containsEntry("status", "PARTIALLY_RECEIVED");
         assertThat(orderRow(stale.getId())).containsEntry("status", "PARTIALLY_RECEIVED");
         // 断言非空洞：同一张单的其他操作日志确实入了库，只是这次关单没有留下记录
-        assertThat(logCount(written.getId(), "SUBMIT")).isEqualTo(1);
+        assertThat(logCount(written.getId(), "CREATE")).isEqualTo(1);
         assertThat(shortCloseLogs(written.getId())).isZero();
         assertThat(shortCloseLogs(stale.getId())).isZero();
     }

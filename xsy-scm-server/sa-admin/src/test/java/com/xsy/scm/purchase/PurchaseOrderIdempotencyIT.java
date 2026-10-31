@@ -142,42 +142,4 @@ class PurchaseOrderIdempotencyIT extends ScmW5PgITBase {
     // 4. 状态迁移的重放
     // ------------------------------------------------------------------
 
-    @Test
-    @DisplayName("submit 重放：状态只推进一次，只留一条 SUBMIT 日志")
-    void submitReplayDoesNotAdvanceTwice() {
-        Long skuId = newOnShelfSku("ID4");
-        Long supplierId = newPurchasableSupplier("ID4", skuId);
-        Long customerId = newCustomer();
-        Long salesOrder = confirmedSalesOrder(customerId, skuId, "5.0000", "3.0000");
-        PurchaseDemandEntity demand = generateDemandFor(supplierId, salesOrder);
-
-        PurchaseOrderVO order = createDraftOrder("ID4", supplierId, skuId, "3.0000", "6.2000",
-                allocation(demand, "3.0000"));
-
-        // submit 的 scope 是 PURCHASE_ORDER_SUBMIT 加单据 id，因此幂等键只在同一张单内生效
-        PurchaseOrderVersionForm submit = new PurchaseOrderVersionForm();
-        submit.setId(order.getId());
-        submit.setVersion(order.getVersion());
-        String key = prefix + ":ID4:submit";
-
-        PurchaseOrderVO first = purchaseOrderService.submit(submit, key);
-        PurchaseOrderVO replayed = purchaseOrderService.submit(submit, key);
-
-        assertThat(first.getStatus()).isEqualTo("SUBMITTED");
-        assertThat(replayed.getStatus()).isEqualTo("SUBMITTED");
-        assertThat(replayed.getSubmittedAt()).isEqualTo(first.getSubmittedAt());
-        assertThat(replayed.getVersion()).isEqualTo(first.getVersion());
-
-        // 重放不产生第二条 SUBMIT 日志。DESC → 最新在最前
-        List<PurchaseOperationLogVO> logs = purchaseQueryService.orderLogs(order.getId());
-        assertThat(logs).extracting(PurchaseOperationLogVO::getOperationType)
-                .containsExactly("SUBMIT", "CREATE");
-
-        // 另一张单用同一个 key 不受影响（scope 里带单 id）
-        PurchaseOrderVO second = createDraftOrder("ID4b", supplierId, skuId, "1.0000", "6.2000");
-        PurchaseOrderVersionForm otherSubmit = new PurchaseOrderVersionForm();
-        otherSubmit.setId(second.getId());
-        otherSubmit.setVersion(second.getVersion());
-        assertThat(purchaseOrderService.submit(otherSubmit, key).getStatus()).isEqualTo("SUBMITTED");
-    }
 }

@@ -8,7 +8,7 @@ import java.util.Set;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID;
 
 /**
- * 采购单草稿可提交或取消；已提交可取消、直接确认采购或进入收货流程；部分收货后只能继续收货或少收关单。采购确认、收货完成、少收关单和取消均不可再流转。
+ * 采购单新建即提交，可取消、直接确认采购或进入收货流程；部分收货后只能继续收货或少收关单。采购确认、收货完成、少收关单和取消均不可再流转。
  */
 public final class PurchaseOrderStateMachine {
 
@@ -25,7 +25,6 @@ public final class PurchaseOrderStateMachine {
             return false;
         }
         return switch (fromStatus) {
-            case DRAFT -> Set.of(ScmPurchaseStatusEnum.SUBMITTED, ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
             case SUBMITTED -> Set.of(ScmPurchaseStatusEnum.ACCOUNTED, ScmPurchaseStatusEnum.PARTIALLY_RECEIVED,
                 ScmPurchaseStatusEnum.RECEIVED, ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
             // 同一状态到自身是合法的：第二次收货后仍是 PARTIALLY_RECEIVED
@@ -56,10 +55,10 @@ public final class PurchaseOrderStateMachine {
     }
 
     /**
-     * 只有 {@code DRAFT} 可编辑行与需求分配。
+     * 新建即为 {@code SUBMITTED}，在采购确认或收货之前仍可编辑行与需求分配。
      */
     public static boolean editable(String purchaseOrderStatus) {
-        return ScmPurchaseStatusEnum.DRAFT.name().equals(purchaseOrderStatus);
+        return ScmPurchaseStatusEnum.SUBMITTED.name().equals(purchaseOrderStatus);
     }
 
     /**
@@ -71,11 +70,10 @@ public final class PurchaseOrderStateMachine {
     }
 
     /**
-     * 可取消：{@code DRAFT} 或 {@code SUBMITTED}，不含 {@code PARTIALLY_RECEIVED}。
+     * 可取消：仅 {@code SUBMITTED}，不含 {@code PARTIALLY_RECEIVED}。
      */
     public static boolean cancellable(String purchaseOrderStatus) {
-        return ScmPurchaseStatusEnum.DRAFT.name().equals(purchaseOrderStatus)
-            || ScmPurchaseStatusEnum.SUBMITTED.name().equals(purchaseOrderStatus);
+        return ScmPurchaseStatusEnum.SUBMITTED.name().equals(purchaseOrderStatus);
     }
 
     /**

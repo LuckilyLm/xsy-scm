@@ -23,10 +23,7 @@
             @click="order.id != null && financeConfirmModal?.open(order.id)"
             >确认采购</a-button
           >
-          <template v-if="order.status === 'DRAFT'">
-            <a-button type="primary" :loading="submitting" v-privilege="'scm:purchase:submit'" @click="submit"> 提交 </a-button>
-          </template>
-          <template v-if="order.accountId == null && ['DRAFT', 'SUBMITTED'].includes(order.status ?? '')">
+          <template v-if="order.accountId == null && order.status === 'SUBMITTED'">
             <a-button danger v-privilege="'scm:purchase:cancel'" @click="cancelOpen = true"> 取消采购单 </a-button>
           </template>
           <template v-if="order.status === 'PARTIALLY_RECEIVED'">
@@ -220,7 +217,7 @@ import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import PurchaseFinanceConfirmModal from './purchase-finance-confirm-modal.vue';
 import PurchaseCostAdjustmentModal from './purchase-cost-adjustment-modal.vue';
 import {computed, ref} from 'vue';
-import {Modal, message} from 'ant-design-vue';
+import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import {SCM_DEMAND_STATUS_ENUM, SCM_PURCHASE_OPERATION_ENUM, SCM_PURCHASE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
@@ -256,8 +253,6 @@ const OPERATION_COLOR: Record<string, string> = {
 
 const visible = ref(false);
 const loading = ref(false);
-/** 提交单独用 loading，避免和刷新互相影响。 */
-const submitting = ref(false);
 const logsLoading = ref(false);
 /** 区分“还没查”和“查过但没记录”。 */
 const logsLoaded = ref(false);
@@ -289,13 +284,13 @@ function windowOpen(item: OrderItem): boolean {
 /** 补价只对待定价行，且提交后、未锁单、窗口未过期；这四条后端都会再校验。 */
 function canFill(item: OrderItem): boolean {
   return (
-    order.value?.accountId == null && Boolean(item.pricePending) && order.value?.status !== 'DRAFT' && !order.value?.lockedFlag && windowOpen(item)
+    order.value?.accountId == null && Boolean(item.pricePending) && !order.value?.lockedFlag && windowOpen(item)
   );
 }
 
 /** 改价只对「还没有确认收货」的行：确认后库存成本已冻结，改价会造成账实不符。 */
 function canAdjust(item: OrderItem): boolean {
-  return order.value?.accountId == null && !item.pricePending && Number(item.receivedQuantity ?? '0') === 0 && order.value?.status !== 'DRAFT';
+  return order.value?.accountId == null && !item.pricePending && Number(item.receivedQuantity ?? '0') === 0;
 }
 
 function openPrice(mode: 'FILL' | 'ADJUST', item: OrderItem) {
@@ -422,23 +417,6 @@ async function loadLogs() {
   } finally {
     logsLoading.value = false;
   }
-}
-
-function submit() {
-  Modal.confirm({
-    title: '提交这张采购单？提交后不可再改行与分配。',
-    onOk: async () => {
-      submitting.value = true;
-      try {
-        await purchaseOrderApi.submit({id: order.value!.id!, version: order.value!.version!});
-        await load();
-        emit('saved');
-      } finally {
-        // 异常继续抛出，让确认框保持打开；失败原因由全局提示给出
-        submitting.value = false;
-      }
-    },
-  });
 }
 
 async function cancel() {

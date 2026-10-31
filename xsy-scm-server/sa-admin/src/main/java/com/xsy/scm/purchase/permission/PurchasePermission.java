@@ -36,8 +36,6 @@ public final class PurchasePermission {
 
     public static final String ASSIGN = ScmCrossDomainPermission.PURCHASE_ASSIGN;
 
-    public static final String SUBMIT = "scm:purchase:submit";
-
     public static final String CANCEL = "scm:purchase:cancel";
 
     public static final String SHORT_CLOSE = "scm:purchase:short-close";

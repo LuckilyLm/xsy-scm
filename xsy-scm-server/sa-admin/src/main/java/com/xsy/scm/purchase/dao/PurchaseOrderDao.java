@@ -47,7 +47,7 @@ public interface PurchaseOrderDao extends BaseMapper<PurchaseOrderEntity> {
     Long nextOrderNo();
 
     /**
-     * 软删（仅 DRAFT，由 Service 断言）。
+     * 软删（仅尚可编辑的采购单，由 Service 断言）。
      */
     int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("operator") String operator);
 

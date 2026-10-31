@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
- * 采购单从草稿提交，允许部分收货、全部收货或少收关单；草稿和已提交单可取消。正式履约及取消时点随状态一同保存。
+ * 采购单新建即为已提交，允许部分收货、全部收货或少收关单；提交后未确认前可取消。正式履约及取消时点随状态一同保存。
  */
 @Data
 @TableName(value = "xsy_purchase_order", autoResultMap = true)
@@ -69,7 +69,7 @@ public class PurchaseOrderEntity {
     /** MANUAL 手动锁单 / AUTO_7_DAYS 提交满 7 天自动锁单。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String lockReason;
-    /** 自动锁单时点 = 提交时刻 + 7 天；草稿单为空。 */
+    /** 自动锁单时点 = 建单（提交）时刻 + 7 天。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime autoLockAt;
     @Version

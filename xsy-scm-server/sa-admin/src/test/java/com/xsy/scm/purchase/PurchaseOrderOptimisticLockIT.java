@@ -69,31 +69,21 @@ class PurchaseOrderOptimisticLockIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 2. submit 的单头版本
+    // 2. 新建即提交，单头版本从 0 开始
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("submit：采购单版本过期 → 40921，状态仍为 DRAFT")
-    void submitRejectsStaleOrderVersion() {
+    @DisplayName("create：新单直接进入 SUBMITTED，版本从 0 开始")
+    void createdOrderStartsSubmittedAtVersionZero() {
         Draft draft = draft("OL2");
 
-        PurchaseOrderVersionForm stale = new PurchaseOrderVersionForm();
-        stale.setId(draft.order().getId());
-        stale.setVersion(draft.order().getVersion() + 7);
-        expectCode(() -> purchaseOrderService.submit(stale, prefix + ":OL2:submit"), 40921);
-
-        assertThat(reloadOrder(draft.order().getId()).getStatus()).isEqualTo("DRAFT");
-        // 失败不写 SUBMIT 日志
+        PurchaseOrderVO created = reloadOrder(draft.order().getId());
+        assertThat(created.getStatus()).isEqualTo("SUBMITTED");
+        assertThat(created.getSubmittedAt()).isNotNull();
+        assertThat(created.getVersion()).isZero();
         assertThat(purchaseQueryService.orderLogs(draft.order().getId()))
                 .extracting(log -> log.getOperationType())
                 .containsExactly("CREATE");
-
-        // 正确版本仍可提交
-        PurchaseOrderVersionForm ok = new PurchaseOrderVersionForm();
-        ok.setId(draft.order().getId());
-        ok.setVersion(reloadOrder(draft.order().getId()).getVersion());
-        assertThat(purchaseOrderService.submit(ok, prefix + ":OL2:submit2").getStatus())
-                .isEqualTo("SUBMITTED");
     }
 
     // ------------------------------------------------------------------

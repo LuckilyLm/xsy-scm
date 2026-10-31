@@ -144,7 +144,7 @@ class PurchaseOperationLogIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("CREATE 无前态、UPDATE / SUBMIT 有前态与后态，且状态可读")
+    @DisplayName("CREATE 无前态、UPDATE 有前态与后态，且状态可读")
     void orderMutationLogsExposeStatusSnapshots() {
         Long skuId = newOnShelfSku("LG4");
         Long supplierId = newPurchasableSupplier("LG4", skuId);
@@ -159,29 +159,21 @@ class PurchaseOperationLogIT extends ScmW5PgITBase {
         PurchaseOperationLogVO create = logs.getFirst();
         assertThat(create.getOperationType()).isEqualTo("CREATE");
         assertThat(create.getBeforeData()).isNull();
-        assertThat(create.getAfterData()).containsEntry("status", "DRAFT");
+        assertThat(create.getAfterData()).containsEntry("status", "SUBMITTED");
 
         // UPDATE：前后态都有，且能看出金额变化
         purchaseOrderService.update(editForm(order.getId(), "2.0000", "5.0000",
                 allocation(reloadDemand(demand.getId()), "2.0000")));
 
-        // SUBMIT：前态 DRAFT、后态 SUBMITTED
-        submitOrder(order.getId());
-
         logs = purchaseQueryService.orderLogs(order.getId());
         assertThat(logs).extracting(PurchaseOperationLogVO::getOperationType)
-                .containsExactly("SUBMIT", "UPDATE", "CREATE");
+                .containsExactly("UPDATE", "CREATE");
 
-        // DESC → 索引 0 = SUBMIT、1 = UPDATE、2 = CREATE
-        PurchaseOperationLogVO update = logs.get(1);
+        PurchaseOperationLogVO update = logs.getFirst();
         assertThat(update.getBeforeData()).containsEntry("totalAmount", "18.6000");
         assertThat(update.getAfterData()).containsEntry("totalAmount", "10.0000");
         assertThat(update.getBeforeData()).containsKeys("items", "status", "version");
         assertThat(update.getAfterData()).containsKeys("items", "status", "version");
-
-        PurchaseOperationLogVO submit = logs.getFirst();
-        assertThat(submit.getBeforeData()).containsEntry("status", "DRAFT");
-        assertThat(submit.getAfterData()).containsEntry("status", "SUBMITTED");
 
         // 只追加：id 严格递减（DESC 排序下等价于「严格递增」，条数与动作数一致）
         assertThat(logs).extracting(PurchaseOperationLogVO::getId)

@@ -19,7 +19,6 @@ import java.util.List;
 @Getter
 @RequiredArgsConstructor
 public enum ScmPurchaseStatusEnum {
-    DRAFT("草稿"),
     SUBMITTED("已提交"),
     ACCOUNTED("采购已确认"),
     PARTIALLY_RECEIVED("部分收货"),
@@ -48,12 +47,12 @@ public enum ScmPurchaseStatusEnum {
     }
 
     /**
-     * 是否进入正式采购流程必须逐个列出，不能用「排除草稿和取消」倒推；新增状态时要明确是否计入。
+     * 是否进入正式采购流程必须逐个列出，不能用「排除取消」倒推；新增状态时要明确是否计入。
      */
     public boolean committed() {
         return switch (this) {
             case SUBMITTED, ACCOUNTED, PARTIALLY_RECEIVED, RECEIVED, SHORT_CLOSED -> true;
-            case DRAFT, CANCELLED -> false;
+            case CANCELLED -> false;
         };
     }
 

@@ -738,15 +738,10 @@ public abstract class ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * 提交采购单 —— 收货的前置状态（只有 {@code SUBMITTED} / {@code PARTIALLY_RECEIVED} 可收货）。
-     *
-     * <p>版本从库里回读，调用方不必自己数：数错会得到 40921，而不是被测的行为。
+     * 采购单新建即已提交，这里只是按 id 回读，调用方无需再显式提交。
      */
     protected PurchaseOrderVO submitOrder(Long orderId) {
-        PurchaseOrderVersionForm form = new PurchaseOrderVersionForm();
-        form.setId(orderId);
-        form.setVersion(reloadOrder(orderId).getVersion());
-        return purchaseOrderService.submit(form, prefix + ":submit:" + orderId);
+        return purchaseQueryService.orderDetail(orderId);
     }
 
     /**

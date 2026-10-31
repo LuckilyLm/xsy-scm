@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 /**
- * 编辑采购单（仅 DRAFT）。
+ * 编辑采购单（仅尚未采购确认且没有收货记录的已提交单）。
  *
  * <p>
  * {@code items[].id} 为空 = 新增行；非空 = 保留行（必须带 {@code version}，否则 40088）。未出现在 {@code items} 中的既有活动行 = 删除行（其全部 allocation

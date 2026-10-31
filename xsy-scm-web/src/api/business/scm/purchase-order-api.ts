@@ -67,7 +67,6 @@ export const purchaseOrderApi = {
   update: (data: OrderPayload) => postRequest<Order>('/scm/purchase/update', data),
   /** 改派采购归属：独立权限；/update 不改归属，重复提交由版本号拦截。 */
   reassign: (data: OrderReassignPayload) => postRequest<Order>('/scm/purchase/reassign', data),
-  submit: (data: OrderVersionPayload) => purchaseCommand<Order>('/scm/purchase/submit', data),
   /** 补价：只对待定价行，价格窗口内且未锁单。 */
   fillPrice: (itemId: Id, data: OrderPricePayload) => purchaseCommand<Order>(`/scm/purchase/item/${itemId}/price/fill`, data),
   /** 改价：首次收货确认前可用；锁单后仍需改价走这里（专门权限 + 必填原因）。 */

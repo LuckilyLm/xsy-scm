@@ -68,7 +68,6 @@ class PurchaseDailyReportPgIT extends ScmW6PgITBase {
         order(ScmPurchaseStatusEnum.SHORT_CLOSED, start().plusHours(12), "箱", "5", WAREHOUSE_A, PURCHASER_A);
         order(ScmPurchaseStatusEnum.SUBMITTED, start().minusNanos(1000), "kg", "100", WAREHOUSE_A, PURCHASER_A);
         order(ScmPurchaseStatusEnum.SUBMITTED, start().plusDays(1), "kg", "100", WAREHOUSE_A, PURCHASER_A);
-        order(ScmPurchaseStatusEnum.DRAFT, null, "kg", "100", WAREHOUSE_A, PURCHASER_A);
         order(ScmPurchaseStatusEnum.CANCELLED, start(), "kg", "100", WAREHOUSE_A, PURCHASER_A);
         Long deletedOrder = order(ScmPurchaseStatusEnum.SUBMITTED, start(), "kg", "100", WAREHOUSE_A, PURCHASER_A);
         jdbcTemplate.update("UPDATE xsy_purchase_order SET deleted = TRUE WHERE id = ?", deletedOrder);

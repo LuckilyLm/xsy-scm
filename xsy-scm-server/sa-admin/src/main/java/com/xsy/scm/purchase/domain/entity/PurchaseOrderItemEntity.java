@@ -60,7 +60,7 @@ public class PurchaseOrderItemEntity {
     /** 待定价：TRUE 时 {@code purchasePrice} 必须为空，由数据库 CHECK 绑定。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Boolean pricePending;
-    /** 价格窗口起点 = 采购单提交时刻；草稿单为空。 */
+    /** 价格窗口起点 = 采购单建单（提交）时刻。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime priceWindowStartedAt;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

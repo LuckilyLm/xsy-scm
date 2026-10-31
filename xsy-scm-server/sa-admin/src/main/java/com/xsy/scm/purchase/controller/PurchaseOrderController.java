@@ -17,7 +17,6 @@ import com.xsy.scm.purchase.domain.form.PurchaseOrderQueryForm;
 import com.xsy.scm.purchase.domain.form.PurchaseOrderReassignForm;
 import com.xsy.scm.purchase.domain.form.PurchaseOrderShortCloseForm;
 import com.xsy.scm.purchase.domain.form.PurchaseOrderUpdateForm;
-import com.xsy.scm.purchase.domain.form.PurchaseOrderVersionForm;
 import com.xsy.scm.purchase.domain.vo.PurchaseOperationLogVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderItemVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
@@ -167,14 +166,6 @@ public class PurchaseOrderController {
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> reassign(@Valid @RequestBody PurchaseOrderReassignForm form) {
         return ResponseDTO.ok(purchaseOrderService.reassign(form));
-    }
-
-    @PostMapping("/submit")
-    @SaCheckPermission(PurchasePermission.SUBMIT)
-    @OperateLog
-    public ResponseDTO<PurchaseOrderVO> submit(@Valid @RequestBody PurchaseOrderVersionForm form,
-        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
-        return ResponseDTO.ok(purchaseOrderService.submit(form, idempotencyKey));
     }
 
     @PostMapping("/cancel")

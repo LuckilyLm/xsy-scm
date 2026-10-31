@@ -1,8 +1,7 @@
 import type {SmartEnum} from '/@/types/smart-enum';
 
-/** 采购单状态依次为草稿、已提交、部分收货及收货完成等。部分收货不能直接取消；已收货、少收关单和已取消均为终态。 */
+/** 采购单新建即为已提交，随后进入部分收货、收货完成等状态。部分收货不能直接取消；已收货、少收关单和已取消均为终态。 */
 export const SCM_PURCHASE_STATUS_ENUM: SmartEnum<string> = {
-  DRAFT: {value: 'DRAFT', desc: '草稿'},
   SUBMITTED: {value: 'SUBMITTED', desc: '已提交'},
   ACCOUNTED: {value: 'ACCOUNTED', desc: '采购已确认'},
   PARTIALLY_RECEIVED: {value: 'PARTIALLY_RECEIVED', desc: '部分收货'},

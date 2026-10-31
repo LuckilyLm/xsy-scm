@@ -54,7 +54,6 @@ import java.util.stream.Collectors;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_CANCEL_REASON_REQUIRED;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_DELETE_STATE_INVALID;
-import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_ITEM_EMPTY;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_ITEM_NOT_OWNED;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_ITEM_VERSION_CONFLICT;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_NOT_FOUND;
@@ -119,6 +118,10 @@ public class PurchaseOrderService {
             purchaseOwnerResolver.resolveForCreate(form.getPurchaserId()), form);
         order.setOrderNo(ScmDocumentNumbers.next());
         order.setTotalAmount(totalAmount(rows));
+        // 新建即提交：价格窗口与自动锁单从建单时刻开始计时。
+        OffsetDateTime submittedAt = OffsetDateTime.now();
+        order.setSubmittedAt(submittedAt);
+        order.setAutoLockAt(submittedAt.plusDays(PurchaseOrderLockService.PRICE_WINDOW_DAYS));
         PurchaseEntityStamper.stamp(order, true);
         purchaseOrderDao.insert(order);
 
@@ -133,6 +136,7 @@ public class PurchaseOrderService {
 
         // 本单此前不存在任何分配 → oldTotals 为空
         purchaseOrderAllocationService.recomputeDemands(demands, Map.of(), newTotals, form.getSupplierId());
+        purchaseOrderItemDao.startPriceWindow(order.getId(), submittedAt, ScmOperator.current());
 
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.CREATE,
@@ -147,7 +151,7 @@ public class PurchaseOrderService {
         PurchaseOrderValidator.draft(form);
         PurchaseOrderEntity order = lockOrder(form.getId());
         version(order.getVersion(), form.getVersion());
-        // 只有 DRAFT 可编辑行与分配。必须判返回值：{@code editable(...)} 是纯布尔判定，
+        // 只有 SUBMITTED（尚未采购确认、尚未收货）可编辑行与分配。必须判返回值：{@code editable(...)} 是纯布尔判定，
         // 写成裸语句会静默放过 SUBMITTED / 终态单，让后续的数量校验（40082）抢先抛出，把状态错误伪装成数量错误。
         if (!PurchaseOrderStateMachine.editable(order.getStatus())) {
             throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
@@ -165,7 +169,7 @@ public class PurchaseOrderService {
 
         List<RequestedRow> rows = purchaseOrderAllocationService.materialize(form);
         // 保留行沿用库中的已收数量：请求只表达计划量，不表达已收量。
-        // 草稿单的已收恒为 0，但不能依赖这一点，否则可编辑状态一松动就会把 received_quantity 静默清零。
+        // 可编辑单的已收恒为 0，但不能依赖这一点，否则可编辑状态一松动就会把 received_quantity 静默清零。
         for (RequestedRow row : rows) {
             PurchaseOrderItemEntity old = existingById.get(row.item.getId());
             if (old != null) {
@@ -266,38 +270,6 @@ public class PurchaseOrderService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public PurchaseOrderVO submit(PurchaseOrderVersionForm form, String idempotencyKey) {
-        var claim = purchaseIdempotencyService.claim("PURCHASE_ORDER_SUBMIT:" + form.getId(), idempotencyKey, form);
-        if (claim.replay()) {
-            return purchaseIdempotencyService.replay(claim, PurchaseOrderVO.class);
-        }
-
-        PurchaseOrderEntity order = lockOrder(form.getId());
-        version(order.getVersion(), form.getVersion());
-        PurchaseOrderStateMachine.transition(order.getStatus(), ScmPurchaseStatusEnum.SUBMITTED.name());
-        if (purchaseOrderItemDao.countActiveByOrderId(order.getId()) == 0) {
-            throw new ScmBusinessException(PURCHASE_ORDER_ITEM_EMPTY);
-        }
-
-        Map<String, Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
-        OffsetDateTime submittedAt = OffsetDateTime.now();
-        order.setStatus(ScmPurchaseStatusEnum.SUBMITTED.name());
-        order.setSubmittedAt(submittedAt);
-        // 自动锁单与价格窗口共用同一个锚点：提交时刻 + 7 天。窗口内允许补价，窗口外回填后锁单。
-        order.setAutoLockAt(submittedAt.plusDays(PurchaseOrderLockService.PRICE_WINDOW_DAYS));
-        save(order);
-        // 草稿期间价格窗口不启动；提交这一刻才开始计时，避免「草稿放了三天，窗口只剩四天」
-        purchaseOrderItemDao.startPriceWindow(order.getId(), submittedAt, ScmOperator.current());
-
-        PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
-        purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.SUBMIT,
-            order.getId(), null, null, before, PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order)));
-        purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
-            order.getId(), result);
-        return result;
-    }
-
-    @Transactional(rollbackFor = Exception.class)
     public PurchaseOrderVO cancel(PurchaseOrderCancelForm form, String idempotencyKey) {
         var claim = purchaseIdempotencyService.claim("PURCHASE_ORDER_CANCEL:" + form.getId(), idempotencyKey, form);
         if (claim.replay()) {
@@ -390,7 +362,8 @@ public class PurchaseOrderService {
         }
         // 删除没走 lockOrder，归属守卫单独补一次；批量删除逐单委托本方法，因此同样生效
         purchaseOwnerResolver.requireVisible(order.getPurchaserId());
-        if (!PurchaseOrderStateMachine.editable(order.getStatus())) {
+        if (!PurchaseOrderStateMachine.editable(order.getStatus())
+            || purchaseAccountDao.accountId(order.getId()) != null) {
             throw new ScmBusinessException(PURCHASE_ORDER_DELETE_STATE_INVALID);
         }
 

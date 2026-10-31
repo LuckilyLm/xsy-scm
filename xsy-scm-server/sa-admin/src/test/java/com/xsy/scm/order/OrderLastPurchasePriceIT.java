@@ -61,10 +61,8 @@ class OrderLastPurchasePriceIT {
     }
 
     @Test
-    void ignoresDraftCancelledAndDeletedRows() {
+    void ignoresCancelledAndDeletedRows() {
         long skuId = 8_831_000_002L;
-        long draft = order(ScmPurchaseStatusEnum.DRAFT, 101L, null, "草稿供应商");
-        item(draft, skuId, "99.0000", false);
         long cancelled = order(ScmPurchaseStatusEnum.CANCELLED, 101L, EARLY, "取消供应商");
         item(cancelled, skuId, "88.0000", false);
         long committed = order(ScmPurchaseStatusEnum.SUBMITTED, 101L, EARLY, "已提交供应商");

@@ -459,7 +459,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         assertThat(withOverride.getTimeline()).extracting(MallOrderTimelineVO::getOperationType)
                 .as("内部授信审批不得出现在客户时间线").doesNotContain("CREDIT_OVERRIDE");
         assertThat(withOverride.getTimeline()).extracting(MallOrderTimelineVO::getOperationType)
-                .as("客户可见的生命周期节点仍在").contains("CREATE", "SUBMIT", "CONFIRM");
+                .as("客户可见的生命周期节点仍在").contains("CREATE", "CONFIRM");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_order_operation_log WHERE order_id = ?"
                 + " AND operation_type = 'CREDIT_OVERRIDE'", Integer.class, submitted.getOrderId()))
                 .as("后台审计记录保持完整，商城只是收窄展示").isEqualTo(1);

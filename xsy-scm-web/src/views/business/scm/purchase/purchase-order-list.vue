@@ -29,7 +29,7 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:purchase:add'" @click="drawer?.open()">新建采购单</a-button>
-        <a-button danger v-privilege="'scm:purchase:delete'" :disabled="!draftSelected.length" @click="batchDelete"> 批量删除草稿 </a-button>
+        <a-button danger v-privilege="'scm:purchase:delete'" :disabled="!submittedSelected.length" @click="batchDelete"> 批量删除 </a-button>
         <a-button danger v-privilege="'scm:purchase:short-close'" :disabled="!partialSelected.length" @click="batchShortClose">
           批量少收关单
         </a-button>
@@ -58,7 +58,7 @@
         columnWidth: SCM_COLUMN_WIDTH.selection,
         selectedRowKeys: selected,
         onChange: (keys: (string | number)[]) => (selected = keys),
-        getCheckboxProps: (row: Order) => ({disabled: !['DRAFT', 'PARTIALLY_RECEIVED'].includes(row.status ?? '')}),
+        getCheckboxProps: (row: Order) => ({disabled: !['SUBMITTED', 'PARTIALLY_RECEIVED'].includes(row.status ?? '')}),
       }"
     >
       <template #bodyCell="{record, column}">
@@ -86,9 +86,9 @@
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 当前状态最常用的两个动作常驻，其他操作收进“更多” -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <template v-if="record.status === 'DRAFT'">
+            <template v-if="record.status === 'SUBMITTED'">
               <a-button type="link" size="small" v-privilege="'scm:purchase:update'" @click="drawer?.open(record.id)"> 编辑 </a-button>
-              <a-button type="link" size="small" v-privilege="'scm:purchase:submit'" @click="submit(record)"> 提交 </a-button>
+              <a-button type="link" size="small" @click="detail?.open(record.id)">详情</a-button>
             </template>
             <template v-else>
               <a-button type="link" size="small" @click="detail?.open(record.id)">详情</a-button>
@@ -279,9 +279,9 @@ const listExport = useScmExport();
 /** 竞态保护：慢的旧请求不得覆盖新结果。 */
 let requestId = 0;
 
-/** 行勾选同时服务两类批量：删除只取草稿、少收关单只取部分收货，各自按状态取子集。 */
+/** 行勾选同时服务两类批量：删除只取已提交、少收关单只取部分收货，各自按状态取子集。 */
 const selectedOrders = computed(() => tableData.value.filter((o) => selected.value.includes(o.id!)));
-const draftSelected = computed(() => selectedOrders.value.filter((o) => o.status === 'DRAFT'));
+const submittedSelected = computed(() => selectedOrders.value.filter((o) => o.status === 'SUBMITTED'));
 const partialSelected = computed(() => selectedOrders.value.filter((o) => o.status === 'PARTIALLY_RECEIVED'));
 
 // 创建时间不默认上列；计划到货才是采购跟单关注的日期。
@@ -297,9 +297,8 @@ const columns = ref<TableColumnsType<Order>>([
 ]);
 const {tableRef, displayColumns, scrollX} = useScmTableFill(columns, () => SCM_COLUMN_WIDTH.selection);
 
-/** 草稿/部分完成=待处理，已提交=处理中，已收货=完成，少收关单/取消=失效。 */
+/** 部分完成=待处理，已提交=处理中，已收货=完成，少收关单/取消=失效。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {
-  DRAFT: 'warning',
   SUBMITTED: 'processing',
   ACCOUNTED: 'success',
   PARTIALLY_RECEIVED: 'warning',
@@ -316,9 +315,9 @@ const canShortClose = computed(() => hasPermission('scm:purchase:short-close'));
 const canDelete = computed(() => hasPermission('scm:purchase:delete'));
 const canLock = computed(() => hasPermission('scm:purchase:lock'));
 const canUnlock = computed(() => hasPermission('scm:purchase:unlock'));
-/** 锁单只对已提交、部分收货的单有意义；草稿还没定价，收货完成的单已没有可改的价格窗口。 */
+/** 锁单只对已提交、部分收货的单有意义；收货完成的单已没有可改的价格窗口。 */
 const LOCKABLE_STATUSES = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
-/** 只有进入正式采购流程的单才能分享给现场：草稿还没定，取消的没有任务。 */
+/** 只有进入正式采购流程的单才能分享给现场：取消的没有任务。 */
 const SHAREABLE_STATUSES = ['SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED'];
 const canShare = computed(() => hasPermission('scm:purchase:share:create'));
 
@@ -327,12 +326,12 @@ const entryHidden = computed(() => !columns.value.some((column) => (column as {d
 
 /** 当前状态可用的操作；低频动作收进“更多”。详情默认走第一列的采购单号。 */
 function moreActions(row: Order): ScmActionItem[] {
-  const draft = row.status === 'DRAFT';
+  const submitted = row.status === 'SUBMITTED';
   return [
     {key: 'detail', label: '详情', hidden: !entryHidden.value},
-    {key: 'print', label: '打印', hidden: !draft},
+    {key: 'print', label: '打印', hidden: !submitted},
     {key: 'share', label: '分享', hidden: !(canShare.value && SHAREABLE_STATUSES.includes(row.status ?? ''))},
-    {key: 'feedback', label: '现场回填', hidden: draft},
+    {key: 'feedback', label: '现场回填', hidden: row.status === 'CANCELLED'},
     {key: 'reassign', label: '改派', hidden: !canAssign.value},
     {
       key: 'lock',
@@ -340,13 +339,13 @@ function moreActions(row: Order): ScmActionItem[] {
       hidden: !(canLock.value && row.accountId == null && !row.lockedFlag && LOCKABLE_STATUSES.includes(row.status ?? '')),
     },
     {key: 'unlock', label: '解锁', hidden: !(canUnlock.value && row.accountId == null && row.lockedFlag)},
-    {key: 'cancel', label: '取消', hidden: !(canCancel.value && row.accountId == null && ['DRAFT', 'SUBMITTED'].includes(row.status ?? ''))},
+    {key: 'cancel', label: '取消', hidden: !(canCancel.value && row.accountId == null && row.status === 'SUBMITTED')},
     {
       key: 'shortClose',
       label: '少收关单',
       hidden: !(canShortClose.value && row.status === 'PARTIALLY_RECEIVED'),
     },
-    {key: 'delete', label: '删除', danger: true, hidden: !(canDelete.value && draft)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(canDelete.value && submitted && row.accountId == null)},
   ];
 }
 
@@ -412,17 +411,6 @@ function resetQuery() {
   queryForm.supplierId = undefined;
   queryForm.status = undefined;
   onSearch();
-}
-
-/** 状态操作成功后重新加载；失败由全局提示给出原因。 */
-function submit(row: Order) {
-  Modal.confirm({
-    title: '提交这张采购单？提交后不可再改行与分配。',
-    onOk: async () => {
-      await purchaseOrderApi.submit({id: row.id!, version: row.version!});
-      await queryData();
-    },
-  });
 }
 
 function cancel(row: Order) {
@@ -524,7 +512,8 @@ function unlock(row: Order) {
 
 function remove(row: Order) {
   Modal.confirm({
-    title: '删除这张草稿采购单？',
+    title: '删除这张采购单？',
+    content: '仅尚未采购确认且没有收货记录的采购单可以删除。',
     okType: 'danger',
     onOk: async () => {
       await purchaseOrderApi.delete({id: row.id!, version: row.version!});
@@ -534,13 +523,13 @@ function remove(row: Order) {
 }
 
 function batchDelete() {
-  const targets = draftSelected.value;
+  const targets = submittedSelected.value;
   if (!targets.length) {
-    message.warning('请勾选至少一张「草稿」采购单');
+    message.warning('请勾选至少一张已提交的采购单');
     return;
   }
   Modal.confirm({
-    title: `删除所选 ${targets.length} 张草稿采购单？`,
+    title: `删除所选 ${targets.length} 张采购单？`,
     okType: 'danger',
     onOk: async () => {
       await purchaseOrderApi.batchDelete(targets.map((o) => ({id: o.id!, version: o.version!})));

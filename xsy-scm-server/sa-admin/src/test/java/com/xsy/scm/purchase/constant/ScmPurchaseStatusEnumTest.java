@@ -34,8 +34,8 @@ class ScmPurchaseStatusEnumTest {
     @DisplayName("采购单 7 态与 ck_purchase_order_status 白名单一致")
     void purchaseOrderStatusMatchesDdl() {
         assertThat(names(ScmPurchaseStatusEnum.values()))
-                .isEqualTo(whitelist("/db/migration/V217__scm_purchase_account_without_stock.sql", "ck_purchase_order_status"));
-        assertThat(ScmPurchaseStatusEnum.values()).hasSize(7);
+                .isEqualTo(whitelist("/db/migration/V222__scm_remove_purchase_draft_status.sql", "ck_purchase_order_status"));
+        assertThat(ScmPurchaseStatusEnum.values()).hasSize(6);
         assertThat(ScmPurchaseStatusEnum.ACCOUNTED.committed()).isTrue();
         assertThat(com.xsy.scm.purchase.manager.PurchaseOrderStateMachine.canTransition("SUBMITTED", "ACCOUNTED")).isTrue();
         assertThat(com.xsy.scm.purchase.manager.PurchaseOrderStateMachine.terminal("ACCOUNTED")).isTrue();

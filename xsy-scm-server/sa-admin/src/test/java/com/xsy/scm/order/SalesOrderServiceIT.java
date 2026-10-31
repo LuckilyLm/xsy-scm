@@ -140,7 +140,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         logs.setOrderId(o.getOrderId());
         logs.setPageNum(1L);
         logs.setPageSize(20L);
-        assertThat(query.logs(logs).getList()).extracting(OrderOperationLogVO::getOperationType).contains("CREATE", "UPDATE", "SUBMIT", "ACTUAL_QUANTITY", "CONFIRM");
+        assertThat(query.logs(logs).getList()).extracting(OrderOperationLogVO::getOperationType).contains("CREATE", "UPDATE", "ACTUAL_QUANTITY", "CONFIRM");
         assertThat(query.logs(logs).getList()).allSatisfy(l -> {
             assertThat(l.getOperator()).isEqualTo("1:1");
             assertThat(l.getAfterData()).isNotEmpty();

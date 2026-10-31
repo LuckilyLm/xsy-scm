@@ -40,7 +40,7 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * 创建或编辑草稿时更新供应商、仓库信息，提交后冻结。 采购员由服务端确定，不能信任客户端传入的 ID。
+     * 新建采购单时写入供应商、仓库快照；新建即提交，后续编辑只改允许变更的字段。 采购员由服务端确定，不能信任客户端传入的 ID。
      */
     public static PurchaseOrderEntity order(String supplierCode, String supplierName, String warehouseCode,
         String warehouseName, Long purchaserId, PurchaseOrderAddForm form) {
@@ -54,7 +54,7 @@ public final class PurchaseSnapshotFactory {
         order.setWarehouseNameSnapshot(warehouseName);
         order.setPlannedArrivalDate(form.getPlannedArrivalDate());
         order.setRemark(PurchaseOrderValidator.trim(form.getRemark()));
-        order.setStatus(ScmPurchaseStatusEnum.DRAFT.name());
+        order.setStatus(ScmPurchaseStatusEnum.SUBMITTED.name());
         order.setVersion(0);
         order.setDeleted(false);
         return order;

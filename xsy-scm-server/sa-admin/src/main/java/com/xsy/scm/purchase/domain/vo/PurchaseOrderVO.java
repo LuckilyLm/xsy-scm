@@ -54,7 +54,7 @@ public class PurchaseOrderVO {
     private String lockedBy;
     /** MANUAL / AUTO_7_DAYS。 */
     private String lockReason;
-    /** 提交时刻 + 7 天；草稿单为空。 */
+    /** 建单（提交）时刻 + 7 天。 */
     private OffsetDateTime autoLockAt;
     /** 待定价行数：列表据此显示「待定价」，不需要再拉明细。 */
     private Integer pendingPriceCount;
