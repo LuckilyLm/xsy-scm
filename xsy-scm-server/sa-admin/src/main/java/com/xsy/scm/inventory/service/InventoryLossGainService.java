@@ -49,7 +49,6 @@ public class InventoryLossGainService {
 
     private final InventoryLossGainItemDao inventoryLossGainItemDao;
 
-
     private final InventoryCommandService inventoryCommandService;
 
     private final WarehouseService warehouseService;

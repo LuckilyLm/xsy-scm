@@ -190,7 +190,7 @@ class OrderPoolServiceTest {
         assertRejected(assignForm(ORDER_ID, 3, TARGET_SELLER), OrderErrorCode.ORDER_NOT_FOUND);
 
         when(salesOrderDao.lock(ORDER_ID))
-                .thenReturn(orderOf(ScmOrderSourceEnum.ADMIN, ScmOrderStatusEnum.DRAFT, null));
+                .thenReturn(orderOf(ScmOrderSourceEnum.ADMIN, ScmOrderStatusEnum.PENDING, null));
         assertRejected(assignForm(ORDER_ID, 3, TARGET_SELLER), OrderErrorCode.ORDER_NOT_FOUND);
 
         when(salesOrderDao.lock(ORDER_ID))
@@ -201,10 +201,9 @@ class OrderPoolServiceTest {
     }
 
     @Test
-    @DisplayName("草稿、待确认与已确认的商城单都可以被指派")
-    void draftPendingAndConfirmedMallOrdersAreAllEligible() {
-        for (ScmOrderStatusEnum status : List.of(ScmOrderStatusEnum.DRAFT, ScmOrderStatusEnum.PENDING,
-                ScmOrderStatusEnum.CONFIRMED)) {
+    @DisplayName("待确认与已确认的商城单都可以被指派")
+    void pendingAndConfirmedMallOrdersAreAllEligible() {
+        for (ScmOrderStatusEnum status : List.of(ScmOrderStatusEnum.PENDING, ScmOrderStatusEnum.CONFIRMED)) {
             SalesOrderEntity order = orderOf(ScmOrderSourceEnum.MALL, status, null);
             when(salesOrderDao.lock(ORDER_ID)).thenReturn(order);
             stubAssignableTarget();

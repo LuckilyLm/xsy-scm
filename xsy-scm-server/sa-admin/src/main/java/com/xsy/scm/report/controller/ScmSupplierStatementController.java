@@ -35,9 +35,10 @@ public class ScmSupplierStatementController {
     private final ScmSupplierStatementService statementService;
 
     @PostMapping("/freeze")
-    @SaCheckPermission(value = {ScmReportPermission.SUPPLIER_STATEMENT_QUERY,
-        ScmReportPermission.SUPPLIER_STATEMENT_FREEZE, FinancePermission.PAYABLE_QUERY,
-        FinancePermission.PAYMENT_QUERY}, mode = SaMode.AND)
+    @SaCheckPermission(
+        value = {ScmReportPermission.SUPPLIER_STATEMENT_QUERY, ScmReportPermission.SUPPLIER_STATEMENT_FREEZE,
+            FinancePermission.PAYABLE_QUERY, FinancePermission.PAYMENT_QUERY},
+        mode = SaMode.AND)
     @OperateLog
     public ResponseDTO<ScmSupplierStatementVO> freeze(@Valid @RequestBody ScmSupplierStatementForm form) {
         return ResponseDTO.ok(statementService.freeze(form));

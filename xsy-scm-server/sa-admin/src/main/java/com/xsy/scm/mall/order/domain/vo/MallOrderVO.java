@@ -21,7 +21,7 @@ public class MallOrderVO {
     private Long orderId;
     private String orderNo;
     /**
-     * 正式销售订单状态：DRAFT / PENDING / CONFIRMED / CANCELLED
+     * 正式销售订单状态：PENDING / CONFIRMED / CANCELLED
      */
     private String status;
     /**

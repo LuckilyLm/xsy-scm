@@ -47,7 +47,6 @@ public class InventoryStocktakeService {
 
     private final InventoryStocktakeItemDao inventoryStocktakeItemDao;
 
-
     private final InventoryCommandService inventoryCommandService;
 
     private final InventoryBalanceDao inventoryBalanceDao;

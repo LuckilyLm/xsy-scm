@@ -51,7 +51,6 @@ public class InventoryFulfillmentService {
 
     private final InventoryBalanceDao inventoryBalanceDao;
 
-
     private final InventoryCommandService inventoryCommandService;
 
     private final WarehouseService warehouseService;

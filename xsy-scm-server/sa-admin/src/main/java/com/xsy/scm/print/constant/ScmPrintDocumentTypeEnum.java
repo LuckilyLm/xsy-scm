@@ -71,8 +71,7 @@ public enum ScmPrintDocumentTypeEnum {
      */
     CUSTOMER_SORTING_SHEET("客户分拣单", null, customerSheetHeader(),
         customerSheetRows(new ScmPrintField("orderedQuantity", "数量", false, true),
-            new ScmPrintField("actualQuantity", "实数量", false, true),
-            new ScmPrintField("remark", "备注", false, false)),
+            new ScmPrintField("actualQuantity", "实数量", false, true), new ScmPrintField("remark", "备注", false, false)),
         List.of()),
 
     /**
@@ -200,19 +199,15 @@ public enum ScmPrintDocumentTypeEnum {
         return List.of(new ScmPrintField("customerName", "收货单位", false, false),
             new ScmPrintField("orderNo", "订单号", false, false),
             new ScmPrintField("expectDeliveryTime", "配送日期", false, false),
-            new ScmPrintField("routeNo", "线路", false, false),
-            new ScmPrintField("receiverName", "收货人", false, false),
+            new ScmPrintField("routeNo", "线路", false, false), new ScmPrintField("receiverName", "收货人", false, false),
             new ScmPrintField("receiverPhone", "收货电话", false, false),
-            new ScmPrintField("address", "收货地址", false, false),
-            new ScmPrintField("remark", "备注", false, false));
+            new ScmPrintField("address", "收货地址", false, false), new ScmPrintField("remark", "备注", false, false));
     }
 
     /** 客户级分拣单与送货单共用的行首列，其后接各单据自己的数量、价格列。 */
     private static List<ScmPrintField> customerSheetRows(ScmPrintField... ownColumns) {
-        List<ScmPrintField> fields = new ArrayList<>(List.of(
-            new ScmPrintField("rowNo", "序号", false, true),
-            new ScmPrintField("productName", "商品名称", false, false),
-            new ScmPrintField("specName", "规格", false, false),
+        List<ScmPrintField> fields = new ArrayList<>(List.of(new ScmPrintField("rowNo", "序号", false, true),
+            new ScmPrintField("productName", "商品名称", false, false), new ScmPrintField("specName", "规格", false, false),
             new ScmPrintField("saleUnit", "单位", false, false)));
         fields.addAll(List.of(ownColumns));
         return List.copyOf(fields);

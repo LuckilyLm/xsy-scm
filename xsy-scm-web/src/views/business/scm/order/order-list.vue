@@ -40,18 +40,18 @@
         <a-button type="primary" v-privilege="'scm:order:add'" @click="drawer?.open()">新建订单</a-button>
         <a-button v-privilege="'scm:order:import'" @click="importModal?.open()">导入订单</a-button>
         <a-button v-privilege="'scm:report:order:exception:query'" @click="router.push('/report/report-order-exceptions')">异常工作台</a-button>
-        <a-button v-if="canPriceCheck" :disabled="!selected.length || selected.length > 8 || !selectedAllDraft" @click="openBatchPriceCheck"
+        <a-button v-if="canPriceCheck" :disabled="!selected.length || selected.length > 8 || !selectedAllPending" @click="openBatchPriceCheck"
           >批量核价（最多8单）</a-button
         >
         <a-button v-if="canManageTags" :disabled="!selected.length || selected.length > 20" @click="openBatchTags">批量打标签</a-button>
         <a-button v-if="canPrint" :disabled="!selected.length" @click="openBatchPrint">批量打印订单</a-button>
         <a-button v-if="canPrint" @click="customerSheetOpen = true">打印客户分拣单 / 送货单</a-button>
-        <a-button danger v-privilege="'scm:order:delete'" :disabled="!selected.length || !selectedAllDraft" @click="batchDelete">
-          批量删除草稿
+        <a-button danger v-privilege="'scm:order:delete'" :disabled="!selected.length || !selectedAllPending" @click="batchDelete">
+          批量删除
         </a-button>
-        <!-- 显示已选数量；混选到非草稿单时说明按钮为什么不可用 -->
+        <!-- 显示已选数量；混选到非待确认单时说明按钮为什么不可用 -->
         <span v-if="selected.length" class="scm-query-table-context">
-          已选 {{ selected.length }} 单<template v-if="!selectedAllDraft"> · 含非草稿单，核价与删除不可用</template>
+          已选 {{ selected.length }} 单<template v-if="!selectedAllPending"> · 含非待确认单，核价与删除不可用</template>
         </span>
       </div>
       <div class="smart-table-setting-block">
@@ -107,11 +107,7 @@
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 行内只留当前状态最常用的动作，其余收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <template v-if="record.status === 'DRAFT'">
-              <a-button type="link" size="small" v-privilege="'scm:order:update'" @click="drawer?.open(record.orderId)">编辑 </a-button>
-              <a-button type="link" size="small" v-privilege="'scm:order:submit'" @click="submit(record)">提交 </a-button>
-            </template>
-            <template v-else-if="record.status === 'PENDING'">
+            <template v-if="record.status === 'PENDING'">
               <a-button type="link" size="small" v-privilege="'scm:order:update'" @click="drawer?.open(record.orderId)">编辑 </a-button>
               <a-button type="link" size="small" @click="openDetail(record.orderId)">详情</a-button>
             </template>
@@ -267,8 +263,8 @@ const canPrint = computed(() => hasPermission('scm:order:query'));
 const selectedRows = computed(() =>
   tableData.value.filter((row) => row.orderId != null && selected.value.some((id) => String(id) === String(row.orderId)))
 );
-const selectedAllDraft = computed(
-  () => selectedRows.value.length === selected.value.length && selectedRows.value.every((row) => row.status === 'DRAFT')
+const selectedAllPending = computed(
+  () => selectedRows.value.length === selected.value.length && selectedRows.value.every((row) => row.status === 'PENDING')
 );
 function openBatchTags(): void {
   if (!canManageTags.value) return;
@@ -304,7 +300,7 @@ function lockTip(row: Order): string {
 const entryHidden = computed(() => !columns.value.some((column) => (column as {dataIndex?: string}).dataIndex === 'orderNo'));
 
 function rowActions(row: Order): ScmActionItem[] {
-  const draft = row.status === 'DRAFT';
+  const pending = row.status === 'PENDING';
   const confirmed = row.status === 'CONFIRMED';
   // 详情默认走第一列的订单号；只有第一列被隐藏时才补回「更多」
   return [
@@ -314,7 +310,7 @@ function rowActions(row: Order): ScmActionItem[] {
     {key: 'unlock', label: '解锁', hidden: !(confirmed && row.lockedFlag && canUnlock.value)},
     {key: 'tag', label: '订单标签', hidden: !canManageTags.value},
     {key: 'print', label: '打印订单', hidden: !canPrint.value},
-    {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
   ];
 }
 
@@ -369,20 +365,10 @@ function resetQuery() {
   onSearch();
 }
 
-function submit(r: Order) {
-  Modal.confirm({
-    title: '提交订单并锁定价格？',
-    onOk: async () => {
-      // 失败原因由全局提示给出；异常继续抛出，确认框保持打开
-      await orderApi.submit({orderId: r.orderId, version: r.version});
-      await queryData();
-    },
-  });
-}
-
 function remove(r: Order) {
   Modal.confirm({
-    title: '删除这张草稿订单？',
+    title: '删除这张订单？',
+    content: '仅未确认且没有资金、库存和履约记录的订单可以删除。',
     okType: 'danger',
     onOk: async () => {
       await orderApi.delete({orderId: r.orderId, version: r.version});
@@ -433,7 +419,8 @@ function unlockOrder(r: Order) {
 
 function batchDelete() {
   Modal.confirm({
-    title: '删除所选草稿？',
+    title: '删除所选订单？',
+    content: '仅未确认且没有资金、库存和履约记录的订单可以删除。',
     okType: 'danger',
     onOk: async () => {
       await orderApi.batchDelete(

@@ -49,7 +49,7 @@ import static org.mockito.Mockito.mockStatic;
  * SEC-01 / SEC-02 回归：订单族与退货族的<b>写命令入口</b>必须与读接口同口径地判归属。
  *
  * <p>被测缺陷是一条「读收窄、写不设防」的错配：查询与详情早就按 {@code orderSellerScope}
- * 只给出本人负责的行，但 {@code update / submit / actualQuantity / cancel / delete /
+ * 只给出本人负责的行，但 {@code update / actualQuantity / cancel / delete /
  * reserveStock} 与退货的 {@code create / approve / reject / cancel} 只判「单据存在」，
  * 于是持有功能点权限的普通人员<b>只要猜到 id</b> 就能改别人的单、动别人的数量、占别人的库存、
  * 替别人批退货退款 —— 行级范围沦为「藏起来」。
@@ -98,11 +98,11 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
     // ==================== SEC-01：订单写命令 ====================
 
     @Test
-    @DisplayName("订单编辑：改别人的草稿 30005，改自己的照常成功")
+    @DisplayName("订单编辑：改别人的待确认单 30005，改自己的照常成功")
     void updateRejectsForeignOrderButAllowsOwn() {
         Long customerOfB = createTradableCustomer("U1", sellerB);
         Long sku = newOnShelfSku("U1");
-        Long orderOfB = draftOrder(customerOfB, sku, sellerB, "u1");
+        Long orderOfB = pendingOrder(customerOfB, sku, sellerB, "u1");
         Integer before = versionOf(orderOfB);
 
         assertNoPermission(() -> as(sellerA, Set.of(), () -> salesOrderService.update(
@@ -117,54 +117,13 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
     }
 
     @Test
-    @DisplayName("订单提交：替别人提交 30005；自己的单提交成功进入 PENDING")
-    void submitRejectsForeignOrderButAllowsOwn() {
-        Long customerOfB = createTradableCustomer("S1", sellerB);
-        Long sku = newOnShelfSku("S1");
-        Long orderOfB = draftOrder(customerOfB, sku, sellerB, "s1");
-
-        assertNoPermission(() -> as(sellerA, Set.of(),
-                () -> salesOrderService.submit(versionForm(orderOfB, versionOf(orderOfB)), prefix + "-s1a")));
-        // 越权不是「改了一半」：单还是草稿，版本没被 bump
-        assertThat(statusOf(orderOfB)).isEqualTo("DRAFT");
-
-        assertThat(as(sellerB, Set.of(),
-                () -> salesOrderService.submit(versionForm(orderOfB, versionOf(orderOfB)), prefix + "-s1b")
-                        .getStatus()))
-                .isEqualTo("PENDING");
-    }
-
-    @Test
-    @DisplayName("订单提交幂等重放：同一个人换了范围后重放旧键同样 30005")
-    void submitReplayDoesNotBypassScope() {
-        Long customerOfB = createTradableCustomer("S2", sellerB);
-        Long sku = newOnShelfSku("S2");
-        Long orderOfB = draftOrder(customerOfB, sku, sellerB, "s2");
-        String key = prefix + "-s2";
-
-        // B 先把单提交掉，键落库并带上结果。重放要命中同一行，请求体必须逐字节一致 → 复用同一个 form
-        OrderVersionForm form = versionForm(orderOfB, versionOf(orderOfB));
-        as(sellerB, Set.of(), () -> salesOrderService.submit(form, key));
-
-        // A 用同一张单、同一个键重放：scope 含 operator，A 与 B 是两行 → 不命中重放，
-        // 走写命令后在订单锁之后被范围门禁拦下。
-        assertNoPermission(() -> as(sellerA, Set.of(), () -> salesOrderService.submit(form, key)));
-
-        // B 自己重放同一个键、同样的请求体：命中 replay 分支，replay 前先 detail() → 范围成立，正常返回
-        assertThat(as(sellerB, Set.of(), () -> salesOrderService.submit(form, key).getOrderId()))
-                .isEqualTo(orderOfB);
-    }
-
-    @Test
     @DisplayName("实收数量：改别人单的数量 30005；自己的单照常")
     void actualQuantityRejectsForeignOrderButAllowsOwn() {
         Long customerOfB = createTradableCustomer("Q1", sellerB);
         Long sku = newOnShelfSku("Q1");
-        Long orderOfB = draftOrder(customerOfB, sku, sellerB, "q1");
+        Long orderOfB = pendingOrder(customerOfB, sku, sellerB, "q1");
         Long itemId = firstItemId(orderOfB);
-        // 实收数量只在 PENDING 上允许，先由负责人自己提交；本用例要验的是那道归属门禁
-        as(sellerB, Set.of(), () -> salesOrderService.submit(
-                versionForm(orderOfB, versionOf(orderOfB)), prefix + "-q1sub"));
+        // 新建即待确认；本用例要验的是那道归属门禁
         assertThat(statusOf(orderOfB)).isEqualTo("PENDING");
 
         assertNoPermission(() -> as(sellerA, Set.of(), () -> salesOrderService.actualQuantity(
@@ -182,11 +141,11 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
     void cancelRejectsForeignOrderButAllowsOwn() {
         Long customerOfB = createTradableCustomer("C1", sellerB);
         Long sku = newOnShelfSku("C1");
-        Long orderOfB = draftOrder(customerOfB, sku, sellerB, "c1");
+        Long orderOfB = pendingOrder(customerOfB, sku, sellerB, "c1");
 
         assertNoPermission(() -> as(sellerA, Set.of(), () -> salesOrderService.cancel(
                 cancelForm(orderOfB, versionOf(orderOfB)), prefix + "-c1a")));
-        assertThat(as(sellerB, Set.of(), () -> statusOf(orderOfB))).isEqualTo("DRAFT");
+        assertThat(as(sellerB, Set.of(), () -> statusOf(orderOfB))).isEqualTo("PENDING");
 
         assertThat(as(sellerB, Set.of(), () -> salesOrderService.cancel(
                 cancelForm(orderOfB, versionOf(orderOfB)), prefix + "-c1b").getStatus()))
@@ -194,18 +153,18 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
     }
 
     @Test
-    @DisplayName("订单删除：删别人的草稿 30005，单据仍在；自己的草稿照常删")
+    @DisplayName("订单删除：删别人的待确认单 30005，单据仍在；自己的待确认单照常删")
     void deleteRejectsForeignOrderButAllowsOwn() {
         Long customerOfB = createTradableCustomer("D1", sellerB);
         Long sku = newOnShelfSku("D1");
-        Long orderOfB = draftOrder(customerOfB, sku, sellerB, "d1");
+        Long orderOfB = pendingOrder(customerOfB, sku, sellerB, "d1");
 
         assertNoPermission(() -> as(sellerA, Set.<String>of(), () -> {
             salesOrderService.delete(versionForm(orderOfB, versionOf(orderOfB)));
             return null;
         }));
         assertThat(deletedOf(orderOfB)).as("越权删除不得真的落库").isFalse();
-        assertThat(statusOf(orderOfB)).isEqualTo("DRAFT");
+        assertThat(statusOf(orderOfB)).isEqualTo("PENDING");
 
         // 负责人自己删：软删标记必须落地
         as(sellerB, Set.of(), () -> {
@@ -220,7 +179,7 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
     void reserveStockRejectsForeignOrder() {
         Long customerOfB = createTradableCustomer("R1", sellerB);
         Long sku = newOnShelfSku("R1");
-        Long orderOfB = draftOrder(customerOfB, sku, sellerB, "r1");
+        Long orderOfB = pendingOrder(customerOfB, sku, sellerB, "r1");
         // 用负责人自己的身份把单推到 CONFIRMED：本用例要验的是预留那道门禁，不是状态机
         confirmOwn(orderOfB);
         assertThat(as(sellerB, Set.of(), () -> statusOf(orderOfB))).isEqualTo("CONFIRMED");
@@ -359,14 +318,14 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
     void unassignedOrderIsNotWritableByPlainSeller() {
         Long customerOfA = createTradableCustomer("N1", sellerA);
         String orderNo = prefix + "-N1";
-        // 直接插一张 seller_id 为 null 的草稿：模拟「归属被收回」的历史单。
+        // 直接插一张 seller_id 为 null 的待确认单：模拟「归属被收回」的历史单。
         // 用 delete 作为探针：它只需要订单行本身，不依赖地址快照或订单行，
         // 能把「范围判定」这一件事单独隔离出来。
         jdbc.update("INSERT INTO xsy_sales_order (order_no, customer_id, customer_code_snapshot,"
                         + " customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot,"
                         + " order_source, status, ordered_total_amount, settlement_total_amount,"
                         + " settle_mode_snapshot, seller_id)"
-                        + " VALUES (?, ?, 'CODE-N1', '范围测试客户', ?, '范围测试客户', 'ADMIN', 'DRAFT', 0, 0,"
+                        + " VALUES (?, ?, 'CODE-N1', '范围测试客户', ?, '范围测试客户', 'ADMIN', 'PENDING', 0, 0,"
                         + " 'INDEPENDENT', NULL)",
                 orderNo, customerOfA, customerOfA);
         Long unassigned = jdbc.queryForObject("SELECT id FROM xsy_sales_order WHERE order_no = ?", Long.class, orderNo);
@@ -446,14 +405,14 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
     }
 
     /** 走真实建单服务造一张草稿，归属由客户快照强制为负责人。 */
-    private Long draftOrder(Long customerId, Long skuId, Long ownerEmployeeId, String suffix) {
+    private Long pendingOrder(Long customerId, Long skuId, Long ownerEmployeeId, String suffix) {
         return as(ownerEmployeeId, Set.of(), () -> salesOrderService.create(
                 orderForm(customerId, skuId, suffix), prefix + "-so").getOrderId());
     }
 
     /** 造一张已确认订单：写路径门禁之前的完整主链，供退货族使用。 */
     private Long confirmedOrder(Long customerId, Long skuId, Long ownerEmployeeId, String suffix) {
-        Long orderId = draftOrder(customerId, skuId, ownerEmployeeId, suffix);
+        Long orderId = pendingOrder(customerId, skuId, ownerEmployeeId, suffix);
         confirmOwn(orderId);
         return orderId;
     }
@@ -461,15 +420,14 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
     /**
      * 以负责人身份把草稿推到 CONFIRMED。
      *
-     * <p>夹具用的 SKU 是 {@code NON_STANDARD}（基类固定），提交时系统不自动补实数量，
+     * <p>夹具用的 SKU 是 {@code NON_STANDARD}（基类固定），新建时系统不自动补实数量，
      * 而确认前每行都必须有正实数量 —— 所以这里先走一次真实 {@code actualQuantity}，
-     * 再提交 + 确认。这三步都是被本类当作「前置事实」的既有主链，不是待测点。
+     * 再确认。这两步都是被本类当作「前置事实」的既有主链，不是待测点。
      */
     private void confirmOwn(Long orderId) {
         Long seller = jdbc.queryForObject("SELECT seller_id FROM xsy_sales_order WHERE id = ?", Long.class, orderId);
         Long itemId = firstItemId(orderId);
         as(seller, Set.of(), () -> {
-            salesOrderService.submit(versionForm(orderId, versionOf(orderId)), prefix + "-sub");
             salesOrderService.actualQuantity(
                     actualForm(orderId, itemId, versionOf(orderId), "1.0000"), prefix + "-act");
             salesOrderService.confirm(versionForm(orderId, versionOf(orderId)), prefix + "-cfm");

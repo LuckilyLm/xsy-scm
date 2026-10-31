@@ -36,7 +36,6 @@ public class InventoryOutboundService {
 
     private final InventoryOutboundItemDao inventoryOutboundItemDao;
 
-
     private final InventoryCommandService inventoryCommandService;
 
     private final ScmWarehouseScopeGuard warehouseScopeGuard;

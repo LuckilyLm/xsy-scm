@@ -88,16 +88,14 @@ class CustomerFrequentSkuIT extends ScmW3PgITBase {
         return f;
     }
 
-    /** create → submit，停在 PENDING（已锁价但未确认）。 */
+    /** 新建即停在 PENDING（已锁价但未确认）。 */
     private SalesOrderDetailVO submitted(Long c, Long sku, String tag) {
-        var o = orders.create(form(c, sku, false), prefix + tag + "c");
-        return orders.submit(version(o), prefix + tag + "s");
+        return orders.create(form(c, sku, false), prefix + tag + "c");
     }
 
-    /** create → submit → 录实重 → confirm，得到带锁定单价的 CONFIRMED 单。 */
+    /** 新建 → 录实重 → confirm，得到带锁定单价的 CONFIRMED 单。 */
     private SalesOrderDetailVO confirmed(Long c, Long sku, String tag, boolean manual) {
         var o = orders.create(form(c, sku, manual), prefix + tag + "c");
-        o = orders.submit(version(o), prefix + tag + "s");
         var a = new OrderActualQuantityForm();
         a.setOrderId(o.getOrderId());
         a.setItemId(o.getItems().getFirst().getItemId());

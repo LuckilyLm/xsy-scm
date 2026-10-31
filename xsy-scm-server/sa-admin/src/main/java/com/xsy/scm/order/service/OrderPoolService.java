@@ -101,8 +101,7 @@ public class OrderPoolService {
         }
         var order = salesOrderDao.lock(form.getOrderId());
         if (order == null || !ScmOrderSourceEnum.MALL.name().equals(order.getOrderSource()) || !Set
-            .of(ScmOrderStatusEnum.DRAFT.name(), ScmOrderStatusEnum.PENDING.name(), ScmOrderStatusEnum.CONFIRMED.name())
-            .contains(order.getStatus())) {
+            .of(ScmOrderStatusEnum.PENDING.name(), ScmOrderStatusEnum.CONFIRMED.name()).contains(order.getStatus())) {
             throw new ScmBusinessException(OrderErrorCode.ORDER_NOT_FOUND);
         }
         if (order.getSellerId() != null) {

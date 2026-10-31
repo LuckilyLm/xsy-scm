@@ -72,7 +72,7 @@ class OrderWebTest {
                     assertThat(m.getAnnotation(SaCheckPermission.class)).as(m.getName()).isNotNull();
                     count++;
                 }
-        assertThat(count).isEqualTo(37);
+        assertThat(count).isEqualTo(36);
     }
 
     @Test
@@ -157,8 +157,13 @@ class OrderWebTest {
 
     @Test
     void missingIdempotencyReturnsStableBusinessCode() throws Exception {
-        when(service.submit(any(), isNull())).thenThrow(new ScmBusinessException(OrderErrorCode.ORDER_IDEMPOTENCY_KEY_REQUIRED));
-        mvc.perform(post("/scm/order/submit").contentType(MediaType.APPLICATION_JSON).content("{\"orderId\":1,\"version\":0}")).andExpect(jsonPath("$.code").value(40069));
+        when(service.create(any(), isNull()))
+                .thenThrow(new ScmBusinessException(OrderErrorCode.ORDER_IDEMPOTENCY_KEY_REQUIRED));
+        mvc.perform(post("/scm/order/create").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"customerId\":1,\"orderSource\":\"ADMIN\",\"address\":{\"receiverName\":\"张三\","
+                        + "\"receiverPhone\":\"13800000000\",\"address\":\"地址\"},"
+                        + "\"items\":[{\"skuId\":2,\"orderedQuantity\":\"1.0000\",\"manualPriceOverride\":false}]}"))
+                .andExpect(jsonPath("$.code").value(40069));
     }
 
     @Test

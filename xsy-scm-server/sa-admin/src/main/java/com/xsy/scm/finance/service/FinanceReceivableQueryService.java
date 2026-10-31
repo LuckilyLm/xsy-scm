@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
@@ -56,15 +55,15 @@ public class FinanceReceivableQueryService {
     @Transactional(readOnly = true)
     public PageResult<FinanceReceivableVO> query(FinanceReceivableQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        return FinanceQuerySupport.query(form, scope.getOrderSellerScope(),
-            () -> validateFilters(form), (page, range) -> financeReceivableDao.queryPage(page, form, scope, range));
+        return FinanceQuerySupport.query(form, scope.getOrderSellerScope(), () -> validateFilters(form),
+            (page, range) -> financeReceivableDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
     public List<FinanceReceivableVO> exportRows(FinanceReceivableQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        return FinanceQuerySupport.exportRows(form, scope.getOrderSellerScope(),
-            () -> validateFilters(form), (page, range) -> financeReceivableDao.queryPage(page, form, scope, range));
+        return FinanceQuerySupport.exportRows(form, scope.getOrderSellerScope(), () -> validateFilters(form),
+            (page, range) -> financeReceivableDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
@@ -101,8 +100,8 @@ public class FinanceReceivableQueryService {
         if (original != null) {
             receivableLogIds.add(original.getReceivableId());
         }
-        List<FinanceOperationLogVO> logs = new ArrayList<>(
-            financeOperationLogQueryService.listByBusinessIds(ScmFinanceBusinessTypeEnum.RECEIVABLE.name(), receivableLogIds));
+        List<FinanceOperationLogVO> logs = new ArrayList<>(financeOperationLogQueryService
+            .listByBusinessIds(ScmFinanceBusinessTypeEnum.RECEIVABLE.name(), receivableLogIds));
         logs.addAll(financeOperationLogQueryService.listByBusinessIds(ScmFinanceBusinessTypeEnum.WRITE_OFF.name(),
             writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
         logs.sort(

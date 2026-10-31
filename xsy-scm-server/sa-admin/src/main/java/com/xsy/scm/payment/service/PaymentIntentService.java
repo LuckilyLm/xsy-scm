@@ -61,7 +61,6 @@ public class PaymentIntentService {
 
     private final PaymentTransactionDao paymentTransactionDao;
 
-
     /**
      * 只读外部数据：按订单 id 解析正式订单（订单号 / 客户 / 业务员）。
      */

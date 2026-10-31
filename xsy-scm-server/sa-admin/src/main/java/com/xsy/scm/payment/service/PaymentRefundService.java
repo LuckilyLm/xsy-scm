@@ -75,7 +75,6 @@ public class PaymentRefundService {
     private final FinancePaymentService financePaymentService;
     private final FinanceOrderFundingPolicy financeOrderFundingPolicy;
 
-
     private final ScmPaymentProviderRegistry providerRegistry;
 
     private final ScmIdempotencyService idempotencyService;

@@ -122,7 +122,6 @@ export const orderApi = {
   assignPoolOrder: (data: {orderId: Id; version: number; sellerId: number}) => orderCommand<OrderPoolRow>('/scm/order/pool/assign', data),
   query: (data: Query, options?: RequestOptions) => postRequest<ScmPage<Order>>('/scm/order/query', data, options),
   detail: (id: Id, options?: RequestOptions) => getRequest<Order>('/scm/order/detail/' + id, {}, options),
-  create: (data: Order) => orderCommand<Order>('/scm/order/create', data),
   exchangeReplacement: (returnId: Id, options?: RequestOptions) => getRequest<Id | null>('/scm/order/exchange/replacement/' + returnId, {}, options),
   createExchange: (returnId: Id, order: Order) => orderCommand<Order>('/scm/order/exchange/create', {returnId, order}),
   receivedCorrections: (orderId: Id, options?: RequestOptions) =>
@@ -151,7 +150,6 @@ export const orderApi = {
   ) => postRequest<PastePreview>('/scm/order/import/paste-preview', data, options),
   update: (data: Order) => postRequest<Order>('/scm/order/update', data),
   reprice: (data: {orderId: Id; version: number; reason: string}) => postRequest<Order>('/scm/order/reprice', data),
-  submit: (data: unknown) => orderCommand<Order>('/scm/order/submit', data),
   confirm: (data: unknown) => orderCommand<Order>('/scm/order/confirm', data),
   creditCheck: (customerId: Id, requestedAmount?: string) =>
     getRequest<{

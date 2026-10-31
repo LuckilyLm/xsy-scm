@@ -48,7 +48,6 @@ import com.xsy.scm.order.manager.OrderValidator;
 import com.xsy.scm.order.manager.SalesOrderItemChangeSet;
 import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.order.support.PlannedQuantity;
-import com.xsy.scm.pricing.constant.AgreementFormulaType;
 import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.pricing.service.PriceResolver;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
@@ -60,6 +59,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,8 +90,6 @@ import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_LOCKED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_NOT_FOUND;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ORIGINAL_INVALID;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_PENDING_EDIT_BLOCKED;
-import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_PRICE_INVALID;
-import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_PRICE_OVERRIDE_REASON_REQUIRED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_REPRICE_REQUIRED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RESERVE_STATE_INVALID;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_SORTED_ITEM_CHANGE_BLOCKED;
@@ -108,7 +106,7 @@ public class SalesOrderService {
     private final OrderAddressSnapshotDao orderAddressSnapshotDao;
     private final OrderBundleComponentDao orderBundleComponentDao;
     /**
-     * 删除换货草稿时清掉换货关联：残留关联会让退货单无法再建换货，详情也会指向已删草稿。
+     * 删除换货单时清掉退货单上的换货关联：残留关联会让退货单无法再建换货，详情也会指向已删订单。
      */
     private final OrderReturnDao orderReturnDao;
     private final OrderOperationLogRecorder orderLogs;
@@ -148,7 +146,7 @@ public class SalesOrderService {
             salesOrderQueryService.detail(result.getOrderId());
             return result;
         }
-        var result = createDraft(salesOrderAddForm);
+        var result = createOrder(salesOrderAddForm);
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
             result.getOrderId(), result);
         return result;
@@ -162,8 +160,7 @@ public class SalesOrderService {
             salesOrderQueryService.detail(result.getOrderId());
             return result;
         }
-        var result = createDraft(salesOrderAddForm);
-        result = submitOrder(result.getOrderId(), result.getVersion());
+        var result = createOrder(salesOrderAddForm);
         if (result.getItems().stream()
             .allMatch(orderItem -> ScmProductTypeEnum.STANDARD.name().equals(orderItem.getProductTypeSnapshot()))) {
             result = confirmOrder(result.getOrderId(), result.getVersion());
@@ -183,8 +180,7 @@ public class SalesOrderService {
         if (claim.replay()) {
             return new MallOrderCreationResult(orderIdempotencyService.replay(claim, SalesOrderDetailVO.class), true);
         }
-        var result = createDraft(salesOrderAddForm, false);
-        result = submitOrderForMall(result.getOrderId(), result.getVersion());
+        var result = createOrder(salesOrderAddForm, false);
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
             result.getOrderId(), result);
         return new MallOrderCreationResult(result, false);
@@ -225,8 +221,7 @@ public class SalesOrderService {
         var imported = new ArrayList<SalesOrderDetailVO>();
         for (int index = 0; index < forms.size(); index++) {
             try {
-                var order = createDraft(forms.get(index));
-                order = submitOrder(order.getOrderId(), order.getVersion());
+                var order = createOrder(forms.get(index));
                 if (order.getItems().stream().allMatch(
                     orderItem -> ScmProductTypeEnum.STANDARD.name().equals(orderItem.getProductTypeSnapshot())))
                     order = confirmOrder(order.getOrderId(), order.getVersion());
@@ -258,15 +253,15 @@ public class SalesOrderService {
         }
     }
 
-    private SalesOrderDetailVO createDraft(SalesOrderAddForm salesOrderAddForm) {
-        return createDraft(salesOrderAddForm, true);
+    private SalesOrderDetailVO createOrder(SalesOrderAddForm salesOrderAddForm) {
+        return createOrder(salesOrderAddForm, true);
     }
 
     /**
      * @param enforceEmployeeScope
      *            是否套用员工负责人范围；商城入口传 {@code false}，由适配器按登录客户判定归属
      */
-    private SalesOrderDetailVO createDraft(SalesOrderAddForm salesOrderAddForm, boolean enforceEmployeeScope) {
+    private SalesOrderDetailVO createOrder(SalesOrderAddForm salesOrderAddForm, boolean enforceEmployeeScope) {
         OrderValidator.draft(salesOrderAddForm);
         var customer = customerService.requireTradable(salesOrderAddForm.getCustomerId());
         // 新建订单前必须确认当前调用者能读取该客户：只收窄列表等于「看不见但仍能往别人名下塞单」，
@@ -283,13 +278,15 @@ public class SalesOrderService {
             warehouseService.require(selectedWarehouse);
         }
         var rows = materialize(salesOrderAddForm);
+        rows.forEach(this::lockPendingItem);
         var salesOrder = new SalesOrderEntity();
         OrderSnapshotFactory.customer(salesOrder, customer);
         var settlementCustomer = customerService.requireSettlementCustomer(customer);
         salesOrder.setSettlementCustomerId(settlementCustomer.getId());
         salesOrder.setSettlementCustomerNameSnapshot(settlementCustomer.getName());
         salesOrder.setOrderNo(ScmDocumentNumbers.next());
-        salesOrder.setStatus(ScmOrderStatusEnum.DRAFT.name());
+        salesOrder.setStatus(ScmOrderStatusEnum.PENDING.name());
+        salesOrder.setSubmittedAt(OffsetDateTime.now());
         header(salesOrder, salesOrderAddForm);
         // 客户预选券只随商城建单保存；后台录单即使误带该字段也不保存，后台用券一律在确认时显式指定。
         if (ScmOrderSourceEnum.MALL.name().equals(salesOrder.getOrderSource())) {
@@ -436,114 +433,11 @@ public class SalesOrderService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public SalesOrderDetailVO submit(OrderVersionForm orderVersionForm, String key) {
-        var claim = orderIdempotencyService.claim("ORDER_SUBMIT:" + orderVersionForm.getOrderId(), key,
-            orderVersionForm);
-        if (claim.replay()) {
-            // 重放也要过范围：幂等 scope 含 operator，A 与 B 的键本就不同，
-            // 但同一个人换了负责范围后重放同一个键仍会绕过写命令的校验。detail 会重新判范围。
-            salesOrderQueryService.detail(orderVersionForm.getOrderId());
-            return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
-        }
-        var result = submitOrder(orderVersionForm.getOrderId(), orderVersionForm.getVersion());
-        orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
-            result.getOrderId(), result);
-        return result;
-    }
-
-    private SalesOrderDetailVO submitOrder(Long orderId, Integer expectedVersion) {
-        return submitOrder(orderId, expectedVersion, true);
-    }
-
-    private SalesOrderDetailVO submitOrderForMall(Long orderId, Integer expectedVersion) {
-        return submitOrder(orderId, expectedVersion, false);
-    }
-
-    private SalesOrderDetailVO submitOrder(Long orderId, Integer expectedVersion, boolean enforceEmployeeScope) {
-        var salesOrder = lock(orderId);
-        requireEmployeeScopeIfNeeded(salesOrder, enforceEmployeeScope);
-        version(salesOrder.getVersion(), expectedVersion);
-        OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.PENDING.name());
-        var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
-        var rows = salesOrderItemDao.list(salesOrder.getId());
-        var automatic = rows.stream().filter(orderItem -> !orderItem.getManualPriceOverride())
-            .map(SalesOrderItemEntity::getSkuId).toList();
-        customerService.requireTradable(salesOrder.getCustomerId());
-        var resolved = priceResolver
-            .requireResolvable(salesOrder.getCustomerId(), automatic, OffsetDateTime.now(),
-                salesOrder.getMallDeliveryWarehouseId())
-            .stream().collect(Collectors.toMap(ResolvedPriceVO::getSkuId, Function.identity()));
-        var manual = rows.stream().filter(SalesOrderItemEntity::getManualPriceOverride)
-            .map(SalesOrderItemEntity::getSkuId).toList();
-        var manualResolved = priceResolver.resolve(salesOrder.getCustomerId(), manual, OffsetDateTime.now(),
-            salesOrder.getMallDeliveryWarehouseId());
-        if (manualResolved.stream().anyMatch(resolvedPrice -> !resolvedPrice.isSellable()))
-            throw new ScmBusinessException(com.xsy.scm.pricing.constant.PricingErrorCode.SKU_NOT_SELLABLE);
-        for (var row : rows) {
-            if (!row.getManualPriceOverride()) {
-                if (!quoteMatches(row, resolved.get(row.getSkuId()))) {
-                    throw new ScmBusinessException(ORDER_REPRICE_REQUIRED);
-                }
-            } else {
-                OrderValidator.reason(row.getManualPriceReason(), ORDER_PRICE_OVERRIDE_REASON_REQUIRED);
-                if (row.getDraftUnitPrice() == null)
-                    throw new ScmBusinessException(ORDER_PRICE_INVALID);
-            }
-            row.setLockedUnitPrice(row.getDraftUnitPrice());
-            row.setLockedPriceSource(row.getDraftPriceSource());
-            row.setLockedPriceSourceId(row.getDraftPriceSourceId());
-            if (row.getPriceBasisSnapshot() == null && !row.getManualPriceOverride()) {
-                row.setPriceBasisSnapshot(resolved.get(row.getSkuId()).getPriceBasisSnapshot());
-            }
-            row.setOrderedLineAmount(
-                OrderAmountCalculator.lineAmount(row.getOrderedQuantity(), row.getLockedUnitPrice()));
-            if (ScmProductTypeEnum.STANDARD.name().equals(row.getProductTypeSnapshot())) {
-                row.setActualQuantity(row.getOrderedQuantity());
-                row.setActualQuantitySource(ScmOrderQuantitySourceEnum.SYSTEM.name());
-            }
-            saveItem(row);
-        }
-        salesOrder.setOrderedTotalAmount(total(rows));
-        salesOrder.setStatus(ScmOrderStatusEnum.PENDING.name());
-        salesOrder.setSubmittedAt(OffsetDateTime.now());
-        save(salesOrder);
-        var result = salesOrderQueryService.detailSnapshot(salesOrder.getId());
-        log(salesOrder.getId(), ScmOrderOperationTypeEnum.SUBMIT, null, before, result);
-        return result;
-    }
-
-    private static boolean quoteMatches(SalesOrderItemEntity row, ResolvedPriceVO current) {
-        if (current == null || current.getUnitPrice() == null || row.getDraftUnitPrice() == null
-            || current.getUnitPrice().compareTo(row.getDraftUnitPrice()) != 0
-            || !Objects.equals(row.getDraftPriceSource(),
-                current.getPriceSource() == null ? null : current.getPriceSource().name())
-            || !Objects.equals(row.getDraftPriceSourceId(), current.getSourceRecordId())) {
-            return false;
-        }
-        Map<String, Object> before = row.getPriceBasisSnapshot();
-        Map<String, Object> after = current.getPriceBasisSnapshot();
-        if (before == null || after == null) {
-            if (before == null && after != null && AgreementFormulaType.FIXED.name().equals(after.get("formulaType"))) {
-                return true;
-            }
-            return before == null && after == null;
-        }
-        for (String key : List.of("formulaType", "agreementVersion", "formulaParameter", "basisUnitPrice",
-            "warehouseId", "stockUnit", "stockUnitCost", "stockUnitsPerSaleUnit", "bundleCostComponents")) {
-            if (!Objects.equals(before.get(key), after.get(key))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO reprice(OrderRepriceForm form) {
         SalesOrderEntity order = lock(form.getOrderId());
         requireOrderSellerScope(order);
         version(order.getVersion(), form.getVersion());
-        if ((!ScmOrderStatusEnum.DRAFT.name().equals(order.getStatus())
-            && !ScmOrderStatusEnum.PENDING.name().equals(order.getStatus()))
+        if (!ScmOrderStatusEnum.PENDING.name().equals(order.getStatus())
             || salesOrderDao.hasPriceFreezeBlockingFact(order.getId())) {
             throw new ScmBusinessException(ORDER_STATE_INVALID);
         }
@@ -776,7 +670,7 @@ public class SalesOrderService {
      * 商城客户取消：与管理端共用同一条取消路径和状态机，只跳过员工负责人范围。
      *
      * <p>
-     * 只有 {@code DRAFT} / {@code PENDING} 可取消，已确认订单一律拒绝；归属由商城适配器按登录客户判定。
+     * 只有 {@code PENDING} 可取消，已确认订单一律拒绝；归属由商城适配器按登录客户判定。
      */
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO cancelFromMall(OrderCancelForm orderCancelForm, String key) {
@@ -824,7 +718,9 @@ public class SalesOrderService {
             return;
         requireOrderSellerScope(salesOrder);
         version(salesOrder.getVersion(), orderVersionForm.getVersion());
-        if (!ScmOrderStatusEnum.DRAFT.name().equals(salesOrder.getStatus())) {
+        // 只有尚未确认、且没有资金或库存事实的订单可以删除；已有事实的订单必须走取消，不能抹掉痕迹。
+        if (!ScmOrderStatusEnum.PENDING.name().equals(salesOrder.getStatus())
+            || salesOrderDao.hasPriceFreezeBlockingFact(salesOrder.getId())) {
             throw new ScmBusinessException(ORDER_DELETE_STATE_INVALID);
         }
         var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
@@ -832,9 +728,9 @@ public class SalesOrderService {
             removeItem(row);
         if (salesOrderDao.softDelete(salesOrder.getId(), salesOrder.getVersion(), ScmOperator.current()) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
-        // 草稿若是换货单，把退货单上的换货关联清空：残留会挡住退货单重新创建换货
+        // 换货单被删除时，把退货单上的换货关联清空：残留会挡住退货单重新创建换货
         orderReturnDao.clearReplacementOrder(salesOrder.getId());
-        log(salesOrder.getId(), ScmOrderOperationTypeEnum.UPDATE, "删除草稿", before,
+        log(salesOrder.getId(), ScmOrderOperationTypeEnum.UPDATE, "删除订单", before,
             Map.of("deleted", true, "version", salesOrder.getVersion() + 1));
     }
 
@@ -943,10 +839,24 @@ public class SalesOrderService {
             ? Map.<Long, String>of()
             : productSpuDao.selectBatchIds(spuIds).stream()
                 .collect(Collectors.toMap(productSpu -> productSpu.getId(), productSpu -> productSpu.getSpuCode()));
-        var resolved = priceResolver
-            .resolve(salesOrderAddForm.getCustomerId(), ids, OffsetDateTime.now(),
+        // 新建即锁定报价：自动定价的行必须能解析出可售价，人工改价的行同样要校验商品可售。
+        var automaticIds = salesOrderAddForm.getItems().stream()
+            .filter(item -> !Boolean.TRUE.equals(item.getManualPriceOverride())).map(SalesOrderItemForm::getSkuId)
+            .toList();
+        var manualIds = salesOrderAddForm.getItems().stream()
+            .filter(item -> Boolean.TRUE.equals(item.getManualPriceOverride())).map(SalesOrderItemForm::getSkuId)
+            .toList();
+        var resolved = new HashMap<Long, ResolvedPriceVO>();
+        resolved.putAll(priceResolver
+            .requireResolvable(salesOrderAddForm.getCustomerId(), automaticIds, OffsetDateTime.now(),
                 selectedWarehouseForCreate(salesOrderAddForm))
-            .stream().collect(Collectors.toMap(ResolvedPriceVO::getSkuId, Function.identity()));
+            .stream().collect(Collectors.toMap(ResolvedPriceVO::getSkuId, Function.identity())));
+        var manualResolved = priceResolver.resolve(salesOrderAddForm.getCustomerId(), manualIds, OffsetDateTime.now(),
+            selectedWarehouseForCreate(salesOrderAddForm));
+        if (manualResolved.stream().anyMatch(resolvedPrice -> !resolvedPrice.isSellable()))
+            throw new ScmBusinessException(com.xsy.scm.pricing.constant.PricingErrorCode.SKU_NOT_SELLABLE);
+        resolved
+            .putAll(manualResolved.stream().collect(Collectors.toMap(ResolvedPriceVO::getSkuId, Function.identity())));
         return salesOrderAddForm.getItems().stream().map(orderItemForm -> {
             var productSkuOption = products.get(orderItemForm.getSkuId());
             return OrderSnapshotFactory.item(orderItemForm, productSkuOption,
@@ -994,7 +904,7 @@ public class SalesOrderService {
     }
 
     /**
-     * 待确认订单改单后重新锁定：单价取行上已有的草稿报价（不重新解析），标品实数量必须等于下单量。 非标品的实数量是称重结果，不在改单时覆盖。
+     * 待确认订单改单后重新锁定：单价取行上已有的解析报价（不重新解析），标品实数量必须等于下单量。 非标品的实数量是称重结果，不在改单时覆盖。
      */
     private void lockPendingItem(SalesOrderItemEntity row) {
         row.setLockedUnitPrice(row.getDraftUnitPrice());
@@ -1008,7 +918,7 @@ public class SalesOrderService {
     }
 
     /**
-     * 已确认订单改单后的重锁：单价沿用行上已有的草稿报价（改价走人工改价并留痕）， 标品实数量回到下单量；非标品的实数量是称重结果，改单不覆盖它，但结算行金额按新单价重算。
+     * 已确认订单改单后的重锁：单价沿用行上已有的解析报价（改价走人工改价并留痕）， 标品实数量回到下单量；非标品的实数量是称重结果，改单不覆盖它，但结算行金额按新单价重算。
      *
      * <p>
      * 改单表单里不带实数量，非标品要从改前的行上取回，否则结算金额会被改单悄悄清零。

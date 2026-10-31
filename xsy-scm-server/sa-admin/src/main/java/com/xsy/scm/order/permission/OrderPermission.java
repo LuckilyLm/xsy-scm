@@ -14,8 +14,6 @@ public final class OrderPermission {
 
     public static final String UPDATE = "scm:order:update";
 
-    public static final String SUBMIT = "scm:order:submit";
-
     public static final String CONFIRM = "scm:order:confirm";
 
     public static final String CANCEL = "scm:order:cancel";

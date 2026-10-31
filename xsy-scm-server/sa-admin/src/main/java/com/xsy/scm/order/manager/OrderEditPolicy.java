@@ -20,7 +20,7 @@ public final class OrderEditPolicy {
      */
     public static String blockedReason(SalesOrderEntity order) {
         var status = order.getStatus();
-        if (ScmOrderStatusEnum.DRAFT.name().equals(status) || ScmOrderStatusEnum.PENDING.name().equals(status))
+        if (ScmOrderStatusEnum.PENDING.name().equals(status))
             return null;
         if (!ScmOrderStatusEnum.CONFIRMED.name().equals(status))
             return "当前订单状态不允许改单";

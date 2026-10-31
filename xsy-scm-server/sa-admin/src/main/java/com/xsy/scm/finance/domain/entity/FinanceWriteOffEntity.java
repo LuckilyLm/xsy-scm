@@ -72,8 +72,8 @@ public class FinanceWriteOffEntity extends FinanceRecord {
     /**
      * 由原核销记录派生红字（反核销）记录：来源、目标与金额沿用原行，核销号重新生成。
      */
-    public static FinanceWriteOffEntity reversalOf(FinanceWriteOffEntity original, String reason,
-        OffsetDateTime now, String operator) {
+    public static FinanceWriteOffEntity reversalOf(FinanceWriteOffEntity original, String reason, OffsetDateTime now,
+        String operator) {
         FinanceWriteOffEntity reversal = new FinanceWriteOffEntity();
         reversal.setWriteOffNo(ScmDocumentNumbers.next());
         reversal.setSourceType(original.getSourceType());

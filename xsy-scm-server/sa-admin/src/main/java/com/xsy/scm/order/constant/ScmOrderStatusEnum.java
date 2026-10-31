@@ -14,12 +14,7 @@ import lombok.RequiredArgsConstructor;
 public enum ScmOrderStatusEnum {
 
     /**
-     * 草稿：尚未提交，可自由修改。
-     */
-    DRAFT("草稿"),
-
-    /**
-     * 待确认：已提交，等待仓库确认。
+     * 待确认：新建即进入此状态，等待仓库确认；确认前可修改或删除。
      */
     PENDING("待确认"),
 

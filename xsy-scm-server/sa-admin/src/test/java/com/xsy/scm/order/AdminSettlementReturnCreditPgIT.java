@@ -334,7 +334,6 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
     private SalesOrderDetailVO pending(Long customerId, Long skuId, String ordered, String actual) {
         SalesOrderAddForm form = orderForm(customerId, skuId, ordered);
         var order = salesOrderService.create(form, key());
-        order = salesOrderService.submit(salesOrderVersion(order), key());
         OrderActualQuantityForm quantity = new OrderActualQuantityForm();
         quantity.setOrderId(order.getOrderId());
         quantity.setItemId(order.getItems().getFirst().getItemId());

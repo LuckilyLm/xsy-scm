@@ -52,7 +52,6 @@ public class PaymentReconciliationService {
 
     private final PaymentTransactionDao paymentTransactionDao;
 
-
     private final ScmPaymentProviderRegistry providerRegistry;
 
     /**

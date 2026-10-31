@@ -160,7 +160,6 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
 
         var scope = prefix + ":" + tag + ":so";
         SalesOrderDetailVO order = salesOrderService.create(form, scope + ":create");
-        order = salesOrderService.submit(versionOf(order), scope + ":submit");
         for (SalesOrderItemVO item : order.getItems()) {
             var actual = new OrderActualQuantityForm();
             actual.setOrderId(order.getOrderId());

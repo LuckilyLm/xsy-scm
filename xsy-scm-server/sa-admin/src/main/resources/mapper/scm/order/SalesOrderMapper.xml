@@ -22,7 +22,7 @@
         WHERE deleted = FALSE
             AND order_source = 'MALL'
             AND seller_id IS NULL
-            AND status IN ('DRAFT', 'PENDING', 'CONFIRMED')
+            AND status IN ('PENDING', 'CONFIRMED')
         <if test="query.status != null and query.status != ''">AND status = #{query.status}</if>
         <if test="query.keyword != null and query.keyword != ''">
             AND (order_no ILIKE CONCAT('%', #{query.keyword}, '%') OR
@@ -38,7 +38,7 @@
             AND version = #{version}
             AND seller_id IS NULL
             AND order_source = 'MALL'
-            AND status IN ('DRAFT', 'PENDING', 'CONFIRMED')
+            AND status IN ('PENDING', 'CONFIRMED')
             AND deleted = FALSE
     </update>
 
@@ -216,7 +216,7 @@
         WHERE o.customer_id = #{customerId}
             AND o.order_source = 'MALL'
             AND o.deleted = FALSE
-        <if test="displayStatus == 'PENDING'">AND o.status IN( 'DRAFT', 'PENDING')</if>
+        <if test="displayStatus == 'PENDING'">AND o.status = 'PENDING'</if>
         <if test="displayStatus == 'PREPARING'">
             AND o.status = 'CONFIRMED'
                 AND COALESCE(f.fulfillment_status, 'PENDING') NOT IN ('IN_TRANSIT', 'SIGNED', 'EXCEPTION')

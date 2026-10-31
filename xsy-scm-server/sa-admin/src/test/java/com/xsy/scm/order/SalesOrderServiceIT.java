@@ -77,7 +77,6 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     SalesOrderDetailVO confirmed(Long c, Long sku) {
         // 键按次唯一：真提交的用例重跑时不能撞上上一次留下的幂等记录。
         var o = orders.create(form(c, sku), prefix + "c-" + UUID.randomUUID());
-        o = orders.submit(version(o), prefix + "s");
         var a = new OrderActualQuantityForm();
         a.setOrderId(o.getOrderId());
         a.setItemId(o.getItems().getFirst().getItemId());
@@ -109,15 +108,12 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         expectCode(() -> orders.update(u), 40921);
         jdbc.update("UPDATE xsy_product_sku SET market_price=2.5000 WHERE id=?", sku);
         session.clearCache();
-        // 行情变了以后提交会被「报价依据已变化」拦下，必须显式核价留痕——这正是设计口径。
-        var stale = updated;
-        expectCode(() -> orders.submit(version(stale), prefix + "stale"), 40975);
+        // 行情变了不会静默改价：必须显式核价留痕——这正是设计口径。
         var reprice = new OrderRepriceForm();
         reprice.setOrderId(updated.getOrderId());
         reprice.setVersion(updated.getVersion());
         reprice.setReason("行情涨价");
-        updated = orders.reprice(reprice);
-        o = orders.submit(version(updated), prefix + "s");
+        o = orders.reprice(reprice);
         assertThat(o.getOrderedTotalAmount()).isEqualByComparingTo("7.5000");
         assertThat(o.getItems().getFirst().getActualQuantity()).isNull();
         jdbc.update("UPDATE xsy_product_sku SET market_price=8.0000 WHERE id=?", sku);
@@ -175,7 +171,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         var sku = newOnShelfSku("PENDING_EDIT");
         jdbc.update("UPDATE xsy_product_sku SET product_type='STANDARD' WHERE id=?", sku);
         session.clearCache();
-        var pending = orders.submit(version(orders.create(form(c, sku), prefix + "pe")), prefix + "pe-submit");
+        var pending = orders.create(form(c, sku), prefix + "pe");
         assertThat(pending.getStatus()).isEqualTo("PENDING");
         var quotedUnitPrice = pending.getItems().getFirst().getLockedUnitPrice();
 
@@ -202,7 +198,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     void pendingOrderWithPaymentFactRefusesFurtherEdits() {
         var c = customer();
         var sku = newOnShelfSku("PENDING_BLOCKED");
-        var pending = orders.submit(version(orders.create(form(c, sku), prefix + "pb")), prefix + "pb-submit");
+        var pending = orders.create(form(c, sku), prefix + "pb");
         jdbc.queryForObject("INSERT INTO xsy_payment_intent (intent_no, customer_id, customer_name_snapshot,"
                 + " source_type, source_id, source_no_snapshot, amount, method, provider, status,"
                 + " created_by, updated_by) VALUES (?, ?, ?, 'SALES_ORDER', ?, ?, 1.0000, 'ONLINE', 'MOCK',"
@@ -407,9 +403,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         assertThat(orders.create(f, prefix).getOrderId()).isEqualTo(o.getOrderId());
         f.setRemark("changed");
         expectCode(() -> orders.create(f, prefix), 40966);
-        var request = version(o);
-        o = orders.submit(request, prefix + "s");
-        assertThat(orders.submit(request, prefix + "s").getVersion()).isEqualTo(o.getVersion());
+        assertThat(o.getStatus()).isEqualTo("PENDING");
         assertThat(o.getItems().getFirst().getActualQuantity()).isEqualByComparingTo("2.0000");
         var actual = new OrderActualQuantityForm();
         actual.setOrderId(o.getOrderId());
@@ -423,7 +417,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     }
 
     @Test
-    void manualOverrideDoesNotBypassVisibilityAndDraftCanClearIt() {
+    void manualOverrideDoesNotBypassVisibility() {
         var c = customer();
         var sku = newOnShelfSku("M");
         var f = form(c, sku);
@@ -433,10 +427,11 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         item.setOverrideReason("协商");
         var o = orders.create(f, prefix);
         assertThat(o.getItems().getFirst().getDraftPriceSource()).isEqualTo("OVERRIDE");
+        assertThat(o.getItems().getFirst().getLockedPriceSource()).isEqualTo("OVERRIDE");
         jdbc.update("UPDATE xsy_customer SET visibility_policy='ALLOWLIST' WHERE id=?", c);
         session.clearCache();
-        var draft = o;
-        expectCode(() -> orders.submit(version(draft), prefix + "s"), 40949);
+        // 人工改价不能绕过可见性：新建时同样按可售价校验。
+        expectCode(() -> orders.create(f, prefix + "hidden"), 40949);
     }
 
     @Test
@@ -662,7 +657,6 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         assertThat(o.getItems()).extracting(SalesOrderItemVO::getSkuId).containsExactly(second, first);
         assertThat(o.getItems().getFirst().getSpecValuesSnapshot()).isNotEmpty();
         assertThat(o.getItems().getFirst().getSaleUnitSnapshot()).isEqualTo("kg");
-        o = orders.submit(version(o), prefix + "submit");
         var manual = o.getItems().getLast();
         assertThat(manual.getLockedUnitPrice()).isEqualByComparingTo("2.1234");
         assertThat(manual.getLockedPriceSource()).isEqualTo("OVERRIDE");

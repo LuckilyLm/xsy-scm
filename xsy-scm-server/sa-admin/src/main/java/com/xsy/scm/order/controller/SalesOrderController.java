@@ -152,14 +152,6 @@ public class SalesOrderController {
         return ResponseDTO.ok(salesOrderService.update(salesOrderUpdateForm));
     }
 
-    @PostMapping("/submit")
-    @SaCheckPermission(OrderPermission.SUBMIT)
-    @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> submit(@Valid @RequestBody OrderVersionForm orderVersionForm,
-        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(salesOrderService.submit(orderVersionForm, key));
-    }
-
     @GetMapping("/credit-check/{customerId}")
     @SaCheckPermission(OrderPermission.QUERY)
     public ResponseDTO<CustomerCreditCheckVO> creditCheck(@PathVariable Long customerId,

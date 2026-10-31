@@ -90,8 +90,8 @@ public class FinancePaymentQueryService {
             : null;
         List<FinanceWriteOffVO> writeOffs = writeOffQueryService
             .bySource(ScmFinanceWriteOffSourceTypeEnum.PAYMENT.name(), sourceId, scope);
-        List<FinanceOperationLogVO> logs = new ArrayList<>(
-            financeOperationLogQueryService.listByBusinessIds(ScmFinanceBusinessTypeEnum.PAYMENT.name(), List.of(sourceId)));
+        List<FinanceOperationLogVO> logs = new ArrayList<>(financeOperationLogQueryService
+            .listByBusinessIds(ScmFinanceBusinessTypeEnum.PAYMENT.name(), List.of(sourceId)));
         logs.addAll(financeOperationLogQueryService.listByBusinessIds(ScmFinanceBusinessTypeEnum.WRITE_OFF.name(),
             writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
         logs.sort(
@@ -113,7 +113,8 @@ public class FinancePaymentQueryService {
         }
         // 付款方式按对手方分两组：供应商三值、客户退款四值。过滤是跨对手方的，
         // 因此两组都要放行 —— 只认一组会把另一组的值当成非法参数拒掉。
-        if (form.getMethod() != null && !FinanceQuerySupport.enumContains(ScmFinancePaymentMethodEnum.values(), form.getMethod())
+        if (form.getMethod() != null
+            && !FinanceQuerySupport.enumContains(ScmFinancePaymentMethodEnum.values(), form.getMethod())
             && !FinanceQuerySupport.enumContains(ScmFinanceCustomerRefundMethodEnum.values(), form.getMethod())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }

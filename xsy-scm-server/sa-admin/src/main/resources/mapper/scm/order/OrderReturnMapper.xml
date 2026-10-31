@@ -69,7 +69,7 @@
         ORDER BY r.created_at DESC, r.id DESC
     </select>
 
-    <!-- 换货单已删除的关联视为不存在：否则退货详情会对着一张已删草稿加载失败，且无法再建换货 -->
+    <!-- 换货单已删除的关联视为不存在：否则退货详情会对着一张已删换货单加载失败，且无法再建换货 -->
     <select id="replacementOrderId" resultType="long">
         SELECT r.replacement_order_id
         FROM xsy_order_return r

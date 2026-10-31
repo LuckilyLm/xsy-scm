@@ -8,7 +8,7 @@ import com.xsy.scm.order.constant.ScmOrderStatusEnum;
  */
 public enum MallOrderDisplayStatusEnum {
     /**
-     * 待处理：订单已提交但后台尚未确认（含草稿）。
+     * 待处理：订单已新建但后台尚未确认。
      */
     PENDING,
     /**
@@ -40,8 +40,7 @@ public enum MallOrderDisplayStatusEnum {
         if (ScmOrderStatusEnum.CANCELLED.name().equals(orderStatus)) {
             return CANCELLED;
         }
-        if (ScmOrderStatusEnum.DRAFT.name().equals(orderStatus)
-            || ScmOrderStatusEnum.PENDING.name().equals(orderStatus)) {
+        if (ScmOrderStatusEnum.PENDING.name().equals(orderStatus)) {
             return PENDING;
         }
         if (!ScmOrderStatusEnum.CONFIRMED.name().equals(orderStatus)) {

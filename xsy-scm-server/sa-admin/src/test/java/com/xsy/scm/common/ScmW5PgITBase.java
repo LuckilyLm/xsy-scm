@@ -531,8 +531,7 @@ public abstract class ScmW5PgITBase {
         item.setManualPriceOverride(false);
         form.setItems(new ArrayList<>(List.of(item)));
 
-        SalesOrderDetailVO order = salesOrderService.create(form, scope + ":create");
-        return salesOrderService.submit(salesOrderVersion(order), scope + ":submit");
+        return salesOrderService.create(form, scope + ":create");
     }
 
     /**

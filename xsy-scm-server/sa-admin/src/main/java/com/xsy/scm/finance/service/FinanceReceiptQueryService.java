@@ -46,15 +46,15 @@ public class FinanceReceiptQueryService {
     @Transactional(readOnly = true)
     public PageResult<FinanceReceiptQueryVO> query(FinanceReceiptQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        return FinanceQuerySupport.query(form, scope.getCustomerSellerScope(),
-            () -> validateFilters(form), (page, range) -> financeReceiptDao.queryPage(page, form, scope, range));
+        return FinanceQuerySupport.query(form, scope.getCustomerSellerScope(), () -> validateFilters(form),
+            (page, range) -> financeReceiptDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
     public List<FinanceReceiptQueryVO> exportRows(FinanceReceiptQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        return FinanceQuerySupport.exportRows(form, scope.getCustomerSellerScope(),
-            () -> validateFilters(form), (page, range) -> financeReceiptDao.queryPage(page, form, scope, range));
+        return FinanceQuerySupport.exportRows(form, scope.getCustomerSellerScope(), () -> validateFilters(form),
+            (page, range) -> financeReceiptDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
@@ -100,7 +100,8 @@ public class FinanceReceiptQueryService {
     }
 
     private static void validateFilters(FinanceReceiptQueryForm form) {
-        if (form.getMethod() != null && !FinanceQuerySupport.enumContains(ScmFinanceReceiptMethodEnum.values(), form.getMethod())) {
+        if (form.getMethod() != null
+            && !FinanceQuerySupport.enumContains(ScmFinanceReceiptMethodEnum.values(), form.getMethod())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         if (form.getEntryType() != null

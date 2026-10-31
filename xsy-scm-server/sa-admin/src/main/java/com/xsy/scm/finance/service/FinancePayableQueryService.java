@@ -55,15 +55,15 @@ public class FinancePayableQueryService {
     @Transactional(readOnly = true)
     public PageResult<FinancePayableVO> query(FinancePayableQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        return FinanceQuerySupport.query(form, scope.getPurchaserScope(),
-            () -> validateFilters(form), (page, range) -> financePayableDao.queryPage(page, form, scope, range));
+        return FinanceQuerySupport.query(form, scope.getPurchaserScope(), () -> validateFilters(form),
+            (page, range) -> financePayableDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
     public List<FinancePayableVO> exportRows(FinancePayableQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        return FinanceQuerySupport.exportRows(form, scope.getPurchaserScope(),
-            () -> validateFilters(form), (page, range) -> financePayableDao.queryPage(page, form, scope, range));
+        return FinanceQuerySupport.exportRows(form, scope.getPurchaserScope(), () -> validateFilters(form),
+            (page, range) -> financePayableDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
@@ -108,8 +108,8 @@ public class FinancePayableQueryService {
         if (original != null) {
             payableLogIds.add(original.getPayableId());
         }
-        List<FinanceOperationLogVO> logs = new ArrayList<>(
-            financeOperationLogQueryService.listByBusinessIds(ScmFinanceBusinessTypeEnum.PAYABLE.name(), payableLogIds));
+        List<FinanceOperationLogVO> logs = new ArrayList<>(financeOperationLogQueryService
+            .listByBusinessIds(ScmFinanceBusinessTypeEnum.PAYABLE.name(), payableLogIds));
         logs.addAll(financeOperationLogQueryService.listByBusinessIds(ScmFinanceBusinessTypeEnum.WRITE_OFF.name(),
             writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
         logs.sort(

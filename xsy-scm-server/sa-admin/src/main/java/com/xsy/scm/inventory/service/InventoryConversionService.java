@@ -52,7 +52,6 @@ public class InventoryConversionService {
 
     private final InventoryConversionItemDao inventoryConversionItemDao;
 
-
     private final InventoryCommandService inventoryCommandService;
 
     private final WarehouseService warehouseService;

@@ -45,7 +45,6 @@ public class InventoryTransferService {
 
     private final InventoryTransferItemDao inventoryTransferItemDao;
 
-
     private final InventoryCommandService inventoryCommandService;
 
     private final WarehouseService warehouseService;

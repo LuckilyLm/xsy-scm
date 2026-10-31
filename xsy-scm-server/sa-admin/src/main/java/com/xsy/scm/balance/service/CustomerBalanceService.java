@@ -287,8 +287,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         CustomerBalanceMovementEntity movement = new CustomerBalanceMovementEntity();
-        movement
-            .setMovementNo(ScmDocumentNumbers.next());
+        movement.setMovementNo(ScmDocumentNumbers.next());
         movement.setAccountId(account.getId());
         movement.setSettlementCustomerId(account.getSettlementCustomerId());
         movement.setCustomerId(customerId);

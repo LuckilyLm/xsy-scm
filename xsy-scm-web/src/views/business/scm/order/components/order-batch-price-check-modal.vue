@@ -1,5 +1,5 @@
 <template>
-  <a-modal :open="visible" title="草稿订单批量核价" :width="1120" :footer="null" @cancel="close">
+  <a-modal :open="visible" title="待确认订单批量核价" :width="1120" :footer="null" @cancel="close">
     <a-space class="smart-margin-bottom10" wrap>
       <span>已选 {{ entries.length }} 单，最多 8 单</span>
       <a-button size="small" :loading="loading" @click="reload">重新核价</a-button>
@@ -61,7 +61,7 @@
           </template>
         </a-collapse-panel>
       </a-collapse>
-      <a-empty v-if="!loading && !entries.length" description="没有可核价的草稿订单" />
+      <a-empty v-if="!loading && !entries.length" description="没有可核价的待确认订单" />
     </a-spin>
   </a-modal>
 </template>
@@ -98,7 +98,7 @@ const canUpdate = computed(() => hasPermission('scm:order:update') && hasPermiss
 const columns: TableColumnsType<PriceCheckLine> = [
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '下单量', dataIndex: 'quantity', width: 100},
-  {title: '原草稿价', dataIndex: 'oldPrice', width: 120},
+  {title: '原解析价', dataIndex: 'oldPrice', width: 120},
   {title: '当前解析价', dataIndex: 'currentPrice', width: 120},
   {title: '比较结果', dataIndex: 'state', align: 'center', width: 120},
   {title: '说明', dataIndex: 'reason', width: 180},
@@ -124,8 +124,8 @@ const tone = (state: PriceCheckState) =>
   })[state];
 
 function open(orders: Order[]): void {
-  if (!orders.length || orders.length > 8 || orders.some((row) => row.status !== 'DRAFT' || row.orderId == null)) {
-    void message.warning('请选择 1 至 8 张草稿订单');
+  if (!orders.length || orders.length > 8 || orders.some((row) => row.status !== 'PENDING' || row.orderId == null)) {
+    void message.warning('请选择 1 至 8 张待确认订单');
     return;
   }
   generation++;
@@ -155,7 +155,7 @@ async function reload(): Promise<void> {
     try {
       const detail = (await orderApi.detail(entry.id, {suppressGlobalErrorMessage: true})).data;
       if (ticket !== generation) return;
-      if (detail.status !== 'DRAFT' || detail.version == null || !detail.customerId) {
+      if (detail.status !== 'PENDING' || detail.version == null || !detail.customerId) {
         throw new Error('订单状态已变化，请返回列表刷新');
       }
       const skus = [
@@ -201,14 +201,14 @@ function confirmApply(entry: Entry): void {
   const previewVersion = entry.result.version;
   const actionReason = reason.value.trim();
   Modal.confirm({
-    title: '确认重算该草稿订单？',
+    title: '确认重算该订单？',
     content: '系统将以执行时的价格重新核价并记录操作日志，不保证与预览价格完全一致。',
     okText: '确认重算',
     async onOk() {
       applyingId.value = String(entry.id);
       try {
         const latest = (await orderApi.detail(entry.id, {suppressGlobalErrorMessage: true})).data;
-        if (latest.status !== 'DRAFT' || latest.version !== previewVersion) {
+        if (latest.status !== 'PENDING' || latest.version !== previewVersion) {
           throw new Error('订单版本或状态已变化，请重新核价');
         }
         await orderApi.reprice({orderId: entry.id, version: previewVersion, reason: actionReason});

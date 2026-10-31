@@ -67,10 +67,9 @@ public class ScmCustomerMonthlyProfitController {
         var selection = ScmExportColumnSelection.resolve(form.getExportColumns(), COLUMNS, true);
         var titles = COLUMNS.stream().map(Column::title).toList();
         List<List<Object>> rows = profitService.export(form).stream()
-            .map(row -> ScmExcel.row(titles, row.getDimensionName(), row.getRevenueAmount(),
-                row.getSalesCostAmount(), row.getGrossProfit(), row.getTaxAmount(), row.getServiceAmount(),
-                row.getFreightAmount(), row.getCommissionAmount(), row.getExpenseAmount(), row.getNetProfit(),
-                row.getCostMissingCount()))
+            .map(row -> ScmExcel.row(titles, row.getDimensionName(), row.getRevenueAmount(), row.getSalesCostAmount(),
+                row.getGrossProfit(), row.getTaxAmount(), row.getServiceAmount(), row.getFreightAmount(),
+                row.getCommissionAmount(), row.getExpenseAmount(), row.getNetProfit(), row.getCostMissingCount()))
             .toList();
         ScmExportColumnSelection.writeSelected(response, "客户月利润.xlsx", "客户月利润", selection, rows);
     }

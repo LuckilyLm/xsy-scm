@@ -48,7 +48,7 @@ public class OrderReturnEntity {
     private OffsetDateTime rejectedAt;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime cancelledAt;
-    /** 换货单 ID；为空表示没有换货。换货草稿删除后清空，允许重新创建。 */
+    /** 换货单 ID；为空表示没有换货。换货单删除后清空，允许重新创建。 */
     private Long replacementOrderId;
     @Version
     private Integer version = 0;

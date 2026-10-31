@@ -21,7 +21,7 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_SOURCE_INVALID(40075, "后台订单来源仅允许后台录单或补单"),
     ORDER_RETURN_APPROVAL_INVALID(40072, "批准数量无效或未批准任何商品"),
     ORDER_RETURN_ITEM_INVALID(40073, "退货明细不属于原订单或订单行不可退"),
-    ORDER_DELETE_STATE_INVALID(40074, "仅草稿订单可以删除"),
+    ORDER_DELETE_STATE_INVALID(40074, "仅未确认且无资金库存事实的订单可以删除"),
     ORDER_QUANTITY_FORMAT_INVALID(40076, "数量必须是整数至多 14 位、小数至多 4 位的定点数字符串"),
     ORDER_NOT_FOUND(40460, "销售订单不存在"),
     ORDER_ITEM_NOT_FOUND(40461, "订单明细不存在"),
@@ -63,7 +63,7 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_RETURN_INDEPENDENT_UNIT_INVALID(41216, "退货单位与商品销售单位不一致，请先确认单位"),
 
     /**
-     * 只有已确认订单允许预留库存；草稿、取消和完成订单不得占用库存。
+     * 只有已确认订单允许预留库存；待确认、取消和完成订单不得占用库存。
      */
     ORDER_RESERVE_STATE_INVALID(40945, "当前订单状态不允许预留库存（仅已确认订单可预留）");
 

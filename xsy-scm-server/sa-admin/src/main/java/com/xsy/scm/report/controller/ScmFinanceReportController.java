@@ -83,9 +83,9 @@ public class ScmFinanceReportController {
     public void exportReceivables(@Valid @RequestBody ScmFinanceReportExportQueryForm form,
         HttpServletResponse response) throws IOException {
         List<List<Object>> rows = financeReportService.exportReceivableDetails(form).stream()
-            .map(row -> ScmExcel.row(RECEIVABLE_TITLES, row.getReceivableNo(), row.getOrderNo(),
-                row.getCustomerName(), row.getAmount(), row.getRedAmount(), row.getNetAmount(),
-                row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(), row.getEventAt()))
+            .map(row -> ScmExcel.row(RECEIVABLE_TITLES, row.getReceivableNo(), row.getOrderNo(), row.getCustomerName(),
+                row.getAmount(), row.getRedAmount(), row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount(),
+                row.getOverAppliedAmount(), row.getEventAt()))
             .toList();
         ScmExcel.write(response, "应收明细.xlsx", "应收明细", RECEIVABLE_TITLES, rows);
     }

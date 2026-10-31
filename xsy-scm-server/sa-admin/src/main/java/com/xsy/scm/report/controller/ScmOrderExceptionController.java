@@ -46,8 +46,8 @@ public class ScmOrderExceptionController {
     }
 
     @PostMapping("/export")
-    @SaCheckPermission(value = {ScmReportPermission.ORDER_EXCEPTION_QUERY,
-        ScmReportPermission.EXPORT}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.ORDER_EXCEPTION_QUERY, ScmReportPermission.EXPORT},
+        mode = SaMode.AND)
     @OperateLog
     public void export(@Valid @RequestBody ScmOrderExceptionQueryForm form, HttpServletResponse response)
         throws IOException {

@@ -27,8 +27,8 @@ export interface PriceCheckResult {
 
 /** 只读核价：来源单价、人工改价和旧订单对象都不修改。 */
 export function compareOrderPrices(order: Order, preview: ResolvedPrice[]): PriceCheckResult {
-  if (!order.orderId || order.status !== 'DRAFT' || order.version == null) {
-    throw new Error('仅可预览有效草稿订单');
+  if (!order.orderId || order.status !== 'PENDING' || order.version == null) {
+    throw new Error('仅可预览有效的待确认订单');
   }
   const resolved = new Map(preview.map((item) => [String(item.skuId), item]));
   const lines = (order.items ?? []).map((item: Item): PriceCheckLine => {

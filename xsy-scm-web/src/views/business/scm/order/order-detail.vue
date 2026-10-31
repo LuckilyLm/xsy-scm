@@ -236,7 +236,7 @@
       </a-form-item>
     </a-modal>
     <a-modal :open="repriceOpen" title="手动重算订单价格" :confirm-loading="saving" @ok="reprice" @cancel="repriceOpen = false">
-      <p class="scm-note">仅草稿和待确认订单可重算；已有资金或履约记录时会被拒绝。</p>
+      <p class="scm-note">仅待确认订单可重算；已有资金或履约记录时会被拒绝。</p>
       <a-form-item label="重算原因" required style="margin-top: 16px">
         <a-textarea v-model:value="repriceReason" :maxlength="500" :rows="3" />
       </a-form-item>
@@ -299,7 +299,7 @@ const moreActions = computed(() => {
   const current = order.value;
   if (!current) return [];
   const list: {key: string; label: string; danger?: boolean}[] = [];
-  const editable = current.status === 'DRAFT' || current.status === 'PENDING';
+  const editable = current.status === 'PENDING';
   if (editable && hasPermission('scm:order:update')) list.push({key: 'reprice', label: '手动重算价格'});
   if (hasPermission('scm:payment:transaction:query')) list.push({key: 'payments', label: '支付记录'});
   if (editable && hasPermission('scm:order:cancel')) list.push({key: 'cancel', label: '取消订单', danger: true});
@@ -347,7 +347,7 @@ const columns: TableColumnsType<Item> = [
   },
   {title: '实数量', dataIndex: 'actualQuantity', width: 100},
   {
-    title: '草稿单价',
+    title: '解析单价',
     dataIndex: 'draftUnitPrice',
     width: 110,
   },

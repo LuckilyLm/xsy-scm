@@ -1,7 +1,6 @@
 import type {SmartEnum} from '/@/types/smart-enum';
 
 export const SCM_ORDER_STATUS_ENUM: SmartEnum<string> = {
-  DRAFT: {value: 'DRAFT', desc: '草稿'},
   PENDING: {value: 'PENDING', desc: '待确认'},
   CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
   CANCELLED: {value: 'CANCELLED', desc: '已取消'},

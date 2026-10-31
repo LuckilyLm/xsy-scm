@@ -29,7 +29,7 @@ class OrderUnpricedIT extends ScmW3PgITBase {
     PriceResolver resolver;
 
     @Test
-    void missingPricePersistsNullRejectsSubmitAndRollbackKeepsDraft() throws Exception {
+    void missingPriceRejectsCreationAndLeavesNoOrder() throws Exception {
         var customer = new CustomerAddForm();
         customer.setName(prefix);
         customer.setCustomerTypeId(customerTypeId("ENTERPRISE"));
@@ -61,22 +61,18 @@ class OrderUnpricedIT extends ScmW3PgITBase {
         i.setOrderedQuantity("1.0000");
         i.setManualPriceOverride(false);
         f.setItems(List.of(i));
-        var draft = orders.create(f, prefix);
-        assertThat(draft.getOrderedTotalAmount()).isNull();
-        assertThat(draft.getItems().getFirst().getDraftPriceSource()).isNull();
-        assertThat(draft.getItems().getFirst().getOrderedLineAmount()).isNull();
-        assertThat(objectMapper.readTree(objectMapper.writeValueAsString(draft)).get("orderedTotalAmount").isNull()).isTrue();
-        var submit = new OrderVersionForm();
-        submit.setOrderId(draft.getOrderId());
-        submit.setVersion(draft.getVersion());
-        expectCode(() -> orders.submit(submit, prefix + "s"), 40949);
-        assertThat(query.detail(draft.getOrderId()).getStatus()).isEqualTo("DRAFT");
-        assertThat(query.detail(draft.getOrderId()).getItems().getFirst().getLockedUnitPrice()).isNull();
+        // 新建即锁价：解析不出价格就直接失败，不留下任何订单。
+        expectCode(() -> orders.create(f, prefix), 40949);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_sales_order WHERE customer_id = ?", Integer.class, c))
+                .isZero();
+
         // SQL CHECK must reject price/source asymmetry, including PostgreSQL's NULL boolean semantics.
-        var connection = jdbc.getDataSource().getConnection();
-        connection.close();
+        p.price(new java.math.BigDecimal("5.0000"), ScmPriceSourceEnum.MARKET, null);
+        var order = orders.create(f, prefix + "priced");
+        assertThat(order.getStatus()).isEqualTo("PENDING");
+        assertThat(order.getItems().getFirst().getLockedUnitPrice()).isEqualByComparingTo("5.0000");
         var savepoint = jdbc.execute((org.springframework.jdbc.core.ConnectionCallback<java.sql.Savepoint>) con -> con.setSavepoint());
-        assertThatThrownBy(() -> jdbc.update("UPDATE xsy_sales_order_item SET manual_price_override=TRUE,draft_unit_price=NULL,draft_price_source=NULL,manual_price_reason='test' WHERE id=?", draft.getItems().getFirst().getItemId())).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update("UPDATE xsy_sales_order_item SET manual_price_override=TRUE,draft_unit_price=NULL,draft_price_source=NULL,manual_price_reason='test' WHERE id=?", order.getItems().getFirst().getItemId())).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         jdbc.execute((org.springframework.jdbc.core.ConnectionCallback<Void>) con -> {
             con.rollback(savepoint);
             return null;

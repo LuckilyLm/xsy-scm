@@ -98,7 +98,6 @@ public class PurchaseReceiptService {
 
     private final PurchaseOperationLogDao purchaseOperationLogDao;
 
-
     private final PurchaseIdempotencyService purchaseIdempotencyService;
 
     private final PurchaseQueryService purchaseQueryService;

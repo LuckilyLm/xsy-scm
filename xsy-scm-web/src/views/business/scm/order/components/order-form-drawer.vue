@@ -6,7 +6,7 @@
     @close="closeDrawer"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon />
-    <p v-if="exchangeReturnId" class="scm-note">原货已接收。替换订单重新定价并从草稿开始；后续提交、预留和配送按正常订单办理，不自动抵扣退款。</p>
+    <p v-if="exchangeReturnId" class="scm-note">原货已接收。替换订单重新定价后按正常订单办理，不自动抵扣退款。</p>
     <p v-if="form.status === 'PENDING'" class="scm-note pending-edit-note">
       该订单已提交，等待确认。保存后仍为待确认；未修改的商品沿用提交时报价，如需按最新价格重算请使用「批量核价」。
     </p>
@@ -103,21 +103,19 @@
     <template #footer>
       <a-space>
         <a-button @click="closeDrawer">关闭</a-button>
-        <a-button v-if="!form.orderId && !exchangeReturnId" :loading="saving" :disabled="loading" @click="save(true)">保存草稿</a-button>
-        <a-button v-if="!form.orderId && !exchangeReturnId" :loading="saving" :disabled="loading" @click="save(false, true)">
+        <a-button v-if="!form.orderId && !exchangeReturnId" :loading="saving" :disabled="loading" @click="save(true)">
           创建并继续录单
         </a-button>
-        <a-button type="primary" :loading="saving" :disabled="loading" @click="save(false)">
-          {{ exchangeReturnId ? '创建换货草稿' : form.orderId ? '保存修改' : '创建订单' }}
+        <a-button type="primary" :loading="saving" :disabled="loading" @click="save()">
+          {{ exchangeReturnId ? '创建换货单' : form.orderId ? '保存修改' : '创建订单' }}
         </a-button>
       </a-space>
     </template>
   </a-drawer>
 </template>
 <script setup lang="ts">
-import {computed, onBeforeUnmount, reactive, ref, watch} from 'vue';
-import {onBeforeRouteLeave} from 'vue-router';
-import {message, Modal, type FormInstance} from 'ant-design-vue';
+import {computed, reactive, ref, watch} from 'vue';
+import {message, type FormInstance} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
@@ -128,14 +126,8 @@ import {
   payload,
   validateOrder,
   fixed,
-  draftKey,
-  serializeDraft,
-  applyDraft,
   fromHistory,
-  type Draft,
 } from '../order-form-model';
-import {localSave, localRead, localRemove} from '/@/utils/local-util';
-import {useUserStore} from '/@/store/modules/system/user';
 import {orderError} from '../order-errors';
 import type {Order, Id, Item} from '../order-types';
 import ItemTable from './order-item-editable-table.vue';
@@ -189,31 +181,8 @@ const formRules = {
     },
   ],
 };
-const userStore = useUserStore();
 let requestId = 0;
 let previewRequestId = 0;
-
-/* 草稿只存本地、按登录用户隔离，不存解析价和版本。 */
-function draftStorageKey() {
-  return draftKey(userStore.employeeId);
-}
-
-function readDraft(): Draft | null {
-  try {
-    const raw = localRead(draftStorageKey());
-    return raw ? (JSON.parse(raw) as Draft) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeDraft(draft: Draft) {
-  localSave(draftStorageKey(), JSON.stringify(draft));
-}
-
-function clearDraft() {
-  localRemove(draftStorageKey());
-}
 
 async function open(id?: Id) {
   const current = ++requestId;
@@ -236,39 +205,7 @@ async function open(id?: Id) {
     } finally {
       if (current === requestId) loading.value = false;
     }
-  } else {
-    await promptRestoreDraft();
   }
-}
-
-/** 新建时若存在本地草稿，让用户选择恢复或丢弃；恢复后重新获取客户和价格。 */
-async function promptRestoreDraft() {
-  const draft = readDraft();
-  if (!draft || (!draft.customerId && !draft.items.length)) return;
-  Modal.confirm({
-    title: '发现上次未提交的订单草稿',
-    content: '是否恢复草稿内容？选择「丢弃」将清空并新建空白订单。',
-    okText: '恢复',
-    cancelText: '丢弃',
-    maskClosable: false,
-    // 抽屉晚于确认框挂载，同层级时可能盖住确认框，抬高一层保证能点
-    zIndex: 9999,
-    onOk: async () => {
-      const restored = applyDraft(draft);
-      form.value = restored;
-      if (restored.customerId) {
-        const supplementReason = restored.supplementReason;
-        const originalOrderId = restored.originalOrderId;
-        // customerChanged 会用客户默认地址覆盖并按当前价格重新解析，同时清空 originalOrderId
-        await customerChanged(restored.customerId);
-        form.value.supplementReason = supplementReason;
-        form.value.originalOrderId = originalOrderId;
-      } else {
-        await preview();
-      }
-    },
-    onCancel: () => clearDraft(),
-  });
 }
 
 /** 只用到明细表的 closeRecentPopover，不依赖组件实例的具体类型。 */
@@ -285,35 +222,13 @@ watch(
 );
 
 watch(visible, (opened) => {
-  if (opened) window.addEventListener('beforeunload', persistUnsavedDraft);
-  else {
-    window.removeEventListener('beforeunload', persistUnsavedDraft);
-    itemTableRef.value?.closeRecentPopover();
-  }
+  if (!opened) itemTableRef.value?.closeRecentPopover();
 });
 
-/** 只为未保存的新建单写草稿；已关闭或已保存的都不写。 */
-function persistUnsavedDraft() {
-  if (!visible.value) return;
-  if (exchangeReturnId.value) return;
-  if (!form.value.orderId && (form.value.customerId || form.value.items.length)) {
-    writeDraft(serializeDraft(form.value));
-  }
-}
-
-/** 关闭时只给未保存的新建单存草稿，编辑已有单不产生草稿。 */
 function closeDrawer() {
-  persistUnsavedDraft();
   requestId++;
   visible.value = false;
 }
-
-// 刷新、路由切换、卸载不走 closeDrawer，这里各补一次存草稿
-onBeforeRouteLeave(() => persistUnsavedDraft());
-onBeforeUnmount(() => {
-  window.removeEventListener('beforeunload', persistUnsavedDraft);
-  persistUnsavedDraft();
-});
 
 /** 复用历史订单：只复制基本信息，价格和可用性重新解析。 */
 async function openFromHistory(id: Id) {
@@ -466,7 +381,7 @@ async function continueWithNextOrder(previous: Order): Promise<void> {
   }
 }
 
-async function save(draft = false, continueCreating = false) {
+async function save(continueCreating = false) {
   if (saving.value || loading.value) return;
   saving.value = true;
   error.value = '';
@@ -498,17 +413,13 @@ async function save(draft = false, continueCreating = false) {
       message.success('订单修改已保存');
     } else if (exchangeReturnId.value) {
       await orderApi.createExchange(exchangeReturnId.value, f);
-      message.success('换货草稿已创建，请按正常订单流程提交和确认');
-    } else if (draft) {
-      await orderApi.create(f);
-      message.success('草稿已保存');
+      message.success('换货单已创建，请按正常订单流程确认');
     } else {
       const result = await orderApi.createAndProgress(f);
       message.success(result.data.status === 'CONFIRMED' ? '订单已创建并确认' : '订单已创建，非标品等待称重后确认');
     }
-    if (isNew && !exchangeReturnId.value) clearDraft();
     emit('saved');
-    if (isNew && !exchangeReturnId.value && !draft && continueCreating && visible.value) {
+    if (isNew && !exchangeReturnId.value && continueCreating && visible.value) {
       await continueWithNextOrder(f);
     } else {
       visible.value = false;

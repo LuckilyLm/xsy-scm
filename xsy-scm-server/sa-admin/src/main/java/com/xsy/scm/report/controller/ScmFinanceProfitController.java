@@ -36,22 +36,23 @@ public class ScmFinanceProfitController {
     private final ScmFinanceProfitService financeProfitService;
 
     @PostMapping("/query")
-    @SaCheckPermission(value = {ScmReportPermission.FINANCE_PROFIT_QUERY,
-        ScmReportPermission.COST_QUERY}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.FINANCE_PROFIT_QUERY, ScmReportPermission.COST_QUERY},
+        mode = SaMode.AND)
     public ResponseDTO<PageResult<ScmFinanceProfitRowVO>> query(@Valid @RequestBody ScmFinanceProfitQueryForm form) {
         return ResponseDTO.ok(financeProfitService.query(form));
     }
 
     @PostMapping("/summary")
-    @SaCheckPermission(value = {ScmReportPermission.FINANCE_PROFIT_QUERY,
-        ScmReportPermission.COST_QUERY}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.FINANCE_PROFIT_QUERY, ScmReportPermission.COST_QUERY},
+        mode = SaMode.AND)
     public ResponseDTO<ScmFinanceProfitSummaryVO> summary(@Valid @RequestBody ScmFinanceProfitQueryForm form) {
         return ResponseDTO.ok(financeProfitService.summary(form));
     }
 
     @PostMapping("/export")
-    @SaCheckPermission(value = {ScmReportPermission.FINANCE_PROFIT_QUERY, ScmReportPermission.COST_QUERY,
-        ScmReportPermission.EXPORT}, mode = SaMode.AND)
+    @SaCheckPermission(
+        value = {ScmReportPermission.FINANCE_PROFIT_QUERY, ScmReportPermission.COST_QUERY, ScmReportPermission.EXPORT},
+        mode = SaMode.AND)
     @OperateLog
     public void export(@Valid @RequestBody ScmFinanceProfitQueryForm form, HttpServletResponse response)
         throws IOException {

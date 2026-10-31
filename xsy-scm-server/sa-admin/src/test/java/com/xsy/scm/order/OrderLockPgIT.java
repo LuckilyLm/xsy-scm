@@ -98,7 +98,6 @@ class OrderLockPgIT extends ScmW3PgITBase {
 
     private SalesOrderDetailVO confirmed(Long c, Long sku) {
         var o = orders.create(form(c, sku), prefix + "c-" + UUID.randomUUID());
-        o = orders.submit(version(o), prefix + "s-" + UUID.randomUUID());
         var a = new OrderActualQuantityForm();
         a.setOrderId(o.getOrderId());
         a.setItemId(o.getItems().getFirst().getItemId());

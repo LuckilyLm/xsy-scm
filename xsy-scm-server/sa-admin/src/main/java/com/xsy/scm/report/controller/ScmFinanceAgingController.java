@@ -49,9 +49,9 @@ public class ScmFinanceAgingController {
     public void export(@Valid @RequestBody ScmFinanceAgingQueryForm form, HttpServletResponse response)
         throws IOException {
         var rows = financeAgingService.export(form).stream()
-            .map(row -> ScmExcel.row(TITLES, form.getAsOfDate(), form.isReceivable() ? "应收" : "应付",
-                row.getDocumentNo(), row.getSourceNo(), row.getCounterpartyName(), row.getSettlementCustomerName(),
-                row.getEventAt(), row.getDueDate(), row.getOverdueDays(),
+            .map(row -> ScmExcel.row(TITLES, form.getAsOfDate(), form.isReceivable() ? "应收" : "应付", row.getDocumentNo(),
+                row.getSourceNo(), row.getCounterpartyName(), row.getSettlementCustomerName(), row.getEventAt(),
+                row.getDueDate(), row.getOverdueDays(),
                 ScmFinanceAgingBucketEnum.valueOf(row.getAgingBucket()).getDescription(), row.getAmount(),
                 row.getRedAmount(), row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount()))
             .toList();

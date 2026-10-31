@@ -83,75 +83,7 @@ export function sumOrderedQuantity(items: {orderedQuantity?: string | number | n
   return total.toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
 }
 
-/** 草稿明细行：只存用户输入的内容。 */
-export interface DraftItem {
-  skuId?: string | number;
-  orderedQuantity: string;
-  manualPriceOverride: boolean;
-  unitPrice?: string | null;
-  overrideReason?: string | null;
-}
-
-/** 本地草稿（存在 localStorage）。不含价格解析结果、库存、版本等，恢复后重新向服务端获取。 */
-export interface Draft {
-  customerId?: string | number;
-  deliveryWarehouseId?: string | number | null;
-  orderSource: string;
-  expectDeliveryTime?: string | null;
-  remark?: string | null;
-  supplementReason?: string | null;
-  originalOrderId?: string | number | null;
-  items: DraftItem[];
-}
-
-/** 草稿存储键按登录用户隔离，避免不同操作员的草稿互串。 */
-export function draftKey(employeeId: string | number): string {
-  return `xsy-scm:order-draft:${employeeId}`;
-}
-
-/** 把新建表单转成草稿，只挑用户输入字段，不存解析价和版本。 */
-export function serializeDraft(form: Order): Draft {
-  return {
-    customerId: form.customerId,
-    deliveryWarehouseId: form.deliveryWarehouseId ?? null,
-    orderSource: form.orderSource,
-    expectDeliveryTime: form.expectDeliveryTime ?? null,
-    remark: form.remark ?? null,
-    supplementReason: form.orderSource === 'SUPPLEMENT' ? form.supplementReason ?? null : null,
-    originalOrderId: form.orderSource === 'SUPPLEMENT' ? form.originalOrderId ?? null : null,
-    items: form.items
-      .filter((i) => i.skuId != null || (i.orderedQuantity && i.orderedQuantity !== ''))
-      .map((i) => ({
-        skuId: i.skuId,
-        orderedQuantity: i.orderedQuantity,
-        manualPriceOverride: !!i.manualPriceOverride,
-        unitPrice: i.manualPriceOverride ? i.unitPrice ?? null : null,
-        overrideReason: i.manualPriceOverride ? i.overrideReason ?? null : null,
-      })),
-  };
-}
-
-/** 从草稿还原表单，只回填用户输入；价格和地址由调用方重新获取。 */
-export function applyDraft(draft: Draft): Order {
-  const form = newOrder();
-  form.customerId = draft.customerId;
-  form.deliveryWarehouseId = draft.deliveryWarehouseId ?? null;
-  form.orderSource = draft.orderSource || 'ADMIN';
-  form.expectDeliveryTime = draft.expectDeliveryTime ?? null;
-  form.remark = draft.remark ?? null;
-  form.supplementReason = draft.supplementReason ?? null;
-  form.originalOrderId = draft.originalOrderId ?? null;
-  form.items = (draft.items ?? []).map((i) => ({
-    skuId: i.skuId,
-    orderedQuantity: i.orderedQuantity,
-    manualPriceOverride: !!i.manualPriceOverride,
-    unitPrice: i.manualPriceOverride ? i.unitPrice ?? null : null,
-    overrideReason: i.manualPriceOverride ? i.overrideReason ?? null : null,
-  }));
-  return form;
-}
-
-/** 复制历史订单只生成新草稿，不带单号、状态、原价格和库存预留。 */
+/** 复制历史订单只用于新建，不带单号、状态、原价格和库存预留。 */
 export function fromHistory(detail: Order): Order {
   const form = newOrder();
   form.customerId = detail.customerId;

@@ -74,8 +74,7 @@ public class BalanceRechargeService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         CustomerBalanceRechargeEntity recharge = new CustomerBalanceRechargeEntity();
-        recharge
-            .setRechargeNo(ScmDocumentNumbers.next());
+        recharge.setRechargeNo(ScmDocumentNumbers.next());
         recharge.setSettlementCustomerId(settlement.getId());
         recharge.setSettlementCustomerNameSnapshot(settlement.getName());
         recharge.setCustomerId(customer.getId());

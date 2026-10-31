@@ -76,13 +76,12 @@ class SalesOrderRecentPriceIT extends ScmW3PgITBase {
         return f;
     }
 
-    /** create → submit，停在 PENDING（已锁价但未确认），用于验证 PENDING 被排除。 */
+    /** 新建即停在 PENDING（已锁价但未确认），用于验证 PENDING 被排除。 */
     private SalesOrderDetailVO submitted(Long c, Long sku, String tag) {
-        var o = orders.create(form(c, sku), prefix + tag + "c");
-        return orders.submit(version(o), prefix + tag + "s");
+        return orders.create(form(c, sku), prefix + tag + "c");
     }
 
-    /** create → submit → 录实重 → confirm，得到带锁定单价的 CONFIRMED 单。 */
+    /** 新建 → 录实重 → confirm，得到带锁定单价的 CONFIRMED 单。 */
     private SalesOrderDetailVO confirmed(Long c, Long sku, String tag) {
         var o = submitted(c, sku, tag);
         var a = new OrderActualQuantityForm();

@@ -248,8 +248,8 @@ public class ScmReportController {
         throws IOException {
         List<String> titles = List.of("一级分类", "末级分类", "确认订单金额", "订单笔数", "客户数", "金额排名");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.byCategory(form)).stream()
-            .map(r -> ScmExcel.row(titles, r.getRootCategoryName(), r.getLeafCategoryName(),
-                r.getSettlementAmount(), r.getOrderCount(), r.getCustomerCount(), r.getAmountRank()))
+            .map(r -> ScmExcel.row(titles, r.getRootCategoryName(), r.getLeafCategoryName(), r.getSettlementAmount(),
+                r.getOrderCount(), r.getCustomerCount(), r.getAmountRank()))
             .toList();
         ScmExcel.write(response, "销售分析-按分类.xlsx", "按分类", titles, rows);
     }
@@ -276,10 +276,10 @@ public class ScmReportController {
         List<String> titles = List.of("确认时间", "订单号", "客户编码", "客户名称", "销售员", "订单来源", "结算方式", "商品编码", "商品名称", "商品规格编码",
             "商品规格", "商品类型", "销售单位", "订购数量", "实际数量", "锁定成交单价", "价格来源", "结算金额", "是否手工改价", "手工改价原因");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.itemList(form)).stream()
-            .map(r -> ScmExcel.row(titles, r.getConfirmedAt(), r.getOrderNo(), r.getCustomerCode(),
-                r.getCustomerName(), r.getSellerName(), r.getOrderSource(), settleModeLabel(r.getSettleMode()),
-                r.getSpuCode(), r.getProductName(), r.getSkuCode(), r.getSpecName(), r.getProductType(),
-                r.getSaleUnit(), r.getOrderedQuantity(), r.getActualQuantity(), r.getLockedUnitPrice(),
+            .map(r -> ScmExcel.row(titles, r.getConfirmedAt(), r.getOrderNo(), r.getCustomerCode(), r.getCustomerName(),
+                r.getSellerName(), r.getOrderSource(), settleModeLabel(r.getSettleMode()), r.getSpuCode(),
+                r.getProductName(), r.getSkuCode(), r.getSpecName(), r.getProductType(), r.getSaleUnit(),
+                r.getOrderedQuantity(), r.getActualQuantity(), r.getLockedUnitPrice(),
                 priceSourceLabel(r.getLockedPriceSource()), r.getSettlementLineAmount(),
                 yesNo(r.getManualPriceOverride()), r.getManualPriceReason()))
             .toList();
@@ -294,8 +294,8 @@ public class ScmReportController {
         List<String> titles = List.of("确认时间", "订单号", "客户编码", "客户名称", "销售员", "订单来源", "结算方式", "订单行数", "商品规格数", "结算金额",
             "已完成退款金额");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.orderList(form)).stream()
-            .map(r -> ScmExcel.row(titles, r.getConfirmedAt(), r.getOrderNo(), r.getCustomerCode(),
-                r.getCustomerName(), r.getSellerName(), ScmOrderSourceEnum.descOf(r.getOrderSource()),
+            .map(r -> ScmExcel.row(titles, r.getConfirmedAt(), r.getOrderNo(), r.getCustomerCode(), r.getCustomerName(),
+                r.getSellerName(), ScmOrderSourceEnum.descOf(r.getOrderSource()),
                 ScmSettleModeEnum.labelOf(r.getSettleMode()), r.getLineCount(), r.getSkuKindCount(),
                 r.getSettlementAmount(), r.getCompletedRefundAmount()))
             .toList();
@@ -392,8 +392,8 @@ public class ScmReportController {
         throws IOException {
         List<String> titles = List.of("业务日", "商品规格编码", "商品名称", "采购单位", "加权平均采购价", "上次有效均价", "涨跌金额", "涨跌幅(%)", "样本行数");
         List<List<Object>> rows = purchaseReportService.priceTrend(form).stream()
-            .map(r -> ScmExcel.row(titles, r.getBizDate(), r.getSkuCode(), r.getProductName(),
-                r.getPurchaseUnit(), r.getWeightedAvgPrice(), r.getPreviousWeightedAvgPrice(), r.getPriceChangeAmount(),
+            .map(r -> ScmExcel.row(titles, r.getBizDate(), r.getSkuCode(), r.getProductName(), r.getPurchaseUnit(),
+                r.getWeightedAvgPrice(), r.getPreviousWeightedAvgPrice(), r.getPriceChangeAmount(),
                 r.getPriceChangePercent(), r.getSampleLineCount()))
             .toList();
         ScmExcel.write(response, "采购分析-价格波动.xlsx", "价格波动", titles, rows);
@@ -407,9 +407,9 @@ public class ScmReportController {
         List<String> titles = List.of("商品名称", "商品规格编码", "商品规格", "采购单位", "采购单数", "计划采购数量", "已收数量", "采购订单金额", "采购成交均价",
             "采购入库数量", "采购入库成本金额");
         List<List<Object>> rows = exportRows(form, () -> purchaseReportService.byProduct(form)).stream()
-            .map(r -> ScmExcel.row(titles, r.getProductName(), r.getSkuCode(), r.getSkuName(),
-                r.getPurchaseUnit(), r.getOrderCount(), r.getPlannedQuantity(), r.getReceivedQuantity(),
-                r.getOrderAmount(), r.getAvgPurchasePrice(), r.getInboundQuantityText(), r.getInboundCostAmount()))
+            .map(r -> ScmExcel.row(titles, r.getProductName(), r.getSkuCode(), r.getSkuName(), r.getPurchaseUnit(),
+                r.getOrderCount(), r.getPlannedQuantity(), r.getReceivedQuantity(), r.getOrderAmount(),
+                r.getAvgPurchasePrice(), r.getInboundQuantityText(), r.getInboundCostAmount()))
             .toList();
         var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(), PURCHASE_PRODUCT_EXPORT_COLUMNS,
             StpUtil.hasPermission(ScmReportPermission.COST_QUERY));
@@ -612,11 +612,10 @@ public class ScmReportController {
         List<String> titles = List.of("发生时间", "仓库", "商品名称", "商品规格编码", "流水类型", "方向", "来源单据类型", "来源单号", "来源单据 ID",
             "来源单据行 ID", "数量", "单位", "单位成本", "成本金额", "变动前数量", "变动后数量", "操作人");
         List<List<Object>> rows = exportRows(form, () -> inventoryReportService.movementList(form)).stream()
-            .map(r -> ScmExcel.row(titles, r.getOccurredAt(), r.getWarehouseName(), r.getProductName(),
-                r.getSkuCode(), r.getMovementType(), r.getDirection(), r.getSourceDocumentType(),
-                r.getSourceDocumentNo(), r.getSourceDocumentId(), r.getSourceDocumentItemId(), r.getQuantity(),
-                r.getUnit(), r.getUnitCost(), r.getCostAmount(), r.getBeforeQuantity(), r.getAfterQuantity(),
-                r.getOperator()))
+            .map(r -> ScmExcel.row(titles, r.getOccurredAt(), r.getWarehouseName(), r.getProductName(), r.getSkuCode(),
+                r.getMovementType(), r.getDirection(), r.getSourceDocumentType(), r.getSourceDocumentNo(),
+                r.getSourceDocumentId(), r.getSourceDocumentItemId(), r.getQuantity(), r.getUnit(), r.getUnitCost(),
+                r.getCostAmount(), r.getBeforeQuantity(), r.getAfterQuantity(), r.getOperator()))
             .toList();
         ScmExcel.write(response, "库存流水.xlsx", "库存流水", titles, rows);
     }
@@ -629,9 +628,9 @@ public class ScmReportController {
         List<String> titles = List.of("商品名称", "商品规格编码", "仓库", "损耗类型", "数量", "单位", "单位成本", "损耗成本金额", "来源单号", "发生时间",
             "操作人");
         List<List<Object>> rows = exportRows(form, () -> inventoryReportService.lossList(form)).stream()
-            .map(r -> ScmExcel.row(titles, r.getProductName(), r.getSkuCode(), r.getWarehouseName(),
-                r.getLossType(), r.getQuantity(), r.getUnit(), r.getUnitCost(), r.getCostAmount(),
-                r.getSourceDocumentNo(), r.getOccurredAt(), r.getOperator()))
+            .map(r -> ScmExcel.row(titles, r.getProductName(), r.getSkuCode(), r.getWarehouseName(), r.getLossType(),
+                r.getQuantity(), r.getUnit(), r.getUnitCost(), r.getCostAmount(), r.getSourceDocumentNo(),
+                r.getOccurredAt(), r.getOperator()))
             .toList();
         ScmExcel.write(response, "损耗分析.xlsx", "损耗分析", titles, rows);
     }
@@ -645,9 +644,8 @@ public class ScmReportController {
         throws IOException {
         List<String> titles = List.of("仓库", "商品名称", "商品规格编码", "当前数量", "预留数量", "可用数量", "单位", "当前移动平均成本", "当前账面金额");
         List<List<Object>> rows = exportRows(form, () -> inventoryReportService.valueList(form)).stream()
-            .map(r -> ScmExcel.row(titles, r.getWarehouseName(), r.getProductName(), r.getSkuCode(),
-                r.getQuantity(), r.getReservedQuantity(), r.getAvailableQuantity(), r.getUnit(), r.getAvgCost(),
-                r.getBookAmount()))
+            .map(r -> ScmExcel.row(titles, r.getWarehouseName(), r.getProductName(), r.getSkuCode(), r.getQuantity(),
+                r.getReservedQuantity(), r.getAvailableQuantity(), r.getUnit(), r.getAvgCost(), r.getBookAmount()))
             .toList();
         ScmExcel.write(response, "当前库存价值.xlsx", "当前库存价值", titles, rows);
     }
