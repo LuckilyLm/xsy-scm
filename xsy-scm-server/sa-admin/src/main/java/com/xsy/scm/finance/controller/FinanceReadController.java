@@ -26,7 +26,7 @@ import com.xsy.scm.finance.service.FinancePayableQueryService;
 import com.xsy.scm.finance.service.FinancePaymentQueryService;
 import com.xsy.scm.finance.service.FinanceReceivableQueryService;
 import com.xsy.scm.finance.service.FinanceReceiptQueryService;
-import com.xsy.scm.finance.support.FinanceExcel;
+import com.xsy.scm.common.excel.ScmExcel;
 import com.xsy.scm.finance.support.FinanceExportLabels;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -89,12 +89,12 @@ public class FinanceReadController {
         throws IOException {
         List<FinanceReceivableVO> rows = financeReceivableQueryService.exportRows(form);
         List<List<Object>> data = rows.stream()
-            .map(row -> FinanceExcel.row(RECEIVABLE_EXPORT_TITLES, row.getReceivableNo(), row.getOrderNo(),
+            .map(row -> ScmExcel.row(RECEIVABLE_EXPORT_TITLES, row.getReceivableNo(), row.getOrderNo(),
                 row.getCustomerName(), FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(),
                 row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(),
                 FinanceExportLabels.settleState(row.getSettleState()), row.getEventAt(), row.getReason()))
             .toList();
-        FinanceExcel.write(response, "应收明细.xlsx", "应收明细", RECEIVABLE_EXPORT_TITLES, data);
+        ScmExcel.write(response, "应收明细.xlsx", "应收明细", RECEIVABLE_EXPORT_TITLES, data);
     }
 
     @PostMapping("/payable/query")
@@ -116,12 +116,12 @@ public class FinanceReadController {
         throws IOException {
         List<FinancePayableVO> rows = financePayableQueryService.exportRows(form);
         List<List<Object>> data = rows.stream()
-            .map(row -> FinanceExcel.row(PAYABLE_EXPORT_TITLES, row.getPayableNo(), row.getPurchaseOrderNo(),
+            .map(row -> ScmExcel.row(PAYABLE_EXPORT_TITLES, row.getPayableNo(), row.getPurchaseOrderNo(),
                 row.getSupplierName(), FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(),
                 row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(),
                 FinanceExportLabels.settleState(row.getSettleState()), row.getEventAt(), row.getReason()))
             .toList();
-        FinanceExcel.write(response, "应付明细.xlsx", "应付明细", PAYABLE_EXPORT_TITLES, data);
+        ScmExcel.write(response, "应付明细.xlsx", "应付明细", PAYABLE_EXPORT_TITLES, data);
     }
 
     @PostMapping("/receipt/query")
@@ -144,12 +144,12 @@ public class FinanceReadController {
         throws IOException {
         List<FinanceReceiptQueryVO> rows = financeReceiptQueryService.exportRows(form);
         List<List<Object>> data = rows.stream()
-            .map(row -> FinanceExcel.row(RECEIPT_EXPORT_TITLES, row.getReceiptNo(), row.getCustomerName(),
+            .map(row -> ScmExcel.row(RECEIPT_EXPORT_TITLES, row.getReceiptNo(), row.getCustomerName(),
                 FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(), row.getEffectiveAmount(),
                 row.getUsedAmount(), row.getPendingWriteOffAmount(), FinanceExportLabels.receiptMethod(row.getMethod()),
                 row.getReceivedAt(), row.getExternalReference(), row.getReason()))
             .toList();
-        FinanceExcel.write(response, "收款明细.xlsx", "收款明细", RECEIPT_EXPORT_TITLES, data);
+        ScmExcel.write(response, "收款明细.xlsx", "收款明细", RECEIPT_EXPORT_TITLES, data);
     }
 
     @PostMapping("/payment/query")
@@ -172,13 +172,13 @@ public class FinanceReadController {
         throws IOException {
         List<FinancePaymentQueryVO> rows = financePaymentQueryService.exportRows(form);
         List<List<Object>> data = rows.stream()
-            .map(row -> FinanceExcel.row(PAYMENT_EXPORT_TITLES, row.getPaymentNo(),
+            .map(row -> ScmExcel.row(PAYMENT_EXPORT_TITLES, row.getPaymentNo(),
                 FinanceExportLabels.counterpartyType(row.getCounterpartyType()), row.getCounterpartyName(),
                 FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(), row.getEffectiveAmount(),
                 row.getUsedAmount(), row.getPendingWriteOffAmount(), FinanceExportLabels.paymentMethod(row.getMethod()),
                 row.getPaidAt(), FinanceExportLabels.paymentSourceType(row.getSourceType()), row.getSourceId()))
             .toList();
-        FinanceExcel.write(response, "付款明细.xlsx", "付款明细", PAYMENT_EXPORT_TITLES, data);
+        ScmExcel.write(response, "付款明细.xlsx", "付款明细", PAYMENT_EXPORT_TITLES, data);
     }
 
     @GetMapping("/log/query")

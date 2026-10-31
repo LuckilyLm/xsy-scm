@@ -5,8 +5,6 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
-import com.xsy.scm.common.time.ScmDateTimeRange;
-import com.xsy.scm.common.time.ScmDateTimeRangeResolver;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceEntryTypeEnum;
@@ -23,10 +21,8 @@ import com.xsy.scm.finance.domain.vo.FinanceReceivableDetailVO;
 import com.xsy.scm.finance.domain.vo.FinanceReceivableItemVO;
 import com.xsy.scm.finance.domain.vo.FinanceReceivableVO;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffVO;
-import com.xsy.scm.finance.support.FinanceExportGuard;
 import com.xsy.scm.finance.support.FinanceQuerySupport;
 import net.lab1024.sa.base.common.domain.PageResult;
-import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
@@ -61,33 +56,15 @@ public class FinanceReceivableQueryService {
     @Transactional(readOnly = true)
     public PageResult<FinanceReceivableVO> query(FinanceReceivableQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        if (scope.getOrderSellerScope().isEmpty()) {
-            return ScmDataScopeService.emptyPage(form);
-        }
-        FinanceQuerySupport.rejectClientSort(form);
-        FinanceQuerySupport.normalizePage(form);
-        validateFilters(form);
-        ScmDateTimeRange range = ScmDateTimeRangeResolver.resolve(form.getStartDate(), form.getEndDate());
-        Page<?> page = SmartPageUtil.convert2PageQuery(form);
-        page.setOptimizeCountSql(false);
-        return SmartPageUtil.convert2PageResult(page, financeReceivableDao.queryPage(page, form, scope, range));
+        return FinanceQuerySupport.query(form, scope.getOrderSellerScope(),
+            () -> validateFilters(form), (page, range) -> financeReceivableDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
     public List<FinanceReceivableVO> exportRows(FinanceReceivableQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        if (scope.getOrderSellerScope().isEmpty()) {
-            return List.of();
-        }
-        FinanceQuerySupport.rejectClientSort(form);
-        FinanceQuerySupport.normalizePage(form);
-        validateFilters(form);
-        ScmDateTimeRange range = ScmDateTimeRangeResolver.resolve(form.getStartDate(), form.getEndDate());
-        return FinanceExportGuard.exportRows(pageSize -> {
-            Page<?> page = page(form, pageSize);
-            page.setSearchCount(false);
-            return financeReceivableDao.queryPage(page, form, scope, range);
-        });
+        return FinanceQuerySupport.exportRows(form, scope.getOrderSellerScope(),
+            () -> validateFilters(form), (page, range) -> financeReceivableDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
@@ -165,11 +142,5 @@ public class FinanceReceivableQueryService {
         if (form.getSettleState() != null && !SETTLE_STATES.contains(form.getSettleState())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
-    }
-
-    private static Page<?> page(FinanceReceivableQueryForm form, long pageSize) {
-        form.setPageNum(1L);
-        form.setPageSize(pageSize);
-        return SmartPageUtil.convert2PageQuery(form);
     }
 }

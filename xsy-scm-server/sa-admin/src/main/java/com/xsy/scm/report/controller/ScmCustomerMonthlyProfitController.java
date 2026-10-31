@@ -11,7 +11,7 @@ import com.xsy.scm.report.constant.ScmReportPermission;
 import com.xsy.scm.report.domain.form.ScmCustomerMonthlyProfitQueryForm;
 import com.xsy.scm.report.domain.vo.ScmCustomerMonthlyProfitVO;
 import com.xsy.scm.report.service.ScmCustomerMonthlyProfitService;
-import com.xsy.scm.report.support.ScmReportExcel;
+import com.xsy.scm.common.excel.ScmExcel;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -67,7 +67,7 @@ public class ScmCustomerMonthlyProfitController {
         var selection = ScmExportColumnSelection.resolve(form.getExportColumns(), COLUMNS, true);
         var titles = COLUMNS.stream().map(Column::title).toList();
         List<List<Object>> rows = profitService.export(form).stream()
-            .map(row -> ScmReportExcel.row(titles, row.getDimensionName(), row.getRevenueAmount(),
+            .map(row -> ScmExcel.row(titles, row.getDimensionName(), row.getRevenueAmount(),
                 row.getSalesCostAmount(), row.getGrossProfit(), row.getTaxAmount(), row.getServiceAmount(),
                 row.getFreightAmount(), row.getCommissionAmount(), row.getExpenseAmount(), row.getNetProfit(),
                 row.getCostMissingCount()))

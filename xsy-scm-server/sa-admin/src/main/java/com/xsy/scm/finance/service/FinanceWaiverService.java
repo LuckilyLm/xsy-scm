@@ -160,22 +160,7 @@ public class FinanceWaiverService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         BigDecimal before = receivableBalance(target);
-        FinanceWriteOffEntity reversal = new FinanceWriteOffEntity();
-        reversal.setWriteOffNo(ScmDocumentNumbers.next());
-        reversal.setSourceType(original.getSourceType());
-        reversal.setSourceId(original.getSourceId());
-        reversal.setTargetType(original.getTargetType());
-        reversal.setTargetId(original.getTargetId());
-        reversal.setAmount(original.getAmount());
-        reversal.setEntryType(ScmFinanceReverseEntryTypeEnum.REVERSE.name());
-        reversal.setReverseOfId(original.getId());
-        reversal.setReason(reason);
-        reversal.setWrittenOffAt(now);
-        reversal.setOperator(operator);
-        reversal.setCreatedAt(now);
-        reversal.setUpdatedAt(now);
-        reversal.setCreatedBy(operator);
-        reversal.setUpdatedBy(operator);
+        FinanceWriteOffEntity reversal = FinanceWriteOffEntity.reversalOf(original, reason, now, operator);
         if (financeWriteOffDao.insertReverseOnConflictDoNothing(reversal) != 1) {
             throw new ScmBusinessException(FinanceErrorCode.WAIVER_ALREADY_REVERSED);
         }

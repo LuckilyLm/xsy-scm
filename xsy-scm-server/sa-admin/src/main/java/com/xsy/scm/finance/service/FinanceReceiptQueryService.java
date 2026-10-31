@@ -1,13 +1,10 @@
 package com.xsy.scm.finance.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
-import com.xsy.scm.common.time.ScmDateTimeRange;
-import com.xsy.scm.common.time.ScmDateTimeRangeResolver;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReceiptMethodEnum;
@@ -22,10 +19,8 @@ import com.xsy.scm.finance.domain.vo.FinanceOperationLogVO;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptDetailVO;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptQueryVO;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffVO;
-import com.xsy.scm.finance.support.FinanceExportGuard;
 import com.xsy.scm.finance.support.FinanceQuerySupport;
 import net.lab1024.sa.base.common.domain.PageResult;
-import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,33 +46,15 @@ public class FinanceReceiptQueryService {
     @Transactional(readOnly = true)
     public PageResult<FinanceReceiptQueryVO> query(FinanceReceiptQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        if (scope.getCustomerSellerScope().isEmpty()) {
-            return ScmDataScopeService.emptyPage(form);
-        }
-        FinanceQuerySupport.rejectClientSort(form);
-        FinanceQuerySupport.normalizePage(form);
-        validateFilters(form);
-        ScmDateTimeRange range = ScmDateTimeRangeResolver.resolve(form.getStartDate(), form.getEndDate());
-        Page<?> page = SmartPageUtil.convert2PageQuery(form);
-        page.setOptimizeCountSql(false);
-        return SmartPageUtil.convert2PageResult(page, financeReceiptDao.queryPage(page, form, scope, range));
+        return FinanceQuerySupport.query(form, scope.getCustomerSellerScope(),
+            () -> validateFilters(form), (page, range) -> financeReceiptDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
     public List<FinanceReceiptQueryVO> exportRows(FinanceReceiptQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        if (scope.getCustomerSellerScope().isEmpty()) {
-            return List.of();
-        }
-        FinanceQuerySupport.rejectClientSort(form);
-        FinanceQuerySupport.normalizePage(form);
-        validateFilters(form);
-        ScmDateTimeRange range = ScmDateTimeRangeResolver.resolve(form.getStartDate(), form.getEndDate());
-        return FinanceExportGuard.exportRows(pageSize -> {
-            Page<?> page = page(form, pageSize);
-            page.setSearchCount(false);
-            return financeReceiptDao.queryPage(page, form, scope, range);
-        });
+        return FinanceQuerySupport.exportRows(form, scope.getCustomerSellerScope(),
+            () -> validateFilters(form), (page, range) -> financeReceiptDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
@@ -123,22 +100,12 @@ public class FinanceReceiptQueryService {
     }
 
     private static void validateFilters(FinanceReceiptQueryForm form) {
-        if (form.getMethod() != null && !enumContains(ScmFinanceReceiptMethodEnum.values(), form.getMethod())) {
+        if (form.getMethod() != null && !FinanceQuerySupport.enumContains(ScmFinanceReceiptMethodEnum.values(), form.getMethod())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         if (form.getEntryType() != null
-            && !enumContains(ScmFinanceReverseEntryTypeEnum.values(), form.getEntryType())) {
+            && !FinanceQuerySupport.enumContains(ScmFinanceReverseEntryTypeEnum.values(), form.getEntryType())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
-    }
-
-    private static boolean enumContains(Enum<?>[] values, String value) {
-        return java.util.Arrays.stream(values).anyMatch(candidate -> candidate.name().equals(value));
-    }
-
-    private static Page<?> page(FinanceReceiptQueryForm form, long pageSize) {
-        form.setPageNum(1L);
-        form.setPageSize(pageSize);
-        return SmartPageUtil.convert2PageQuery(form);
     }
 }

@@ -15,7 +15,7 @@ import com.xsy.scm.report.constant.ScmReportPermission;
 import com.xsy.scm.report.domain.form.PurchaseDailyQueryForm;
 import com.xsy.scm.report.domain.vo.PurchaseDailyReportVO;
 import com.xsy.scm.report.service.PurchaseDailyQueryService;
-import com.xsy.scm.report.support.ScmReportExcel;
+import com.xsy.scm.common.excel.ScmExcel;
 import com.xsy.scm.report.support.ScmReportExportGuard;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -51,10 +51,10 @@ public class PurchaseDailyReportController {
         });
         List<String> titles = List.of("统计日期", "商品编码", "商品名称", "商品规格编码", "商品规格", "采购单位", "采购单数", "采购数量", "采购金额");
         List<List<Object>> rows = products.stream()
-            .map(row -> ScmReportExcel.row(titles, form.getReportDate(), row.getSpuCode(), row.getProductName(),
+            .map(row -> ScmExcel.row(titles, form.getReportDate(), row.getSpuCode(), row.getProductName(),
                 row.getSkuCode(), row.getSkuName(), row.getPurchaseUnit(), row.getOrderCount(),
                 row.getPlannedQuantity(), row.getOrderAmount()))
             .toList();
-        ScmReportExcel.write(response, "采购商品清单-" + form.getReportDate() + ".xlsx", "采购商品清单", titles, rows);
+        ScmExcel.write(response, "采购商品清单-" + form.getReportDate() + ".xlsx", "采购商品清单", titles, rows);
     }
 }

@@ -10,10 +10,11 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import com.xsy.scm.common.constant.ScmCreditPeriodTypeEnum;
 import com.xsy.scm.common.constant.ScmCreditPeriodUnitEnum;
 import com.xsy.scm.common.constant.ScmSettleModeEnum;
-import com.xsy.scm.common.domain.ScmLocationForm;
+import com.xsy.scm.common.domain.ScmPartyForm;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.common.validation.ScmEnumValue;
@@ -25,7 +26,8 @@ import java.util.List;
  * 新客户默认是潜在客户，状态通过专门接口变更。客户编码由服务端生成，不接受客户端自行填写。
  */
 @Data
-public class CustomerAddForm extends ScmLocationForm {
+@EqualsAndHashCode(callSuper = true)
+public class CustomerAddForm extends ScmPartyForm {
     @Pattern(regexp = CustomerVisibilityPolicy.PATTERN, message = "商品可见性策略无效")
     private String visibilityPolicy;
     @Valid
@@ -57,33 +59,6 @@ public class CustomerAddForm extends ScmLocationForm {
 
     @Positive(message = "供应商 ID 必须大于0")
     private Long supplierId;
-
-    @Size(max = 100, message = "联系人姓名不能超过100个字符")
-    private String contactName;
-
-    @Size(max = 32, message = "联系电话不能超过32个字符")
-    private String contactPhone;
-
-    @Size(max = 255, message = "联系地址不能超过255个字符")
-    private String address;
-
-    @Positive(message = "省份编码必须大于0")
-    private Integer provinceCode;
-
-    @Size(max = 32, message = "省份名称不能超过32个字符")
-    private String provinceName;
-
-    @Positive(message = "城市编码必须大于0")
-    private Integer cityCode;
-
-    @Size(max = 64, message = "城市名称不能超过64个字符")
-    private String cityName;
-
-    @Positive(message = "区县编码必须大于0")
-    private Integer districtCode;
-
-    @Size(max = 64, message = "区县名称不能超过64个字符")
-    private String districtName;
 
     @NotBlank(message = "结算模式不能为空")
     @ScmEnumValue(enumClass = ScmSettleModeEnum.class, message = "结算模式无效")
@@ -126,7 +101,4 @@ public class CustomerAddForm extends ScmLocationForm {
     @Min(value = 1, message = "月结日必须在1至28之间")
     @Max(value = 28, message = "月结日必须在1至28之间")
     private Integer settleDay;
-
-    @Size(max = 500, message = "备注不能超过500个字符")
-    private String remark;
 }

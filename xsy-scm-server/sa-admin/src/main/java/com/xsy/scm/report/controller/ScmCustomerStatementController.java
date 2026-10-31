@@ -17,7 +17,7 @@ import com.xsy.scm.report.constant.ScmReportPermission;
 import com.xsy.scm.report.domain.form.ScmCustomerStatementForm;
 import com.xsy.scm.report.domain.vo.ScmCustomerStatementVO;
 import com.xsy.scm.report.service.ScmCustomerStatementService;
-import com.xsy.scm.report.support.ScmReportExcel;
+import com.xsy.scm.common.excel.ScmExcel;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -61,7 +61,7 @@ public class ScmCustomerStatementController {
     public void export(@PathVariable Long id, HttpServletResponse response) throws IOException {
         ScmCustomerStatementVO version = statementService.detail(id);
         List<List<Object>> rows = version.getItems().stream()
-            .map(item -> ScmReportExcel.row(TITLES, version.getId(), version.getSettlementCustomerName(),
+            .map(item -> ScmExcel.row(TITLES, version.getId(), version.getSettlementCustomerName(),
                 version.getPartialScope() ? "部分授权范围，非完整集团对账" : "完整结算方范围", version.getGeneratedAt(),
                 version.getStartDate(), version.getEndDate(), version.getOpeningReceivable(),
                 version.getReceivableIncrease(), version.getReceivableRed(), version.getWriteOffNet(),
@@ -72,7 +72,7 @@ public class ScmCustomerStatementController {
                 item.getReceivableBalance()))
             .toList();
         if (rows.isEmpty()) {
-            rows = List.of(ScmReportExcel.row(TITLES, version.getId(), version.getSettlementCustomerName(),
+            rows = List.of(ScmExcel.row(TITLES, version.getId(), version.getSettlementCustomerName(),
                 version.getPartialScope() ? "部分授权范围，非完整集团对账" : "完整结算方范围", version.getGeneratedAt(),
                 version.getStartDate(), version.getEndDate(), version.getOpeningReceivable(),
                 version.getReceivableIncrease(), version.getReceivableRed(), version.getWriteOffNet(),
@@ -80,6 +80,6 @@ public class ScmCustomerStatementController {
                 version.getClosingUnallocated(), version.getRefundNet(), null, null, null, null, null, null, null, null,
                 null, null, null));
         }
-        ScmReportExcel.write(response, "客户对账单-" + id + ".xlsx", "冻结明细", TITLES, rows);
+        ScmExcel.write(response, "客户对账单-" + id + ".xlsx", "冻结明细", TITLES, rows);
     }
 }

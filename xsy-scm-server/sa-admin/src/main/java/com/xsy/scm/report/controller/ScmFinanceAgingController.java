@@ -8,7 +8,7 @@ import com.xsy.scm.report.domain.form.ScmFinanceAgingQueryForm;
 import com.xsy.scm.report.domain.vo.ScmFinanceAgingRowVO;
 import com.xsy.scm.report.domain.vo.ScmFinanceAgingSummaryVO;
 import com.xsy.scm.report.service.ScmFinanceAgingService;
-import com.xsy.scm.report.support.ScmReportExcel;
+import com.xsy.scm.common.excel.ScmExcel;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,12 +49,12 @@ public class ScmFinanceAgingController {
     public void export(@Valid @RequestBody ScmFinanceAgingQueryForm form, HttpServletResponse response)
         throws IOException {
         var rows = financeAgingService.export(form).stream()
-            .map(row -> ScmReportExcel.row(TITLES, form.getAsOfDate(), form.isReceivable() ? "应收" : "应付",
+            .map(row -> ScmExcel.row(TITLES, form.getAsOfDate(), form.isReceivable() ? "应收" : "应付",
                 row.getDocumentNo(), row.getSourceNo(), row.getCounterpartyName(), row.getSettlementCustomerName(),
                 row.getEventAt(), row.getDueDate(), row.getOverdueDays(),
                 ScmFinanceAgingBucketEnum.valueOf(row.getAgingBucket()).getDescription(), row.getAmount(),
                 row.getRedAmount(), row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount()))
             .toList();
-        ScmReportExcel.write(response, "往来账龄.xlsx", "账龄明细", TITLES, rows);
+        ScmExcel.write(response, "往来账龄.xlsx", "账龄明细", TITLES, rows);
     }
 }

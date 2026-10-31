@@ -146,7 +146,7 @@ class FinanceReadOnlyContractTest {
     }
 
     @Test
-    @DisplayName("finance 包不依赖 report 包（设计稿 §18：导出层自建 FinanceExcel，不跨域引用）")
+    @DisplayName("finance 包不依赖 report 包（导出统一走 common 的 ScmExcel，不跨域引用）")
     void financePackageDoesNotDependOnReportPackage() throws IOException {
         Path javaRoot = moduleRoot().resolve("src/main/java/com/xsy/scm/finance");
         List<String> violations = new ArrayList<>();

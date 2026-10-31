@@ -11,7 +11,7 @@ import com.xsy.scm.finance.domain.vo.FinancePostingVO;
 import com.xsy.scm.finance.permission.FinancePermission;
 import com.xsy.scm.finance.service.FinancePostingQueryService;
 import com.xsy.scm.finance.service.FinancePostingService;
-import com.xsy.scm.finance.support.FinanceExcel;
+import com.xsy.scm.common.excel.ScmExcel;
 import com.xsy.scm.finance.support.FinanceExportLabels;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
@@ -68,13 +68,13 @@ public class FinancePostingController {
         throws IOException {
         List<FinancePostingVO> rows = financePostingQueryService.exportRows(form);
         List<List<Object>> data = rows.stream()
-            .map(row -> FinanceExcel.row(EXPORT_TITLES, row.getPostingNo(), row.getCustomerName(),
+            .map(row -> ScmExcel.row(EXPORT_TITLES, row.getPostingNo(), row.getCustomerName(),
                 row.getSettlementCustomerName(), row.getDocumentDate(), row.getAmount(), row.getTaxRate(),
                 FinanceExportLabels.postingRefundStatus(row.getRefundStatus()),
                 FinanceExportLabels.postingStatus(row.getStatus()), row.getRemark(), row.getVoidReason(),
                 row.getCreatedBy(), row.getCreatedAt()))
             .toList();
-        FinanceExcel.write(response, "过账明细.xlsx", "过账明细", EXPORT_TITLES, data);
+        ScmExcel.write(response, "过账明细.xlsx", "过账明细", EXPORT_TITLES, data);
     }
 
     @PostMapping("/add")

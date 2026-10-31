@@ -4,7 +4,6 @@ import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
-import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
 
@@ -12,16 +11,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
  * 销售订单打印只读正式订单详情，沿用业务员的数据范围；不读当前商品价格，也不改变锁价、结算或库存。
  */
 @Component
-@RequiredArgsConstructor
-public class SalesOrderPrintSourceProvider implements ScmPrintSourceProvider {
-    private final SalesOrderQueryService orderQueryService;
+public class SalesOrderPrintSourceProvider extends ScmOrderPrintSourceProvider {
+
+    public SalesOrderPrintSourceProvider(SalesOrderQueryService orderQueryService) {
+        super(orderQueryService);
+    }
 
     @Override
     public ScmPrintDocumentTypeEnum documentType() {
@@ -29,23 +29,8 @@ public class SalesOrderPrintSourceProvider implements ScmPrintSourceProvider {
     }
 
     @Override
-    public String queryPermission() {
-        return OrderPermission.QUERY;
-    }
-
-    @Override
-    public void requireVisible(Long businessId) {
-        orderQueryService.detail(businessId);
-    }
-
-    @Override
-    public Long customerId(Long businessId) {
-        return orderQueryService.detail(businessId).getCustomerId();
-    }
-
-    @Override
     public ScmPrintSource load(Long businessId) {
-        SalesOrderDetailVO order = orderQueryService.detail(businessId);
+        SalesOrderDetailVO order = orderDetail(businessId);
         var header = ScmPrintSource.values();
         header.put("orderNo", ScmPrintText.text(order.getOrderNo()));
         header.put("customerName", ScmPrintText.text(order.getCustomerNameSnapshot()));
@@ -54,12 +39,7 @@ public class SalesOrderPrintSourceProvider implements ScmPrintSourceProvider {
         header.put("orderSource", sourceLabel(order.getOrderSource()));
         header.put("expectDeliveryTime", ScmPrintText.dateTime(order.getExpectDeliveryTime()));
         header.put("remark", ScmPrintText.text(order.getRemark()));
-        var address = order.getAddress();
-        if (address != null) {
-            header.put("receiverName", ScmPrintText.text(address.getReceiverName()));
-            header.put("receiverPhone", ScmPrintText.text(address.getReceiverPhone()));
-            header.put("address", ScmPrintText.text(address.getAddress()));
-        }
+        putAddress(header, order.getAddress());
 
         List<Map<String, String>> rows = new ArrayList<>();
         List<SalesOrderItemVO> items = order.getItems() == null ? List.of() : order.getItems();

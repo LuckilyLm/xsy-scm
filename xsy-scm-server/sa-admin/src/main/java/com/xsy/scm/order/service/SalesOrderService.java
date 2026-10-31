@@ -12,6 +12,7 @@ import com.xsy.scm.finance.domain.vo.CustomerCreditCheckVO;
 import com.xsy.scm.inventory.service.InventoryReservationService;
 import com.xsy.scm.mall.catalog.service.MallStockAvailabilityService;
 import com.xsy.scm.notification.service.ScmNotificationService;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.order.constant.OrderErrorCode;
 import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
 import com.xsy.scm.order.constant.ScmOrderQuantitySourceEnum;
@@ -115,7 +116,6 @@ public class SalesOrderService {
     private final PriceResolver priceResolver;
     private final ProductSkuOptionDao productSkuOptionDao;
     private final ProductSpuDao productSpuDao;
-    private final OrderNumberGenerator numbers;
     private final OrderIdempotencyService orderIdempotencyService;
     /**
      * 显式预留库存、取消时释放；库存变更走库存模块的服务。
@@ -288,7 +288,7 @@ public class SalesOrderService {
         var settlementCustomer = customerService.requireSettlementCustomer(customer);
         salesOrder.setSettlementCustomerId(settlementCustomer.getId());
         salesOrder.setSettlementCustomerNameSnapshot(settlementCustomer.getName());
-        salesOrder.setOrderNo(numbers.order());
+        salesOrder.setOrderNo(ScmDocumentNumbers.next());
         salesOrder.setStatus(ScmOrderStatusEnum.DRAFT.name());
         header(salesOrder, salesOrderAddForm);
         // 客户预选券只随商城建单保存；后台录单即使误带该字段也不保存，后台用券一律在确认时显式指定。

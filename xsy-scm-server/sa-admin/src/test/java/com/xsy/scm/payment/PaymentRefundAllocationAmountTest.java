@@ -21,7 +21,6 @@ import com.xsy.scm.payment.domain.dto.PaymentOrderFact;
 import com.xsy.scm.payment.domain.entity.RefundFundingAllocationEntity;
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
-import com.xsy.scm.payment.service.PaymentNumberGenerator;
 import com.xsy.scm.payment.service.PaymentRefundService;
 import com.xsy.scm.payment.service.RefundFundingCompletionService;
 import java.math.BigDecimal;
@@ -36,7 +35,7 @@ class PaymentRefundAllocationAmountTest {
     private final PaymentSourceDao sources = mock(PaymentSourceDao.class);
     private final PaymentRefundService service = new PaymentRefundService(refunds, allocations,
             mock(PaymentTransactionDao.class), intents, sources,
-            financePayments, mock(FinanceOrderFundingPolicy.class), mock(PaymentNumberGenerator.class),
+            financePayments, mock(FinanceOrderFundingPolicy.class),
             mock(ScmPaymentProviderRegistry.class), mock(ScmIdempotencyService.class),
             mock(ScmDataScopeService.class), mock(RefundFundingCompletionService.class));
 

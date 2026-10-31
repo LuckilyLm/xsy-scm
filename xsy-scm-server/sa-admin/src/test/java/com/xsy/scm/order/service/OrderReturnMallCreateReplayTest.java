@@ -1,7 +1,6 @@
 package com.xsy.scm.order.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -28,7 +27,7 @@ class OrderReturnMallCreateReplayTest {
         OrderReturnDao returns = mock(OrderReturnDao.class);
         OrderReturnService service = new OrderReturnService(salesOrders, mock(SalesOrderDao.class),
                 mock(SalesOrderItemDao.class), returns, mock(OrderReturnItemDao.class),
-                mock(OrderReturnReceiptItemDao.class), mock(OrderRefundDao.class), mock(OrderNumberGenerator.class),
+                mock(OrderReturnReceiptItemDao.class), mock(OrderRefundDao.class),
                 idempotency, mock(OrderOperationLogRecorder.class), mock(ScmDataScopeService.class),
                 mock(com.xsy.scm.customer.service.CustomerService.class), mock(OrderReturnPriceService.class),
                 mock(FinanceReceivableService.class));

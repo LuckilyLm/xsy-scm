@@ -2,7 +2,6 @@ package com.xsy.scm.print.support;
 
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
-import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
 
@@ -14,14 +13,12 @@ import java.util.Map;
  * 客户级分拣单/送货单的公共取数：一张订单就是一个客户，只读正式订单详情。
  *
  * <p>
- * 两种纸面共用表头和行序，差别只在是否印价格、实数量取不取值、有没有合计。取数统一走 {@link SalesOrderQueryService#detail(Long)}，数据范围与订单详情一致，打印域不直连业务表。
+ * 两种纸面共用表头和行序，差别只在是否印价格、实数量取不取值、有没有合计。
  */
-public abstract class CustomerSheetPrintSourceProvider implements ScmPrintSourceProvider {
-
-    private final SalesOrderQueryService orderQueryService;
+public abstract class CustomerSheetPrintSourceProvider extends ScmOrderPrintSourceProvider {
 
     protected CustomerSheetPrintSourceProvider(SalesOrderQueryService orderQueryService) {
-        this.orderQueryService = orderQueryService;
+        super(orderQueryService);
     }
 
     /** 是否印销售单价和行金额。 */
@@ -34,23 +31,8 @@ public abstract class CustomerSheetPrintSourceProvider implements ScmPrintSource
     protected abstract boolean showTotals();
 
     @Override
-    public String queryPermission() {
-        return OrderPermission.QUERY;
-    }
-
-    @Override
-    public void requireVisible(Long businessId) {
-        orderQueryService.detail(businessId);
-    }
-
-    @Override
-    public Long customerId(Long businessId) {
-        return orderQueryService.detail(businessId).getCustomerId();
-    }
-
-    @Override
     public ScmPrintSource load(Long businessId) {
-        SalesOrderDetailVO order = orderQueryService.detail(businessId);
+        SalesOrderDetailVO order = orderDetail(businessId);
         var header = ScmPrintSource.values();
         header.put("customerName", ScmPrintText.text(order.getCustomerNameSnapshot()));
         header.put("orderNo", ScmPrintText.text(order.getOrderNo()));
@@ -58,12 +40,7 @@ public abstract class CustomerSheetPrintSourceProvider implements ScmPrintSource
         header.put("routeNo",
             order.getDeliveryProgress() == null ? "" : ScmPrintText.text(order.getDeliveryProgress().getRouteNo()));
         header.put("remark", ScmPrintText.text(order.getRemark()));
-        var address = order.getAddress();
-        if (address != null) {
-            header.put("receiverName", ScmPrintText.text(address.getReceiverName()));
-            header.put("receiverPhone", ScmPrintText.text(address.getReceiverPhone()));
-            header.put("address", ScmPrintText.text(address.getAddress()));
-        }
+        putAddress(header, order.getAddress());
 
         List<Map<String, String>> rows = new ArrayList<>();
         List<SalesOrderItemVO> items = order.getItems() == null ? List.of() : order.getItems();

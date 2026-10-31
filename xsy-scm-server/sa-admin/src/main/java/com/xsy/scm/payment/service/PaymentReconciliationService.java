@@ -2,6 +2,7 @@ package com.xsy.scm.payment.service;
 
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.payment.constant.PaymentErrorCode;
 import com.xsy.scm.payment.constant.ScmPaymentReconciliationCategoryEnum;
 import com.xsy.scm.payment.constant.ScmPaymentReconciliationStatusEnum;
@@ -51,7 +52,6 @@ public class PaymentReconciliationService {
 
     private final PaymentTransactionDao paymentTransactionDao;
 
-    private final PaymentNumberGenerator paymentNumberGenerator;
 
     private final ScmPaymentProviderRegistry providerRegistry;
 
@@ -130,7 +130,7 @@ public class PaymentReconciliationService {
         }
 
         PaymentReconciliationEntity reconciliation = new PaymentReconciliationEntity();
-        reconciliation.setReconciliationNo(paymentNumberGenerator.nextReconciliationNo());
+        reconciliation.setReconciliationNo(ScmDocumentNumbers.next());
         reconciliation.setProvider(providerCode);
         reconciliation.setBizDate(bizDate);
         reconciliation.setStatus(items.isEmpty()

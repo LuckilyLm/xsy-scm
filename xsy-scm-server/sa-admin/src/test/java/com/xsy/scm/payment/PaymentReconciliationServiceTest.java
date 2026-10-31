@@ -9,7 +9,6 @@ import com.xsy.scm.payment.domain.entity.PaymentReconciliationItemEntity;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
-import com.xsy.scm.payment.service.PaymentNumberGenerator;
 import com.xsy.scm.payment.service.PaymentReconciliationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -29,11 +28,10 @@ class PaymentReconciliationServiceTest {
     private final PaymentReconciliationDao reconciliations = mock(PaymentReconciliationDao.class);
     private final PaymentReconciliationItemDao items = mock(PaymentReconciliationItemDao.class);
     private final PaymentTransactionDao transactions = mock(PaymentTransactionDao.class);
-    private final PaymentNumberGenerator numbers = mock(PaymentNumberGenerator.class);
     private final ScmPaymentProviderRegistry providers = mock(ScmPaymentProviderRegistry.class);
     private final ScmPaymentProvider provider = mock(ScmPaymentProvider.class);
     private final PaymentReconciliationService service = new PaymentReconciliationService(reconciliations, items,
-            transactions, numbers, providers);
+            transactions, providers);
 
     @Test
     void intentAmountDifferenceIsReportedEvenWhenSettlementMatchesProviderAmount() {
@@ -53,7 +51,6 @@ class PaymentReconciliationServiceTest {
                 List.of(new ScmPaymentProvider.SettlementLine("WX20", new BigDecimal("90.0000")))));
         when(transactions.listByWindow(eq("MOCK"), any(OffsetDateTime.class), any(OffsetDateTime.class)))
                 .thenReturn(List.of(transaction));
-        when(numbers.nextReconciliationNo()).thenReturn("RECON-1");
 
         AtomicReference<PaymentReconciliationEntity> saved = new AtomicReference<>();
         when(reconciliations.insert(any(PaymentReconciliationEntity.class))).thenAnswer(invocation -> {
@@ -114,7 +111,6 @@ class PaymentReconciliationServiceTest {
                 .thenReturn(List.of());
         when(transactions.listSucceededBetween(eq("MOCK"), any(OffsetDateTime.class), any(OffsetDateTime.class)))
                 .thenReturn(List.of(transaction));
-        when(numbers.nextReconciliationNo()).thenReturn("RECON-2");
 
         AtomicReference<PaymentReconciliationEntity> saved = new AtomicReference<>();
         when(reconciliations.insert(any(PaymentReconciliationEntity.class))).thenAnswer(invocation -> {

@@ -18,7 +18,7 @@ import com.xsy.scm.report.domain.form.ScmFinanceProfitQueryForm;
 import com.xsy.scm.report.domain.vo.ScmFinanceProfitRowVO;
 import com.xsy.scm.report.domain.vo.ScmFinanceProfitSummaryVO;
 import com.xsy.scm.report.service.ScmFinanceProfitService;
-import com.xsy.scm.report.support.ScmReportExcel;
+import com.xsy.scm.common.excel.ScmExcel;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -57,12 +57,12 @@ public class ScmFinanceProfitController {
         throws IOException {
         String dimension = form.getDimension().getDescription();
         List<List<Object>> rows = financeProfitService.export(form).stream()
-            .map(row -> ScmReportExcel.row(TITLES, dimension, row.getDimensionName(), row.getDimensionCode(),
+            .map(row -> ScmExcel.row(TITLES, dimension, row.getDimensionName(), row.getDimensionCode(),
                 row.getBizDate(), fixedScale(row.getRevenueAmount()), fixedScale(row.getSalesCostAmount()),
                 fixedScale(row.getGiftCostAmount()), fixedScale(row.getGrossProfit()),
                 fixedScale(row.getGrossMarginRate()), row.getCostMissingCount()))
             .toList();
-        ScmReportExcel.write(response, "销售毛利分析.xlsx", "毛利分析", TITLES, rows);
+        ScmExcel.write(response, "销售毛利分析.xlsx", "毛利分析", TITLES, rows);
     }
 
     private static BigDecimal fixedScale(BigDecimal value) {

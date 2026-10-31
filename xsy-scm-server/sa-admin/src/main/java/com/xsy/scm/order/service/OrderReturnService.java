@@ -11,6 +11,7 @@ import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.finance.constant.ScmFinanceReceivableSourceTypeEnum;
 import com.xsy.scm.finance.service.FinanceReceivableService;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
 import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
 import com.xsy.scm.order.constant.ScmOrderReturnSourceEnum;
@@ -86,7 +87,6 @@ public class OrderReturnService {
     private final OrderReturnItemDao orderReturnItemDao;
     private final OrderReturnReceiptItemDao orderReturnReceiptItemDao;
     private final OrderRefundDao orderRefundDao;
-    private final OrderNumberGenerator numbers;
     private final OrderIdempotencyService orderIdempotencyService;
     private final OrderOperationLogRecorder orderLogs;
     private final ScmDataScopeService dataScopeService;
@@ -249,7 +249,7 @@ public class OrderReturnService {
         orderReturnEntity.setSourceType(ScmOrderReturnSourceEnum.ORDER.name());
         orderReturnEntity.setCustomerId(order.getCustomerId());
         orderReturnEntity.setCustomerNameSnapshot(order.getCustomerNameSnapshot());
-        orderReturnEntity.setReturnNo(numbers.returned());
+        orderReturnEntity.setReturnNo(ScmDocumentNumbers.next());
         orderReturnEntity.setStatus(ScmOrderReturnStatusEnum.PENDING.name());
         orderReturnEntity.setReason(orderReturnAddForm.getReason().trim());
         orderReturnEntity.setApprovedAmount(BigDecimal.ZERO.setScale(4));
@@ -348,7 +348,7 @@ public class OrderReturnService {
         orderReturnEntity.setSourceType(ScmOrderReturnSourceEnum.INDEPENDENT.name());
         orderReturnEntity.setCustomerId(customer.getId());
         orderReturnEntity.setCustomerNameSnapshot(customer.getName());
-        orderReturnEntity.setReturnNo(numbers.returned());
+        orderReturnEntity.setReturnNo(ScmDocumentNumbers.next());
         orderReturnEntity.setStatus(ScmOrderReturnStatusEnum.PENDING.name());
         orderReturnEntity.setReason(form.getReason().trim());
         orderReturnEntity.setApprovedAmount(BigDecimal.ZERO.setScale(4));
@@ -492,7 +492,7 @@ public class OrderReturnService {
         BigDecimal refundAmount = financeReceivableService.generateRedOnReturnApproved(orderReturnEntity.getId());
         if (refundAmount.signum() > 0) {
             var refund = new OrderRefundEntity();
-            refund.setRefundNo(numbers.refund());
+            refund.setRefundNo(ScmDocumentNumbers.next());
             refund.setReturnId(orderReturnEntity.getId());
             refund.setOrderId(orderReturnEntity.getOrderId());
             refund.setCustomerId(orderReturnEntity.getCustomerId());

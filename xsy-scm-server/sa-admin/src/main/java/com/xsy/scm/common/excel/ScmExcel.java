@@ -1,7 +1,7 @@
-package com.xsy.scm.finance.support;
+package com.xsy.scm.common.excel;
 
-import com.xsy.scm.common.json.ScmOffsetDateTimeSerializer;
 import cn.idev.excel.FastExcel;
+import com.xsy.scm.common.json.ScmOffsetDateTimeSerializer;
 import jakarta.servlet.http.HttpServletResponse;
 import net.lab1024.sa.base.common.util.SmartResponseUtil;
 
@@ -14,15 +14,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 同步导出财务 Excel，金额与时间按固定文本格式输出。
+ * 同步导出 Excel：日期按北京时间文本、金额按完整定点字符串输出，避免 Excel 自动舍入或用科学计数法。
  */
-public final class FinanceExcel {
+public final class ScmExcel {
 
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private FinanceExcel() {
+    private ScmExcel() {
     }
 
+    /**
+     * 写出一张表。
+     *
+     * @param titles
+     *            表头，顺序即列顺序
+     * @param rows
+     *            行数据，每行元素数必须与 {@code titles} 等长（用 {@link #row} 构造可自检）
+     */
     public static void write(HttpServletResponse response, String fileName, String sheetName, List<String> titles,
         List<List<Object>> rows) throws IOException {
         SmartResponseUtil.setDownloadFileHeader(response, fileName, null);
@@ -34,6 +42,12 @@ public final class FinanceExcel {
             .doWrite(rows);
     }
 
+    /**
+     * 构造一行，并保证列数与表头一致。
+     *
+     * <p>
+     * 列数不齐会让 Excel 出现整列错位而不报错，那是导出里最难被发现的一类缺陷。
+     */
     public static List<Object> row(List<String> titles, Object... cells) {
         if (cells.length != titles.size()) {
             throw new IllegalStateException("导出行列数(" + cells.length + ")与表头列数(" + titles.size() + ")不一致");

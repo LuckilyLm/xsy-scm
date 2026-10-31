@@ -18,7 +18,7 @@ import com.xsy.scm.report.constant.ScmReportPermission;
 import com.xsy.scm.report.domain.form.ScmSupplierStatementForm;
 import com.xsy.scm.report.domain.vo.ScmSupplierStatementVO;
 import com.xsy.scm.report.service.ScmSupplierStatementService;
-import com.xsy.scm.report.support.ScmReportExcel;
+import com.xsy.scm.common.excel.ScmExcel;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -65,7 +65,7 @@ public class ScmSupplierStatementController {
         ScmSupplierStatementVO version = statementService.detail(id);
         String coverage = version.getPartialScope() ? "部分应付范围；付款为全供应商，金额不可勾稽" : "完整供应商范围";
         List<List<Object>> rows = version.getItems().stream()
-            .map(item -> ScmReportExcel.row(TITLES, version.getId(), version.getSupplierName(), coverage,
+            .map(item -> ScmExcel.row(TITLES, version.getId(), version.getSupplierName(), coverage,
                 version.getGeneratedAt(), version.getStartDate(), version.getEndDate(), version.getOpeningPayable(),
                 version.getPayableIncrease(), version.getPayableRed(), version.getWriteOffNet(),
                 version.getClosingPayable(), version.getOpeningUnallocated(), version.getPaymentNet(),
@@ -74,12 +74,12 @@ public class ScmSupplierStatementController {
                 item.getPayableBalance()))
             .toList();
         if (rows.isEmpty()) {
-            rows = List.of(ScmReportExcel.row(TITLES, version.getId(), version.getSupplierName(), coverage,
+            rows = List.of(ScmExcel.row(TITLES, version.getId(), version.getSupplierName(), coverage,
                 version.getGeneratedAt(), version.getStartDate(), version.getEndDate(), version.getOpeningPayable(),
                 version.getPayableIncrease(), version.getPayableRed(), version.getWriteOffNet(),
                 version.getClosingPayable(), version.getOpeningUnallocated(), version.getPaymentNet(),
                 version.getClosingUnallocated(), null, null, null, null, null, null, null, null));
         }
-        ScmReportExcel.write(response, "供应商对账单-" + id + ".xlsx", "冻结明细", TITLES, rows);
+        ScmExcel.write(response, "供应商对账单-" + id + ".xlsx", "冻结明细", TITLES, rows);
     }
 }

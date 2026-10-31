@@ -1,6 +1,8 @@
 package com.xsy.scm.finance.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
+import com.xsy.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -66,4 +68,28 @@ public class FinanceWriteOffEntity extends FinanceRecord {
      * 操作人（loginId 形态，与审计列一致）。
      */
     private String operator;
+
+    /**
+     * 由原核销记录派生红字（反核销）记录：来源、目标与金额沿用原行，核销号重新生成。
+     */
+    public static FinanceWriteOffEntity reversalOf(FinanceWriteOffEntity original, String reason,
+        OffsetDateTime now, String operator) {
+        FinanceWriteOffEntity reversal = new FinanceWriteOffEntity();
+        reversal.setWriteOffNo(ScmDocumentNumbers.next());
+        reversal.setSourceType(original.getSourceType());
+        reversal.setSourceId(original.getSourceId());
+        reversal.setTargetType(original.getTargetType());
+        reversal.setTargetId(original.getTargetId());
+        reversal.setAmount(original.getAmount());
+        reversal.setEntryType(ScmFinanceReverseEntryTypeEnum.REVERSE.name());
+        reversal.setReverseOfId(original.getId());
+        reversal.setReason(reason);
+        reversal.setWrittenOffAt(now);
+        reversal.setOperator(operator);
+        reversal.setCreatedAt(now);
+        reversal.setUpdatedAt(now);
+        reversal.setCreatedBy(operator);
+        reversal.setUpdatedBy(operator);
+        return reversal;
+    }
 }

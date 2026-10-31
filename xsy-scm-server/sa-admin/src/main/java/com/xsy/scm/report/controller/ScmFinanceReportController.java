@@ -10,7 +10,7 @@ import com.xsy.scm.report.domain.vo.ScmFinanceOverviewVO;
 import com.xsy.scm.report.domain.vo.ScmFinancePayableDetailVO;
 import com.xsy.scm.report.domain.vo.ScmFinanceReceivableDetailVO;
 import com.xsy.scm.report.service.ScmFinanceReportService;
-import com.xsy.scm.report.support.ScmReportExcel;
+import com.xsy.scm.common.excel.ScmExcel;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -70,11 +70,11 @@ public class ScmFinanceReportController {
     public void exportOverview(@Valid @RequestBody ScmFinanceOverviewQueryForm form, HttpServletResponse response)
         throws IOException {
         ScmFinanceOverviewVO result = financeReportService.overview(form);
-        List<List<Object>> rows = List.of(ScmReportExcel.row(OVERVIEW_TITLES, form.getStartDate(), form.getEndDate(),
+        List<List<Object>> rows = List.of(ScmExcel.row(OVERVIEW_TITLES, form.getStartDate(), form.getEndDate(),
             result.getReceivableOccurredAmount(), result.getReceivableWrittenOffAmount(),
             result.getEndingReceivableAmount(), result.getPayableOccurredAmount(), result.getPayableWrittenOffAmount(),
             result.getEndingPayableAmount()));
-        ScmReportExcel.write(response, "往来概览.xlsx", "往来概览", OVERVIEW_TITLES, rows);
+        ScmExcel.write(response, "往来概览.xlsx", "往来概览", OVERVIEW_TITLES, rows);
     }
 
     @PostMapping("/receivable/aging-free-detail/export")
@@ -83,11 +83,11 @@ public class ScmFinanceReportController {
     public void exportReceivables(@Valid @RequestBody ScmFinanceReportExportQueryForm form,
         HttpServletResponse response) throws IOException {
         List<List<Object>> rows = financeReportService.exportReceivableDetails(form).stream()
-            .map(row -> ScmReportExcel.row(RECEIVABLE_TITLES, row.getReceivableNo(), row.getOrderNo(),
+            .map(row -> ScmExcel.row(RECEIVABLE_TITLES, row.getReceivableNo(), row.getOrderNo(),
                 row.getCustomerName(), row.getAmount(), row.getRedAmount(), row.getNetAmount(),
                 row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(), row.getEventAt()))
             .toList();
-        ScmReportExcel.write(response, "应收明细.xlsx", "应收明细", RECEIVABLE_TITLES, rows);
+        ScmExcel.write(response, "应收明细.xlsx", "应收明细", RECEIVABLE_TITLES, rows);
     }
 
     @PostMapping("/payable/aging-free-detail/export")
@@ -96,10 +96,10 @@ public class ScmFinanceReportController {
     public void exportPayables(@Valid @RequestBody ScmFinanceReportExportQueryForm form, HttpServletResponse response)
         throws IOException {
         List<List<Object>> rows = financeReportService.exportPayableDetails(form).stream()
-            .map(row -> ScmReportExcel.row(PAYABLE_TITLES, row.getPayableNo(), row.getPurchaseOrderNo(),
+            .map(row -> ScmExcel.row(PAYABLE_TITLES, row.getPayableNo(), row.getPurchaseOrderNo(),
                 row.getSupplierName(), row.getAmount(), row.getRedAmount(), row.getNetAmount(),
                 row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(), row.getEventAt()))
             .toList();
-        ScmReportExcel.write(response, "应付明细.xlsx", "应付明细", PAYABLE_TITLES, rows);
+        ScmExcel.write(response, "应付明细.xlsx", "应付明细", PAYABLE_TITLES, rows);
     }
 }

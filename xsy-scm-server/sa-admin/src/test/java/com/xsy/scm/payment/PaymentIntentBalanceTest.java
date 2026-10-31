@@ -23,7 +23,6 @@ import com.xsy.scm.payment.domain.form.PaymentIntentCreateForm;
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
 import com.xsy.scm.payment.service.PaymentIntentService;
-import com.xsy.scm.payment.service.PaymentNumberGenerator;
 import com.xsy.scm.payment.support.BalanceConsumptionResult;
 import com.xsy.scm.payment.support.BalanceConsumptionSink;
 import com.xsy.scm.payment.support.BalanceRechargeIntentFact;
@@ -51,7 +50,6 @@ import static org.mockito.Mockito.when;
 class PaymentIntentBalanceTest {
     private final PaymentIntentDao intents = mock(PaymentIntentDao.class);
     private final PaymentTransactionDao transactions = mock(PaymentTransactionDao.class);
-    private final PaymentNumberGenerator numbers = mock(PaymentNumberGenerator.class);
     private final PaymentSourceDao sources = mock(PaymentSourceDao.class);
     private final ScmDataScopeService scopes = mock(ScmDataScopeService.class);
     private final ScmIdempotencyService idempotency = mock(ScmIdempotencyService.class);
@@ -62,7 +60,7 @@ class PaymentIntentBalanceTest {
     private final BalanceConsumptionSink consumption = mock(BalanceConsumptionSink.class);
     private final ObjectProvider<BalanceRechargeSink> rechargeProvider = provider();
     private final ObjectProvider<BalanceConsumptionSink> consumptionProvider = provider();
-    private final PaymentIntentService service = new PaymentIntentService(intents, transactions, numbers, sources,
+    private final PaymentIntentService service = new PaymentIntentService(intents, transactions, sources,
             scopes, idempotency, providers, receipts, rechargeProvider, consumptionProvider, settlements, payable);
     private final PaymentIntentCreateForm form = new PaymentIntentCreateForm();
 
@@ -96,7 +94,8 @@ class PaymentIntentBalanceTest {
         }
         var transaction = ArgumentCaptor.forClass(PaymentTransactionEntity.class);
         verify(transactions).insert(transaction.capture());
-        assertThat(transaction.getValue().getProviderTransactionNo()).isEqualTo("PT20");
+        assertThat(transaction.getValue().getProviderTransactionNo())
+                .isEqualTo(transaction.getValue().getTransactionNo());
         verify(intents).markBalanceSucceeded(1L, at, "1:1");
         verify(settlements).settleSalesOrderFunding(10L);
         verifyNoInteractions(receipts, providers, rechargeProvider);
@@ -209,7 +208,6 @@ class PaymentIntentBalanceTest {
         var channel = mock(ScmPaymentProvider.class);
         when(providers.require("MOCK")).thenReturn(channel);
         when(channel.provider()).thenReturn(ScmPaymentProviderEnum.MOCK);
-        when(numbers.nextIntentNo()).thenReturn("PI1"); when(numbers.nextTransactionNo()).thenReturn("PT20");
         when(intents.insert(any(PaymentIntentEntity.class))).thenAnswer(invocation -> {
             PaymentIntentEntity row = invocation.getArgument(0); row.setId(1L); return 1;
         });
@@ -274,8 +272,6 @@ class PaymentIntentBalanceTest {
 
     private void stubIntentCreation() {
         stubClaim();
-        when(numbers.nextIntentNo()).thenReturn("PI1");
-        when(numbers.nextTransactionNo()).thenReturn("PT20");
         when(intents.insert(any(PaymentIntentEntity.class))).thenAnswer(invocation -> {
             PaymentIntentEntity row = invocation.getArgument(0); row.setId(1L); return 1;
         });

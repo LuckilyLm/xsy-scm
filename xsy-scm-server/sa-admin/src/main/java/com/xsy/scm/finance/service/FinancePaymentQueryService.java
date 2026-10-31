@@ -1,13 +1,10 @@
 package com.xsy.scm.finance.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
-import com.xsy.scm.common.time.ScmDateTimeRange;
-import com.xsy.scm.common.time.ScmDateTimeRangeResolver;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceCounterpartyTypeEnum;
@@ -25,10 +22,8 @@ import com.xsy.scm.finance.domain.vo.FinanceOperationLogVO;
 import com.xsy.scm.finance.domain.vo.FinancePaymentDetailVO;
 import com.xsy.scm.finance.domain.vo.FinancePaymentQueryVO;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffVO;
-import com.xsy.scm.finance.support.FinanceExportGuard;
 import com.xsy.scm.finance.support.FinanceQuerySupport;
 import net.lab1024.sa.base.common.domain.PageResult;
-import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,27 +49,15 @@ public class FinancePaymentQueryService {
     @Transactional(readOnly = true)
     public PageResult<FinancePaymentQueryVO> query(FinancePaymentQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        FinanceQuerySupport.rejectClientSort(form);
-        FinanceQuerySupport.normalizePage(form);
-        validateFilters(form);
-        ScmDateTimeRange range = ScmDateTimeRangeResolver.resolve(form.getStartDate(), form.getEndDate());
-        Page<?> page = SmartPageUtil.convert2PageQuery(form);
-        page.setOptimizeCountSql(false);
-        return SmartPageUtil.convert2PageResult(page, financePaymentDao.queryPage(page, form, scope, range));
+        return FinanceQuerySupport.query(form, () -> validateFilters(form),
+            (page, range) -> financePaymentDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
     public List<FinancePaymentQueryVO> exportRows(FinancePaymentQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        FinanceQuerySupport.rejectClientSort(form);
-        FinanceQuerySupport.normalizePage(form);
-        validateFilters(form);
-        ScmDateTimeRange range = ScmDateTimeRangeResolver.resolve(form.getStartDate(), form.getEndDate());
-        return FinanceExportGuard.exportRows(pageSize -> {
-            Page<?> page = page(form, pageSize);
-            page.setSearchCount(false);
-            return financePaymentDao.queryPage(page, form, scope, range);
-        });
+        return FinanceQuerySupport.exportRows(form, () -> validateFilters(form),
+            (page, range) -> financePaymentDao.queryPage(page, form, scope, range));
     }
 
     @Transactional(readOnly = true)
@@ -125,32 +108,22 @@ public class FinancePaymentQueryService {
 
     private static void validateFilters(FinancePaymentQueryForm form) {
         if (form.getCounterpartyType() != null
-            && !enumContains(ScmFinanceCounterpartyTypeEnum.values(), form.getCounterpartyType())) {
+            && !FinanceQuerySupport.enumContains(ScmFinanceCounterpartyTypeEnum.values(), form.getCounterpartyType())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         // 付款方式按对手方分两组：供应商三值、客户退款四值。过滤是跨对手方的，
         // 因此两组都要放行 —— 只认一组会把另一组的值当成非法参数拒掉。
-        if (form.getMethod() != null && !enumContains(ScmFinancePaymentMethodEnum.values(), form.getMethod())
-            && !enumContains(ScmFinanceCustomerRefundMethodEnum.values(), form.getMethod())) {
+        if (form.getMethod() != null && !FinanceQuerySupport.enumContains(ScmFinancePaymentMethodEnum.values(), form.getMethod())
+            && !FinanceQuerySupport.enumContains(ScmFinanceCustomerRefundMethodEnum.values(), form.getMethod())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         if (form.getSourceType() != null
-            && !enumContains(ScmFinancePaymentSourceTypeEnum.values(), form.getSourceType())) {
+            && !FinanceQuerySupport.enumContains(ScmFinancePaymentSourceTypeEnum.values(), form.getSourceType())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         if (form.getEntryType() != null
-            && !enumContains(ScmFinanceReverseEntryTypeEnum.values(), form.getEntryType())) {
+            && !FinanceQuerySupport.enumContains(ScmFinanceReverseEntryTypeEnum.values(), form.getEntryType())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
-    }
-
-    private static boolean enumContains(Enum<?>[] values, String value) {
-        return java.util.Arrays.stream(values).anyMatch(candidate -> candidate.name().equals(value));
-    }
-
-    private static Page<?> page(FinancePaymentQueryForm form, long pageSize) {
-        form.setPageNum(1L);
-        form.setPageSize(pageSize);
-        return SmartPageUtil.convert2PageQuery(form);
     }
 }

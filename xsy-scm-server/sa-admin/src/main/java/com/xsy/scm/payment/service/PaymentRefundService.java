@@ -10,6 +10,7 @@ import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.service.FinanceOrderFundingPolicy;
 import com.xsy.scm.finance.service.FinancePaymentService;
 import com.xsy.scm.finance.support.FinancePaymentRefundFact;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.payment.constant.PaymentErrorCode;
 import com.xsy.scm.payment.constant.ScmPaymentMethodEnum;
 import com.xsy.scm.payment.constant.ScmPaymentMockScenarioEnum;
@@ -74,7 +75,6 @@ public class PaymentRefundService {
     private final FinancePaymentService financePaymentService;
     private final FinanceOrderFundingPolicy financeOrderFundingPolicy;
 
-    private final PaymentNumberGenerator paymentNumberGenerator;
 
     private final ScmPaymentProviderRegistry providerRegistry;
 
@@ -141,7 +141,7 @@ public class PaymentRefundService {
 
         String operator = ScmOperator.current();
         PaymentRefundEntity refund = new PaymentRefundEntity();
-        refund.setRefundNo(paymentNumberGenerator.nextRefundNo());
+        refund.setRefundNo(ScmDocumentNumbers.next());
         refund.setIntentId(transaction.getIntentId());
         refund.setTransactionId(transaction.getId());
         refund.setProvider(transaction.getProvider());
@@ -348,7 +348,7 @@ public class PaymentRefundService {
         PaymentRefundEntity refund = existing;
         if (refund == null) {
             refund = new PaymentRefundEntity();
-            refund.setRefundNo(paymentNumberGenerator.nextRefundNo());
+            refund.setRefundNo(ScmDocumentNumbers.next());
             refund.setIntentId(transaction.getIntentId());
             refund.setTransactionId(transaction.getId());
             refund.setProvider(transaction.getProvider());

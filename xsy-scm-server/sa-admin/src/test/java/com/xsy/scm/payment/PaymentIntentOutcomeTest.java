@@ -21,7 +21,6 @@ import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
 import com.xsy.scm.payment.service.PaymentCallbackService;
 import com.xsy.scm.payment.service.PaymentIntentService;
-import com.xsy.scm.payment.service.PaymentNumberGenerator;
 import com.xsy.scm.payment.support.BalanceConsumptionSink;
 import com.xsy.scm.payment.support.BalanceRechargeSink;
 import java.math.BigDecimal;
@@ -30,7 +29,6 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -45,7 +43,6 @@ class PaymentIntentOutcomeTest {
 
     private final PaymentIntentDao intents = mock(PaymentIntentDao.class);
     private final PaymentTransactionDao transactions = mock(PaymentTransactionDao.class);
-    private final PaymentNumberGenerator numbers = mock(PaymentNumberGenerator.class);
     private final PaymentSourceDao sources = mock(PaymentSourceDao.class);
     private final ScmDataScopeService scopes = mock(ScmDataScopeService.class);
     private final ScmIdempotencyService idempotency = mock(ScmIdempotencyService.class);
@@ -56,7 +53,7 @@ class PaymentIntentOutcomeTest {
     private final PaymentCallbackEventDao callbackEvents = mock(PaymentCallbackEventDao.class);
     private final ObjectProvider<BalanceRechargeSink> rechargeProvider = provider();
     private final ObjectProvider<BalanceConsumptionSink> consumptionProvider = provider();
-    private final PaymentIntentService intentsService = new PaymentIntentService(intents, transactions, numbers,
+    private final PaymentIntentService intentsService = new PaymentIntentService(intents, transactions,
             sources, scopes, idempotency, providers, receipts, rechargeProvider, consumptionProvider, settlements, payable);
     private final ScmPaymentProvider provider = mock(ScmPaymentProvider.class);
 
@@ -110,8 +107,6 @@ class PaymentIntentOutcomeTest {
         PaymentIntentCreateForm form = salesOrderIntent();
         when(idempotency.claim(anyString(), anyString(), eq(form)))
                 .thenReturn(new ScmIdempotencyService.Claim(null, false));
-        when(numbers.nextIntentNo()).thenReturn("PI1");
-        when(numbers.nextTransactionNo()).thenReturn("PT20");
         when(intents.insert(any(PaymentIntentEntity.class))).thenAnswer(invocation -> {
             PaymentIntentEntity row = invocation.getArgument(0);
             row.setId(1L);

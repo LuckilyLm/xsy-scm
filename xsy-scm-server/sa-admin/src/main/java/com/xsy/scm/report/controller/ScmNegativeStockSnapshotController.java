@@ -9,7 +9,7 @@ import com.xsy.scm.report.constant.ScmReportPermission;
 import com.xsy.scm.report.domain.form.ScmNegativeStockSnapshotForm;
 import com.xsy.scm.report.domain.vo.ScmNegativeStockSnapshotVO;
 import com.xsy.scm.report.service.ScmNegativeStockSnapshotService;
-import com.xsy.scm.report.support.ScmReportExcel;
+import com.xsy.scm.common.excel.ScmExcel;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -58,11 +58,11 @@ public class ScmNegativeStockSnapshotController {
         List<String> titles = List.of("留存编号", "留存时间", "仓库", "商品", "规格", "单位", "负数量", "余额均价", "估算金额");
         List<List<Object>> rows = new ArrayList<>();
         for (var row : snapshot.getRows()) {
-            rows.add(ScmReportExcel.row(titles, snapshot.getSnapshotNo(), snapshot.getCapturedAt(),
+            rows.add(ScmExcel.row(titles, snapshot.getSnapshotNo(), snapshot.getCapturedAt(),
                 snapshot.getWarehouseName(), row.path("productName").asText(""), row.path("specName").asText(""),
                 row.path("unit").asText(""), row.path("quantity").asText(""), row.path("avgCost").asText(""),
                 row.path("estimatedAmount").asText("")));
         }
-        ScmReportExcel.write(response, "负库存月度留存.xlsx", "月度留存", titles, rows);
+        ScmExcel.write(response, "负库存月度留存.xlsx", "月度留存", titles, rows);
     }
 }

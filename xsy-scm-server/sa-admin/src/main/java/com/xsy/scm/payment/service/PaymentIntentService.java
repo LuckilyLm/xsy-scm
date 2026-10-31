@@ -13,6 +13,7 @@ import com.xsy.scm.finance.service.FinanceReceiptService;
 import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
 import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.payment.constant.PaymentErrorCode;
 import com.xsy.scm.payment.constant.ScmPaymentIntentStatusEnum;
 import com.xsy.scm.payment.constant.ScmPaymentMethodEnum;
@@ -60,7 +61,6 @@ public class PaymentIntentService {
 
     private final PaymentTransactionDao paymentTransactionDao;
 
-    private final PaymentNumberGenerator paymentNumberGenerator;
 
     /**
      * 只读外部数据：按订单 id 解析正式订单（订单号 / 客户 / 业务员）。
@@ -195,7 +195,7 @@ public class PaymentIntentService {
     private PaymentIntentEntity createInternal(IntentDraft draft, ScmIdempotencyService.Claim claim) {
         String operator = ScmOperator.current();
         PaymentIntentEntity intent = new PaymentIntentEntity();
-        intent.setIntentNo(paymentNumberGenerator.nextIntentNo());
+        intent.setIntentNo(ScmDocumentNumbers.next());
         intent.setCustomerId(draft.customerId());
         // 保存正式客户名与业务单号：存 id 字符串不只是显示问题 ——
         // 支付成功后会顺着 customer_id 进 Finance 收款记录，来源身份必须从一开始就是对的
@@ -214,7 +214,7 @@ public class PaymentIntentService {
         paymentIntentDao.insert(intent);
 
         PaymentTransactionEntity transaction = new PaymentTransactionEntity();
-        transaction.setTransactionNo(paymentNumberGenerator.nextTransactionNo());
+        transaction.setTransactionNo(ScmDocumentNumbers.next());
         transaction.setIntentId(intent.getId());
         transaction.setProvider(intent.getProvider());
         transaction.setAmount(intent.getAmount());
