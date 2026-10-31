@@ -20,7 +20,7 @@ class MallOrderDisplayStatusEnumTest {
 
     @Test
     void unconfirmedOrdersArePending() {
-        assertThat(MallOrderDisplayStatusEnum.derive("DRAFT", null)).isEqualTo(MallOrderDisplayStatusEnum.PENDING);
+        assertThat(MallOrderDisplayStatusEnum.derive("ARCHIVED", null)).isEqualTo(MallOrderDisplayStatusEnum.PENDING);
         assertThat(MallOrderDisplayStatusEnum.derive("PENDING", null)).isEqualTo(MallOrderDisplayStatusEnum.PENDING);
     }
 

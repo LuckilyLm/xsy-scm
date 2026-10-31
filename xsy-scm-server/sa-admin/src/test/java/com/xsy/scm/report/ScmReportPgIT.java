@@ -52,7 +52,7 @@ import static org.mockito.Mockito.mockStatic;
  * <ol>
  *   <li>把 25 条报表 SQL <b>全部真跑一遍</b>：列名写错、GROUP BY 与 SELECT 不匹配、
  *       日期轴类型不一致这类问题只有 PostgreSQL 能发现，编译与静态检查看不见。</li>
- *   <li>钉住「只统计已成立事实」的口径：DRAFT 订单 / DRAFT 与 CANCELLED 采购单 / PENDING 退款
+ *   <li>钉住「只统计已成立事实」的口径：未确认订单 / 已取消采购单 / PENDING 退款
  *       一律不得进入报表，且一单多行不得把退款放大。</li>
  * </ol>
  *
@@ -248,12 +248,12 @@ class ScmReportPgIT extends ScmW6PgITBase {
     // ==================== 2. 销售口径：只统计已确认订单 ====================
 
     @Test
-    @DisplayName("销售统计：DRAFT 不计、CONFIRMED 计，且一单多行不放大退款")
+    @DisplayName("销售统计：PENDING 不计、CONFIRMED 计，且一单多行不放大退款")
     void salesReportCountsOnlyConfirmedOrders() {
         Long customerId = 900_000_001L;
-        Long orderId = insertSalesOrder("DRAFT", null, customerId);
+        Long orderId = insertSalesOrder("PENDING", null, customerId);
 
-        // 同一状态、同一时间轴下：草稿订单不得出现在任何销售统计里
+        // 同一状态、同一时间轴下：待确认订单不得出现在任何销售统计里
         assertThat(confirmedOrderCountOf(customerId)).isZero();
         assertThat(salesSettlementAmountOf(customerId)).isNull();
 
@@ -321,10 +321,10 @@ class ScmReportPgIT extends ScmW6PgITBase {
     // ==================== 3. 采购口径：只统计提交后的采购事实 ====================
 
     @Test
-    @DisplayName("采购统计：DRAFT 与 CANCELLED 不计，提交后计入且业务日期按 submitted_at")
+    @DisplayName("采购统计：CANCELLED 不计，SUBMITTED 计入且业务日期按 submitted_at")
     void purchaseReportCountsOnlySubmittedOrders() {
         Long supplierId = 900_000_011L;
-        Long orderId = insertPurchaseOrder("DRAFT", null, supplierId);
+        Long orderId = insertPurchaseOrder("CANCELLED", null, supplierId);
 
         assertThat(purchaseSubmittedAmountOf(supplierId)).isEqualByComparingTo("0.0000");
 
@@ -522,7 +522,7 @@ class ScmReportPgIT extends ScmW6PgITBase {
         // ck_purchase_order_cancel_reason 要求 CANCELLED 必须同带取消原因，因此取消夹具一次性写全，
         // 这也正好证明「已提交后又取消」的单保留了 submitted_at 仍不进统计。
         boolean cancelled = "CANCELLED".equals(status);
-        String orderNo = tag + "-PO-" + supplierId + "-" + status;
+        String orderNo = tag + "-PO-" + supplierId + "-" + status + "-" + fixtureSeq.incrementAndGet();
         jdbc.update("""
                 INSERT INTO xsy_purchase_order(order_no, supplier_id, supplier_code_snapshot, supplier_name_snapshot,
                                            warehouse_id, warehouse_code_snapshot, warehouse_name_snapshot,

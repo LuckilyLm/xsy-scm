@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.*;
 
 class OrderRulesTest {
     @ParameterizedTest
-    @CsvSource({"DRAFT,DRAFT,false", "DRAFT,PENDING,true", "DRAFT,CONFIRMED,false", "DRAFT,CANCELLED,true", "PENDING,DRAFT,false", "PENDING,PENDING,false", "PENDING,CONFIRMED,true", "PENDING,CANCELLED,true", "CONFIRMED,DRAFT,false", "CONFIRMED,PENDING,false", "CONFIRMED,CONFIRMED,false", "CONFIRMED,CANCELLED,false", "CANCELLED,DRAFT,false", "CANCELLED,PENDING,false", "CANCELLED,CONFIRMED,false", "CANCELLED,CANCELLED,false"})
+    @CsvSource({"PENDING,PENDING,false", "PENDING,CONFIRMED,true", "PENDING,CANCELLED,true", "CONFIRMED,PENDING,false", "CONFIRMED,CONFIRMED,false", "CONFIRMED,CANCELLED,false", "CANCELLED,PENDING,false", "CANCELLED,CONFIRMED,false", "CANCELLED,CANCELLED,false"})
     void stateGraph(String from, String to, boolean allowed) {
         assertThat(OrderStateMachine.canTransition(from, to)).isEqualTo(allowed);
     }

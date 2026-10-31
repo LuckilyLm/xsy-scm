@@ -71,7 +71,7 @@ class ScmTodoQueryServiceTest {
                 "scm:delivery:route:query", "scm:delivery:route:plan"));
 
         assertThat(keys(todos)).containsExactlyInAnyOrder(
-                "inventory-warning", "receipt-putaway", "loss-gain-audit", "delivery-route-draft");
+                "inventory-warning", "receipt-putaway", "loss-gain-audit", "delivery-route-pending");
         verify(warning).queryWarningPage(any());
         verify(purchase).receiptQuery(any());
         verify(lossGain).queryPage(any());

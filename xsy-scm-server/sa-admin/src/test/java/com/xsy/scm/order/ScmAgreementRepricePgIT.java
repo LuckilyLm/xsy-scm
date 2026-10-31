@@ -13,13 +13,13 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** V139：只允许有权限的人手动重算草稿价格，冻结订单不可重算。 */
+/** V139：只允许有权限的人手动重算待确认订单价格，冻结订单不可重算。 */
 class ScmAgreementRepricePgIT extends ScmW5PgITBase {
 
     @Test
     void repriceUnconfirmedDraftRecordsBothPriceChangeAndAuditReason() {
         Long customer = newCustomer();
-        Long sku = newOnShelfSku("REPRICE-DRAFT");
+        Long sku = newOnShelfSku("REPRICE-PENDING");
         SalesOrderAddForm form = new SalesOrderAddForm();
         form.setCustomerId(customer);
         form.setOrderSource("ADMIN");
@@ -46,7 +46,7 @@ class ScmAgreementRepricePgIT extends ScmW5PgITBase {
         request.setVersion(draft.getVersion());
         request.setReason("采购市场参考价变化后人工核价");
         var repriced = salesOrderService.reprice(request);
-        assertThat(repriced.getStatus()).isEqualTo("DRAFT");
+        assertThat(repriced.getStatus()).isEqualTo("PENDING");
         assertThat(jdbc.queryForObject(
                 "SELECT draft_unit_price FROM xsy_sales_order_item WHERE order_id=?",
                 BigDecimal.class, orderId)).isEqualByComparingTo("2.5000");
