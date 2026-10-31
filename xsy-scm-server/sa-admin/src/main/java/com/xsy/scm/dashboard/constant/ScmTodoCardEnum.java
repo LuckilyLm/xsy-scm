@@ -21,7 +21,7 @@ public enum ScmTodoCardEnum {
         List.of("scm:inventory:loss-gain:query"),
         List.of("scm:inventory:loss-gain:approve", "scm:inventory:loss-gain:reject")),
 
-    DELIVERY_ROUTE_DRAFT("delivery-route-draft", "草稿配送线路", "/delivery/routes?status=DRAFT",
+    DELIVERY_ROUTE_PENDING("delivery-route-pending", "待排线配送线路", "/delivery/routes?status=PENDING",
         List.of("scm:delivery:route:query", "scm:delivery:route:plan"), List.of()),;
 
     private final String key;

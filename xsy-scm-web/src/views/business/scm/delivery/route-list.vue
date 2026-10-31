@@ -168,9 +168,9 @@ const columns = computed<TableColumnsType>(() => [
 ]);
 const tableScrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
 
-/** 状态视觉：草稿 = 待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
+/** 状态视觉：待排线 = 待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
 const ROUTE_STATUS_TONE: Record<RouteStatus, ScmStatusTone> = {
-  DRAFT: 'warning',
+  PENDING: 'warning',
   PLANNED: 'processing',
   DISPATCHED: 'processing',
   COMPLETED: 'success',
@@ -197,7 +197,7 @@ function rowActions(record: DeliveryRoute): ScmActionItem[] {
     {
       key: 'edit',
       label: '编辑',
-      hidden: !(record.status === 'DRAFT' && hasPerm(DELIVERY_PERM.ROUTE_UPDATE)),
+      hidden: !(record.status === 'PENDING' && hasPerm(DELIVERY_PERM.ROUTE_UPDATE)),
     },
     {
       key: 'print',

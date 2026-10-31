@@ -181,7 +181,7 @@ class DeliveryDispatchPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("状态守卫：DRAFT 不能发车，DISPATCHED 之后不能取消，同一订单不能被签两次")
+    @DisplayName("状态守卫：PENDING 不能发车，DISPATCHED 之后不能取消，同一订单不能被签两次")
     void stateGuardsKeepTransitionsIrreversible() {
         Case one = plannedRouteWithOneSortedOrder("l3g", "1.0000");
         Long draftRoute = newRoute(seedWarehouseId());

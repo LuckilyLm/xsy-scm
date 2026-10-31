@@ -22,7 +22,7 @@ class DeliveryPlanSnapshotPolicyTest {
         route.setVersion(5);
         route.setWarehouseId(8L);
         route.setDeliveryDate(LocalDate.of(2026, 10, 17));
-        route.setStatus("DRAFT");
+        route.setStatus("PENDING");
         route.setStartLongitude(new BigDecimal("108.940000"));
         route.setStartLatitude(new BigDecimal("34.340000"));
         route.setStartGeomCrs("GCJ02");

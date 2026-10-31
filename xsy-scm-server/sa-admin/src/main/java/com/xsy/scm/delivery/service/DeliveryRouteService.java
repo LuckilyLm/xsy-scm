@@ -123,7 +123,7 @@ public class DeliveryRouteService {
         var route = new DeliveryRouteEntity();
         applyHeader(route, form);
         route.setRouteNo(ScmDocumentNumbers.next());
-        route.setStatus(ScmDeliveryRouteStatusEnum.DRAFT.name());
+        route.setStatus(ScmDeliveryRouteStatusEnum.PENDING.name());
         stamp(route, true);
         deliveryRouteDao.insert(route);
         return route.getId();
@@ -352,7 +352,7 @@ public class DeliveryRouteService {
     public void cancel(Long id, DeliveryVersionForm form) {
         reason(form);
         var route = lock(id, form.getVersion());
-        if (!Set.of(ScmDeliveryRouteStatusEnum.DRAFT.name(), ScmDeliveryRouteStatusEnum.PLANNED.name())
+        if (!Set.of(ScmDeliveryRouteStatusEnum.PENDING.name(), ScmDeliveryRouteStatusEnum.PLANNED.name())
             .contains(route.getStatus()))
             throw new ScmBusinessException(STATE_INVALID);
         var assigned = active(id);
@@ -579,7 +579,7 @@ public class DeliveryRouteService {
     }
 
     private void draft(DeliveryRouteEntity route) {
-        if (!ScmDeliveryRouteStatusEnum.DRAFT.name().equals(route.getStatus()))
+        if (!ScmDeliveryRouteStatusEnum.PENDING.name().equals(route.getStatus()))
             throw new ScmBusinessException(STATE_INVALID);
     }
 

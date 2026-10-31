@@ -17,7 +17,7 @@
           </div>
           <div class="scm-detail-header__actions">
             <a-space wrap>
-              <a-button v-if="detail.route.status === 'DRAFT'" type="primary" v-privilege="'scm:delivery:route:plan'" :disabled="busy" @click="plan"
+              <a-button v-if="detail.route.status === 'PENDING'" type="primary" v-privilege="'scm:delivery:route:plan'" :disabled="busy" @click="plan"
                 >确认规划
               </a-button>
               <a-button
@@ -38,7 +38,7 @@
                 >完成线路
               </a-button>
               <a-button
-                v-if="['DRAFT', 'PLANNED'].includes(detail.route.status)"
+                v-if="['PENDING', 'PLANNED'].includes(detail.route.status)"
                 danger
                 v-privilege="'scm:delivery:route:cancel'"
                 :disabled="busy"
@@ -252,8 +252,8 @@ const routeId = ref<Id>(),
 const candidates = ref<InstanceType<typeof CandidateOrderModal>>(),
   printer = ref<InstanceType<typeof RoutePrint>>();
 const {canViewAmount, canSign, hasPerm} = useDeliveryPermission();
-// 草稿态且有编辑权才能改线路；超级管理员的放行在 hasPerm 里处理
-const canEdit = computed(() => detail.value?.route.status === 'DRAFT' && hasPerm(DELIVERY_PERM.ROUTE_UPDATE));
+// 待排线且有编辑权才能改线路；超级管理员的放行在 hasPerm 里处理
+const canEdit = computed(() => detail.value?.route.status === 'PENDING' && hasPerm(DELIVERY_PERM.ROUTE_UPDATE));
 const startPoint = computed<MapPoint>(() => ({
   longitude: detail.value?.route.startLongitude,
   latitude: detail.value?.route.startLatitude,
@@ -292,7 +292,7 @@ const planDisabledReason = computed(() => {
   if (status === 'CANCELLED') {
     return '当前线路已取消，因此不能生成建议。';
   }
-  return '只有草稿线路可以生成与应用建议。';
+  return '只有待排线的线路可以生成与应用建议。';
 });
 
 function currentPlanContext(id: Id, context: number) {

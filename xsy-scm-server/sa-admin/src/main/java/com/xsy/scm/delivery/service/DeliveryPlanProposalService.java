@@ -221,7 +221,7 @@ public class DeliveryPlanProposalService {
     }
 
     private static void requireDraft(DeliveryRouteEntity route) {
-        if (!ScmDeliveryRouteStatusEnum.DRAFT.name().equals(route.getStatus())) {
+        if (!ScmDeliveryRouteStatusEnum.PENDING.name().equals(route.getStatus())) {
             throw new ScmBusinessException(DeliveryErrorCode.STATE_INVALID);
         }
     }

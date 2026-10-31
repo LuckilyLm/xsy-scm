@@ -15,7 +15,7 @@ public class DeliveryOrderProgressVO {
     private String routeNo;
     private String routeName;
     private LocalDate deliveryDate;
-    /** 线路状态：DRAFT / PLANNED / DISPATCHED / COMPLETED / CANCELLED。 */
+    /** 线路状态：PENDING / PLANNED / DISPATCHED / COMPLETED / CANCELLED。 */
     private String routeStatus;
     private String warehouseNameSnapshot;
     private String driverNameSnapshot;

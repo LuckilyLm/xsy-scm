@@ -52,7 +52,7 @@ const TODO_META: Record<string, TodoMeta> = {
     tone: 'primary',
     hint: '待审批的报损报溢单据',
   },
-  'delivery-route-draft': {
+  'delivery-route-pending': {
     iconName: 'todo-draft-delivery',
     tone: 'ok',
     hint: '待完善的配送线路',

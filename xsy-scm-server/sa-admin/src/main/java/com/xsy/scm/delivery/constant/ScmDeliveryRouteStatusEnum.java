@@ -13,8 +13,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmDeliveryRouteStatusEnum {
 
-    /** 草稿：线路尚在编辑。 */
-    DRAFT("草稿"),
+    /** 待排线：新建后尚未确认成线，可继续增删订单与站点。 */
+    PENDING("待排线"),
 
     /** 已排线：订单已挂到线路上，未发车。 */
     PLANNED("已排线"),

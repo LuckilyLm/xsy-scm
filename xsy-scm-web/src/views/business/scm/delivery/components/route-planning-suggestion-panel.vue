@@ -159,7 +159,7 @@ const distanceBasis = (plan: DeliveryPlanProposal) => (plan.estimated ? '直线�
 
 const sourceVersionStale = computed(() => props.proposal?.sourceRouteVersion == null || props.proposal.sourceRouteVersion !== props.route.version);
 const canApplyProposal = computed(
-  () => props.canEdit && props.route.status === 'DRAFT' && props.proposal?.status === 'PROPOSED' && !sourceVersionStale.value
+  () => props.canEdit && props.route.status === 'PENDING' && props.proposal?.status === 'PROPOSED' && !sourceVersionStale.value
 );
 const factorLabels: Record<string, string> = {
   TIME_WINDOW: '客户时间窗',

@@ -77,7 +77,7 @@ public class ScmTodoQueryService {
             case RECEIPT_PUTAWAY -> total(purchaseQueryService.receiptQuery(putawayForm()));
             // PENDING 即待审批列表筛选，approve / reject 权限由卡片可见性把关
             case LOSS_GAIN_AUDIT -> total(inventoryLossGainQueryService.queryPage(pendingLossGainForm()));
-            case DELIVERY_ROUTE_DRAFT -> total(deliveryRouteQueryService.query(draftRouteForm()));
+            case DELIVERY_ROUTE_PENDING -> total(deliveryRouteQueryService.query(pendingRouteForm()));
         };
     }
 
@@ -110,11 +110,11 @@ public class ScmTodoQueryService {
         return form;
     }
 
-    private static DeliveryQueryForm draftRouteForm() {
+    private static DeliveryQueryForm pendingRouteForm() {
         DeliveryQueryForm form = new DeliveryQueryForm();
         form.setPageNum(1L);
         form.setPageSize(1L);
-        form.setStatus(ScmDeliveryRouteStatusEnum.DRAFT.name());
+        form.setStatus(ScmDeliveryRouteStatusEnum.PENDING.name());
         return form;
     }
 }

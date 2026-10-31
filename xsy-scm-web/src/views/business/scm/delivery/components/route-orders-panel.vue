@@ -1,6 +1,6 @@
 <template>
   <div class="smart-table-btn-block">
-    <a-button v-if="routeStatus === 'DRAFT'" type="primary" v-privilege="'scm:delivery:route:update'" :disabled="busy" @click="emit('addOrders')"
+    <a-button v-if="routeStatus === 'PENDING'" type="primary" v-privilege="'scm:delivery:route:update'" :disabled="busy" @click="emit('addOrders')"
       >加入订单
     </a-button>
     <span class="order-count">共 {{ orders.length }} 单</span>
@@ -21,7 +21,7 @@
           {{ isLocated(stopOf(record.stopId) ?? {}) ? '已定位' : '未定位' }}
         </a-tag>
         <a-button
-          v-if="routeStatus === 'DRAFT'"
+          v-if="routeStatus === 'PENDING'"
           type="link"
           danger
           size="small"
@@ -64,7 +64,7 @@
       </template>
       <template v-else-if="column.dataIndex === 'action'">
         <a-button
-          v-if="routeStatus === 'DRAFT'"
+          v-if="routeStatus === 'PENDING'"
           type="link"
           danger
           v-privilege="'scm:delivery:route:update'"

@@ -28,7 +28,7 @@ export interface Vehicle {
   remark?: string | null;
 }
 
-export type RouteStatus = 'DRAFT' | 'PLANNED' | 'DISPATCHED' | 'COMPLETED' | 'CANCELLED';
+export type RouteStatus = 'PENDING' | 'PLANNED' | 'DISPATCHED' | 'COMPLETED' | 'CANCELLED';
 
 /** 履约状态表示是否送达，与是否还在线路上无关；移出线路不等于拒收。 */
 export type FulfillmentStatus = 'PENDING' | 'IN_TRANSIT' | 'SIGNED' | 'EXCEPTION';
@@ -224,7 +224,7 @@ export interface Query extends Partial<AreaColumns> {
 }
 
 export const routeStatuses: Record<RouteStatus, {label: string; color: string}> = {
-  DRAFT: {label: '草稿', color: 'default'},
+  PENDING: {label: '待排线', color: 'default'},
   PLANNED: {label: '已规划', color: 'green'},
   DISPATCHED: {label: '已发车', color: 'blue'},
   COMPLETED: {label: '已完成', color: 'cyan'},

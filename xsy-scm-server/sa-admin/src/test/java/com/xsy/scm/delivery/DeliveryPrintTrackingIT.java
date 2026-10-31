@@ -109,7 +109,7 @@ class DeliveryPrintTrackingIT extends ScmW5PgITBase {
         var stale = ordersForm(ctx.route(), List.of(ctx.a()));
         stale.setVersion(stale.getVersion() + 1);
         expectCode(() -> delivery.printOrders(ctx.route(), stale, "w5:stale"), 40921);
-        // 未规划线路不可正式生成打印：用一个尚未归属任何线路的新订单挂到 DRAFT 线路
+        // 未规划线路不可正式生成打印：用一个尚未归属任何线路的新订单挂到待排线线路
         var draft = route();
         var d = confirmedSalesOrder(newCustomer(), ctx.sku(), "1.0000", "1.0000");
         add(draft, List.of(d));
@@ -199,7 +199,7 @@ class DeliveryPrintTrackingIT extends ScmW5PgITBase {
         return ctx;
     }
 
-    /** 同样三张订单的线路，但停在 DRAFT：用于验证移出订单后重新组单的聚合口径。 */
+    /** 同样三张订单的线路，但停在待排线：用于验证移出订单后重新组单的聚合口径。 */
     private Ctx draftRoute() {
         Long sku = newOnShelfSku("PRN");
         Long c1 = newCustomer();
