@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 库存调拨支持草稿、发出和目标仓收货。发出与收货独立授权；已发出但未收货的记录不可当作完成调拨，也不能重新修改草稿。
+ * 库存调拨支持待发货、发出和目标仓收货。发出与收货独立授权；已发出但未收货的记录不可当作完成调拨，也不能重新修改待发货单。
  */
 @RestController
 @RequestMapping("/scm/inventory/transfer")
@@ -59,7 +59,7 @@ public class InventoryTransferController {
     }
 
     /**
-     * 新建草稿调拨单，返回新单 id。
+     * 新建调拨单，新建后即进入待发货，返回新单 id。
      */
     @PostMapping("/create")
     @SaCheckPermission(InventoryPermission.TRANSFER_ADD)
@@ -69,7 +69,7 @@ public class InventoryTransferController {
     }
 
     /**
-     * 改草稿（仅 DRAFT）。
+     * 修改待发货调拨单（仅 PENDING）。
      */
     @PostMapping("/update/{id}")
     @SaCheckPermission(InventoryPermission.TRANSFER_UPDATE)
@@ -109,7 +109,7 @@ public class InventoryTransferController {
     }
 
     /**
-     * 取消草稿（不产生任何库存影响）。在途不可取消 —— 货已出库，只能反向调拨冲回。
+     * 取消待发货调拨单（不产生任何库存影响）。在途不可取消 —— 货已出库，只能反向调拨冲回。
      */
     @PostMapping("/cancel/{id}")
     @SaCheckPermission(InventoryPermission.TRANSFER_UPDATE)
@@ -120,7 +120,7 @@ public class InventoryTransferController {
     }
 
     /**
-     * 删除草稿（逻辑删）。已发出 / 已收货的单不可删除。
+     * 删除待发货调拨单（逻辑删）。已发出 / 已收货的单不可删除。
      */
     @PostMapping("/delete/{id}")
     @SaCheckPermission(InventoryPermission.TRANSFER_DELETE)

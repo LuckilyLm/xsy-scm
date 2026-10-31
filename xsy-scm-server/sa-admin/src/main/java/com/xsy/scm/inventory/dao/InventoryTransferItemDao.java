@@ -12,7 +12,7 @@ import java.util.List;
  * 调拨单明细读写。
  *
  * <p>
- * 明细整行替换只发生在草稿态（先逻辑删旧行再插新行，同一事务内）。发出之后不再有任何写方法被调用 —— 由服务层状态机与 {@code InventoryTransferDao} 的 SQL 条件共同保证。
+ * 明细整行替换只发生在待发货状态（先逻辑删旧行再插新行，同一事务内）。发出之后不再有任何写方法被调用 —— 由服务层状态机与 {@code InventoryTransferDao} 的 SQL 条件共同保证。
  *
  * <p>
  * 注意 {@link #updateUnitSnapshot} 只在发出时被调用一次：收货不再改单位记录，因为它是「源仓记账单位」的记录，收货要做的是核对目标仓与之一致，而不是改写它。
@@ -26,7 +26,7 @@ public interface InventoryTransferItemDao extends BaseMapper<InventoryTransferIt
     List<InventoryTransferItemVO> listByTransferId(@Param("transferId") Long transferId);
 
     /**
-     * 软删某单下的全部明细（草稿重存时用）。
+     * 软删某单下的全部明细（待发货单重存时用）。
      */
     int deleteByTransferId(@Param("transferId") Long transferId, @Param("operator") String operator);
 

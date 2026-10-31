@@ -37,7 +37,7 @@ public class InventoryTransferQueryForm extends PageParam {
     private Long toWarehouseId;
 
     /**
-     * 状态：{@code DRAFT} / {@code SHIPPED} / {@code RECEIVED} / {@code CANCELLED}（精确）。
+     * 状态：{@code PENDING} / {@code SHIPPED} / {@code RECEIVED} / {@code CANCELLED}（精确）。
      */
     @Size(max = 20, message = "调拨状态不能超过20个字符")
     private String status;

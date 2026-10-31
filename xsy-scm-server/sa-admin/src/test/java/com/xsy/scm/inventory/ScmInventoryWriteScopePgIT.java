@@ -96,8 +96,6 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
     private static final BigDecimal MOVED = new BigDecimal("4.0000");
     private static final BigDecimal ZERO = new BigDecimal("0.0000");
 
-    /** 反例单据的初始状态：拒绝后必须仍是它。 */
-    private static final String DRAFT = "DRAFT";
     /** 出库单新建后的初始状态。 */
     private static final String OUTBOUND_INITIAL = "PENDING";
     private static final String PENDING = "PENDING";
@@ -183,7 +181,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
         // 发出要求 from 仓权限：只授权 to 端的人发不出去，源仓余额与流水原样
         assertDataScopeDenied(() -> asRun(targetKeeper, () -> transferService.ship(transferId)));
-        assertThat(statusOf("xsy_inventory_transfer", transferId)).isEqualTo(DRAFT);
+        assertThat(statusOf("xsy_inventory_transfer", transferId)).isEqualTo(PENDING);
         assertThat(movementTypes(source)).containsExactly("PURCHASE_IN");
         assertThat(quantityOf(source)).isEqualByComparingTo(STOCKED);
 
@@ -254,7 +252,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
         // 撤销草稿不碰余额，判据与查询同为 OR：两端都不授权的人撤不掉
         assertDataScopeDenied(() -> asRun(stranger, () -> transferService.cancel(allowed)));
         assertDataScopeDenied(() -> asRun(stranger, () -> transferService.delete(allowed)));
-        assertThat(statusOf("xsy_inventory_transfer", allowed)).isEqualTo(DRAFT);
+        assertThat(statusOf("xsy_inventory_transfer", allowed)).isEqualTo(PENDING);
         assertThat(activeRowCount("xsy_inventory_transfer", allowed)).isEqualTo(1);
         // 命中任一端（这里是 from 端）就可以撤自己的草稿
         asRun(onlyMine, () -> transferService.cancel(allowed));

@@ -46,12 +46,12 @@ public class InventoryTransferVO {
     private String remark;
 
     /**
-     * 发出时刻；草稿与已取消为空。
+     * 发出时刻；待发货与已取消为空。
      */
     private OffsetDateTime shippedAt;
 
     /**
-     * 发出人；草稿与已取消为空。
+     * 发出人；待发货与已取消为空。
      */
     @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String shippedBy;
@@ -100,7 +100,7 @@ public class InventoryTransferVO {
         private BigDecimal quantity;
 
         /**
-         * 发出时写入的源仓记账单位；草稿态为空。
+         * 发出时写入的源仓记账单位；待发货时为空。
          */
         private String unitSnapshot;
 

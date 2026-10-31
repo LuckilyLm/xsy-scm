@@ -368,7 +368,7 @@ export interface InventoryLossGainAudit {
 /**
  * `InventoryTransferVO`。
  *
- * 流程为 DRAFT → SHIPPED（在途）→ RECEIVED。在途货物不在任何仓库余额中，
+ * 流程为 PENDING（待发货）→ SHIPPED（在途）→ RECEIVED。在途货物不在任何仓库余额中，
  * 全仓总库存会暂时减少，列表要醒目显示“在途”。
  * 源仓和目标仓各带编码、名称，方便直接看清方向。
  */
@@ -381,11 +381,11 @@ export interface InventoryTransfer {
   toWarehouseId?: Id;
   toWarehouseCode?: string;
   toWarehouseName?: string;
-  /** `DRAFT` / `SHIPPED`（在途）/ `RECEIVED` / `CANCELLED`。 */
+  /** `PENDING`（待发货）/ `SHIPPED`（在途）/ `RECEIVED` / `CANCELLED`。 */
   status?: string;
   statusDesc?: string;
   remark?: string;
-  /** 发出时间；草稿和已取消为空。 */
+  /** 发出时间；待发货和已取消为空。 */
   shippedAt?: string;
   shippedBy?: string;
   /** 收货时间；仅已完成有值。 */
@@ -421,7 +421,7 @@ export interface InventoryTransferQuery extends Page {
   status?: string;
 }
 
-/** 新建和修改草稿共用。数量必须是定点字符串；源仓和目标仓不能相同。 */
+/** 新建和修改待发货调拨单共用。数量必须是定点字符串；源仓和目标仓不能相同。 */
 export interface InventoryTransferAdd {
   fromWarehouseId: Id;
   toWarehouseId: Id;

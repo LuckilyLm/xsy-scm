@@ -231,13 +231,13 @@ class ScmInventoryConstantTest {
     void transferStatusMachineIsTwoStepAndInTransitIsNotCancellable() {
         assertThat(ScmInventoryTransferStatusEnum.values()).hasSize(4);
 
-        // 草稿：可改、可发、可取消、可删
-        assertThat(ScmInventoryTransferStatusEnum.DRAFT.isEditable()).isTrue();
-        assertThat(ScmInventoryTransferStatusEnum.DRAFT.isShippable()).isTrue();
-        assertThat(ScmInventoryTransferStatusEnum.DRAFT.isCancellable()).isTrue();
-        assertThat(ScmInventoryTransferStatusEnum.DRAFT.isDeletable()).isTrue();
-        assertThat(ScmInventoryTransferStatusEnum.DRAFT.isReceivable()).isFalse();
-        assertThat(ScmInventoryTransferStatusEnum.DRAFT.isInTransit()).isFalse();
+        // 待发货：可改、可发、可取消、可删
+        assertThat(ScmInventoryTransferStatusEnum.PENDING.isEditable()).isTrue();
+        assertThat(ScmInventoryTransferStatusEnum.PENDING.isShippable()).isTrue();
+        assertThat(ScmInventoryTransferStatusEnum.PENDING.isCancellable()).isTrue();
+        assertThat(ScmInventoryTransferStatusEnum.PENDING.isDeletable()).isTrue();
+        assertThat(ScmInventoryTransferStatusEnum.PENDING.isReceivable()).isFalse();
+        assertThat(ScmInventoryTransferStatusEnum.PENDING.isInTransit()).isFalse();
 
         // 在途：只能收货，不可取消、不可改、不可删 ——
         // 货已经物理离开源仓，账上只能靠一张反向调拨单冲回。

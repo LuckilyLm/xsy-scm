@@ -116,12 +116,12 @@ export const SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM: SmartEnum<string> = {
 /**
  * 调拨单状态（与后端 `ScmInventoryTransferStatusEnum` 逐字对应）。
  *
- * 两步式：`DRAFT → SHIPPED（在途）→ RECEIVED`，草稿可 `CANCELLED`。
+ * 两步式：`PENDING（待发货）→ SHIPPED（在途）→ RECEIVED`，待发货可 `CANCELLED`。
  * `SHIPPED` 不可取消 —— 货已经物理离开源仓，账上只能靠一张反向调拨单冲回。
  * 在途期间这批货不在任何余额行里，需用「在途库存」报表查看（不进余额表）。
  */
 export const SCM_INVENTORY_TRANSFER_STATUS_ENUM: SmartEnum<string> = {
-  DRAFT: {value: 'DRAFT', desc: '草稿'},
+  PENDING: {value: 'PENDING', desc: '待发货'},
   SHIPPED: {value: 'SHIPPED', desc: '在途'},
   RECEIVED: {value: 'RECEIVED', desc: '已完成'},
   CANCELLED: {value: 'CANCELLED', desc: '已取消'},

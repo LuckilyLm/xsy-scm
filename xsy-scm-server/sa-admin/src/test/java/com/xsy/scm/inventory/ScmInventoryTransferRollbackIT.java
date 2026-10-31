@@ -114,7 +114,7 @@ class ScmInventoryTransferRollbackIT extends ScmW6PgITBase {
         assertThat(movementCount(wh1, second)).isEqualTo(1);
 
         // 单据仍是草稿、明细仍在 —— 用户修掉冲突行之后可以直接重试
-        assertThat(statusOf(id)).isEqualTo("DRAFT");
+        assertThat(statusOf(id)).isEqualTo("PENDING");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM xsy_inventory_transfer_item WHERE transfer_id = ? AND deleted = FALSE",
                 Integer.class, id)).isEqualTo(2);

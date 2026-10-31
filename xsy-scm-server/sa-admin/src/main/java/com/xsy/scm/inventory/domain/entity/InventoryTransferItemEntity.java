@@ -41,7 +41,7 @@ public class InventoryTransferItemEntity {
     private BigDecimal quantity;
 
     /**
-     * 发出时写入的记账单位（源仓单位）；草稿态为空。
+     * 发出时写入的记账单位（源仓单位）；待发货时为空。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unitSnapshot;

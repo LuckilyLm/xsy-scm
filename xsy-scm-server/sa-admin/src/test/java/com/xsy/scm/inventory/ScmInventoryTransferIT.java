@@ -109,8 +109,8 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
 
         Long id = transferService.create(form(wh1, wh2, sku, "4.0000"));
 
-        // 草稿：什么都没动
-        assertThat(statusOf(id)).isEqualTo("DRAFT");
+        // 待发货：什么都没动
+        assertThat(statusOf(id)).isEqualTo("PENDING");
         assertThat(balanceRow(wh1, sku).getQuantity()).isEqualByComparingTo("10.0000");
         assertThat(balanceRow(wh2, sku)).isNull();
 
@@ -192,7 +192,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("转出超过源仓现有量被拒（41043），单据仍是草稿、目标仓不变")
+    @DisplayName("转出超过源仓现有量被拒（41043），单据仍是待发货、目标仓不变")
     void shipBeyondOnHandIsRejected() {
         Long sku = stockedInSeed("tf3", "5.0000");
         Long wh1 = seedWarehouseId();
@@ -201,7 +201,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         Long id = transferService.create(form(wh1, wh2, sku, "6.0000"));
         expectCode(() -> transferService.ship(id), 41043);
 
-        assertThat(statusOf(id)).isEqualTo("DRAFT");
+        assertThat(statusOf(id)).isEqualTo("PENDING");
         assertThat(balanceRow(wh1, sku).getQuantity()).isEqualByComparingTo("5.0000");
         assertThat(balanceRow(wh2, sku)).isNull();
     }
@@ -298,14 +298,14 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("状态机：草稿不可收货；在途不可取消/改/删/再发出；已收货是终态")
+    @DisplayName("状态机：待发货不可收货；在途不可取消/改/删/再发出；已收货是终态")
     void transferStatusMachineIsTwoStepAndTerminal() {
         Long sku = stockedInSeed("tf9", "10.0000");
         Long wh1 = seedWarehouseId();
         Long wh2 = newWarehouse("TF9B");
         Long id = transferService.create(form(wh1, wh2, sku, "3.0000"));
 
-        // 草稿不可收货
+        // 待发货不可收货
         expectCode(() -> transferService.receive(id), 41039);
 
         transferService.ship(id);
@@ -326,7 +326,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("草稿取消不产生任何库存影响")
+    @DisplayName("待发货单取消不产生任何库存影响")
     void cancelledDraftHasNoStockEffect() {
         Long sku = stockedInSeed("tf10", "10.0000");
         Long wh1 = seedWarehouseId();
@@ -346,7 +346,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("在途调拨阻塞仓库停用（41009）—— 目标仓侧；草稿不阻塞")
+    @DisplayName("在途调拨阻塞仓库停用（41009）—— 目标仓侧；待发货不阻塞")
     void inTransitTransferBlocksDestinationWarehouseDisable() {
         Long sku = stockedInSeed("tf11", "10.0000");
         Long wh1 = seedWarehouseId();
@@ -356,7 +356,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         assertThat(warehouseDisableGuard.disableBlocker(wh2)).isNull();
 
         Long id = transferService.create(form(wh1, wh2, sku, "3.0000"));
-        // 草稿还没动过任何库存，不阻塞
+        // 待发货还没动过任何库存，不阻塞
         assertThat(warehouseDisableGuard.disableBlocker(wh2)).isNull();
 
         transferService.ship(id);

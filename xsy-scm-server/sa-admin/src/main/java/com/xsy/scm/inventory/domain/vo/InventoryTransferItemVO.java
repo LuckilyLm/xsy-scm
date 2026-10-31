@@ -37,7 +37,7 @@ public class InventoryTransferItemVO {
     private BigDecimal quantity;
 
     /**
-     * 发出时写入的源仓记账单位；草稿态为空。
+     * 发出时写入的源仓记账单位；待发货时为空。
      */
     private String unitSnapshot;
 

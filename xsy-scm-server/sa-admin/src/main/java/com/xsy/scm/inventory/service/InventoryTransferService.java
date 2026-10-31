@@ -35,7 +35,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSF
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSFER_WAREHOUSE_DISABLED;
 
 /**
- * 管理跨仓调拨：草稿、发出、在途、收货。在途调拨不能取消，需用反向调拨冲回。发出和收货分别在事务中更新对应仓库；先锁单据，再按仓库和商品规格顺序锁余额。
+ * 管理跨仓调拨：待发货、发出、在途、收货。在途调拨不能取消，需用反向调拨冲回。发出和收货分别在事务中更新对应仓库；先锁单据，再按仓库和商品规格顺序锁余额。
  */
 @Service
 @RequiredArgsConstructor
@@ -52,10 +52,10 @@ public class InventoryTransferService {
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     /**
-     * 新建草稿调拨单。
+     * 新建调拨单，新建后即进入「待发货」。
      *
      * <p>
-     * 草稿阶段不校验源仓是否有货（那是发出时的判断）：草稿允许「先开单再备货」。
+     * 待发货阶段不校验源仓是否有货（那是发出时的判断）：允许「先开单再备货」。
      *
      * @return 新单 id
      */
@@ -70,9 +70,9 @@ public class InventoryTransferService {
         entity.setTransferNo(ScmDocumentNumbers.next());
         entity.setFromWarehouseId(form.getFromWarehouseId());
         entity.setToWarehouseId(form.getToWarehouseId());
-        entity.setStatus(ScmInventoryTransferStatusEnum.DRAFT.name());
+        entity.setStatus(ScmInventoryTransferStatusEnum.PENDING.name());
         entity.setRemark(form.getRemark());
-        // 草稿态不得有发出 / 收货信息（数据库 CHECK 也要求两者按状态为空）
+        // 待发货不得有发出 / 收货信息（数据库 CHECK 也要求两者按状态为空）
         entity.setShippedAt(null);
         entity.setShippedBy(null);
         entity.setReceivedAt(null);
@@ -88,7 +88,7 @@ public class InventoryTransferService {
     }
 
     /**
-     * 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新）。
+     * 修改待发货调拨单：只允许 PENDING；明细整表替换（逻辑删旧 + 插新）。
      */
     @Transactional(rollbackFor = Exception.class)
     public void update(Long transferId, InventoryTransferAddForm form) {
@@ -99,7 +99,7 @@ public class InventoryTransferService {
         // 行上的两端 + 表单新选的两端：改单可以把任一端换仓，换进换出都必须在授权范围内
         warehouseScopeGuard.requireAll(locked.getFromWarehouseId(), locked.getToWarehouseId(),
             form.getFromWarehouseId(), form.getToWarehouseId());
-        requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryTransferStatusEnum.PENDING);
 
         if (inventoryTransferDao.updateDraft(transferId, form.getFromWarehouseId(), form.getToWarehouseId(),
             form.getRemark(), operator) != 1) {
@@ -113,7 +113,7 @@ public class InventoryTransferService {
      * 发出：从源仓扣减并写 {@code TRANSFER_OUT} 流水，单据进入在途状态。
      *
      * <p>
-     * 明细行的 {@code unitSnapshot} 在此刻按源仓记账单位回写 —— 草稿态它为空。这个值是收货时核对目标仓单位一致的依据。
+     * 明细行的 {@code unitSnapshot} 在此刻按源仓记账单位回写 —— 待发货时它为空。这个值是收货时核对目标仓单位一致的依据。
      *
      * <p>
      * 源仓必须启用：停用仓库不能用于新的调拨业务（41048）。
@@ -126,7 +126,7 @@ public class InventoryTransferService {
         InventoryTransferEntity locked = lockAndRequire(transferId);
         // 调拨三个动作的范围判据互不相同：查询任一端命中即可见、发出只看 from、收货只看 to
         warehouseScopeGuard.require(locked.getFromWarehouseId());
-        requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryTransferStatusEnum.PENDING);
         requireEnabled(locked.getFromWarehouseId());
 
         List<InventoryTransferItemVO> items = inventoryTransferItemDao.listByTransferId(transferId);
@@ -183,29 +183,29 @@ public class InventoryTransferService {
     }
 
     /**
-     * 取消草稿：不产生任何库存影响。在途不可取消（货已出库，只能反向调拨冲回）。
+     * 取消待发货调拨单：不产生任何库存影响。在途不可取消（货已出库，只能反向调拨冲回）。
      */
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long transferId) {
         String operator = ScmOperator.current();
         InventoryTransferEntity locked = lockAndRequire(transferId);
-        // 撤销草稿不碰任何余额，判据与查询同一条 OR：看得见这张单，就能撤掉它
+        // 撤销待发货单不碰任何余额，判据与查询同一条 OR：看得见这张单，就能撤掉它
         warehouseScopeGuard.requireAny(locked.getFromWarehouseId(), locked.getToWarehouseId());
-        requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryTransferStatusEnum.PENDING);
         if (inventoryTransferDao.markCancelled(transferId, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
 
     /**
-     * 删除草稿（逻辑删）。已发出 / 已收货的单不可删 —— 它们已产生流水，必须留痕。
+     * 删除待发货调拨单（逻辑删）。已发出 / 已收货的单不可删 —— 它们已产生流水，必须留痕。
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long transferId) {
         String operator = ScmOperator.current();
         InventoryTransferEntity locked = lockAndRequire(transferId);
         warehouseScopeGuard.requireAny(locked.getFromWarehouseId(), locked.getToWarehouseId());
-        requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
+        requireStatus(locked, ScmInventoryTransferStatusEnum.PENDING);
         inventoryTransferItemDao.deleteByTransferId(transferId, operator);
         if (inventoryTransferDao.deleteById(transferId) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);

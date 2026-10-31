@@ -217,7 +217,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 发出仅草稿可做、收货仅在途可做、改 / 删仅草稿可做。在途不可取消：货已物理离开源仓，账上只能靠反向调拨单冲回。
      */
-    INVENTORY_TRANSFER_STATUS_INVALID(41039, "调拨单当前状态不允许该操作（草稿可改可发可删，在途只能收货）"),
+    INVENTORY_TRANSFER_STATUS_INVALID(41039, "调拨单当前状态不允许该操作（待发货可改可发可删，在途只能收货）"),
 
     /**
      * 41040：调拨单至少需要一行明细。

@@ -1,4 +1,4 @@
-<!-- 库存调拨单：草稿 → 在途 → 已收货。在途货物不在任何仓库余额中，全仓总库存会暂时减少。 -->
+<!-- 库存调拨单：待发货 → 在途 → 已收货。在途货物不在任何仓库余额中，全仓总库存会暂时减少。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -74,7 +74,7 @@
           <!-- 详情和当前可执行的推进动作常驻，其他操作收进“更多” -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-            <a-button v-if="record.status === 'DRAFT'" type="link" size="small" @click="onShip(record)" v-privilege="'scm:inventory:transfer:ship'">
+            <a-button v-if="record.status === 'PENDING'" type="link" size="small" @click="onShip(record)" v-privilege="'scm:inventory:transfer:ship'">
               发出
             </a-button>
             <a-button
@@ -107,7 +107,7 @@
     </div>
   </a-card>
 
-  <!-- 新建 / 编辑草稿 -->
+  <!-- 新建 / 编辑待发货调拨单 -->
   <a-drawer :open="drawerOpen" :title="form.id ? `编辑调拨单 ${form.transferNo}` : '新建调拨单'" :width="scmDrawerWidth('l')" @close="closeDrawer">
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="源仓库（转出）" name="fromWarehouseId">
@@ -147,7 +147,7 @@
     <template #footer>
       <a-space>
         <a-button @click="closeDrawer">取消</a-button>
-        <a-button type="primary" :loading="saving" @click="onSubmit">保存草稿</a-button>
+        <a-button type="primary" :loading="saving" @click="onSubmit">保存</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -247,7 +247,7 @@ const itemColumns: TableColumnsType = [
 
 /** 在途用橙色，避免被误认为货物丢失。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {
-  DRAFT: 'processing',
+  PENDING: 'processing',
   SHIPPED: 'warning',
   RECEIVED: 'success',
   CANCELLED: 'neutral',
@@ -258,13 +258,13 @@ const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status
 const canUpdate = computed(() => hasPermission('scm:inventory:transfer:update'));
 const canDelete = computed(() => hasPermission('scm:inventory:transfer:delete'));
 
-/** 只有草稿可写。 */
+/** 只有待发货可写。 */
 function rowActions(row: InventoryTransfer): ScmActionItem[] {
-  const draft = row.status === 'DRAFT';
+  const pending = row.status === 'PENDING';
   return [
-    {key: 'edit', label: '编辑', hidden: !(draft && canUpdate.value)},
-    {key: 'cancel', label: '取消单据', hidden: !(draft && canUpdate.value)},
-    {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
+    {key: 'edit', label: '编辑', hidden: !(pending && canUpdate.value)},
+    {key: 'cancel', label: '取消单据', hidden: !(pending && canUpdate.value)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
   ];
 }
 
@@ -447,10 +447,10 @@ async function onSubmit() {
   try {
     if (form.id) {
       await inventoryTransferApi.update(form.id, payload);
-      message.success('已保存草稿');
+      message.success('已保存');
     } else {
       await inventoryTransferApi.create(payload);
-      message.success('已创建草稿');
+      message.success('已创建调拨单');
     }
     drawerOpen.value = false;
     queryData();
@@ -541,7 +541,7 @@ function onCancel(record: InventoryTransfer) {
 function onDelete(record: InventoryTransfer) {
   Modal.confirm({
     title: '删除调拨单',
-    content: `确认删除草稿「${record.transferNo}」？已发出或已收货的单据不可删除。`,
+    content: `确认删除待发货调拨单「${record.transferNo}」？已发出或已收货的单据不可删除。`,
     okText: '删除',
     okType: 'danger',
     cancelText: '返回',

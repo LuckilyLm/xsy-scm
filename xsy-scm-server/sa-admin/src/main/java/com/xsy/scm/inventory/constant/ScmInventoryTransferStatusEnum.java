@@ -4,16 +4,16 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 调拨依次从草稿、已发出到已收货。草稿可以取消；发出后不能取消或删除，必须通过后续收货或反向业务处理。
+ * 调拨依次从待发货、已发出到已收货。待发货可以取消；发出后不能取消或删除，必须通过后续收货或反向业务处理。
  */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryTransferStatusEnum {
 
     /**
-     * 草稿：可改明细、可发出、可取消、可删除；未产生任何库存影响。
+     * 待发货：可改明细、可发出、可取消、可删除；未产生任何库存影响。
      */
-    DRAFT("草稿"),
+    PENDING("待发货"),
 
     /**
      * 在途：源仓已扣减、目标仓未增加。
@@ -29,24 +29,24 @@ public enum ScmInventoryTransferStatusEnum {
     RECEIVED("已完成"),
 
     /**
-     * 已取消：仅草稿可取消，未产生任何库存影响（终态）。
+     * 已取消：仅待发货可取消，未产生任何库存影响（终态）。
      */
     CANCELLED("已取消");
 
     private final String desc;
 
     /**
-     * 是否允许编辑明细（只有草稿可以）。
+     * 是否允许编辑明细（只有待发货可以）。
      */
     public boolean isEditable() {
-        return this == DRAFT;
+        return this == PENDING;
     }
 
     /**
-     * 是否允许发出（只有草稿可以）。
+     * 是否允许发出（只有待发货可以）。
      */
     public boolean isShippable() {
-        return this == DRAFT;
+        return this == PENDING;
     }
 
     /**
@@ -57,17 +57,17 @@ public enum ScmInventoryTransferStatusEnum {
     }
 
     /**
-     * 是否允许取消（只有草稿可以 —— 在途的货已经出库，只能反向调拨冲回）。
+     * 是否允许取消（只有待发货可以 —— 在途的货已经出库，只能反向调拨冲回）。
      */
     public boolean isCancellable() {
-        return this == DRAFT;
+        return this == PENDING;
     }
 
     /**
-     * 是否允许删除（只有草稿可以；已发出/已收货必须留痕）。
+     * 是否允许删除（只有待发货可以；已发出/已收货必须留痕）。
      */
     public boolean isDeletable() {
-        return this == DRAFT;
+        return this == PENDING;
     }
 
     /**

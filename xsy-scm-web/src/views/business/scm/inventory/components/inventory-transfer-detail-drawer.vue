@@ -17,7 +17,7 @@
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unitSnapshot'">
-          {{ record.unitSnapshot || '（草稿未发出）' }}
+          {{ record.unitSnapshot || '（待发货未发出）' }}
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>

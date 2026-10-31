@@ -322,7 +322,7 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
     @DisplayName("V31 调拨 schema：源仓≠目标仓、状态与发出/收货信息一致，都在 DB 层生效")
     void transferSchemaIsEnforcedByTheDatabase() {
         assertThat(constraintDef("xsy_inventory_transfer", "ck_inventory_transfer_status"))
-                .contains("DRAFT").contains("SHIPPED").contains("RECEIVED").contains("CANCELLED");
+                .contains("PENDING").contains("SHIPPED").contains("RECEIVED").contains("CANCELLED");
         assertThat(constraintDef("xsy_inventory_transfer", "ck_inventory_transfer_distinct"))
                 .contains("from_warehouse_id").contains("to_warehouse_id");
         assertThat(constraintDef("xsy_inventory_transfer", "ck_inventory_transfer_shipped"))
@@ -337,7 +337,7 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
 
         // 1) 源仓 == 目标仓：那不是调拨，是把货在同一行余额上来回加减
         expectSqlFailure(insert.formatted("NULL", "NULL", "NULL", "NULL"),
-                "W31-IT-1", 1L, 1L, "DRAFT");
+                "W31-IT-1", 1L, 1L, "PENDING");
         // 2) 未知状态
         expectSqlFailure(insert.formatted("NULL", "NULL", "NULL", "NULL"),
                 "W31-IT-2", 1L, 2L, "CONFIRMED");
@@ -349,12 +349,12 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 "W31-IT-4", 1L, 2L, "RECEIVED");
         // 5) 草稿却带了发出人：两侧都要挡，否则「谁发的」可以被预先写脏
         expectSqlFailure(insert.formatted("CURRENT_TIMESTAMP", "'甲'", "NULL", "NULL"),
-                "W31-IT-5", 1L, 2L, "DRAFT");
+                "W31-IT-5", 1L, 2L, "PENDING");
 
         // 合法插入必须成功 —— 证明上面五次失败是判据生效，而不是表根本插不进去
         assertThat(jdbc.update("INSERT INTO xsy_inventory_transfer "
                 + "(transfer_no, from_warehouse_id, to_warehouse_id, status, version, deleted) "
-                + "VALUES (?, 1, 2, 'DRAFT', 0, FALSE)", "W31-IT-OK")).isEqualTo(1);
+                + "VALUES (?, 1, 2, 'PENDING', 0, FALSE)", "W31-IT-OK")).isEqualTo(1);
     }
 
     // ------------------------------------------------------------------

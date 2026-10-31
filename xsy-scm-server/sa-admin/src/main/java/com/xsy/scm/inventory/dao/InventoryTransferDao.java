@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 调拨单在 SQL 中按状态限制写入：草稿才能修改、删除和发出，发出后才能收货。发出和收货使用单据行锁防止并发重复处理。
+ * 调拨单在 SQL 中按状态限制写入：待发货才能修改、删除和发出，发出后才能收货。发出和收货使用单据行锁防止并发重复处理。
  */
 @Mapper
 public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity> {
@@ -55,12 +55,12 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
         @Param("receivedBy") String receivedBy);
 
     /**
-     * 置为已取消（带状态条件，只有草稿可取消）。
+     * 置为已取消（带状态条件，只有待发货可取消）。
      */
     int markCancelled(@Param("id") Long id, @Param("operator") String operator);
 
     /**
-     * 回写草稿头（源仓 / 目标仓 / 备注）。
+     * 回写待发货单头（源仓 / 目标仓 / 备注）。
      */
     int updateDraft(@Param("id") Long id, @Param("fromWarehouseId") Long fromWarehouseId,
         @Param("toWarehouseId") Long toWarehouseId, @Param("remark") String remark, @Param("operator") String operator);
