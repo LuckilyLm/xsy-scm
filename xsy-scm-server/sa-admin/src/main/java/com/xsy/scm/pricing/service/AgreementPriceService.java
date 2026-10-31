@@ -9,12 +9,14 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xsy.scm.pricing.dao.AgreementPriceDao;
+import com.xsy.scm.pricing.dao.PriceOperationLogDao;
 import com.xsy.scm.pricing.domain.entity.AgreementPriceEntity;
 import com.xsy.scm.pricing.domain.form.AgreementPriceAddForm;
 import com.xsy.scm.pricing.domain.form.AgreementPriceDeleteForm;
 import com.xsy.scm.pricing.domain.form.AgreementPriceUpdateForm;
 import com.xsy.scm.pricing.manager.PriceValidation;
 import com.xsy.scm.pricing.constant.ScmPriceOperationTypeEnum;
+import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
 import com.xsy.scm.pricing.constant.AgreementFormulaType;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.customer.service.CustomerTypeService;
@@ -33,6 +35,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 @RequiredArgsConstructor
 public class AgreementPriceService {
     private final AgreementPriceDao agreementPriceDao;
+    private final PriceOperationLogDao priceOperationLogDao;
     private final CustomerService customerService;
     private final CustomerTypeService customerTypeService;
     private final PriceValidation validation;
@@ -160,7 +163,7 @@ public class AgreementPriceService {
 
     private void log(AgreementPriceEntity agreementPrice, ScmPriceOperationTypeEnum operationType,
         String beforeSnapshot) {
-        agreementPriceDao.log(agreementPrice.getId(), operationType.name(), ScmOperator.current(), beforeSnapshot,
-            snapshot(agreementPrice));
+        priceOperationLogDao.insert(ScmPriceSourceEnum.AGREEMENT.name(), agreementPrice.getId(), operationType.name(),
+            ScmOperator.current(), beforeSnapshot, snapshot(agreementPrice));
     }
 }

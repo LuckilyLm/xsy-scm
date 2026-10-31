@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.pricing.constant.PricingErrorCode;
 import com.xsy.scm.pricing.constant.ScmPriceOperationTypeEnum;
+import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
+import com.xsy.scm.pricing.dao.PriceOperationLogDao;
 import com.xsy.scm.pricing.dao.TimePriceDao;
 import com.xsy.scm.pricing.domain.entity.TimePriceEntity;
 import com.xsy.scm.pricing.domain.form.TimePriceForm;
@@ -29,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TimePriceService {
 
     private final TimePriceDao timePriceDao;
+    private final PriceOperationLogDao priceOperationLogDao;
 
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
@@ -133,8 +136,8 @@ public class TimePriceService {
     }
 
     private void log(TimePriceEntity entity, ScmPriceOperationTypeEnum operationType, String beforeSnapshot) {
-        timePriceDao.log(entity.getId(), operationType.name(), com.xsy.scm.common.constant.ScmOperator.current(),
-            beforeSnapshot, snapshot(entity));
+        priceOperationLogDao.insert(ScmPriceSourceEnum.TIME_PRICE.name(), entity.getId(), operationType.name(),
+            com.xsy.scm.common.constant.ScmOperator.current(), beforeSnapshot, snapshot(entity));
     }
 
     private void requireValidWindow(TimePriceForm form) {

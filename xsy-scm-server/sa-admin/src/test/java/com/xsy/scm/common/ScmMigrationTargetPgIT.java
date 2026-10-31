@@ -112,15 +112,20 @@ class ScmMigrationTargetPgIT {
         if (target < 148) {
             return;
         }
-        assertColumn("xsy_order_exchange_link", "return_id");
-        assertColumn("xsy_order_exchange_link", "replacement_order_id");
+        if (target >= 220) {
+            // V220 把 1:1 的换货关联收进退货单本身
+            assertColumn("xsy_order_return", "replacement_order_id");
+        } else {
+            assertColumn("xsy_order_exchange_link", "return_id");
+            assertColumn("xsy_order_exchange_link", "replacement_order_id");
+            Integer uniqueIndexes = jdbc.queryForObject(
+                    "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                            + "AND indexname IN ('uk_order_exchange_return', 'uk_order_exchange_replacement')",
+                    Integer.class);
+            assertThat(uniqueIndexes).isEqualTo(2);
+        }
         assertColumn("xsy_order_received_quantity_correction", "previous_received_quantity");
         assertColumn("xsy_order_received_quantity_correction", "shipped_quantity");
-        Integer uniqueIndexes = jdbc.queryForObject(
-                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
-                        + "AND indexname IN ('uk_order_exchange_return', 'uk_order_exchange_replacement')",
-                Integer.class);
-        assertThat(uniqueIndexes).isEqualTo(2);
     }
 
     /**
@@ -686,10 +691,12 @@ class ScmMigrationTargetPgIT {
         if (target < 166) {
             return;
         }
-        assertColumn("xsy_pricing_time_price_operation_log", "before_data");
+        String table = target >= 220 ? "xsy_price_operation_log" : "xsy_pricing_time_price_operation_log";
+        String trigger = target >= 220 ? "trg_price_operation_log_append_only" : "trg_time_price_log_append_only";
+        assertColumn(table, "before_data");
         Integer appendOnly = jdbc.queryForObject(
-                "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_time_price_log_append_only' "
-                        + "AND NOT tgisinternal", Integer.class);
+                "SELECT count(*) FROM pg_trigger WHERE tgname = '" + trigger + "' AND NOT tgisinternal",
+                Integer.class);
         assertThat(appendOnly).as("审计日志必须只追加").isEqualTo(1);
     }
 

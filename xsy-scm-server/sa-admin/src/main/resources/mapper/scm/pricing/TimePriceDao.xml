@@ -62,10 +62,4 @@
             AND deleted = FALSE
     </update>
 
-    <insert id="log">
-        INSERT INTO xsy_pricing_time_price_operation_log (time_price_id, operation_type, operator, before_data,
-            after_data, created_by)
-        VALUES (#{id}, #{operation}, #{operator}, CAST(#{before} AS jsonb), CAST(#{after} AS jsonb), #{operator})
-    </insert>
-
 </mapper>

@@ -16,6 +16,7 @@
         <result column="approved_at" property="approvedAt"/>
         <result column="rejected_at" property="rejectedAt"/>
         <result column="cancelled_at" property="cancelledAt"/>
+        <result column="replacement_order_id" property="replacementOrderId"/>
         <result column="version" property="version"/>
         <result column="deleted" property="deleted"/>
         <result column="created_at" property="createdAt"/>
@@ -67,6 +68,27 @@
         <if test="query.endTime != null">AND r.created_at &lt; #{query.endTime}</if>
         ORDER BY r.created_at DESC, r.id DESC
     </select>
+
+    <!-- 换货单已删除的关联视为不存在：否则退货详情会对着一张已删草稿加载失败，且无法再建换货 -->
+    <select id="replacementOrderId" resultType="long">
+        SELECT r.replacement_order_id
+        FROM xsy_order_return r
+        JOIN xsy_sales_order o ON o.id = r.replacement_order_id
+        WHERE r.id = #{returnId}
+            AND o.deleted = FALSE
+    </select>
+
+    <update id="bindReplacementOrder">
+        UPDATE xsy_order_return
+        SET replacement_order_id = #{replacementOrderId}
+        WHERE id = #{returnId}
+    </update>
+
+    <update id="clearReplacementOrder">
+        UPDATE xsy_order_return
+        SET replacement_order_id = NULL
+        WHERE replacement_order_id = #{replacementOrderId}
+    </update>
 
     <!-- 商城客户列表：归属就是 customer_id 等值，不联接订单、不拼员工范围。 -->
     <select id="listByCustomer" resultMap="row">

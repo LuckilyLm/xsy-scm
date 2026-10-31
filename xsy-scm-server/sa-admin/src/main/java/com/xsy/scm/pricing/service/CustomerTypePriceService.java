@@ -9,12 +9,14 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xsy.scm.pricing.dao.CustomerTypePriceDao;
+import com.xsy.scm.pricing.dao.PriceOperationLogDao;
 import com.xsy.scm.pricing.domain.entity.CustomerTypePriceEntity;
 import com.xsy.scm.pricing.domain.form.CustomerTypePriceAddForm;
 import com.xsy.scm.pricing.domain.form.CustomerTypePriceDeleteForm;
 import com.xsy.scm.pricing.domain.form.CustomerTypePriceUpdateForm;
 import com.xsy.scm.pricing.manager.PriceValidation;
 import com.xsy.scm.pricing.constant.ScmPriceOperationTypeEnum;
+import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.customer.service.CustomerTypeService;
 import com.xsy.scm.common.constant.ScmOperator;
@@ -30,6 +32,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 @RequiredArgsConstructor
 public class CustomerTypePriceService {
     private final CustomerTypePriceDao customerTypePriceDao;
+    private final PriceOperationLogDao priceOperationLogDao;
     private final CustomerService customerService;
     private final CustomerTypeService customerTypeService;
     private final PriceValidation validation;
@@ -129,7 +132,7 @@ public class CustomerTypePriceService {
 
     private void log(CustomerTypePriceEntity customerTypePrice, ScmPriceOperationTypeEnum operationType,
         String beforeSnapshot) {
-        customerTypePriceDao.log(customerTypePrice.getId(), operationType.name(), ScmOperator.current(), beforeSnapshot,
-            snapshot(customerTypePrice));
+        priceOperationLogDao.insert(ScmPriceSourceEnum.CUSTOMER_TYPE.name(), customerTypePrice.getId(),
+            operationType.name(), ScmOperator.current(), beforeSnapshot, snapshot(customerTypePrice));
     }
 }

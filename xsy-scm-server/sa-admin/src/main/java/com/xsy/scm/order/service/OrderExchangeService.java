@@ -1,13 +1,11 @@
 package com.xsy.scm.order.service;
 
-import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.finance.constant.ScmFinanceReceivableSourceTypeEnum;
 import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.order.constant.ScmOrderReturnStatusEnum;
-import com.xsy.scm.order.dao.OrderExchangeLinkDao;
 import com.xsy.scm.order.dao.OrderReturnDao;
 import com.xsy.scm.order.dao.OrderReturnItemDao;
 import com.xsy.scm.order.dao.OrderReturnReceiptItemDao;
@@ -36,7 +34,6 @@ public class OrderExchangeService {
     private final SalesOrderDao salesOrderDao;
     private final SalesOrderService salesOrderService;
     private final SalesOrderQueryService salesOrderQueryService;
-    private final OrderExchangeLinkDao exchangeLinkDao;
     private final OrderIdempotencyService idempotencyService;
     private final ScmDataScopeService dataScopeService;
 
@@ -52,7 +49,7 @@ public class OrderExchangeService {
         }
         var returned = returnDao.lock(form.getReturnId());
         requireVisible(returned);
-        Long existingReplacement = exchangeLinkDao.replacementOrderId(returned.getId());
+        Long existingReplacement = returnDao.replacementOrderId(returned.getId());
         if (existingReplacement != null)
             throw new ScmBusinessException(ORDER_EXCHANGE_EXISTS);
         if (!ScmOrderReturnStatusEnum.APPROVED.name().equals(returned.getStatus()))
@@ -75,7 +72,7 @@ public class OrderExchangeService {
         if (replacement.getSupplementReason() == null || replacement.getSupplementReason().isBlank())
             replacement.setSupplementReason("换货：退货单" + returned.getReturnNo());
         var result = salesOrderService.create(replacement, key + ":replacement");
-        exchangeLinkDao.insert(returned.getId(), original.getId(), result.getOrderId(), ScmOperator.current());
+        returnDao.bindReplacementOrder(returned.getId(), result.getOrderId());
         idempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(), result.getOrderId(),
             result);
         return result;
@@ -85,7 +82,7 @@ public class OrderExchangeService {
     public Long replacementOrderId(Long returnId) {
         var returned = returnDao.selectById(returnId);
         requireVisible(returned);
-        Long replacementOrderId = exchangeLinkDao.replacementOrderId(returnId);
+        Long replacementOrderId = returnDao.replacementOrderId(returnId);
         if (replacementOrderId != null)
             salesOrderQueryService.detail(replacementOrderId);
         return replacementOrderId;

@@ -20,7 +20,7 @@ import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.order.dao.OrderAddressSnapshotDao;
 import com.xsy.scm.order.dao.OrderBundleComponentDao;
-import com.xsy.scm.order.dao.OrderExchangeLinkDao;
+import com.xsy.scm.order.dao.OrderReturnDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.dao.SalesOrderItemDao;
 import com.xsy.scm.order.domain.entity.OrderAddressSnapshotEntity;
@@ -110,7 +110,7 @@ public class SalesOrderService {
     /**
      * 删除换货草稿时清掉换货关联：残留关联会让退货单无法再建换货，详情也会指向已删草稿。
      */
-    private final OrderExchangeLinkDao orderExchangeLinkDao;
+    private final OrderReturnDao orderReturnDao;
     private final OrderOperationLogRecorder orderLogs;
     private final CustomerService customerService;
     private final PriceResolver priceResolver;
@@ -832,8 +832,8 @@ public class SalesOrderService {
             removeItem(row);
         if (salesOrderDao.softDelete(salesOrder.getId(), salesOrder.getVersion(), ScmOperator.current()) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
-        // 草稿若是换货单，关联一并移除：return_id 有唯一索引，残留会挡住退货单重新创建换货
-        orderExchangeLinkDao.deleteByReplacementOrderId(salesOrder.getId());
+        // 草稿若是换货单，把退货单上的换货关联清空：残留会挡住退货单重新创建换货
+        orderReturnDao.clearReplacementOrder(salesOrder.getId());
         log(salesOrder.getId(), ScmOrderOperationTypeEnum.UPDATE, "删除草稿", before,
             Map.of("deleted", true, "version", salesOrder.getVersion() + 1));
     }

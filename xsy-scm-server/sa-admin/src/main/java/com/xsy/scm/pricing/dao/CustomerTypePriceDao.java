@@ -29,8 +29,4 @@ public interface CustomerTypePriceDao extends BaseMapper<CustomerTypePriceEntity
 
     int softDelete(@Param("id") Long customerTypePriceId, @Param("version") Integer version,
         @Param("operator") String operator);
-
-    void log(@Param("id") Long customerTypePriceId, @Param("operation") String operationType,
-        @Param("operator") String operator, @Param("before") String beforeSnapshot,
-        @Param("after") String afterSnapshot);
 }

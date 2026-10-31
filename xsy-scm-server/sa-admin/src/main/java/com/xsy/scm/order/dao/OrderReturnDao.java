@@ -27,4 +27,15 @@ public interface OrderReturnDao extends BaseMapper<OrderReturnEntity> {
      */
     List<OrderReturnEntity> listByCustomer(Page<?> page, @Param("customerId") Long customerId,
         @Param("orderId") Long orderId);
+
+    /**
+     * 退货单当前有效的换货单；关联的换货草稿被删除后视为没有换货。
+     */
+    Long replacementOrderId(@Param("returnId") Long returnId);
+
+    /** 绑定换货单。唯一索引保证一张换货单只属于一条退货。 */
+    int bindReplacementOrder(@Param("returnId") Long returnId, @Param("replacementOrderId") Long replacementOrderId);
+
+    /** 换货草稿被删除时清空关联，否则退货单无法重新创建换货。 */
+    int clearReplacementOrder(@Param("replacementOrderId") Long replacementOrderId);
 }

@@ -81,11 +81,4 @@
             AND deleted = FALSE
     </update>
 
-    <insert id="log">
-        INSERT INTO xsy_customer_agreement_price_operation_log (agreement_price_id, operation_type, operator,
-            before_data, after_data, created_by)
-        VALUES (#{id}, #{operation}, #{operator}, CAST(#{before,jdbcType=VARCHAR} AS jsonb),
-            CAST(#{after,jdbcType=VARCHAR} AS jsonb), #{operator})
-    </insert>
-
 </mapper>

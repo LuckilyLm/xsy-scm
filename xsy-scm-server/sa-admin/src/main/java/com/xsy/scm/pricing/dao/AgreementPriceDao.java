@@ -29,8 +29,4 @@ public interface AgreementPriceDao extends BaseMapper<AgreementPriceEntity> {
 
     int softDelete(@Param("id") Long agreementPriceId, @Param("version") Integer version,
         @Param("operator") String operator);
-
-    void log(@Param("id") Long agreementPriceId, @Param("operation") String operationType,
-        @Param("operator") String operator, @Param("before") String beforeSnapshot,
-        @Param("after") String afterSnapshot);
 }

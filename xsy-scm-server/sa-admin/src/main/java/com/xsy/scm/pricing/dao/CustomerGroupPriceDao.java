@@ -31,8 +31,4 @@ public interface CustomerGroupPriceDao extends BaseMapper<CustomerGroupPriceEnti
 
     int softDelete(@Param("id") Long groupPriceId, @Param("version") Integer version,
         @Param("operator") String operator);
-
-    void log(@Param("id") Long groupPriceId, @Param("operation") String operationType,
-        @Param("operator") String operator, @Param("before") String beforeSnapshot,
-        @Param("after") String afterSnapshot);
 }

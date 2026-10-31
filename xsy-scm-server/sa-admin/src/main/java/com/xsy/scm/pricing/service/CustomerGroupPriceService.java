@@ -15,7 +15,9 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.customer.service.CustomerGroupService;
 import com.xsy.scm.pricing.constant.ScmPriceOperationTypeEnum;
+import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
 import com.xsy.scm.pricing.dao.CustomerGroupPriceDao;
+import com.xsy.scm.pricing.dao.PriceOperationLogDao;
 import com.xsy.scm.pricing.domain.entity.CustomerGroupPriceEntity;
 import com.xsy.scm.pricing.domain.form.CustomerGroupPriceAddForm;
 import com.xsy.scm.pricing.domain.form.CustomerGroupPriceDeleteForm;
@@ -41,6 +43,7 @@ import static com.xsy.scm.pricing.constant.PricingErrorCode.SKU_NOT_SELLABLE;
 public class CustomerGroupPriceService {
 
     private final CustomerGroupPriceDao customerGroupPriceDao;
+    private final PriceOperationLogDao priceOperationLogDao;
 
     private final CustomerGroupService customerGroupService;
 
@@ -166,7 +169,7 @@ public class CustomerGroupPriceService {
     }
 
     private void log(CustomerGroupPriceEntity entity, ScmPriceOperationTypeEnum operationType, String beforeSnapshot) {
-        customerGroupPriceDao.log(entity.getId(), operationType.name(), ScmOperator.current(), beforeSnapshot,
-            snapshot(entity));
+        priceOperationLogDao.insert(ScmPriceSourceEnum.CUSTOMER_GROUP.name(), entity.getId(), operationType.name(),
+            ScmOperator.current(), beforeSnapshot, snapshot(entity));
     }
 }

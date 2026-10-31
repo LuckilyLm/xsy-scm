@@ -16,36 +16,20 @@
     <select id="query" resultMap="history">
         SELECT h.*, c.name customer_name, ct.name customer_type_name, cg.group_name, s.sku_code, s.spec_name,
             COALESCE(sp.name, gsp.name) product_name
-        FROM (SELECT l.id history_id, 'AGREEMENT' source, l.agreement_price_id price_id, p.customer_id,
-            NULL::bigint customer_type_id, p.sku_id, NULL::bigint group_id, NULL::bigint spu_id,
-            l.operation_type, l.operator, l.created_at operated_at,
-            l.before_data, l.after_data, p.unit_price current_unit_price, p.effective_from current_effective_from,
-            p.effective_to current_effective_to,
-            COALESCE(p.deleted,
-            TRUE) current_deleted FROM xsy_customer_agreement_price_operation_log l LEFT JOIN
-            xsy_customer_agreement_price p ON p.id = l.agreement_price_id UNION ALL SELECT l.id history_id,
-            'CUSTOMER_TYPE' source, l.customer_type_price_id price_id, NULL::bigint customer_id, p.customer_type_id,
-            p.sku_id, NULL::bigint group_id, NULL::bigint spu_id, l.operation_type, l.operator, l.created_at operated_at,
-            l.before_data, l.after_data,
-            p.unit_price current_unit_price, p.effective_from current_effective_from,
-            p.effective_to current_effective_to,
-            COALESCE(p.deleted,
-            TRUE) current_deleted FROM xsy_customer_type_price_operation_log l LEFT JOIN xsy_customer_type_price p ON
-            p.id = l.customer_type_price_id UNION ALL SELECT l.id history_id, 'CUSTOMER_GROUP' source,
-            l.group_price_id price_id, NULL::bigint customer_id, NULL::bigint customer_type_id, NULL::bigint sku_id,
-            p.group_id, p.spu_id, l.operation_type, l.operator, l.created_at operated_at, l.before_data, l.after_data,
-            p.unit_price current_unit_price, p.effective_from current_effective_from,
-            p.effective_to current_effective_to,
-            COALESCE(p.deleted, TRUE) current_deleted
-            FROM xsy_customer_group_price_operation_log l
-            LEFT JOIN xsy_customer_group_price p ON p.id = l.group_price_id UNION ALL SELECT l.id history_id,
-            'TIME_PRICE' source, l.time_price_id price_id, NULL::bigint customer_id, NULL::bigint customer_type_id,
-            p.sku_id, NULL::bigint group_id, NULL::bigint spu_id, l.operation_type, l.operator, l.created_at operated_at,
-            l.before_data, l.after_data,
-            p.unit_price current_unit_price, p.start_at current_effective_from, p.end_at current_effective_to,
-            COALESCE(p.deleted,
-            TRUE) current_deleted FROM xsy_pricing_time_price_operation_log l LEFT JOIN xsy_pricing_time_price p ON p.id
-            = l.time_price_id) h
+        FROM (SELECT l.id history_id, l.price_type source, l.price_id,
+            ap.customer_id, tp.customer_type_id, gp.group_id,
+            COALESCE(ap.sku_id, tp.sku_id, tp_price.sku_id) sku_id, gp.spu_id,
+            l.operation_type, l.operator, l.created_at operated_at, l.before_data, l.after_data,
+            COALESCE(ap.unit_price, tp.unit_price, gp.unit_price, tp_price.unit_price) current_unit_price,
+            COALESCE(ap.effective_from, tp.effective_from, gp.effective_from,
+            tp_price.start_at) current_effective_from,
+            COALESCE(ap.effective_to, tp.effective_to, gp.effective_to, tp_price.end_at) current_effective_to,
+            COALESCE(ap.deleted, tp.deleted, gp.deleted, tp_price.deleted, TRUE) current_deleted
+            FROM xsy_price_operation_log l
+            LEFT JOIN xsy_customer_agreement_price ap ON l.price_type = 'AGREEMENT' AND ap.id = l.price_id
+            LEFT JOIN xsy_customer_type_price tp ON l.price_type = 'CUSTOMER_TYPE' AND tp.id = l.price_id
+            LEFT JOIN xsy_customer_group_price gp ON l.price_type = 'CUSTOMER_GROUP' AND gp.id = l.price_id
+            LEFT JOIN xsy_pricing_time_price tp_price ON l.price_type = 'TIME_PRICE' AND tp_price.id = l.price_id) h
         LEFT JOIN xsy_customer c ON c.id = h.customer_id
         LEFT JOIN xsy_customer_type ct ON ct.id = h.customer_type_id
         LEFT JOIN xsy_customer_group cg ON cg.id = h.group_id
