@@ -56,7 +56,7 @@ class ScmInventoryRollbackIT extends ScmW6PgITBase {
         assertThat(movementCount(warehouseId, skuId)).isZero();
 
         // 采购侧：收货单仍是草稿、采购行累计为 0、采购单状态没动
-        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("DRAFT");
+        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("PENDING");
         assertThat(receivedQuantityOf(fx.orderItemId())).isEqualByComparingTo("0.0000");
         assertThat(reloadOrder(fx.order().getId()).getStatus()).isEqualTo("SUBMITTED");
 
@@ -103,7 +103,7 @@ class ScmInventoryRollbackIT extends ScmW6PgITBase {
 
         // 采购侧：整笔确认被回滚 —— 这是「收货确认与入库同事务」最直接的证据。
         // 如果库存写入另开了事务（REQUIRES_NEW），这里会看到 CONFIRMED + 累计 3.0000。
-        assertThat(reloadReceipt(box.receipt().getId()).getStatus()).isEqualTo("DRAFT");
+        assertThat(reloadReceipt(box.receipt().getId()).getStatus()).isEqualTo("PENDING");
         assertThat(receivedQuantityOf(box.orderItemId())).isEqualByComparingTo("0.0000");
         assertThat(reloadOrder(box.order().getId()).getStatus()).isEqualTo("SUBMITTED");
 

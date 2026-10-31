@@ -53,7 +53,8 @@ class ScmPurchaseStatusEnumTest {
         assertThat(names(ScmPurchaseDemandStatusEnum.values()))
                 .isEqualTo(whitelist(MIGRATION, "ck_purchase_demand_status"));
         assertThat(names(ScmReceiptStatusEnum.values()))
-                .isEqualTo(whitelist(MIGRATION, "ck_purchase_receipt_status"));
+                .isEqualTo(whitelist("/db/migration/V227__scm_remove_purchase_receipt_draft_status.sql",
+                        "ck_purchase_receipt_status"));
         assertThat(names(ScmWarehouseStatusEnum.values()))
                 .isEqualTo(whitelist(MIGRATION, "ck_warehouse_status"));
 

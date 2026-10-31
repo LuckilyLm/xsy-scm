@@ -54,7 +54,7 @@ public interface PurchaseReceiptDao extends BaseMapper<PurchaseReceiptEntity> {
     List<PurchaseReceiptEntity> listActiveByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
     /**
-     * 软删（仅 DRAFT，由 Service 断言）。
+     * 软删（仅 PENDING，由 Service 断言）。
      */
     int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("operator") String operator);
 }

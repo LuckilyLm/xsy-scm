@@ -142,7 +142,7 @@ class PurchaseOrderWebTest {
                 count++;
             }
         }
-        assertThat(count).isEqualTo(42);
+        assertThat(count).isEqualTo(41);
     }
 
     // ------------------------------------------------------------------
@@ -155,7 +155,7 @@ class PurchaseOrderWebTest {
         PurchaseOrderVO vo = new PurchaseOrderVO();
         vo.setId(1L);
         vo.setOrderNo("PO20260916000001");
-        vo.setStatus("DRAFT");
+        vo.setStatus("SUBMITTED");
         vo.setTotalAmount(new BigDecimal("18.6"));
         vo.setReceivedProgress(null);
         when(queries.orderDetail(1L)).thenReturn(vo);
@@ -173,7 +173,7 @@ class PurchaseOrderWebTest {
         PurchaseReceiptVO vo = new PurchaseReceiptVO();
         vo.setId(7L);
         vo.setReceiptNo("PR20260916000001");
-        vo.setStatus("DRAFT");
+        vo.setStatus("PENDING");
         when(queries.receiptDetail(7L)).thenReturn(vo);
 
         mvc.perform(get("/scm/purchase/receipt/detail/7"))

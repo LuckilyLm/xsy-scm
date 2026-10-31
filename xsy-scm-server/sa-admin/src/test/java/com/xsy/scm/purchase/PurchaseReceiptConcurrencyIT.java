@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code received_quantity} 是本次数量、{@code cumulative_received_quantity} 是含历史的累计 ——
  * 把这两个混为一谈会让「分次到货」的账面完全错位。
  *
- * <p><b>两层版本各自独立</b>：收货单版本挡「同一张草稿被两个人同时确认」，
+ * <p><b>两层版本各自独立</b>：收货单版本挡「同一张待确认单被两个人同时确认」，
  * 收货行版本挡「同一行被两次并发确认」，两层各有一例专门验证。
  */
 @DisplayName("收货累计与乐观锁：累加 / 单据版本 / 行版本（PG IT）")
@@ -70,7 +70,7 @@ class PurchaseReceiptConcurrencyIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("收货单版本过期 → 40921，单据保持草稿、采购行不动")
+    @DisplayName("收货单版本过期 → 40921，单据保持待确认、采购行不动")
     void staleReceiptVersionRejected() {
         ReceiptFixture fx = receiptFixture("CC2", "10.0000");
         PurchaseReceiptVO current = reloadReceipt(fx.receipt().getId());
@@ -81,7 +81,7 @@ class PurchaseReceiptConcurrencyIT extends ScmW5PgITBase {
                         receiptLine(line.getId(), line.getVersion(), "5.0000")),
                 prefix + ":CC2:stale"), 40921);
 
-        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("DRAFT");
+        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("PENDING");
         assertThat(reloadOrder(fx.order().getId()).getItems().getFirst().getReceivedQuantity())
                 .isEqualByComparingTo("0.0000");
     }
@@ -103,7 +103,7 @@ class PurchaseReceiptConcurrencyIT extends ScmW5PgITBase {
                         receiptLine(line.getId(), line.getVersion() + 5, "5.0000")),
                 prefix + ":CC3:stale"), 40921);
 
-        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("DRAFT");
+        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("PENDING");
         assertThat(reloadOrder(fx.order().getId()).getStatus()).isEqualTo("SUBMITTED");
 
         // 正确版本仍可确认

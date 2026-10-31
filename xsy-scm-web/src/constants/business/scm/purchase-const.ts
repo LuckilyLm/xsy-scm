@@ -10,9 +10,9 @@ export const SCM_PURCHASE_STATUS_ENUM: SmartEnum<string> = {
   CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };
 
-/** 收货单状态（2 值：草稿 → 已确认，确认后不可改不可删）。 */
+/** 收货单状态（2 值：待确认 → 已确认，确认后不可改不可删）。 */
 export const SCM_RECEIPT_STATUS_ENUM: SmartEnum<string> = {
-  DRAFT: {value: 'DRAFT', desc: '草稿'},
+  PENDING: {value: 'PENDING', desc: '待确认'},
   CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
 };
 

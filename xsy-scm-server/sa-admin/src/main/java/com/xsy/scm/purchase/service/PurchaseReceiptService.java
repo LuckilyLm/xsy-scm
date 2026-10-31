@@ -138,7 +138,7 @@ public class PurchaseReceiptService {
     private final FinancePayableService financePayableService;
 
     /**
-     * 建收货单（{@code DRAFT}，不产生任何副作用）。
+     * 建收货单（{@code PENDING}，不产生任何副作用）。
      *
      * <p>
      * 行由服务端按采购单的全部活动行自动生成：不允许调用方挑行，否则「确认时必须覆盖全部行」（40998） 就失去了基准集合。
@@ -163,7 +163,7 @@ public class PurchaseReceiptService {
         purchaseOwnerResolver.requireVisible(order.getPurchaserId());
         if (purchaseAccountDao.accountId(order.getId()) != null
             || !PurchaseOrderStateMachine.receivable(order.getStatus())) {
-            // RECEIVED / SHORT_CLOSED / CANCELLED / DRAFT 都不允许新收货
+            // RECEIVED / SHORT_CLOSED / CANCELLED 以及还没提交的采购单都不允许新收货
             throw new ScmBusinessException(PURCHASE_RECEIPT_ORDER_STATE_INVALID);
         }
         // 仓库可能在采购单创建后被停用：收货单创建是「新引用」，必须重查启用态。
@@ -175,7 +175,7 @@ public class PurchaseReceiptService {
 
         PurchaseReceiptEntity receipt = PurchaseSnapshotFactory.receipt(order, ScmDocumentNumbers.next(),
             form.getRemark());
-        // 入库方式由调用方显式二选一（无默认）；DRAFT 期入库状态恒 PENDING。
+        // 入库方式由调用方显式二选一（无默认）；收货单待确认期间入库状态恒 PENDING。
         receipt.setReceiptMode(form.getReceiptMode());
         receipt.setPutawayStatus(ScmPutawayStatusEnum.PENDING.name());
         stamp(receipt, true);
@@ -205,7 +205,7 @@ public class PurchaseReceiptService {
         PurchaseReceiptEntity receipt = lockReceipt(form.getId());
         purchaseOwnerResolver.requireVisible(orderPurchaserId(receipt));
         version(receipt.getVersion(), form.getVersion());
-        if (!ScmReceiptStatusEnum.DRAFT.name().equals(receipt.getStatus())) {
+        if (!ScmReceiptStatusEnum.PENDING.name().equals(receipt.getStatus())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_STATE_INVALID);
         }
 
@@ -264,7 +264,7 @@ public class PurchaseReceiptService {
             warehouseScopeGuard.require(receipt.getWarehouseId());
         }
         version(receipt.getVersion(), form.getVersion());
-        if (!ScmReceiptStatusEnum.DRAFT.name().equals(receipt.getStatus())) {
+        if (!ScmReceiptStatusEnum.PENDING.name().equals(receipt.getStatus())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_STATE_INVALID);
         }
         if (purchaseAccountDao.accountId(order.getId()) != null
@@ -452,7 +452,7 @@ public class PurchaseReceiptService {
         if (order == null) {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
-        // 已确认收货单的采购单不可能仍是 DRAFT，行价格只读即可（不入行锁）。
+        // 已确认收货单的采购单必定已提交，行价格只读即可（不入行锁）。
         Map<Long, PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.listByOrderId(order.getId()).stream()
             .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
         List<PurchaseReceiptItemEntity> receiptItems = purchaseReceiptItemDao.listByReceiptId(receipt.getId());
@@ -507,7 +507,7 @@ public class PurchaseReceiptService {
             return;
         }
         purchaseOwnerResolver.requireVisible(orderPurchaserId(receipt));
-        if (!ScmReceiptStatusEnum.DRAFT.name().equals(receipt.getStatus())) {
+        if (!ScmReceiptStatusEnum.PENDING.name().equals(receipt.getStatus())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_DELETE_STATE_INVALID);
         }
 

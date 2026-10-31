@@ -28,7 +28,7 @@ final class PurchaseReceiptSnapshotMapper {
     }
 
     /**
-     * 草稿收货单删除操作记录的完整前态。
+     * 待确认收货单删除操作记录的完整前态。
      */
     static Map<String, Object> receiptSnapshot(PurchaseReceiptVO vo) {
         Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();

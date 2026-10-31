@@ -11,7 +11,8 @@ import net.lab1024.sa.base.common.domain.PageParam;
  * 按商品收货工作台查询条件（只读）。
  *
  * <p>
- * 范围固定为「可收货」的采购单（{@code SUBMITTED} / {@code PARTIALLY_RECEIVED}），不开放状态入参， 已收货完成、短关、取消、草稿单都不出现在工作台上。其余过滤只缩小视图范围，不改变汇总结果。
+ * 范围固定为「可收货」的采购单（{@code SUBMITTED} / {@code PARTIALLY_RECEIVED}），不开放状态入参，
+ * 已收货完成、短关、取消、未提交的采购单都不出现在工作台上。其余过滤只缩小视图范围，不改变汇总结果。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

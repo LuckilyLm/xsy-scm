@@ -100,7 +100,7 @@ class PurchaseReceiptWeightIT extends ScmW5PgITBase {
         assertThat(weighingRecordCount(line.getId())).isZero();
         assertThat(reloadOrder(fx.order().getId()).getItems().getFirst().getReceivedQuantity())
                 .isEqualByComparingTo("0.0000");
-        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("DRAFT");
+        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("PENDING");
     }
 
     // ------------------------------------------------------------------
@@ -154,7 +154,7 @@ class PurchaseReceiptWeightIT extends ScmW5PgITBase {
                         receiptLine(line.getId(), line.getVersion(), "3.0000", "3.0")),
                 prefix + ":WG4:weight"), 40083);
 
-        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("DRAFT");
+        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("PENDING");
         assertThat(weighingRecordCount(line.getId())).isZero();
     }
 }

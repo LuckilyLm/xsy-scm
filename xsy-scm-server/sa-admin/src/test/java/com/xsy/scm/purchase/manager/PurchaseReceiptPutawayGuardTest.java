@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 仓库确认入库前置判定。
  *
  * <p>把状态迁移矩阵钉住：只有「已确认 + WAREHOUSE_CONFIRM + 待入库」三者同时成立才放行，
- * 其余任何组合（草稿、DIRECT、已入库、空值）一律拒绝。
+ * 其余任何组合（待确认、DIRECT、已入库、空值）一律拒绝。
  */
 @DisplayName("入库确认前置判定（单元）")
 class PurchaseReceiptPutawayGuardTest {
@@ -24,9 +24,9 @@ class PurchaseReceiptPutawayGuardTest {
     @Test
     @DisplayName("其余组合一律拒绝")
     void everyOtherCombinationIsRejected() {
-        // 草稿（即使方式与状态正确）
+        // 待确认（即使方式与状态正确）
         assertThat(PurchaseReceiptPutawayGuard.putawayAllowed(
-                "DRAFT", "WAREHOUSE_CONFIRM", "PENDING")).isFalse();
+                "PENDING", "WAREHOUSE_CONFIRM", "PENDING")).isFalse();
         // DIRECT 模式（确认即入库，不存在二次确认）
         assertThat(PurchaseReceiptPutawayGuard.putawayAllowed(
                 "CONFIRMED", "DIRECT", "PENDING")).isFalse();

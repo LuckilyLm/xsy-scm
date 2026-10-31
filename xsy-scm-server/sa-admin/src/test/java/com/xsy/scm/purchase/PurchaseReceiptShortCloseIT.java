@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p><b>{@code shortClose} 的准入条件是两个「至少」</b>：至少一行已收，且至少一行未收齐。
  * 缺一都不成立 ——
  * <ul>
- *   <li>没有任何已收 → 那是「取消」，不是「少收」（{@code cancellable} 管的是 DRAFT/SUBMITTED）；</li>
+ *   <li>没有任何已收 → 那是「取消」，不是「少收」（{@code cancellable} 管的是 SUBMITTED）；</li>
  *   <li>全部收齐 → 采购单已经是 {@code RECEIVED}，状态机根本不允许再关单。</li>
  * </ul>
  * 所以本类的前置必须造两行：一行收齐、一行欠收。单行订单永远测不出这条规则。

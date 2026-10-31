@@ -105,7 +105,7 @@ public final class PurchaseSnapshotFactory {
         receipt.setWarehouseId(order.getWarehouseId());
         receipt.setWarehouseCodeSnapshot(order.getWarehouseCodeSnapshot());
         receipt.setWarehouseNameSnapshot(order.getWarehouseNameSnapshot());
-        receipt.setStatus(ScmReceiptStatusEnum.DRAFT.name());
+        receipt.setStatus(ScmReceiptStatusEnum.PENDING.name());
         receipt.setRemark(PurchaseOrderValidator.trim(remark));
         receipt.setVersion(0);
         receipt.setDeleted(false);

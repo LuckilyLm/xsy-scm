@@ -70,7 +70,7 @@ class ScmFinancePayableRollbackPgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("来源键被占：confirm 抛错 → 收货单仍 DRAFT、无应付无日志、库存与幂等零残留")
+    @DisplayName("来源键被占：confirm 抛错 → 收货单仍 PENDING、无应付无日志、库存与幂等零残留")
     void financeFailureRollsBackTheWholeReceiptConfirm() {
         Long skuId = newOnShelfSku("FPR1");
         PurchaseReceiptVO receipt = draftDirectReceipt("FPR1", skuId, "8.0000", "6.2000");
@@ -91,7 +91,7 @@ class ScmFinancePayableRollbackPgIT extends ScmW6PgITBase {
 
             // 采购侧什么都没留下：状态、累计量、单号、幂等结果全部回到确认前
             PurchaseReceiptVO after = reloadReceipt(receipt.getId());
-            assertThat(after.getStatus()).isEqualTo("DRAFT");
+            assertThat(after.getStatus()).isEqualTo("PENDING");
             assertThat(after.getConfirmedAt()).isNull();
             assertThat(after.getPutawayStatus()).isEqualTo("PENDING");
             assertThat(reloadOrder(receipt.getPurchaseOrderId()).getStatus()).isEqualTo("SUBMITTED");

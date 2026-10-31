@@ -4,7 +4,7 @@ import lombok.Data;
 import jakarta.validation.constraints.NotNull;
 
 /**
- * 删除采购收货单（仅 DRAFT，否则 40994）。
+ * 删除采购收货单（仅 PENDING，否则 40994）。
  */
 @Data
 public class PurchaseReceiptDeleteForm {

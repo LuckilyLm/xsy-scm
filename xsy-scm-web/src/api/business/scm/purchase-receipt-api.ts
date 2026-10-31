@@ -23,7 +23,7 @@ export const purchaseReceiptApi = {
   /** 按商品收货工作台：只读，按商品规格和采购单位归并。 */
   itemWorkbench: (data: ReceiptItemWorkbenchQuery, options?: RequestOptions) =>
     postRequest<ScmPage<ReceiptItemWorkbenchRow>>('/scm/purchase/receipt/item-workbench/query', data, options),
-  /** 建草稿收货单：行由服务端按采购单全部活动行生成。 */
+  /** 新建收货单（待确认）：行由服务端按采购单全部活动行生成。 */
   create: (data: ReceiptCreatePayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/create', data),
   /** `update` 只允许改备注，数量在确认时一次写入。 */
   update: (data: ReceiptUpdatePayload) => postRequest<Receipt>('/scm/purchase/receipt/update', data),
@@ -32,7 +32,7 @@ export const purchaseReceiptApi = {
   /** 仓库确认入库：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
   putaway: (data: ReceiptPutawayPayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/putaway', data),
   delete: (data: ReceiptDeletePayload) => postRequest<string>('/scm/purchase/receipt/delete', data),
-  /** 批量删除草稿收货单：`PurchaseReceiptBatchDeleteForm` 的元素要求 `id` + `version`。 */
+  /** 批量删除待确认收货单：`PurchaseReceiptBatchDeleteForm` 的元素要求 `id` + `version`。 */
   batchDelete: (receipts: ReceiptVersionPayload[]) => postRequest<string>('/scm/purchase/receipt/batch-delete', {receipts}),
 };
 export default purchaseReceiptApi;

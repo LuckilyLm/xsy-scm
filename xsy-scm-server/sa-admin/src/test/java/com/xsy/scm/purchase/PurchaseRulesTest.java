@@ -41,29 +41,24 @@ class PurchaseRulesTest {
 
     @ParameterizedTest(name = "{0} -> {1} = {2}")
     @CsvSource({
-            // DRAFT
-            "DRAFT,DRAFT,false",
-            "DRAFT,SUBMITTED,true",
-            "DRAFT,PARTIALLY_RECEIVED,false",
-            "DRAFT,RECEIVED,false",
-            "DRAFT,SHORT_CLOSED,false",
-            "DRAFT,CANCELLED,true",
-            // SUBMITTED
-            "SUBMITTED,DRAFT,false",
+            // SUBMITTED（新建即提交）
             "SUBMITTED,SUBMITTED,false",
+            "SUBMITTED,ACCOUNTED,true",
             "SUBMITTED,PARTIALLY_RECEIVED,true",
             "SUBMITTED,RECEIVED,true",
             "SUBMITTED,SHORT_CLOSED,false",
             "SUBMITTED,CANCELLED,true",
             // PARTIALLY_RECEIVED（自身到自身合法：第二次收货后仍是部分收货）
-            "PARTIALLY_RECEIVED,DRAFT,false",
             "PARTIALLY_RECEIVED,SUBMITTED,false",
+            "PARTIALLY_RECEIVED,ACCOUNTED,false",
             "PARTIALLY_RECEIVED,PARTIALLY_RECEIVED,true",
             "PARTIALLY_RECEIVED,RECEIVED,true",
             "PARTIALLY_RECEIVED,SHORT_CLOSED,true",
             // 已部分收货不允许 cancel，需要终止时用 short-close
             "PARTIALLY_RECEIVED,CANCELLED,false",
             // 终态
+            "ACCOUNTED,SUBMITTED,false",
+            "ACCOUNTED,RECEIVED,false",
             "RECEIVED,RECEIVED,false",
             "RECEIVED,CANCELLED,false",
             "SHORT_CLOSED,RECEIVED,false",
@@ -79,7 +74,7 @@ class PurchaseRulesTest {
     void unknownStateNeverTransitions() {
         assertThat(PurchaseOrderStateMachine.canTransition(null, "SUBMITTED")).isFalse();
         assertThat(PurchaseOrderStateMachine.canTransition("", "SUBMITTED")).isFalse();
-        assertThat(PurchaseOrderStateMachine.canTransition("DRAFT", null)).isFalse();
+        assertThat(PurchaseOrderStateMachine.canTransition("SUBMITTED", null)).isFalse();
         assertThat(PurchaseOrderStateMachine.canTransition("ARCHIVED", "SUBMITTED")).isFalse();
     }
 
@@ -90,7 +85,7 @@ class PurchaseRulesTest {
                 .isInstanceOfSatisfying(ScmBusinessException.class, e -> assertThat(codeOf(e)).isEqualTo(40982));
         assertThatThrownBy(() -> PurchaseOrderStateMachine.transition("PARTIALLY_RECEIVED", "CANCELLED"))
                 .isInstanceOfSatisfying(ScmBusinessException.class, e -> assertThat(codeOf(e)).isEqualTo(40982));
-        assertThatCode(() -> PurchaseOrderStateMachine.transition("DRAFT", "SUBMITTED"))
+        assertThatCode(() -> PurchaseOrderStateMachine.transition("SUBMITTED", "ACCOUNTED"))
                 .doesNotThrowAnyException();
     }
 
@@ -99,10 +94,10 @@ class PurchaseRulesTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("只有 DRAFT 可编辑行与需求分配（T2）")
-    void editableOnlyDraft() {
-        assertThat(PurchaseOrderStateMachine.editable("DRAFT")).isTrue();
-        assertThat(PurchaseOrderStateMachine.editable("SUBMITTED")).isFalse();
+    @DisplayName("只有 SUBMITTED 可编辑行与需求分配（T2）")
+    void editableOnlySubmitted() {
+        assertThat(PurchaseOrderStateMachine.editable("SUBMITTED")).isTrue();
+        assertThat(PurchaseOrderStateMachine.editable("ACCOUNTED")).isFalse();
         assertThat(PurchaseOrderStateMachine.editable("PARTIALLY_RECEIVED")).isFalse();
         assertThat(PurchaseOrderStateMachine.editable("RECEIVED")).isFalse();
         assertThat(PurchaseOrderStateMachine.editable("SHORT_CLOSED")).isFalse();
@@ -113,7 +108,7 @@ class PurchaseRulesTest {
     @Test
     @DisplayName("可建 / 可确认收货：SUBMITTED 或 PARTIALLY_RECEIVED（T7 / T8）")
     void receivableSubmittedOrPartiallyReceived() {
-        assertThat(PurchaseOrderStateMachine.receivable("DRAFT")).isFalse();
+        assertThat(PurchaseOrderStateMachine.receivable("ACCOUNTED")).isFalse();
         assertThat(PurchaseOrderStateMachine.receivable("SUBMITTED")).isTrue();
         assertThat(PurchaseOrderStateMachine.receivable("PARTIALLY_RECEIVED")).isTrue();
         assertThat(PurchaseOrderStateMachine.receivable("RECEIVED")).isFalse();
@@ -122,9 +117,9 @@ class PurchaseRulesTest {
     }
 
     @Test
-    @DisplayName("可取消：DRAFT / SUBMITTED；P14 明确排除 PARTIALLY_RECEIVED（T4）")
+    @DisplayName("可取消：仅 SUBMITTED；P14 明确排除 PARTIALLY_RECEIVED（T4）")
     void cancellableExcludesPartiallyReceived() {
-        assertThat(PurchaseOrderStateMachine.cancellable("DRAFT")).isTrue();
+        assertThat(PurchaseOrderStateMachine.cancellable("ACCOUNTED")).isFalse();
         assertThat(PurchaseOrderStateMachine.cancellable("SUBMITTED")).isTrue();
         assertThat(PurchaseOrderStateMachine.cancellable("PARTIALLY_RECEIVED")).isFalse();
         assertThat(PurchaseOrderStateMachine.cancellable("RECEIVED")).isFalse();
@@ -134,7 +129,7 @@ class PurchaseRulesTest {
     @Test
     @DisplayName("可少收关单：仅 PARTIALLY_RECEIVED（T5 / Q2a）")
     void shortClosableOnlyPartiallyReceived() {
-        assertThat(PurchaseOrderStateMachine.shortClosable("DRAFT")).isFalse();
+        assertThat(PurchaseOrderStateMachine.shortClosable("ACCOUNTED")).isFalse();
         assertThat(PurchaseOrderStateMachine.shortClosable("SUBMITTED")).isFalse();
         assertThat(PurchaseOrderStateMachine.shortClosable("PARTIALLY_RECEIVED")).isTrue();
         assertThat(PurchaseOrderStateMachine.shortClosable("RECEIVED")).isFalse();
@@ -144,7 +139,7 @@ class PurchaseRulesTest {
     @Test
     @DisplayName("终态：RECEIVED / SHORT_CLOSED / CANCELLED")
     void terminalStates() {
-        assertThat(PurchaseOrderStateMachine.terminal("DRAFT")).isFalse();
+        assertThat(PurchaseOrderStateMachine.terminal("ACCOUNTED")).isTrue();
         assertThat(PurchaseOrderStateMachine.terminal("SUBMITTED")).isFalse();
         assertThat(PurchaseOrderStateMachine.terminal("PARTIALLY_RECEIVED")).isFalse();
         assertThat(PurchaseOrderStateMachine.terminal("RECEIVED")).isTrue();
@@ -168,13 +163,13 @@ class PurchaseRulesTest {
     void statusEnumsAreFrozen() {
         assertThat(ScmPurchaseStatusEnum.values())
                 .extracting(Enum::name)
-                .containsExactly("DRAFT", "SUBMITTED", "PARTIALLY_RECEIVED", "RECEIVED", "SHORT_CLOSED", "CANCELLED");
+                .containsExactly("SUBMITTED", "ACCOUNTED", "PARTIALLY_RECEIVED", "RECEIVED", "SHORT_CLOSED", "CANCELLED");
         assertThat(ScmPurchaseDemandStatusEnum.values())
                 .extracting(Enum::name)
                 .containsExactly("PENDING", "PARTIALLY_ALLOCATED", "ALLOCATED");
         assertThat(ScmReceiptStatusEnum.values())
                 .extracting(Enum::name)
-                .containsExactly("DRAFT", "CONFIRMED");
+                .containsExactly("PENDING", "CONFIRMED");
     }
 
     // ------------------------------------------------------------------
@@ -218,7 +213,7 @@ class PurchaseRulesTest {
                 .doesNotThrowAnyException();
 
         for (SalesOrderEntity bad : new SalesOrderEntity[]{
-                order("DRAFT", false), order("PENDING", false), order("CANCELLED", false),
+                order("PENDING", false), order("CANCELLED", false),
                 order("CONFIRMED", true), null}) {
             assertThatThrownBy(() -> PurchaseDemandSourceGuard.requireConfirmed(bad))
                     .isInstanceOfSatisfying(ScmBusinessException.class,
@@ -242,7 +237,7 @@ class PurchaseRulesTest {
     // ------------------------------------------------------------------
 
     @ParameterizedTest
-    @ValueSource(strings = {"DRAFT", "CONFIRMED"})
+    @ValueSource(strings = {"PENDING", "CONFIRMED"})
     @DisplayName("收货单两态都是合法枚举值")
     void receiptStatusWhitelist(String status) {
         assertThat(ScmReceiptStatusEnum.valueOf(status).name()).isEqualTo(status);

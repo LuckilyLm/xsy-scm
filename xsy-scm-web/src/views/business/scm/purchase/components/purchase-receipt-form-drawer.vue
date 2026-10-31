@@ -1,4 +1,4 @@
-<!-- 采购收货单表单。草稿只能改备注，数量在确认收货时一次填写。
+<!-- 采购收货单表单。待确认时只能改备注，数量在确认收货时一次填写。
      表单里没有状态字段；采购单下拉只列可收货的单。 -->
 <template>
   <a-drawer :title="form.id ? '编辑收货单备注' : '新建收货单'" :open="visible" :width="scmDrawerWidth('s')" @close="visible = false">
@@ -59,7 +59,7 @@
       <a-space>
         <a-button @click="visible = false">关闭</a-button>
         <a-button type="primary" :loading="saving" :disabled="loading" @click="save">
-          {{ form.id ? '保存备注' : '创建草稿' }}
+          {{ form.id ? '保存备注' : '新建收货单' }}
         </a-button>
       </a-space>
     </template>
@@ -162,7 +162,7 @@ async function save() {
         receiptMode: form.value.receiptMode!,
         remark: form.value.remark ?? null,
       });
-      message.success('草稿收货单已创建');
+      message.success('收货单已创建，待确认');
       if (result.data.id != null) emit('created', result.data.id);
     }
     visible.value = false;

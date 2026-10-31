@@ -665,7 +665,7 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 造一张草稿采购单：一个 SKU 行 + 指定分配集合。
+     * 造一张采购单（新建即已提交）：一个 SKU 行 + 指定分配集合。
      *
      * <p>{@code itemQuantity} 与分配合计是解耦的 —— 采购行可以有「没有需求来源」的部分，
      * 这是「一采购行一个 SKU，可承接多个需求」的必然结果（采购量 ≠ 需求量）。
@@ -745,10 +745,10 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 为采购单建一张草稿收货单（收货行由服务端按采购单的全部活动行自动生成）。
+     * 为采购单建一张待确认收货单（收货行由服务端按采购单的全部活动行自动生成）。
      *
      * <p>幂等键固定为 {@code prefix + ":receipt:" + orderId}，因此同一个采购单只能调一次。
-     * 若先调它并让 {@code create} 因业务原因抛错（例如 DRAFT 单 → 40991），这次失败已经在本用例的
+     * 若先调它并让 {@code create} 因业务原因抛错（例如已取消的采购单 → 40991），这次失败已经在本用例的
      * 事务里插入了 claim 行；再用同一个键调第二次会命中「已提交的幂等记录缺少 result_data」。
      * 那种场景要改用 {@link #createAnotherReceipt(Long, String)} 换键。
      */
@@ -831,7 +831,7 @@ public abstract class ScmW5PgITBase {
      * 按采购单找收货单（断言恰好一张）。
      *
      * <p>只适用于「本用例为该采购单只建了一张收货单」的场景：同一采购单的
-     * 草稿收货单张数不受限制（分次到货是正常业务），所以多次建单的用例请直接用
+     * 待确认收货单张数不受限制（分次到货是正常业务），所以多次建单的用例请直接用
      * {@link #reloadReceipt(Long)}。
      */
     protected PurchaseReceiptVO receiptOfOrder(Long orderId) {

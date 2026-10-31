@@ -105,7 +105,7 @@ class PurchaseReceiptOverReceiptIT extends ScmW5PgITBase {
                 prefix + ":OR2:over"), 40989);
 
         // 整笔回滚：不是「收 11 然后报错」
-        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("DRAFT");
+        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("PENDING");
         assertThat(reloadOrder(fx.order().getId()).getItems().getFirst().getReceivedQuantity())
                 .isEqualByComparingTo("0.0000");
         assertThat(reloadOrder(fx.order().getId()).getStatus()).isEqualTo("SUBMITTED");
@@ -197,7 +197,7 @@ class PurchaseReceiptOverReceiptIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("容差配置非法（abc / 101 / -1）→ 40999，且收货单保持草稿")
+    @DisplayName("容差配置非法（abc / 101 / -1）→ 40999，且收货单保持待确认")
     void invalidToleranceConfigRejected() {
         ReceiptFixture fx = receiptFixture("OR6", "10.0000");
 
@@ -211,7 +211,7 @@ class PurchaseReceiptOverReceiptIT extends ScmW5PgITBase {
                     prefix + ":OR6:" + bad), 40999);
         }
 
-        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("DRAFT");
+        assertThat(reloadReceipt(fx.receipt().getId()).getStatus()).isEqualTo("PENDING");
     }
 
     // ------------------------------------------------------------------

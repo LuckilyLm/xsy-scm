@@ -580,8 +580,8 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
         Long receiptId = as(caller, Set.of(), () -> createReceipt(orderId).getId());
 
         assertNoPermission(() -> as(caller, Set.of(), () -> confirmReceipt(receiptId, "4.0000")));
-        // 失败关闭必须真的什么都没写：状态仍 DRAFT、目标仓既无余额行也无 PURCHASE_IN 流水
-        assertThat(receiptStatus(receiptId)).isEqualTo("DRAFT");
+        // 失败关闭必须真的什么都没写：状态仍 PENDING、目标仓既无余额行也无 PURCHASE_IN 流水
+        assertThat(receiptStatus(receiptId)).isEqualTo("PENDING");
         assertThat(balanceRowCount(otherWarehouse, goods.skuId())).isZero();
         assertThat(movementCount(otherWarehouse, goods.skuId())).isZero();
 
@@ -601,7 +601,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
 
         assertNoPermission(() -> as(lead, Set.of(ScmDataScopeService.WAREHOUSE_ALL_PERM),
                 () -> confirmReceipt(receiptId, "4.0000")));
-        assertThat(receiptStatus(receiptId)).as("越权确认没有推进状态").isEqualTo("DRAFT");
+        assertThat(receiptStatus(receiptId)).as("越权确认没有推进状态").isEqualTo("PENDING");
 
         // 采购主管的全量采购范围 + 自己管的仓：这才是裁决里「代录」成立的形状
         as(lead, Set.of(ScmDataScopeService.WAREHOUSE_ALL_PERM, ScmDataScopeService.PURCHASE_ALL_PERM),

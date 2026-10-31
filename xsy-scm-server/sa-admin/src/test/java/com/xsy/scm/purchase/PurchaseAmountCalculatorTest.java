@@ -60,7 +60,7 @@ class PurchaseAmountCalculatorTest {
     }
 
     @Test
-    @DisplayName("空行集合 → 单头金额 0.0000（草稿单可以有零行金额语义）")
+    @DisplayName("空行集合 → 单头金额 0.0000（空行集合的金额语义）")
     void emptyLinesYieldZeroTotal() {
         assertThat(PurchaseAmountCalculator.totalAmount(Collections.emptyList()))
                 .isEqualByComparingTo("0.0000");

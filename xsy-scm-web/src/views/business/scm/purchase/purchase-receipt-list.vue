@@ -37,7 +37,7 @@
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
             <a-button type="primary" v-privilege="'scm:purchase:receipt:add'" @click="form?.open()">新建收货单</a-button>
-            <a-button danger v-privilege="'scm:purchase:receipt:delete'" :disabled="!selected.length" @click="batchDelete"> 批量删除草稿 </a-button>
+            <a-button danger v-privilege="'scm:purchase:receipt:delete'" :disabled="!selected.length" @click="batchDelete"> 批量删除 </a-button>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_RECEIPT" :refresh="queryData" />
@@ -58,7 +58,7 @@
             columnWidth: SCM_COLUMN_WIDTH.selection,
             selectedRowKeys: selected,
             onChange: (keys: (string | number)[]) => (selected = keys),
-            getCheckboxProps: (row: Receipt) => ({disabled: row.status !== 'DRAFT'}),
+            getCheckboxProps: (row: Receipt) => ({disabled: row.status !== 'PENDING'}),
           }"
         >
           <template #bodyCell="{record, column}">
@@ -77,7 +77,7 @@
               <!-- 只保留当前状态的推进动作，编辑备注和删除收进“更多” -->
               <a-space :size="0" class="smart-table-operate scm-table-actions">
                 <a-button
-                  v-if="record.status === 'DRAFT'"
+                  v-if="record.status === 'PENDING'"
                   type="link"
                   size="small"
                   v-privilege="'scm:purchase:receipt:confirm'"
@@ -190,12 +190,12 @@ const columns = ref<TableColumnsType<Receipt>>([
 const canUpdate = computed(() => hasPermission('scm:purchase:receipt:update'));
 const canDelete = computed(() => hasPermission('scm:purchase:receipt:delete'));
 
-/** 只有草稿可写。 */
+/** 只有待确认可写。 */
 function rowActions(row: Receipt): ScmActionItem[] {
-  const draft = row.status === 'DRAFT';
+  const pending = row.status === 'PENDING';
   return [
-    {key: 'edit', label: '编辑备注', hidden: !(draft && canUpdate.value)},
-    {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
+    {key: 'edit', label: '编辑备注', hidden: !(pending && canUpdate.value)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
   ];
 }
 
@@ -263,7 +263,7 @@ function resetQuery() {
 
 function remove(row: Receipt) {
   Modal.confirm({
-    title: '删除这张草稿收货单？',
+    title: '删除这张待确认收货单？',
     okType: 'danger',
     onOk: async () => {
       // 失败原因由全局提示给出
@@ -275,7 +275,7 @@ function remove(row: Receipt) {
 
 function batchDelete() {
   Modal.confirm({
-    title: '删除所选草稿收货单？',
+    title: '删除所选待确认收货单？',
     okType: 'danger',
     onOk: async () => {
       await purchaseReceiptApi.batchDelete(

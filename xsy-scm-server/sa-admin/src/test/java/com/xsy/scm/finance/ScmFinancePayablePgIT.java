@@ -469,6 +469,6 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
                 .hasMessageContaining("不能生成应付");
 
         assertThat(payablesOfReceipt(receipt.getId())).isEmpty();
-        assertThat(reloadReceipt(receipt.getId()).getStatus()).isEqualTo("DRAFT");
+        assertThat(reloadReceipt(receipt.getId()).getStatus()).isEqualTo("PENDING");
     }
 }
