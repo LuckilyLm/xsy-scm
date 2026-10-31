@@ -102,8 +102,7 @@ public class FinanceOrderFundingWriteOffService {
         BigDecimal before = financeWriteOffDao
             .selectTargetWrittenOffAmount(ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name(), receivableId);
         FinanceWriteOffEntity entity = new FinanceWriteOffEntity();
-        entity.setWriteOffNo(
-            ScmDocumentNumbers.format(FinanceConstant.WRITE_OFF_NO_PREFIX, financeWriteOffDao.nextWriteOffNo()));
+        entity.setWriteOffNo(ScmDocumentNumbers.next());
         entity.setSourceType(sourceType);
         entity.setSourceId(sourceId);
         entity.setTargetType(ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name());

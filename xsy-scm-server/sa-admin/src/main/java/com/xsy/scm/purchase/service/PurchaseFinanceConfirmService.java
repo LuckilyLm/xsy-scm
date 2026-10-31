@@ -94,7 +94,7 @@ public class PurchaseFinanceConfirmService {
             }
         }
         PurchaseAccountVO account = new PurchaseAccountVO();
-        account.setAccountNo(ScmDocumentNumbers.format("PAC", accountDao.nextNumber()));
+        account.setAccountNo(ScmDocumentNumbers.next());
         account.setPurchaseOrderId(order.getId());
         account.setSupplierId(order.getSupplierId());
         account.setSupplierNameSnapshot(order.getSupplierNameSnapshot());

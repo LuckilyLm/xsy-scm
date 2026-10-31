@@ -163,7 +163,7 @@ const emit = defineEmits<{
 }>();
 
 const orderViewColumns = computed<TableColumnsType<RouteOrderView>>(() => [
-  {title: '订单号', dataIndex: 'orderNo', width: 170},
+  {title: '订单号', dataIndex: 'orderNo', width: 200},
   {title: '客户', dataIndex: 'customerName', width: 160},
   {title: '停靠序', dataIndex: 'stopSeq', width: 80},
   {title: '商品行', dataIndex: 'itemCount', width: 80},

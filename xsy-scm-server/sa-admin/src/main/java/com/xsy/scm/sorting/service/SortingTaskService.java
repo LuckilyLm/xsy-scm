@@ -52,7 +52,6 @@ import java.util.Objects;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.sorting.constant.SortingConstant.PRINTABLE;
-import static com.xsy.scm.sorting.constant.SortingConstant.TASK_NO_PREFIX;
 import static com.xsy.scm.sorting.constant.SortingConstant.WORKING;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.ASSIGNEE_INVALID;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.ITEM_NOT_IN_TASK;
@@ -113,7 +112,7 @@ public class SortingTaskService {
         var lines = sortableLines(form.getSalesOrderItemIds());
 
         var task = new SortingTaskEntity();
-        task.setTaskNo(ScmDocumentNumbers.format(TASK_NO_PREFIX, sortingQueryDao.nextNumber()));
+        task.setTaskNo(ScmDocumentNumbers.next());
         task.setWarehouseId(warehouse.getId());
         task.setWarehouseNameSnapshot(warehouse.getName());
         task.setAssigneeEmployeeId(form.getAssigneeEmployeeId());

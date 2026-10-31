@@ -44,8 +44,6 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
 
     private static final int SCALE = 4;
 
-    private static final String MOVEMENT_NO_PREFIX = "CBM";
-
     private static final String CORRECTION_SCOPE = "BALANCE_CORRECTION";
 
     private final CustomerBalanceAccountDao customerBalanceAccountDao;
@@ -290,7 +288,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         String operator = ScmOperator.current();
         CustomerBalanceMovementEntity movement = new CustomerBalanceMovementEntity();
         movement
-            .setMovementNo(ScmDocumentNumbers.format(MOVEMENT_NO_PREFIX, customerBalanceMovementDao.nextMovementNo()));
+            .setMovementNo(ScmDocumentNumbers.next());
         movement.setAccountId(account.getId());
         movement.setSettlementCustomerId(account.getSettlementCustomerId());
         movement.setCustomerId(customerId);

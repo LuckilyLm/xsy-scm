@@ -92,8 +92,7 @@ public class FinancePayableService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         FinancePayableEntity red = new FinancePayableEntity();
-        red.setPayableNo(
-            ScmDocumentNumbers.format(FinanceConstant.PAYABLE_NO_PREFIX, financePayableDao.nextPayableNo()));
+        red.setPayableNo(ScmDocumentNumbers.next());
         red.setSourceType(ScmFinancePayableSourceTypeEnum.MANUAL.name());
         red.setSourceId(null);
         red.setPurchaseOrderId(original.getPurchaseOrderId());
@@ -278,8 +277,7 @@ public class FinancePayableService {
         OffsetDateTime now = OffsetDateTime.now();
 
         FinancePayableEntity payable = new FinancePayableEntity();
-        payable.setPayableNo(
-            ScmDocumentNumbers.format(FinanceConstant.PAYABLE_NO_PREFIX, financePayableDao.nextPayableNo()));
+        payable.setPayableNo(ScmDocumentNumbers.next());
         payable.setSourceType(source.getPurchaseAccountId() == null
             ? ScmFinancePayableSourceTypeEnum.PURCHASE_RECEIPT.name()
             : ScmFinancePayableSourceTypeEnum.PURCHASE_ACCOUNT.name());

@@ -87,8 +87,7 @@ public class FinanceWaiverService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         FinanceWaiverEntity waiver = new FinanceWaiverEntity();
-        waiver
-            .setWaiverNo(ScmDocumentNumbers.format(FinanceConstant.WAIVER_NO_PREFIX, financeWaiverDao.nextWaiverNo()));
+        waiver.setWaiverNo(ScmDocumentNumbers.next());
         waiver.setReceivableId(target.getReceivableId());
         waiver.setCustomerId(target.getCustomerId());
         waiver.setSettlementCustomerId(target.getSettlementCustomerId());
@@ -162,8 +161,7 @@ public class FinanceWaiverService {
         String operator = ScmOperator.current();
         BigDecimal before = receivableBalance(target);
         FinanceWriteOffEntity reversal = new FinanceWriteOffEntity();
-        reversal.setWriteOffNo(
-            ScmDocumentNumbers.format(FinanceConstant.WRITE_OFF_NO_PREFIX, financeWriteOffDao.nextWriteOffNo()));
+        reversal.setWriteOffNo(ScmDocumentNumbers.next());
         reversal.setSourceType(original.getSourceType());
         reversal.setSourceId(original.getSourceId());
         reversal.setTargetType(original.getTargetType());
@@ -231,8 +229,7 @@ public class FinanceWaiverService {
         writeOff.setUpdatedAt(now);
         writeOff.setCreatedBy(operator);
         writeOff.setUpdatedBy(operator);
-        writeOff.setWriteOffNo(
-            ScmDocumentNumbers.format(FinanceConstant.WRITE_OFF_NO_PREFIX, financeWriteOffDao.nextWriteOffNo()));
+        writeOff.setWriteOffNo(ScmDocumentNumbers.next());
         return writeOff;
     }
 

@@ -286,7 +286,7 @@ const partialSelected = computed(() => selectedOrders.value.filter((o) => o.stat
 
 // 创建时间不默认上列；计划到货才是采购跟单关注的日期。
 const columns = ref<TableColumnsType<Order>>([
-  {title: '采购单号', dataIndex: 'orderNo', width: 160, ellipsis: true},
+  {title: '采购单号', dataIndex: 'orderNo', width: 200, ellipsis: true},
   {title: '供应商', dataIndex: 'supplierName', width: 180, ellipsis: true},
   {title: '采购员', dataIndex: 'purchaserName', width: 80, ellipsis: true},
   {title: '作业地点', dataIndex: 'warehouseName', width: 100, ellipsis: true},

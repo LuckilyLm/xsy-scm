@@ -192,10 +192,10 @@ const settleOptions = Object.values(SCM_FINANCE_SETTLE_STATE_ENUM).map((item) =>
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
 const columns = ref<TableColumnsType<FinanceReceivable>>([
-  {title: '应收单号', dataIndex: 'receivableNo', width: 170, ellipsis: true},
+  {title: '应收单号', dataIndex: 'receivableNo', width: 200, ellipsis: true},
   {title: '未核销', dataIndex: 'openAmount', width: 148},
   {title: '客户', dataIndex: 'customerName', width: 190},
-  {title: '订单号', dataIndex: 'orderNo', width: 170},
+  {title: '订单号', dataIndex: 'orderNo', width: 200},
   {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
   {title: '金额', dataIndex: 'amount', width: 136},
   {title: '已核销', dataIndex: 'writtenOffAmount', width: 148},

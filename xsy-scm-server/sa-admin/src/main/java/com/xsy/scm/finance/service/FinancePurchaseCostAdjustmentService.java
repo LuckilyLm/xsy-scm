@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.util.Map;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
-import com.xsy.scm.finance.constant.FinanceConstant;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceEntryTypeEnum;
@@ -78,7 +77,7 @@ public class FinancePurchaseCostAdjustmentService {
         entry.setCreatedBy(source.getCreatedBy());
         entryDao.insert(entry);
         FinancePayableEntity payable = new FinancePayableEntity();
-        payable.setPayableNo(ScmDocumentNumbers.format(FinanceConstant.PAYABLE_NO_PREFIX, payableDao.nextPayableNo()));
+        payable.setPayableNo(ScmDocumentNumbers.next());
         payable.setSourceType(ScmFinancePayableSourceTypeEnum.PURCHASE_COST_ADJUSTMENT.name());
         payable.setSourceId(entry.getId());
         payable.setPurchaseOrderId(source.getPurchaseOrderId());

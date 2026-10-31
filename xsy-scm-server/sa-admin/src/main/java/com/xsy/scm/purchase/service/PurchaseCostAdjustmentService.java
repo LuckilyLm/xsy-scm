@@ -80,7 +80,7 @@ public class PurchaseCostAdjustmentService {
         if (price.signum() < 0 || difference.signum() == 0) {
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
-        source.setAdjustmentNo(ScmDocumentNumbers.format("PCA", adjustmentDao.nextNumber()));
+        source.setAdjustmentNo(ScmDocumentNumbers.next());
         source.setNewPrice(price);
         source.setDirection(difference.signum() > 0
             ? ScmPurchaseCostDirectionEnum.INCREASE.name()

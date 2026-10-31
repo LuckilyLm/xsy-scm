@@ -16,8 +16,7 @@ import java.util.List;
  * 采购单。
  *
  * <p>
- * {@link #nextOrderNo()} 取全局序列，不按日重置：单号形如 {@code PO + yyyyMMdd + 至少 6 位}，超过 999999 自然扩位，由
- * {@code PurchaseNumberGenerator} 负责拼接与补零。
+ * {@link #nextOrderNo()} 是历史全局序列；新单号由 {@code ScmDocumentNumbers.next()} 生成 {@code XSY + 雪花 ID}。
  */
 @Mapper
 public interface PurchaseOrderDao extends BaseMapper<PurchaseOrderEntity> {

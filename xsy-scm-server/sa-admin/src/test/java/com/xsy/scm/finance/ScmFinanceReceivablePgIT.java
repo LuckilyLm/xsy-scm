@@ -335,7 +335,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         assertThat(receivable.get("reason")).isNull();
         assertThat(receivable.get("deleted")).isEqualTo(false);
         assertThat(decimalOf(receivable, "amount")).isEqualByComparingTo("35.0000");
-        assertThat(String.valueOf(receivable.get("receivable_no"))).matches("AR\\d{14,}");
+        assertThat(String.valueOf(receivable.get("receivable_no"))).matches("^XSY\\d{18,19}$");
 
         List<Map<String, Object>> items = receivableItemsOf(receivableId);
         assertThat(items).hasSize(1);

@@ -167,7 +167,7 @@ const sortingColumns: TableColumnsType<OrderSorting> = [
   {title: '分拣结果', dataIndex: 'result', align: 'center', width: 110},
 ];
 const returnColumns: TableColumnsType<OrderReturnFact> = [
-  {title: '退货单号', dataIndex: 'returnNo', width: 170},
+  {title: '退货单号', dataIndex: 'returnNo', width: 200},
   {title: '审批状态', dataIndex: 'status', align: 'center', width: 96},
   {title: '原因', dataIndex: 'reason', width: 180},
   {title: '批准金额', dataIndex: 'approvedAmount', width: 130},
@@ -175,7 +175,7 @@ const returnColumns: TableColumnsType<OrderReturnFact> = [
   {title: '应收红冲', dataIndex: 'redReceivable', width: 190},
 ];
 const refundColumns: TableColumnsType<OrderRefundFact> = [
-  {title: '退款单号', dataIndex: 'refundNo', width: 170},
+  {title: '退款单号', dataIndex: 'refundNo', width: 200},
   {title: '关联退货单', dataIndex: 'returnNo', width: 170},
   {title: '退款单状态', dataIndex: 'status', align: 'center', width: 106},
   {title: '退款金额', dataIndex: 'refundAmount', width: 130},

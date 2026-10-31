@@ -123,7 +123,7 @@ const statusOptions = Object.values(SCM_INVENTORY_RESERVATION_STATUS_ENUM).map((
 
 type InventoryReservationColumn = ScmListColumn;
 const columns = ref<InventoryReservationColumn[]>([
-  {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 180},
+  {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 200},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 150},

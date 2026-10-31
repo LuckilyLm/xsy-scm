@@ -1,27 +1,28 @@
 package com.xsy.scm.common.util;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+
 import java.util.Locale;
 
 /**
- * SCM 编号拼接规则：单据号 = 前缀 + yyyyMMdd（Asia/Shanghai）+ 至少 6 位序号；主数据编码 = 前缀 + 至少 6 位序号，不带日期。
+ * SCM 编号规则：业务单据号 = {@code XSY} + 雪花 ID（如 {@code XSY1723456789012345678}）；主数据编码 = 前缀 + 至少 6 位序号，不带日期。
  *
  * <p>
- * 时间基准固定用 Asia/Shanghai：单号里的日期段是业务日期，不能随服务器时区漂移。序号超过 999999 时自然扩位。
+ * 单据号不再用「英文前缀 + 业务日期 + 序号」拼接：雪花 ID 全局唯一、按时间递增，省掉按日序列和时区处理；单据类型由各业务字段区分。
+ * 已生成的历史单号按原样保留，不重写。
  */
 public final class ScmDocumentNumbers {
 
-    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
-
-    private static final DateTimeFormatter DATE = DateTimeFormatter.BASIC_ISO_DATE;
+    private static final String DOCUMENT_PREFIX = "XSY";
 
     private ScmDocumentNumbers() {
     }
 
-    public static String format(String prefix, long number) {
-        return prefix + LocalDate.now(BUSINESS_ZONE).format(DATE) + String.format(Locale.ROOT, "%06d", number);
+    /**
+     * 下一个业务单据号：{@code XSY} + 雪花 ID。
+     */
+    public static String next() {
+        return DOCUMENT_PREFIX + IdWorker.getIdStr();
     }
 
     /** 主数据编码（客户 / 供应商 / 仓库等）：没有业务日期，只拼前缀与序号。 */

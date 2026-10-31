@@ -811,7 +811,7 @@ const effectivePeriodText = (row: PriceRow): string =>
   `${datetime(row.effectiveFrom)} ～ ${row.effectiveTo ? datetime(row.effectiveTo) : '长期有效'}`;
 
 const orderCols: TableColumnsType<Order> = [
-  {title: '订单号', dataIndex: 'orderNo', width: 180},
+  {title: '订单号', dataIndex: 'orderNo', width: 200},
   {title: '来源', dataIndex: 'orderSource', width: 110, align: 'center'},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '订单金额', dataIndex: 'orderedTotalAmount', width: 140},

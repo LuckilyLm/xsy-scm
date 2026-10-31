@@ -55,7 +55,7 @@ const saving = ref(false);
 const error = ref('');
 let generation = 0;
 const columns: TableColumnsType<SortingStandardItem> = [
-  {title: '订单号', dataIndex: 'orderNo', width: 170},
+  {title: '订单号', dataIndex: 'orderNo', width: 200},
   {title: '客户', dataIndex: 'customerName', width: 130},
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'specName', width: 130},

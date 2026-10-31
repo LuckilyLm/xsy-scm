@@ -136,9 +136,9 @@ const error = ref('');
 
 const columns = ref<TableColumnsType<TraceCorrection>>([
   {title: '包装码', dataIndex: 'unitCode', width: 150},
-  {title: '批次号', dataIndex: 'lotNo', width: 180, ellipsis: true},
+  {title: '批次号', dataIndex: 'lotNo', width: 200, ellipsis: true},
   {title: '客户', dataIndex: 'customerName', width: 140, ellipsis: true},
-  {title: '订单号', dataIndex: 'orderNo', width: 160, ellipsis: true},
+  {title: '订单号', dataIndex: 'orderNo', width: 200, ellipsis: true},
   {title: '更正原因', dataIndex: 'reason', width: 200, ellipsis: true},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
   {title: '申请人', dataIndex: 'requestedBy', width: 140},

@@ -116,7 +116,7 @@ const emit = defineEmits<{
 }>();
 
 const columns = ref<TableColumnsType<SortingCandidateLine>>([
-  {title: '订单号', dataIndex: 'orderNo', width: 170},
+  {title: '订单号', dataIndex: 'orderNo', width: 200},
   {title: '客户', dataIndex: 'customerName', width: 160},
   {title: '商品', dataIndex: 'productNameSnapshot', width: 170},
   {title: '商品规格', dataIndex: 'specNameSnapshot', width: 130},

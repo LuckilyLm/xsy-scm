@@ -82,8 +82,7 @@ public class FinancePostingService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         FinancePostingEntity posting = new FinancePostingEntity();
-        posting.setPostingNo(
-            ScmDocumentNumbers.format(FinanceConstant.POSTING_NO_PREFIX, financePostingDao.nextPostingNo()));
+        posting.setPostingNo(ScmDocumentNumbers.next());
         posting.setCustomerId(customer.getCustomerId());
         posting.setCustomerNameSnapshot(customer.getCustomerName());
         posting.setSettlementCustomerId(customer.getSettlementCustomerId());

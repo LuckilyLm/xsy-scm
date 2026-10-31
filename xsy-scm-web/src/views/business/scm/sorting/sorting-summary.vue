@@ -202,7 +202,7 @@ const customerColumns: TableColumnsType<SortingCustomerLine> = [
   {title: '送货时间', dataIndex: 'deliveryTimeSnapshot', width: 165},
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 140},
   {title: '客户', dataIndex: 'customerNameSnapshot', width: 150},
-  {title: '订单号', dataIndex: 'orderNoSnapshot', width: 180},
+  {title: '订单号', dataIndex: 'orderNoSnapshot', width: 200},
   {title: '分拣任务', dataIndex: 'taskNo', width: 180},
   {title: '任务状态', dataIndex: 'taskStatus', align: 'center', width: 100},
   {title: '商品', dataIndex: 'productNameSnapshot', width: 160},

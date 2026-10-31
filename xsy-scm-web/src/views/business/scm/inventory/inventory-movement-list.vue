@@ -133,7 +133,7 @@ type InventoryMovementColumn = ScmListColumn;
 const columns = ref<InventoryMovementColumn[]>([
   {title: '发生时间', dataIndex: 'occurredAt', width: 170},
   {title: '类型', dataIndex: 'movementType', width: 150, align: 'center'},
-  {title: '业务单号', dataIndex: 'receiptNo', width: 170},
+  {title: '业务单号', dataIndex: 'receiptNo', width: 200},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
   {title: '商品规格', dataIndex: 'skuName', width: 150},
   {title: '数量', dataIndex: 'quantity', width: 110},

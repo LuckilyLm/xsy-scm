@@ -153,8 +153,7 @@ public class FinancePaymentService {
 
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
-        payment.setPaymentNo(
-            ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
+        payment.setPaymentNo(ScmDocumentNumbers.next());
         payment.setCreatedAt(now);
         payment.setUpdatedAt(now);
         payment.setCreatedBy(operator);
@@ -185,8 +184,7 @@ public class FinancePaymentService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         FinancePaymentEntity reversal = new FinancePaymentEntity();
-        reversal.setPaymentNo(
-            ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
+        reversal.setPaymentNo(ScmDocumentNumbers.next());
         reversal.setCounterpartyType(original.getCounterpartyType());
         reversal.setCounterpartyId(original.getCounterpartyId());
         reversal.setCounterpartyNameSnapshot(original.getCounterpartyNameSnapshot());
@@ -300,8 +298,7 @@ public class FinancePaymentService {
 
         OffsetDateTime now = OffsetDateTime.now();
         FinancePaymentEntity payment = new FinancePaymentEntity();
-        payment.setPaymentNo(
-            ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
+        payment.setPaymentNo(ScmDocumentNumbers.next());
         payment.setCounterpartyType(ScmFinanceCounterpartyTypeEnum.CUSTOMER.name());
         payment.setCounterpartyId(refund.getCustomerId());
         payment.setCounterpartyNameSnapshot(customer.getCustomerName());

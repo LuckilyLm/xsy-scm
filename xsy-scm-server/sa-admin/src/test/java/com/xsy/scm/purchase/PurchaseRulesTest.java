@@ -6,7 +6,6 @@ import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import com.xsy.scm.purchase.constant.ScmReceiptStatusEnum;
 import com.xsy.scm.purchase.manager.PurchaseOrderStateMachine;
 import com.xsy.scm.purchase.manager.PurchaseSnapshotFactory;
-import com.xsy.scm.purchase.service.PurchaseNumberGenerator;
 import com.xsy.scm.purchase.support.PurchaseDemandSourceGuard;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import org.junit.jupiter.api.DisplayName;
@@ -236,24 +235,6 @@ class PurchaseRulesTest {
         entity.setStatus(status);
         entity.setDeleted(deleted);
         return entity;
-    }
-
-    // ------------------------------------------------------------------
-    // 单号：全局序列 + yyyyMMdd + 至少 6 位，超 999999 自然扩位
-    // ------------------------------------------------------------------
-
-    @Test
-    @DisplayName("单号格式：PO / PR + yyyyMMdd + 至少 6 位，超 999999 自然扩位")
-    void numberingExpandsNaturally() {
-        assertThat(PurchaseNumberGenerator.format("PO", 1)).matches("PO[0-9]{8}000001");
-        assertThat(PurchaseNumberGenerator.format("PO", 999999)).matches("PO[0-9]{8}999999");
-        // 不截断、不报错：7 位原样输出
-        assertThat(PurchaseNumberGenerator.format("PO", 1000000)).matches("PO[0-9]{8}1000000");
-        assertThat(PurchaseNumberGenerator.format("PR", 12345678)).matches("PR[0-9]{8}12345678");
-        // 日期段取 Asia/Shanghai（与 demand_date 同一个 ZoneId 常量）
-        assertThat(PurchaseNumberGenerator.format("PO", 1))
-                .startsWith("PO" + LocalDate.now(PurchaseSnapshotFactory.ASIA_SHANGHAI)
-                        .format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE));
     }
 
     // ------------------------------------------------------------------

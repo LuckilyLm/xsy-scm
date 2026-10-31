@@ -161,8 +161,8 @@ const summaryColumns = [
 const columns: TableColumnsType<OrderExceptionRow> = [
   {title: '异常类别', dataIndex: 'exceptionType', align: 'center', width: 145},
   {title: '发生时间', dataIndex: 'occurredAt', width: 180},
-  {title: '来源单号', dataIndex: 'sourceNo', width: 180},
-  {title: '订单号', dataIndex: 'orderNo', width: 180},
+  {title: '来源单号', dataIndex: 'sourceNo', width: 200},
+  {title: '订单号', dataIndex: 'orderNo', width: 200},
   {title: '客户', dataIndex: 'customerName', width: 150},
   {title: '仓库', dataIndex: 'warehouseName', width: 140},
   {title: '商品', dataIndex: 'productName', width: 140},

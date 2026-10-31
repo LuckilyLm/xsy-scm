@@ -53,8 +53,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         PurchaseOrderVO order = createDraftOrder("PO1", supplierId, skuId, "3.0000", "6.2000",
                 allocation(demand, "3.0000"));
 
-        // 单号 = PO + yyyyMMdd + ≥6 位序号（PG sequence 全局递增，不按日 reset）
-        assertThat(order.getOrderNo()).matches("^PO\\d{14,}$");
+        assertThat(order.getOrderNo()).matches("^XSY\\d{18,19}$");
         assertThat(order.getStatus()).isEqualTo("DRAFT");
 
         // 供应商 / 仓库快照在创建时固化：历史永不回读主数据

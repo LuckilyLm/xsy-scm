@@ -202,8 +202,7 @@ public class FinanceWriteOffService {
             }
 
             FinanceWriteOffEntity writeOff = new FinanceWriteOffEntity();
-            writeOff.setWriteOffNo(
-                ScmDocumentNumbers.format(FinanceConstant.WRITE_OFF_NO_PREFIX, financeWriteOffDao.nextWriteOffNo()));
+            writeOff.setWriteOffNo(ScmDocumentNumbers.next());
             writeOff.setSourceType(sourceType);
             writeOff.setSourceId(source.id());
             writeOff.setTargetType(targetType);
@@ -281,8 +280,7 @@ public class FinanceWriteOffService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         FinanceWriteOffEntity reversal = new FinanceWriteOffEntity();
-        reversal.setWriteOffNo(
-            ScmDocumentNumbers.format(FinanceConstant.WRITE_OFF_NO_PREFIX, financeWriteOffDao.nextWriteOffNo()));
+        reversal.setWriteOffNo(ScmDocumentNumbers.next());
         reversal.setSourceType(original.getSourceType());
         reversal.setSourceId(original.getSourceId());
         reversal.setTargetType(original.getTargetType());

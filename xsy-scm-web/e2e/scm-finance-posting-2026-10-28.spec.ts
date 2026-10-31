@@ -84,7 +84,7 @@ test.describe('scm-finance-posting', () => {
     });
     const row = (created.list as Row[])[0];
     expect(row, '登记后应能按客户查到这张过账单').toBeTruthy();
-    expect(row.postingNo).toMatch(/^PD/);
+    expect(row.postingNo).toMatch(/^XSY\d{18,19}$/);
     expect(row.refundStatus).toBe('PENDING');
     expect(row.status).toBe('NORMAL');
     expect(Number(row.amount)).toBeCloseTo(1234.5, 4);

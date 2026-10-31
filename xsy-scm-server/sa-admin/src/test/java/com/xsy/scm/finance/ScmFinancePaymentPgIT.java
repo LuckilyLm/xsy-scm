@@ -289,7 +289,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         assertThat(row.get("reverse_of_id")).isNull();
         assertThat(row.get("reason")).isNull();
         assertThat((BigDecimal) row.get("amount")).isEqualByComparingTo("500.0000");
-        assertThat(String.valueOf(row.get("payment_no"))).matches("PM\\d{14,}");
+        assertThat(String.valueOf(row.get("payment_no"))).matches("^XSY\\d{18,19}$");
         assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
                 result.getPaymentId())).as("该笔预付款不自动生成核销").isZero();
         assertThat(result.getCounterpartyName()).as("回显登记时冻结的对方名").isEqualTo(row.get("counterparty_name_snapshot"));
@@ -804,18 +804,15 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("付款单号取 PM 前缀 + 全局序列，且跳号只来自 nextval 不随事务回滚")
-    void paymentNumberComesFromTheGlobalSequence() {
+    @DisplayName("付款单号 = XSY + 雪花 ID，两次付款不重复")
+    void paymentNumberUsesSnowflake() {
         Long supplierId = supplier();
         String firstNo = add(supplierForm(supplierId, "1.0000")).getPaymentNo();
         expectCode(() -> add(supplierForm(supplierId, "0")), 40000);
         String secondNo = add(supplierForm(supplierId, "2.0000")).getPaymentNo();
 
-        assertThat(firstNo).matches("PM\\d{8}\\d{6,}");
+        assertThat(firstNo).matches("^XSY\\d{18,19}$");
+        assertThat(secondNo).matches("^XSY\\d{18,19}$");
         assertThat(secondNo).isNotEqualTo(firstNo);
-        long first = Long.parseLong(firstNo.substring(10));
-        long second = Long.parseLong(secondNo.substring(10));
-        // 失败的那一次也已经 nextval 过，因此序号允许跳、但必须单调递增（全局非重置序列）
-        assertThat(second).isGreaterThan(first);
     }
 }

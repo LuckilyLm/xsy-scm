@@ -56,7 +56,7 @@ public class ScmNegativeStockSnapshotService {
         var rows = ScmReportExportGuard.exportRows(size -> reportDao.negativeStockList(new Page<>(1, size, false),
             query, dataScopeService.resolve().getWarehouseScope()));
         ScmNegativeStockSnapshotVO snapshot = new ScmNegativeStockSnapshotVO();
-        snapshot.setSnapshotNo(ScmDocumentNumbers.format("NS", snapshotDao.nextNumber()));
+        snapshot.setSnapshotNo(ScmDocumentNumbers.next());
         snapshot.setWarehouseId(form.getWarehouseId());
         snapshot.setWarehouseName(warehouse.getName());
         snapshot

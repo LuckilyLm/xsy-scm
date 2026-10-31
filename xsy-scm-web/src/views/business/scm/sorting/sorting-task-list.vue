@@ -266,7 +266,7 @@ const emptyText = computed(() =>
 
 // 列表只留任务、执行人、进度和送货时间；打印次数和创建时间放在详情里。
 const columns = ref<TableColumnsType<SortingTask>>([
-  {title: '任务号', dataIndex: 'taskNo', width: 180},
+  {title: '任务号', dataIndex: 'taskNo', width: 200},
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 150},
   {title: '受指派人', dataIndex: 'assigneeName', width: 120},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},

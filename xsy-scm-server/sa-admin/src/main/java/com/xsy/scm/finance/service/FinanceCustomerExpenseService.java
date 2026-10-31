@@ -66,7 +66,7 @@ public class FinanceCustomerExpenseService {
             return expenseDao.find(idempotencyService.replay(claim, Long.class));
         }
         FinanceCustomerExpenseEntity expense = new FinanceCustomerExpenseEntity();
-        expense.setExpenseNo(ScmDocumentNumbers.format("CE", expenseDao.nextNumber()));
+        expense.setExpenseNo(ScmDocumentNumbers.next());
         expense.setCustomerId(customer.getCustomerId());
         expense.setCustomerNameSnapshot(customer.getCustomerName());
         expense.setExpenseMonth(form.getExpenseMonth());

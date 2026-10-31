@@ -100,7 +100,7 @@ const emit = defineEmits<{
 }>();
 
 const orderColumns = computed<TableColumnsType<RouteOrder>>(() => [
-  {title: '订单号', dataIndex: 'orderNoSnapshot', width: 170},
+  {title: '订单号', dataIndex: 'orderNoSnapshot', width: 200},
   {title: '停靠点 / 客户', dataIndex: 'stop', width: 200},
   {title: '配送地址', dataIndex: 'address', width: 240},
   {title: '期望配送', dataIndex: 'expectDeliveryTimeSnapshot', width: 180},

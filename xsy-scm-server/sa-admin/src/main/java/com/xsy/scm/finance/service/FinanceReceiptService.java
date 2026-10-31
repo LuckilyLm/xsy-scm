@@ -325,8 +325,7 @@ public class FinanceReceiptService {
             ? FinanceConstant.ORDER_FUNDING_OPERATOR
             : funding.getOperator();
         FinanceReceiptEntity receipt = new FinanceReceiptEntity();
-        receipt.setReceiptNo(
-            ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
+        receipt.setReceiptNo(ScmDocumentNumbers.next());
         receipt.setCustomerId(customer.getCustomerId());
         receipt.setCustomerNameSnapshot(customer.getCustomerName());
         receipt.setSettlementCustomerId(funding.getSettlementCustomerId());
@@ -371,8 +370,7 @@ public class FinanceReceiptService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         FinanceReceiptEntity reversal = new FinanceReceiptEntity();
-        reversal.setReceiptNo(
-            ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
+        reversal.setReceiptNo(ScmDocumentNumbers.next());
         reversal.setCustomerId(original.getCustomerId());
         reversal.setCustomerNameSnapshot(original.getCustomerNameSnapshot());
         reversal.setSettlementCustomerId(original.getSettlementCustomerId());
@@ -431,8 +429,7 @@ public class FinanceReceiptService {
         String operator = ScmOperator.current();
 
         FinanceReceiptEntity receipt = new FinanceReceiptEntity();
-        receipt.setReceiptNo(
-            ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
+        receipt.setReceiptNo(ScmDocumentNumbers.next());
         receipt.setCustomerId(customer.getCustomerId());
         receipt.setCustomerNameSnapshot(customerNameSnapshot);
         receipt.setSettlementCustomerId(settlementCustomerId);

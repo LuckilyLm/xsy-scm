@@ -1,44 +1,27 @@
 package com.xsy.scm.payment.service;
 
 import com.xsy.scm.common.util.ScmDocumentNumbers;
-import com.xsy.scm.payment.dao.PaymentDocumentNumberDao;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 支付意图、交易、退款和回调使用各自的单号前缀及日期序号。
+ * 支付意图、交易、退款和回调统一使用 {@code XSY + 雪花 ID} 单号；单据类型由各自业务字段区分。
  */
 @Service
-@RequiredArgsConstructor
 public class PaymentNumberGenerator {
 
-    public static final String INTENT_PREFIX = "PYI";
-    public static final String TRANSACTION_PREFIX = "PYT";
-    public static final String REFUND_PREFIX = "PYR";
-    public static final String RECONCILIATION_PREFIX = "PYC";
-
-    private final PaymentDocumentNumberDao paymentDocumentNumberDao;
-
     public String nextIntentNo() {
-        return format(INTENT_PREFIX, paymentDocumentNumberDao.nextDocumentNo());
+        return ScmDocumentNumbers.next();
     }
 
     public String nextTransactionNo() {
-        return format(TRANSACTION_PREFIX, paymentDocumentNumberDao.nextDocumentNo());
+        return ScmDocumentNumbers.next();
     }
 
     public String nextRefundNo() {
-        return format(REFUND_PREFIX, paymentDocumentNumberDao.nextDocumentNo());
+        return ScmDocumentNumbers.next();
     }
 
     public String nextReconciliationNo() {
-        return format(RECONCILIATION_PREFIX, paymentDocumentNumberDao.nextDocumentNo());
-    }
-
-    /**
-     * 单号拼接的纯函数（单测可直接覆盖，不需要 DB）。
-     */
-    public static String format(String prefix, long number) {
-        return ScmDocumentNumbers.format(prefix, number);
+        return ScmDocumentNumbers.next();
     }
 }

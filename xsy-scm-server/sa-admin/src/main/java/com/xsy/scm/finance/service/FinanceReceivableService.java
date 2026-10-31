@@ -233,8 +233,7 @@ public class FinanceReceivableService {
         OffsetDateTime now = OffsetDateTime.now();
 
         FinanceReceivableEntity receivable = new FinanceReceivableEntity();
-        receivable.setReceivableNo(
-            ScmDocumentNumbers.format(FinanceConstant.RECEIVABLE_NO_PREFIX, financeReceivableDao.nextReceivableNo()));
+        receivable.setReceivableNo(ScmDocumentNumbers.next());
         receivable.setSourceType(ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name());
         receivable.setSourceId(source.getSalesOrderId());
         receivable.setOrderId(source.getSalesOrderId());
@@ -260,8 +259,7 @@ public class FinanceReceivableService {
         OffsetDateTime now = OffsetDateTime.now();
 
         FinanceReceivableEntity red = new FinanceReceivableEntity();
-        red.setReceivableNo(
-            ScmDocumentNumbers.format(FinanceConstant.RECEIVABLE_NO_PREFIX, financeReceivableDao.nextReceivableNo()));
+        red.setReceivableNo(ScmDocumentNumbers.next());
         red.setSourceType(ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name());
         red.setSourceId(returned.getOrderReturnId());
         red.setOrderId(returned.getOrderId());
@@ -293,8 +291,7 @@ public class FinanceReceivableService {
         OffsetDateTime now = OffsetDateTime.now();
 
         FinanceReceivableEntity red = new FinanceReceivableEntity();
-        red.setReceivableNo(
-            ScmDocumentNumbers.format(FinanceConstant.RECEIVABLE_NO_PREFIX, financeReceivableDao.nextReceivableNo()));
+        red.setReceivableNo(ScmDocumentNumbers.next());
         red.setSourceType(ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name());
         red.setSourceId(returned.getOrderReturnId());
         red.setOrderId(null);

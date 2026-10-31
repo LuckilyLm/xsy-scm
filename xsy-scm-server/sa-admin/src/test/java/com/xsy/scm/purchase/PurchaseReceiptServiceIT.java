@@ -51,12 +51,12 @@ class PurchaseReceiptServiceIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("create：按采购单活动行生成收货行，单号 PR+日期+序号，对账量取初始态")
+    @DisplayName("create：按采购单活动行生成收货行，单号为 XSY + 雪花 ID，对账量取初始态")
     void createGeneratesReceiptForEveryActiveOrderItem() {
         ReceiptFixture fx = receiptFixture("RC1", "10.0000");
         PurchaseReceiptVO receipt = fx.receipt();
 
-        assertThat(receipt.getReceiptNo()).matches("^PR\\d{14,}$");
+        assertThat(receipt.getReceiptNo()).matches("^XSY\\d{18,19}$");
         assertThat(receipt.getStatus()).isEqualTo("DRAFT");
         assertThat(receipt.getPurchaseOrderId()).isEqualTo(fx.order().getId());
         assertThat(receipt.getPurchaseOrderNo()).isEqualTo(fx.order().getOrderNo());

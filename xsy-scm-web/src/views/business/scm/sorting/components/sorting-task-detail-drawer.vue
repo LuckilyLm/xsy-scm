@@ -267,7 +267,7 @@ function close() {
 const resultOptions = Object.values(SCM_SORTING_RESULT_ENUM).map((item) => ({value: item.value, label: item.desc}));
 
 const itemColumns = ref<TableColumnsType<SortingTaskItem>>([
-  {title: '订单号', dataIndex: 'orderNoSnapshot', width: 170},
+  {title: '订单号', dataIndex: 'orderNoSnapshot', width: 200},
   {title: '客户', dataIndex: 'customerNameSnapshot', width: 150},
   {title: '商品 / 商品规格', dataIndex: 'product', width: 220},
   {title: '单位', dataIndex: 'saleUnitSnapshot', width: 80},

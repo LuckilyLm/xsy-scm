@@ -142,7 +142,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         assertThat(item.getOccupationStatus()).isEqualTo("ACTIVE");
         assertThat(first.getTask().getStatus()).isEqualTo("PENDING");
         assertThat(first.getTask().getWarehouseNameSnapshot()).isNotBlank();
-        assertThat(first.getTask().getTaskNo()).startsWith("SRT").hasSize(17);
+        assertThat(first.getTask().getTaskNo()).matches("^XSY\\d{18,19}$");
         assertThat(actualQuantity(order)).as("建单不得改订单实发量").isEqualByComparingTo("10.0000");
     }
 
@@ -684,7 +684,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         completeLine(taskId, itemIdOfTask(taskId), "2.0000", "NORMAL", null);
         var preview = as(sorterA, Set.of(PRINT_PERM), () -> queries.printPreview(taskId));
         assertThat(preview.getItems()).hasSize(1);
-        assertThat(preview.getTaskNo()).startsWith("SRT");
+        assertThat(preview.getTaskNo()).matches("^XSY\\d{18,19}$");
         assertThat(printCount(taskId)).as("预览不占用幂等键也不计次").isZero();
     }
 

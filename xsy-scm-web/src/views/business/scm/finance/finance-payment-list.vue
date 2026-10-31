@@ -330,7 +330,7 @@ function counterpartyTypeText(value?: string | null): string {
 }
 
 const columns = ref<TableColumnsType<FinancePayment>>([
-  {title: '付款单号', dataIndex: 'paymentNo', width: 170, ellipsis: true},
+  {title: '付款单号', dataIndex: 'paymentNo', width: 200, ellipsis: true},
   {title: '待核销', dataIndex: 'pendingWriteOffAmount', width: 148},
   {title: '往来方', dataIndex: 'counterpartyName', width: 190},
   {title: '往来方类型', dataIndex: 'counterpartyType', align: 'center', width: 112},

@@ -1,28 +1,23 @@
 package com.xsy.scm.order.service;
 
 import com.xsy.scm.common.util.ScmDocumentNumbers;
-import com.xsy.scm.order.dao.SalesOrderDao;
 import org.springframework.stereotype.Service;
-import lombok.RequiredArgsConstructor;
 
+/**
+ * 销售订单、退货单、退款单统一使用 {@code XSY + 雪花 ID} 单号；单据类型由各自业务字段区分。
+ */
 @Service
-@RequiredArgsConstructor
 public class OrderNumberGenerator {
-    private final SalesOrderDao salesOrderDao;
 
     public String order() {
-        return format("SO", salesOrderDao.nextOrder());
+        return ScmDocumentNumbers.next();
     }
 
     public String returned() {
-        return format("RT", salesOrderDao.nextReturn());
+        return ScmDocumentNumbers.next();
     }
 
     public String refund() {
-        return format("RF", salesOrderDao.nextRefund());
-    }
-
-    public static String format(String prefix, long number) {
-        return ScmDocumentNumbers.format(prefix, number);
+        return ScmDocumentNumbers.next();
     }
 }

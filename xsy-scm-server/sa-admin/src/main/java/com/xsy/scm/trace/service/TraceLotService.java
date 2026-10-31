@@ -1,8 +1,7 @@
 package com.xsy.scm.trace.service;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
-import com.xsy.scm.common.no.ScmBusinessNoService;
-import com.xsy.scm.common.no.ScmBusinessNoType;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.trace.constant.TraceErrorCode;
 import com.xsy.scm.trace.dao.TraceLotDao;
 import com.xsy.scm.trace.domain.vo.TraceLotVO;
@@ -19,7 +18,7 @@ import org.springframework.stereotype.Service;
  * 批次档案的写入与读取。
  *
  * <p>
- * 内部批次号由 {@link ScmBusinessNoService} 按「前缀 + 北京时间业务日 + 全局序号」发号，不展示给前端； 来源生产批号只做 trim 与长度校验，原样保存且不参与唯一约束。批次档案创建后不改写。
+ * 内部批次号由 {@link ScmDocumentNumbers} 按「XSY + 雪花 ID」发号，不展示给前端； 来源生产批号只做 trim 与长度校验，原样保存且不参与唯一约束。批次档案创建后不改写。
  */
 @Service
 @RequiredArgsConstructor
@@ -30,8 +29,6 @@ public class TraceLotService implements TraceLotContract {
     private static final String ORIGIN_PURCHASE_RECEIPT = "PURCHASE_RECEIPT";
 
     private final TraceLotDao traceLotDao;
-
-    private final ScmBusinessNoService businessNoService;
 
     @Override
     public List<LotAllocation> createReceiptLots(CreateReceiptLots command) {
@@ -49,7 +46,7 @@ public class TraceLotService implements TraceLotContract {
                 throw new ScmBusinessException(TraceErrorCode.TRACE_LOT_QUANTITY_INVALID);
             }
             TraceLotVO.Lot lot = new TraceLotVO.Lot();
-            lot.setLotNo(businessNoService.nextDated(ScmBusinessNoType.TRACE_LOT));
+            lot.setLotNo(ScmDocumentNumbers.next());
             lot.setSourceLotNo(sourceLotNo);
             lot.setSupplierId(command.supplierId());
             lot.setSkuId(command.skuId());

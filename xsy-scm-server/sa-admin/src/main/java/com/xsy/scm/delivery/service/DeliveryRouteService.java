@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,6 +25,7 @@ import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.delivery.dao.DeliveryDriverDao;
 import com.xsy.scm.delivery.dao.DeliveryQueryDao;
 import com.xsy.scm.delivery.dao.DeliveryRouteDao;
@@ -122,8 +122,7 @@ public class DeliveryRouteService {
     public Long create(DeliveryRouteForm form) {
         var route = new DeliveryRouteEntity();
         applyHeader(route, form);
-        String sequence = String.format("%06d", deliveryQueryDao.nextNumber());
-        route.setRouteNo("DR" + form.getDeliveryDate().format(DateTimeFormatter.BASIC_ISO_DATE) + sequence);
+        route.setRouteNo(ScmDocumentNumbers.next());
         route.setStatus(ScmDeliveryRouteStatusEnum.DRAFT.name());
         stamp(route, true);
         deliveryRouteDao.insert(route);

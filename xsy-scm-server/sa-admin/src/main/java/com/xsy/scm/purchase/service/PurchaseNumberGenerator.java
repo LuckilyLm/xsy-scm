@@ -1,40 +1,25 @@
 package com.xsy.scm.purchase.service;
 
 import com.xsy.scm.common.util.ScmDocumentNumbers;
-import lombok.RequiredArgsConstructor;
-import com.xsy.scm.purchase.dao.PurchaseOrderDao;
-import com.xsy.scm.purchase.dao.PurchaseReceiptDao;
 import org.springframework.stereotype.Service;
 
 /**
- * 采购单号和收货单号由各自前缀、北京时间日期和数据库序列组成。使用序列保证并发下不重复，不按查询最大单号生成。
+ * 采购单号和收货单号统一使用 {@code XSY + 雪花 ID}，雪花 ID 全局唯一，不再依赖数据库序列。
  */
 @Service
-@RequiredArgsConstructor
 public class PurchaseNumberGenerator {
 
-    private final PurchaseOrderDao purchaseOrderDao;
-
-    private final PurchaseReceiptDao purchaseReceiptDao;
-
     /**
-     * 采购单号。必须在事务内调用（序列的 nextval 不回滚，跳号是可接受的）。
+     * 采购单号。
      */
     public String order() {
-        return format("PO", purchaseOrderDao.nextOrderNo());
+        return ScmDocumentNumbers.next();
     }
 
     /**
-     * 收货单号。同上。
+     * 收货单号。
      */
     public String receipt() {
-        return format("PR", purchaseReceiptDao.nextReceiptNo());
-    }
-
-    /**
-     * 只做格式化，不访问数据库。
-     */
-    public static String format(String prefix, long number) {
-        return ScmDocumentNumbers.format(prefix, number);
+        return ScmDocumentNumbers.next();
     }
 }

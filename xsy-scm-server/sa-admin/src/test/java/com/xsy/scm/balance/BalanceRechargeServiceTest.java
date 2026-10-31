@@ -65,7 +65,6 @@ class BalanceRechargeServiceTest {
 
     @Test
     void createPersistsTheRechargeFactBeforeAskingThePaymentDomainToCollect() {
-        when(recharges.nextRechargeNo()).thenReturn(9L);
         when(recharges.insert(any(CustomerBalanceRechargeEntity.class))).thenAnswer(invocation -> {
             CustomerBalanceRechargeEntity row = invocation.getArgument(0); row.setId(9L); return 1;
         });
@@ -79,7 +78,7 @@ class BalanceRechargeServiceTest {
         assertThat(created).isSameAs(intent);
         var row = ArgumentCaptor.forClass(CustomerBalanceRechargeEntity.class);
         verify(recharges).insert(row.capture());
-        assertThat(row.getValue().getRechargeNo()).startsWith("CBR").endsWith("000009");
+        assertThat(row.getValue().getRechargeNo()).matches("^XSY\\d{18,19}$");
         assertThat(row.getValue().getSettlementCustomerId()).isEqualTo(3L);
         assertThat(row.getValue().getSettlementCustomerNameSnapshot()).isEqualTo("集团");
         assertThat(row.getValue().getCustomerId()).isEqualTo(2L);

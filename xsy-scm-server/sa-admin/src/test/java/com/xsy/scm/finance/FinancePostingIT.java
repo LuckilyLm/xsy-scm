@@ -52,7 +52,7 @@ class FinancePostingIT extends ScmW5PgITBase {
 
         FinancePostingVO posting = postingService.add(addForm(customerId, "1234.5678"), key("add"));
 
-        assertThat(posting.getPostingNo()).startsWith("PD");
+        assertThat(posting.getPostingNo()).matches("^XSY\\d{18,19}$");
         assertThat(posting.getStatus()).isEqualTo("NORMAL");
         assertThat(posting.getRefundStatus()).isEqualTo("PENDING");
         assertThat(posting.getTaxRate()).isEqualByComparingTo("13.0000");

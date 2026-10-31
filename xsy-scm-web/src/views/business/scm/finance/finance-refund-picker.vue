@@ -64,9 +64,9 @@ const total = ref(0);
 const loading = ref(false);
 const error = ref('');
 const columns = computed<TableColumnsType<FinanceRefundOption>>(() => [
-  {title: '退款单号', dataIndex: 'refundNo', width: 180},
-  {title: '退货单号', dataIndex: 'returnNo', width: 170},
-  {title: '订单号', dataIndex: 'orderNo', width: 180},
+  {title: '退款单号', dataIndex: 'refundNo', width: 200},
+  {title: '退货单号', dataIndex: 'returnNo', width: 200},
+  {title: '订单号', dataIndex: 'orderNo', width: 200},
   {title: '客户', dataIndex: 'customerName', width: 190},
   {title: '退款金额', dataIndex: 'refundAmount', width: 150},
   {title: '完成时点', dataIndex: 'completedAt', width: 180},

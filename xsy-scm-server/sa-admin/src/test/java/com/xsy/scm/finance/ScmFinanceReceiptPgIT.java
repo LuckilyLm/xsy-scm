@@ -153,7 +153,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         assertThat((BigDecimal) row.get("amount")).isEqualByComparingTo("100.0000");
         assertThat(row.get("customer_id")).isEqualTo(customerId);
         assertThat(row.get("deleted")).isEqualTo(false);
-        assertThat(String.valueOf(row.get("receipt_no"))).matches("RC\\d{14,}");
+        assertThat(String.valueOf(row.get("receipt_no"))).matches("^XSY\\d{18,19}$");
         assertThat(row.get("created_by")).isEqualTo(currentOperator());
         assertThat(timestampOf(row.get("received_at")).toInstant()).isEqualTo(PAST.toInstant());
 
@@ -297,7 +297,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
 
         FinanceReceiptVO result = add(form(customerId, "30.0000", "CASH", PAST));
 
-        assertThat(result.getReceiptNo()).startsWith("RC");
+        assertThat(result.getReceiptNo()).matches("^XSY\\d{18,19}$");
         assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
                 result.getReceiptId())).as("这笔预收不自动生成核销").isZero();
         // 按客户收窄而不是全表：同一库里 NOT_SUPPORTED 的 IT 会提交真实的应收事实

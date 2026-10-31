@@ -204,7 +204,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         assertThat(payable.get("reason")).isNull();
         assertThat(payable.get("original_payable_id")).isNull();
         assertThat(payable.get("deleted")).isEqualTo(false);
-        assertThat(String.valueOf(payable.get("payable_no"))).matches("AP\\d{14,}");
+        assertThat(String.valueOf(payable.get("payable_no"))).matches("^XSY\\d{18,19}$");
         // 应付时点 = 收货确认时刻（DIRECT 下也等于物理入库时刻，但口径取的是 confirmed_at）
         assertThat(timeOf(payable, "event_at").toInstant())
                 .isEqualTo(receiptConfirmedAt(receipt.getId()).toInstant());

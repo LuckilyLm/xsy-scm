@@ -273,7 +273,7 @@ const statusOptions = Object.values(SCM_FINANCE_POSTING_STATUS_ENUM).map((item) 
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
 const columns = ref<TableColumnsType<FinancePosting>>([
-  {title: '过账单号', dataIndex: 'postingNo', width: 170, ellipsis: true},
+  {title: '过账单号', dataIndex: 'postingNo', width: 200, ellipsis: true},
   {title: '客户', dataIndex: 'customerName', width: 190, ellipsis: true},
   {title: '过账日期', dataIndex: 'documentDate', width: 120},
   {title: '过账金额', dataIndex: 'amount', width: 140},

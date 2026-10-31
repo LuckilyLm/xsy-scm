@@ -33,8 +33,6 @@ public class BalanceRechargeService {
 
     private static final int SCALE = 4;
 
-    private static final String RECHARGE_NO_PREFIX = "CBR";
-
     private static final String CREATE_SCOPE = "BALANCE_RECHARGE_CREATE";
 
     private final CustomerBalanceRechargeDao customerBalanceRechargeDao;
@@ -77,7 +75,7 @@ public class BalanceRechargeService {
         String operator = ScmOperator.current();
         CustomerBalanceRechargeEntity recharge = new CustomerBalanceRechargeEntity();
         recharge
-            .setRechargeNo(ScmDocumentNumbers.format(RECHARGE_NO_PREFIX, customerBalanceRechargeDao.nextRechargeNo()));
+            .setRechargeNo(ScmDocumentNumbers.next());
         recharge.setSettlementCustomerId(settlement.getId());
         recharge.setSettlementCustomerNameSnapshot(settlement.getName());
         recharge.setCustomerId(customer.getId());

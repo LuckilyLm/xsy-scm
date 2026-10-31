@@ -9,41 +9,6 @@ public final class FinanceConstant {
 
     public static final String ORDER_FUNDING_OPERATOR = "SYSTEM:ORDER_FUNDING";
 
-    /**
-     * 应收单号前缀：AR + 业务日(Asia/Shanghai) + 全局非重置序号，拼接走 {@code ScmDocumentNumbers.format}。
-     */
-    public static final String RECEIVABLE_NO_PREFIX = "AR";
-
-    /**
-     * 应付单号前缀。
-     */
-    public static final String PAYABLE_NO_PREFIX = "AP";
-
-    /**
-     * 收款单号前缀。
-     */
-    public static final String RECEIPT_NO_PREFIX = "RC";
-
-    /**
-     * 付款单号前缀。
-     */
-    public static final String PAYMENT_NO_PREFIX = "PM";
-
-    /**
-     * 核销单号前缀。
-     */
-    public static final String WRITE_OFF_NO_PREFIX = "WO";
-
-    /**
-     * 抹零单号前缀。
-     */
-    public static final String WAIVER_NO_PREFIX = "WV";
-
-    /**
-     * 过账单号前缀。
-     */
-    public static final String POSTING_NO_PREFIX = "PD";
-
     public static final String RECEIVABLE_QUERY_PERM = FinancePermission.RECEIVABLE_QUERY;
     public static final String PAYABLE_QUERY_PERM = FinancePermission.PAYABLE_QUERY;
     public static final String RECEIPT_QUERY_PERM = FinancePermission.RECEIPT_QUERY;

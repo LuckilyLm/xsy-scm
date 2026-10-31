@@ -1687,7 +1687,7 @@ test.describe('scm-sorting', () => {
     expect(Number(created.itemCount)).toBe(2);
     expect(Number(created.processedCount)).toBe(0);
     expect(Number(created.assigneeEmployeeId)).toBe(sorterEmployeeId);
-    expect(String(created.taskNo)).toMatch(/^SRT\d{14}$/);
+    expect(String(created.taskNo)).toMatch(/^XSY\d{18,19}$/);
   });
 
   test('范围是授权仓 ∩ 受指派人：分拣员只看派给自己的，未指派任务回 30005', async () => {

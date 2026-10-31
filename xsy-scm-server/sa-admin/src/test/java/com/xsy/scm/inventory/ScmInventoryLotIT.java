@@ -193,7 +193,7 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
 
         // 回放：单元 → 批次 → 收货来源
         var replay = traceUnitService.replay(codes.getFirst());
-        assertThat(replay.getLot().getLotNo()).startsWith("LOT");
+        assertThat(replay.getLot().getLotNo()).matches("^XSY\\d{18,19}$");
         assertThat(replay.getReceipt()).isNotNull();
         assertThat(replay.getReceipt().getReceiptNo()).isEqualTo(fx.receipt().getReceiptNo());
     }

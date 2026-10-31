@@ -4,7 +4,6 @@ import com.xsy.scm.order.manager.*;
 import com.xsy.scm.order.domain.entity.*;
 import com.xsy.scm.order.domain.form.*;
 import com.xsy.scm.order.constant.*;
-import com.xsy.scm.order.service.OrderNumberGenerator;
 import com.xsy.scm.common.idempotency.ScmIdempotencyRequestHasher;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -92,9 +91,7 @@ class OrderRulesTest {
     }
 
     @Test
-    void numberingExpandsNaturallyAndPriceEnumHasNoUnpriced() {
-        assertThat(OrderNumberGenerator.format("SO", 999999)).matches("SO[0-9]{8}999999");
-        assertThat(OrderNumberGenerator.format("RT", 1000000)).matches("RT[0-9]{8}1000000");
+    void priceEnumHasNoUnpriced() {
         // 枚举顺序就是取价链顺序：逐客协议价 → 客户分组价 → 客户类型价 → 时价 → 市场价，人工改价最后兜底。
         assertThat(ScmOrderPriceSourceEnum.values()).extracting(Enum::name).containsExactly("AGREEMENT", "CUSTOMER_GROUP",
                 "CUSTOMER_TYPE", "TIME_PRICE", "MARKET", "OVERRIDE");

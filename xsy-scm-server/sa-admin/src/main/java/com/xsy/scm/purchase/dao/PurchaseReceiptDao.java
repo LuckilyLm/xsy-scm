@@ -18,7 +18,7 @@ import java.util.List;
  * 收货单继承并复制采购单的供应商 / 仓库，因此这里没有按入参修改供应商 / 仓库的写方法，跨仓收货在结构上不可能发生。
  *
  * <p>
- * {@link #nextReceiptNo()} 取全局序列（不按日重置），由 {@code PurchaseNumberGenerator} 拼成 {@code PR + yyyyMMdd + 至少 6 位}。
+ * {@link #nextReceiptNo()} 是历史全局序列；新单号由 {@code ScmDocumentNumbers.next()} 生成 {@code XSY + 雪花 ID}。
  */
 @Mapper
 public interface PurchaseReceiptDao extends BaseMapper<PurchaseReceiptEntity> {

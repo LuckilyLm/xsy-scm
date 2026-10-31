@@ -1,6 +1,7 @@
 package com.xsy.scm.finance;
 
 import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.finance.domain.form.FinanceReceiptAddForm;
 import com.xsy.scm.finance.service.FinanceReceiptService;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +15,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mockStatic;
 
 /**
  * 收款登记的原子性（PG IT，无外层事务）。
@@ -113,11 +115,8 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
         Long customerId = customer();
         String idempotencyKey = prefix + ":no-collision:" + UUID.randomUUID();
 
-        // 预先占掉服务侧下一次将要使用的单号：序列 nextval 不回滚，因此这次取号是确定的
-        long next = jdbc.queryForObject("SELECT nextval('finance_receipt_no_seq')", Long.class);
-        String taken = "RC" + java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"))
-                .format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE)
-                + String.format("%06d", next + 1);
+        // 固定雪花 ID，预先占掉服务侧下一次将要使用的单号，制造 receipt_no 唯一键冲突
+        String taken = "XSY1723456789012345678";
         jdbc.update("INSERT INTO xsy_finance_receipt (receipt_no, customer_id, customer_name_snapshot,"
                         + " settlement_customer_id, settlement_customer_name_snapshot,"
                         + " amount, method, received_at, entry_type, created_at, updated_at, created_by)"
@@ -130,7 +129,8 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
         int receiveLogsBefore = count("SELECT count(*) FROM xsy_finance_operation_log"
                 + " WHERE business_type = 'RECEIPT'");
 
-        try {
+        try (var numbers = mockStatic(ScmDocumentNumbers.class)) {
+            numbers.when(ScmDocumentNumbers::next).thenReturn(taken);
             assertThatThrownBy(() -> financeReceiptService.add(form(customerId, "33.0000", "撞号用例"),
                     idempotencyKey))
                     .isInstanceOf(DataIntegrityViolationException.class);

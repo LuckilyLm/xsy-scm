@@ -6,42 +6,41 @@
 
 ## 0. 撤回前几版不准确的建议
 
-1. **撤回“所有单据每天重置六位流水”**：实际 ScmDocumentNumbers.format 使用北京时间日期和至少六位 PG 序列，序列全局递增、不按日重置。6 位只是最小展示宽度，不是容量硬上限；跳号正常。无充分理由不得改成每日重置。
+1. **撤回“所有单据每天重置六位流水”**：历史实现使用北京时间日期和全局递增的 PG 序列，6 位只是最小展示宽度；2026-11-01 起业务单据号统一改为 `XSY` + 雪花 ID，不再按日或按序列拼接。
 2. **撤回随意定义的前缀表**：如 PR=采购退货、TR=调拨、ST=盘点、DL=配送等都不符合当前代码。实际 PR 是采购收货，TRF 是调拨，STK 是盘点，DR 是配送线路。禁止用空想字典覆盖在用编号。
 3. **撤回把 P00001234、SKU00005678 或 FRU-APL-00128 当作行业统一标准**：SPU/SKU 的身份边界、供应商货号、包装、计量与追溯颗粒度应先确定。编码格式是次级选择；不能把可变分类/产地/价格/批次塞进稳定身份码。
 4. **批次码不能直接充当一物一码**：历史参考实现中的 TraceCodeService 使用一码一批，traceCode=batchNo，**并不是一箱一码/一件一码**。产品需求明确提出一物一码，二者存在差异。
-5. **撤回“当前已有统一 BusinessNumberService 管理所有编号”的说法**：现有 ScmBusinessNoService 只服务 CUSTOMER/SUPPLIER/WAREHOUSE 主数据；各业务域各取 PG Sequence，并共享格式化工具。统一规范 ≠ 立即重写所有生成器。
-6. **不使用编号推断数据可信性**：某日的日期段说明取号/业务日期策略，不证明采收时间、发货时间；一个订单号不是批次或唯一实物码；一张二维码不等于有可审计的追溯事实。
+5. **撤回“当前已有统一 BusinessNumberService 管理所有编号”的说法**：ScmBusinessNoService 只服务主数据编码；业务单据号统一由 ScmDocumentNumbers.next() 发号。
+6. **不使用编号推断数据可信性**：编号不含业务日期，也不证明采收时间、发货时间；一个订单号不是批次或唯一实物码；一张二维码不等于有可审计的追溯事实。
 
 ## 1. 当前代码核对：哪些已实现
 
-### 1.1 单据编号（均为“前缀 + yyyyMMdd + 至少六位序列”，除明确列出的特殊情况）
+### 1.1 单据编号（2026-11-01 起统一为 `XSY + 雪花 ID`）
 
-| 领域 | 已存在的编号 | 真实前缀 | 生成位置/说明 |
+所有业务单据号都由 `common/util/ScmDocumentNumbers.next()` 生成，格式为 `XSY` + 雪花 ID（如 `XSY1723456789012345678`），不再拼接英文前缀与业务日期。单据类型由各自的业务字段区分；历史单号按原格式保留，下表的前缀只用于识别旧数据。
+
+| 领域 | 已存在的编号 | 历史前缀 | 生成位置 |
 | --- | --- | --- | --- |
-| 销售订单 | 订单号 | SO | order/service/OrderNumberGenerator.java；独立 sales_order_no_seq |
-| 销售退货 | 退货单号 | RT | 同上；order_return_no_seq |
-| 订单退款 | 订单侧退款单号 | RF | 同上；order_refund_no_seq，不能混同支付网关退款 |
-| 采购 | 采购订单号 | PO | purchase/service/PurchaseNumberGenerator.java；purchase_order_no_seq |
-| 采购收货 | 收货单号 | PR | 同上；purchase_receipt_no_seq；PR **不是采购退货** |
+| 销售订单 | 订单号 | SO | order/service/OrderNumberGenerator.java |
+| 销售退货 | 退货单号 | RT | 同上 |
+| 订单退款 | 订单侧退款单号 | RF | 同上；不能混同支付网关退款 |
+| 采购 | 采购订单号 | PO | purchase/service/PurchaseNumberGenerator.java |
+| 采购收货 | 收货单号 | PR | 同上；PR **不是采购退货** |
 | 库存出库 | 出库单号 | OUT | inventory/service/InventoryOutboundNumberGenerator.java |
 | 库存调拨 | 调拨单号 | TRF | inventory/service/InventoryTransferNumberGenerator.java |
 | 库存盘点 | 盘点单号 | STK | inventory/service/InventoryStocktakeNumberGenerator.java |
 | 报损/报溢 | 损溢单号 | LGR | inventory/service/InventoryLossGainNumberGenerator.java |
 | 规格转换 | 转换单号 | CVT | inventory/service/InventoryConversionNumberGenerator.java |
-| 分拣 | 分拣任务号 | SRT | sorting/service/SortingTaskService.java；SortingConstant.TASK_NO_PREFIX |
-| 配送 | 配送线路号 | DR | delivery/service/DeliveryRouteService.java；**日期来自指定 deliveryDate**，不是简单的当前日 |
-| 财务应收 | 应收单号 | AR | finance/constant/FinanceConstant.java；各业务 Service 调用共享 formatter |
-| 财务应付 | 应付单号 | AP | 同上 |
-| 财务收款 | 收款单号 | RC | 同上 |
-| 财务付款 | 付款单号 | PM | 同上 |
-| 财务核销 | 核销单号 | WO | 同上 |
-| 支付意图 | 内部意图编号 | PYI | payment/service/PaymentNumberGenerator.java |
-| 支付交易 | 内部交易编号 | PYT | 同上 |
-| 支付退款 | 内部退款编号 | PYR | 同上；与订单 RF 分层 |
-| 支付对账 | 对账记录编号 | PYC | 同上；四种类型共用 payment_document_seq |
+| 分拣 | 分拣任务号 | SRT | sorting/service/SortingTaskService.java |
+| 配送 | 配送线路号 | DR | delivery/service/DeliveryRouteService.java |
+| 财务应收 | 应收单号 | AR | finance/service/FinanceReceivableService.java |
+| 财务应付 | 应付单号 | AP | finance/service/FinancePayableService.java |
+| 财务收款 | 收款单号 | RC | finance/service/FinanceReceiptService.java |
+| 财务付款 | 付款单号 | PM | finance/service/FinancePaymentService.java |
+| 财务核销 | 核销单号 | WO | finance/service/FinanceWriteOffService.java |
+| 支付意图/交易/退款/对账 | 内部支付编号 | PYI/PYT/PYR/PYC | payment/service/PaymentNumberGenerator.java |
 
-备注：余额充值及余额流水也已使用单独序列 + ScmDocumentNumbers，需在实施时补充其常量与全量注册表；此表不假装已经穷尽 146 个 Flyway 文件的所有字段。不同业务的共享序列/独立序列以及唯一键均以实际 SQL 为准。
+备注：余额充值、余额流水、追溯批次也用同一个方法发号。此表不假装已经穷尽 146 个 Flyway 文件的所有字段。
 
 ### 1.2 主数据与商品：现状不一致
 
@@ -82,13 +81,13 @@
 
 | 已有对象 | 现行规则 | 决定性输入 |
 | --- | --- | --- |
-| 销售 SO、退货 RT、退款 RF | 已有前缀 + 北京时间业务日 + PG 全局单调序号 | 正式下单/退货/退款业务命令 |
+| 销售 SO、退货 RT、退款 RF | `XSY` + 雪花 ID | 正式下单/退货/退款业务命令 |
 | 采购订单 PO、收货 PR | 同上（PR 是收货，不是采购退货） | 下单/实际收货动作 |
 | 库存 OUT/TRF/STK/LGR/CVT | 同上 | 出库/调拨/盘点/损溢/规格转换动作 |
 | 分拣任务 SRT | 同上 | 正式创建分拣任务 |
-| 配送线路 DR | 前缀 + **选择的配送日期** + 不重置序列 | 操作员选择配送日期和停靠信息 |
-| 财务 AR/AP/RC/PM/WO | 领域前缀 + 日期 + 各自序列 | 已确认业务/应收/应付/收付款事实 |
-| 支付 PYI/PYT/PYR/PYC | 类型化前缀 + 日期 + 共享支付序列 | 支付域正式状态操作；渠道交易号另存 |
+| 配送线路 DR | 同上 | 操作员选择配送日期和停靠信息 |
+| 财务 AR/AP/RC/PM/WO | 同上 | 已确认业务/应收/应付/收付款事实 |
+| 支付 PYI/PYT/PYR/PYC | 同上 | 支付域正式状态操作；渠道交易号另存 |
 
 **C. 用户可输入/选择的代码：它们有外部或业务语义，不能替换为无意义的系统流水。**
 

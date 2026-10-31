@@ -238,7 +238,7 @@ const allocateRules = {
 /** 常用列放在前面，其余可通过列设置打开。 */
 type DemandListColumn = ScmListColumn;
 const columns = ref<DemandListColumn[]>([
-  {title: '来源单号', dataIndex: 'salesOrderNoSnapshot', width: 150},
+  {title: '来源单号', dataIndex: 'salesOrderNoSnapshot', width: 200},
   {title: '需求来源 / 批次', dataIndex: 'calculationBatchId', width: 145},
   {title: '商品名称', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'skuName', width: 150},

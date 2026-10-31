@@ -77,7 +77,6 @@ class CustomerBalanceLedgerTest {
     void firstCreditCreatesTheWalletAccountUnderLockThenAppendsTheMovement() {
         var account = new CustomerBalanceAccountEntity(); account.setId(4L); account.setSettlementCustomerId(3L);
         when(accounts.lockBySettlementCustomerId(3L)).thenReturn(null, account);
-        when(movements.nextMovementNo()).thenReturn(7L);
         when(movements.insertOnConflictDoNothing(any())).thenAnswer(invocation -> {
             CustomerBalanceMovementEntity row = invocation.getArgument(0); row.setId(5L); return 1;
         });
@@ -101,7 +100,7 @@ class CustomerBalanceLedgerTest {
         sequence.verify(accounts).lockBySettlementCustomerId(3L);
         sequence.verify(movements).selectBySource("PAYMENT_TRANSACTION", 20L);
         assertThat(movement.getId()).isEqualTo(5L);
-        assertThat(movement.getMovementNo()).startsWith("CBM").endsWith("000007");
+        assertThat(movement.getMovementNo()).matches("^XSY\\d{18,19}$");
         assertThat(movement.getAccountId()).isEqualTo(4L);
         assertThat(movement.getSettlementCustomerId()).isEqualTo(3L);
         assertThat(movement.getCustomerId()).isEqualTo(2L);

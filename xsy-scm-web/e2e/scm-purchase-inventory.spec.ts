@@ -680,7 +680,7 @@ test.describe('scm-inventory-lot', () => {
     const quantities = balances.list.map((x: any) => String(x.quantity)).sort();
     expect(quantities).toEqual(['4.0000', '6.0000']);
     // 批次号由系统发号，来源批号原样保存
-    expect(balances.list.every((x: any) => /^LOT\d{8}\d{6}$/.test(x.lotNo))).toBe(true);
+    expect(balances.list.every((x: any) => /^XSY\d{18,19}$/.test(x.lotNo))).toBe(true);
     expect(balances.list.map((x: any) => x.sourceLotNo).sort()).toEqual([name + '-A', name + '-B']);
 
     // 子账合计必须等于总账
@@ -1537,9 +1537,9 @@ test.describe('scm-purchase', () => {
   }
   const orderDetail = (id: string) => get('/scm/purchase/detail/' + id);
   const receiptDetail = (id: string) => get('/scm/purchase/receipt/detail/' + id);
-  /** 采购单号 PO+yyyyMMdd+至少 6 位；收货单号 PR+同形（全局序列，不按日 reset）。 */
-  const PO = /^PO\d{14,}$/,
-    PR = /^PR\d{14,}$/;
+  /** 采购单号、收货单号统一为 XSY + 雪花 ID。 */
+  const PO = /^XSY\d{18,19}$/,
+    PR = /^XSY\d{18,19}$/;
 
   /** 造一张**已确认**的销售订单（W5 需求的唯一来源），并给出可隔离它的汇总窗口。 */
   async function confirmedOrder(orderedQuantity: string, actualQuantity: string) {
