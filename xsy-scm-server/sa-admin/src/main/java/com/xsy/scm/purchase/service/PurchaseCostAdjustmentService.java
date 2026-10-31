@@ -17,6 +17,7 @@ import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.finance.service.FinancePurchaseCostAdjustmentService;
 import com.xsy.scm.purchase.constant.PurchaseErrorCode;
 import com.xsy.scm.purchase.constant.ScmPurchaseCostDirectionEnum;
+import com.xsy.scm.purchase.constant.ScmPurchaseIdempotencyResourceTypeEnum;
 import com.xsy.scm.purchase.dao.PurchaseCostAdjustmentDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderDao;
 import com.xsy.scm.purchase.domain.entity.PurchaseOrderEntity;
@@ -91,7 +92,8 @@ public class PurchaseCostAdjustmentService {
         source.setCreatedBy(ScmOperator.current());
         adjustmentDao.insert(source);
         financeAdjustmentService.generate(source.getId());
-        idempotencyService.complete(claim, "PURCHASE_COST_ADJUSTMENT", source.getId(), source);
+        idempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_COST_ADJUSTMENT.name(),
+            source.getId(), source);
         return source;
     }
 
