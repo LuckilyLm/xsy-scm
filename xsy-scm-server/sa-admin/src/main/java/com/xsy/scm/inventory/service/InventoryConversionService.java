@@ -5,6 +5,7 @@ import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.inventory.constant.ScmInventoryConversionStatusEnum;
 import com.xsy.scm.inventory.constant.ScmInventoryConversionTypeEnum;
 import com.xsy.scm.inventory.dao.InventoryConversionDao;
@@ -51,7 +52,6 @@ public class InventoryConversionService {
 
     private final InventoryConversionItemDao inventoryConversionItemDao;
 
-    private final InventoryConversionNumberGenerator numberGenerator;
 
     private final InventoryCommandService inventoryCommandService;
 
@@ -75,7 +75,7 @@ public class InventoryConversionService {
         warehouseService.require(form.getWarehouseId());
 
         InventoryConversionEntity entity = new InventoryConversionEntity();
-        entity.setConversionNo(numberGenerator.next());
+        entity.setConversionNo(ScmDocumentNumbers.next());
         entity.setWarehouseId(form.getWarehouseId());
         entity.setConvertType(form.getConvertType());
         entity.setStatus(ScmInventoryConversionStatusEnum.PENDING.name());

@@ -6,7 +6,7 @@
         <id column="id" property="id"/>
         <result column="demand_snapshot"
                 property="demandSnapshot"
-                typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
     </resultMap>
 
     <!-- 全部查询都是集合形态。没有「按 itemId 查单条」的方法。 -->

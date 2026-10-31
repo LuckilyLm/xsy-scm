@@ -11,25 +11,25 @@
         <id column="id" property="id"/>
         <result column="spec_values_snapshot"
                 property="specValuesSnapshot"
-                typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
     </resultMap>
 
     <resultMap id="demandVoMap" type="com.xsy.scm.purchase.domain.vo.PurchaseDemandVO">
         <id column="id" property="id"/>
         <result column="spec_values"
                 property="specValues"
-                typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
     </resultMap>
 
     <!--
-      来源行属于订单域的 xsy_sales_order_item，其 JSONB 处理器是订单域的 OrderJsonbTypeHandler；
+      来源行属于订单域的 xsy_sales_order_item，JSONB 统一用公共的 JsonbObjectMapTypeHandler；
       这里只以字符串引用，不产生 purchase → order 的编译期依赖。
     -->
     <resultMap id="sourceItemMap" type="com.xsy.scm.order.domain.entity.SalesOrderItemEntity">
         <id column="id" property="id"/>
         <result column="spec_values_snapshot"
                 property="specValuesSnapshot"
-                typeHandler="com.xsy.scm.order.support.OrderJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
     </resultMap>
 
     <!--
@@ -263,7 +263,7 @@
             calculation_batch_item_id, created_by)
         VALUES (#{row.salesOrderId}, #{row.salesOrderItemId}, #{row.spuId}, #{row.skuId}, #{row.salesOrderNoSnapshot},
             #{row.spuCodeSnapshot}, #{row.productNameSnapshot}, #{row.skuCodeSnapshot}, #{row.skuNameSnapshot},
-            #{row.specValuesSnapshot,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
+            #{row.specValuesSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
             #{row.demandUnitSnapshot}, #{row.productTypeSnapshot}, #{row.requiredQuantity}, 0, #{row.supplierId},
             #{row.warehouseId}, #{row.purchaserId}, #{row.status}, #{row.demandDate}, #{row.sourceConfirmedAt},
             #{row.calculationBatchId}, #{row.calculationBatchItemId}, #{row.createdBy})

@@ -19,7 +19,7 @@
             (#{r.batchId}, #{r.lineNo}, #{r.salesOrderId}, #{r.salesOrderItemId}, #{r.salesOrderNoSnapshot},
                 #{r.sourceConfirmedAt}, #{r.spuId}, #{r.skuId}, #{r.spuCodeSnapshot}, #{r.productNameSnapshot},
                 #{r.skuCodeSnapshot}, #{r.skuNameSnapshot},
-                #{r.specValuesSnapshot,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
+                #{r.specValuesSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
                 #{r.demandUnitSnapshot}, #{r.productTypeSnapshot}, #{r.sourceQuantity}, #{r.requiredQuantity},
                 #{r.existingDemandId})
         </foreach>

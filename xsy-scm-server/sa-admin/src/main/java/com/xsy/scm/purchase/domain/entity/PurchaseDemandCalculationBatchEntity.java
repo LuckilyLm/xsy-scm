@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
+import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -31,9 +31,9 @@ public class PurchaseDemandCalculationBatchEntity {
     private int candidateLineCount;
     private int generatedCount;
     private int skippedCount;
-    @TableField(typeHandler = PurchaseJsonbTypeHandler.class)
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
     private Map<String, Object> summarySnapshot;
-    @TableField(typeHandler = PurchaseJsonbTypeHandler.class)
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
     private Map<String, Object> resultSnapshot;
     private OffsetDateTime createdAt;
     private String createdBy;

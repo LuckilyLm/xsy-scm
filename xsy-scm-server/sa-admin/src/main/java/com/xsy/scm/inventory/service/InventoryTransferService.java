@@ -5,6 +5,7 @@ import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.inventory.constant.ScmInventoryTransferStatusEnum;
 import com.xsy.scm.inventory.dao.InventoryTransferDao;
 import com.xsy.scm.inventory.dao.InventoryTransferItemDao;
@@ -44,7 +45,6 @@ public class InventoryTransferService {
 
     private final InventoryTransferItemDao inventoryTransferItemDao;
 
-    private final InventoryTransferNumberGenerator numberGenerator;
 
     private final InventoryCommandService inventoryCommandService;
 
@@ -68,7 +68,7 @@ public class InventoryTransferService {
         warehouseScopeGuard.requireAll(form.getFromWarehouseId(), form.getToWarehouseId());
 
         InventoryTransferEntity entity = new InventoryTransferEntity();
-        entity.setTransferNo(numberGenerator.next());
+        entity.setTransferNo(ScmDocumentNumbers.next());
         entity.setFromWarehouseId(form.getFromWarehouseId());
         entity.setToWarehouseId(form.getToWarehouseId());
         entity.setStatus(ScmInventoryTransferStatusEnum.DRAFT.name());

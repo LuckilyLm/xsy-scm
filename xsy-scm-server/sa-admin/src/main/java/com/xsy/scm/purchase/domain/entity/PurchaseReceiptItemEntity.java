@@ -15,7 +15,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
-import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
+import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
 
 /**
  * 收货明细保留计划量、本次实收量、累计收货量、剩余量、超收量及差异。数据库约束保证这些值一致；不在收货行另存采购价格。
@@ -39,7 +39,7 @@ public class PurchaseReceiptItemEntity {
     private String skuCodeSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String skuNameSnapshot;
-    @TableField(typeHandler = PurchaseJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private Map<String, Object> specValuesSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String purchaseUnitSnapshot;

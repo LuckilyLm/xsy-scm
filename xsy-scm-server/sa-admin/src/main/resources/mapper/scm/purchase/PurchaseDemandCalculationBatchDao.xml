@@ -31,7 +31,7 @@
     <update id="markGenerated">
         UPDATE xsy_purchase_demand_calculation_batch
         SET status = 'GENERATED', generated_count = #{generatedCount}, skipped_count = #{skippedCount},
-            result_snapshot = #{resultSnapshot,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
+            result_snapshot = #{resultSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
             generated_at = #{generatedAt}, updated_at = #{generatedAt}, updated_by = #{operator}
         WHERE id = #{batchId}
             AND status = 'READY'

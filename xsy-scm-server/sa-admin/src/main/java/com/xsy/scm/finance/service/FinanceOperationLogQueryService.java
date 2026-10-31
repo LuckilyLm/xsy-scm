@@ -72,6 +72,19 @@ public class FinanceOperationLogQueryService {
             .stream().map(FinanceOperationLogQueryService::toVO).toList();
     }
 
+    /** 单据详情批量取日志：业务类型 + 业务 ID 列表，按创建时间正序。 */
+    public List<FinanceOperationLogVO> listByBusinessIds(String businessType, List<Long> businessIds) {
+        if (businessIds.isEmpty()) {
+            return List.of();
+        }
+        return financeOperationLogDao
+            .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
+                .eq(FinanceOperationLogEntity::getBusinessType, businessType)
+                .in(FinanceOperationLogEntity::getBusinessId, businessIds)
+                .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
+            .stream().map(FinanceOperationLogQueryService::toVO).toList();
+    }
+
     private Long requireBusinessVisible(ScmFinanceBusinessTypeEnum type, Long businessId, ScmDataScopeContext scope) {
         switch (type) {
             case RECEIVABLE -> {

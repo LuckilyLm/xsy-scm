@@ -10,7 +10,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-import com.xsy.scm.order.support.OrderJsonbTypeHandler;
+import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
 
 @Data
 @TableName(value = "xsy_order_operation_log", autoResultMap = true)
@@ -30,9 +30,9 @@ public class OrderOperationLogEntity {
     private String operator;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String reason;
-    @TableField(typeHandler = OrderJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private Map<String, Object> beforeData;
-    @TableField(typeHandler = OrderJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private Map<String, Object> afterData;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime createdAt;

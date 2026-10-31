@@ -15,7 +15,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
-import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
+import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
 
 /**
  * 分配记录连接采购明细和采购需求，数量计入该需求的跨采购单已分配总量。同一明细与需求组合不能重复出现。
@@ -38,7 +38,7 @@ public class PurchaseDemandAllocationEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal allocatedQuantity;
-    @TableField(typeHandler = PurchaseJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private Map<String, Object> demandSnapshot;
     @Version
     private Integer version = 0;

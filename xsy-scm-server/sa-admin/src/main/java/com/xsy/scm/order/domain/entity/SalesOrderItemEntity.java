@@ -15,7 +15,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
-import com.xsy.scm.order.support.OrderJsonbTypeHandler;
+import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
 
 @Data
 @TableName(value = "xsy_sales_order_item", autoResultMap = true)
@@ -36,7 +36,7 @@ public class SalesOrderItemEntity {
     private String skuCodeSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String specNameSnapshot;
-    @TableField(typeHandler = OrderJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private Map<String, Object> specValuesSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String saleUnitSnapshot;
@@ -72,7 +72,7 @@ public class SalesOrderItemEntity {
     private String lockedPriceSource;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long lockedPriceSourceId;
-    @TableField(typeHandler = OrderJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private Map<String, Object> priceBasisSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

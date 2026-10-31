@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.inventory.constant.ScmInventoryOutboundStatusEnum;
 import com.xsy.scm.inventory.dao.InventoryOutboundDao;
 import com.xsy.scm.inventory.dao.InventoryOutboundItemDao;
@@ -35,7 +36,6 @@ public class InventoryOutboundService {
 
     private final InventoryOutboundItemDao inventoryOutboundItemDao;
 
-    private final InventoryOutboundNumberGenerator numberGenerator;
 
     private final InventoryCommandService inventoryCommandService;
 
@@ -57,7 +57,7 @@ public class InventoryOutboundService {
         warehouseScopeGuard.require(form.getWarehouseId());
 
         InventoryOutboundEntity entity = new InventoryOutboundEntity();
-        entity.setOutboundNo(numberGenerator.next());
+        entity.setOutboundNo(ScmDocumentNumbers.next());
         entity.setWarehouseId(form.getWarehouseId());
         entity.setStatus(ScmInventoryOutboundStatusEnum.DRAFT.name());
         entity.setRemark(form.getRemark());

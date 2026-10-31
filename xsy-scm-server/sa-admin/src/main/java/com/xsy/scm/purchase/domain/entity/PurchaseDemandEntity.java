@@ -16,7 +16,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
-import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
+import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
 
 /**
  * 每条已确认销售订单行最多生成一条有效采购需求。需求日期取订单确认时间的北京时间日期，需求单位在生成时固定，不会被采购单位覆盖。
@@ -46,7 +46,7 @@ public class PurchaseDemandEntity {
     private String skuCodeSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String skuNameSnapshot;
-    @TableField(typeHandler = PurchaseJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private Map<String, Object> specValuesSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String demandUnitSnapshot;

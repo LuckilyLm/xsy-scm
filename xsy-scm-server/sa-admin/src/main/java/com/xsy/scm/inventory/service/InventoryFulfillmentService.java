@@ -3,6 +3,7 @@ package com.xsy.scm.inventory.service;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.inventory.constant.InventoryErrorCode;
 import com.xsy.scm.inventory.constant.ScmInventoryOutboundStatusEnum;
 import com.xsy.scm.inventory.constant.ScmInventorySourceDocumentTypeEnum;
@@ -50,7 +51,6 @@ public class InventoryFulfillmentService {
 
     private final InventoryBalanceDao inventoryBalanceDao;
 
-    private final InventoryOutboundNumberGenerator numberGenerator;
 
     private final InventoryCommandService inventoryCommandService;
 
@@ -396,7 +396,7 @@ public class InventoryFulfillmentService {
 
     private InventoryOutboundEntity insertOutbound(Command command) {
         InventoryOutboundEntity entity = new InventoryOutboundEntity();
-        entity.setOutboundNo(numberGenerator.next());
+        entity.setOutboundNo(ScmDocumentNumbers.next());
         entity.setWarehouseId(command.warehouseId());
         entity.setStatus(ScmInventoryOutboundStatusEnum.CONFIRMED.name());
         // 发车时刻即确认时刻：流水的 occurred_at / operator 都从这里取，不用 now() 顶替。

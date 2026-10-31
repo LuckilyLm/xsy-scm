@@ -15,7 +15,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
-import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
+import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
 
 /**
  * 采购明细按采购单与商品规格唯一，需求分配另按采购明细与需求唯一。容差范围内的超收合法，不能用静态数据库约束限制“已收量不超过计划量”。
@@ -39,7 +39,7 @@ public class PurchaseOrderItemEntity {
     private String skuCodeSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String skuNameSnapshot;
-    @TableField(typeHandler = PurchaseJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
     private Map<String, Object> specValuesSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String purchaseUnitSnapshot;

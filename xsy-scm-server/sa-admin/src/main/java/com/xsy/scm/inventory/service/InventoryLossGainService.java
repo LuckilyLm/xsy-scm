@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.inventory.constant.ScmInventoryLossGainStatusEnum;
 import com.xsy.scm.inventory.constant.ScmInventoryLossGainTypeEnum;
 import com.xsy.scm.inventory.dao.InventoryLossGainDao;
@@ -48,7 +49,6 @@ public class InventoryLossGainService {
 
     private final InventoryLossGainItemDao inventoryLossGainItemDao;
 
-    private final InventoryLossGainNumberGenerator numberGenerator;
 
     private final InventoryCommandService inventoryCommandService;
 
@@ -76,7 +76,7 @@ public class InventoryLossGainService {
         warehouseService.require(form.getWarehouseId());
 
         InventoryLossGainEntity entity = new InventoryLossGainEntity();
-        entity.setLossGainNo(numberGenerator.next());
+        entity.setLossGainNo(ScmDocumentNumbers.next());
         entity.setWarehouseId(form.getWarehouseId());
         entity.setAdjustType(form.getAdjustType());
         entity.setStatus(ScmInventoryLossGainStatusEnum.PENDING.name());

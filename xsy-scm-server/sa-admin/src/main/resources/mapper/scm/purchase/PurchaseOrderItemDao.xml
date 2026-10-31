@@ -6,7 +6,7 @@
         <id column="id" property="id"/>
         <result column="spec_values_snapshot"
                 property="specValuesSnapshot"
-                typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
     </resultMap>
 
     <select id="listByOrderId" resultMap="itemRowMap">

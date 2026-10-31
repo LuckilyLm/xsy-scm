@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.inventory.constant.ScmInventoryStocktakeStatusEnum;
 import com.xsy.scm.inventory.dao.InventoryBalanceDao;
 import com.xsy.scm.inventory.dao.InventoryStocktakeDao;
@@ -46,7 +47,6 @@ public class InventoryStocktakeService {
 
     private final InventoryStocktakeItemDao inventoryStocktakeItemDao;
 
-    private final InventoryStocktakeNumberGenerator numberGenerator;
 
     private final InventoryCommandService inventoryCommandService;
 
@@ -70,7 +70,7 @@ public class InventoryStocktakeService {
         warehouseService.require(form.getWarehouseId());
 
         InventoryStocktakeEntity entity = new InventoryStocktakeEntity();
-        entity.setStocktakeNo(numberGenerator.next());
+        entity.setStocktakeNo(ScmDocumentNumbers.next());
         entity.setWarehouseId(form.getWarehouseId());
         entity.setStatus(ScmInventoryStocktakeStatusEnum.DRAFT.name());
         entity.setRemark(form.getRemark());

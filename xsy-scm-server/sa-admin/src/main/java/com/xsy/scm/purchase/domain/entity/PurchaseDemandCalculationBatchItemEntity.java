@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
-import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
+import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -32,7 +32,7 @@ public class PurchaseDemandCalculationBatchItemEntity {
     private String productNameSnapshot;
     private String skuCodeSnapshot;
     private String skuNameSnapshot;
-    @TableField(typeHandler = PurchaseJsonbTypeHandler.class)
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
     private Map<String, Object> specValuesSnapshot;
     private String demandUnitSnapshot;
     private String productTypeSnapshot;

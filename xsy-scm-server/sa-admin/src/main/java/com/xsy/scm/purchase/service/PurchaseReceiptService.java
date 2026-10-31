@@ -5,6 +5,7 @@ import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
 import com.xsy.scm.finance.service.FinancePayableService;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.purchase.constant.PurchaseConfigKey;
 import com.xsy.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
 import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
@@ -97,7 +98,6 @@ public class PurchaseReceiptService {
 
     private final PurchaseOperationLogDao purchaseOperationLogDao;
 
-    private final PurchaseNumberGenerator numberGenerator;
 
     private final PurchaseIdempotencyService purchaseIdempotencyService;
 
@@ -174,7 +174,7 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(PURCHASE_ORDER_ITEM_EMPTY);
         }
 
-        PurchaseReceiptEntity receipt = PurchaseSnapshotFactory.receipt(order, numberGenerator.receipt(),
+        PurchaseReceiptEntity receipt = PurchaseSnapshotFactory.receipt(order, ScmDocumentNumbers.next(),
             form.getRemark());
         // 入库方式由调用方显式二选一（无默认）；DRAFT 期入库状态恒 PENDING。
         receipt.setReceiptMode(form.getReceiptMode());
@@ -484,7 +484,7 @@ public class PurchaseReceiptService {
         before.put("putawayStatus", ScmPutawayStatusEnum.PENDING.name());
         Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("putawayStatus", ScmPutawayStatusEnum.COMPLETED.name());
-        // 审计记录只放字符串：PurchaseJsonbTypeHandler 的 ObjectMapper 未注册 JavaTimeModule，
+        // 审计记录只放字符串：JsonbObjectMapTypeHandler 的 ObjectMapper 未注册 JavaTimeModule，
         // 直接放 OffsetDateTime 会抛「Invalid purchase JSON」（与确认日志同一规则）。
         after.put("putawayAt", now.toString());
         after.put("putawayBy", operator);

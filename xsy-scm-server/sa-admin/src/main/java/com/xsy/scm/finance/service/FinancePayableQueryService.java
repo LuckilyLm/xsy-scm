@@ -1,6 +1,5 @@
 package com.xsy.scm.finance.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.exception.ScmBusinessException;
@@ -14,11 +13,9 @@ import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceEntryTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceSettleStateEnum;
 import com.xsy.scm.finance.constant.ScmFinanceWriteOffTargetTypeEnum;
-import com.xsy.scm.finance.dao.FinanceOperationLogDao;
 import com.xsy.scm.finance.dao.FinancePayableDao;
 import com.xsy.scm.finance.dao.FinancePayableItemDao;
 import com.xsy.scm.finance.dao.FinancePayableSourceDao;
-import com.xsy.scm.finance.domain.entity.FinanceOperationLogEntity;
 import com.xsy.scm.finance.domain.entity.FinancePayableEntity;
 import com.xsy.scm.finance.domain.entity.FinancePayableItemEntity;
 import com.xsy.scm.finance.domain.form.FinancePayableQueryForm;
@@ -28,6 +25,7 @@ import com.xsy.scm.finance.domain.vo.FinancePayableItemVO;
 import com.xsy.scm.finance.domain.vo.FinancePayableVO;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffVO;
 import com.xsy.scm.finance.support.FinanceExportGuard;
+import com.xsy.scm.finance.support.FinanceQuerySupport;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
@@ -56,7 +54,7 @@ public class FinancePayableQueryService {
     private final FinancePayableItemDao financePayableItemDao;
     private final FinancePayableSourceDao financePayableSourceDao;
     private final FinanceWriteOffQueryService writeOffQueryService;
-    private final FinanceOperationLogDao financeOperationLogDao;
+    private final FinanceOperationLogQueryService financeOperationLogQueryService;
     private final ScmDataScopeService dataScopeService;
 
     @Transactional(readOnly = true)
@@ -65,8 +63,8 @@ public class FinancePayableQueryService {
         if (scope.getPurchaserScope().isEmpty()) {
             return ScmDataScopeService.emptyPage(form);
         }
-        rejectClientSort(form);
-        normalizePage(form);
+        FinanceQuerySupport.rejectClientSort(form);
+        FinanceQuerySupport.normalizePage(form);
         validateFilters(form);
         ScmDateTimeRange range = ScmDateTimeRangeResolver.resolve(form.getStartDate(), form.getEndDate());
         Page<?> page = SmartPageUtil.convert2PageQuery(form);
@@ -80,8 +78,8 @@ public class FinancePayableQueryService {
         if (scope.getPurchaserScope().isEmpty()) {
             return List.of();
         }
-        rejectClientSort(form);
-        normalizePage(form);
+        FinanceQuerySupport.rejectClientSort(form);
+        FinanceQuerySupport.normalizePage(form);
         validateFilters(form);
         ScmDateTimeRange range = ScmDateTimeRangeResolver.resolve(form.getStartDate(), form.getEndDate());
         return FinanceExportGuard.exportRows(pageSize -> {
@@ -134,8 +132,8 @@ public class FinancePayableQueryService {
             payableLogIds.add(original.getPayableId());
         }
         List<FinanceOperationLogVO> logs = new ArrayList<>(
-            operationLogs(ScmFinanceBusinessTypeEnum.PAYABLE.name(), payableLogIds));
-        logs.addAll(operationLogs(ScmFinanceBusinessTypeEnum.WRITE_OFF.name(),
+            financeOperationLogQueryService.listByBusinessIds(ScmFinanceBusinessTypeEnum.PAYABLE.name(), payableLogIds));
+        logs.addAll(financeOperationLogQueryService.listByBusinessIds(ScmFinanceBusinessTypeEnum.WRITE_OFF.name(),
             writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
         logs.sort(
             Comparator.comparing(FinanceOperationLogVO::getCreatedAt).thenComparing(FinanceOperationLogVO::getId));
@@ -148,18 +146,6 @@ public class FinancePayableQueryService {
         detail.setWriteOffs(writeOffs);
         detail.setOperationLogs(logs);
         return detail;
-    }
-
-    private List<FinanceOperationLogVO> operationLogs(String businessType, List<Long> businessIds) {
-        if (businessIds.isEmpty()) {
-            return List.of();
-        }
-        return financeOperationLogDao
-            .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
-                .eq(FinanceOperationLogEntity::getBusinessType, businessType)
-                .in(FinanceOperationLogEntity::getBusinessId, businessIds)
-                .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
-            .stream().map(FinancePayableQueryService::logVO).toList();
     }
 
     private static FinancePayableItemVO itemVO(FinancePayableItemEntity item) {
@@ -175,35 +161,6 @@ public class FinancePayableQueryService {
         vo.setUnitPrice(item.getUnitPrice());
         vo.setAmount(item.getAmount());
         return vo;
-    }
-
-    private static FinanceOperationLogVO logVO(FinanceOperationLogEntity entity) {
-        FinanceOperationLogVO vo = new FinanceOperationLogVO();
-        vo.setId(entity.getId());
-        vo.setBusinessType(entity.getBusinessType());
-        vo.setBusinessId(entity.getBusinessId());
-        vo.setOperationType(entity.getOperationType());
-        vo.setOperator(entity.getOperator());
-        vo.setReason(entity.getReason());
-        vo.setBeforeData(entity.getBeforeData());
-        vo.setAfterData(entity.getAfterData());
-        vo.setCreatedAt(entity.getCreatedAt());
-        return vo;
-    }
-
-    private static void rejectClientSort(FinancePayableQueryForm form) {
-        if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
-            throw new ScmBusinessException(VALIDATION_ERROR);
-        }
-    }
-
-    private static void normalizePage(FinancePayableQueryForm form) {
-        if (form.getPageNum() == null || form.getPageNum() < 1) {
-            form.setPageNum(1L);
-        }
-        if (form.getPageSize() == null || form.getPageSize() < 1) {
-            form.setPageSize(20L);
-        }
     }
 
     private static void validateFilters(FinancePayableQueryForm form) {

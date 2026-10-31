@@ -3,6 +3,7 @@ package com.xsy.scm.purchase.service;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
 import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import com.xsy.scm.purchase.constant.ScmPurchaseIdempotencyResourceTypeEnum;
@@ -78,7 +79,6 @@ public class PurchaseOrderService {
 
     private final PurchaseOperationLogDao purchaseOperationLogDao;
 
-    private final PurchaseNumberGenerator numberGenerator;
 
     private final PurchaseIdempotencyService purchaseIdempotencyService;
 
@@ -118,7 +118,7 @@ public class PurchaseOrderService {
             warehouse.getWarehouseCode(), warehouse.getName(),
             // 归属由服务端确定：普通新建一律是当前员工，表单里的 purchaser_id 不采信。
             purchaseOwnerResolver.resolveForCreate(form.getPurchaserId()), form);
-        order.setOrderNo(numberGenerator.order());
+        order.setOrderNo(ScmDocumentNumbers.next());
         order.setTotalAmount(totalAmount(rows));
         PurchaseEntityStamper.stamp(order, true);
         purchaseOrderDao.insert(order);
