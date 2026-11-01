@@ -49,7 +49,6 @@ test.describe('scm-return-independent', () => {
       remark: `${runTag} 独立退货取价夹具`,
       items: [{skuId, orderedQuantity: '10.0000', manualPriceOverride: false}],
     });
-    order = await call<Row>(client, 'post', '/scm/order/submit', {orderId: order.orderId, version: order.version});
     order = await call<Row>(client, 'post', '/scm/order/item/actual-quantity', {
       orderId: order.orderId,
       itemId: order.items[0].itemId,

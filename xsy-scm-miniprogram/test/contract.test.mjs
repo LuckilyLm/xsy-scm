@@ -40,8 +40,8 @@ test('funds pages use only customer read APIs and do not create payment commands
   assert.doesNotMatch(api, /postRequest|recharge|repay/);
   assert.match(pages, /pages-sub\/wallet/);
   assert.match(pages, /pages-sub\/credit/);
-  assert.match(mine, /goWallet/);
-  assert.match(mine, /goCredit/);
+  // 余额与账期入口已从「我的」下线（资金只读，由后台处理），页面仍保留只读明细路由。
+  assert.doesNotMatch(mine, /goWallet|goCredit/);
   assert.match(wallet, /row\.returnId/);
   assert.match(credit, /settleState/);
   assert.match(mock, /creditLimitVisible: false/);
@@ -177,7 +177,7 @@ test('order center shows the server-derived display status, not a client state m
   const detail = read('../src/pages-sub/order/detail.vue');
   const util = read('../src/utils/order-display.js');
   // 文案与档位来自服务端下发的 displayStatus
-  assert.match(util, /PENDING: \{ text: '待处理'/);
+  assert.match(util, /PENDING:\s*\{\s*text: '待处理'/);
   assert.match(page, /displayStatusText\(order\.displayStatus\)/);
   assert.match(detail, /displayStatusText\(order\.displayStatus\)/);
   // 客户端不得按订单原始状态自行推导阶段
@@ -262,7 +262,7 @@ test('order detail renders the server-provided delivery progress', () => {
   const mock = read('../mock/routes/order.js');
   // 节点文案与 done 都由服务端按正式事实给出，客户端只渲染，不自己推导进度
   assert.match(page, /v-for="\(node, index\) in order\.progress"/);
-  assert.match(page, /:class="\{ 'od-step--pending': !node\.done \}"/);
+  assert.match(page, /:class="\{\s*'od-step--pending': !node\.done\s*\}"/);
   // 配送详情只读配送事实（线路 / 发车 / 司机），未排车时不编线路
   assert.match(page, /order\.delivery\.routeName/);
   assert.match(page, /order\.delivery\.dispatchedAt/);

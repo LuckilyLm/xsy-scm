@@ -149,7 +149,6 @@ async function stockIn(harness: FinanceHarness, supplierId: string, skuIds: stri
       allocations: [],
     })),
   });
-  await call(harness.admin, 'post', '/scm/purchase/submit', {id: order.id, version: order.version});
   const receipt = await call<Row>(harness.admin, 'post', '/scm/purchase/receipt/create', {
     purchaseOrderId: order.id,
     receiptMode: 'DIRECT',
@@ -232,7 +231,6 @@ export async function createSignedOrder(
       manualPriceOverride: false,
     })),
   });
-  order = await call<Row>(harness.admin, 'post', '/scm/order/submit', {orderId: order.orderId, version: order.version});
   for (const [index, input] of lineInputs.entries()) {
     const fresh = await call<Row>(harness.admin, 'get', `/scm/order/detail/${order.orderId}`);
     const line = pickOrderLine(fresh, skus[index], `${harness.runTag} ${suffix}`);
@@ -410,10 +408,6 @@ export async function createPurchaseReceipt(
     plannedArrivalDate: null,
     remark: `${harness.runTag} ${suffix} Finance payable E2E`,
     items: [{skuId: Number(skuId), quantity: plannedQuantity, price: '6.2000', allocations: []}],
-  });
-  await call(harness.admin, 'post', '/scm/purchase/submit', {
-    id: purchaseOrder.id,
-    version: purchaseOrder.version,
   });
   const receipt = await call<Row>(harness.admin, 'post', '/scm/purchase/receipt/create', {
     purchaseOrderId: purchaseOrder.id,

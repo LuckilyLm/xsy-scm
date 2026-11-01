@@ -80,9 +80,6 @@
         <template v-else-if="column.dataIndex === 'totalAmount'">
           <span class="scm-money">{{ amount(record.totalAmount) }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'receivedProgress'">
-          <span class="scm-quantity">{{ progress(record.receivedProgress) }}</span>
-        </template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 当前状态最常用的两个动作常驻，其他操作收进“更多” -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -180,7 +177,7 @@ import {useUserStore} from '/@/store/modules/system/user';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_PURCHASE_EXPORT_COLUMNS, SCM_PURCHASE_STATUS_ENUM, SCM_PURCHASE_TABLE_ID} from '/@/constants/business/scm/purchase-const';
 import type {Order, OrderQuery} from './purchase-types';
-import {amount, progress} from './purchase-form-model';
+import {amount} from './purchase-form-model';
 import {hasPermission} from '../common/scm-permission';
 import {useScmExport} from '../common/use-scm-export';
 import {dateOnly} from '../common/scm-display';

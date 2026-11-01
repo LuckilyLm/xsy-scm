@@ -10,9 +10,6 @@
         <a-form-item v-if="kind === 'RECEIVABLE' || kind === 'PAYABLE'" label="结清状态">
           <a-select v-model:value="settleState" :options="settleOptions" style="width: 150px" />
         </a-form-item>
-        <a-form-item label="单据 ID">
-          <a-input-number v-model:value="recordId" :min="1" :precision="0" placeholder="可选" style="width: 140px" />
-        </a-form-item>
         <a-form-item>
           <a-button type="primary" :loading="loading" @click="search">查询可用单据</a-button>
         </a-form-item>
@@ -71,7 +68,6 @@ const defaults = initialFinanceDateRange();
 const startDate = ref(defaults.startDate);
 const endDate = ref(defaults.endDate);
 const settleState = ref<'OPEN' | 'PARTIAL'>('OPEN');
-const recordId = ref<number>();
 const pageNum = ref(1);
 const pageSize = ref(10);
 const rows = ref<FinanceCandidate[]>([]);
@@ -156,13 +152,13 @@ async function search() {
     const quiet = {suppressGlobalErrorMessage: true};
     let response: ApiResponse<ScmPage<FinanceReceipt | FinancePayment | FinanceReceivable | FinancePayable>>;
     if (props.kind === 'RECEIPT') {
-      response = await financeApi.receiptQuery({...base, pendingOnly: true, receiptId: recordId.value}, quiet);
+      response = await financeApi.receiptQuery({...base, pendingOnly: true}, quiet);
     } else if (props.kind === 'PAYMENT') {
-      response = await financeApi.paymentQuery({...base, counterpartyType: 'SUPPLIER', pendingOnly: true, paymentId: recordId.value}, quiet);
+      response = await financeApi.paymentQuery({...base, counterpartyType: 'SUPPLIER', pendingOnly: true}, quiet);
     } else if (props.kind === 'RECEIVABLE') {
-      response = await financeApi.receivableQuery({...base, settleState: settleState.value, receivableId: recordId.value}, quiet);
+      response = await financeApi.receivableQuery({...base, settleState: settleState.value}, quiet);
     } else {
-      response = await financeApi.payableQuery({...base, settleState: settleState.value, payableId: recordId.value}, quiet);
+      response = await financeApi.payableQuery({...base, settleState: settleState.value}, quiet);
     }
     if (current !== requestId) return;
     rows.value = response.data.list.map(toCandidate);
@@ -189,7 +185,6 @@ watch(
   (isOpen) => {
     if (isOpen) {
       pageNum.value = 1;
-      recordId.value = undefined;
       void search();
     }
   },

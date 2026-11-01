@@ -38,7 +38,7 @@
     >
       <template #description>
         <div v-for="item in failedItems" :key="String(item.orderId)">
-          {{ item.orderNo || item.orderId }} {{ item.customerName || '' }}：{{ item.message || '打印失败' }}
+          {{ item.orderNo || '未知订单' }} {{ item.customerName || '' }}：{{ item.message || '打印失败' }}
         </div>
       </template>
     </a-alert>

@@ -112,7 +112,7 @@
         />
       </a-form-item>
       <a-form-item label="备注">
-        <a-input v-model:value="issueForm.remark" maxlength="200" />
+        <a-input v-model:value="issueForm.remark" :maxlength="200" />
       </a-form-item>
     </a-form>
     <p v-if="lotHint" class="scm-note">{{ lotHint }}</p>

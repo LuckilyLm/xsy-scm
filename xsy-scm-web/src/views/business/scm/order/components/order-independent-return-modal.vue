@@ -11,7 +11,7 @@
         </a-col>
         <a-col :span="16">
           <a-form-item label="退货原因" required>
-            <a-input v-model:value="reason" :disabled="saving" maxlength="500" placeholder="例如：现场退回，找不到原单" />
+            <a-input v-model:value="reason" :disabled="saving" :maxlength="500" placeholder="例如：现场退回，找不到原单" />
           </a-form-item>
         </a-col>
       </a-row>
@@ -65,7 +65,7 @@
           <a-input
             v-model:value="record.priceReason"
             :disabled="saving || !needsManualPrice(record)"
-            maxlength="500"
+            :maxlength="500"
             :aria-label="'价格原因 ' + (index + 1)"
           />
         </template>

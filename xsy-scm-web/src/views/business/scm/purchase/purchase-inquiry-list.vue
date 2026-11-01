@@ -175,9 +175,8 @@ const quoteValidUntil = ref<string>();
 const quoteRemark = ref('');
 
 const columns: TableColumnsType<PurchaseInquiry> = [
-  // 询价没有业务单号，主键前面加 # 表明它是流水号而不是可当单号引用的编号
-  {title: '编号', dataIndex: 'id', width: 90, customRender: ({text}) => `#${text}`},
-  {title: '商品', dataIndex: 'productNameSnapshot', width: 210},
+  // 询价没有业务单号，也不展示数据库主键：按商品 + 截止时间定位这条询价
+  {title: '商品', dataIndex: 'productNameSnapshot', width: 240},
   {title: '需求量', dataIndex: 'requiredQuantity', width: 150},
   {title: '截止时间', dataIndex: 'deadlineAt', width: 180},
   {title: '状态', dataIndex: 'status', align: 'center', width: 96},

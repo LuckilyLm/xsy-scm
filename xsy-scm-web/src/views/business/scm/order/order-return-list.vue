@@ -210,7 +210,7 @@
             </a-table>
           </template>
           <a-form-item v-else label="处理原因" required>
-            <a-input v-model:value="decisionReason" :disabled="saving" maxlength="500" />
+            <a-input v-model:value="decisionReason" :disabled="saving" :maxlength="500" />
           </a-form-item>
         </fieldset>
       </template>

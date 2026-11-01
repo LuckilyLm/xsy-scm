@@ -23,7 +23,7 @@
       </template>
     </a-table>
   </a-card>
-  <a-card v-if="selected" :title="`客户对账单 · 版本 #${selected.id}`" size="small" :bordered="false">
+  <a-card v-if="selected" title="客户对账单" size="small" :bordered="false">
     <template #extra>
       <a-space>
         <a-button v-privilege="PERM.EXPORT" size="small" :loading="versionExport.exporting" @click="exportVersion">导出 Excel</a-button>
@@ -34,7 +34,7 @@
     <div ref="printArea" class="statement-print">
       <h2>{{ selected.settlementCustomerName }} · 客户对账单</h2>
       <p>
-        版本 #{{ selected.id }}　期间 {{ selected.startDate }} 至 {{ selected.endDate }}　冻结时间 {{ datetime(selected.generatedAt) }}
+        期间 {{ selected.startDate }} 至 {{ selected.endDate }}　冻结时间 {{ datetime(selected.generatedAt) }}
         <a-tag v-if="selected.includePosting" color="blue">含过账记录</a-tag>
       </p>
       <a-alert
@@ -125,7 +125,6 @@ const factLabels: Record<string, string> = {
 };
 const moneyColumns = ['receivableDelta', 'receiptDelta', 'writeOffDelta', 'refundDelta', 'postingAmount', 'receivableBalance'];
 const historyColumns: TableColumnsType<CustomerStatement> = [
-  {title: '版本', dataIndex: 'id'},
   {title: '结算方', dataIndex: 'settlementCustomerName'},
   {title: '起始日', dataIndex: 'startDate'},
   {title: '截止日', dataIndex: 'endDate'},

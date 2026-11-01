@@ -146,7 +146,6 @@ export async function createDeliveryReadyOrder(
     remark: input.runTag,
     items: [{skuId: input.skuId, orderedQuantity: quantity, manualPriceOverride: false}],
   });
-  order = await call<Row>(client, 'post', '/scm/order/submit', {orderId: order.orderId, version: order.version});
   const line = order.items[0];
   await call(client, 'post', '/scm/order/item/actual-quantity', {
     orderId: order.orderId,

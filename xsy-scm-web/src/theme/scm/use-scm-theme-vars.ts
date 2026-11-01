@@ -33,6 +33,8 @@ export function useScmThemeVars(): void {
     style.setProperty('--scm-fill', current.colorFillTertiary);
     style.setProperty('--scm-text', current.colorText);
     style.setProperty('--scm-text-secondary', current.colorTextSecondary);
+    // 三级文字：未变更字段、被弱化的对照值；介于「次要」和「禁用」之间，暗色下仍可辨认
+    style.setProperty('--scm-text-tertiary', current.colorTextTertiary);
     style.setProperty('--scm-text-disabled', current.colorTextDisabled);
     style.setProperty('--scm-border', current.colorBorderSecondary);
     style.setProperty('--scm-bg-container', current.colorBgContainer);

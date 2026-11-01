@@ -103,28 +103,36 @@ test.describe('scm-delivery', () => {
   }
 
   /**
-   * 仓库下拉没有搜索框，选项又是虚拟列表：只渲染首屏那十几个。
+   * 仓库下拉没有搜索框，选项多时又是虚拟列表。
    *
-   * <p>开发库里 E2E 建过的仓库越积越多，`鲜蔬源仓库` 这类早期数据会排到几十项之后，
-   * 按文本 click 永远等不到（元素不在 DOM）；滚动过程中节点还会被回收，点了就 detached。
-   * 这里改用方向键把激活项逐项下移，虚拟列表会把激活项滚进窗口，命中文本后回车选中。
+   * <p>先直接点目标选项：选项少时整列都在 DOM 里，最稳。虚拟列表把目标滚出 DOM 时，
+   * 再用方向键把激活项逐项下移（虚拟列表会把激活项滚进窗口），命中文本后回车选中。
+   * 注意不能读 `aria-activedescendant` 指向的无障碍列表——那里只有数字 id；
+   * 要读当前高亮选项的实际文案。
    */
-  async function pickOption(page: any, scope: any, label: string, optionText: string) {
+  async function pickOption(page: any, scope: any, label: string, optionText: string): Promise<void> {
     const control = field(scope, label).locator('.ant-select-selector').first();
     await control.click();
     const dropdown = page.locator('.ant-select-dropdown:visible');
-    const input = control.locator('input').first();
-    for (let step = 0; step < 500; step++) {
-      await page.keyboard.press('ArrowDown');
-      const activeId = await input.getAttribute('aria-activedescendant').catch((): string | null => null);
-      if (!activeId) continue;
-      const text = await dropdown
-        .locator(`#${activeId}`)
-        .innerText()
-        .catch((): string => '');
-      if (text.includes(optionText)) break;
+    const direct = dropdown.locator('.ant-select-item-option').filter({hasText: optionText}).first();
+    // isVisible 不等待渲染，下拉还在展开动画里时必然返回 false，必须显式等一次
+    if (await direct.waitFor({state: 'visible', timeout: 2000}).then(
+      () => true,
+      () => false
+    )) {
+      await direct.click();
+    } else {
+      for (let step = 0; step < 500; step++) {
+        await page.keyboard.press('ArrowDown');
+        const text = await dropdown
+          .locator('.ant-select-item-option-active')
+          .first()
+          .innerText({timeout: 500})
+          .catch((): string => '');
+        if (text.includes(optionText)) break;
+      }
+      await page.keyboard.press('Enter');
     }
-    await page.keyboard.press('Enter');
     await expect(control.locator('.ant-select-selection-item')).toContainText(optionText);
   }
 
@@ -235,7 +243,6 @@ test.describe('scm-delivery', () => {
         remark: name,
         items: [{skuId, orderedQuantity: '1.0000', manualPriceOverride: false}],
       });
-      order = await post<Row>('/scm/order/submit', {orderId: order.orderId, version: order.version});
       const item = order.items[0];
       await post('/scm/order/item/actual-quantity', {
         orderId: order.orderId,
@@ -294,7 +301,7 @@ test.describe('scm-delivery', () => {
   test.afterAll(async () => {
     if (routeId && api) {
       const current = await route();
-      if (current.status === 'DRAFT' || current.status === 'PLANNED') {
+      if (current.status === 'PENDING' || current.status === 'PLANNED') {
         await envelope(`/scm/delivery/routes/${current.routeId ?? routeId}/cancel`, {version: Number(current.version), reason: 'E2E 收尾释放'});
       }
     }
@@ -427,7 +434,7 @@ test.describe('scm-delivery', () => {
     expect(String(found.list[0].deliveryDate).slice(0, 10), '表单默认配送日期应为当天').toBe(today);
 
     const created = await route();
-    expect(created.status).toBe('DRAFT');
+    expect(created.status).toBe('PENDING');
     expect(String(created.startLongitude), '线路起点必须取仓库现值，不是页面自己填的').toContain('113.93');
     expect(created.startGeomCrs).toBe('GCJ02');
     expect(created.warehouseId != null, '线路必须绑定仓库').toBeTruthy();
@@ -512,7 +519,7 @@ test.describe('scm-delivery', () => {
 
     const blocked = await envelope(`/scm/delivery/routes/${routeId}/plan`, {version: await routeVersion()});
     expect(blocked.code, '尚有停靠点未定位时不得确认规划').toBe(41104);
-    expect(await (await route()).status).toBe('DRAFT');
+    expect(await (await route()).status).toBe('PENDING');
 
     await page.goto('/#/delivery/routes');
     await page.locator('#scm-delivery-route-table tbody tr.ant-table-row').filter({hasText: name}).first().getByText(accessibleName('路线')).click();
@@ -777,7 +784,6 @@ test.describe('scm-delivery-l3', () => {
       remark: `${tag} 发车备货`,
       items: [{skuId: Number(skuId), quantity, price: PRICE, allocations: []}],
     });
-    await post('/scm/purchase/submit', {id: order.id, version: order.version});
     const receipt = await post<Row>('/scm/purchase/receipt/create', {
       purchaseOrderId: order.id,
       receiptMode: 'DIRECT',
@@ -1094,7 +1100,8 @@ test.describe('scm-delivery-l3', () => {
     // 关闭详情 = 回列表页（页面左上「返回线路管理」；按钮内含图标，图标自身 aria-label
     // 会混进可及名，因此直接按专用类名定位而不是按纯文案的可及名匹配）。
     await detailPage.locator('.scm-detail-header__back').click();
-    await expect(page).toHaveURL(/#\/delivery\/routes$/);
+    // 列表查询条件按登录人记忆：返回时会把 keyword 一并带回，只校验路由本身。
+    await expect(page).toHaveURL(/#\/delivery\/routes(\?.*)?$/);
   });
 
   async function routeVersionOf(id: string | number): Promise<number> {
@@ -1552,7 +1559,6 @@ test.describe('scm-sorting', () => {
       remark: `${tag}-${seq}`,
       items: [{skuId, orderedQuantity: quantity, manualPriceOverride: false}],
     });
-    order = await post<Row>('/scm/order/submit', {orderId: order.orderId, version: order.version});
     const line = order.items[0];
     await post('/scm/order/item/actual-quantity', {
       orderId: order.orderId,
@@ -1856,9 +1862,6 @@ test.describe('scm-sorting', () => {
       address: {receiverName: '标品验收', receiverPhone: '13800000000', address: '分拣验收路1号'},
       items: [{skuId: standardSkuId, orderedQuantity: '2.0000', manualPriceOverride: false}],
     });
-    if (order.status === 'DRAFT') {
-      order = await post<Row>('/scm/order/submit', {orderId: order.orderId, version: order.version});
-    }
     if (order.status !== 'CONFIRMED') {
       order = await post<Row>('/scm/order/confirm', {orderId: order.orderId, version: order.version});
     }

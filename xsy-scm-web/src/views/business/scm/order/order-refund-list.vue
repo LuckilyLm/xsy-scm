@@ -93,7 +93,7 @@
   >
     <p>登记售后退款业务完成。纯余额订单将同时返还原钱包；其他支付方式仍需单独处理资金退款。</p>
     <a-form-item label="外部凭证（可选）">
-      <a-input v-model:value="externalReference" maxlength="128" />
+      <a-input v-model:value="externalReference" :maxlength="128" />
     </a-form-item>
   </a-modal>
   <a-modal

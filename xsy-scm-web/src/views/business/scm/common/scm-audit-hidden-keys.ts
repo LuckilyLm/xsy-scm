@@ -37,12 +37,28 @@ const REFERENCE_KEYS = [
   'payableId',
   'refundId',
   'exceptionId',
+  'activityId',
+  'activityVersion',
+  'salesOrderId',
+  'orderItemId',
+  'couponInstanceId',
+  'mallCouponInstanceId',
+  'mallDeliveryWarehouseId',
+  'roundingTargetItemId',
   'provinceCode',
   'cityCode',
   'districtCode',
   'latitude',
   'longitude',
   'geomCrs',
+  // 权限层内部开关，不是业务字段；显示出来只会让操作记录更难读。
+  'deliveryFactsVisible',
+  'fundingFactsVisible',
+  'inventoryFactsVisible',
+  'receivableFactsVisible',
+  'refundFactsVisible',
+  'returnFactsVisible',
+  'sortingFactsVisible',
 ];
 
 const HIDDEN_AUDIT_KEYS = new Set([...BOOKKEEPING_KEYS, ...REFERENCE_KEYS]);

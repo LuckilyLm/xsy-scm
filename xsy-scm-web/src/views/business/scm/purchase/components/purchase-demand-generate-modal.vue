@@ -27,7 +27,6 @@
     </a-form>
 
     <a-descriptions v-if="batch" bordered size="small" :column="2">
-      <a-descriptions-item label="批次编号"><span class="scm-mono">#{{ batch.batchId }}</span></a-descriptions-item>
       <a-descriptions-item label="状态">{{ batchStatusText(batch.status) }}</a-descriptions-item>
       <a-descriptions-item label="建议采购行">{{ batch.candidateLineCount }}</a-descriptions-item>
       <a-descriptions-item label="汇总商品规格">{{ batch.summary?.length ?? 0 }}</a-descriptions-item>

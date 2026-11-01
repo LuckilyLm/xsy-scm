@@ -101,19 +101,19 @@
     <a-alert v-if="formError" :message="formError" type="error" show-icon />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="仓库名称" name="name">
-        <a-input v-model:value="form.name" maxlength="150" />
+        <a-input v-model:value="form.name" :maxlength="150" />
       </a-form-item>
       <a-form-item label="所在地区">
         <AreaCascader type="province_city_district" v-model:value="area" style="width: 100%" placeholder="省 / 市 / 区" @change="onAreaChange" />
       </a-form-item>
       <a-form-item label="地址" name="address">
-        <a-input v-model:value="form.address" maxlength="255" @change="onAddressChange" />
+        <a-input v-model:value="form.address" :maxlength="255" @change="onAddressChange" />
       </a-form-item>
       <a-form-item label="地图定位">
         <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)" />
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-input v-model:value="form.remark" maxlength="500" />
+        <a-input v-model:value="form.remark" :maxlength="500" />
       </a-form-item>
       <!-- 批次追踪只在新建空仓时决定：开启后不可关闭，因此编辑态只读回显 -->
       <a-form-item label="批次追踪">

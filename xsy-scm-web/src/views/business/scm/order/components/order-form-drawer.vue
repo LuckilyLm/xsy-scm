@@ -77,17 +77,17 @@
           </a-col>
           <a-col :span="12">
             <a-form-item label="收货人" name="receiverName" required>
-              <a-input v-model:value="form.address.receiverName" :disabled="!!form.orderId" maxlength="100" />
+              <a-input v-model:value="form.address.receiverName" :disabled="!!form.orderId" :maxlength="100" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="联系电话" name="receiverPhone" required class="app-drawer-field--compact">
-              <a-input v-model:value="form.address.receiverPhone" :disabled="!!form.orderId" maxlength="32" />
+              <a-input v-model:value="form.address.receiverPhone" :disabled="!!form.orderId" :maxlength="32" />
             </a-form-item>
           </a-col>
           <a-col :span="24">
             <a-form-item label="收货地址" name="address" required class="app-drawer-field--wide">
-              <a-input v-model:value="form.address.address" :disabled="!!form.orderId" maxlength="500" />
+              <a-input v-model:value="form.address.address" :disabled="!!form.orderId" :maxlength="500" />
             </a-form-item>
           </a-col>
         </a-row>
@@ -115,6 +115,7 @@
 </template>
 <script setup lang="ts">
 import {computed, reactive, ref, watch} from 'vue';
+import {onBeforeRouteLeave} from 'vue-router';
 import {message, type FormInstance} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -229,6 +230,9 @@ function closeDrawer() {
   requestId++;
   visible.value = false;
 }
+
+// 列表页会被 keep-alive 缓存；切走菜单时必须收起抽屉，否则遮罩会一直盖在新页面上。
+onBeforeRouteLeave(() => closeDrawer());
 
 /** 复用历史订单：只复制基本信息，价格和可用性重新解析。 */
 async function openFromHistory(id: Id) {

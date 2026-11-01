@@ -107,7 +107,8 @@ const columns = ref<TableColumnsType<LogRow>>([
     width: 210,
     customRender: ({text}) => datetime(text),
   },
-  {title: '操作', dataIndex: 'operationType', align: 'center', width: 140},
+  // 与筛选条同名词；右侧还有一列「操作」放查看动作，两列不能同名
+  {title: '操作类型', dataIndex: 'operationType', align: 'center', width: 140},
   {
     title: '操作人',
     dataIndex: 'operatorName',

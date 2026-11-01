@@ -76,7 +76,7 @@
       <template v-else>
         <div v-for="(row, index) in entry.rows" :key="`${entry.group.key}-${index}`" class="scm-diff-row">
           <div class="scm-diff-row-title">
-            <span :title="row.identity">{{ rowTitle(row) }}</span>
+            <span :title="rowTitle(row, index)">{{ rowTitle(row, index) }}</span>
             <a-tag v-if="!row.beforeExists" color="green">新增</a-tag>
             <a-tag v-else-if="!row.afterExists" color="red">移除</a-tag>
           </div>
@@ -253,14 +253,14 @@ const ROW_TITLE_KEYS = [
   'skuNameSnapshot',
 ];
 
-function rowTitle(row: DiffChild): string {
+function rowTitle(row: DiffChild, index: number): string {
   for (const key of ROW_TITLE_KEYS) {
     const field = row.fields.find((f) => f.key === key);
     const text = field && field.after !== '—' ? field.after : field?.before;
     if (text && text !== '—') return `${labelOf(key)}：${text}`;
   }
-  const at = row.identity.indexOf('=');
-  return at > 0 ? `${labelOf(row.identity.slice(0, at))}：${row.identity.slice(at + 1)}` : row.identity;
+  // 没有可读名称时只说第几行：行标识是数据库主键，对读日志的人没有意义
+  return `第 ${index + 1} 行`;
 }
 
 /** 已有行只显示变化字段；新增或移除行显示有值的一侧。 */
@@ -305,6 +305,9 @@ function visibleRowFields(row: DiffChild): FieldRow[] {
   margin-bottom: 12px;
   border-collapse: collapse;
   font-size: 13px;
+  /* 固定布局让两个值列等宽：自动布局会按内容分配，短值那一列窄、长值那列宽，
+     同一条记录前后两半对不齐，跨记录扫一眼也无法比较 */
+  table-layout: fixed;
 }
 
 .scm-diff-grid th,
@@ -319,7 +322,9 @@ function visibleRowFields(row: DiffChild): FieldRow[] {
   font-size: 12px;
   font-weight: 500;
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--scm-fill, rgba(0, 0, 0, 0.04));
+  /* 「修改前 / 修改后」只有三个字，任何宽度都不该折成两行。 */
+  white-space: nowrap;
 }
 
 /* 字段名只做定位，不抢数值的视觉重量 */
@@ -330,10 +335,10 @@ function visibleRowFields(row: DiffChild): FieldRow[] {
   white-space: nowrap;
 }
 
-/* 未变更项弱化显示 */
+/* 未变更项弱化显示；走三级文字令牌，暗色模式下才不会变成黑底黑字 */
 .scm-diff-grid tr.is-quiet th,
 .scm-diff-grid tr.is-quiet td {
-  color: rgba(0, 0, 0, 0.3);
+  color: var(--scm-text-tertiary, rgba(0, 0, 0, 0.45));
 }
 
 .scm-diff-value {
@@ -342,9 +347,9 @@ function visibleRowFields(row: DiffChild): FieldRow[] {
   font-variant-numeric: tabular-nums;
 }
 
-/* 空值弱化，避免误读成破折号 */
+/* 空值弱化，避免误读成破折号；用禁用色令牌，暗色模式下同样可见 */
 .scm-diff-value.is-empty {
-  color: rgba(0, 0, 0, 0.25);
+  color: var(--scm-text-disabled, rgba(0, 0, 0, 0.25));
 }
 
 .scm-diff-table {

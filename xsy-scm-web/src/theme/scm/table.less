@@ -159,6 +159,11 @@
   cursor: default;
 }
 
+/* 空表只有「暂无数据」一行字：antd 默认的 25% 黑几乎和纸面同色，按表头墨色给出可读对比 */
+.scm-module .admin-layout .ant-table-wrapper .ant-empty-description {
+  color: var(--scm-ink-soft);
+}
+
 /* 单元格内的次要说明文字 */
 .scm-cell-hint {
   font-size: 12px;

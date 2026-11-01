@@ -154,7 +154,7 @@
           <a-input-number v-model:value="actualForm.actualQuantity" string-mode :precision="4" :min="'0.0001'" style="width: 100%" />
         </a-form-item>
         <a-form-item label="修改原因" name="actualQuantityReason" :rules="[{required: true, message: '请填写修改原因', trigger: 'change'}]">
-          <a-input v-model:value="actualForm.actualQuantityReason" maxlength="500" />
+          <a-input v-model:value="actualForm.actualQuantityReason" :maxlength="500" />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -232,7 +232,7 @@
     </a-modal>
     <a-modal :open="cancelOpen" title="取消订单" :confirm-loading="saving" @ok="cancel" @cancel="cancelOpen = false">
       <a-form-item label="取消原因" name="cancelReason" required>
-        <a-input v-model:value="cancelReason" maxlength="500" />
+        <a-input v-model:value="cancelReason" :maxlength="500" />
       </a-form-item>
     </a-modal>
     <a-modal :open="repriceOpen" title="手动重算订单价格" :confirm-loading="saving" @ok="reprice" @cancel="repriceOpen = false">

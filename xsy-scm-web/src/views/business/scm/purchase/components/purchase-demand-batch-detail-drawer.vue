@@ -11,7 +11,6 @@
     <a-spin :spinning="loading">
       <template v-if="detail">
         <a-descriptions bordered size="small" :column="3" class="head">
-          <a-descriptions-item label="批次编号"><span class="scm-mono">#{{ detail.batchId }}</span></a-descriptions-item>
           <a-descriptions-item label="状态">{{ batchStatusText(detail.status) }}</a-descriptions-item>
           <a-descriptions-item label="冻结时间">{{ datetime(detail.createdAt) }}</a-descriptions-item>
           <a-descriptions-item label="统计时间段" :span="2">{{ datetime(detail.startAt) }} ~ {{ datetime(detail.endAt) }}</a-descriptions-item>

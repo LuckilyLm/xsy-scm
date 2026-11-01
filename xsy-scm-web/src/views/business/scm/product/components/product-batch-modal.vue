@@ -11,7 +11,7 @@
     >
       <template #description>
         <ul class="batch-failures">
-          <li v-for="row in failures" :key="`${row.spuId}-${row.reasonCode}`">{{ row.spuCode || row.spuId }}：{{ row.reasonMsg }}</li>
+          <li v-for="row in failures" :key="`${row.spuId}-${row.reasonCode}`">{{ row.spuCode || '未知商品' }}：{{ row.reasonMsg }}</li>
           <li v-if="hiddenFailures > 0">另有 {{ hiddenFailures }} 行未列出</li>
         </ul>
       </template>

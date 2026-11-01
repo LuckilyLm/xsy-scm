@@ -250,7 +250,7 @@ const columns = ref<OrderListColumn[]>([
   {title: '下单金额', dataIndex: 'orderedTotalAmount', width: 130},
   {title: '结算金额', dataIndex: 'settlementTotalAmount', width: 130},
   {title: '期望配送时间', dataIndex: 'expectDeliveryTime', width: 180},
-  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 180},
 ]);
 // 宽屏剩余宽度补给文本列；用户改过列宽则原样渲染。
 const {tableRef, displayColumns, scrollX} = useScmTableFill(columns, () => SCM_COLUMN_WIDTH.selection);

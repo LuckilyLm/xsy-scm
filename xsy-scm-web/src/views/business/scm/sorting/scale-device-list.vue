@@ -102,19 +102,19 @@
     <a-alert v-if="registerError" :message="registerError" type="error" show-icon class="smart-margin-bottom10" />
     <a-form ref="registerFormRef" :model="registerForm" :rules="registerRules" layout="vertical">
       <a-form-item label="设备编号" name="deviceCode" extra="现场贴在秤上的编号；撤销后也不会被另一台秤复用">
-        <a-input v-model:value="registerForm.deviceCode" maxlength="64" />
+        <a-input v-model:value="registerForm.deviceCode" :maxlength="64" />
       </a-form-item>
       <a-form-item label="设备名称" name="deviceName">
-        <a-input v-model:value="registerForm.deviceName" maxlength="100" placeholder="如：分拣台 1 号秤" />
+        <a-input v-model:value="registerForm.deviceName" :maxlength="100" placeholder="如：分拣台 1 号秤" />
       </a-form-item>
       <a-form-item label="设备型号" name="deviceModel">
-        <a-input v-model:value="registerForm.deviceModel" maxlength="100" placeholder="如：SHOUHENG TCS-150A" />
+        <a-input v-model:value="registerForm.deviceModel" :maxlength="100" placeholder="如：SHOUHENG TCS-150A" />
       </a-form-item>
       <a-form-item label="绑定仓库" name="warehouseId">
         <WarehouseSelect v-model:value="registerForm.warehouseId" width="100%" />
       </a-form-item>
       <a-form-item label="工位编码" name="stationCode">
-        <a-input v-model:value="registerForm.stationCode" maxlength="64" />
+        <a-input v-model:value="registerForm.stationCode" :maxlength="64" />
       </a-form-item>
     </a-form>
   </a-modal>

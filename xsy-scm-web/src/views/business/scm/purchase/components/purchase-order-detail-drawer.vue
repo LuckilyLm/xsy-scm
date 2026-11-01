@@ -180,13 +180,13 @@
 
     <a-modal :open="cancelOpen" title="取消采购单" :confirm-loading="saving" @ok="cancel" @cancel="cancelOpen = false">
       <a-form-item label="取消原因" required>
-        <a-input v-model:value="cancelReason" maxlength="500" />
+        <a-input v-model:value="cancelReason" :maxlength="500" />
       </a-form-item>
     </a-modal>
 
     <a-modal :open="shortCloseOpen" title="少收关单" :confirm-loading="saving" @ok="shortClose" @cancel="shortCloseOpen = false">
       <a-form-item label="少收关单原因" required>
-        <a-input v-model:value="shortCloseReason" maxlength="500" />
+        <a-input v-model:value="shortCloseReason" :maxlength="500" />
       </a-form-item>
     </a-modal>
 

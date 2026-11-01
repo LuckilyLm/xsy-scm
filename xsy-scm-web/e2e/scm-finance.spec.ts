@@ -527,7 +527,7 @@ test.describe('scm-finance-receivable', () => {
     const drawer = page.locator('.ant-drawer-open').filter({hasText: '应收明细'}).first();
     await expect(drawer).toBeVisible();
     await expect(drawer).toContainText(facts.orderNo);
-    await expect(drawer).toContainText('出库来源');
+    await expect(drawer).toContainText('来源单据');
     await expect(drawer).toContainText('2.0000');
     await page.keyboard.press('Escape');
     await expect(drawer).toHaveCount(0);

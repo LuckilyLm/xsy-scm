@@ -169,17 +169,13 @@
   >
     <a-alert v-if="codError" class="form-error" type="error" show-icon :message="codError" />
     <a-form layout="vertical">
-      <a-form-item label="销售订单 ID" required>
-        <a-input-number
-          v-model:value="codOrderIdInput"
-          string-mode
-          :precision="0"
-          :min="'1'"
-          :controls="false"
+      <a-form-item label="销售订单号" required>
+        <a-input
+          v-model:value="codForm.orderNo"
           :disabled="codSaving"
-          placeholder="输入订单 ID 后查询待收金额"
-          style="width: 100%"
+          placeholder="输入订单号后查询待收金额"
           @change="clearCodPreview"
+          @press-enter="() => loadCodPreview()"
         />
         <a-button :loading="codLoading" :disabled="codSaving" style="margin-top: 8px" @click="() => loadCodPreview()">查询订单</a-button>
       </a-form-item>
@@ -231,12 +227,13 @@
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, onMounted, reactive, ref, watch} from 'vue';
+import {onMounted, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {financeApi} from '/@/api/business/scm/finance-api';
+import {orderApi} from '/@/api/business/scm/order-api';
 import {
   SCM_FINANCE_ENTRY_COLOR,
   SCM_FINANCE_ENTRY_TYPE_ENUM,
@@ -289,20 +286,18 @@ const codOpen = ref(false),
   codError = ref('');
 const codPreview = ref<FinanceCodCollectionPreview>();
 let codPreviewGeneration = 0;
-/** 订单 ID 是数字，但模型保持字符串：避免大整数精度问题，也兼容路由里带来的 query 值。 */
+/**
+ * 页面上只让用户填订单号；`orderId` 由订单号解析后填入，用于提交与「订单是否变更」的校验。
+ * id 保持字符串，避免大整数精度问题，也兼容路由里带来的 query 值。
+ */
 const codForm = reactive({
+  orderNo: '',
   orderId: '',
   amount: '',
   method: undefined as 'CASH' | 'BANK_TRANSFER' | 'OTHER' | undefined,
   receivedAt: nowDateTimeValue(),
   externalReference: '',
   remark: '',
-});
-const codOrderIdInput = computed({
-  get: () => (codForm.orderId === '' ? null : codForm.orderId),
-  set: (value: string | number | null | undefined) => {
-    codForm.orderId = value == null ? '' : String(value);
-  },
 });
 const reverseOpen = ref(false),
   reverseSaving = ref(false),
@@ -404,31 +399,64 @@ function openCod() {
   codPreviewGeneration++;
   codError.value = '';
   codPreview.value = undefined;
-  Object.assign(codForm, {orderId: '', amount: '', method: undefined, receivedAt: nowDateTimeValue(), externalReference: '', remark: ''});
+  Object.assign(codForm, {
+    orderNo: '',
+    orderId: '',
+    amount: '',
+    method: undefined,
+    receivedAt: nowDateTimeValue(),
+    externalReference: '',
+    remark: '',
+  });
   codOpen.value = true;
 }
 
+/** 订单号改动后旧预览立即作废，避免把上一张订单的待收金额提交进来。 */
 function clearCodPreview() {
   codPreviewGeneration++;
   codPreview.value = undefined;
   codLoading.value = false;
+  codForm.orderId = '';
   codForm.amount = '';
 }
 
-async function loadCodPreview(options: {preserveAmount?: boolean} = {}) {
-  const requestedOrderId = codForm.orderId.trim();
-  if (!/^[1-9]\d*$/.test(requestedOrderId)) {
-    codError.value = '请输入有效的销售订单 ID。';
-    return;
-  }
+/** 按订单号精确匹配出订单 id；用户不需要知道内部主键。 */
+async function resolveOrderId(orderNo: string): Promise<string> {
+  const response = await orderApi.query({pageNum: 1, pageSize: 20, keyword: orderNo}, {suppressGlobalErrorMessage: true});
+  const matched = response.data.list.find((order) => (order.orderNo ?? '').toUpperCase() === orderNo.toUpperCase());
+  return matched?.orderId == null ? '' : String(matched.orderId);
+}
+
+/**
+ * 取订单的待收金额。
+ *
+ * 正常入口按订单号解析；从订单页「货到付款收款」跳进来时路由带的是 orderId，直接用它，回填订单号供页面显示。
+ */
+async function loadCodPreview(options: {preserveAmount?: boolean; orderId?: string} = {}) {
   const generation = ++codPreviewGeneration;
   codLoading.value = true;
   codError.value = '';
   codPreview.value = undefined;
   try {
-    const preview = (await financeApi.receiptCodPreview(requestedOrderId, {suppressGlobalErrorMessage: true})).data;
-    if (generation !== codPreviewGeneration || codForm.orderId.trim() !== requestedOrderId) return;
+    let orderId = options.orderId?.trim() ?? '';
+    if (!orderId) {
+      const requestedOrderNo = codForm.orderNo.trim();
+      if (!requestedOrderNo) {
+        codError.value = '请输入销售订单号。';
+        return;
+      }
+      orderId = await resolveOrderId(requestedOrderNo);
+      if (generation !== codPreviewGeneration) return;
+      if (!orderId) {
+        codError.value = `未找到订单号「${requestedOrderNo}」的订单`;
+        return;
+      }
+    }
+    codForm.orderId = orderId;
+    const preview = (await financeApi.receiptCodPreview(orderId, {suppressGlobalErrorMessage: true})).data;
+    if (generation !== codPreviewGeneration) return;
     codPreview.value = preview;
+    if (!codForm.orderNo) codForm.orderNo = preview.orderNo ?? '';
     if (!options.preserveAmount && !codForm.amount) codForm.amount = preview.openAmount;
   } catch (error) {
     if (generation === codPreviewGeneration) codError.value = financeError(error);
@@ -545,8 +573,7 @@ onMounted(async () => {
   queryData();
   if (typeof route.query.codOrderId === 'string' && /^[1-9]\d*$/.test(route.query.codOrderId)) {
     openCod();
-    codForm.orderId = route.query.codOrderId;
-    await loadCodPreview();
+    await loadCodPreview({orderId: route.query.codOrderId});
   }
 });
 
@@ -555,8 +582,7 @@ watch(
   async (value) => {
     if (codSaving.value || typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) return;
     openCod();
-    codForm.orderId = value;
-    await loadCodPreview();
+    await loadCodPreview({orderId: value});
   }
 );
 </script>

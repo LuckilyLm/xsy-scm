@@ -30,7 +30,7 @@ test.describe('scm-dashboard-todo', () => {
     'inventory-warning': {page: '/inventory/inventory-warning-list', method: 'post', queryPath: '/scm/inventory/warning/query'},
     'receipt-putaway': {page: '/purchase/purchase-receipt-list', method: 'post', queryPath: '/scm/purchase/receipt/query'},
     'loss-gain-audit': {page: '/inventory/inventory-loss-gain-list', method: 'post', queryPath: '/scm/inventory/loss-gain/query'},
-    'delivery-route-draft': {page: '/delivery/routes', method: 'get', queryPath: '/scm/delivery/routes'},
+    'delivery-route-pending': {page: '/delivery/routes', method: 'get', queryPath: '/scm/delivery/routes'},
   };
 
   const LOSS_GAIN_QUERY_PATH = CARDS['loss-gain-audit'].queryPath;
@@ -199,7 +199,7 @@ test.describe('scm-dashboard-todo', () => {
     }
     // 本组造的单据让上面那条断言不再是 0 == 0
     expect(Number(cards.find((c) => c.key === 'loss-gain-audit')!.count), '刚造的待审核报损单要被计入').toBeGreaterThanOrEqual(1);
-    expect(Number(cards.find((c) => c.key === 'delivery-route-draft')!.count), '刚造的草稿线路要被计入').toBeGreaterThanOrEqual(1);
+    expect(Number(cards.find((c) => c.key === 'delivery-route-pending')!.count), '刚造的待排线线路要被计入').toBeGreaterThanOrEqual(1);
   });
 
   test('§6.1-1 待确认入库卡片：status / receiptMode / putawayStatus 三个条件全部落到查询请求', async ({page}) => {
@@ -228,17 +228,17 @@ test.describe('scm-dashboard-todo', () => {
     await expect(page.locator('#scm-inventory-loss-gain-table')).toContainText(lossGainNo);
   });
 
-  test('§6.1-3 草稿配送线路卡片：status=DRAFT 落到列表查询', async ({page}) => {
+  test('§6.1-3 待排线配送线路卡片：status=PENDING 落到列表查询', async ({page}) => {
     await authenticate(page, adminToken);
-    const card = (await get<Row[]>('/scm/dashboard/todo')).find((c) => c.key === 'delivery-route-draft')!;
+    const card = (await get<Row[]>('/scm/dashboard/todo')).find((c) => c.key === 'delivery-route-pending')!;
     const {page: path, params} = splitRoute(card.route);
     const conditions = await openPage(
       page,
       `/#${path}?${new URLSearchParams(params as Record<string, string>)}`,
-      CARDS['delivery-route-draft'].queryPath,
+      CARDS['delivery-route-pending'].queryPath,
       'get'
     );
-    expect(conditions.status, '线路状态筛选没进查询条件').toBe('DRAFT');
+    expect(conditions.status, '线路状态筛选没进查询条件').toBe('PENDING');
     await expect(page.locator('#scm-delivery-route-table')).toContainText(draftRouteName);
   });
 
@@ -256,7 +256,7 @@ test.describe('scm-dashboard-todo', () => {
     expect((await openPage(page, '/#/inventory/inventory-loss-gain-list?status=PENDING', LOSS_GAIN_QUERY_PATH)).status).toBe('PENDING');
     // 先离开再跳回：走的是组件缓存后重新进入的路径，不是首次挂载
     await page.goto('/#/delivery/routes');
-    await page.waitForRequest((req) => new URL(req.url()).pathname === CARDS['delivery-route-draft'].queryPath);
+    await page.waitForRequest((req) => new URL(req.url()).pathname === CARDS['delivery-route-pending'].queryPath);
     const again = await openPage(page, '/#/inventory/inventory-loss-gain-list?status=REJECTED', LOSS_GAIN_QUERY_PATH);
     expect(again.status, '第二次跳入没有套用新条件').toBe('REJECTED');
   });
@@ -464,7 +464,7 @@ test.describe('scm-report', () => {
       remark: name,
       items: [{skuId, quantity, price: '6.2000', allocations: []}],
     });
-    return await post('/scm/purchase/submit', {id: o.id, version: o.version});
+    return o;
   }
 
   async function confirmedReceipt(receiptMode: 'DIRECT' | 'WAREHOUSE_CONFIRM', quantity: string) {
@@ -602,7 +602,6 @@ test.describe('scm-report', () => {
     const draftRows = await report('sales/customer', {customerId});
     expect(draftRows.list, '草稿订单不得进入销售统计').toHaveLength(0);
 
-    order = await post('/scm/order/submit', {orderId: order.orderId, version: order.version});
     let confirmed = await raw('/scm/order/confirm', {orderId: order.orderId, version: order.version});
     if (confirmed.code === 40963) {
       // 非标品：先按结算量录实重再确认（40963 = 缺实重，不是失败）
@@ -653,19 +652,16 @@ test.describe('scm-report', () => {
   });
 
   test('3 采购报表只计提交后的采购事实', async ({page}) => {
-    const draftOnly: any = await post('/scm/purchase/create', {
+    // 采购单草稿态已下线：创建即提交，立即进入采购报表。
+    await post('/scm/purchase/create', {
       supplierId,
       warehouseId,
       purchaserId: null,
       plannedArrivalDate: null,
-      remark: name + '-draft',
+      remark: name + '-created',
       items: [{skuId, quantity: '3.0000', price: '5.0000', allocations: []}],
     });
     let overview = await report('purchase/overview', {supplierId});
-    expect(overview.submittedOrderCount ?? 0, '草稿采购单不进统计').toBe(0);
-
-    await post('/scm/purchase/submit', {id: draftOnly.id, version: draftOnly.version});
-    overview = await report('purchase/overview', {supplierId});
     expect(overview.submittedOrderCount).toBe(1);
     expect(overview.submittedAmount).toBe('15.0000');
 
@@ -868,7 +864,6 @@ test.describe('scm-report', () => {
         items: dailyItems,
       });
       orderIds.push(String(created.id));
-      await post('/scm/purchase/submit', {id: created.id, version: created.version});
 
       if (secondWarehouse) {
         const secondOrder = await post('/scm/purchase/create', {
@@ -880,7 +875,6 @@ test.describe('scm-report', () => {
           items: [{skuId: dailySkus[0].skuId, quantity: '2.0000', price: '6.2000', allocations: []}],
         });
         orderIds.push(String(secondOrder.id));
-        await post('/scm/purchase/submit', {id: secondOrder.id, version: secondOrder.version});
       }
 
       w6Fixture('backdate-purchase-order', [

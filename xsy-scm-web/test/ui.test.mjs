@@ -1461,12 +1461,11 @@ import ts from 'typescript';
     assert.deepEqual([...new Set(offenders)], [], '没有 :model 时表单项校验读不到用户输入');
   });
 
-  test('数量、金额、价格与订单 ID 使用数值输入框', () => {
+  test('数量、金额与价格使用数值输入框', () => {
     const expected = {
       'pricing/components/agreement-price-form-drawer.vue': 'form.formulaParameter',
       'product/components/product-bundle-editor.vue': 'row.quantityPerBundleSaleUnit',
       'supplier/components/supplier-sku-editable-table.vue': 'draft.referencePrice',
-      'finance/finance-receipt-list.vue': 'codOrderIdInput',
     };
     const byName = new Map(files);
     for (const [name, binding] of Object.entries(expected)) {
@@ -1476,6 +1475,13 @@ import ts from 'typescript';
       assert.ok(input, `${name} 的 ${binding} 仍在用文本输入框`);
       assert.match(input, /string-mode/, `${name} 的 ${binding} 需保留定点字符串精度`);
     }
+  });
+
+  test('货到付款收款按订单号查询，表单不暴露内部订单 ID', () => {
+    const source = new Map(files).get('finance/finance-receipt-list.vue');
+    assert.ok(source, '缺少页面：finance/finance-receipt-list.vue');
+    assert.match(source, /label="销售订单号"/, '货到付款收款要让用户填订单号');
+    assert.ok(!/codOrderIdInput/.test(source), '订单 ID 由后台按订单号解析，不应出现在表单里');
   });
 
   test('销售侧金额用两位小数，采购侧价格保留四位', () => {

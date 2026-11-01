@@ -680,12 +680,14 @@ test.describe('scm-product', () => {
     expect(after.defaultSku.skuCode).toMatch(/^SKU\d{6,}$/);
     expect(after.skuList[0].marketPrice).toBe('12.3500');
     row = page.locator('.ant-table-tbody tr.ant-table-row').filter({hasText: prefix + '苹果'});
-    await button(row, '下架').click();
+    // 两态字段已改为状态列开关：点击开关后仍走 Modal.confirm，取消/失败保持原状。
+    await row.locator('.ant-switch').first().click();
+    // 商品停用确认按钮按动作命名（下架），不是通用「确定」
     await page
-      .locator('.ant-popover:visible')
-      .getByRole('button', {name: /确.*定/})
+      .locator('.ant-modal-confirm:visible')
+      .getByRole('button', {name: /下\s*架/})
       .click();
-    await expect(button(row, '上架')).toBeVisible();
+    await expect(row.locator('.ant-switch').first()).toHaveAttribute('aria-checked', 'false');
     await page.getByPlaceholder('商品名称 / 条码').fill(prefix + 'BAR');
     await button(page, '查询').click();
     await expect(row).toBeVisible();
@@ -738,7 +740,7 @@ test.describe('scm-product', () => {
     const statusChanged = page.waitForResponse((r) => r.url().endsWith('/scm/product/batch/updateStatus'));
     await modal.getByRole('button', {name: /确.*定/}).click();
     expect((await (await statusChanged).json()).data.updatedCount).toBe(1);
-    await expect(button(row, '上架')).toBeVisible();
+    await expect(row.locator('.ant-switch').first()).toHaveAttribute('aria-checked', 'false');
     // 每次批量命令都会重载列表并清空选择，所以第二条命令要重新勾选
     await expect(row.first()).toBeVisible();
     await row.first().locator('.ant-checkbox-wrapper').click();
@@ -1571,19 +1573,19 @@ test.describe('scm-supplier', () => {
     expect((await (await api.get(`/scm/supplier/detail/${supplierId}`)).json()).data.contactName).toBe('李四');
 
     // --------------------------------------------------------- 状态：停用 / 启用
-    // 停用 / 启用属低频动作，已收进操作列「更多」；结果按状态列文本验证。
-    await openRowAction(page, row, '启用 / 停用');
+    // 两态字段用状态列开关表达；点击后确认，取消则保持原状。
+    await row.locator('.ant-switch').first().click();
     await page
       .locator('.ant-modal-confirm:visible')
       .getByRole('button', {name: /停\s*用/})
       .click();
-    await expect(row).toContainText('停用');
-    await openRowAction(page, row, '启用 / 停用');
+    await expect(row.locator('.ant-switch').first()).toHaveAttribute('aria-checked', 'false');
+    await row.locator('.ant-switch').first().click();
     await page
       .locator('.ant-modal-confirm:visible')
       .getByRole('button', {name: /启\s*用/})
       .click();
-    await expect(row).toContainText('启用');
+    await expect(row.locator('.ant-switch').first()).toHaveAttribute('aria-checked', 'true');
 
     // --------------------------------------------- 空数组 = 清空全部关联（R11）
     await button(row, '关联商品').click();

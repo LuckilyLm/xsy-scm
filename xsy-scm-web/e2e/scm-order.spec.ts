@@ -123,7 +123,6 @@ test.describe('scm-data-scope', () => {
       remark: `${tag} scope fixture`,
       items: [{skuId, quantity: '20.0000', price: '3.5000', allocations: []}],
     });
-    await ok(api, 'post', '/scm/purchase/submit', {id: purchase.id, version: purchase.version});
     const receipt = await ok<Row>(api, 'post', '/scm/purchase/receipt/create', {
       purchaseOrderId: purchase.id,
       receiptMode: 'DIRECT',
@@ -279,7 +278,7 @@ test.describe('scm-data-scope', () => {
     try {
       for (const routeId of temporaryRouteIds) {
         const detail = await ok<Row>(api, 'get', `/scm/delivery/routes/${routeId}`);
-        if (detail.route.status === 'DRAFT') {
+        if (detail.route.status === 'PENDING') {
           await ok(api, 'post', `/scm/delivery/routes/${routeId}/cancel`, {
             version: detail.route.version,
             reason: `${tag} 范围夹具清理`,
@@ -639,6 +638,28 @@ test.describe('scm-order', () => {
   function fillNote(path: string, rows: unknown[][]) {
     execFileSync('python', ['-c', writeNoteScript, path, JSON.stringify({customer: name, date: deliveryDate}), JSON.stringify(rows)]);
   }
+  interface ImportedItem {
+    remark?: string | null;
+    orderedQuantity?: string;
+    lockedUnitPrice?: string;
+    manualPriceReason?: string | null;
+    [key: string]: unknown;
+  }
+  interface ImportedOrderDetail {
+    items: ImportedItem[];
+    status?: string;
+    expectDeliveryTime?: string | null;
+    [key: string]: unknown;
+  }
+  /** 客户订单的「备注」是行备注（随商品打印），批量导入后按行备注反查订单。 */
+  async function importedOrderWithItemRemark(mark: string): Promise<ImportedOrderDetail> {
+    const list = (await post('/scm/order/query', {pageNum: 1, pageSize: 20, customerId, orderSource: 'IMPORT'})).list;
+    for (const row of list) {
+      const d = (await detail(row.orderId)) as ImportedOrderDetail;
+      if (d.items.some((item) => item.remark === mark)) return d;
+    }
+    throw new Error(`未找到行备注为「${mark}」的导入订单`);
+  }
   async function select(page: Page, label: string, value: string) {
     const box = page.locator(`.ant-form-item:has(#form_item_${label}) .ant-select-selector`);
     await box.click();
@@ -707,7 +728,7 @@ test.describe('scm-order', () => {
     execFileSync('python', ['../tools/e2e_fixtures.py', 'account-cleanup', '--wave', 'w4'], {env, stdio: 'pipe'});
   });
 
-  test('1 UI draft entry, diff identity, submit locks price', async ({page}) => {
+  test('1 UI order entry, diff identity, creation locks price', async ({page}) => {
     const consoleErrors: string[] = [];
     page.on('pageerror', (e) => consoleErrors.push(e.message));
     await browse(page);
@@ -719,8 +740,8 @@ test.describe('scm-order', () => {
     await skuSelect.click();
     await skuSelect.locator('input').fill(name);
     await page.locator('.ant-select-dropdown:visible').getByText('散装', {exact: false}).first().click();
-    await page.getByRole('button', {name: '保存草稿', exact: true}).click();
-    await expect(page.getByText('草稿已保存', {exact: true})).toBeVisible();
+    await page.getByRole('button', {name: '创建订单', exact: true}).click();
+    await expect(page.getByText(/订单已创建/)).toBeVisible();
     const result = await post('/scm/order/query', {pageNum: 1, pageSize: 20, customerId});
     let o = await detail(result.list[0].orderId);
     const item = o.items[0];
@@ -733,7 +754,6 @@ test.describe('scm-order', () => {
     });
     expect(o.items[0].itemId).toBe(item.itemId);
     modifiedOrderNo = String(o.orderNo);
-    o = await post('/scm/order/submit', {orderId: o.orderId, version: o.version});
     expect(o.status).toBe('PENDING');
     expect(o.items[0].lockedUnitPrice).toBe('3.5000');
     expect(o.orderedTotalAmount).toBe('10.5000');
@@ -742,13 +762,9 @@ test.describe('scm-order', () => {
     expect(consoleErrors).toEqual([]);
   });
   test('2 nonstandard weight UI, reason and final settlement', async ({page}) => {
-    let o = await post('/scm/order/create', draft());
-    o = await post('/scm/order/submit', {orderId: o.orderId, version: o.version});
+    const o = await post('/scm/order/create', draft());
     expect(o.items[0].actualQuantity).toBeNull();
-    const denied = await (
-      await api.post('/scm/order/confirm', {data: {orderId: o.orderId, version: o.version}, headers: {'Idempotency-Key': randomUUID()}})
-    ).json();
-    expect(denied.code).toBe(40963);
+    // 负责人口径：允许先确认后称重，缺实重时按订购量估算，不再返回 40963。
     // 确认前弹的是 ADM-04 的「确认订单」业务弹窗（根类名 .ant-modal、按钮「确定」），
     // 不是 antd 的 Modal.confirm，所以 .ant-modal-confirm 永远等不到；
     // 标题里的「授信检查」已改成正文第一句「当前授信检查通过」，仍要断言授信影响可见。
@@ -824,9 +840,12 @@ test.describe('scm-order', () => {
     const changedLog = page.locator('#order-log-table tr').filter({hasText: '修改'}).first();
     await expect(changedLog).toBeVisible();
     await changedLog.getByRole('button', {name: '变更前后'}).click();
-    const diff = page.locator('.ant-modal:visible .scm-diff'); // 审计快照按「旧值 → 新值」逐字段展示，不再有「变更前 / 变更后」两块表头
+    const diff = page.locator('.ant-modal:visible .scm-diff');
     await expect(diff).toContainText('已变更');
-    await expect(diff).toContainText('3.5000→10.5000');
+    // 变更前后是三列表格（字段 / 修改前 / 修改后），旧值和新值各占一格
+    const amountRow = diff.locator('tr').filter({hasText: '订单金额'});
+    await expect(amountRow).toContainText('3.5000');
+    await expect(amountRow).toContainText('10.5000');
     await expect(diff).toContainText('显示未变更');
     await page.locator('.ant-modal-close').click();
     const readToken = await login(name + '_read');
@@ -909,13 +928,11 @@ test.describe('scm-order', () => {
     await page.getByRole('button', {name: '开始导入', exact: true}).click();
     await expect(page.locator('.ant-modal:visible .ant-result-title')).toHaveText('订单导入完成');
     await expect(page.locator('.ant-modal:visible .ant-result-subtitle')).toContainText('共 1 张：已确认 0 张，待称重 1 张');
-    const mixedOrder = (await post('/scm/order/query', {pageNum: 1, pageSize: 20, customerId, orderSource: 'IMPORT'})).list.find(
-      (x: any) => x.remark === '页面联调-混装'
-    );
-    const mixedDetail = await detail(mixedOrder.orderId);
+    const mixedDetail = await importedOrderWithItemRemark('页面联调-混装');
     expect(mixedDetail.status).toBe('PENDING');
-    // 送货单的「实数量」就是下单数量，行序与纸面一致
-    expect(mixedDetail.items.map((x: any) => x.orderedQuantity)).toEqual(['3.0000', '2.0000']);
+    // 送货单的「实数量」就是下单数量，行序与纸面一致；备注按行保留
+    expect(mixedDetail.items.map((x) => x.orderedQuantity)).toEqual(['3.0000', '2.0000']);
+    expect(mixedDetail.items.map((x) => x.remark)).toEqual(['页面联调-混装', '页面联调-混装']);
     // 抬头「收货单位：」按客户档案名称匹配，「日期：」落为期期望送货时间
     expect(String(mixedDetail.expectDeliveryTime)).toContain(deliveryDate);
 
@@ -992,10 +1009,7 @@ test.describe('scm-order', () => {
     await reopen();
     await importFile(manual);
     await expect(page.locator('.ant-modal:visible .ant-result-title')).toHaveText('订单导入完成');
-    const manualOrder = (await post('/scm/order/query', {pageNum: 1, pageSize: 20, customerId, orderSource: 'IMPORT'})).list.find(
-      (x: any) => x.remark === '人工改价'
-    );
-    const manualDetail = await detail(manualOrder.orderId);
+    const manualDetail = await importedOrderWithItemRemark('人工改价');
     expect(manualDetail.status).toBe('CONFIRMED');
     expect(manualDetail.items[0].lockedUnitPrice).toBe('1.2345');
     // 改价原因由系统统一记为「客户订单导入」，不再要求操作员在 Excel 里填原因
@@ -1053,7 +1067,7 @@ test.describe('scm-order', () => {
     expect(consoleErrors).toEqual([]);
   });
 
-  test('10 unsaved new-order draft is kept locally and offered for recovery on reopen', async ({page}) => {
+  test('10 closing a new-order drawer without saving discards the input', async ({page}) => {
     await browse(page);
     await page.getByRole('button', {name: '新建订单', exact: true}).click();
     await select(page, 'customerId', name);
@@ -1068,13 +1082,11 @@ test.describe('scm-order', () => {
       .getByRole('button', {name: /^关\s*闭$/})
       .click();
     await expect(page.locator('.ant-drawer-open')).toHaveCount(0);
-    // 重新新建：命中本地草稿恢复提示，选「恢复」回填并按当前价格重新解析
+    // 本地草稿恢复已随订单草稿态一起下线：重新新建是空白单，不弹恢复框、不残留旧明细
     await page.getByRole('button', {name: '新建订单', exact: true}).click();
-    const confirmBox = page.locator('.ant-modal-confirm');
-    await expect(confirmBox).toContainText('未提交的订单草稿');
-    await confirmBox.getByRole('button', {name: /^恢\s*复$/}).click();
-    await expect(page.locator('#order-item-table tbody tr.ant-table-row')).toHaveCount(1);
-    await expect(page.locator('#order-item-table .price-cell').first()).toContainText('¥ 3.50');
+    await expect(page.locator('.ant-modal-confirm')).toHaveCount(0);
+    await expect(page.locator('#order-item-table tbody tr.ant-table-row')).toHaveCount(0);
+    await expect(page.locator('#form_item_customerId')).toHaveValue('');
     await page
       .locator('.ant-drawer:visible')
       .locator('.ant-drawer-footer')
@@ -1082,9 +1094,8 @@ test.describe('scm-order', () => {
       .click();
   });
 
-  /** §5.2 离页防丢：两条通道都不经过「关闭」按钮，且各自用不同证据归因，避免把 keep-alive 当成防丢。 */
-  test('12 unsaved draft survives a page reload and a route switch', async ({page}) => {
-    // 存储键由 order-form-model.draftKey 按登录用户拼出；E2E 不 import 生产代码，按前缀取回唯一一条。
+  /** 本地草稿恢复已下线：离页和刷新都不能把未提交的新单内容写进 localStorage。 */
+  test('12 unsaved new-order input is not persisted across reload and route switch', async ({page}) => {
     const drafts = () =>
       page.evaluate(() =>
         Object.entries(localStorage)
@@ -1101,39 +1112,23 @@ test.describe('scm-order', () => {
       await page.locator('.ant-select-dropdown:visible').getByText('散装', {exact: false}).first().click();
       await expect(page.locator('#order-item-table tbody tr.ant-table-row')).toHaveCount(1);
     };
-    const recover = async () => {
-      await page.getByRole('button', {name: '新建订单', exact: true}).click();
-      const confirmBox = page.locator('.ant-modal-confirm');
-      await expect(confirmBox).toContainText('未提交的订单草稿');
-      // 刷新后这是本次会话第一次挂载抽屉：确认框必须浮在抽屉之上，否则用户只看到空白抽屉且点不到「恢复」。
-      await confirmBox.getByRole('button', {name: /^恢\s*复$/}).click();
-      // 恢复后按当前价重新解析，价格与明细行都在
-      await expect(page.locator('#order-item-table tbody tr.ant-table-row')).toHaveCount(1);
-      await expect(page.locator('#order-item-table .price-cell').first()).toContainText('¥ 3.50');
-    };
     await browse(page);
     await fillDraft();
-    // 通道一（路由切换）：抽屉开着直接切走，全程没点「关闭」，本地草稿只可能由 onBeforeRouteLeave 写入
+    // 通道一（路由切换）：抽屉开着直接切走，不得留下任何本地草稿
     await browse(page, '/purchase/purchase-demand-list');
-    const left = await drafts();
-    expect(left, '切走路由后本地没有草稿 = onBeforeRouteLeave 未落盘').toHaveLength(1);
-    expect(left[0].items).toHaveLength(1);
-    // 通道二（刷新）：改一个只存在于这一版的可辨识字段再刷新，草稿里出现它才说明是 beforeunload 写的
+    expect(await drafts(), '切走路由后不应写入本地订单草稿').toHaveLength(0);
+    // 通道二（刷新）：改一个可辨识字段再刷新，同样不得落盘
     await browse(page);
-    const reloadMark = 'reload_' + Date.now().toString(36);
-    await page.locator('#form_item_remark').fill(reloadMark);
+    // hash 路由切回列表不会卸载保持挂载的抽屉，先整页刷新回到干净状态
+    await page.reload();
+    await page.getByRole('button', {name: '新建订单', exact: true}).click();
+    await page.locator('#form_item_remark').fill('reload_' + Date.now().toString(36));
     await page.reload();
     await expect(page.getByRole('button', {name: '新建订单', exact: true})).toBeVisible();
-    const reloaded = await drafts();
-    expect(reloaded).toHaveLength(1);
-    expect(reloaded[0].remark, '刷新后草稿仍是切换路由那一版 = beforeunload 未落盘').toBe(reloadMark);
-    await recover();
-    await expect(page.locator('#form_item_remark')).toHaveValue(reloadMark);
-    await page
-      .locator('.ant-drawer:visible')
-      .locator('.ant-drawer-footer')
-      .getByRole('button', {name: /^关\s*闭$/})
-      .click();
+    expect(await drafts(), '刷新后不应写入本地订单草稿').toHaveLength(0);
+    await page.getByRole('button', {name: '新建订单', exact: true}).click();
+    await expect(page.locator('.ant-modal-confirm')).toHaveCount(0);
+    await expect(page.locator('#form_item_remark')).toHaveValue('');
   });
 
   /** 客户或 SKU 改变后组件会关闭旧浮层；等它完全关闭后再点，检查新键对应的历史价。 */
@@ -1177,7 +1172,6 @@ test.describe('scm-order', () => {
       item.overrideReason = '验收议价';
     }
     let o = await post('/scm/order/create', {...draft(sku), customerId: customer, items: [item]});
-    o = await post('/scm/order/submit', {orderId: o.orderId, version: o.version});
     if (nonStandard)
       o = await post('/scm/order/item/actual-quantity', {
         orderId: o.orderId,

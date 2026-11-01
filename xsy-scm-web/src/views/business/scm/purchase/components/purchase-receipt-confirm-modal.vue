@@ -98,7 +98,7 @@
               v-if="isNonStandard(record)"
               v-model:value="lineOf(record.id).correctionReason"
               placeholder="实重修正原因（可选）"
-              maxlength="500"
+              :maxlength="500"
               aria-label="实重修正原因"
             />
           </template>

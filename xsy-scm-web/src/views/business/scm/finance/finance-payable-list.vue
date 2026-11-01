@@ -280,7 +280,7 @@ const columns = ref<TableColumnsType<FinancePayable>>([
   {title: '超额核销', dataIndex: 'overAppliedAmount', width: 148},
   {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110},
   {title: '事件时点', dataIndex: 'eventAt', width: 180},
-  {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 130},
+  {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 150},
 ]);
 const redDraftColumns: TableColumnsType<RedDraft> = [
   {title: '商品', dataIndex: 'skuName', width: 190},

@@ -28,7 +28,9 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
+    <!-- 查询过才出表格：未查询时表格自带空状态会和下面的提示叠成两块「没有数据」 -->
     <a-table
+      v-if="queried"
       :id="SCM_PURCHASE_TABLE_ID.LOG"
       size="small"
       :data-source="tableData"
@@ -59,7 +61,7 @@
       </template>
     </a-table>
 
-    <a-empty v-if="!loading && !tableData.length" description="请先输入采购单号查询操作日志" />
+    <a-empty v-if="!queried && !loading" description="请先输入采购单号查询操作日志" />
   </a-card>
 
   <a-modal :open="visible" title="变更前后" width="min(760px, 92vw)" :footer="null" @cancel="visible = false">
@@ -84,6 +86,8 @@ import {datetime} from '../common/scm-display';
 const orderNo = ref<string | undefined>(undefined);
 const operationType = ref<string | undefined>(undefined);
 const tableData = ref<LogRow[]>([]);
+/** 是否已经查过一次采购单；没查过时只显示「先输入单号」的提示，不显示空表格 */
+const queried = ref(false);
 const loading = ref(false);
 const error = ref('');
 const visible = ref(false);
@@ -93,7 +97,8 @@ let requestId = 0;
 /** 日志已按采购单筛选；内部收货单 ID 对用户无意义，不展示。 */
 const columns = ref<TableColumnsType<LogRow>>([
   {title: '时间', dataIndex: 'createdAt', width: 200, customRender: ({text}) => datetime(text)},
-  {title: '操作', dataIndex: 'operationType', align: 'center', width: 150},
+  // 与筛选条同名词；右侧还有一列「操作」放查看动作，两列不能同名
+  {title: '操作类型', dataIndex: 'operationType', align: 'center', width: 150},
   {title: '操作人', dataIndex: 'operator', width: 130},
   {title: '原因', dataIndex: 'reason', width: 200},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 120},
@@ -106,8 +111,10 @@ async function queryData() {
   tableData.value = [];
   try {
     if (!orderNo.value?.trim()) {
+      queried.value = false;
       return;
     }
+    queried.value = true;
     // 查询失败由页头提示并允许重试
     const found = await purchaseOrderApi.query({pageNum: 1, pageSize: 1, orderNo: orderNo.value.trim()}, {suppressGlobalErrorMessage: true});
     const order = found.data.list[0];

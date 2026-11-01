@@ -3,7 +3,7 @@
     <a-alert v-if="error" :message="error" type="error" />
     <a-form ref="formRef" :model="formModel" :rules="formRules" layout="vertical">
       <a-form-item label="退货原因" name="reason">
-        <a-input v-model:value="reason" maxlength="500" />
+        <a-input v-model:value="reason" :maxlength="500" />
       </a-form-item>
       <a-table :data-source="rows" :columns="columns" :pagination="false" row-key="itemId">
         <template #bodyCell="{record, column}">

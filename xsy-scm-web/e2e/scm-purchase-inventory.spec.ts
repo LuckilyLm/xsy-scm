@@ -4,7 +4,7 @@
  */
 import {test, expect} from './scm-test-base';
 import {test as pwTest} from '@playwright/test';
-import {request, type APIRequestContext, type Locator, type Page} from '@playwright/test';
+import {request, type APIRequestContext, type Page} from '@playwright/test';
 import {randomBytes, randomUUID} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {readFileSync, mkdtempSync, writeFileSync} from 'node:fs';
@@ -61,19 +61,6 @@ test.describe('scm-inventory', () => {
   async function search(page: Page) {
     await page.getByRole('button', {name: /^查\s*询$/}).click();
   }
-  /**
-   * 操作列有两种形态：唯一的普通动作直接外露，其余（含危险动作）收进「更多」，
-   * 菜单项渲染在 portal 里，不在行内。
-   */
-  async function rowMenu(page: Page, row: Locator, label: string) {
-    const inline = row.getByRole('button', {name: new RegExp(label.split('').join('s*'))});
-    if ((await inline.count()) > 0) {
-      await inline.click();
-      return;
-    }
-    await row.getByRole('button', {name: /更多/}).click();
-    await page.locator('.ant-dropdown:visible').getByText(label, {exact: true}).click();
-  }
   const balanceRows = (page: Page, text: string) => page.locator('#scm-inventory-balance-table tr').filter({hasText: text});
   const movementRows = (page: Page, text: string) => page.locator('#scm-inventory-movement-table tr').filter({hasText: text});
   const receiptRows = (page: Page, text: string) => page.locator('#scm-purchase-receipt-table tr').filter({hasText: text});
@@ -90,7 +77,6 @@ test.describe('scm-inventory', () => {
       remark: name,
       items: [{skuId, quantity, price: '6.2000', allocations: []}],
     });
-    await post('/scm/purchase/submit', {id: o.id, version: o.version});
     return await get('/scm/purchase/detail/' + o.id);
   }
   async function createReceipt(purchaseOrderId: string, receiptMode: 'DIRECT' | 'WAREHOUSE_CONFIRM') {
@@ -474,32 +460,30 @@ test.describe('scm-inventory', () => {
     await search(page);
     const defaultRow = page.locator('#scm-warehouse-table tr').filter({hasText: defaultName});
     await expect(defaultRow).toHaveCount(1);
-    await rowMenu(page, defaultRow, '停用');
+    // 启停已收敛到状态列开关：停用需要二次确认，启用直接生效
+    await defaultRow.locator('.ant-switch').click();
     await page
       .locator('.ant-modal-confirm:visible')
       .getByRole('button', {name: /确\s*定/})
       .click();
-    // 停用失败时确认框保留，原因由全局 toast 给出
+    // 停用失败时确认框关闭、原因由全局 toast 给出；开关受控，仍显示原状态
     await expect(page.locator('.ant-message')).toContainText('仓库仍有库存余额，不能停用');
-    await page
-      .locator('.ant-modal-confirm:visible')
-      .getByRole('button', {name: /取\s*消/})
-      .click();
+    await expect(defaultRow.locator('.ant-switch')).toHaveAttribute('aria-checked', 'true');
 
     await page.getByPlaceholder('仓库名称').fill(name + '隔离仓');
     await search(page);
     const isolatedRow = page.locator('#scm-warehouse-table tr').filter({hasText: name + '隔离仓'});
     await expect(isolatedRow).toHaveCount(1);
-    await rowMenu(page, isolatedRow, '停用');
+    await isolatedRow.locator('.ant-switch').click();
     await page
       .locator('.ant-modal-confirm:visible')
       .getByRole('button', {name: /确\s*定/})
       .click();
     await expect(page.getByText('仓库已停用', {exact: true})).toBeVisible();
-    await expect(isolatedRow).toContainText('停用');
-    await rowMenu(page, isolatedRow, '启用');
+    await expect(isolatedRow.locator('.ant-switch')).toHaveAttribute('aria-checked', 'false');
+    await isolatedRow.locator('.ant-switch').click();
     await expect(page.getByText('仓库已启用', {exact: true})).toBeVisible();
-    await expect(isolatedRow).toContainText('启用');
+    await expect(isolatedRow.locator('.ant-switch')).toHaveAttribute('aria-checked', 'true');
 
     const enabled = await get('/scm/warehouse/detail/' + isolatedId);
     await post('/scm/warehouse/disable', {id: enabled.id, version: enabled.version});
@@ -576,7 +560,6 @@ test.describe('scm-inventory-lot', () => {
       remark: name,
       items: [{skuId, quantity, price: '6.2000', allocations: []}],
     });
-    await post('/scm/purchase/submit', {id: order.id, version: order.version});
     return await get('/scm/purchase/detail/' + order.id);
   }
 
@@ -774,7 +757,6 @@ test.describe('scm-inventory-lot', () => {
       address: {receiverName: 'W9验收', receiverPhone: '13800000000', address: '验收地址'},
       items: [{skuId, orderedQuantity: '10.0000', manualPriceOverride: false}],
     });
-    order = await post('/scm/order/submit', {orderId: order.orderId, version: order.version});
     order = await post('/scm/order/confirm', {orderId: order.orderId, version: order.version});
     expect(order.status).toBe('CONFIRMED');
 
@@ -1099,7 +1081,6 @@ test.describe('scm-inventory-write', () => {
       remark: name,
       items: [{skuId, quantity, price: purchasePrice, allocations: []}],
     });
-    await post('/scm/purchase/submit', {id: order.id, version: order.version});
     const receipt = await post('/scm/purchase/receipt/create', {purchaseOrderId: order.id, receiptMode: 'DIRECT', remark: name});
     const item = receipt.items[0];
     return await post('/scm/purchase/receipt/confirm', {
@@ -1169,14 +1150,14 @@ test.describe('scm-inventory-write', () => {
       items: [{skuId: Number(id), quantity: '5.0000'}],
     });
     const draft = await get('/scm/inventory/outbound/detail/' + outboundId);
-    expect(draft.status).toBe('DRAFT');
+    expect(draft.status).toBe('PENDING');
 
     await browse(page, '/inventory/inventory-outbound-list');
     await page.getByPlaceholder('出库单号').fill(draft.outboundNo);
     await search(page);
     const row = rows(page, 'scm-inventory-outbound-table', draft.outboundNo);
     await expect(row).toHaveCount(1);
-    await expect(row).toContainText('草稿');
+    await expect(row).toContainText('待出库');
 
     await row.getByRole('button', {name: '确认出库'}).click();
     await page.locator('.ant-modal-confirm:visible').getByRole('button', {name: '确认出库'}).click();
@@ -1336,7 +1317,7 @@ test.describe('scm-inventory-write', () => {
     await search(page);
     const row = rows(page, 'scm-inventory-transfer-table', draft.transferNo);
     await expect(row).toHaveCount(1);
-    await expect(row).toContainText('草稿');
+    await expect(row).toContainText('待发货');
 
     // 发出：源仓立即扣减，目标仓还没有 —— 在途期间这批货不在任何余额行里（没有虚拟在途仓）
     await row.getByRole('button', {name: '发出'}).click();
@@ -1547,7 +1528,6 @@ test.describe('scm-purchase', () => {
       remark: name,
       items: [{skuId, orderedQuantity, manualPriceOverride: false}],
     });
-    o = await post('/scm/order/submit', {orderId: o.orderId, version: o.version});
     o = await post('/scm/order/item/actual-quantity', {
       orderId: o.orderId,
       itemId: o.items[0].itemId,
@@ -1579,7 +1559,6 @@ test.describe('scm-purchase', () => {
   /** 一张**没有需求来源**的已提交采购单 —— 收货类用例的干净前置（采购量 ≠ 需求量是合法业务）。 */
   async function submittedPlainOrder(quantity: string) {
     const o = await createOrder([], quantity, '6.2000');
-    await post('/scm/purchase/submit', {id: o.id, version: o.version});
     return await orderDetail(o.id);
   }
   async function createReceipt(purchaseOrderId: string, key = randomUUID()) {
@@ -1705,7 +1684,7 @@ test.describe('scm-purchase', () => {
   test('2 purchase order keeps the demand allocation and totals the lines', async ({page}) => {
     orderA = await createOrder([{demandId: demandA.id, quantity: '10.0000', demandVersion: demandA.version}], '10.0000', '6.2000');
     expect(orderA.orderNo).toMatch(PO);
-    expect(orderA.status).toBe('DRAFT');
+    expect(orderA.status).toBe('SUBMITTED');
     expect(orderA.totalAmount).toBe('62.0000');
     const detail = await orderDetail(orderA.id);
     expect(detail.allocations).toHaveLength(1);
@@ -1720,16 +1699,15 @@ test.describe('scm-purchase', () => {
     await expect(page.locator('#scm-purchase-order-table')).toBeVisible();
     await page.getByPlaceholder('采购单号').fill(orderA.orderNo);
     const orderRow = await row(page, 'scm-purchase-order-table', orderA.orderNo);
-    await expect(orderRow).toContainText('草稿');
+    await expect(orderRow).toContainText('已提交');
     // 金额列统一走 moneyText：¥ + 千分位 + 两位小数
     await expect(orderRow).toContainText('¥ 62.00');
     await page.screenshot({path: '../.runtime/w5-order-list.png', fullPage: true});
   });
   test('3 first partial receipt moves the order to PARTIALLY_RECEIVED', async () => {
-    await post('/scm/purchase/submit', {id: orderA.id, version: orderA.version});
     const receipt = await createReceipt(orderA.id);
     expect(receipt.receiptNo).toMatch(PR);
-    expect(receipt.status).toBe('DRAFT');
+    expect(receipt.status).toBe('PENDING');
     expect(receipt.items).toHaveLength(1);
     expect(receipt.items[0].plannedQuantity).toBe('10.0000');
     const confirmed = await confirmReceipt(receipt, [line(receipt, '4.0000', '4.0000')]);
@@ -1767,7 +1745,6 @@ test.describe('scm-purchase', () => {
     await page.getByPlaceholder('采购单号').fill(orderA.orderNo);
     const orderRow = await row(page, 'scm-purchase-order-table', orderA.orderNo);
     await expect(orderRow).toContainText('已收货');
-    await expect(orderRow).toContainText('100.00%');
     await browse(page, '/purchase/purchase-receipt-list');
     await page.getByPlaceholder('输入采购单号').fill(orderA.orderNo);
     const receiptRows = await row(page, 'scm-purchase-receipt-table', orderA.orderNo);
@@ -1784,7 +1761,7 @@ test.describe('scm-purchase', () => {
     });
     expect(denied.code).toBe(40989);
     const after = await receiptDetail(receipt.id);
-    expect(after.status).toBe('DRAFT');
+    expect(after.status).toBe('PENDING');
     expect(after.items[0].cumulativeReceivedQuantity).toBe('0.0000');
     expect(after.items[0].remainingQuantity).toBe('10.0000');
     expect((await orderDetail(order.id)).items[0].receivedQuantity).toBe('0.0000');
@@ -2443,10 +2420,10 @@ test.describe('scm-stocktake-import', () => {
       expect(body.code, JSON.stringify(body.errors ?? body.msg)).toBe(0);
       expect(body.data.stocktakeId, '整批校验通过必须建出草稿').toBeTruthy();
       expect(body.data.replayed, '首次导入不是幂等重放').toBe(false);
-      await expect(page.getByText('已创建草稿')).toBeVisible();
+      await expect(page.getByText(/已创建待确认盘点单/)).toBeVisible();
 
       const detail = await ok<any>(admin.get(`/scm/inventory/stocktake/detail/${body.data.stocktakeId}`));
-      expect(detail.status).toBe('DRAFT');
+      expect(detail.status).toBe('PENDING');
       const actualBySku = Object.fromEntries((detail.items ?? []).map((i: any) => [i.skuCode, String(i.actualQuantity)]));
       expect(asNumber(actualBySku), '落库实盘量必须等于 Excel 里填的值').toEqual(asNumber(filledOnce));
       expect(
