@@ -107,7 +107,7 @@
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 行内只留当前状态最常用的动作，其余收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <template v-if="record.status === 'PENDING'">
+            <template v-if="isUnconfirmed(record)">
               <a-button type="link" size="small" v-privilege="'scm:order:update'" @click="drawer?.open(record.orderId)">编辑 </a-button>
               <a-button type="link" size="small" @click="openDetail(record.orderId)">详情</a-button>
             </template>
@@ -299,8 +299,16 @@ function lockTip(row: Order): string {
 /** 订单号列被列设置隐藏时，详情需要另留一个入口。 */
 const entryHidden = computed(() => !columns.value.some((column) => (column as {dataIndex?: string}).dataIndex === 'orderNo'));
 
+/**
+ * 未确认（含尚未迁移的旧状态）一律可编辑；已确认、已取消走各自分支。
+ * 用「非终态」判断而不是只认 PENDING，避免旧数据或状态扩展时操作列丢掉编辑入口。
+ */
+function isUnconfirmed(row: Order): boolean {
+  return row.status !== 'CONFIRMED' && row.status !== 'CANCELLED';
+}
+
 function rowActions(row: Order): ScmActionItem[] {
-  const pending = row.status === 'PENDING';
+  const pending = isUnconfirmed(row);
   const confirmed = row.status === 'CONFIRMED';
   // 详情默认走第一列的订单号；只有第一列被隐藏时才补回「更多」
   return [
