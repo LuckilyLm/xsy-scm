@@ -25,8 +25,9 @@ class SalesOrderOperatorNameTest {
 
         assertThat(SalesOrderQueryService.operatorIds(List.of(employee, mall, system), "1:")).containsExactly(7L);
         assertThat(SalesOrderQueryService.operatorIds(List.of(employee, mall, system), "2:")).containsExactly(7L);
+        // 账号查不到名字时只显示身份，不把账号编号露到页面上
         assertThat(SalesOrderQueryService.operatorName("2:8", Map.of(), operator -> operator))
-                .isEqualTo("商城客户（账号 8）");
+                .isEqualTo("商城客户");
         assertThat(SalesOrderQueryService.operatorName("SYSTEM", Map.of(), operator -> operator)).isEqualTo("SYSTEM");
     }
 

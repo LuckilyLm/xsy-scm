@@ -223,9 +223,7 @@ public class SalesOrderQueryService {
             ? Map.<Long, String>of()
             : mallCustomerAccountDao.listNamesByIds(mallAccountIds).stream()
                 .collect(Collectors.toMap(account -> account.getAccountId(),
-                    account -> account.getCustomerName() == null
-                        ? "商城客户（账号 " + account.getAccountId() + "）"
-                        : account.getCustomerName() + "（商城客户）",
+                    account -> account.getCustomerName() == null ? "商城客户" : account.getCustomerName() + "（商城客户）",
                     (first, ignored) -> first));
         return SmartPageUtil.convert2PageResult(page, operationLogs.stream().map(operationLog -> {
             var operationLogVO = new OrderOperationLogVO();
@@ -256,7 +254,8 @@ public class SalesOrderQueryService {
             return operator;
         }
         if (operator.startsWith(UserTypeEnum.MALL_CUSTOMER.getValue() + ":")) {
-            return mallAccountNames.getOrDefault(id, "商城客户（账号 " + id + "）");
+            // 账号已删除或没查到名字时也只给身份，不把内部账号编号露到页面上
+            return mallAccountNames.getOrDefault(id, "商城客户");
         }
         return employeeDisplay.apply(operator);
     }
