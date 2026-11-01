@@ -1,6 +1,6 @@
 import type {ScmId, ScmSortItem} from './customer';
 
-export type PriceSource = 'AGREEMENT' | 'CUSTOMER_GROUP' | 'CUSTOMER_TYPE' | 'TIME_PRICE' | 'MARKET';
+export type PriceSource = 'AGREEMENT' | 'CUSTOMER_GROUP' | 'TIME_PRICE' | 'MARKET';
 export type AgreementFormulaType = 'FIXED' | 'MARKET_PLUS_AMOUNT' | 'COST_MARKUP_RATE' | 'MARKET_MARKUP_RATE' | 'PURCHASE_COST_LOSS_TAX_MARKUP';
 export type UnavailableReason = 'SKU_NOT_FOUND' | 'SKU_OFF_SHELF' | 'SPU_OFF_SHELF' | 'CATEGORY_DISABLED' | 'NOT_VISIBLE';
 

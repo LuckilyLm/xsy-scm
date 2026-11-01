@@ -34,8 +34,6 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
     int softDelete(@Param("customerId") Long customerId, @Param("version") Integer version,
         @Param("operator") String operator);
 
-    /** 活动客户按类型计数，供删除客户类型前检查引用。 */
-
     /** 加锁读取有效客户行，作为结算与授信的正式依据。 */
     CustomerEntity lock(@Param("customerId") Long customerId);
 

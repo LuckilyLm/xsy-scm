@@ -45,6 +45,7 @@ export const HISTORY_SOURCE_LABEL: Record<string, string> = {
   AGREEMENT: '客户协议价',
   CUSTOMER_GROUP: '客户分组价',
   TIME_PRICE: '时价',
+  LEGACY: '历史价格',
 };
 
 /** 价格历史的变更类型。 */

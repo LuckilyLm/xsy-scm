@@ -14,9 +14,9 @@ export const SCM_ORDER_SOURCE_ENUM: SmartEnum<string> = {
 export const SCM_ORDER_PRICE_SOURCE_ENUM: SmartEnum<string> = {
   AGREEMENT: {value: 'AGREEMENT', desc: '客户协议价'},
   CUSTOMER_GROUP: {value: 'CUSTOMER_GROUP', desc: '客户分组价'},
-  CUSTOMER_TYPE: {value: 'CUSTOMER_TYPE', desc: '客户类型价'},
   TIME_PRICE: {value: 'TIME_PRICE', desc: '时价'},
   MARKET: {value: 'MARKET', desc: '市场价'},
+  LEGACY: {value: 'LEGACY', desc: '历史价格'},
   OVERRIDE: {value: 'OVERRIDE', desc: '人工改价'},
 };
 export const SCM_ORDER_RETURN_STATUS_ENUM: SmartEnum<string> = {

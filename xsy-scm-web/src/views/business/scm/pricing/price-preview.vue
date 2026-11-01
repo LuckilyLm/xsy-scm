@@ -192,9 +192,9 @@ async function trial() {
 const PRICE_SOURCE_TONE: Record<string, ScmStatusTone> = {
   AGREEMENT: 'processing',
   CUSTOMER_GROUP: 'processing',
-  CUSTOMER_TYPE: 'success',
   TIME_PRICE: 'warning',
   MARKET: 'neutral',
+  LEGACY: 'neutral',
 };
 
 /** 不展示 sourceRecordId（数据库主键），需要追溯时走价格历史页。 */

@@ -29,7 +29,7 @@
             LEFT JOIN xsy_customer_agreement_price ap ON l.price_type = 'AGREEMENT' AND ap.id = l.price_id
             LEFT JOIN xsy_customer_group_price gp ON l.price_type = 'CUSTOMER_GROUP' AND gp.id = l.price_id
             LEFT JOIN xsy_pricing_time_price tp_price ON l.price_type = 'TIME_PRICE' AND tp_price.id = l.price_id
-            -- CUSTOMER_TYPE 是已下线的客户类型价，日志 append-only 无法删除，这里不再展示。
+            -- 只展示仍在用的三种价格来源；已下线来源的日志 append-only 无法删除，这里过滤掉。
             WHERE l.price_type IN ('AGREEMENT', 'CUSTOMER_GROUP', 'TIME_PRICE')) h
         LEFT JOIN xsy_customer c ON c.id = h.customer_id
         LEFT JOIN xsy_customer_group cg ON cg.id = h.group_id

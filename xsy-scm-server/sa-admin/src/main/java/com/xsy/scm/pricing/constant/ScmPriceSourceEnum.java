@@ -4,11 +4,11 @@ public enum ScmPriceSourceEnum {
     AGREEMENT("客户协议价"),
     /** 按客户分组维护的商品单位价；优先级在逐客协议价之下、时价之上。 */
     CUSTOMER_GROUP("客户分组价"),
-    /** 历史单据保留的价格来源，仅用于回显；新订单不再产生。 */
-    CUSTOMER_TYPE("客户类型价"),
     /** 商品规格级、按时间段生效的临时价格；优先级在分组价之下、市场价之上。 */
     TIME_PRICE("时价"),
-    MARKET("市场价");
+    MARKET("市场价"),
+    /** 已下线价格来源的历史单据标记，仅用于回显，不参与取价。 */
+    LEGACY("历史价格");
 
     /** 展示名：后端导出与前端文案共用同一份定义。 */
     private final String label;

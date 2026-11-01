@@ -1,6 +1,13 @@
 # 项目状态
 
-最后更新：2026-10-31。当前实施与验证以本文顶部的最新基线为准；下方日期条目保留其发生当时的结果，不代表当前工作区全量验收。
+最后更新：2026-11-01。当前实施与验证以本文顶部的最新基线为准；下方日期条目保留其发生当时的结果，不代表当前工作区全量验收。
+
+## 客户类型下线（2026-11-01，已提交并完成迁移 / 构建 / 浏览器验证）
+
+- 客户类型主数据、客户类型价、客户类型价批量调价及其菜单 / 权限整体下线（`V231`）；客户档案移除 `customer_type_id`，上级客户不再限制类型。定价链为逐客协议价 → 客户分组价 → 时价 → 市场价。
+- 商城共享结算只看「结算主体是否为客户本人」；历史订单行来源统一改记为 `LEGACY`（历史价格，`V233`），价格变更日志 append-only 保留但不再展示。
+- 修复草稿下线遗留的默认值：销售单 `status` 默认 `PENDING`、采购单默认 `SUBMITTED`（`V232`），此前不传状态插入会违反 CHECK。
+- 验证：后端 `test-compile` 通过；客户 / 定价 / 财务 / 商城 / 订单 / 商品 / 迁移 / 菜单契约定向测试全部通过；前端相关单测 41 项通过，改动区域 ESLint / Prettier / `vue-tsc` 无新增错误；Docker 镜像重建并启动，Flyway 已到 `232`；浏览器实测客户新增/删除、价格历史、价格试算、客户详情无客户类型且控制台无错误。
 
 ## 当前客户流程简化（2026-10-31，源码交付；未运行测试、构建或迁移）
 
@@ -119,7 +126,7 @@
 - **负库存 + 损耗报表**：仓库 `allow_negative_stock`（默认关闭，关闭前检查是否仍有负余额）；V187 删除旧的余额 CHECK 并加 `BEFORE INSERT OR UPDATE OF quantity` 触发器（负数量仅限开关仓库、`reserved_quantity = 0`）；销售出库在开关仓库下允许负余额，赠品出库不跟随；加权平均在旧量 ≤ 0 时取本次入库价。新增「负库存损耗」报表页签（`POST /scm/report/inventory/negative-stock/query|summary|export`），是查询时点快照，成本列按 `scm:report:cost:query` 裁剪。
 - **采购价 7 天后置 + 锁单**：采购行 `purchase_price` 可空并新增 `price_pending`/价格窗口，单价与待定价由服务端与数据库 CHECK 双向互斥；`POST /scm/purchase/item/{itemId}/price/fill|adjust`（补价限待定价且窗口内未锁；改价限首次收货确认前、原因必填、锁后仍可用专门权限）；`POST /scm/purchase/lock|unlock`，提交后 7 天自动锁单；`PurchasePriceAutoFillJob` 按最近已提交采购价回填，无历史价则保持待定价。收货确认遇到任一待定价行返回 `PURCHASE_PRICE_PENDING`；收货明细带 `pricePending`，确认弹窗提前拦截。前端明细可勾「待定价」、列表/详情显示待定价与锁单标记、提供补价/改价与锁单/解锁入口。
 - **财务自动 FIFO 核销 + 抹零**：`FinanceWriteOffService` 抽出「锁目标—校验—幂等—写入」公共段，新增 `autoPreview`/`autoAdd`（按账单日期、单据 id 分配，单次最多 100 单，剩余留在资金单待核销额），接口 `POST /scm/finance/write-off/auto/preview|auto`，幂等 scope 与手工核销分开。抹零新增 `xsy_finance_waiver`（V194，只存金额与原因，**不落状态列**：是否已反向由该核销行有没有 `REVERSE` 推导），核销来源扩展 `WAIVER`（V195），`POST /scm/finance/waiver/add|reverse` 与独立权限（V196）。对账单 SQL 增加 `WAIVER`/`WAIVER_REVERSE` 事实，抹零只减应收、不并进核销净额，新增「本期抹零净额」（打印合计字段 `waiverNet` 与导出列）；通用核销反向接口拒绝撤销抹零，必须走抹零反向。
-- **客户分组价**（V198）：新增客户分组主数据（`xsy_customer_group`，客户档案上的 `customer_group_id`）与分组价表（`xsy_customer_group_price`，唯一键为分组 + 商品 + 销售单位 + 开始时刻）、分组价操作日志；客户分组页 `/customer/customer-group-list`，分组价页 `/pricing/customer-group-price-list`，权限拆到 `scm:customer:group:*` 与 `scm:pricing:group-price:*`。分组保存必须至少一个客户；把客户移入其它分组或移出分组时，若原分组会归零则拒绝；删除分组先把客户移出再软删除。`PriceResolver` 在逐客协议价之后、客户类型价之前按「客户所属分组 + 商品 + 销售单位」取价，停用分组不参与；订单行 `CUSTOMER_GROUP` 来源已放开数据库 CHECK 与前端枚举。价格变更历史并入分组价日志，详情页用首个同单位规格回填编辑。
+- **客户分组价**（V198）：新增客户分组主数据（`xsy_customer_group`，客户档案上的 `customer_group_id`）与分组价表（`xsy_customer_group_price`，唯一键为分组 + 商品 + 销售单位 + 开始时刻）、分组价操作日志；客户分组页 `/customer/customer-group-list`，分组价页 `/pricing/customer-group-price-list`，权限拆到 `scm:customer:group:*` 与 `scm:pricing:group-price:*`。分组保存必须至少一个客户；把客户移入其它分组或移出分组时，若原分组会归零则拒绝；删除分组先把客户移出再软删除。`PriceResolver` 在逐客协议价之后、时价之前按「客户所属分组 + 商品 + 销售单位」取价，停用分组不参与；订单行 `CUSTOMER_GROUP` 来源已放开数据库 CHECK 与前端枚举。价格变更历史并入分组价日志，详情页用首个同单位规格回填编辑。
 - **已验证**（仅以下项目）：`mvn -pl sa-admin -am compile`、`test-compile` 通过；新增 `FinanceWriteOffAutoTest` 4 项、`FinanceWaiverServiceTest` 5 项与既有 `FinanceReadOnlyContractTest` 4 项共 13 项通过（含 FIFO 顺序与不超额、预览不写库、无未结目标拒绝、客户退款付款不查应付、抹零超额/无原因拒绝、反向只追加）。`FinanceReadOnlyContractTest` 与 `ScmFinanceSchemaPgIT`/`ScmFinanceRoleMatrixPgIT` 已按第九张财务表、抹零权限与「无状态列」口径更新断言。客户分组价补充 `PriceResolverAgreementFormulaTest` 两项（分组价按商品 + 单位命中并压过客户类型价、跨单位不命中回落市场价）、`PriceResolverTest` 来源数量断言与 `CustomerGroupServiceTest` 三项（唯一成员移出拒绝、留有余量放行、空名单不查库），四个单测类全部通过。前端全量契约单测 `npm test` 549 项全部通过（本轮先红后修：表格列对齐、表格数字 id 撞号、报表导出端点清单、采购待定价校验与载荷、采购操作类型枚举、报表常驻口径说明与 `hint` 基线、抽屉宽度与操作列宽度、`a-form-item name` 缺 `:model`、服务端/快照等黑名单文案）；改动文件 Prettier、ESLint 通过，`vue-tsc` 全仓基线仍有既有 1516 条错误、改动文件 0 条；`npm run build`（vite production）通过。
 - **浏览器实测（2026-10-28）**：客户分组页可新增分组并显示成员数；分组价页可新增「商品 / 单位 / 价格」，列表状态为生效中；价格试算对组内客户命中「客户分组价」，对已有逐客协议价的客户仍优先命中客户协议价；价格历史按 `CUSTOMER_GROUP` 返回分组名、商品与操作日志。
 - **新增 Pg IT（2026-10-28，重置 `xsy_v2_it` 后执行）**：`CustomerGroupPricePgIT` 5 项、`InventoryNegativeStockIT` 4 项、`PurchasePriceWindowIT` 4 项、`FinanceFifoWriteOffIT` 2 项、`FinanceWaiverIT` 3 项、`ScmPrintBatchIT` 2 项、`SalesOrderPastePreviewIT` 3 项，合计 23 项全部通过。覆盖：分组内同单位规格共用价格与组外回退、区间重叠/停用分组/唯一成员移出/删除分组后历史可查；负库存出库建零余额行、数据库守卫、关闭开关前检查与损耗报表；待定价补价、补价前收货拦截、窗口过期拒绝、最近采购价自动回填、锁单/解锁与到期自动锁单；自动 FIFO 顺序与幂等、抹零/反向/超未结额；按配送日期批量预览与打印、同批次键重放、单张失败隔离；整单粘贴匹配、未知商品/单位不符/重复规格/无改价权限保留报错。IT 发现并修复 `PurchaseOrderLockService` 锁单快照直接写 `OffsetDateTime`、JSONB typeHandler 未注册 `JavaTimeModule` 导致锁单/解锁/自动锁单写日志失败的问题（改为 ISO 字符串）。
@@ -577,7 +584,7 @@
 | ID | 需求 | 状态 | 说明 |
 | --- | --- | --- | --- |
 | P01 | 商品三级分类、详情与图片批量修改 | 已演示 | 商品档案、批量分类、图片中心 |
-| P02 | 客户类型价、时价、协议价、批量改价 | 有代码待演示 | 协议价/客户类型价/时价三级已齐（时价本轮补齐）；批量改价需单独核 |
+| P02 | 客户协议价、客户分组价、时价、批量改价 | 有代码待演示 | 客户类型价已下线；协议价/分组价/时价三级已齐，批量改价需单独核 |
 | P03 | 标品/非标品、多规格、多供应商 | 有代码待演示 | 商品规格与商品供应商已具备 |
 | P04 | 自采/供应商送货、默认采购员与供应商 | 部分 | 采购需求生成时可选采购员与供应商；商品级默认值未做 |
 | C01 | 客户资料录入、修改、查询 | 已演示 | |

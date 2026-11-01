@@ -2,7 +2,6 @@
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerQueryService.java	com.xsy.scm.supplier.dao.SupplierDao	selectList	Customer query presents supplier names for linked records.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerQueryService.java	com.xsy.scm.businesscategory.dao.BusinessCategoryDao	selectList	Customer query shows the business category name of linked records.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerSkuVisibilityService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Customer visibility validates requested product identifiers.
-xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerTypeService.java	com.xsy.scm.pricing.dao.CustomerTypePriceDao	lockParent	Customer-type deletion serializes against pricing references.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/service/DeliveryRouteService.java	com.xsy.scm.order.dao.SalesOrderDao	lock	Dispatch and sign serialize with order state changes.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/service/DeliveryRouteService.java	com.xsy.scm.warehouse.dao.WarehouseDao	selectById	Route planning reads the selected warehouse master.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/service/InventoryWarningThresholdService.java	com.xsy.scm.product.dao.ProductSkuDao	selectById	Threshold configuration validates the selected SKU.
@@ -18,9 +17,6 @@ xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderServic
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderService.java	com.xsy.scm.product.dao.ProductSpuDao	selectBatchIds	Order commands resolve SPU snapshots.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/manager/PriceValidation.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Price validation resolves the requested product option.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/CustomerGroupPriceService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Group price entry resolves product option snapshots.
-xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceBatchWriter.java	com.xsy.scm.customer.dao.CustomerTypeDao	selectByIds	Price batch writing validates referenced customer types.
-xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceBatchWriter.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Price batch writing validates referenced product options.
-xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	com.xsy.scm.customer.dao.CustomerTypeDao	selectById	Price resolution loads customer-type context.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	com.xsy.scm.customer.dao.CustomerSkuVisibilityDao	policy,visibleIds	Price resolution applies customer SKU visibility.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Price resolution loads product option snapshots.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/service/ScmPrintBatchService.java	com.xsy.scm.order.dao.SalesOrderDao	selectForCustomerSheet	Customer sheet batch printing reads the confirmed orders of the delivery day.

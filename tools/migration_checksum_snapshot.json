@@ -844,6 +844,94 @@
     "211": {
       "file": "V211__scm_sales_order_item_remark.sql",
       "checksum": 353076605
+    },
+    "212": {
+      "file": "V212__scm_customer_monthly_expense.sql",
+      "checksum": 1383209185
+    },
+    "213": {
+      "file": "V213__scm_purchase_finance_confirm_permission.sql",
+      "checksum": 786355104
+    },
+    "214": {
+      "file": "V214__scm_purchase_cost_adjustment.sql",
+      "checksum": 454377184
+    },
+    "215": {
+      "file": "V215__scm_negative_stock_snapshot.sql",
+      "checksum": -1515460687
+    },
+    "216": {
+      "file": "V216__scm_inspection_photos.sql",
+      "checksum": -287848341
+    },
+    "217": {
+      "file": "V217__scm_purchase_account_without_stock.sql",
+      "checksum": 158930730
+    },
+    "218": {
+      "file": "V218__scm_simple_negative_stock.sql",
+      "checksum": -826452091
+    },
+    "219": {
+      "file": "V219__scm_customer_monthly_goods_cost.sql",
+      "checksum": 35841440
+    },
+    "220": {
+      "file": "V220__scm_price_log_and_exchange_link.sql",
+      "checksum": -440481038
+    },
+    "221": {
+      "file": "V221__scm_remove_order_draft_status.sql",
+      "checksum": 1464715976
+    },
+    "222": {
+      "file": "V222__scm_remove_purchase_draft_status.sql",
+      "checksum": -2088074141
+    },
+    "223": {
+      "file": "V223__scm_remove_delivery_route_draft_status.sql",
+      "checksum": -301140078
+    },
+    "224": {
+      "file": "V224__scm_remove_inventory_outbound_draft_status.sql",
+      "checksum": 1542532771
+    },
+    "225": {
+      "file": "V225__scm_remove_inventory_stocktake_draft_status.sql",
+      "checksum": -1538965140
+    },
+    "226": {
+      "file": "V226__scm_remove_inventory_transfer_draft_status.sql",
+      "checksum": 161114489
+    },
+    "227": {
+      "file": "V227__scm_remove_purchase_receipt_draft_status.sql",
+      "checksum": 767270193
+    },
+    "228": {
+      "file": "V228__scm_comment_tables_and_columns.sql",
+      "checksum": 1898152888
+    },
+    "229": {
+      "file": "V229__scm_rename_business_category_menu.sql",
+      "checksum": -1279798453
+    },
+    "230": {
+      "file": "V230__scm_supplier_business_category_menu.sql",
+      "checksum": 117389336
+    },
+    "231": {
+      "file": "V231__scm_remove_customer_type.sql",
+      "checksum": 44337004
+    },
+    "232": {
+      "file": "V232__scm_fix_transaction_status_defaults.sql",
+      "checksum": -271986291
+    },
+    "233": {
+      "file": "V233__scm_retire_legacy_price_source.sql",
+      "checksum": -1371377545
     }
   }
 }

@@ -10,7 +10,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 /**
- * 客户分组：按批次约定价格的客户集合，与「客户类型」（个人 / 公司 / 集团）无关。
+ * 客户分组：按批次约定价格的客户集合，只承载价格约定，与客户个体属性无关。
  *
  * <p>
  * 成员关系存在 {@code xsy_customer.customer_group_id}；保存分组时至少要有 一个客户，否则这条分组价永远解析不到。

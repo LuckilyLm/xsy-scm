@@ -22,9 +22,10 @@ class ScmPriceSourceLabelTest {
             assertThat(source.getLabel()).as(source.name()).isNotBlank();
         }
         assertThat(ScmPriceSourceEnum.AGREEMENT.getLabel()).isEqualTo("客户协议价");
-        assertThat(ScmPriceSourceEnum.CUSTOMER_TYPE.getLabel()).isEqualTo("客户类型价");
+        assertThat(ScmPriceSourceEnum.CUSTOMER_GROUP.getLabel()).isEqualTo("客户分组价");
         assertThat(ScmPriceSourceEnum.TIME_PRICE.getLabel()).isEqualTo("时价");
         assertThat(ScmPriceSourceEnum.MARKET.getLabel()).isEqualTo("市场价");
+        assertThat(ScmPriceSourceEnum.LEGACY.getLabel()).isEqualTo("历史价格");
     }
 
     @Test

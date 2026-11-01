@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 客户分组维护。分组只承载价格约定与成员关系，不改变客户状态或客户类型。
+ * 客户分组维护。分组只承载价格约定与成员关系，不改变客户状态。
  */
 @RestController
 @RequestMapping("/scm/customer/group")

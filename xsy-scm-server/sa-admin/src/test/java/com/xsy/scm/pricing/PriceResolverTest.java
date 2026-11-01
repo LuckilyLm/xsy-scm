@@ -36,7 +36,7 @@ class PriceResolverTest {
         assertThat(r.getPriceSource()).isNull();
         // 新公式可以引入更细的未定价原因，但不影响缺少价格来源的既有语义。
         assertThat(ScmUnpricedReasonEnum.values()).contains(ScmUnpricedReasonEnum.NO_PRICE_SOURCE);
-        // 时价压在客户类型价之下、市场价之上；客户分组价又压在客户类型价之上。
+        // 时价压在市场价之上；客户分组价又压在时价之上。
         assertThat(ScmPriceSourceEnum.values()).hasSize(5);
         assertThat(ScmPriceSourceEnum.values()).contains(ScmPriceSourceEnum.TIME_PRICE,
             ScmPriceSourceEnum.CUSTOMER_GROUP);

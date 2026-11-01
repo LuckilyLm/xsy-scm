@@ -8,8 +8,9 @@
 const PRICE_SOURCE_LABEL = {
   MARKET: '市场价',
   AGREEMENT: '客户协议价',
-  CUSTOMER_TYPE: '客户类型价',
+  CUSTOMER_GROUP: '客户分组价',
   TIME_PRICE: '时价',
+  LEGACY: '历史价格',
 };
 
 /** 单个商品：后端 VO → 展示模型 */

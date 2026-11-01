@@ -121,8 +121,9 @@ export function nonStandardTip(product) {
 const PRICE_SOURCE_LABELS = {
   MARKET: '市场价',
   AGREEMENT: '协议价',
-  CUSTOMER_TYPE: '类型价',
+  CUSTOMER_GROUP: '分组价',
   TIME_PRICE: '时价',
+  LEGACY: '历史价格',
 };
 
 export function priceSourceLabel(product) {
@@ -144,7 +145,7 @@ export function priceSourceLevel(product) {
   if (source === 'AGREEMENT') {
     return 'agreement';
   }
-  if (source === 'CUSTOMER_TYPE') {
+  if (source === 'CUSTOMER_GROUP') {
     return 'type';
   }
   if (source === 'TIME_PRICE') {

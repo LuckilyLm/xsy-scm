@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 协议价与客户类型价审计表记录的操作类型。
+ * 价格变更审计记录的操作类型。
  *
  * <p>
  * {@code desc} 供页面与导出使用，保存仍用枚举名。

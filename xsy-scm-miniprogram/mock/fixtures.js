@@ -67,7 +67,7 @@ export function findCategoryName(categoryId) {
 /*
  * 价格来源（与后端 ScmPriceSourceEnum 一致）：
  *   AGREEMENT      客户协议价
- *   CUSTOMER_TYPE  客户类型价
+ *   CUSTOMER_GROUP 客户分组价
  *   TIME_PRICE     时价
  *   MARKET         市场价
  *   UNPRICED       无价格（不可下单）
@@ -99,23 +99,23 @@ const PRODUCT_TABLE = [
   // [名称, 规格, 单位, 二级分类, 是否非标品, 价格, 价格来源, 库存状态, 可售量, 图片键]
   /* ---- 蔬菜 / 叶菜类 ---- */
   ['上海青', '500g/份', '份', '叶菜类', false, '3.50', 'MARKET', 'AVAILABLE', 240, 'shanghaiqing'],
-  ['生菜', '300g/颗', '颗', '叶菜类', false, '4.20', 'CUSTOMER_TYPE', 'AVAILABLE', 96, 'shenglai'],
+  ['生菜', '300g/颗', '颗', '叶菜类', false, '4.20', 'CUSTOMER_GROUP', 'AVAILABLE', 96, 'shenglai'],
   ['菜心', '500g/份', '份', '叶菜类', false, '3.80', 'AGREEMENT', 'AVAILABLE', 320, 'caixin'],
-  ['空心菜', '500g/份', '份', '叶菜类', false, '3.20', 'CUSTOMER_TYPE', 'INSUFFICIENT', 12, 'kongxincai'],
+  ['空心菜', '500g/份', '份', '叶菜类', false, '3.20', 'CUSTOMER_GROUP', 'INSUFFICIENT', 12, 'kongxincai'],
   ['西兰花', '400g/颗', '颗', '叶菜类', false, '5.60', 'AGREEMENT', 'AVAILABLE', 150, 'xilanhua'],
 
   /* ---- 蔬菜 / 根茎类 ---- */
   ['土豆', '净重', '斤', '根茎类', true, '2.80', 'AGREEMENT', 'AVAILABLE', 800, 'tudou'],
   ['白萝卜', '净重', '斤', '根茎类', true, '2.40', 'AGREEMENT', 'AVAILABLE', 650, 'bailuobo'],
-  ['江西信丰萝卜', '净重', '斤', '根茎类', true, '3.10', 'CUSTOMER_TYPE', 'AVAILABLE', 300, 'xinfengluobo'],
+  ['江西信丰萝卜', '净重', '斤', '根茎类', true, '3.10', 'CUSTOMER_GROUP', 'AVAILABLE', 300, 'xinfengluobo'],
   ['洋葱', '净重', '斤', '根茎类', true, '2.10', 'STANDARD', 'OUT_OF_STOCK', 0, 'yangcong'],
-  ['大蒜', '净重', '斤', '根茎类', true, '7.60', 'CUSTOMER_TYPE', 'AVAILABLE', 300, 'dasuan'],
+  ['大蒜', '净重', '斤', '根茎类', true, '7.60', 'CUSTOMER_GROUP', 'AVAILABLE', 300, 'dasuan'],
   ['莲藕', '净重', '斤', '根茎类', true, '6.20', 'AGREEMENT', 'AVAILABLE', 180, 'lianou'],
   // 图片待补：刻意留空以持续验证无图 fallback
-  ['山东大姜', '净重', '斤', '根茎类', true, '7.20', 'CUSTOMER_TYPE', 'AVAILABLE', 260, ''],
+  ['山东大姜', '净重', '斤', '根茎类', true, '7.20', 'CUSTOMER_GROUP', 'AVAILABLE', 260, ''],
 
   /* ---- 蔬菜 / 瓜果类 ---- */
-  ['黄瓜', '500g/盒', '盒', '瓜果类', false, '5.80', 'CUSTOMER_TYPE', 'AVAILABLE', 140, 'huanggua'],
+  ['黄瓜', '500g/盒', '盒', '瓜果类', false, '5.80', 'CUSTOMER_GROUP', 'AVAILABLE', 140, 'huanggua'],
   ['南瓜', '净重', '斤', '瓜果类', true, '3.90', 'STANDARD', 'INSUFFICIENT', 8, 'nangua'],
   ['西红柿', '净重', '斤', '瓜果类', true, '4.50', 'AGREEMENT', 'AVAILABLE', 210, 'xihongshi'],
   ['甜玉米', '2根/份', '份', '瓜果类', false, '4.80', 'AGREEMENT', 'AVAILABLE', 260, 'tianyumi'],
@@ -130,15 +130,15 @@ const PRODUCT_TABLE = [
   /* ---- 水果 / 国产水果 ---- */
   ['苹果', '净重', '斤', '国产水果', true, '5.20', 'AGREEMENT', 'AVAILABLE', 420, 'pingguo'],
   ['橙子', '净重', '斤', '国产水果', true, '4.60', 'MARKET', 'AVAILABLE', 300, 'chengzi'],
-  ['香蕉', '净重', '斤', '国产水果', true, '3.80', 'CUSTOMER_TYPE', 'AVAILABLE', 380, 'xiangjiao'],
+  ['香蕉', '净重', '斤', '国产水果', true, '3.80', 'CUSTOMER_GROUP', 'AVAILABLE', 380, 'xiangjiao'],
   ['荔枝', '净重', '斤', '国产水果', true, '12.80', 'AGREEMENT', 'AVAILABLE', 120, 'lizhi'],
   ['妃子笑', '净重', '斤', '国产水果', true, '18.60', 'AGREEMENT', 'INSUFFICIENT', 6, 'feizixiao'],
-  ['桂味', '净重', '斤', '国产水果', true, '22.00', 'CUSTOMER_TYPE', 'AVAILABLE', 45, 'guiwei'],
+  ['桂味', '净重', '斤', '国产水果', true, '22.00', 'CUSTOMER_GROUP', 'AVAILABLE', 45, 'guiwei'],
   ['麒麟瓜', '净重', '斤', '国产水果', true, '3.40', 'MARKET', 'AVAILABLE', 500, 'qilingua'],
   ['甘美4K', '净重', '斤', '国产水果', true, '4.20', 'AGREEMENT', 'AVAILABLE', 260, 'ganmei4k'],
 
   /* ---- 水果 / 进口水果 ---- */
-  ['凤梨', '1.2kg/个', '个', '进口水果', false, '16.80', 'CUSTOMER_TYPE', 'AVAILABLE', 80, 'fengli'],
+  ['凤梨', '1.2kg/个', '个', '进口水果', false, '16.80', 'CUSTOMER_GROUP', 'AVAILABLE', 80, 'fengli'],
   ['牛油果', '6个/盒', '盒', '进口水果', false, '29.90', 'AGREEMENT', 'AVAILABLE', 60, 'niuyouguo'],
   ['黑美人西瓜', '净重', '斤', '进口水果', true, '3.60', 'MARKET', 'AVAILABLE', 320, 'heimeirenxigua'],
   // 无客户价：用于验证「询价」状态（规划 §11.3 绝不显示 ¥0.00）
@@ -148,7 +148,7 @@ const PRODUCT_TABLE = [
   ['紫葡萄', '净重', '斤', '进口水果', true, '14.50', 'AGREEMENT', 'AVAILABLE', 110, 'ziputao'],
 
   /* ---- 水果 / 时令鲜果 ---- */
-  ['提子', '净重', '斤', '时令鲜果', true, '12.60', 'CUSTOMER_TYPE', 'AVAILABLE', 150, 'tizi'],
+  ['提子', '净重', '斤', '时令鲜果', true, '12.60', 'CUSTOMER_GROUP', 'AVAILABLE', 150, 'tizi'],
   ['黑提', '净重', '斤', '时令鲜果', true, '15.80', 'AGREEMENT', 'AVAILABLE', 95, 'heiti'],
   ['板栗', '净重', '斤', '时令鲜果', true, '11.20', 'AGREEMENT', 'AVAILABLE', 200, 'banli'],
   // 三位数价格样本：¥128.00 /盒，用于验证窄屏下价格不被挤压
@@ -158,41 +158,41 @@ const PRODUCT_TABLE = [
   /* ==================== 肉禽蛋 ==================== */
   ['猪肉', '净重', '斤', '猪肉', true, '18.60', 'AGREEMENT', 'AVAILABLE', 150, 'zhurou'],
   ['排骨', '净重', '斤', '猪肉', true, '22.80', 'AGREEMENT', 'AVAILABLE', 120, 'paigu'],
-  ['牛腩', '净重', '斤', '牛羊肉', true, '42.00', 'CUSTOMER_TYPE', 'AVAILABLE', 80, 'niunan'],
+  ['牛腩', '净重', '斤', '牛羊肉', true, '42.00', 'CUSTOMER_GROUP', 'AVAILABLE', 80, 'niunan'],
   ['牛肉', '净重', '斤', '牛羊肉', true, '48.00', 'AGREEMENT', 'AVAILABLE', 90, 'niurou'],
   ['羊排', '净重', '斤', '牛羊肉', true, '52.00', 'STANDARD', 'INSUFFICIENT', 6, 'yangpai'],
   ['鸡腿', '净重', '斤', '禽类', true, '13.20', 'AGREEMENT', 'AVAILABLE', 160, 'jitui'],
-  ['鸡翅', '净重', '斤', '禽类', true, '15.60', 'CUSTOMER_TYPE', 'AVAILABLE', 140, 'jichi'],
+  ['鸡翅', '净重', '斤', '禽类', true, '15.60', 'CUSTOMER_GROUP', 'AVAILABLE', 140, 'jichi'],
   ['鸭胸', '净重', '斤', '禽类', true, '19.80', 'AGREEMENT', 'AVAILABLE', 70, 'yaxiong'],
   ['鸡蛋', '30枚/盒', '盒', '蛋品', false, '26.80', 'AGREEMENT', 'AVAILABLE', 200, 'jidan'],
   ['鸭蛋', '20枚/盒', '盒', '蛋品', false, '22.50', 'MARKET', 'AVAILABLE', 120, 'yadan'],
-  ['鹌鹑蛋', '30枚/盒', '盒', '蛋品', false, '12.60', 'CUSTOMER_TYPE', 'AVAILABLE', 180, 'anchundan'],
+  ['鹌鹑蛋', '30枚/盒', '盒', '蛋品', false, '12.60', 'CUSTOMER_GROUP', 'AVAILABLE', 180, 'anchundan'],
 
   /* ==================== 水产 ==================== */
-  ['基围虾', '净重', '斤', '活鲜', true, '58.00', 'CUSTOMER_TYPE', 'AVAILABLE', 40, 'jiweixia'],
+  ['基围虾', '净重', '斤', '活鲜', true, '58.00', 'CUSTOMER_GROUP', 'AVAILABLE', 40, 'jiweixia'],
   ['梭子蟹', '净重', '斤', '活鲜', true, '68.00', 'AGREEMENT', 'AVAILABLE', 35, 'suozixie'],
   ['花蛤', '净重', '斤', '活鲜', true, '12.80', 'MARKET', 'AVAILABLE', 90, 'huage'],
   ['生蚝', '净重', '斤', '活鲜', true, '26.00', 'AGREEMENT', 'INSUFFICIENT', 8, 'shenghao'],
-  ['青口贝', '净重', '斤', '活鲜', true, '18.50', 'CUSTOMER_TYPE', 'AVAILABLE', 60, 'qingkoubei'],
+  ['青口贝', '净重', '斤', '活鲜', true, '18.50', 'CUSTOMER_GROUP', 'AVAILABLE', 60, 'qingkoubei'],
   ['扇贝', '净重', '斤', '活鲜', true, '32.00', 'AGREEMENT', 'AVAILABLE', 50, 'shanbei'],
   ['鲈鱼', '净重', '斤', '活鲜', true, '24.00', 'MARKET', 'AVAILABLE', 45, 'luyu'],
   ['三文鱼', '净重', '斤', '冰鲜', true, '88.00', 'AGREEMENT', 'AVAILABLE', 30, 'sanwenyu'],
-  ['鱿鱼', '净重', '斤', '冰鲜', true, '28.00', 'CUSTOMER_TYPE', 'AVAILABLE', 55, 'youyu'],
+  ['鱿鱼', '净重', '斤', '冰鲜', true, '28.00', 'CUSTOMER_GROUP', 'AVAILABLE', 55, 'youyu'],
   ['章鱼', '净重', '斤', '冰鲜', true, '46.00', 'STANDARD', 'OUT_OF_STOCK', 0, 'zhangyu'],
 
   /* ==================== 粮油 ==================== */
   ['大米', '25kg/袋', '袋', '米面', false, '128.00', 'AGREEMENT', 'AVAILABLE', 55, 'dami'],
   ['面粉', '25kg/袋', '袋', '米面', false, '96.00', 'AGREEMENT', 'AVAILABLE', 60, 'mianfen'],
   ['玉米碴', '2.5kg/袋', '袋', '米面', false, '18.60', 'MARKET', 'AVAILABLE', 100, 'yumicha'],
-  ['燕麦片', '1kg/袋', '袋', '米面', false, '22.80', 'CUSTOMER_TYPE', 'AVAILABLE', 80, 'yanmaipian'],
+  ['燕麦片', '1kg/袋', '袋', '米面', false, '22.80', 'CUSTOMER_GROUP', 'AVAILABLE', 80, 'yanmaipian'],
   ['玉米面', '2.5kg/袋', '袋', '米面', false, '16.80', 'MARKET', 'AVAILABLE', 90, 'yumimian'],
   // 黑米业主给了散装 / 袋装两张图，按不同包装拆成两个 SKU
   ['黑米（散装）', '净重', '斤', '米面', true, '6.80', 'AGREEMENT', 'AVAILABLE', 200, 'heimi'],
   ['黑米（袋装）', '2.5kg/袋', '袋', '米面', false, '32.00', 'AGREEMENT', 'AVAILABLE', 70, 'heimidazhuang'],
-  ['薏米', '1kg/袋', '袋', '米面', false, '24.60', 'CUSTOMER_TYPE', 'AVAILABLE', 85, 'yimi'],
+  ['薏米', '1kg/袋', '袋', '米面', false, '24.60', 'CUSTOMER_GROUP', 'AVAILABLE', 85, 'yimi'],
   ['荞麦米', '1kg/袋', '袋', '米面', false, '19.80', 'MARKET', 'AVAILABLE', 95, 'qiaomaimi'],
   ['橄榄油', '1L/瓶', '瓶', '食用油', false, '78.00', 'AGREEMENT', 'AVAILABLE', 60, 'ganlanyou'],
-  ['香油', '500ml/瓶', '瓶', '食用油', false, '26.80', 'CUSTOMER_TYPE', 'AVAILABLE', 110, 'xiangyou'],
+  ['香油', '500ml/瓶', '瓶', '食用油', false, '26.80', 'CUSTOMER_GROUP', 'AVAILABLE', 110, 'xiangyou'],
   ['花生油', '5L/桶', '桶', '食用油', false, '118.00', 'AGREEMENT', 'AVAILABLE', 45, 'huashengyou'],
   ['葵花籽油', '5L/桶', '桶', '食用油', false, '86.00', 'MARKET', 'AVAILABLE', 50, 'kuihuaziyou'],
   ['玉米油', '5L/桶', '桶', '食用油', false, '92.00', 'AGREEMENT', 'AVAILABLE', 48, 'yumiyou'],
@@ -201,12 +201,12 @@ const PRODUCT_TABLE = [
   // 酱油业主放在「粮油」目录，商品分类按真实域归到「基础调味」
   ['酱油', '1.9L/瓶', '瓶', '基础调味', false, '18.90', 'MARKET', 'AVAILABLE', 200, 'jiangyou'],
   ['生抽', '1.9L/瓶', '瓶', '基础调味', false, '21.60', 'AGREEMENT', 'AVAILABLE', 180, 'shengchou'],
-  ['香醋', '500ml/瓶', '瓶', '基础调味', false, '9.80', 'CUSTOMER_TYPE', 'AVAILABLE', 220, 'xiangcu'],
+  ['香醋', '500ml/瓶', '瓶', '基础调味', false, '9.80', 'CUSTOMER_GROUP', 'AVAILABLE', 220, 'xiangcu'],
   ['盐', '1kg/袋', '袋', '基础调味', false, '3.60', 'MARKET', 'AVAILABLE', 500, 'yan'],
   ['白砂糖', '1kg/袋', '袋', '基础调味', false, '8.20', 'AGREEMENT', 'AVAILABLE', 300, 'baishatang'],
-  ['冰糖', '1kg/袋', '袋', '基础调味', false, '12.60', 'CUSTOMER_TYPE', 'AVAILABLE', 200, 'bingtang'],
+  ['冰糖', '1kg/袋', '袋', '基础调味', false, '12.60', 'CUSTOMER_GROUP', 'AVAILABLE', 200, 'bingtang'],
   ['芝麻酱', '500g/瓶', '瓶', '复合调味', false, '16.80', 'AGREEMENT', 'AVAILABLE', 130, 'zhimajiang'],
-  ['花椒', '500g/袋', '袋', '香辛料', false, '32.00', 'CUSTOMER_TYPE', 'AVAILABLE', 90, 'huajiao'],
+  ['花椒', '500g/袋', '袋', '香辛料', false, '32.00', 'CUSTOMER_GROUP', 'AVAILABLE', 90, 'huajiao'],
   ['孜然', '500g/袋', '袋', '香辛料', false, '28.50', 'MARKET', 'AVAILABLE', 100, 'ziran'],
   ['黑胡椒', '500g/袋', '袋', '香辛料', false, '36.00', 'AGREEMENT', 'AVAILABLE', 80, 'heihujiao'],
   ['干辣椒八角', '500g/袋', '袋', '香辛料', false, '24.00', 'MARKET', 'AVAILABLE', 120, 'ganlajiao'],

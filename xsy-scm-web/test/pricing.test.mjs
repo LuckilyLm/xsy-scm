@@ -44,9 +44,8 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
 
   test('价格来源的中文文案与颜色档位覆盖每一个来源', () => {
     for (const source of backendSources()) {
-      // MARKET 是兜底来源（读 SKU 自身市场价），不产生价格历史记录，历史文案不要求它；
-      // CUSTOMER_TYPE 是历史单据的遗留来源，V231 之后不再产生新的价格历史。
-      if (source !== 'MARKET' && source !== 'CUSTOMER_TYPE') {
+      // MARKET 是兜底来源（读 SKU 自身市场价），不产生价格历史记录，历史文案不要求它。
+      if (source !== 'MARKET') {
         assert.match(display, new RegExp(`${source}: '`), `历史来源文案缺 ${source}`);
       }
       assert.match(preview, new RegExp(`${source}: '`), `预览页颜色档位缺 ${source}`);

@@ -266,15 +266,27 @@ function reset() {
   search();
 }
 async function exportRows() {
-  if (!applied.value || exporting.value) return;
-  const exportColumns = columns.value.map((column) => String('dataIndex' in column ? column.dataIndex : '')).filter((key) => key && key !== 'action');
+  const query = applied.value;
+  if (!query || exporting.value) return;
+  const exportColumns = (columns.value as unknown as Array<{dataIndex?: unknown}>)
+    .map((column) => String(column.dataIndex ?? ''))
+    .filter((key) => key && key !== 'action');
   if (!exportColumns.length) {
     message.warning('请至少选择一个数据列');
     return;
   }
   exporting.value = true;
+  const payload: FinanceProfitQuery & {exportColumns: string[]} = {
+    startDate: query.startDate,
+    endDate: query.endDate,
+    dimension: query.dimension,
+    customerId: query.customerId,
+    pageNum: query.pageNum,
+    pageSize: query.pageSize,
+    exportColumns,
+  };
   try {
-    await financeProfitApi.monthlyExport({...applied.value, exportColumns});
+    await financeProfitApi.monthlyExport(payload);
   } catch {
     /* 全局提示 */
   } finally {

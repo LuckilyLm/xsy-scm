@@ -138,7 +138,6 @@ export const SCM_AUDIT_FIELD_LABELS: Record<string, string> = {
   itemCount: '明细行数',
 
   // ---- 价格历史 ----
-  customerTypeId: '客户类型 ID',
   unitPrice: '单价',
   effectiveFrom: '生效日期',
   effectiveTo: '失效日期',

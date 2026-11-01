@@ -50,7 +50,7 @@ public class OrderRecentPriceVO {
     private BigDecimal unitPrice;
 
     /**
-     * 价格来源（AGREEMENT / CUSTOMER_TYPE / TIME_PRICE / MARKET / OVERRIDE），可能为空。
+     * 价格来源（AGREEMENT / CUSTOMER_GROUP / TIME_PRICE / MARKET / OVERRIDE）。
      */
     private String priceSource;
 

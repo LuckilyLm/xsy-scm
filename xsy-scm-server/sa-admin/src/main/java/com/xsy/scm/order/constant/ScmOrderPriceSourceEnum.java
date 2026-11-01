@@ -24,11 +24,6 @@ public enum ScmOrderPriceSourceEnum {
     CUSTOMER_GROUP("客户分组价"),
 
     /**
-     * 客户类型价。
-     */
-    CUSTOMER_TYPE("客户类型价"),
-
-    /**
      * 限时价格。
      */
     TIME_PRICE("时价"),
@@ -37,6 +32,11 @@ public enum ScmOrderPriceSourceEnum {
      * 商品市场价。
      */
     MARKET("市场价"),
+
+    /**
+     * 已下线价格来源的历史单据标记。
+     */
+    LEGACY("历史价格"),
 
     /**
      * 人工改价。

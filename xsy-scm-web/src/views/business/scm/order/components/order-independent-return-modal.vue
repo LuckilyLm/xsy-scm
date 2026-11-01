@@ -132,9 +132,9 @@ const PRICE_SOURCE_TEXT: Record<string, string> = {
   RECENT_TRANSACTION: '最近成交价',
   AGREEMENT: '协议价',
   CUSTOMER_GROUP: '客户分组价',
-  CUSTOMER_TYPE: '客户类型价',
   TIME_PRICE: '时价',
   MARKET: '市场价',
+  LEGACY: '历史价格',
   MANUAL: '人工填价',
 };
 const priceSourceText = (source?: string | null): string => (source ? PRICE_SOURCE_TEXT[source] ?? source : '—');

@@ -92,9 +92,9 @@ class OrderRulesTest {
 
     @Test
     void priceEnumHasNoUnpriced() {
-        // 枚举顺序就是取价链顺序：逐客协议价 → 客户分组价 → 客户类型价 → 时价 → 市场价，人工改价最后兜底。
+        // 枚举顺序就是取价链顺序：逐客协议价 → 客户分组价 → 时价 → 市场价，人工改价最后兜底。
         assertThat(ScmOrderPriceSourceEnum.values()).extracting(Enum::name).containsExactly("AGREEMENT", "CUSTOMER_GROUP",
-                "CUSTOMER_TYPE", "TIME_PRICE", "MARKET", "OVERRIDE");
+                "TIME_PRICE", "MARKET", "LEGACY", "OVERRIDE");
     }
 
     @Test
