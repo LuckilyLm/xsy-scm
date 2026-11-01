@@ -876,7 +876,6 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
     private Long newCustomerAssignedTo(Long sellerId) {
         CustomerAddForm form = new CustomerAddForm();
         form.setName(prefix + "-M" + (++customerSequence) + "客户");
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
         form.setCodAllowed(true);
         form.setSellerId(sellerId);

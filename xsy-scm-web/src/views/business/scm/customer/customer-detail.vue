@@ -11,9 +11,8 @@
         <div class="scm-detail-header__title-row">
           <h1 class="scm-detail-header__title">{{ customer?.name || '客户详情' }}</h1>
         </div>
-        <p v-if="customer" class="scm-detail-header__meta">
-          <span v-if="customer.customerTypeName">{{ customer.customerTypeName }}</span>
-          <span v-if="customer.sellerName">{{ customer.customerTypeName ? ' · ' : '' }}{{ customer.sellerName }}</span>
+        <p v-if="customer?.sellerName" class="scm-detail-header__meta">
+          <span>{{ customer.sellerName }}</span>
         </p>
       </div>
     </header>

@@ -345,7 +345,6 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     private com.xsy.scm.customer.domain.form.CustomerAddForm groupForm(Long parentId) {
         var form = new com.xsy.scm.customer.domain.form.CustomerAddForm();
         form.setName(prefix + "-G" + java.util.UUID.randomUUID().toString().substring(0, 6));
-        form.setCustomerTypeId(customerTypeId(parentId == null ? "GROUP" : "ENTERPRISE"));
         form.setSettleMode("GROUP");
         form.setSellerId(anyEmployeeId());
         form.setParentCustomerId(parentId);

@@ -28,12 +28,10 @@ const props = withDefaults(
     placeholder?: string;
     width?: string;
     size?: string;
-    /** 只列出指定类型编码的客户；上级客户只接受集团。 */
-    typeCode?: string | null;
     /** 要排除的客户 ID；编辑时传自己，避免把自己选为上级。 */
     excludeId?: ScmId | null;
   }>(),
-  {placeholder: '请选择客户', width: '100%', size: 'default', typeCode: null, excludeId: null}
+  {placeholder: '请选择客户', width: '100%', size: 'default', excludeId: null}
 );
 
 const emit = defineEmits<{'update:value': [value: ScmId | undefined]; change: [value: ScmId | undefined]}>();
@@ -41,13 +39,10 @@ const emit = defineEmits<{'update:value': [value: ScmId | undefined]; change: [v
 const customerList = ref<CustomerOption[]>([]);
 
 const visibleList = computed(() =>
-  customerList.value.filter((item) => {
-    if (props.typeCode && item.customerTypeCode !== props.typeCode) {
-      return false;
-    }
+  customerList.value.filter(
     // 用 String() 比较：后端 Long 与前端可能拿到的字符串形式 ID 都要能对上。
-    return props.excludeId == null || String(item.customerId) !== String(props.excludeId);
-  })
+    (item) => props.excludeId == null || String(item.customerId) !== String(props.excludeId)
+  )
 );
 
 function filterOption(input: string, option?: {value?: ScmId | null}): boolean {

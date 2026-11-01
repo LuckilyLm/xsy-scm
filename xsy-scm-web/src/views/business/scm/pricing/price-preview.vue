@@ -22,7 +22,10 @@
         <a-form-item class="smart-query-form-item">
           <a-space>
             <a-button type="primary" @click="resolve" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算</a-button>
-            <a-button v-if="hasPermission('scm:pricing:resolve:query') && hasPermission('scm:report:cost:query')" :loading="trialLoading" @click="trial"
+            <a-button
+              v-if="hasPermission('scm:pricing:resolve:query') && hasPermission('scm:report:cost:query')"
+              :loading="trialLoading"
+              @click="trial"
               >查看计算依据</a-button
             >
           </a-space>
@@ -30,7 +33,7 @@
       </a-row>
     </a-form>
     <a-alert v-if="error" :message="error" type="error" show-icon />
-    <p v-if="result" class="resolve-meta">查询时间：{{ result.at }} · 客户类型：{{ result.customerTypeName }}</p>
+    <p v-if="result" class="resolve-meta">查询时间：{{ result.at }}</p>
     <a-table
       :columns="columns"
       :data-source="result?.items || []"
@@ -185,7 +188,7 @@ async function trial() {
   }
 }
 
-/** 来源颜色：协议价蓝、类型价绿、时价橙、市场价灰。 */
+/** 来源颜色：协议价蓝、分组价绿、时价橙、市场价灰。 */
 const PRICE_SOURCE_TONE: Record<string, ScmStatusTone> = {
   AGREEMENT: 'processing',
   CUSTOMER_GROUP: 'processing',

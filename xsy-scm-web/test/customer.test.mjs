@@ -55,7 +55,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     // 2026-10-28 客户分组价：分组决定组内协议价，列表要能直接看出客户归属哪个分组。
     assert.deepEqual(
       titles,
-      ['客户名称', '客户类型', '客户分类', '客户分组', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
+      ['客户名称', '客户分类', '客户分组', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
       '客户列表列结构被改动'
     );
     assert.doesNotMatch(LIST, /dataIndex: 'customerCode'/);
@@ -137,7 +137,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
       width: Number(m[1]),
       hiddenByDefault: /showFlag:\s*false/.test(m[2]),
     }));
-    assert.equal(columns.length, 11, '客户列表列数被改动');
+    assert.equal(columns.length, 10, '客户列表列数被改动');
     const visibleWidth = columns.filter((column) => !column.hiddenByDefault).reduce((sum, column) => sum + column.width, 0);
     assert.ok(visibleWidth > 0);
     // 列宽与铺满统一走 useScmTableFill：scrollX 由它算出
@@ -239,7 +239,6 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     // 关键：金额是 4 位定点字符串。如果这里变成数字 0，说明有人偷偷做了 Number() 运算。
     assert.equal(form.creditLimit, '0.0000');
     assert.equal(form.creditPeriodType, undefined);
-    assert.equal(form.customerTypeId, undefined);
     // 区划六列必须由新建初值显式置 null：漏一列（undefined）就会让上一条记录的区划串进新客户。
     for (const key of ['provinceCode', 'provinceName', 'cityCode', 'cityName', 'districtCode', 'districtName']) {
       assert.equal(form[key], null, `emptyCustomer 缺少区划列 ${key}`);
@@ -298,11 +297,10 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
 
   test('校验必填项、电话格式与金额精度', () => {
     // 编码由服务端生成：不带编码的合法表单必须直接通过校验。
-    const ok = {...emptyCustomer(), name: '客户甲', customerTypeId: 1};
+    const ok = {...emptyCustomer(), name: '客户甲'};
     assert.equal(validateCustomer(ok), undefined);
 
     assert.match(validateCustomer({...ok, name: ''}), /客户名称/);
-    assert.match(validateCustomer({...ok, customerTypeId: undefined}), /客户类型/);
     assert.match(validateCustomer({...ok, contactPhone: '12345'}), /联系电话/);
     assert.match(validateCustomer({...ok, creditLimit: '1.23456'}), /两位小数/);
     assert.match(validateCustomer({...ok, creditLimit: '-1'}), /两位小数/);
@@ -312,7 +310,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
   });
 
   test('按金额账期必须有阈值，按时间账期必须有值且结算日限 1–28', () => {
-    const ok = {...emptyCustomer(), name: '客户甲', customerTypeId: 1};
+    const ok = {...emptyCustomer(), name: '客户甲'};
 
     assert.match(validateCustomer({...ok, creditPeriodType: 'BY_AMOUNT'}), /金额阈值/);
     assert.match(validateCustomer({...ok, creditPeriodType: 'BY_AMOUNT', creditAmountThreshold: '1.23456'}), /两位小数/);
@@ -334,7 +332,6 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     const payload = toCustomerPayload({
       ...emptyCustomer(),
       name: '  客户甲  ',
-      customerTypeId: 1,
       contactName: '   ',
       remark: ' 有备注 ',
     });
@@ -358,12 +355,13 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     const payload = toCustomerPayload({...emptyCustomer(), customerCode: 'CUS000001', name: '客户甲'});
     // 编码只在 UI 表单模型（CustomerFormModel）上做只读回显，写请求体（CustomerPayload）没有这个键。
     assert.equal('customerCode' in payload, false);
+    assert.equal('customerTypeId' in payload, false);
     assert.equal(payload.name, '客户甲');
   });
 
   test('客户分类可空，选中后随写请求提交', () => {
     assert.equal(emptyCustomer().businessCategoryId, null);
-    const payload = toCustomerPayload({...emptyCustomer(), customerTypeId: 1, businessCategoryId: 9});
+    const payload = toCustomerPayload({...emptyCustomer(), businessCategoryId: 9});
     assert.equal(payload.businessCategoryId, 9);
   });
 

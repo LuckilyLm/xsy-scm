@@ -4,8 +4,6 @@ import type {
   PriceForm,
   PriceQuery,
   PriceRow,
-  BatchRow,
-  BatchResult,
   HistoryRow,
   ResolveResult,
   GroupPriceForm,
@@ -42,9 +40,6 @@ export const pricingApi = {
     update: (form: GroupPriceForm) => postRequest('/scm/pricing/group-price/update', form),
     delete: (form: GroupPriceForm) => postRequest('/scm/pricing/group-price/delete', form),
   },
-  typePrice: resource('/scm/pricing/type-price'),
-  // 批次号由服务端生成，请求只提交调价行。
-  batch: (form: {rows: BatchRow[]}) => postRequest<BatchResult>('/scm/pricing/type-price/batch', form),
   history: (
     form: PriceQuery & {
       source?: string;

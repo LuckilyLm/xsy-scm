@@ -6,7 +6,6 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.manager.CustomerValidator;
 import com.xsy.scm.customer.service.CustomerService;
-import com.xsy.scm.customer.service.CustomerTypeService;
 import com.xsy.scm.finance.domain.vo.FinanceReceivableVO;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
@@ -34,7 +33,6 @@ public class MallFundsQueryService {
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
 
     private final CustomerService customerService;
-    private final CustomerTypeService customerTypeService;
     private final CustomerBalanceService balanceService;
     private final MallFundsSourceDao sourceDao;
 
@@ -115,8 +113,7 @@ public class MallFundsQueryService {
 
     private boolean sharedSettlement(CustomerEntity customer, CustomerEntity settlement) {
         // 唯一判定点见 CustomerValidator.sharedSettlement：商城结算方式选项必须与这里保持一致。
-        return CustomerValidator.sharedSettlement(customer.getId(), settlement.getId(),
-            customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
+        return CustomerValidator.sharedSettlement(customer.getId(), settlement.getId());
     }
 
     private static MallReceivableVO receivableView(FinanceReceivableVO row) {

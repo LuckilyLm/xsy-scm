@@ -25,7 +25,6 @@
             <span class="customer-card__head">
               <span class="customer-card__name" :title="item.customerName">{{ item.customerName }}</span>
             </span>
-            <span v-if="item.customerTypeName" class="customer-card__meta">{{ item.customerTypeName }}</span>
             <span class="customer-card__stats">
               <span class="customer-card__stat">{{ visibilityPolicyLabel(item.visibilityPolicy) }}</span>
               <template v-if="item.visibilityPolicy === 'ALLOWLIST'">
@@ -211,7 +210,6 @@ const shelfStatusTone = (value?: string | null): ScmStatusTone => (value === 'ON
 type VisibilityListColumn = TableColumnsType<VisibilityRow>[number] & {showFlag?: boolean};
 const columns = ref<VisibilityListColumn[]>([
   {title: '客户名称', dataIndex: 'customerName', width: 180},
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
   {title: '商品名称', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'specName', width: 150},
   {title: '可见策略', dataIndex: 'visibilityPolicy', width: 125, align: 'center'},
@@ -222,7 +220,7 @@ const columns = ref<VisibilityListColumn[]>([
 const detailColumns = computed<TableColumnsType<VisibilityRow>>(
   () =>
     (columns.value as Array<{dataIndex?: unknown}>).filter(
-      (column) => !['customerName', 'customerCode', 'customerTypeName', 'visibilityPolicy'].includes(String(column.dataIndex))
+      (column) => !['customerName', 'customerCode', 'visibilityPolicy'].includes(String(column.dataIndex))
     ) as TableColumnsType<VisibilityRow>
 );
 

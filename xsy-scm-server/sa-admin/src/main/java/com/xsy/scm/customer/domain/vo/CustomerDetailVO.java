@@ -30,10 +30,6 @@ public class CustomerDetailVO {
 
     private String name;
 
-    private Long customerTypeId;
-
-    private String customerTypeName;
-
     private Long businessCategoryId;
 
     private String businessCategoryName;

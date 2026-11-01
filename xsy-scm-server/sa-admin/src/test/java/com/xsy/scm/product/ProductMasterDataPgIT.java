@@ -328,11 +328,11 @@ class ProductMasterDataPgIT {
         service.delete(deletion(clean));
         conflict(() -> query.detail(clean), PRODUCT_NOT_FOUND);
         Long priced = service.add(product("kg"));
-        jdbc.update("INSERT INTO xsy_customer_type_price(customer_type_id,sku_id,unit_price,effective_from,created_by) VALUES (?,?,1.5,?,?)",
+        jdbc.update("INSERT INTO xsy_customer_agreement_price(customer_id,sku_id,unit_price,effective_from,created_by) VALUES (?,?,1.5,?,?)",
                 1L, skuId(priced), OffsetDateTime.now(), "pco1-it");
         conflict(() -> service.delete(deletion(priced)), PRODUCT_BUSINESS_REFERENCED);
         // 撤销价格行也不解锁：删除保护看的是「是否产生过事实」，不是「现在还挂着价格」。
-        jdbc.update("UPDATE xsy_customer_type_price SET deleted=TRUE WHERE sku_id=?", skuId(priced));
+        jdbc.update("UPDATE xsy_customer_agreement_price SET deleted=TRUE WHERE sku_id=?", skuId(priced));
         conflict(() -> service.delete(deletion(priced)), PRODUCT_BUSINESS_REFERENCED);
     }
 

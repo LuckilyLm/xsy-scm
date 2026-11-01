@@ -19,16 +19,15 @@ import com.xsy.scm.pricing.constant.ScmPriceOperationTypeEnum;
 import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
 import com.xsy.scm.pricing.constant.AgreementFormulaType;
 import com.xsy.scm.customer.service.CustomerService;
-import com.xsy.scm.customer.service.CustomerTypeService;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 
 import static com.xsy.scm.pricing.constant.PricingErrorCode.AGREEMENT_PRICE_NOT_FOUND;
 import static com.xsy.scm.pricing.constant.PricingErrorCode.AGREEMENT_PRICE_OVERLAP;
-import static com.xsy.scm.pricing.constant.PricingErrorCode.PRICE_BATCH_ROW_INVALID;
 import static com.xsy.scm.pricing.constant.PricingErrorCode.PRICE_INVALID;
 import static com.xsy.scm.pricing.constant.PricingErrorCode.PERIOD_INVALID;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 @Service
@@ -37,7 +36,6 @@ public class AgreementPriceService {
     private final AgreementPriceDao agreementPriceDao;
     private final PriceOperationLogDao priceOperationLogDao;
     private final CustomerService customerService;
-    private final CustomerTypeService customerTypeService;
     private final PriceValidation validation;
     private final ObjectMapper objectMapper;
 
@@ -104,7 +102,7 @@ public class AgreementPriceService {
             ScmDecimalStrings.parseScale4Required(form.getFormulaParameter());
         }
         if (form.getCustomerId() == null)
-            throw new ScmBusinessException(PRICE_BATCH_ROW_INVALID);
+            throw new ScmBusinessException(VALIDATION_ERROR);
         if (agreementPriceDao.lockParent(form.getCustomerId()) == null) {
             customerService.requireTradable(form.getCustomerId());
         }

@@ -6,10 +6,8 @@ export type UnavailableReason = 'SKU_NOT_FOUND' | 'SKU_OFF_SHELF' | 'SPU_OFF_SHE
 
 export interface PriceForm {
   agreementPriceId?: ScmId;
-  customerTypePriceId?: ScmId;
   version?: number;
   customerId?: ScmId;
-  customerTypeId?: ScmId;
   skuId?: ScmId;
   unitPrice: string | null;
   formulaType?: AgreementFormulaType;
@@ -21,8 +19,6 @@ export interface PriceForm {
 export interface PriceRow extends PriceForm {
   customerCode?: string;
   customerName?: string;
-  customerTypeCode?: string;
-  customerTypeName?: string;
   skuCode: string;
   productName: string;
   specName: string;
@@ -34,7 +30,6 @@ export interface PriceQuery {
   pageSize: number;
   keyword?: string;
   customerId?: ScmId;
-  customerTypeId?: ScmId;
   skuId?: ScmId;
   effectiveFrom?: string | null;
   effectiveTo?: string | null;
@@ -105,30 +100,8 @@ export interface ResolvedPrice {
 
 export interface ResolveResult {
   customerId: ScmId;
-  customerTypeId: ScmId;
-  customerTypeName: string;
   at: string;
   items: ResolvedPrice[];
-}
-
-export interface BatchRow extends PriceForm {
-  rowNumber: number;
-}
-
-export interface BatchFailure {
-  rowNumber: number;
-  customerTypeId: ScmId;
-  skuId: ScmId;
-  code: number;
-  message: string;
-}
-
-export interface BatchResult {
-  batchKey: string;
-  committed: boolean;
-  rowCount: number;
-  ids: ScmId[];
-  failures: BatchFailure[];
 }
 
 export interface HistoryRow {
@@ -136,7 +109,6 @@ export interface HistoryRow {
   source: string;
   priceId: ScmId;
   customerName: string;
-  customerTypeName: string;
   groupName?: string | null;
   skuCode: string;
   productName: string;
@@ -156,7 +128,6 @@ export interface CustomerVisibilitySummary {
   customerId: ScmId;
   customerCode: string;
   customerName: string;
-  customerTypeName: string | null;
   visibilityPolicy: string;
   productCount: number;
   specCount: number;
@@ -166,7 +137,6 @@ export interface VisibilityRow {
   customerId: ScmId;
   customerCode: string;
   customerName: string;
-  customerTypeName: string;
   visibilityPolicy: string;
   skuId: ScmId | null;
   skuCode: string | null;

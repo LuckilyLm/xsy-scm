@@ -312,7 +312,6 @@ class OrderPoolAssignmentConcurrencyPgIT extends ScmW5PgITBase {
     private Long newCustomerWithoutSeller() {
         CustomerAddForm form = new CustomerAddForm();
         form.setName(prefix + "-P" + (++customerSequence) + "客户");
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
         form.setCodAllowed(true);
         form.setSellerId(null);

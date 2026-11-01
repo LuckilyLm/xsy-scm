@@ -38,21 +38,9 @@ export const CREDIT_PERIOD_UNIT_ENUM: SmartEnum<string> = {
   MONTH: {value: 'MONTH', desc: '月'},
 };
 
-/**
- * 客户类型状态：启用 / 停用
- *
- * 只有 `ENABLED` 的类型会出现在下拉里（后端 `/scm/customer/type/option/list` 已做过滤）；
- * 停用的类型仍可在管理列表中看到，但不允许再被新建客户引用（40431）。
- */
-export const CUSTOMER_TYPE_STATUS_ENUM: SmartEnum<string> = {
-  ENABLED: {value: 'ENABLED', desc: '启用'},
-  DISABLED: {value: 'DISABLED', desc: '停用'},
-};
-
 export default {
   SETTLE_MODE_ENUM,
   CUSTOMER_STATUS_ENUM,
   CREDIT_PERIOD_TYPE_ENUM,
   CREDIT_PERIOD_UNIT_ENUM,
-  CUSTOMER_TYPE_STATUS_ENUM,
 };

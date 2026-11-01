@@ -1,13 +1,9 @@
 package com.xsy.scm.common;
 
 import com.xsy.scm.customer.dao.CustomerDao;
-import com.xsy.scm.customer.dao.CustomerTypeDao;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
-import com.xsy.scm.customer.domain.entity.CustomerTypeEntity;
 import com.xsy.scm.customer.domain.form.CustomerAddForm;
-import com.xsy.scm.customer.domain.form.CustomerTypeAddForm;
 import com.xsy.scm.customer.service.CustomerService;
-import com.xsy.scm.customer.service.CustomerTypeService;
 import com.xsy.scm.supplier.dao.SupplierDao;
 import com.xsy.scm.supplier.dao.SupplierSkuDao;
 import com.xsy.scm.supplier.domain.entity.SupplierEntity;
@@ -36,14 +32,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Service 里的版本比对是应用层判断，即使没有拦截器也能抛 40921；
  * 只有「版本被数据库侧真正推进」与「落后版本更新 0 行」这两点才能证明乐观锁真的生效。
  */
-@DisplayName("W2 乐观锁：四个聚合在真实 PG + MP 拦截器上生效（PG IT）")
+@DisplayName("W2 乐观锁：客户、供应商与供应商规格在真实 PG + MP 拦截器上生效（PG IT）")
 class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
 
     @Autowired
     private CustomerDao customerDao;
-
-    @Autowired
-    private CustomerTypeDao customerTypeDao;
 
     @Autowired
     private SupplierDao supplierDao;
@@ -55,9 +48,6 @@ class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
     private CustomerService customerService;
 
     @Autowired
-    private CustomerTypeService customerTypeService;
-
-    @Autowired
     private SupplierService supplierService;
 
     @Autowired
@@ -66,16 +56,7 @@ class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
     private Long customerId() {
         CustomerAddForm form = new CustomerAddForm();
         form.setName("乐观锁客户");
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         return customerService.add(form);
-    }
-
-    private Long customerTypeId2() {
-        CustomerTypeAddForm form = new CustomerTypeAddForm();
-        form.setTypeCode(prefix + "-T");
-        form.setName("乐观锁类型");
-        form.setStatus("ENABLED");
-        return customerTypeService.add(form);
     }
 
     private Long supplierId() {
@@ -121,24 +102,6 @@ class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
         assertThat(customerDao.updateById(entity)).as("落后版本必须更新 0 行").isZero();
         assertThat(jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class, id))
                 .as("失败写入不得落库").isEqualTo("第一次改名");
-    }
-
-    @Test
-    @DisplayName("customer_type：版本推进 + 落后版本更新 0 行")
-    void customerTypeVersionIsGuarded() {
-        Long id = customerTypeId2();
-
-        CustomerTypeEntity entity = customerTypeDao.selectById(id);
-        assertThat(entity.getVersion()).isZero();
-        entity.setName("第一次改名");
-        assertThat(customerTypeDao.updateById(entity)).isEqualTo(1);
-        assertVersion("xsy_customer_type", id, 1);
-
-        jdbc.update("UPDATE xsy_customer_type SET version = version + 10 WHERE id = ?", id);
-        entity.setName("落后版本的写入");
-        assertThat(customerTypeDao.updateById(entity)).isZero();
-        assertThat(jdbc.queryForObject("SELECT name FROM xsy_customer_type WHERE id = ?", String.class, id))
-                .isEqualTo("第一次改名");
     }
 
     @Test

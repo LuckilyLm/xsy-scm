@@ -56,7 +56,6 @@ class OrderLockPgIT extends ScmW3PgITBase {
     private Long customer() {
         var f = new CustomerAddForm();
         f.setName(prefix);
-        f.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         f.setSettleMode("INDEPENDENT");
         f.setSellerId(anyEmployeeId());
         f.setContactName("收货人");

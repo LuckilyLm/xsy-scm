@@ -11,7 +11,6 @@ public class CustomerSkuVisibilityReverseVO {
     private Long customerId;
     private String customerCode;
     private String customerName;
-    private String customerTypeName;
     private String visibilityPolicy;
     private Long skuId;
     private String skuCode;

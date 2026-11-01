@@ -34,7 +34,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * {@code FOR UPDATE} 锁序、{@code JSONB} 映射、{@code NUMERIC(18,4)} 精度。
  *
  * <p><b>事务策略：</b>整个用例包在一个事务里，结束时回滚，不向开发库留下任何数据。
- * 种子数据（{@code xsy_customer_type}）由 V8 迁移提供，只读使用。
  *
  * <p><b>不 mock 商品域：</b>订单与定价的外键语义依赖真实存在的 {@code xsy_product_spu} /
  * {@code xsy_product_sku}，所以这里通过 {@link ProductSpuService} 造数，而不是直接插表——
@@ -94,10 +93,6 @@ public abstract class ScmW3PgITBase {
     // 数据辅助
     // ------------------------------------------------------------------
 
-    protected Long customerTypeId(String typeCode) {
-        return jdbc.queryForObject(
-                "SELECT id FROM xsy_customer_type WHERE type_code = ? AND deleted = FALSE", Long.class, typeCode);
-    }
 
     /**
      * 任一可用员工 id，用于业务员 / 默认采购员引用。

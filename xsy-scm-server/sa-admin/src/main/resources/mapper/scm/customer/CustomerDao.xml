@@ -4,7 +4,7 @@
 
     <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式契约） -->
     <sql id="customerColumns">
-        c.id, c.version, c.visibility_policy, c.customer_code, c.name, c.customer_type_id, c.business_category_id,
+        c.id, c.version, c.visibility_policy, c.customer_code, c.name, c.business_category_id,
             c.customer_group_id,
             c.status, c.settle_mode,
             c.cod_allowed, c.shared_settlement_enabled, c.mall_delivery_warehouse_id, c.credit_limit,
@@ -35,7 +35,6 @@
                 c.contact_name ILIKE CONCAT('%', #{query.keyword}, '%') OR
                 c.contact_phone ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
-        <if test="query.customerTypeId != null">AND c.customer_type_id = #{query.customerTypeId}</if>
         <if test="query.businessCategoryId != null">AND c.business_category_id = #{query.businessCategoryId}</if>
         <if test="query.customerGroupId != null">AND c.customer_group_id = #{query.customerGroupId}</if>
         <if test="query.status != null and query.status != ''">AND c.status = #{query.status}</if>
@@ -75,13 +74,6 @@
             AND version = #{version}
             AND deleted = FALSE
     </update>
-
-    <select id="countActiveByTypeId" resultType="long">
-        SELECT COUNT(*)
-        FROM xsy_customer
-        WHERE customer_type_id = #{typeId}
-            AND deleted = FALSE
-    </select>
 
     <select id="lock" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
         SELECT

@@ -1,4 +1,4 @@
-<!-- 价格变更历史：协议价和类型价两种来源，可查看前后差异。 -->
+<!-- 价格变更历史：协议价、分组价和时价等来源，可查看前后差异。 -->
 <template>
   <a-form layout="inline" class="smart-query-form">
     <a-row class="smart-query-form-row">
@@ -7,9 +7,6 @@
       </a-form-item>
       <a-form-item label="客户" class="smart-query-form-item">
         <CustomerSelect v-model:value="query.customerId" width="180px" />
-      </a-form-item>
-      <a-form-item label="客户类型" class="smart-query-form-item">
-        <CustomerTypeSelect v-model:value="query.customerTypeId" width="150px" />
       </a-form-item>
       <a-form-item label="商品规格" class="smart-query-form-item">
         <SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]" />
@@ -47,10 +44,7 @@
         <template v-if="column.dataIndex === 'source'">
           {{ historyLabel(HISTORY_SOURCE_LABEL, record.source) }}
         </template>
-        <template v-else-if="column.dataIndex === 'customerName'">{{
-          record.customerName || record.groupName || record.customerTypeName || '—'
-        }}</template>
-        <template v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'customerName'">{{ record.customerName || record.groupName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'specName'">{{ record.specName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'operationType'">
           <ScmStatusTag
@@ -98,7 +92,6 @@ import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
-import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
@@ -129,7 +122,6 @@ const operationOptions = Object.entries(HISTORY_OPERATION_LABEL).map(([value, la
 const columns = ref<TableColumnsType<HistoryRow>>([
   {title: '来源', dataIndex: 'source', width: 120},
   {title: '客户', dataIndex: 'customerName', width: 170},
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 150},
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'specName', width: 170},
   {title: '变更', dataIndex: 'operationType', align: 'center', width: 100},

@@ -8,6 +8,7 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.constant.CustomerErrorCode;
 import com.xsy.scm.customer.dao.CustomerDao;
 import com.xsy.scm.customer.dao.CustomerGroupDao;
+import com.xsy.scm.customer.manager.CustomerValidator;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.domain.entity.CustomerGroupEntity;
 import com.xsy.scm.customer.domain.form.CustomerGroupAddForm;
@@ -15,7 +16,6 @@ import com.xsy.scm.customer.domain.form.CustomerGroupDeleteForm;
 import com.xsy.scm.customer.domain.form.CustomerGroupQueryForm;
 import com.xsy.scm.customer.domain.form.CustomerGroupUpdateForm;
 import com.xsy.scm.customer.domain.vo.CustomerGroupVO;
-import com.xsy.scm.customer.manager.CustomerTypeValidator;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -105,7 +105,7 @@ public class CustomerGroupService {
 
     @Transactional(rollbackFor = Exception.class)
     public Long add(CustomerGroupAddForm form) {
-        String code = CustomerTypeValidator.normalizeCode(form.getGroupCode());
+        String code = CustomerValidator.normalizeCode(form.getGroupCode());
         if (existsCode(code, null)) {
             throw new ScmBusinessException(CustomerErrorCode.CUSTOMER_GROUP_CODE_DUPLICATE);
         }
@@ -115,7 +115,7 @@ public class CustomerGroupService {
 
         var entity = new CustomerGroupEntity();
         entity.setGroupCode(code);
-        entity.setGroupName(CustomerTypeValidator.normalizeName(form.getGroupName()));
+        entity.setGroupName(CustomerValidator.normalizeName(form.getGroupName()));
         entity.setStatus(form.getStatus());
         entity.setVersion(0);
         entity.setDeleted(false);
@@ -136,7 +136,7 @@ public class CustomerGroupService {
         if (!Objects.equals(entity.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        String code = CustomerTypeValidator.normalizeCode(form.getGroupCode());
+        String code = CustomerValidator.normalizeCode(form.getGroupCode());
         if (existsCode(code, entity.getId())) {
             throw new ScmBusinessException(CustomerErrorCode.CUSTOMER_GROUP_CODE_DUPLICATE);
         }
@@ -144,7 +144,7 @@ public class CustomerGroupService {
         assertCanMove(customerIds, entity.getId());
 
         entity.setGroupCode(code);
-        entity.setGroupName(CustomerTypeValidator.normalizeName(form.getGroupName()));
+        entity.setGroupName(CustomerValidator.normalizeName(form.getGroupName()));
         entity.setStatus(form.getStatus());
         entity.setVersion(form.getVersion());
         stamp(entity, false);

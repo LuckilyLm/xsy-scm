@@ -87,7 +87,7 @@ class OperateLogBusinessFilterPgIT {
 
     @Test
     void customerFilterSeparatesCustomerIdFromParentAndLongerId() {
-        log("cus12", "/scm/customer/update", "[{\"customerId\":12,\"customerTypeId\":9}]");
+        log("cus12", "/scm/customer/update", "[{\"customerId\":12}]");
         log("parentCus12", "/scm/customer/add", "[{\"parentCustomerId\":12,\"status\":\"ACTIVE\"}]");
         log("cus123", "/scm/customer/delete", "[{\"customerId\":123}]");
 

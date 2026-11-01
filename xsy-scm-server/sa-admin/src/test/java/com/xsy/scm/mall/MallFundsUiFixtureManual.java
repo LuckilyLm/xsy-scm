@@ -66,7 +66,6 @@ class MallFundsUiFixtureManual extends ScmW5PgITBase {
     private Long groupCustomer(Long parentId) {
         CustomerAddForm form = new CustomerAddForm();
         form.setName(prefix + "-" + UUID.randomUUID().toString().substring(0, 5));
-        form.setCustomerTypeId(customerTypeId(parentId == null ? "GROUP" : "ENTERPRISE"));
         form.setSettleMode("GROUP");
         form.setSellerId(1L);
         form.setParentCustomerId(parentId);

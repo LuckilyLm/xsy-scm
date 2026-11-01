@@ -53,7 +53,6 @@ class CustomerSharedSettlementPgIT extends ScmW5PgITBase {
     private CustomerAddForm form(String name, String settleMode, boolean shared) {
         CustomerAddForm form = new CustomerAddForm();
         form.setName(name);
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode(settleMode);
         form.setSharedSettlementEnabled(shared);
         return form;

@@ -67,8 +67,8 @@ class ScmCustomerSupplierMigrationIT {
             // ---- 2. 表与约束 ----
             assertThat(scalar(statement,
                     "SELECT count(*) FROM information_schema.tables WHERE table_schema='xsy_v2' "
-                            + "AND table_name IN ('xsy_customer_type','xsy_customer','xsy_supplier','xsy_supplier_sku')"))
-                    .as("W2 四张表").isEqualTo(4);
+                            + "AND table_name IN ('xsy_customer','xsy_supplier','xsy_supplier_sku')"))
+                    .as("W2 三张表（客户类型表已由 V231 下线）").isEqualTo(3);
             assertThat(scalar(statement,
                     "SELECT count(*) FROM pg_constraint WHERE connamespace = 'xsy_v2'::regnamespace "
                             + "AND conname IN ("
@@ -79,9 +79,8 @@ class ScmCustomerSupplierMigrationIT {
             // partial unique：活动编码唯一，软删后可复用
             assertThat(scalar(statement,
                     "SELECT count(*) FROM pg_indexes WHERE schemaname='xsy_v2' AND indexname IN ("
-                            + "'uk_customer_code_active','uk_customer_type_code_active',"
-                            + "'uk_supplier_code_active','uk_supplier_sku_active')"))
-                    .as("四条 partial unique index").isEqualTo(4);
+                            + "'uk_customer_code_active','uk_supplier_code_active','uk_supplier_sku_active')"))
+                    .as("三条 partial unique index").isEqualTo(3);
 
             // ---- 3. 反陷阱：绝不存在「每个供应商只能有一条默认」的唯一索引 ----
             assertThat(scalar(statement,
@@ -89,11 +88,16 @@ class ScmCustomerSupplierMigrationIT {
                             + "AND indexdef ILIKE '%is_default%'"))
                     .as("R12：不得为 is_default 建任何唯一约束或索引").isZero();
 
-            // ---- 4. 客户类型种子（legacy 的可维护字典，不是硬编码枚举）----
+            // ---- 4. V231：客户类型相关结构已下线 ----
             assertThat(scalar(statement,
-                    "SELECT count(*) FROM xsy_customer_type WHERE deleted=FALSE "
-                            + "AND type_code IN ('ENTERPRISE','PERSONAL','GROUP')"))
-                    .as("C 的 CustomerTypeEnum 落为种子数据").isEqualTo(3);
+                    "SELECT count(*) FROM information_schema.tables WHERE table_schema='xsy_v2' "
+                            + "AND table_name IN ('xsy_customer_type','xsy_customer_type_price',"
+                            + "'xsy_customer_price_batch_audit')"))
+                    .as("客户类型 / 类型价 / 类型价批量审计表都必须被删除").isZero();
+            assertThat(scalar(statement,
+                    "SELECT count(*) FROM information_schema.columns WHERE table_schema='xsy_v2' "
+                            + "AND table_name='xsy_customer' AND column_name='customer_type_id'"))
+                    .as("客户表不得再保留 customer_type_id").isZero();
 
             // ---- 5. 菜单与权限点 ----
             assertThat(scalar(statement, "SELECT count(*) FROM t_menu WHERE menu_id IN (431,432,433,434,441,442,443,444,445,451,452,453,454,461,462,463,464,471,472,473,474,475,481,482)"))
@@ -111,7 +115,7 @@ class ScmCustomerSupplierMigrationIT {
                     .as("SCM 权限码").isEqualTo(16);
             assertThat(scalar(statement,
                     "SELECT count(*) FROM t_role_menu WHERE role_id = 1 AND menu_id IN (431,432,433,434,441,442,443,444,445,451,452,453,454,461,462,463,464,471,472,473,474,475,481,482)"))
-                    .as("管理员角色授权").isEqualTo(24);
+                    .as("管理员角色授权（客户类型菜单 433/451-454 已由 V231 撤回）").isEqualTo(19);
 
             // 菜单 id 序列已校正，后续迁移不会撞主键
             assertThat(scalar(statement,

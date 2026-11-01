@@ -43,16 +43,11 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
     @Autowired
     private SupplierService supplierService;
 
-    private Long enterpriseTypeId() {
-        return customerTypeId("ENTERPRISE");
-    }
-
     private CustomerAddForm form(String suffix) {
         CustomerAddForm form = new CustomerAddForm();
         form.setName("客户" + suffix);
         // 编码由服务端生成、不再携带测试前缀；用联系人字段承载前缀，保证 keyword 查询能收敛到本用例的数据
         form.setContactName("联系人" + prefix);
-        form.setCustomerTypeId(enterpriseTypeId());
         return form;
     }
 
@@ -84,10 +79,9 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("状态 / 类型 / 结算方式 / 上级客户筛选都生效")
+    @DisplayName("状态 / 结算方式 / 上级客户筛选都生效")
     void filtersAreApplied() {
-        Long groupTypeId = customerTypeId("GROUP");
-        Long group = service.add(groupForm("G1", groupTypeId));
+        Long group = service.add(groupForm("G1"));
         CustomerAddForm childForm = form("F1");
         childForm.setParentCustomerId(group);
         Long child = service.add(childForm);
@@ -103,11 +97,6 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
         assertThat(queryService.query(byStatus).getList()).extracting(CustomerVO::getCustomerId)
                 .containsExactly(child);
 
-        CustomerQueryForm byType = queryForm();
-        byType.setCustomerTypeId(groupTypeId);
-        assertThat(queryService.query(byType).getList()).extracting(CustomerVO::getCustomerId)
-                .containsExactly(group);
-
         CustomerQueryForm bySettleMode = queryForm();
         bySettleMode.setSettleMode("GROUP");
         assertThat(queryService.query(bySettleMode).getList()).extracting(CustomerVO::getCustomerId)
@@ -119,20 +108,18 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
                 .containsExactly(child);
     }
 
-    private CustomerAddForm groupForm(String suffix, Long groupTypeId) {
+    private CustomerAddForm groupForm(String suffix) {
         CustomerAddForm form = new CustomerAddForm();
         form.setName("集团" + suffix);
         form.setContactName("联系人" + prefix);
-        form.setCustomerTypeId(groupTypeId);
         form.setSettleMode("GROUP");
         return form;
     }
 
     @Test
-    @DisplayName("列表与详情批量补全类型名 / 上级客户名 / 业务员名 / 供应商名")
+    @DisplayName("列表与详情批量补全上级客户名 / 业务员名 / 供应商名")
     void enrichmentResolvesNamesFromRelatedTables() {
-        Long groupTypeId = customerTypeId("GROUP");
-        Long group = service.add(groupForm("G2", groupTypeId));
+        Long group = service.add(groupForm("G2"));
         Long employeeId = anyEmployeeId();
 
         SupplierAddForm supplierForm = new SupplierAddForm();
@@ -147,12 +134,10 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
 
         CustomerVO row = queryService.query(queryForm()).getList().stream()
                 .filter(vo -> vo.getCustomerId().equals(id)).findFirst().orElseThrow();
-        assertThat(row.getCustomerTypeName()).isEqualTo("企业");
         assertThat(row.getParentCustomerName()).isEqualTo("集团G2");
         assertThat(row.getSellerName()).isNotBlank();
 
         CustomerDetailVO detail = queryService.detail(id);
-        assertThat(detail.getCustomerTypeName()).isEqualTo("企业");
         assertThat(detail.getParentCustomerName()).isEqualTo("集团G2");
         assertThat(detail.getSellerName()).isNotBlank();
         assertThat(detail.getSupplierName()).isEqualTo("供应商" + prefix);

@@ -38,10 +38,6 @@ public class CustomerAddForm extends ScmPartyForm {
     @Size(max = 150, message = "客户名称不能超过150个字符")
     private String name;
 
-    @NotNull(message = "客户类型不能为空")
-    @Positive(message = "客户类型必须大于0")
-    private Long customerTypeId;
-
     @Positive(message = "客户分类必须大于0")
     private Long businessCategoryId;
 

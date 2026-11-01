@@ -46,7 +46,6 @@ export function emptyCustomer(): CustomerFormModel {
     districtName: null,
     customerCode: '',
     name: '',
-    customerTypeId: undefined,
     businessCategoryId: null,
     customerGroupId: null,
     parentCustomerId: undefined,
@@ -101,9 +100,6 @@ export function applyCreditPeriodUnit(form: CustomerFormModel, unit?: 'DAY' | 'M
 export function validateCustomer(form: CustomerFormModel): string | undefined {
   if (!form.name?.trim()) {
     return '请输入客户名称';
-  }
-  if (!form.customerTypeId) {
-    return '请选择客户类型';
   }
   const phone = form.contactPhone?.trim();
   if (phone && !PHONE.test(phone)) {

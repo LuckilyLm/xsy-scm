@@ -62,8 +62,6 @@ public class CustomerService {
 
     private final CustomerValidator customerValidator;
 
-    private final CustomerTypeService customerTypeService;
-
     private final BusinessCategoryService businessCategoryService;
 
     private final CustomerGroupService customerGroupService;
@@ -122,11 +120,9 @@ public class CustomerService {
         boolean directParent = Objects.equals(customer.getParentCustomerId(), settlement.getId());
         boolean groupMode = ScmSettleModeEnum.GROUP.name().equals(customer.getSettleMode())
             && ScmSettleModeEnum.GROUP.name().equals(settlement.getSettleMode());
-        boolean settlementIsGroup = CustomerValidator.GROUP_TYPE_CODE
-            .equals(customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
         // 结算主体只允许自己或直接上级。兄弟客户即使拥有同一 parent，也不能互相充当结算主体；
-        // 集团统一结算必须由 GROUP 类型、GROUP 模式且自身结算的权威父客户承担。
-        if ((!self && !(directParent && groupMode && settlementIsGroup))
+        // 集团统一结算必须由 GROUP 模式且自身结算的权威父客户承担。
+        if ((!self && !(directParent && groupMode))
             || !Objects.equals(settlement.getSettlementCustomerId(), settlement.getId())) {
             throw new ScmBusinessException(CustomerErrorCode.CUSTOMER_PARENT_INVALID);
         }
@@ -153,7 +149,6 @@ public class CustomerService {
     @Transactional(rollbackFor = Exception.class)
     public Long add(CustomerAddForm form) {
         customerValidator.validateCreditPeriod(form);
-        customerTypeService.requireSelectableType(form.getCustomerTypeId());
         customerValidator.validateParent(form.getParentCustomerId(), null);
 
         CustomerEntity entity = new CustomerEntity();
@@ -184,7 +179,6 @@ public class CustomerService {
         customerSkuVisibilityDao.lockCustomer(form.getCustomerId());
         CustomerEntity entity = require(form.getCustomerId(), form.getVersion());
         requireCurrentCustomerScope(entity);
-        customerTypeService.requireSelectableType(form.getCustomerTypeId());
         customerValidator.validateParent(form.getParentCustomerId(), form.getCustomerId());
 
         // apply 不碰 status：状态只能走 updateStatus；也不碰 seller_id：归属只能走 reassignSeller。
@@ -299,7 +293,6 @@ public class CustomerService {
             entity.setVisibilityPolicy(CustomerVisibilityPolicy.ALL_ENABLED);
         }
         entity.setName(CustomerValidator.normalizeName(form.getName()));
-        entity.setCustomerTypeId(form.getCustomerTypeId());
         Long businessCategoryId = form.getBusinessCategoryId();
         if (businessCategoryId != null) {
             businessCategoryService.requireSelectable(businessCategoryId, BusinessCategoryScopeEnum.CUSTOMER);

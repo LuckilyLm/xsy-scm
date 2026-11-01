@@ -12,7 +12,6 @@ import net.lab1024.sa.base.common.domain.PageParam;
 public class PriceHistoryQueryForm extends PageParam {
     private String source;
     private Long customerId;
-    private Long customerTypeId;
     private Long groupId;
     private Long skuId;
     private String operationType;

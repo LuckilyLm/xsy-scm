@@ -6,9 +6,6 @@
         <a-form-item label="关键字" class="smart-query-form-item">
           <a-input v-model:value="filters.keyword" allow-clear placeholder="客户名称 / 联系人 / 电话" style="width: 200px" />
         </a-form-item>
-        <a-form-item label="客户类型" class="smart-query-form-item">
-          <CustomerTypeSelect v-model:value="filters.customerTypeId" width="160px" />
-        </a-form-item>
         <a-form-item label="客户分类" class="smart-query-form-item">
           <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="CUSTOMER" style="width: 150px" />
         </a-form-item>
@@ -30,8 +27,8 @@
         <a-form-item label="结算方式" class="smart-query-form-item">
           <SmartEnumSelect v-model:value="filters.settleMode" enum-name="SETTLE_MODE_ENUM" width="140px" />
         </a-form-item>
-        <a-form-item label="上级集团" class="smart-query-form-item">
-          <CustomerSelect v-model:value="filters.parentCustomerId" type-code="GROUP" width="220px" placeholder="仅集团客户" />
+        <a-form-item label="上级客户" class="smart-query-form-item">
+          <CustomerSelect v-model:value="filters.parentCustomerId" width="220px" placeholder="请选择上级客户" />
         </a-form-item>
       </a-row>
     </a-form>
@@ -66,7 +63,6 @@
               {{ record.name }}
             </a-button>
           </template>
-          <span v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'businessCategoryName'">{{ record.businessCategoryName || '未分类' }}</span>
           <span v-else-if="column.dataIndex === 'customerGroupName'">{{ record.customerGroupName || '未分组' }}</span>
           <span v-else-if="column.dataIndex === 'sellerName'">{{ record.sellerName || '—' }}</span>
@@ -153,7 +149,6 @@ import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue'
 import CustomerPromotionModal from '/@/views/business/scm/customer/components/customer-promotion-modal.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
-import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
 import BusinessCategoryTreeSelect from '/@/components/business/scm/business-category-tree-select/index.vue';
 import CustomerGroupSelect from '/@/components/business/scm/customer-group-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
@@ -233,7 +228,6 @@ const statusColor = (value: CustomerStatus): string => {
 type CustomerListColumn = TableColumnsType<CustomerRow>[number] & {showFlag?: boolean};
 const columns = ref<CustomerListColumn[]>([
   {title: '客户名称', dataIndex: 'name', width: 200, sorter: true, ellipsis: true},
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
   {title: '客户分类', dataIndex: 'businessCategoryName', width: 120, align: 'center'},
   {title: '客户分组', dataIndex: 'customerGroupName', width: 140},
   {title: '业务员', dataIndex: 'sellerName', width: 110},
@@ -278,7 +272,6 @@ function reset() {
     pageNum: 1,
     pageSize: 20,
     keyword: undefined,
-    customerTypeId: undefined,
     businessCategoryId: undefined,
     customerGroupId: undefined,
     status: undefined,

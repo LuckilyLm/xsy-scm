@@ -151,7 +151,6 @@ class ScmCustomerBalanceScopePgIT extends ScmW2PgITBase {
     private CustomerAddForm customerForm() {
         CustomerAddForm form = new CustomerAddForm();
         form.setName(prefix + "客户");
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
         return form;
     }
@@ -161,7 +160,6 @@ class ScmCustomerBalanceScopePgIT extends ScmW2PgITBase {
         form.setCustomerId(customerId);
         form.setVersion(version);
         form.setName(prefix + "改名");
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
         return form;
     }

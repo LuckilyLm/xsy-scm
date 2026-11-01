@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import type {PriceForm, BatchRow} from '../../../../types/business/scm/pricing';
+import type {PriceForm} from '../../../../types/business/scm/pricing';
 
 /** 销售单价/加价金额：两位新录入值或历史四位值，三位和五位以上拒绝。 */
 function isSalesMoney(value: string | number | null | undefined): boolean {
@@ -28,9 +28,9 @@ export function emptyPrice(): PriceForm {
   return {unitPrice: '', effectiveFrom: '', effectiveTo: null};
 }
 
-export function validatePrice(f: PriceForm, dimension: 'customerId' | 'customerTypeId'): string[] {
+export function validatePrice(f: PriceForm): string[] {
   const errors: string[] = [];
-  if (f[dimension] == null) errors.push(dimension === 'customerId' ? '请选择客户' : '请选择客户类型');
+  if (f.customerId == null) errors.push('请选择客户');
   if (f.skuId == null) errors.push('请选择商品规格');
   if ((f.formulaType == null || f.formulaType === 'FIXED') && !isSalesMoney(f.unitPrice)) errors.push('单价须为非负数，最多两位小数');
   if (f.formulaType && f.formulaType !== 'FIXED') {
@@ -41,8 +41,4 @@ export function validatePrice(f: PriceForm, dimension: 'customerId' | 'customerT
   if (f.effectiveTo && (!Number.isFinite(Date.parse(f.effectiveTo)) || Date.parse(f.effectiveTo) <= Date.parse(f.effectiveFrom)))
     errors.push('结束时间必须晚于开始时间');
   return errors;
-}
-
-export function validateBatch(rows: BatchRow[]): {rowNumber: number; message: string}[] {
-  return rows.flatMap((r) => validatePrice(r, 'customerTypeId').map((message) => ({rowNumber: r.rowNumber, message})));
 }

@@ -44,8 +44,9 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
 
   test('价格来源的中文文案与颜色档位覆盖每一个来源', () => {
     for (const source of backendSources()) {
-      // MARKET 是兜底来源（读 SKU 自身市场价），不产生价格历史记录，历史文案不要求它
-      if (source !== 'MARKET') {
+      // MARKET 是兜底来源（读 SKU 自身市场价），不产生价格历史记录，历史文案不要求它；
+      // CUSTOMER_TYPE 是历史单据的遗留来源，V231 之后不再产生新的价格历史。
+      if (source !== 'MARKET' && source !== 'CUSTOMER_TYPE') {
         assert.match(display, new RegExp(`${source}: '`), `历史来源文案缺 ${source}`);
       }
       assert.match(preview, new RegExp(`${source}: '`), `预览页颜色档位缺 ${source}`);
@@ -91,9 +92,7 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
   test('pricing error mapping preserves overlap, conflict, idempotency and sellability codes', async () => {
     const {pricingError} = await import('../src/views/business/scm/pricing/pricing-errors.ts');
     assert.match(pricingError({code: 40933}), /重叠/);
-    assert.match(pricingError({code: 40935}), /重叠/);
     assert.match(pricingError({code: 40921}), /修改/);
-    assert.match(pricingError({code: 40948}), /批次号/);
     assert.match(pricingError({code: 40949}), /不可售/);
   });
 
@@ -129,7 +128,6 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     const display = code('../src/views/business/scm/pricing/pricing-display.ts');
     // 来源与变更类型都要有中文映射：直接渲染会把 AGREEMENT / CREATE 端给使用者
     assert.match(display, /AGREEMENT: '客户协议价'/);
-    assert.match(display, /CUSTOMER_TYPE: '客户类型价'/);
     assert.match(display, /CREATE: '新增'/);
     assert.match(page, /historyLabel\(HISTORY_SOURCE_LABEL, record\.source\)/);
     assert.match(page, /historyLabel\(HISTORY_OPERATION_LABEL, record\.operationType\)/);
@@ -163,19 +161,5 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     // 规格编码不展示，只保留规格名称
     assert.doesNotMatch(page, /title: '商品规格编码'/);
     assert.doesNotMatch(page, /record\.skuCode/);
-  });
-}
-
-// ---------------------------------------------------------------- 来源：pricing-batch-error-column.test.mjs
-{
-  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
-  const page = read('../src/views/business/scm/pricing/customer-type-price-batch.vue');
-
-  test('批量调价的错误列只在整批失败后出现，平时不占一列空白', () => {
-    const base = page.match(/const BASE_COLUMNS[\s\S]*?\n\];/)?.[0] ?? '';
-    assert.ok(base, '基础列没有独立出来，错误列无法按需插入');
-    assert.doesNotMatch(base, /title: '错误'/, '错误列仍常驻在基础列里');
-    assert.match(page, /if \(!failures\.value\.length\) \{\s*return BASE_COLUMNS;/, '没有失败时仍渲染错误列');
-    assert.match(page, /list\.splice\(5, 0, \{title: '错误'/, '有失败时错误列没有插回表格');
   });
 }

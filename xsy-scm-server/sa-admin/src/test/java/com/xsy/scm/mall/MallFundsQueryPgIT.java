@@ -45,7 +45,8 @@ class MallFundsQueryPgIT extends ScmW5PgITBase {
         var firstIdentity = identity(first);
         assertThat(funds.walletSummary(firstIdentity).getBalanceVisible()).isFalse();
         assertThat(funds.walletSummary(firstIdentity).getAvailableBalance()).isNull();
-        assertThat(funds.walletSummary(identity(group)).getBalanceVisible()).isFalse();
+        assertThat(funds.walletSummary(identity(group)).getBalanceVisible())
+                .as("集团主体自己结算时能看到自己的钱包").isTrue();
         var ownMovements = funds.walletMovements(firstIdentity, movementPage(1, 1));
         assertThat(ownMovements.getTotal()).isEqualTo(2L);
         assertThat(ownMovements.getPages()).isEqualTo(2L);
@@ -114,7 +115,6 @@ class MallFundsQueryPgIT extends ScmW5PgITBase {
     private Long groupCustomer(Long parentId) {
         CustomerAddForm form = new CustomerAddForm();
         form.setName(prefix + "-GROUP-" + UUID.randomUUID().toString().substring(0, 5));
-        form.setCustomerTypeId(customerTypeId(parentId == null ? "GROUP" : "ENTERPRISE"));
         form.setSettleMode("GROUP");
         form.setSellerId(1L);
         form.setParentCustomerId(parentId);

@@ -40,7 +40,6 @@ class SalesOrderRecentPriceIT extends ScmW3PgITBase {
     private Long customer(String sfx) {
         var f = new CustomerAddForm();
         f.setName(prefix + sfx);
-        f.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         f.setSettleMode("INDEPENDENT");
         f.setSellerId(anyEmployeeId());
         Long id = customers.add(f);

@@ -14,9 +14,7 @@ import static org.mockito.Mockito.when;
 import com.xsy.scm.balance.service.CustomerBalanceService;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
-import com.xsy.scm.customer.domain.entity.CustomerTypeEntity;
 import com.xsy.scm.customer.service.CustomerService;
-import com.xsy.scm.customer.service.CustomerTypeService;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.funds.dao.MallFundsSourceDao;
@@ -29,22 +27,17 @@ import org.junit.jupiter.api.Test;
 
 class MallFundsQueryServiceTest {
     private final CustomerService customers = mock(CustomerService.class);
-    private final CustomerTypeService customerTypes = mock(CustomerTypeService.class);
     private final CustomerBalanceService balances = mock(CustomerBalanceService.class);
     private final MallFundsSourceDao sources = mock(MallFundsSourceDao.class);
-    private final MallFundsQueryService service = new MallFundsQueryService(customers, customerTypes, balances,
-            sources);
+    private final MallFundsQueryService service = new MallFundsQueryService(customers, balances, sources);
 
     @Test
     void childAccountCannotSeeSharedWalletTotalButCanRequestOnlyItsOwnMovements() {
         RequestMallCustomer identity = identity(20L);
-        CustomerEntity child = customer(20L, 10L, null);
-        CustomerEntity parent = customer(10L, 10L, 1L);
+        CustomerEntity child = customer(20L, 10L);
+        CustomerEntity parent = customer(10L, 10L);
         when(customers.requireTradable(20L)).thenReturn(child);
         when(customers.requireSettlementAccount(child)).thenReturn(parent);
-        // 共享判定现在由 CustomerValidator.sharedSettlement 统一给出：结算主体类型码是必传参数，
-        // 因此这里必须显式给出类型（非 GROUP，共享仅因「结算主体不是本人」成立）。
-        when(customerTypes.require(1L)).thenReturn(enterpriseType());
 
         var summary = service.walletSummary(identity);
         assertThat(summary.getBalanceVisible()).isFalse();
@@ -62,28 +55,28 @@ class MallFundsQueryServiceTest {
     }
 
     @Test
-    void groupSettlementAccountDoesNotExposeWholeGroupBalanceToItsPurchasingLogin() {
+    void selfSettlingCustomerSeesItsOwnWallet() {
         RequestMallCustomer identity = identity(10L);
-        CustomerEntity group = customer(10L, 10L, 1L);
-        CustomerTypeEntity groupType = new CustomerTypeEntity();
-        groupType.setTypeCode("GROUP");
-        when(customers.requireTradable(10L)).thenReturn(group);
-        when(customers.requireSettlementAccount(group)).thenReturn(group);
-        when(customerTypes.require(1L)).thenReturn(groupType);
+        CustomerEntity self = customer(10L, 10L);
+        when(customers.requireTradable(10L)).thenReturn(self);
+        when(customers.requireSettlementAccount(self)).thenReturn(self);
+        when(sources.walletAccountExists(10L)).thenReturn(true);
+        when(balances.balanceOfSettlement(10L)).thenReturn(new BigDecimal("88.0000"));
 
-        assertThat(service.walletSummary(identity).getBalanceVisible()).isFalse();
-        verifyNoInteractions(balances);
+        var summary = service.walletSummary(identity);
+        assertThat(summary.getBalanceVisible()).isTrue();
+        assertThat(summary.getHasWallet()).isTrue();
+        assertThat(summary.getAvailableBalance()).isEqualByComparingTo("88.0000");
     }
 
     @Test
     void sharedSettlementCreditSummaryAndReceivableListRemainScopedToThePurchasingCustomer() {
         RequestMallCustomer identity = identity(20L);
-        CustomerEntity child = customer(20L, 10L, null);
-        CustomerEntity parent = customer(10L, 10L, 1L);
+        CustomerEntity child = customer(20L, 10L);
+        CustomerEntity parent = customer(10L, 10L);
         parent.setCreditLimit(new BigDecimal("1000.0000"));
         when(customers.requireTradable(20L)).thenReturn(child);
         when(customers.requireSettlementAccount(child)).thenReturn(parent);
-        when(customerTypes.require(1L)).thenReturn(enterpriseType());
         MallFundsSourceDao.CreditFacts facts = new MallFundsSourceDao.CreditFacts();
         facts.setOpenReceivableAmount(new BigDecimal("20.0000"));
         facts.setConfirmedOrderAmount(new BigDecimal("10.0000"));
@@ -106,7 +99,7 @@ class MallFundsQueryServiceTest {
     @Test
     void missingOrOtherCustomerReceivableUsesTheSameNotFoundResult() {
         RequestMallCustomer identity = identity(20L);
-        when(customers.requireTradable(20L)).thenReturn(customer(20L, 20L, null));
+        when(customers.requireTradable(20L)).thenReturn(customer(20L, 20L));
 
         assertThatThrownBy(() -> service.receivable(identity, 99L))
                 .isInstanceOfSatisfying(ScmBusinessException.class,
@@ -120,17 +113,10 @@ class MallFundsQueryServiceTest {
         return identity;
     }
 
-    private static CustomerEntity customer(Long id, Long settlementId, Long typeId) {
+    private static CustomerEntity customer(Long id, Long settlementId) {
         CustomerEntity customer = new CustomerEntity();
         customer.setId(id);
         customer.setSettlementCustomerId(settlementId);
-        customer.setCustomerTypeId(typeId);
         return customer;
-    }
-
-    private static CustomerTypeEntity enterpriseType() {
-        CustomerTypeEntity type = new CustomerTypeEntity();
-        type.setTypeCode("ENTERPRISE");
-        return type;
     }
 }

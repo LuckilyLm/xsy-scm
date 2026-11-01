@@ -8,7 +8,6 @@ public class CustomerSkuVisibilitySummaryVO {
     private Long customerId;
     private String customerCode;
     private String customerName;
-    private String customerTypeName;
     private String visibilityPolicy;
     private Long productCount;
     private Long specCount;

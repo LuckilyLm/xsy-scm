@@ -4,7 +4,6 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.manager.CustomerValidator;
 import com.xsy.scm.customer.service.CustomerService;
-import com.xsy.scm.customer.service.CustomerTypeService;
 import com.xsy.scm.finance.service.FinanceOrderPayableQueryService;
 import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 import com.xsy.scm.mall.order.constant.ScmSharedSettlementPolicy;
@@ -25,7 +24,6 @@ import org.springframework.stereotype.Service;
 public class OrderSettlementConfirmationPolicy {
 
     private final CustomerService customerService;
-    private final CustomerTypeService customerTypeService;
     private final OrderCreditService orderCreditService;
     private final FinanceOrderPayableQueryService payableQueryService;
 
@@ -48,8 +46,7 @@ public class OrderSettlementConfirmationPolicy {
             || !ScmSettlementMethodEnum.isSupported(order.getSettlementMethod())) {
             throw new ScmBusinessException(OrderErrorCode.ORDER_SETTLEMENT_METHOD_BLOCKED);
         }
-        boolean shared = CustomerValidator.sharedSettlement(buyer.getId(), settlement.getId(),
-            customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
+        boolean shared = CustomerValidator.sharedSettlement(buyer.getId(), settlement.getId());
         ScmSettlementMethodEnum method = ScmSettlementMethodEnum.valueOf(order.getSettlementMethod());
         switch (method) {
             case CREDIT -> {

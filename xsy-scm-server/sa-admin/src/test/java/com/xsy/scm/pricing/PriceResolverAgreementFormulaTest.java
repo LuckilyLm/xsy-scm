@@ -2,21 +2,17 @@ package com.xsy.scm.pricing;
 
 import com.xsy.scm.customer.constant.CustomerVisibilityPolicy;
 import com.xsy.scm.customer.dao.CustomerSkuVisibilityDao;
-import com.xsy.scm.customer.dao.CustomerTypeDao;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
-import com.xsy.scm.customer.domain.entity.CustomerTypeEntity;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.pricing.constant.ScmPriceStatusEnum;
 import com.xsy.scm.pricing.constant.ScmUnpricedReasonEnum;
 import com.xsy.scm.pricing.dao.AgreementPriceDao;
 import com.xsy.scm.pricing.dao.CustomerGroupPriceDao;
-import com.xsy.scm.pricing.dao.CustomerTypePriceDao;
 import com.xsy.scm.pricing.dao.TimePriceDao;
 import com.xsy.scm.pricing.dao.PricingCostBasisDao;
 import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
 import com.xsy.scm.pricing.domain.entity.AgreementPriceEntity;
 import com.xsy.scm.pricing.domain.entity.CustomerGroupPriceEntity;
-import com.xsy.scm.pricing.domain.entity.CustomerTypePriceEntity;
 import com.xsy.scm.pricing.domain.vo.PricingCostBasisVO;
 import com.xsy.scm.pricing.service.PriceResolver;
 import com.xsy.scm.product.service.ProductBundleComponentQueryService;
@@ -42,18 +38,16 @@ import static org.mockito.Mockito.when;
 class PriceResolverAgreementFormulaTest {
 
     private final CustomerService customers = mock(CustomerService.class);
-    private final CustomerTypeDao customerTypes = mock(CustomerTypeDao.class);
     private final AgreementPriceDao agreements = mock(AgreementPriceDao.class);
     private final CustomerGroupPriceDao groupPrices = mock(CustomerGroupPriceDao.class);
-    private final CustomerTypePriceDao typePrices = mock(CustomerTypePriceDao.class);
     private final TimePriceDao timePrices = mock(TimePriceDao.class);
     private final ProductSkuOptionDao products = mock(ProductSkuOptionDao.class);
     private final ProductBundleComponentQueryService bundles = mock(ProductBundleComponentQueryService.class);
     private final CustomerSkuVisibilityDao visibility = mock(CustomerSkuVisibilityDao.class);
     private final PricingCostBasisDao costs = mock(PricingCostBasisDao.class);
 
-    private final PriceResolver resolver = new PriceResolver(customers, customerTypes, agreements, groupPrices,
-            typePrices, timePrices, products, bundles, visibility, costs);
+    private final PriceResolver resolver = new PriceResolver(customers, agreements, groupPrices, timePrices,
+            products, bundles, visibility, costs);
 
     private AgreementPriceEntity agreement;
 
@@ -63,14 +57,7 @@ class PriceResolverAgreementFormulaTest {
     void setup() {
         customer = new CustomerEntity();
         customer.setId(8L);
-        customer.setCustomerTypeId(5L);
         when(customers.requireTradable(8L)).thenReturn(customer);
-
-        var customerType = new CustomerTypeEntity();
-        customerType.setId(5L);
-        customerType.setName("餐饮");
-        customerType.setStatus("ENABLED");
-        when(customerTypes.selectById(5L)).thenReturn(customerType);
 
         var sku = new ProductSkuOptionVO();
         sku.setSkuId(40L);
@@ -266,7 +253,7 @@ class PriceResolverAgreementFormulaTest {
     }
 
     @Test
-    void groupPriceAppliesByProductAndSaleUnitAboveTypePrice() {
+    void groupPriceAppliesByProductAndSaleUnitAboveTimePrice() {
         customer.setCustomerGroupId(9L);
         when(agreements.selectEffective(eq(8L), eq(List.of(40L)), any(OffsetDateTime.class)))
                 .thenReturn(List.of());
@@ -279,13 +266,6 @@ class PriceResolverAgreementFormulaTest {
         groupPrice.setUnitPrice(new BigDecimal("12.0000"));
         when(groupPrices.selectEffective(eq(9L), eq(List.of(30L)), any(OffsetDateTime.class)))
                 .thenReturn(List.of(groupPrice));
-        var typePrice = new CustomerTypePriceEntity();
-        typePrice.setId(300L);
-        typePrice.setSkuId(40L);
-        typePrice.setUnitPrice(new BigDecimal("18.0000"));
-        when(typePrices.selectEffective(eq(5L), eq(List.of(40L)), any(OffsetDateTime.class)))
-                .thenReturn(List.of(typePrice));
-
         var price = resolver.resolve(8L, List.of(40L), OffsetDateTime.now()).getFirst();
 
         assertThat(price.getPriceSource()).isEqualTo(ScmPriceSourceEnum.CUSTOMER_GROUP);

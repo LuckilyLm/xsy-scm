@@ -37,13 +37,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Web contract coverage. Authentication filters are disabled; permission annotations remain on controllers.
  */
-@WebMvcTest({AgreementPriceController.class, CustomerTypePriceController.class,
-        PriceBatchController.class, PriceHistoryController.class, PriceResolveController.class,
+@WebMvcTest({AgreementPriceController.class, PriceHistoryController.class, PriceResolveController.class,
         CustomerVisibilityController.class, ProductSkuController.class})
 @AutoConfigureMockMvc(addFilters = false)
-@ContextConfiguration(classes = {AgreementPriceController.class, CustomerTypePriceController.class,
-        PriceBatchController.class, PriceHistoryController.class, PriceResolveController.class,
-        PriceHistoryController.class, CustomerVisibilityController.class, ProductSkuController.class,
+@ContextConfiguration(classes = {AgreementPriceController.class, PriceHistoryController.class,
+        PriceResolveController.class, CustomerVisibilityController.class, ProductSkuController.class,
         ScmExceptionHandler.class, GlobalExceptionHandler.class})
 class PricingWebTest {
 
@@ -53,12 +51,6 @@ class PricingWebTest {
     AgreementPriceService agreementService;
     @MockitoBean
     AgreementPriceQueryService agreementQueries;
-    @MockitoBean
-    CustomerTypePriceService typeService;
-    @MockitoBean
-    CustomerTypePriceQueryService typeQueries;
-    @MockitoBean
-    PriceBatchService batchService;
     @MockitoBean
     PriceHistoryQueryService historyService;
     @MockitoBean
@@ -94,21 +86,6 @@ class PricingWebTest {
                         .content("{\"pageNum\":1,\"pageSize\":20}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.list").isArray());
-    }
-
-    @Test
-    void typePriceQueryReturnsPageEnvelope() throws Exception {
-        when(typeQueries.query(any())).thenReturn(emptyPage());
-        mvc.perform(post("/scm/pricing/type-price/query").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"pageNum\":1,\"pageSize\":20}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.data.emptyFlag").value(true));
-    }
-
-    @Test
-    void batchRejectsMissingRowsAtBoundary() throws Exception {
-        mvc.perform(post("/scm/pricing/type-price/batch").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"batchKey\":\"B\",\"rows\":[]}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(30001));
     }
 
     @Test

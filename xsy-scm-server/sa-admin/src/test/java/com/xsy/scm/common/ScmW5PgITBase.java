@@ -441,19 +441,6 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 客户类型 id（V2 的种子字典，{@code ENTERPRISE} 一定存在）。
-     *
-     * <p>注意列名是 {@code id} 而不是 {@code customer_type_id}：{@code xsy_customer_type}
-     * 表沿用「表名 = 实体名」的主键命名，没有前缀。写错会得到一个 {@code BadSqlGrammar}，
-     * 而它的栈顶看起来像「fixture 造数失败」，很容易误判成需求生成的问题。
-     */
-    protected Long customerTypeId(String typeCode) {
-        return jdbc.queryForObject(
-                "SELECT id FROM xsy_customer_type WHERE type_code = ? AND deleted = FALSE",
-                Long.class, typeCode);
-    }
-
-    /**
      * 新建一个 {@code COOPERATING} 客户（{@code add} + {@code updateStatus} 两步）。
      *
      * <p>名称带逐个递增的序号，同一用例内可反复调用且互不混淆；编码由服务端生成。
@@ -462,7 +449,6 @@ public abstract class ScmW5PgITBase {
         String name = prefix + "-C" + (++customerSequence);
         CustomerAddForm form = new CustomerAddForm();
         form.setName(name + "客户");
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
         form.setSellerId(anyEmployeeId());
         Long customerId = customerService.add(form);

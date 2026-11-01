@@ -52,8 +52,6 @@ public class CustomerEntity {
 
     private String name;
 
-    private Long customerTypeId;
-
     /** 客户业务分类；为空表示未分类。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long businessCategoryId;

@@ -11,8 +11,6 @@ import com.xsy.scm.customer.domain.form.CustomerSkuVisibilityItemForm;
 import com.xsy.scm.customer.domain.form.CustomerStatusForm;
 import com.xsy.scm.customer.domain.form.CustomerUpdateForm;
 import com.xsy.scm.customer.service.CustomerService;
-import com.xsy.scm.pricing.domain.form.CustomerTypePriceAddForm;
-import com.xsy.scm.pricing.service.CustomerTypePriceService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,21 +37,11 @@ class CustomerServiceIT extends ScmW2PgITBase {
     private CustomerService service;
 
     @Autowired
-    private CustomerTypePriceService customerTypePriceService;
-
-    @Autowired
     private BusinessCategoryService businessCategoryService;
 
     private CustomerAddForm form(String suffix) {
         CustomerAddForm form = new CustomerAddForm();
         form.setName("客户" + suffix);
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
-        return form;
-    }
-
-    private CustomerAddForm form(String suffix, Long typeId) {
-        CustomerAddForm form = form(suffix);
-        form.setCustomerTypeId(typeId);
         return form;
     }
 
@@ -62,7 +50,6 @@ class CustomerServiceIT extends ScmW2PgITBase {
         form.setCustomerId(id);
         form.setVersion(version);
         form.setName("改名");
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         return form;
     }
 
@@ -240,34 +227,6 @@ class CustomerServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("客户所属类型配过价不影响该客户删除：类型价是类型层共享配置，不是该客户的引用")
-    void deleteIsNotBlockedByPricesOfItsOwnCustomerType() {
-        Long id = service.add(form("TYPE-PRICED"));
-        Long typeId = jdbc.queryForObject("SELECT customer_type_id FROM xsy_customer WHERE id = ?",
-                Long.class, id);
-        // 类型价由本用例自己造：迁移只建表、不种任何价，靠库里「碰巧有」的数据会让这条前置在新库上永远不成立。
-        CustomerTypePriceAddForm price = new CustomerTypePriceAddForm();
-        price.setCustomerTypeId(typeId);
-        price.setSkuId(newOnShelfSku("TYPE-PRICED"));
-        price.setUnitPrice("3.0000");
-        price.setEffectiveFrom(OffsetDateTime.now().minusDays(1));
-        customerTypePriceService.add(price);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_customer_type_price "
-                + "WHERE customer_type_id = ? AND deleted = FALSE", Integer.class, typeId))
-                .as("前提：该客户所属类型确实配过客户类型价")
-                .isPositive();
-
-        CustomerDeleteForm deletion = new CustomerDeleteForm();
-        deletion.setCustomerId(id);
-        deletion.setVersion(0);
-        service.delete(deletion);
-
-        assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_customer WHERE id = ?", Boolean.class, id))
-                .as("类型有价不等于客户被引用，客户本身没有引用时必须能删")
-                .isTrue();
-    }
-
-    @Test
     @DisplayName("客户自己持有可见性白名单时仍然拒绝删除（40939，守卫未被放宽）")
     void deleteIsRejectedWhileTheCustomerOwnsVisibilityRows() {
         Long id = service.add(form("VIS-REF"));
@@ -349,29 +308,26 @@ class CustomerServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("上级客户必须是 GROUP 类型；自身 / 环形 / 非集团都得到 40032")
-    void parentMustBeGroupTypeAndAcyclic() {
-        Long groupTypeId = customerTypeId("GROUP");
-        Long enterpriseTypeId = customerTypeId("ENTERPRISE");
-
-        Long group = service.add(form("G1", groupTypeId));
-        Long member = service.add(form("M1", enterpriseTypeId));
+    @DisplayName("上级客户可以是任意客户；自身 / 环形得到 40032，不存在得 40430")
+    void parentCustomerMustExistAndBeAcyclic() {
+        Long parent = service.add(form("G1"));
+        Long member = service.add(form("M1"));
 
         CustomerUpdateForm child = updateForm(member, 0);
-        child.setParentCustomerId(group);
+        child.setParentCustomerId(parent);
         service.update(child);
         assertThat(jdbc.queryForObject("SELECT parent_customer_id FROM xsy_customer WHERE id = ?", Long.class, member))
-                .isEqualTo(group);
+                .isEqualTo(parent);
+
+        // 任意客户都能作为上级
+        CustomerAddForm nested = form("N1");
+        nested.setParentCustomerId(member);
+        service.add(nested);
 
         // 自身作为上级
         CustomerUpdateForm self = updateForm(member, 1);
         self.setParentCustomerId(member);
         expectCode(() -> service.update(self), 40032);
-
-        // 上级不是集团
-        CustomerAddForm nonGroup = form("N1");
-        nonGroup.setParentCustomerId(member);
-        expectCode(() -> service.add(nonGroup), 40032);
 
         // 上级不存在
         CustomerAddForm missing = form("N2");
@@ -382,9 +338,8 @@ class CustomerServiceIT extends ScmW2PgITBase {
     @Test
     @DisplayName("环形上级被上溯检测拦下（40032）")
     void cyclicParentIsDetected() {
-        Long groupTypeId = customerTypeId("GROUP");
-        Long a = service.add(form("R1", groupTypeId));
-        Long b = service.add(form("R2", groupTypeId));
+        Long a = service.add(form("R1"));
+        Long b = service.add(form("R2"));
 
         // a.parent = b
         CustomerUpdateForm link = updateForm(a, 0);
@@ -396,7 +351,6 @@ class CustomerServiceIT extends ScmW2PgITBase {
         back.setCustomerId(b);
         back.setVersion(0);
         back.setName("客户R2");
-        back.setCustomerTypeId(groupTypeId);
         back.setParentCustomerId(a);
         expectCode(() -> service.update(back), 40032);
     }

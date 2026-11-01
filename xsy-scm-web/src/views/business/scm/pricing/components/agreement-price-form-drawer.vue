@@ -223,7 +223,7 @@ async function submit() {
   form.effectiveFrom = form.effectiveRange?.[0] || '';
   form.effectiveTo = form.effectiveRange?.[1] || null;
   // 结束时间必须晚于开始时间这类跨字段规则，用 toast 提示
-  const problems = validatePrice(form, 'customerId');
+  const problems = validatePrice(form);
   if (problems.length) {
     message.warning(problems.join('；'));
     return;

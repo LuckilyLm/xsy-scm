@@ -44,19 +44,6 @@ export interface ScmSortItem {
   isAsc: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// 客户类型（可维护字典，对应后端 customer_type 表）
-// ---------------------------------------------------------------------------
-
-export interface CustomerType {
-  typeId: ScmId;
-  version: number;
-  typeCode: string;
-  name: string;
-  status: EnableStatus;
-  createdAt?: string;
-}
-
 export interface CustomerGroupOption {
   groupId: ScmId;
   groupCode: string;
@@ -92,23 +79,6 @@ export interface CustomerGroupQuery {
   status?: EnableStatus;
 }
 
-export interface CustomerTypeForm {
-  typeId?: ScmId;
-  version?: number;
-  typeCode: string;
-  name: string;
-  status: EnableStatus;
-}
-
-export interface CustomerTypeQuery {
-  pageNum: number;
-  pageSize: number;
-  searchCount?: boolean;
-  keyword?: string;
-  status?: EnableStatus;
-  sortItemList?: ScmSortItem[];
-}
-
 // ---------------------------------------------------------------------------
 // 客户
 // ---------------------------------------------------------------------------
@@ -120,7 +90,6 @@ export interface CustomerFormModel extends Partial<AreaColumns>, ScmLocation {
   /** 只读回显：编码由服务端生成，不进入写请求（见 `CustomerPayload`）。 */
   customerCode: string;
   name: string;
-  customerTypeId?: ScmId;
   /** 客户业务分类；null 表示未分类。 */
   businessCategoryId?: ScmId | null;
   /** 客户分组；分组价按分组生效，null 表示不参与分组定价。 */
@@ -168,7 +137,6 @@ export interface CustomerRow extends CustomerFormModel {
   customerId: ScmId;
   version: number;
   status: CustomerStatus;
-  customerTypeName?: string;
   businessCategoryName?: string;
   customerGroupName?: string | null;
   parentCustomerName?: string;
@@ -189,9 +157,6 @@ export interface CustomerOption {
   customerCode: string;
   name: string;
   status: CustomerStatus;
-  customerTypeId?: ScmId | null;
-  /** 客户类型编码（例如 `GROUP`），用于「上级集团客户」这类按类型收窄的选择器。 */
-  customerTypeCode?: string | null;
 }
 
 export interface CustomerQuery {
@@ -199,7 +164,6 @@ export interface CustomerQuery {
   pageSize: number;
   searchCount?: boolean;
   keyword?: string;
-  customerTypeId?: ScmId;
   businessCategoryId?: ScmId;
   customerGroupId?: ScmId;
   status?: CustomerStatus;

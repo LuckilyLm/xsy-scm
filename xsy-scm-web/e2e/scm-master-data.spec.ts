@@ -25,7 +25,6 @@ test.describe('scm-customer', () => {
   let api: APIRequestContext;
   let token: string;
   const customerIds: (number | string)[] = [];
-  const typeIds: (number | string)[] = [];
 
   // antd 会在两个中文字之间插入视觉空格（「查询」显示为「查 询」），用允许空白的正则匹配
   const escapeRe = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -68,11 +67,6 @@ test.describe('scm-customer', () => {
         const detail = await (await api.get(`/scm/customer/detail/${id}`)).json();
         if (detail.code === 0) await api.post('/scm/customer/delete', {data: {customerId: id, version: detail.data.version}});
       }
-      // 客户类型没有 detail 端点，版本号从列表里取。
-      const list = await (await api.post('/scm/customer/type/query', {data: {pageNum: 1, pageSize: 100, keyword: name.toUpperCase()}})).json();
-      for (const row of list.code === 0 ? list.data.list : []) {
-        await api.post('/scm/customer/type/delete', {data: {typeId: row.typeId, version: row.version}});
-      }
       await api.get('/login/logout');
       await api.dispose();
     }
@@ -83,26 +77,11 @@ test.describe('scm-customer', () => {
     await page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), value);
   }
 
-  test('live customer pilot: type, credit period, status, search, deep link and deletion', async ({page}) => {
+  test('live customer pilot: credit period, status, search, deep link and deletion', async ({page}) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await authenticate(page);
     const prefix = name.toUpperCase();
-
-    // ---------------------------------------------------------------- 客户类型
-    await page.goto('/#/customer/customer-type-list');
-    await button(page, '新增客户类型').click();
-    const modal = page.locator('.ant-modal:visible');
-    await modal.getByLabel('类型编码').fill(prefix + 'T');
-    await modal.getByLabel('类型名称').fill(prefix + '类型');
-    const typeCreated = page.waitForResponse((r) => r.url().endsWith('/scm/customer/type/add'));
-    await modal.getByRole('button', {name: /确.*定/}).click();
-    const typeBody = await (await typeCreated).json();
-    expect(typeBody.code, JSON.stringify(typeBody)).toBe(0);
-    typeIds.push(typeBody.data);
-    await expect(modal).not.toBeVisible();
-    // 列表只展示类型名称，编码不再占列；按名称定位这一行
-    await expect(page.getByRole('row').filter({hasText: prefix + '类型'})).toBeVisible();
 
     // ------------------------------------------------------------------ 新建客户
     await page.goto('/#/customer/customer-list');
@@ -116,12 +95,6 @@ test.describe('scm-customer', () => {
     // 客户编码由服务端发号：创建态既没有可填输入框，也不放「由系统生成」这类提示。
     await expect(drawer.getByLabel('客户编码', {exact: true})).toHaveCount(0);
     await drawer.getByLabel('客户名称', {exact: true}).fill(prefix + '客户甲');
-    await openSelect(drawer, 'customerTypeId');
-    // 客户类型下拉的选项文本是「名称 （编码）」，不是纯名称，所以不能用 exact 匹配。
-    await page
-      .locator('.ant-select-dropdown:visible .ant-select-item-option')
-      .filter({hasText: prefix + '类型'})
-      .click();
     await drawer.getByLabel('联系电话', {exact: true}).fill('13800138000');
 
     // 地图 M0：级联选择必须落成「编码 + 名称」六列，这是大屏按市聚合与后续底图唯一的数据来源。
@@ -223,16 +196,6 @@ test.describe('scm-customer', () => {
       .click();
     await expect(row).toHaveCount(0);
 
-    // 客户已删除，客户类型这时才能删（否则后端 40938）。
-    await page.goto('/#/customer/customer-type-list');
-    const typeRow = page.getByRole('row').filter({hasText: prefix + '类型'});
-    await button(typeRow, '删除').click();
-    await page
-      .locator('.ant-popover:visible')
-      .getByRole('button', {name: /确.*定/})
-      .click();
-    await expect(typeRow).toHaveCount(0);
-
     expect(errors).toEqual([]);
   });
 
@@ -287,8 +250,6 @@ test.describe('scm-customer-360', () => {
       adminToken = await login(accounts, accounts.admin);
       admin = await apiClient(adminToken);
 
-      const types = await (await admin.post('/scm/customer/type/query', {data: {pageNum: 1, pageSize: 1}})).json();
-      expect(types.code, `查询客户类型失败：${types.msg}`).toBe(0);
       const employees = await (await admin.post('/employee/query', {data: {pageNum: 1, pageSize: 1}})).json();
       expect(employees.code, `查询员工失败：${employees.msg}`).toBe(0);
       const suffix = randomUUID().replaceAll('-', '').slice(0, 12).toUpperCase();
@@ -297,7 +258,6 @@ test.describe('scm-customer-360', () => {
         await admin.post('/scm/customer/add', {
           data: {
             name: `W7 客户 360 ${suffix}`,
-            customerTypeId: types.data.list[0].typeId,
             settleMode: 'INDEPENDENT',
             sellerId: employees.data.list[0].employeeId,
           },
@@ -487,12 +447,9 @@ test.describe('scm-pricing', () => {
   });
 
   test('pricing resolver keeps price and sale eligibility independent', async ({page}) => {
-    const types = await (await api.post('/scm/customer/type/option/list', {data: {}})).json();
-    expect(types.code).toBe(0);
-    const typeId = types.data[0].typeId;
     const prefix = name.toUpperCase();
     // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码。
-    const customer = await (await api.post('/scm/customer/add', {data: {name: prefix, customerTypeId: typeId, settleMode: 'INDEPENDENT'}})).json();
+    const customer = await (await api.post('/scm/customer/add', {data: {name: prefix, settleMode: 'INDEPENDENT'}})).json();
     expect(customer.code).toBe(0);
     customerId = customer.data;
     const detail = await (await api.get(`/scm/customer/detail/${customerId}`)).json();

@@ -3,14 +3,12 @@ package com.xsy.scm.pricing;
 import com.xsy.scm.common.ScmW3PgITBase;
 import com.xsy.scm.pricing.service.*;
 import com.xsy.scm.pricing.domain.form.*;
-import com.xsy.scm.pricing.domain.vo.PriceBatchRowFailureVO;
 import com.xsy.scm.pricing.constant.*;
 import com.xsy.scm.customer.service.*;
 import com.xsy.scm.customer.domain.form.*;
 import com.xsy.scm.product.service.ProductSkuOptionQueryService;
 import com.xsy.scm.product.domain.form.ProductSkuOptionQueryForm;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -30,15 +28,11 @@ import static org.assertj.core.api.Assertions.*;
 
 class PricingIT extends ScmW3PgITBase {
     @Autowired
-    ApplicationContext applicationContext;
-    @Autowired
     org.apache.ibatis.session.SqlSession sqlSession;
     @Autowired
     AgreementPriceService agreements;
     @Autowired
     AgreementPriceQueryService queries;
-    @Autowired
-    CustomerTypePriceService types;
     @Autowired
     PriceResolver resolver;
     @Autowired
@@ -56,13 +50,13 @@ class PricingIT extends ScmW3PgITBase {
     static final OffsetDateTime AT = OffsetDateTime.parse("2026-09-15T00:00:00Z");
 
     /**
-     * 时价的位置：客户类型价之下、市场价之上。
+     * 时价的位置：市场价之上、逐客协议价之下。
      *
      * <p>
      * 只验写入约束不够，必须证明真实选价链路真的按这个顺序取价。
      */
     @Test
-    void timePriceSitsBetweenCustomerTypeAndMarket() {
+    void timePriceSitsBetweenAgreementAndMarket() {
         Long c = customer(), s = newOnShelfSku("TP");
         var timePrice = new com.xsy.scm.pricing.domain.form.TimePriceForm();
         timePrice.setSkuId(s);
@@ -71,31 +65,25 @@ class PricingIT extends ScmW3PgITBase {
         timePrice.setEndAt(AT.plusDays(1));
         timePrices.create(timePrice, "W9 IT");
 
-        // 无协议价、无客户类型价：时价压过市场价
+        // 无协议价：时价压过市场价
         var byTime = resolver.resolve(c, List.of(s), AT).getFirst();
         assertThat(byTime.getPriceSource()).isEqualTo(ScmPriceSourceEnum.TIME_PRICE);
         assertThat(byTime.getUnitPrice()).isEqualByComparingTo("8.8000");
 
-        // 时价区间之外：回落到市场价（此时该规格还没有客户类型价）
+        // 时价区间之外：回落到市场价
         assertThat(resolver.resolve(c, List.of(s), AT.plusDays(3)).getFirst().getPriceSource())
                 .isEqualTo(ScmPriceSourceEnum.MARKET);
 
-        // 加客户类型价：分类约定压过时价
-        var typePrice = new CustomerTypePriceAddForm();
-        typePrice.setCustomerTypeId(customerTypeId("ENTERPRISE"));
-        typePrice.setSkuId(s);
-        typePrice.setUnitPrice("3.0000");
-        typePrice.setEffectiveFrom(AT.minusDays(2));
-        types.add(typePrice);
-        var byType = resolver.resolve(c, List.of(s), AT).getFirst();
-        assertThat(byType.getPriceSource()).isEqualTo(ScmPriceSourceEnum.CUSTOMER_TYPE);
-        assertThat(byType.getUnitPrice()).isEqualByComparingTo("3.0000");
+        // 加逐客协议价：客户直接定价压过时价
+        agreements.add(agreement(c, s, "3.0000", AT.minusDays(2), null));
+        var byAgreement = resolver.resolve(c, List.of(s), AT).getFirst();
+        assertThat(byAgreement.getPriceSource()).isEqualTo(ScmPriceSourceEnum.AGREEMENT);
+        assertThat(byAgreement.getUnitPrice()).isEqualByComparingTo("3.0000");
     }
 
     Long customer() {
         var f = new CustomerAddForm();
         f.setName(prefix);
-        f.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         f.setSettleMode("INDEPENDENT");
         Long id = customers.add(f);
         var status = new CustomerStatusForm();
@@ -119,18 +107,12 @@ class PricingIT extends ScmW3PgITBase {
     @Test
     void priorityZeroHalfOpenAndAuditedCrud() {
         Long c = customer(), s = newOnShelfSku("A");
-        var t = new CustomerTypePriceAddForm();
-        t.setCustomerTypeId(customerTypeId("ENTERPRISE"));
-        t.setSkuId(s);
-        t.setUnitPrice("3.0000");
-        t.setEffectiveFrom(AT.minusDays(2));
-        types.add(t);
         Long id = agreements.add(agreement(c, s, "0.0000", AT, AT.plusDays(1)));
         var result = resolver.resolve(c, List.of(s), AT).getFirst();
         assertThat(result.getPriceSource()).isEqualTo(ScmPriceSourceEnum.AGREEMENT);
         assertThat(result.getUnitPrice()).isEqualByComparingTo("0");
         assertThat(result.isSellable()).isTrue();
-        assertThat(resolver.resolve(c, List.of(s), AT.plusDays(1)).getFirst().getPriceSource()).isEqualTo(ScmPriceSourceEnum.CUSTOMER_TYPE);
+        assertThat(resolver.resolve(c, List.of(s), AT.plusDays(1)).getFirst().getPriceSource()).isEqualTo(ScmPriceSourceEnum.MARKET);
         assertThat(resolver.resolve(c, List.of(s), AT.minusDays(3)).getFirst().getPriceSource()).isEqualTo(ScmPriceSourceEnum.MARKET);
         expectCode(() -> agreements.add(agreement(c, s, "2", AT, AT.plusHours(1))), 40933);
         agreements.add(agreement(c, s, "2", AT.plusDays(1), null));
@@ -217,60 +199,6 @@ class PricingIT extends ScmW3PgITBase {
         assertThat(response.options()).hasSize(1);
         assertThat(response.truncated()).isTrue();
         assertThat(response.options().getFirst().getSpecValues()).isNotEmpty();
-    }
-
-    @Test
-    void batchFailureRollsBackAndSuccessfulKeyIsIdempotent() {
-        var typeId = customerTypeId("ENTERPRISE");
-        var sku = newOnShelfSku("BATCH");
-        var valid = new PriceBatchRowForm();
-        valid.setRowNumber(1);
-        valid.setCustomerTypeId(typeId);
-        valid.setSkuId(sku);
-        valid.setUnitPrice("4.0000");
-        valid.setEffectiveFrom(AT.plusDays(10));
-        var invalid = new PriceBatchRowForm();
-        invalid.setRowNumber(2);
-        invalid.setCustomerTypeId(typeId);
-        invalid.setSkuId(newOnShelfSku("BATCH2"));
-        invalid.setUnitPrice("-1.0000");
-        invalid.setEffectiveFrom(AT.plusDays(10));
-        var form = new PriceBatchForm();
-        form.setBatchKey(prefix + "-FAIL");
-        form.setRows(List.of(valid, invalid));
-        @SuppressWarnings("unchecked") var service = (PriceBatchService) applicationContext.getBean(PriceBatchService.class);
-        var rejected = service.submit(form);
-        assertThat(rejected.committed()).isFalse();
-        assertThat(rejected.failures()).extracting(PriceBatchRowFailureVO::code).contains(40030);
-        var count = jdbc.queryForObject("SELECT count(*) FROM xsy_customer_type_price WHERE customer_type_id=? AND sku_id=? AND deleted=FALSE", Long.class, typeId, sku);
-        assertThat(count).isZero();
-        var successForm = new PriceBatchForm();
-        successForm.setBatchKey(prefix + "-SUCCESS");
-        successForm.setRows(List.of(valid));
-        var success = service.submit(successForm);
-        assertThat(success.committed()).isTrue();
-        expectCode(() -> service.submit(successForm), 40948);
-    }
-
-    @Test
-    void batchGeneratesKeyWhenClientOmitsIt() {
-        var typeId = customerTypeId("ENTERPRISE");
-        var sku = newOnShelfSku("BATCHGEN");
-        var row = new PriceBatchRowForm();
-        row.setRowNumber(1);
-        row.setCustomerTypeId(typeId);
-        row.setSkuId(sku);
-        row.setUnitPrice("5.0000");
-        row.setEffectiveFrom(AT.plusDays(20));
-        var form = new PriceBatchForm();
-        form.setRows(List.of(row));
-        var service = (PriceBatchService) applicationContext.getBean(PriceBatchService.class);
-        var result = service.submit(form);
-        assertThat(result.committed()).isTrue();
-        assertThat(result.batchKey()).startsWith(PriceBatchService.BATCH_KEY_PREFIX);
-        var auditKey = jdbc.queryForObject(
-            "SELECT batch_key FROM xsy_customer_price_batch_audit WHERE batch_key=?", String.class, result.batchKey());
-        assertThat(auditKey).isEqualTo(result.batchKey());
     }
 
     @Test

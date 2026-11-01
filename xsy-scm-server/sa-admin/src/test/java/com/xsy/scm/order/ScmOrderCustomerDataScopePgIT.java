@@ -236,7 +236,6 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
     @DisplayName("集团客户与 settle_mode=GROUP 不扩大可见范围")
     void groupRelationDoesNotWidenVisibility() {
         Long groupId = addCustomer(sellerA, Set.of(), "GP", null, form -> {
-            form.setCustomerTypeId(customerTypeId("GROUP"));
             form.setSettleMode("GROUP");
         });
         // 乙名下的子公司挂在甲名下的集团上：归属只按本行 seller_id 判定，不做上溯/下钻展开
@@ -579,7 +578,6 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
     private CustomerAddForm customerForm(String suffix) {
         CustomerAddForm form = new CustomerAddForm();
         form.setName("范围测试" + suffix);
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
         return form;
     }
@@ -589,7 +587,6 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
         form.setCustomerId(customerId);
         form.setVersion(version);
         form.setName("编辑后名称");
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
         return form;
     }

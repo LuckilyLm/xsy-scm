@@ -118,7 +118,10 @@ test.describe('scm-delivery', () => {
       await page.keyboard.press('ArrowDown');
       const activeId = await input.getAttribute('aria-activedescendant').catch((): string | null => null);
       if (!activeId) continue;
-      const text = await dropdown.locator(`#${activeId}`).innerText().catch((): string => '');
+      const text = await dropdown
+        .locator(`#${activeId}`)
+        .innerText()
+        .catch((): string => '');
       if (text.includes(optionText)) break;
     }
     await page.keyboard.press('Enter');
@@ -190,20 +193,10 @@ test.describe('scm-delivery', () => {
       skuIds.push(String((detail.skuList ?? [])[0].skuId));
     }
 
-    const typeData: any = await post('/scm/customer/type/option/list', {});
-    const typeList = Array.isArray(typeData) ? typeData : typeData.options ?? typeData.list ?? [];
-    expect(typeList.length, '开发库没有客户类型，无法建客户夹具').toBeGreaterThan(0);
-    const rawTypeId = typeList[0].typeId ?? typeList[0].customerTypeId ?? typeList[0].id;
-    // 夹具把不存在的字段当数字传，服务端只会回 30001「参数JSON格式错误」，
-    // 看不出是夹具坏了，因此在这里显性失败并带出真实字段名。
-    expect(Number.isFinite(Number(rawTypeId)), `客户类型选项结构异常，实际字段：${JSON.stringify(Object.keys(typeList[0]))}`).toBeTruthy();
-    const customerTypeId = Number(rawTypeId);
-
     async function newCustomer(tag: string, address: string, located: boolean): Promise<string> {
       const id = String(
         await post('/scm/customer/add', {
           name: `${name}客户${tag}`,
-          customerTypeId,
           settleMode: 'INDEPENDENT',
           contactName: '验收联系人',
           contactPhone: '13800000000',
@@ -1765,9 +1758,7 @@ test.describe('scm-sorting', () => {
       const detail = await get<Row>(`/scm/order/detail/${item.salesOrderId}`);
       const line = (detail.items as Row[]).find((row) => String(row.itemId) === String(item.salesOrderItemId));
       expect(line, `订单 ${item.orderNoSnapshot} 应能回读到分拣行对应的明细`).toBeTruthy();
-      expect(String(line.actualQuantity), `订单 ${item.orderNoSnapshot} 实发量应为分拣实称量`).toBe(
-        String(item.sortedQuantity)
-      );
+      expect(String(line.actualQuantity), `订单 ${item.orderNoSnapshot} 实发量应为分拣实称量`).toBe(String(item.sortedQuantity));
       const expected = (Number(item.sortedQuantity) * Number(line.lockedUnitPrice)).toFixed(4);
       expect(String(line.settlementLineAmount), '结算额按实称量 × 锁定单价重算').toBe(expected);
     }

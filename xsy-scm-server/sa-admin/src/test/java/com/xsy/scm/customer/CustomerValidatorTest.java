@@ -2,9 +2,7 @@ package com.xsy.scm.customer;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.dao.CustomerDao;
-import com.xsy.scm.customer.dao.CustomerTypeDao;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
-import com.xsy.scm.customer.domain.entity.CustomerTypeEntity;
 import com.xsy.scm.customer.domain.form.CustomerAddForm;
 import com.xsy.scm.customer.manager.CustomerValidator;
 import org.junit.jupiter.api.DisplayName;
@@ -26,9 +24,7 @@ class CustomerValidatorTest {
 
     private final CustomerDao customerDao = mock(CustomerDao.class);
 
-    private final CustomerTypeDao customerTypeDao = mock(CustomerTypeDao.class);
-
-    private final CustomerValidator validator = new CustomerValidator(customerDao, customerTypeDao);
+    private final CustomerValidator validator = new CustomerValidator(customerDao);
 
     private static int codeOf(Throwable t) {
         return ((ScmBusinessException) t).getErrorCode().getCode();
@@ -37,7 +33,6 @@ class CustomerValidatorTest {
     private static CustomerAddForm baseForm() {
         CustomerAddForm form = new CustomerAddForm();
         form.setName("  测试客户  ");
-        form.setCustomerTypeId(1L);
         form.setSettleMode("INDEPENDENT");
         return form;
     }
@@ -187,27 +182,16 @@ class CustomerValidatorTest {
     }
 
     @Test
-    @DisplayName("上级客户类型不是集团 → 40032")
-    void parentTypeNotGroupRejected() {
-        when(customerDao.selectById(7L)).thenReturn(customer(7L, 2L));
-        when(customerTypeDao.selectById(2L)).thenReturn(type(2L, "ENTERPRISE"));
-        assertThatThrownBy(() -> validator.validateParent(7L, 1L))
-                .isInstanceOfSatisfying(ScmBusinessException.class, e -> assertThat(codeOf(e)).isEqualTo(40032));
-    }
-
-    @Test
-    @DisplayName("上级客户类型是集团 → 通过")
-    void parentTypeGroupPasses() {
-        when(customerDao.selectById(7L)).thenReturn(customer(7L, 3L));
-        when(customerTypeDao.selectById(3L)).thenReturn(type(3L, "GROUP"));
+    @DisplayName("任意存在的客户都能作为上级 → 通过")
+    void anyExistingParentPasses() {
+        when(customerDao.selectById(7L)).thenReturn(customer(7L));
         assertThatCode(() -> validator.validateParent(7L, 1L)).doesNotThrowAnyException();
     }
 
     @Test
     @DisplayName("上溯成环（祖先等于自身）→ 40032")
     void parentCycleBackToSelfRejected() {
-        when(customerDao.selectById(7L)).thenReturn(customer(7L, 3L, 1L));
-        when(customerTypeDao.selectById(3L)).thenReturn(type(3L, "GROUP"));
+        when(customerDao.selectById(7L)).thenReturn(customer(7L, 1L));
         assertThatThrownBy(() -> validator.validateParent(7L, 1L))
                 .isInstanceOfSatisfying(ScmBusinessException.class, e -> assertThat(codeOf(e)).isEqualTo(40032));
     }
@@ -215,10 +199,9 @@ class CustomerValidatorTest {
     @Test
     @DisplayName("上溯超过最大深度（脏数据环）→ 40032")
     void parentDepthLimitRejected() {
-        when(customerTypeDao.selectById(3L)).thenReturn(type(3L, "GROUP"));
         // 构造 1 → 2 → 3 → ... 的长链，永不收敛
         for (long id = 1; id <= CustomerValidator.MAX_PARENT_DEPTH + 5; id++) {
-            when(customerDao.selectById(id)).thenReturn(customer(id, 3L, id + 1));
+            when(customerDao.selectById(id)).thenReturn(customer(id, id + 1));
         }
         assertThatThrownBy(() -> validator.validateParent(1L, null))
                 .isInstanceOfSatisfying(ScmBusinessException.class, e -> assertThat(codeOf(e)).isEqualTo(40032));
@@ -259,22 +242,14 @@ class CustomerValidatorTest {
         assertThat(CustomerValidator.normalizeOptional(" 13800000000 ")).isEqualTo("13800000000");
     }
 
-    private static CustomerEntity customer(Long id, Long typeId) {
-        return customer(id, typeId, null);
+    private static CustomerEntity customer(Long id) {
+        return customer(id, null);
     }
 
-    private static CustomerEntity customer(Long id, Long typeId, Long parentId) {
+    private static CustomerEntity customer(Long id, Long parentId) {
         CustomerEntity entity = new CustomerEntity();
         entity.setId(id);
-        entity.setCustomerTypeId(typeId);
         entity.setParentCustomerId(parentId);
-        return entity;
-    }
-
-    private static CustomerTypeEntity type(Long id, String typeCode) {
-        CustomerTypeEntity entity = new CustomerTypeEntity();
-        entity.setId(id);
-        entity.setTypeCode(typeCode);
         return entity;
     }
 }

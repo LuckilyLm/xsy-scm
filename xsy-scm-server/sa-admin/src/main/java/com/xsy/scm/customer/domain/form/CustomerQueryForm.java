@@ -22,9 +22,6 @@ public class CustomerQueryForm extends PageParam {
     @Size(max = 150, message = "关键字不能超过150个字符")
     private String keyword;
 
-    @Positive(message = "客户类型必须大于0")
-    private Long customerTypeId;
-
     @Positive(message = "客户分类必须大于0")
     private Long businessCategoryId;
 

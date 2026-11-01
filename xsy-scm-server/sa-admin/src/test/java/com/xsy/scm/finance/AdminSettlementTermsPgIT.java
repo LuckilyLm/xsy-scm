@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AdminSettlementTermsPgIT extends ScmW5PgITBase {
@@ -34,7 +35,6 @@ class AdminSettlementTermsPgIT extends ScmW5PgITBase {
     private Long groupCustomer(Long parent) {
         CustomerAddForm form = new CustomerAddForm();
         form.setName("集团结算验收");
-        form.setCustomerTypeId(customerTypeId(parent == null ? "GROUP" : "ENTERPRISE"));
         form.setSettleMode("GROUP");
         form.setSellerId(1L);
         form.setParentCustomerId(parent);
@@ -103,21 +103,21 @@ class AdminSettlementTermsPgIT extends ScmW5PgITBase {
         Long sibling = groupCustomer(parent);
         CustomerAddForm form = new CustomerAddForm();
         form.setName("非法兄弟结算客户");
-        form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("GROUP");
         form.setParentCustomerId(parent);
         form.setSettlementCustomerId(sibling);
         expectCode(() -> customerService.add(form), 40032);
     }
 
-    @Test void nonGroupParentCannotActAsSettlementCustomerEvenWithDirtyRelationship() {
+    @Test void parentCustomerActsAsSettlementCustomerWhenModeAndRelationshipAreValid() {
         Long parent = newCustomer();
         Long child = newCustomer();
         jdbc.update("UPDATE xsy_customer SET settle_mode='GROUP',parent_customer_id=?,settlement_customer_id=? WHERE id=?",
                 parent, parent, child);
         jdbc.update("UPDATE xsy_customer SET settle_mode='GROUP' WHERE id=?", parent);
         evictMybatisCache();
-        assertThatThrownBy(() -> receipt(child)).isInstanceOf(com.xsy.scm.common.exception.ScmBusinessException.class);
+        // 客户不再区分类型：只要「直接上级 + 双方 GROUP + 上级自身结算」成立，上级就能作为结算主体。
+        assertThatCode(() -> receipt(child)).doesNotThrowAnyException();
     }
 
     @Test void sourceCustomerScopeCannotBeReplacedByGroupRelationship() {

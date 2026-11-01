@@ -66,12 +66,10 @@ class MallSettlementOptionsPgIT extends ScmW5PgITBase {
         assertThat(options(identity(member)).get("COD").getEnabled())
                 .as("成员获明确授权后可使用货到付款，不需要读取共享资金金额").isTrue();
 
-        // 集团主体自己登录商会也不展示共享总额（与钱包概览的既有规则一致）
+        // 集团主体自身结算时没有共享关系，可以看到自己的钱包与授信
         Map<String, MallSettlementOptionVO> groupOptions = options(identity(group));
-        assertThat(groupOptions.get("WALLET").getAmountVisible()).isFalse();
-        assertThat(groupOptions.get("WALLET").getAvailableAmount()).isNull();
-        assertThat(groupOptions.get("CREDIT").getAmountVisible()).isFalse();
-        assertThat(groupOptions.get("CREDIT").getAvailableAmount()).isNull();
+        assertThat(groupOptions.get("WALLET").getAmountVisible()).isTrue();
+        assertThat(groupOptions.get("CREDIT").getAmountVisible()).isTrue();
     }
 
     @Test
@@ -167,7 +165,6 @@ class MallSettlementOptionsPgIT extends ScmW5PgITBase {
     private Long groupCustomer(Long parentId) {
         CustomerAddForm form = new CustomerAddForm();
         form.setName(prefix + "-GROUP-" + UUID.randomUUID().toString().substring(0, 5));
-        form.setCustomerTypeId(customerTypeId(parentId == null ? "GROUP" : "ENTERPRISE"));
         form.setSettleMode("GROUP");
         form.setSellerId(anyEmployeeId());
         form.setParentCustomerId(parentId);

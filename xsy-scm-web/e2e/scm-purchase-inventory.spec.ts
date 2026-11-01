@@ -66,7 +66,7 @@ test.describe('scm-inventory', () => {
    * 菜单项渲染在 portal 里，不在行内。
    */
   async function rowMenu(page: Page, row: Locator, label: string) {
-    const inline = row.getByRole('button', {name: new RegExp(label.split('').join('\s*'))});
+    const inline = row.getByRole('button', {name: new RegExp(label.split('').join('s*'))});
     if ((await inline.count()) > 0) {
       await inline.click();
       return;
@@ -117,11 +117,9 @@ test.describe('scm-inventory', () => {
     // Q12 的前提是「恰好一个启用仓库」，因此这里断言它，而不是假设它。
     const warehouses = await get('/scm/warehouse/list');
     warehouseId = String((warehouses.find((w: any) => w.warehouseCode === 'WH001') ?? warehouses[0]).id);
-    const types = await post('/scm/customer/type/option/list', {});
     // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码。
     customerId = await post('/scm/customer/add', {
       name: name,
-      customerTypeId: types[0].typeId,
       settleMode: 'INDEPENDENT',
       contactName: 'W6验收',
       contactPhone: '13800000000',
@@ -759,10 +757,8 @@ test.describe('scm-inventory-lot', () => {
 
   test('5｜扫码把包装码绑到分拣任务行，回放能回到客户', async ({page}) => {
     // 分拣夹具要等库存存在才能建单：客户 → 确认订单 → 分拣任务 → 录入实拣
-    const types = await post('/scm/customer/type/option/list', {});
     const customerId = await post('/scm/customer/add', {
       name: name + '客户',
-      customerTypeId: types[0].typeId,
       settleMode: 'INDEPENDENT',
       contactName: 'W9验收',
       contactPhone: '13800000000',
@@ -1613,11 +1609,9 @@ test.describe('scm-purchase', () => {
     // 仓库：用 V15 播种的默认仓（W5 只做「新建 / 编辑基础信息」，无启停写入路径 → G1）
     const warehouses = await get('/scm/warehouse/list');
     warehouseId = String((warehouses.find((w: any) => w.warehouseCode === 'WH001') ?? warehouses[0]).id);
-    const types = await post('/scm/customer/type/option/list', {});
     // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码。
     customerId = await post('/scm/customer/add', {
       name: name,
-      customerTypeId: types[0].typeId,
       settleMode: 'INDEPENDENT',
       contactName: 'W5验收',
       contactPhone: '13800000000',

@@ -33,7 +33,6 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     Long customer() {
         var f = new CustomerAddForm();
         f.setName(prefix);
-        f.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         f.setSettleMode("INDEPENDENT");
         f.setSellerId(anyEmployeeId());
         // 送货单导入按客户档案取收货人、电话与地址；其余用例不受影响。

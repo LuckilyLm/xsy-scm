@@ -84,14 +84,9 @@ export async function createSku(
 
 /** 已定位（带 GCJ-02 坐标）的客户 —— 停靠点定位与候选资格都要求坐标完整。 */
 export async function createLocatedCustomer(client: APIRequestContext, runTag: string, tag: string, address: string): Promise<string> {
-  const typeData: any = await call(client, 'post', '/scm/customer/type/option/list', {});
-  const typeList = Array.isArray(typeData) ? typeData : typeData.options ?? typeData.list ?? [];
-  if (!typeList.length) throw new Error('开发库没有客户类型，无法建客户夹具');
-  const customerTypeId = Number(typeList[0].typeId ?? typeList[0].customerTypeId ?? typeList[0].id);
   const id = String(
     await call(client, 'post', '/scm/customer/add', {
       name: `${runTag}客户${tag}`,
-      customerTypeId,
       settleMode: 'INDEPENDENT',
       contactName: '配送夹具联系人',
       contactPhone: '13800000000',

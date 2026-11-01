@@ -35,7 +35,6 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
         @Param("operator") String operator);
 
     /** 活动客户按类型计数，供删除客户类型前检查引用。 */
-    long countActiveByTypeId(@Param("typeId") Long typeId);
 
     /** 加锁读取有效客户行，作为结算与授信的正式依据。 */
     CustomerEntity lock(@Param("customerId") Long customerId);

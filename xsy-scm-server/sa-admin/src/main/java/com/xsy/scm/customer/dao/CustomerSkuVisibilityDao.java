@@ -21,8 +21,6 @@ public interface CustomerSkuVisibilityDao extends BaseMapper<CustomerSkuVisibili
 
     long customerReferences(@Param("id") Long id);
 
-    long typeReferences(@Param("id") Long id);
-
     /** 反向列表读；范围按客户归属（{@code xsy_customer.seller_id}）收窄，传 null 即恒假条件。 */
     List<CustomerSkuVisibilityReverseVO> reverse(Page<?> page, @Param("query") CustomerVisibilityQueryForm query,
         @Param("scope") ScmValueScope scope);

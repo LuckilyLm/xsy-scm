@@ -135,7 +135,7 @@ class CustomerControllerTest {
         when(service.add(any())).thenReturn(42L);
 
         mvc.perform(post("/scm/customer/add").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"测试\",\"customerTypeId\":1}"))
+                        .content("{\"name\":\"测试\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.ok").value(true))

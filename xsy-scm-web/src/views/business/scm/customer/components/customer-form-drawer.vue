@@ -15,11 +15,6 @@
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
-              <a-form-item label="客户类型" name="customerTypeId" :rules="[{required: true, message: '请选择客户类型'}]">
-                <CustomerTypeSelect v-model:value="form.customerTypeId" />
-              </a-form-item>
-            </a-col>
-            <a-col :xs="24" :sm="12">
               <a-form-item label="客户分类" name="businessCategoryId">
                 <BusinessCategoryTreeSelect v-model:value="form.businessCategoryId" scope="CUSTOMER" mode="select" />
               </a-form-item>
@@ -61,13 +56,8 @@
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
-              <a-form-item label="上级集团客户" name="parentCustomerId">
-                <CustomerSelect
-                  v-model:value="form.parentCustomerId"
-                  type-code="GROUP"
-                  :exclude-id="form.customerId"
-                  placeholder="仅集团客户可作为上级"
-                />
+              <a-form-item label="上级客户" name="parentCustomerId">
+                <CustomerSelect v-model:value="form.parentCustomerId" :exclude-id="form.customerId" placeholder="请选择上级客户" />
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
@@ -264,7 +254,6 @@ import type {AreaNode} from '/@/types/business/scm/area';
 import {areaColumnsOf, areaNodesOf} from '../../common/scm-area';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
-import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
 import CustomerGroupSelect from '/@/components/business/scm/customer-group-select/index.vue';
 import BusinessCategoryTreeSelect from '/@/components/business/scm/business-category-tree-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
@@ -355,7 +344,6 @@ async function open(customerId?: ScmId) {
       version: detail.version,
       customerCode: detail.customerCode,
       name: detail.name,
-      customerTypeId: detail.customerTypeId,
       businessCategoryId: detail.businessCategoryId ?? null,
       customerGroupId: detail.customerGroupId ?? null,
       parentCustomerId: detail.parentCustomerId ?? null,

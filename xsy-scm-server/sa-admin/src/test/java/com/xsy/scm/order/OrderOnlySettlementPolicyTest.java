@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.service.CustomerService;
-import com.xsy.scm.customer.service.CustomerTypeService;
 import com.xsy.scm.finance.service.FinanceOrderPayableQueryService;
 import com.xsy.scm.order.constant.OrderErrorCode;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
@@ -16,8 +15,7 @@ import org.junit.jupiter.api.Test;
 
 class OrderOnlySettlementPolicyTest {
     private final OrderSettlementConfirmationPolicy policy = new OrderSettlementConfirmationPolicy(
-        mock(CustomerService.class), mock(CustomerTypeService.class), mock(OrderCreditService.class),
-        mock(FinanceOrderPayableQueryService.class));
+        mock(CustomerService.class), mock(OrderCreditService.class), mock(FinanceOrderPayableQueryService.class));
 
     @Test
     void newOrderRequiresExplicitSupportedSettlement() {

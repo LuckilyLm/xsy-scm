@@ -95,7 +95,6 @@ class MallSettlementUiFixtureManual extends ScmW5PgITBase {
         form.setCustomerId(customerId);
         form.setVersion(customer.getVersion());
         form.setName(customer.getName());
-        form.setCustomerTypeId(customer.getCustomerTypeId());
         form.setSettleMode(customer.getSettleMode());
         form.setSettlementCustomerId(customer.getSettlementCustomerId());
         form.setCreditLimit(customer.getCreditLimit().toPlainString());

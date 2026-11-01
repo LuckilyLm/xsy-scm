@@ -12,10 +12,8 @@ import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.customer.dao.CustomerDao;
 import com.xsy.scm.customer.dao.CustomerGroupDao;
 import com.xsy.scm.customer.dao.CustomerFrequentSkuDao;
-import com.xsy.scm.customer.dao.CustomerTypeDao;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.domain.entity.CustomerGroupEntity;
-import com.xsy.scm.customer.domain.entity.CustomerTypeEntity;
 import com.xsy.scm.customer.domain.form.CustomerQueryForm;
 import com.xsy.scm.customer.domain.vo.CustomerDetailVO;
 import com.xsy.scm.customer.domain.vo.CustomerFrequentSkuVO;
@@ -69,8 +67,6 @@ public class CustomerQueryService {
 
     /** 跨域只读：常购商品从订单表现算，不存副本。 */
     private final CustomerFrequentSkuDao customerFrequentSkuDao;
-
-    private final CustomerTypeDao customerTypeDao;
 
     /** 客户分组名称：列表与详情都按 id 批量补全。 */
     private final CustomerGroupDao customerGroupDao;
@@ -140,7 +136,6 @@ public class CustomerQueryService {
 
         List<CustomerEntity> rows = List.of(entity);
         EnrichmentContext context = context(rows);
-        vo.setCustomerTypeName(context.typeNames().get(entity.getCustomerTypeId()));
         vo.setParentCustomerName(context.customerNames().get(entity.getParentCustomerId()));
         vo.setBusinessCategoryName(context.categoryNames().get(entity.getBusinessCategoryId()));
         vo.setCustomerGroupName(context.groupNames().get(entity.getCustomerGroupId()));
@@ -177,7 +172,7 @@ public class CustomerQueryService {
     }
 
     /**
-     * 客户选择列表按客户数据范围过滤，可按客户类型。客户状态不是供应商的启停状态，不能只按 ENABLED 筛。
+     * 客户选择列表按客户数据范围过滤。客户状态不是供应商的启停状态，不能只按 ENABLED 筛。
      */
     public List<CustomerOptionVO> optionList() {
         var customerScope = dataScopeService.resolve().getCustomerSellerScope();
@@ -186,15 +181,6 @@ public class CustomerQueryService {
         }
         List<CustomerEntity> rows = customerDao.selectOptions(customerScope);
 
-        // 一次批量取回类型编码，避免在循环里查库。
-        Map<Long, String> typeCodes = new HashMap<>();
-        Set<Long> typeIds = collect(rows, CustomerEntity::getCustomerTypeId);
-        if (!typeIds.isEmpty()) {
-            customerTypeDao
-                .selectList(new LambdaQueryWrapper<CustomerTypeEntity>().in(CustomerTypeEntity::getId, typeIds))
-                .forEach(customerType -> typeCodes.put(customerType.getId(), customerType.getTypeCode()));
-        }
-
         List<CustomerOptionVO> list = new ArrayList<>(rows.size());
         for (CustomerEntity row : rows) {
             CustomerOptionVO vo = new CustomerOptionVO();
@@ -202,8 +188,6 @@ public class CustomerQueryService {
             vo.setCustomerCode(row.getCustomerCode());
             vo.setName(row.getName());
             vo.setStatus(row.getStatus());
-            vo.setCustomerTypeId(row.getCustomerTypeId());
-            vo.setCustomerTypeCode(typeCodes.get(row.getCustomerTypeId()));
             list.add(vo);
         }
         return list;
@@ -224,7 +208,6 @@ public class CustomerQueryService {
         CustomerVO vo = new CustomerVO();
         BeanUtils.copyProperties(entity, vo);
         vo.setCustomerId(entity.getId());
-        vo.setCustomerTypeName(context.typeNames().get(entity.getCustomerTypeId()));
         vo.setParentCustomerName(context.customerNames().get(entity.getParentCustomerId()));
         vo.setBusinessCategoryName(context.categoryNames().get(entity.getBusinessCategoryId()));
         vo.setCustomerGroupName(context.groupNames().get(entity.getCustomerGroupId()));
@@ -240,21 +223,13 @@ public class CustomerQueryService {
      */
     private EnrichmentContext context(List<CustomerEntity> rows) {
         if (rows.isEmpty()) {
-            return new EnrichmentContext(Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+            return new EnrichmentContext(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         }
-        Set<Long> typeIds = collect(rows, CustomerEntity::getCustomerTypeId);
         Set<Long> parentIds = collect(rows, CustomerEntity::getParentCustomerId);
         Set<Long> sellerIds = collect(rows, CustomerEntity::getSellerId);
         Set<Long> supplierIds = collect(rows, CustomerEntity::getSupplierId);
         Set<Long> categoryIds = collect(rows, CustomerEntity::getBusinessCategoryId);
         Set<Long> groupIds = collect(rows, CustomerEntity::getCustomerGroupId);
-
-        Map<Long, String> typeNames = new HashMap<>();
-        if (!typeIds.isEmpty()) {
-            customerTypeDao
-                .selectList(new LambdaQueryWrapper<CustomerTypeEntity>().in(CustomerTypeEntity::getId, typeIds))
-                .forEach(customerType -> typeNames.put(customerType.getId(), customerType.getName()));
-        }
 
         Map<Long, String> customerNames = new HashMap<>();
         if (!parentIds.isEmpty()) {
@@ -292,7 +267,7 @@ public class CustomerQueryService {
                 .forEach(group -> groupNames.put(group.getId(), group.getGroupName()));
         }
 
-        return new EnrichmentContext(typeNames, customerNames, employeeNames, supplierNames, categoryNames, groupNames);
+        return new EnrichmentContext(customerNames, employeeNames, supplierNames, categoryNames, groupNames);
     }
 
     private static Set<Long> collect(List<CustomerEntity> rows, Function<CustomerEntity, Long> getter) {
@@ -306,9 +281,8 @@ public class CustomerQueryService {
         return ids;
     }
 
-    /** 补全名称用的五张表，一次构造、多次复用。 */
-    private record EnrichmentContext(Map<Long, String> typeNames, Map<Long, String> customerNames,
-        Map<Long, String> employeeNames, Map<Long, String> supplierNames, Map<Long, String> categoryNames,
-        Map<Long, String> groupNames) {
+    /** 补全名称用的四张表，一次构造、多次复用。 */
+    private record EnrichmentContext(Map<Long, String> customerNames, Map<Long, String> employeeNames,
+        Map<Long, String> supplierNames, Map<Long, String> categoryNames, Map<Long, String> groupNames) {
     }
 }

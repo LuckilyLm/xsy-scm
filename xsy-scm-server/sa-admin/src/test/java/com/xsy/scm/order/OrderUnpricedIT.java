@@ -32,7 +32,6 @@ class OrderUnpricedIT extends ScmW3PgITBase {
     void missingPriceRejectsCreationAndLeavesNoOrder() throws Exception {
         var customer = new CustomerAddForm();
         customer.setName(prefix);
-        customer.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         customer.setSettleMode("INDEPENDENT");
         var c = customers.add(customer);
         var status = new CustomerStatusForm();

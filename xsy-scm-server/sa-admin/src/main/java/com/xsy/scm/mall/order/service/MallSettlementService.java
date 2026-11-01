@@ -4,7 +4,6 @@ import com.xsy.scm.balance.service.CustomerBalanceService;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.manager.CustomerValidator;
 import com.xsy.scm.customer.service.CustomerService;
-import com.xsy.scm.customer.service.CustomerTypeService;
 import com.xsy.scm.finance.domain.vo.CustomerCreditCheckVO;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.order.constant.ScmSharedSettlementPolicy;
@@ -34,7 +33,6 @@ public class MallSettlementService {
     private static final String SHARED_CREDIT_REASON = "集团共享结算，账期由集团主体统一办理";
 
     private final CustomerService customerService;
-    private final CustomerTypeService customerTypeService;
     private final CustomerBalanceService customerBalanceService;
     private final OrderCreditService orderCreditService;
 
@@ -45,8 +43,7 @@ public class MallSettlementService {
             : payableAmount.setScale(SCALE, RoundingMode.HALF_UP);
         CustomerEntity buyer = customerService.requireTradable(customer.getCustomerId());
         CustomerEntity settlement = customerService.requireSettlementCustomer(buyer);
-        boolean shared = CustomerValidator.sharedSettlement(buyer.getId(), settlement.getId(),
-            customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
+        boolean shared = CustomerValidator.sharedSettlement(buyer.getId(), settlement.getId());
 
         List<MallSettlementOptionVO> options = new ArrayList<>();
         options.add(creditOption(settlement, shared, amount));

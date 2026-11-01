@@ -14,24 +14,24 @@
     </resultMap>
 
     <select id="query" resultMap="history">
-        SELECT h.*, c.name customer_name, ct.name customer_type_name, cg.group_name, s.sku_code, s.spec_name,
+        SELECT h.*, c.name customer_name, cg.group_name, s.sku_code, s.spec_name,
             COALESCE(sp.name, gsp.name) product_name
         FROM (SELECT l.id history_id, l.price_type source, l.price_id,
-            ap.customer_id, tp.customer_type_id, gp.group_id,
-            COALESCE(ap.sku_id, tp.sku_id, tp_price.sku_id) sku_id, gp.spu_id,
+            ap.customer_id, gp.group_id,
+            COALESCE(ap.sku_id, tp_price.sku_id) sku_id, gp.spu_id,
             l.operation_type, l.operator, l.created_at operated_at, l.before_data, l.after_data,
-            COALESCE(ap.unit_price, tp.unit_price, gp.unit_price, tp_price.unit_price) current_unit_price,
-            COALESCE(ap.effective_from, tp.effective_from, gp.effective_from,
+            COALESCE(ap.unit_price, gp.unit_price, tp_price.unit_price) current_unit_price,
+            COALESCE(ap.effective_from, gp.effective_from,
             tp_price.start_at) current_effective_from,
-            COALESCE(ap.effective_to, tp.effective_to, gp.effective_to, tp_price.end_at) current_effective_to,
-            COALESCE(ap.deleted, tp.deleted, gp.deleted, tp_price.deleted, TRUE) current_deleted
+            COALESCE(ap.effective_to, gp.effective_to, tp_price.end_at) current_effective_to,
+            COALESCE(ap.deleted, gp.deleted, tp_price.deleted, TRUE) current_deleted
             FROM xsy_price_operation_log l
             LEFT JOIN xsy_customer_agreement_price ap ON l.price_type = 'AGREEMENT' AND ap.id = l.price_id
-            LEFT JOIN xsy_customer_type_price tp ON l.price_type = 'CUSTOMER_TYPE' AND tp.id = l.price_id
             LEFT JOIN xsy_customer_group_price gp ON l.price_type = 'CUSTOMER_GROUP' AND gp.id = l.price_id
-            LEFT JOIN xsy_pricing_time_price tp_price ON l.price_type = 'TIME_PRICE' AND tp_price.id = l.price_id) h
+            LEFT JOIN xsy_pricing_time_price tp_price ON l.price_type = 'TIME_PRICE' AND tp_price.id = l.price_id
+            -- CUSTOMER_TYPE 是已下线的客户类型价，日志 append-only 无法删除，这里不再展示。
+            WHERE l.price_type IN ('AGREEMENT', 'CUSTOMER_GROUP', 'TIME_PRICE')) h
         LEFT JOIN xsy_customer c ON c.id = h.customer_id
-        LEFT JOIN xsy_customer_type ct ON ct.id = h.customer_type_id
         LEFT JOIN xsy_customer_group cg ON cg.id = h.group_id
         LEFT JOIN xsy_product_sku s ON s.id = h.sku_id
         LEFT JOIN xsy_product_spu sp ON sp.id = s.spu_id
@@ -39,7 +39,6 @@
         <where>
             <if test="query.source != null">AND h.source = #{query.source}</if>
             <if test="query.customerId != null">AND h.customer_id = #{query.customerId}</if>
-            <if test="query.customerTypeId != null">AND h.customer_type_id = #{query.customerTypeId}</if>
             <if test="query.groupId != null">AND h.group_id = #{query.groupId}</if>
             <if test="query.skuId != null">AND h.sku_id = #{query.skuId}</if>
             <if test="query.operationType != null">AND h.operation_type = #{query.operationType}</if>

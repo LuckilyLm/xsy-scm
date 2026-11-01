@@ -157,20 +157,10 @@ test.describe('adm-golden-chain-02', () => {
 
   /** 建一个客户并立刻置为合作中（`createLocatedCustomer` 的集团版：可指定结算主体）。 */
   const addCustomer = async (name: string, settleMode: string, settlementCustomerId?: number) => {
-    const typeData = await call<Row>(harness.admin, 'post', '/scm/customer/type/option/list', {});
-    const typeList = (Array.isArray(typeData) ? typeData : (typeData as any).options ?? []) as Row[];
-    expect(typeList.length, '库里没有客户类型，无法建集团夹具').toBeGreaterThan(0);
-    // CustomerValidator.validateParent 要求「上级客户的类型 typeCode 必须是 GROUP」，
-    // 母客户挑错类型就会让子客户建不出来（40032 上级客户不正确）。
-    const wantGroup = settleMode === 'GROUP' && !settlementCustomerId;
-    const groupOption = typeList.find((t) => String(t.typeCode).toUpperCase() === 'GROUP' || String(t.name ?? t.typeName ?? '').includes('集团'));
-    if (wantGroup) expect(groupOption !== undefined, '库里没有 GROUP 客户类型，建不出集团母客户').toBe(true);
-    const chosen = wantGroup ? groupOption : typeList[0];
     // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码；后续按返回 id 使用。
     const id = Number(
       await call(harness.admin, 'post', '/scm/customer/add', {
         name,
-        customerTypeId: Number(chosen.typeId ?? chosen.customerTypeId ?? chosen.id),
         settleMode,
         ...(settlementCustomerId ? {parentCustomerId: settlementCustomerId, settlementCustomerId} : {}),
         contactName: '集团夹具联系人',

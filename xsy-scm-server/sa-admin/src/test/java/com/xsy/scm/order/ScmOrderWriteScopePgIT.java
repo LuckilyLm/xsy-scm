@@ -392,7 +392,6 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
         return as(ownerEmployeeId, Set.of(), () -> {
             CustomerAddForm form = new CustomerAddForm();
             form.setName("写范围测试" + suffix);
-            form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
             form.setSettleMode("INDEPENDENT");
             Long customerId = customerService.add(form);
             CustomerStatusForm status = new CustomerStatusForm();

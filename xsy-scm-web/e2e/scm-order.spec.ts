@@ -585,12 +585,7 @@ test.describe('scm-order', () => {
   const name = 'w4_e2e_' + Date.now().toString(36),
     password = 'W4@' + randomBytes(8).toString('hex');
   const env = {...process.env, W4_E2E_NAME: name, W4_E2E_PASSWORD: password};
-  let api: APIRequestContext,
-    token: string,
-    customerId: string,
-    customerCode: string,
-    skuId: string,
-    standardSkuId: string;
+  let api: APIRequestContext, token: string, customerId: string, customerCode: string, skuId: string, standardSkuId: string;
   let confirmedOrder: any;
   /** 第 1 条用例改价过的订单：第 5 条用例要按它去日志页取那条「修改」记录。 */
   let modifiedOrderNo: string;
@@ -638,19 +633,11 @@ test.describe('scm-order', () => {
    * 列固定为 序号 / 商品名称 / 单位 / 规格 / 实数量 / 销售单价 / 销售金额 / 备注。
    * 用模板自身作为载体写值，保留单元格文本格式，否则 openpyxl 会把数量、单价转成数值。
    */
-  const deliveryDate = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Asia/Shanghai'}).format(
-    new Date(Date.now() + 86_400_000)
-  );
+  const deliveryDate = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Asia/Shanghai'}).format(new Date(Date.now() + 86_400_000));
   const writeNoteScript = `from openpyxl import load_workbook\nimport sys,json\np=sys.argv[1]; meta=json.loads(sys.argv[2]); rows=json.loads(sys.argv[3])\nwb=load_workbook(p); ws=wb.active\nws['B3']=meta['customer']; ws['H3']=meta['date']\nfor r in range(5,67):\n    for c in range(1,9): ws.cell(r,c).value=None\nfor i,row in enumerate(rows,5):\n    for j,v in enumerate(row,1): ws.cell(i,j).value=v\nwb.save(p)`;
   /** 送货单行：序号 / 商品名称 / 单位 / 规格 / 实数量 / 销售单价 / 销售金额 / 备注。 */
   function fillNote(path: string, rows: unknown[][]) {
-    execFileSync('python', [
-      '-c',
-      writeNoteScript,
-      path,
-      JSON.stringify({customer: name, date: deliveryDate}),
-      JSON.stringify(rows),
-    ]);
+    execFileSync('python', ['-c', writeNoteScript, path, JSON.stringify({customer: name, date: deliveryDate}), JSON.stringify(rows)]);
   }
   async function select(page: Page, label: string, value: string) {
     const box = page.locator(`.ant-form-item:has(#form_item_${label}) .ant-select-selector`);
@@ -662,10 +649,8 @@ test.describe('scm-order', () => {
     execFileSync('python', ['../tools/e2e_fixtures.py', 'account-setup', '--wave', 'w4'], {env, stdio: 'pipe'});
     token = await login(name);
     api = await request.newContext({baseURL: apiUrl, extraHTTPHeaders: {Authorization: `Bearer ${token}`}});
-    const types = (await (await api.post('/scm/customer/type/option/list', {data: {}})).json()).data;
     customerId = await post('/scm/customer/add', {
       name: name,
-      customerTypeId: types[0].typeId,
       settleMode: 'INDEPENDENT',
       contactName: 'W4验收',
       contactPhone: '13800000000',
@@ -1166,12 +1151,10 @@ test.describe('scm-order', () => {
   }
   /** 自建合作中客户；名称带独立后缀，保证前端按整名搜索时只命中它自己。 */
   async function cooperatingCustomer(suffix: string) {
-    const types = (await (await api.post('/scm/customer/type/option/list', {data: {}})).json()).data;
     const customerName = name + '_' + suffix;
     // 客户编码由服务端生成：创建载荷不再提交编码（列表/选择器都按名称定位）。
     const id = await post('/scm/customer/add', {
       name: customerName,
-      customerTypeId: types[0].typeId,
       settleMode: 'INDEPENDENT',
       contactName: 'W4验收',
       contactPhone: '13800000000',
@@ -1320,12 +1303,10 @@ test.describe('scm-wave8-log-context', () => {
   let pilotCustomer: {customerId: number; version: number} | undefined;
 
   async function createPilotCustomer() {
-    const typeList = await (await adminApi.post('/scm/customer/type/query', {data: {pageSize: 1, pageNum: 1}})).json();
     const employee = await (await adminApi.post('/employee/query', {data: {pageNum: 1, pageSize: 1}})).json();
     // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码。
     const form = {
       name: account.toUpperCase() + '日志客户',
-      customerTypeId: typeList.code === 0 ? typeList.data.list[0].typeId : 1,
       settleMode: 'INDEPENDENT',
       sellerId: employee.code === 0 ? employee.data.list[0].employeeId : 1,
     };

@@ -161,9 +161,8 @@ class BusinessCategoryServiceIT extends ScmW2PgITBase {
 
         Long referenced = service.add(form("CUSTOMER", prefix + "REF", prefix + "被引用", null));
         jdbc.update(
-            "INSERT INTO xsy_customer (customer_code, name, customer_type_id, business_category_id) "
-                + "VALUES (?, ?, ?, ?)",
-            prefix + "REF-CUS", prefix + "引用客户", customerTypeId("ENTERPRISE"), referenced);
+            "INSERT INTO xsy_customer (customer_code, name, business_category_id) VALUES (?, ?, ?)",
+            prefix + "REF-CUS", prefix + "引用客户", referenced);
 
         BusinessCategoryDeleteForm referencedDelete = new BusinessCategoryDeleteForm();
         referencedDelete.setCategoryId(referenced);

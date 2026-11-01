@@ -518,7 +518,6 @@ test.describe('scm-report', () => {
     customerId = String(
       await post('/scm/customer/add', {
         name,
-        customerTypeId: (await post('/scm/customer/type/option/list', {}))[0].typeId,
         settleMode: 'INDEPENDENT',
         contactName: 'R0验收',
         contactPhone: '13800000000',

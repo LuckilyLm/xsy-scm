@@ -783,7 +783,6 @@ import ts from 'typescript';
   const ORDER_LIST = code('../src/views/business/scm/order/order-list.vue');
   const ROUTE_LIST = code('../src/views/business/scm/delivery/route-list.vue');
   const AGREEMENT_PRICE = code('../src/views/business/scm/pricing/agreement-price-list.vue');
-  const CUSTOMER_TYPE_PRICE = code('../src/views/business/scm/pricing/customer-type-price-list.vue');
   const TABLE_OPERATOR = code('../src/components/support/table-operator/index.vue');
   const TABLE_FILL = code('../src/views/business/scm/common/use-scm-table-fill.ts');
   const SUPPLIER_LIST = code('../src/views/business/scm/supplier/supplier-list.vue');
@@ -983,7 +982,6 @@ import ts from 'typescript';
       [INVENTORY_BALANCE, ['warehouseCode', 'skuCode']],
       [ORDER_LIST, ['customerCodeSnapshot']],
       [AGREEMENT_PRICE, ['customerCode', 'skuCode']],
-      [CUSTOMER_TYPE_PRICE, ['customerTypeCode', 'skuCode']],
     ]) {
       for (const dataIndex of fields) {
         assert.doesNotMatch(page, new RegExp(`dataIndex: '${dataIndex}'`));
@@ -1287,7 +1285,7 @@ import ts from 'typescript';
   test('实体选择器不把编码拼进选项文案', () => {
     const components = `${SRC}components/business/scm/`;
     const offenders = [];
-    for (const name of ['customer-select', 'supplier-select', 'sku-select', 'warehouse-select', 'customer-type-select']) {
+    for (const name of ['customer-select', 'supplier-select', 'sku-select', 'warehouse-select']) {
       const template = readFileSync(`${components}${name}/index.vue`, 'utf8').split('<script')[0];
       if (/Code/.test(template)) offenders.push(name);
     }
@@ -1466,7 +1464,6 @@ import ts from 'typescript';
   test('数量、金额、价格与订单 ID 使用数值输入框', () => {
     const expected = {
       'pricing/components/agreement-price-form-drawer.vue': 'form.formulaParameter',
-      'pricing/customer-type-price-batch.vue': 'record.unitPrice',
       'product/components/product-bundle-editor.vue': 'row.quantityPerBundleSaleUnit',
       'supplier/components/supplier-sku-editable-table.vue': 'draft.referencePrice',
       'finance/finance-receipt-list.vue': 'codOrderIdInput',
@@ -1492,8 +1489,6 @@ import ts from 'typescript';
       return tag;
     };
     const sales = {
-      'pricing/customer-type-price-batch.vue': 'record.unitPrice',
-      'pricing/components/customer-type-price-form-drawer.vue': 'form.unitPrice',
       'pricing/time-price-list.vue': 'form.unitPrice',
       'pricing/components/agreement-price-form-drawer.vue': 'form.unitPriceInput',
       'product/components/product-sku-editable-table.vue': 'sku.marketPrice',

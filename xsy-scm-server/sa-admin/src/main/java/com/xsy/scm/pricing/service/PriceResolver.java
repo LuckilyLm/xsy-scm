@@ -21,7 +21,6 @@ import com.xsy.scm.pricing.domain.vo.PricingCostBasisVO;
 import com.xsy.scm.pricing.constant.AgreementFormulaType;
 import com.xsy.scm.pricing.manager.AgreementFormulaCalculator;
 import com.xsy.scm.common.util.ScmDecimalStrings;
-import com.xsy.scm.pricing.dao.CustomerTypePriceDao;
 import com.xsy.scm.pricing.dao.CustomerGroupPriceDao;
 import com.xsy.scm.pricing.dao.TimePriceDao;
 import com.xsy.scm.pricing.domain.entity.CustomerGroupPriceEntity;
@@ -29,34 +28,28 @@ import com.xsy.scm.pricing.domain.entity.TimePriceEntity;
 import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.pricing.domain.vo.PriceResolveResultVO;
 import com.xsy.scm.pricing.domain.entity.AgreementPriceEntity;
-import com.xsy.scm.pricing.domain.entity.CustomerTypePriceEntity;
 import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
 import com.xsy.scm.pricing.constant.ScmPriceStatusEnum;
 import com.xsy.scm.pricing.constant.ScmUnpricedReasonEnum;
 import com.xsy.scm.pricing.manager.PriceValidation;
 import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import com.xsy.scm.customer.service.CustomerService;
-import com.xsy.scm.customer.dao.CustomerTypeDao;
 import com.xsy.scm.customer.dao.CustomerSkuVisibilityDao;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.service.ProductBundleComponentQueryService;
 import com.xsy.scm.product.domain.entity.ProductBundleComponentEntity;
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 import com.xsy.scm.common.exception.ScmBusinessException;
-import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.customer.constant.CustomerVisibilityPolicy;
 
-import static com.xsy.scm.pricing.constant.PricingErrorCode.PRICE_RESOLVE_CUSTOMER_TYPE_MISSING;
 import static com.xsy.scm.pricing.constant.PricingErrorCode.SKU_NOT_SELLABLE;
 
 @Service
 @RequiredArgsConstructor
 public class PriceResolver {
     private final CustomerService customerService;
-    private final CustomerTypeDao customerTypeDao;
     private final AgreementPriceDao agreementPriceDao;
     private final CustomerGroupPriceDao customerGroupPriceDao;
-    private final CustomerTypePriceDao customerTypePriceDao;
     private final TimePriceDao timePriceDao;
     private final ProductSkuOptionDao productSkuOptionDao;
     private final ProductBundleComponentQueryService productBundleDao;
@@ -69,13 +62,9 @@ public class PriceResolver {
 
     public PriceResolveResultVO preview(Long customerId, List<Long> skuIds, OffsetDateTime requestedAt,
         Long warehouseId) {
-        var customer = customerService.requireTradable(customerId);
-        var customerType = customerTypeDao.selectById(customer.getCustomerTypeId());
-        if (customerType == null || !ScmEnableStatusEnum.ENABLED.name().equals(customerType.getStatus()))
-            throw new ScmBusinessException(PRICE_RESOLVE_CUSTOMER_TYPE_MISSING);
+        customerService.requireTradable(customerId);
         var priceAt = requestedAt == null ? OffsetDateTime.now() : requestedAt;
-        return new PriceResolveResultVO(customerId, customerType.getId(), customerType.getName(), priceAt,
-            resolve(customerId, skuIds, priceAt, warehouseId));
+        return new PriceResolveResultVO(customerId, priceAt, resolve(customerId, skuIds, priceAt, warehouseId));
     }
 
     public List<ResolvedPriceVO> resolve(Long customerId, List<Long> skuIds, OffsetDateTime requestedAt) {
@@ -87,9 +76,6 @@ public class PriceResolver {
         if (skuIds.isEmpty())
             return List.of();
         var customer = customerService.requireTradable(customerId);
-        var customerType = customerTypeDao.selectById(customer.getCustomerTypeId());
-        if (customerType == null || !ScmEnableStatusEnum.ENABLED.name().equals(customerType.getStatus()))
-            throw new ScmBusinessException(PRICE_RESOLVE_CUSTOMER_TYPE_MISSING);
         var priceAt = requestedAt == null ? OffsetDateTime.now() : requestedAt;
         var skuOptionsById = productSkuOptionDao.selectByIds(skuIds).stream()
             .collect(Collectors.toMap(ProductSkuOptionVO::getSkuId, Function.identity()));
@@ -138,10 +124,7 @@ public class PriceResolver {
                 : customerGroupPriceDao.selectEffective(customerGroupId, spuIds, priceAt).stream()
                     .collect(Collectors.toMap(price -> productUnitKey(price.getSpuId(), price.getSaleUnit()),
                         Function.identity(), (first, next) -> first));
-        var customerTypePricesBySkuId = customerTypePriceDao.selectEffective(customerType.getId(), skuIds, priceAt)
-            .stream()
-            .collect(Collectors.toMap(CustomerTypePriceEntity::getSkuId, Function.identity(), (first, next) -> first));
-        // 时价压在客户类型价之下、市场价之上：签了协议或分了类的客户不该被临时价顶掉
+        // 时价压在协议价与分组价之下、市场价之上：签了协议或分了组的客户不该被临时价顶掉
         var timePricesBySkuId = timePriceDao.selectEffective(skuIds, priceAt).stream()
             .collect(Collectors.toMap(TimePriceEntity::getSkuId, Function.identity(), (first, next) -> first));
         boolean allEnabledVisibility = CustomerVisibilityPolicy.ALL_ENABLED
@@ -261,10 +244,6 @@ public class PriceResolver {
                 var groupPrice = groupPricesByProductUnit
                     .get(productUnitKey(skuOption.getSpuId(), skuOption.getSaleUnit()));
                 resolvedPrice.price(groupPrice.getUnitPrice(), ScmPriceSourceEnum.CUSTOMER_GROUP, groupPrice.getId());
-            } else if (customerTypePricesBySkuId.containsKey(skuId)) {
-                var customerTypePrice = customerTypePricesBySkuId.get(skuId);
-                resolvedPrice.price(customerTypePrice.getUnitPrice(), ScmPriceSourceEnum.CUSTOMER_TYPE,
-                    customerTypePrice.getId());
             } else if (timePricesBySkuId.containsKey(skuId)) {
                 var timePrice = timePricesBySkuId.get(skuId);
                 resolvedPrice.price(timePrice.getUnitPrice(), ScmPriceSourceEnum.TIME_PRICE, timePrice.getId());
