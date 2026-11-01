@@ -24,6 +24,7 @@ import {useUserStore} from '/@/store/modules/system/user';
 import 'ant-design-vue/dist/reset.css';
 import '/@/theme/index.less';
 import {installTableCellTooltip} from '/@/theme/scm/table-cell-tooltip';
+import {installNumericInputGuard} from '/@/utils/scm-numeric-input';
 import {localRead} from '/@/utils/local-util';
 import LocalStorageKeyConst from '/@/constants/local-storage-key-const';
 import '/@/utils/ployfill';
@@ -92,6 +93,8 @@ async function initVue() {
   app.config.globalProperties.$lodash = lodash;
   // 表格单元格被省略号截断时，悬浮给出全文提示（主题层让单元格默认不换行）
   installTableCellTooltip();
+  // 数值输入框只接受数字，字母等文本在按键阶段就被挡住
+  installNumericInputGuard();
   //挂载
   app.mount('#app');
 }

@@ -71,22 +71,27 @@
               </div>
               <div class="product-form-field">
                 <a-form-item label="储存方式" name="storageMethod" class="app-drawer-field--compact">
-                  <a-select v-model:value="form.storageMethod" :options="STORAGE_METHOD_ENUM" allow-clear placeholder="未维护" />
+                  <a-select v-model:value="form.storageMethod" :options="STORAGE_METHOD_ENUM" allow-clear placeholder="未设置" />
                 </a-form-item>
               </div>
               <div class="product-form-field">
-                <a-form-item label="保质期" name="shelfLifeDays" class="app-drawer-field--compact">
-                  <a-input-number v-model:value="form.shelfLifeDays" :min="0" :max="36500" :precision="0" addon-after="天" placeholder="未维护" />
+                <a-form-item
+                  label="保质期"
+                  name="shelfLifeDays"
+                  class="app-drawer-field--compact"
+                  :rules="[rangeRule(0, 36500, '保质期须为 0–36500 天')]"
+                >
+                  <a-input-number v-model:value="form.shelfLifeDays" :precision="0" addon-after="天" placeholder="未设置" />
                 </a-form-item>
               </div>
               <div class="product-form-field">
-                <a-form-item label="损耗率" name="lossRate" class="app-drawer-field--compact">
-                  <a-input-number v-model:value="form.lossRate" :min="0" :max="100" :precision="4" :controls="false" addon-after="%" />
+                <a-form-item label="损耗率" name="lossRate" class="app-drawer-field--compact" :rules="[rangeRule(0, 100, '损耗率须在 0–100 之间')]">
+                  <a-input-number v-model:value="form.lossRate" :precision="4" :controls="false" addon-after="%" />
                 </a-form-item>
               </div>
               <div class="product-form-field">
-                <a-form-item label="税率" name="taxRate" class="app-drawer-field--compact">
-                  <a-input-number v-model:value="form.taxRate" :min="0" :max="100" :precision="4" :controls="false" addon-after="%" />
+                <a-form-item label="税率" name="taxRate" class="app-drawer-field--compact" :rules="[rangeRule(0, 100, '税率须在 0–100 之间')]">
+                  <a-input-number v-model:value="form.taxRate" :precision="4" :controls="false" addon-after="%" />
                 </a-form-item>
               </div>
               <div class="product-form-field">
@@ -241,6 +246,14 @@ const canEditImages = computed(
   () => user.administratorFlag || user.getPointList?.some((point: {webPerms: string}) => point.webPerms === 'scm:product:image')
 );
 let session = 0;
+
+/** 数值区间规则；空值表示未设置，不在这里判必填。 */
+function rangeRule(min: number, max: number, message: string) {
+  return {
+    validator: (_rule: unknown, value: number | null | undefined) =>
+      value === null || value === undefined || (value >= min && value <= max) ? Promise.resolve() : Promise.reject(new Error(message)),
+  };
+}
 
 function tagLabel(tagId: ProductId) {
   return tagOptions.value.find((option) => String(option.value) === String(tagId))?.label ?? `#${tagId}`;

@@ -43,12 +43,13 @@ public class ProductUomService {
     }
 
     /**
-     * 下拉只出启用单位；停用单位不再出现在新配置里，历史商品字段不受影响。
+     * 商品表单的单位下拉数据。
+     *
+     * <p>
+     * 启停两种状态都返回：选择项由前端只取启用单位，但商品上已存的单位名必须能在这里查到是不是「停用」， 否则页面只能把停用值当成未知值展示。新建配置仍由 {@link #assertUsable} 拦住停用单位。
      */
     public List<ProductUomVO> options() {
-        var query = new ProductAssistantQueryForm();
-        query.setStatus(ScmEnableStatusEnum.ENABLED.name());
-        return productUomDao.selectWithReference(query);
+        return productUomDao.selectWithReference(new ProductAssistantQueryForm());
     }
 
     /**

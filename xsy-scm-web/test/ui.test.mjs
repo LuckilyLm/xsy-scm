@@ -1477,6 +1477,37 @@ import ts from 'typescript';
     }
   });
 
+  test('数值输入框挡住非数字文本，超范围时给出提示', () => {
+    const guard = readFileSync(new URL('../src/utils/scm-numeric-input.ts', import.meta.url), 'utf8');
+    assert.match(guard, /classList\.contains\('ant-input-number-input'\)/, '数值输入框要按 antd 的输入框类名识别');
+    assert.match(guard, /event\.preventDefault\(\)/, '非数字字符要被拦在输入框外');
+    const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
+    assert.match(main, /installNumericInputGuard\(\)/, '全局录入约束要随应用启动安装');
+
+    const byName = new Map(files);
+    // 规格行：超出范围留在原位并给出红色提示，不再由输入框静默夹取
+    const sku = byName.get('product/components/product-sku-editable-table.vue');
+    assert.ok(sku, '缺少页面：product/components/product-sku-editable-table.vue');
+    assert.match(sku, /fieldError\(marketPriceError\(sku\.marketPrice\)\)/);
+    assert.match(sku, /fieldError\(mallQuantityError\(sku\.mallMinQuantity\)\)/);
+    assert.match(sku, /fieldError\(mallQuantityError\(sku\.mallQuantityStep\)\)/);
+    const skuInput = (sku.match(/<a-input-number\b[\s\S]*?\/>/g) ?? []).find((tag) => tag.includes('sku.marketPrice'));
+    assert.doesNotMatch(skuInput, /:min=/, '市场价的下限交给校验提示，输入框不再静默改成 0');
+
+    // 商品属性：保质期、损耗率、税率都带区间规则
+    const drawer = byName.get('product/components/product-form-drawer.vue');
+    assert.ok(drawer, '缺少页面：product/components/product-form-drawer.vue');
+    assert.match(drawer, /rangeRule\(0, 36500, '保质期须为 0–36500 天'\)/);
+    assert.match(drawer, /rangeRule\(0, 100, '损耗率须在 0–100 之间'\)/);
+    assert.match(drawer, /rangeRule\(0, 100, '税率须在 0–100 之间'\)/);
+
+    // 上限与后端存储精度对齐，提交前同样会拦住
+    const model = readFileSync(new URL('../src/views/business/scm/product/product-form-model.ts', import.meta.url), 'utf8');
+    assert.match(model, /MARKET_PRICE_MAX = '99999999\.99'/);
+    assert.match(model, /MALL_QUANTITY_MAX = '99999999\.9999'/);
+    assert.match(model, /parsed\.gt\(MARKET_PRICE_MAX\)/);
+  });
+
   test('货到付款收款按订单号查询，表单不暴露内部订单 ID', () => {
     const source = new Map(files).get('finance/finance-receipt-list.vue');
     assert.ok(source, '缺少页面：finance/finance-receipt-list.vue');

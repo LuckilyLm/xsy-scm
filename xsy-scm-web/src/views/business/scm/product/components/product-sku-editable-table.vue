@@ -39,11 +39,10 @@
           </a-form-item>
         </div>
         <div class="sku-field-cell">
-          <a-form-item label="市场价" required class="sku-field">
+          <a-form-item label="市场价" required class="sku-field" v-bind="fieldError(marketPriceError(sku.marketPrice))">
             <a-input-number
               :value="sku.marketPrice"
               string-mode
-              :min="0"
               :precision="2"
               step="0.01"
               :controls="false"
@@ -55,11 +54,15 @@
           </a-form-item>
         </div>
         <div class="sku-field-cell">
-          <a-form-item :label="`商城起订量（${sku.saleUnit || '销售单位'}）`" required class="sku-field">
+          <a-form-item
+            :label="`商城起订量（${sku.saleUnit || '销售单位'}）`"
+            required
+            class="sku-field"
+            v-bind="fieldError(mallQuantityError(sku.mallMinQuantity))"
+          >
             <a-input-number
               :value="sku.mallMinQuantity"
               string-mode
-              :min="'0.0001'"
               :step="'1'"
               :controls="false"
               style="width: 100%"
@@ -69,11 +72,15 @@
           </a-form-item>
         </div>
         <div class="sku-field-cell">
-          <a-form-item :label="`商城递增量（${sku.saleUnit || '销售单位'}）`" required class="sku-field">
+          <a-form-item
+            :label="`商城递增量（${sku.saleUnit || '销售单位'}）`"
+            required
+            class="sku-field"
+            v-bind="fieldError(mallQuantityError(sku.mallQuantityStep))"
+          >
             <a-input-number
               :value="sku.mallQuantityStep"
               string-mode
-              :min="'0.0001'"
               :step="'1'"
               :controls="false"
               style="width: 100%"
@@ -140,20 +147,27 @@ import {message} from 'ant-design-vue';
 import {DeleteOutlined, PlusOutlined} from '@ant-design/icons-vue';
 import type {ProductSku, ProductUom} from '/@/types/business/scm/product';
 import {PRODUCT_TYPE_ENUM, SHELF_STATUS_ENUM} from '/@/constants/business/scm/product-const';
-import {emptySku, removeSku, trimQuantity} from '../product-form-model';
+import {emptySku, mallQuantityError, marketPriceError, removeSku, trimQuantity} from '../product-form-model';
 
 const props = defineProps<{modelValue: ProductSku[]; units: ProductUom[]}>();
 const emit = defineEmits<{'update:modelValue': [rows: ProductSku[]]}>();
-// 字典只给启用单位；已停用或字典外的当前值也要留在下拉里。
+
+/** 把校验文案挂成表单项的红色提示；没有问题时不给这两个属性，避免挤占布局。 */
+function fieldError(message: string | undefined) {
+  return message ? {validateStatus: 'error' as const, help: message} : {};
+}
+
+// 下拉只给启用单位；商品上存过的停用单位保留在列表里并标注「已停用」，
+// 不在字典里（历史手填）的值按原名显示，不向使用者暴露内部状态说明。
 const unitOptions = computed(() => {
-  const known = new Set(props.units.map((unit) => unit.name));
-  const outside = [...new Set(props.modelValue.map((sku) => sku.saleUnit).filter((name) => name && !known.has(name)))];
+  const enabled = props.units.filter((unit) => unit.status !== 'DISABLED');
+  const known = new Map(props.units.map((unit) => [unit.name, unit]));
+  const current = [...new Set(props.modelValue.map((sku) => sku.saleUnit).filter(Boolean))];
   return [
-    ...props.units.map((unit) => ({value: unit.name, label: unit.name})),
-    ...outside.map((name) => ({
-      value: name,
-      label: `${name}（字典外/已停用）`,
-    })),
+    ...enabled.map((unit) => ({value: unit.name, label: unit.name})),
+    ...current
+      .filter((name) => !enabled.some((unit) => unit.name === name))
+      .map((name) => ({value: name, label: known.has(name) ? `${name}（已停用）` : name})),
   ];
 });
 function makeDefault(index: number) {

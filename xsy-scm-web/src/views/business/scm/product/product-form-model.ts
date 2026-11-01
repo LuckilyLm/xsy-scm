@@ -19,27 +19,40 @@ export function trimQuantity(value: string | null | undefined): string {
   }
 }
 
-/** 数量必须大于 0，且不超过四位小数。 */
-function isQuantity(value: string | null | undefined): boolean {
-  if (value === null || value === undefined || value === '') return false;
+/**
+ * 金额与数量的录入上限。
+ *
+ * 库里是 NUMERIC(18,4)，这里按常见业务量级卡住多敲的零：上限以内的值原样提交，
+ * 超出的给出提示，而不是失焦时静默改成别的数字。
+ */
+export const MARKET_PRICE_MAX = '99999999.99';
+export const MALL_QUANTITY_MAX = '99999999.9999';
+
+function decimalOf(value: string | null | undefined): Decimal | undefined {
+  if (value === null || value === undefined || value === '') return undefined;
   try {
     const parsed = new Decimal(value);
-    return parsed.isFinite() && parsed.gt(0) && parsed.decimalPlaces() <= 4;
+    return parsed.isFinite() ? parsed : undefined;
   } catch {
-    return false;
+    return undefined;
   }
 }
 
-/** 市场价允许两位新录入值，也放行历史四位值；三位和五位以上都拒绝。 */
-function isMarketPrice(value: string | null | undefined): boolean {
-  if (value === null || value === undefined || value === '') return false;
-  try {
-    const parsed = new Decimal(value);
-    const places = parsed.decimalPlaces();
-    return parsed.isFinite() && !parsed.isNegative() && (places <= 2 || places === 4);
-  } catch {
-    return false;
-  }
+/** 市场价的校验文案，通过返回 undefined；规格行提示和提交前校验共用。 */
+export function marketPriceError(value: string | null | undefined): string | undefined {
+  const parsed = decimalOf(value);
+  if (!parsed) return '市场价须为非负数，最多两位小数';
+  // 允许两位的新录入值，也放行历史四位值；三位和五位以上都拒绝
+  const places = parsed.decimalPlaces();
+  if (parsed.isNegative() || (places > 2 && places !== 4)) return '市场价须为非负数，最多两位小数';
+  return parsed.gt(MARKET_PRICE_MAX) ? `市场价不能超过 ${MARKET_PRICE_MAX}` : undefined;
+}
+
+/** 商城起订量、递增量的校验文案；字段名由调用方拼在前面。 */
+export function mallQuantityError(value: string | null | undefined): string | undefined {
+  const parsed = decimalOf(value);
+  if (!parsed || !parsed.gt(0) || parsed.decimalPlaces() > 4) return '须大于 0，最多四位小数';
+  return parsed.gt(MALL_QUANTITY_MAX) ? `不能超过 ${MALL_QUANTITY_MAX}` : undefined;
 }
 
 export function emptySku(sortOrder = 0, defaultFlag = false): ProductSku {
@@ -138,10 +151,13 @@ export function validateProduct(form: ProductForm): string | undefined {
   for (const [index, sku] of form.skuList.entries()) {
     const label = `第 ${index + 1} 个商品规格：`;
     if (!sku.specName.trim() || !sku.saleUnit.trim()) return label + '请填写商品规格名称和单位';
-    if (!isMarketPrice(sku.marketPrice)) return label + '市场价须为非负数，最多两位小数';
+    const priceError = marketPriceError(sku.marketPrice);
+    if (priceError) return label + priceError;
     // 数量允许按实际需要写小数（斤、kg），但不能为 0，也不能超过后端的四位精度
-    if (!isQuantity(sku.mallMinQuantity)) return label + '商城起订量须大于 0，最多四位小数';
-    if (!isQuantity(sku.mallQuantityStep)) return label + '商城递增量须大于 0，最多四位小数';
+    const minQuantityError = mallQuantityError(sku.mallMinQuantity);
+    if (minQuantityError) return label + '商城起订量' + minQuantityError;
+    const stepError = mallQuantityError(sku.mallQuantityStep);
+    if (stepError) return label + '商城递增量' + stepError;
     const barcode = sku.barcode?.trim();
     if (barcode && barcodes.has(barcode)) return label + '条码重复';
     if (barcode) barcodes.add(barcode);
