@@ -97,20 +97,21 @@ class ScmPurchaseMetricsConsistencyPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("草稿采购单不计入采购额")
-    void draftOrderIsNotCounted() {
+    @DisplayName("新建采购单即已提交，直接计入采购额")
+    void createdOrderCountsImmediately() {
         Long skuId = newOnShelfSku("PQB");
         Long supplierId = newPurchasableSupplier("PQB", skuId);
         ScmDataScopeContext scope = dataScopeService.resolve();
         PurchaseMetrics before = metricsService.todayPurchase(scope);
 
+        // 采购单草稿态已下线：创建即提交，不再存在「草稿不计入」这一步。
         createDraftOrder("PQB", supplierId, skuId, "1.0000", "200.0000");
         evictMybatisCache();
 
         PurchaseMetrics after = metricsService.todayPurchase(scope);
-        assertThat(after.todayPurchaseAmount()).as("草稿还没进入履约链路，金额不该变")
-                .isEqualByComparingTo(before.todayPurchaseAmount());
-        assertThat(after.todayPurchaseOrderCount()).as("单数同理").isEqualTo(before.todayPurchaseOrderCount());
+        assertThat(after.todayPurchaseAmount()).as("新建即提交，金额立即进入今天采购额")
+                .isEqualByComparingTo(before.todayPurchaseAmount().add(new BigDecimal("200.0000")));
+        assertThat(after.todayPurchaseOrderCount()).as("单数同理").isEqualTo(before.todayPurchaseOrderCount() + 1);
     }
 
     @Test

@@ -591,10 +591,10 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     void financePublishesOnlyImplementedCapabilities() {
         assertThat(jdbc.queryForList(
                 "SELECT menu_id FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 ORDER BY menu_id", Long.class))
-                .as("财务段只允许目录、六个实际页面与十九个真实能力权限")
+                .as("财务段只允许目录、六个实际页面与二十五个真实能力权限")
                 .containsExactly(1500L, 1501L, 1502L, 1503L, 1504L, 1505L, 1506L, 1511L, 1512L, 1513L, 1514L,
                         1515L, 1521L, 1522L, 1523L, 1524L, 1525L, 1526L, 1527L, 1528L, 1529L, 1531L, 1532L,
-                        1533L, 1534L, 1535L);
+                        1533L, 1534L, 1535L, 1536L, 1537L, 1538L, 1539L, 1540L, 1541L);
 
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND menu_type = 2",
@@ -632,8 +632,9 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertThat(jdbc.queryForList(
                 "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms LIKE 'scm:finance:%' ORDER BY api_perms",
                 String.class))
-                .as("只发布已实现的登记、查询、核销、红字、抹零、过账、反向与导出权限")
-                .containsExactly("scm:finance:export", "scm:finance:payable:query", "scm:finance:payable:red",
+                .as("只发布已实现的登记、查询、核销、红字、抹零、过账、客户成本费用、反向与导出权限")
+                .containsExactly("scm:finance:expense:add", "scm:finance:expense:query", "scm:finance:expense:void",
+                        "scm:finance:export", "scm:finance:payable:query", "scm:finance:payable:red",
                         "scm:finance:payment:add", "scm:finance:payment:query", "scm:finance:payment:reverse",
                         "scm:finance:posting:add", "scm:finance:posting:query", "scm:finance:posting:update",
                         "scm:finance:posting:void",
@@ -652,8 +653,8 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "WHERE m.menu_id BETWEEN 1500 AND 1599", Integer.class))
-                .as("财务段二十六行菜单（目录、六页面、十九权限）各授超管兜底与 SCM_FINANCE，共 26 × 2 行")
-                .isEqualTo(52);
+                .as("财务段三十二行菜单（目录、六页面、二十五权限）各授超管兜底与 SCM_FINANCE，共 32 × 2 行")
+                .isEqualTo(64);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "JOIN t_role r ON r.role_id = rm.role_id "

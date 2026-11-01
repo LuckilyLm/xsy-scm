@@ -172,13 +172,28 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
     }
 
     /**
+     * 本类必须使用「不允许负库存」的仓库：V218 把种子仓 WH001 改成允许负库存后，
+     * 出库不再受「现有量 − 预留量」门槛约束，这个竞态命题就无从验证。
+     * 独占仓库同时避免本类的余额行污染共享种子仓。
+     */
+    private Long concurrencyWarehouseId;
+
+    @Override
+    protected Long fixtureWarehouseId() {
+        if (concurrencyWarehouseId == null) {
+            concurrencyWarehouseId = newWarehouse("rc-gate");
+        }
+        return concurrencyWarehouseId;
+    }
+
+    /**
      * 入库 {@code quantity} 后的 (仓库, SKU)，物理量已落账。
      */
     private Object[] stocked(String suffix, String quantity) {
         Long skuId = newSkuOfType(suffix, "NON_STANDARD", "ON_SHELF");
         W6Fixture fixture = inboundFixture(suffix, skuId, quantity);
         confirmReceipt(fixture.receipt().getId(), quantity);
-        Long warehouseId = seedWarehouseId();
+        Long warehouseId = fixtureWarehouseId();
         assertThat(balanceRow(warehouseId, skuId)).as("前置：造数入库未落账").isNotNull();
         return new Object[]{warehouseId, skuId};
     }

@@ -23,8 +23,9 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
         // 商城配送仓映射追加 idx_sales_order_mall_delivery_warehouse；
         // V184 为发车满 7 天自动锁单追加部分索引 idx_sales_order_auto_lock；
         // V202/V204 为独立退货追加 idx_order_return_customer_created、uk_order_return_item_sku_active，
-        // 以及订单日志按客户检索的 idx_order_operation_log_customer_created = 34。
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_indexes WHERE schemaname=current_schema() AND tablename IN (" + TABLES + ") AND indexname NOT LIKE '%_pkey'", Integer.class)).isEqualTo(34);
+        // 以及订单日志按客户检索的 idx_order_operation_log_customer_created；
+        // V220 又为换货关联追加 uk_order_return_replacement = 35。
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_indexes WHERE schemaname=current_schema() AND tablename IN (" + TABLES + ") AND indexname NOT LIKE '%_pkey'", Integer.class)).isEqualTo(35);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.sequences WHERE sequence_schema=current_schema() AND sequence_name IN ('sales_order_no_seq','order_return_no_seq','order_refund_no_seq')", Integer.class)).isEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN (" + TABLES + ") AND column_name IN ('fulfillment_status','pay_status','actual_weight')", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN ('xsy_sales_order','xsy_sales_order_item') AND column_name IN ('draft_unit_price','draft_price_source','ordered_line_amount','ordered_total_amount') AND is_nullable='YES'", Integer.class)).isEqualTo(4);
@@ -37,7 +38,8 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
     @Test
     void permissionMenusGrantedAndBusinessLogsHaveNoMutationMapper() {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM t_menu WHERE menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642)", Integer.class)).isEqualTo(23);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM t_role_menu WHERE role_id=1 AND menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642)", Integer.class)).isEqualTo(23);
+        // 614「提交」随订单草稿态下线（V221）保留菜单行但收回超管授权，因此授权数比菜单少一条。
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM t_role_menu WHERE role_id=1 AND menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642)", Integer.class)).isEqualTo(22);
         assertThat(jdbc.queryForObject("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='ck_sales_order_source'", String.class)).contains("IMPORT");
         // 订单日志 DAO 只允许「追加 + 读」：listByOrderId 是商城订单时间线的只读入口，
         // 一旦出现 update / delete 方法，日志就不再是不可改的事实，这里会立刻变红。
