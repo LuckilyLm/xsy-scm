@@ -92,6 +92,7 @@ import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ORIGINAL_INVALID;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_PENDING_EDIT_BLOCKED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_REPRICE_REQUIRED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RESERVE_STATE_INVALID;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_SIGNED_EDIT_BLOCKED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_SORTED_ITEM_CHANGE_BLOCKED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_STATE_INVALID;
 
@@ -351,6 +352,10 @@ public class SalesOrderService {
             throw new ScmBusinessException(ORDER_PENDING_EDIT_BLOCKED);
         // 已确认订单：优惠在确认时已冻结并分摊到行，直接改金额会让分摊与单据对不上，只能取消重下或加单。
         var confirmed = ScmOrderStatusEnum.CONFIRMED.name().equals(salesOrder.getStatus());
+        // 签收后应收已按出库实发量生成，再改价格或数量会让送货单、订单结算额与账面应收三份数不一致。
+        // 差异只能走退货/红字更正，不能在这里悄悄覆盖；异常签收同样属于已交付事实。
+        if (confirmed && salesOrderDao.hasSignedFact(salesOrder.getId()))
+            throw new ScmBusinessException(ORDER_SIGNED_EDIT_BLOCKED);
         if (confirmed && promotionDiscountService.getByOrder(salesOrder.getId()) != null)
             throw new ScmBusinessException(ORDER_DISCOUNT_EDIT_BLOCKED);
         // 客户和地址在创建时确定，编辑不能替换。

@@ -420,7 +420,7 @@ async function save(continueCreating = false) {
       message.success('换货单已创建，请按正常订单流程确认');
     } else {
       const result = await orderApi.createAndProgress(f);
-      message.success(result.data.status === 'CONFIRMED' ? '订单已创建并确认' : '订单已创建，非标品等待称重后确认');
+      message.success(result.data.status === 'CONFIRMED' ? '订单已创建并确认' : '订单已创建，待确认');
     }
     emit('saved');
     if (isNew && !exchangeReturnId.value && continueCreating && visible.value) {

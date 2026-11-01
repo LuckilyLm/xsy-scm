@@ -113,6 +113,10 @@
       otherReserved = reserved_quantity - selectedOrderReservedQuantity，
       本批可用 = quantity - otherReserved = available_quantity + selectedOrderReservedQuantity，
       差额（stock_comparison_gap）= max(本批需求 - 本批可用, 0)。
+
+      负库存不作为额外需求叠加：账面余额为负（−100 斤）只说明历史欠账，不能把 −100 再算进本批
+      30 斤的缺口里变成 130。因此「本批可用」先按 0 下限截断，缺口只从本批订单需求里算；
+      余额本身仍按原值展示，便于核对负库存。生成需求与预览共用这一口径。
       selectedOrderReservedQuantity 只读既有预留事实 xsy_inventory_reservation（ACTIVE +
       SALES_ORDER_ITEM + 来源单落在同一确认窗口），不新造第二套预留记录。它按 oi.sku_id 相关，
       组内恒等，因此写成标量子查询而不是普通 LEFT JOIN —— 后者会让
@@ -127,18 +131,20 @@
     -->
     <select id="summaryPreview" resultType="com.xsy.scm.purchase.domain.vo.PurchaseDemandSummaryVO">
         SELECT s.*, (s.reserved_quantity - s.selected_order_reserved_quantity) AS other_reserved_quantity,
-            (s.available_quantity + s.selected_order_reserved_quantity) AS stock_available_for_selected_orders,
-            CASE WHEN s.inventory_unit IS NOT NULL
-            AND s.inventory_unit &lt;&gt; s.demand_unit THEN NULL ELSE GREATEST(s.order_demand_quantity - (
-            s.available_quantity + s.selected_order_reserved_quantity), 0) END AS stock_comparison_gap,
+            GREATEST(s.available_quantity + s.selected_order_reserved_quantity, 0) AS
+            stock_available_for_selected_orders,
+            CASE WHEN s.inventory_unit IS NOT NULL AND s.inventory_unit &lt;&gt; s.demand_unit THEN NULL
+            ELSE GREATEST(s.order_demand_quantity - GREATEST(s.available_quantity +
+            s.selected_order_reserved_quantity, 0), 0) END AS stock_comparison_gap,
             s.in_transit_quantity, s.purchase_coverage_quantity, CASE WHEN s.inventory_unit IS NOT NULL
-            AND s.inventory_unit &lt;&gt; s.demand_unit THEN NULL ELSE GREATEST(s.order_demand_quantity - (
-            s.available_quantity + s.selected_order_reserved_quantity) - s.in_transit_quantity -
+            AND s.inventory_unit &lt;&gt; s.demand_unit THEN NULL ELSE GREATEST(s.order_demand_quantity -
+            GREATEST(s.available_quantity + s.selected_order_reserved_quantity, 0) - s.in_transit_quantity -
             s.purchase_coverage_quantity, 0) END AS net_purchase_gap,
             CASE WHEN s.inventory_unit IS NULL THEN 'NO_BALANCE' WHEN s.inventory_unit &lt;&gt; s.demand_unit THEN
-            'UNIT_MISMATCH' WHEN (s.available_quantity + s.selected_order_reserved_quantity + s.in_transit_quantity +
-            s.purchase_coverage_quantity) = 0 THEN 'ZERO_STOCK' WHEN s.order_demand_quantity &gt; (s.available_quantity
-            + s.selected_order_reserved_quantity + s.in_transit_quantity + s.purchase_coverage_quantity) THEN 'SHORTAGE'
+            'UNIT_MISMATCH' WHEN (GREATEST(s.available_quantity + s.selected_order_reserved_quantity, 0)
+            + s.in_transit_quantity + s.purchase_coverage_quantity) = 0 THEN 'ZERO_STOCK' WHEN
+            s.order_demand_quantity &gt; (GREATEST(s.available_quantity + s.selected_order_reserved_quantity, 0)
+            + s.in_transit_quantity + s.purchase_coverage_quantity) THEN 'SHORTAGE'
             ELSE 'STOCK_ENOUGH' END AS calculation_status
         FROM (SELECT oi.sku_id, k.sku_code, p.name AS product_name, k.spec_name AS sku_name, cat.name AS category_name,
             oi.sale_unit_snapshot AS demand_unit, b.unit AS inventory_unit,

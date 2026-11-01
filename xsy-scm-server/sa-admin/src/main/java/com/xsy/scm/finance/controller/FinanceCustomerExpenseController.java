@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/scm/finance/customer-expense")
 @RequiredArgsConstructor
@@ -35,6 +37,18 @@ public class FinanceCustomerExpenseController {
     public ResponseDTO<FinanceCustomerExpenseVO> add(@Valid @RequestBody FinanceCustomerExpenseForm.Add form,
         @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(expenseService.add(form, key));
+    }
+
+    /**
+     * 同一月份多客户一次登记；整批一个幂等键，任一行失败全部回滚。
+     */
+    @PostMapping("/batch-add")
+    @SaCheckPermission(FinancePermission.EXPENSE_ADD)
+    @OperateLog
+    public ResponseDTO<List<FinanceCustomerExpenseVO>> batchAdd(
+        @Valid @RequestBody FinanceCustomerExpenseForm.BatchAdd form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(expenseService.addBatch(form, key));
     }
 
     @PostMapping("/void")

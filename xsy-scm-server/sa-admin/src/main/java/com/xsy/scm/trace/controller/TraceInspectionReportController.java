@@ -6,12 +6,14 @@ import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.trace.domain.form.TraceInspectionReportActionForm;
 import com.xsy.scm.trace.domain.form.TraceInspectionReportSaveForm;
 import com.xsy.scm.trace.domain.form.TraceInspectionPhotoForm;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.xsy.scm.trace.domain.vo.TraceInspectionReportVO;
 import com.xsy.scm.trace.permission.TracePermission;
 import com.xsy.scm.trace.service.TraceInspectionReportService;
 import jakarta.validation.Valid;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import lombok.RequiredArgsConstructor;
@@ -31,8 +33,11 @@ public class TraceInspectionReportController {
 
     @GetMapping("/photos")
     @SaCheckPermission(TracePermission.PHOTO_QUERY)
-    public ResponseDTO<List<TraceInspectionReportVO>> photos(@RequestParam(required = false) Long beforeId) {
-        return ResponseDTO.ok(traceInspectionReportService.photos(beforeId));
+    public ResponseDTO<List<TraceInspectionReportVO>> photos(@RequestParam(required = false) Long beforeId,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+        @RequestParam(required = false) String keyword) {
+        return ResponseDTO.ok(traceInspectionReportService.photos(beforeId, startDate, endDate, keyword));
     }
 
     @PostMapping("/photos")

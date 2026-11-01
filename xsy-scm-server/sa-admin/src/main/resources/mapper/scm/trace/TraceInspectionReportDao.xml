@@ -96,6 +96,10 @@
         <include refid="columns"/>
         WHERE r.lot_id IS NULL AND NOT r.removed
         <if test="beforeId != null">AND r.id &lt; #{beforeId}</if>
+        <!-- 按上传日筛选时用业务时区，避免跨零点照片落到前一天。 -->
+        <if test="startDate != null">AND (r.created_at AT TIME ZONE 'Asia/Shanghai')::date &gt;= #{startDate}</if>
+        <if test="endDate != null">AND (r.created_at AT TIME ZONE 'Asia/Shanghai')::date &lt;= #{endDate}</if>
+        <if test="keyword != null and keyword != ''">AND r.report_name ILIKE '%' || #{keyword} || '%'</if>
         ORDER BY r.id DESC LIMIT 50
     </select>
     <select id="lockPhoto" resultType="com.xsy.scm.trace.domain.vo.TraceInspectionReportVO">

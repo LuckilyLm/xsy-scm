@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -88,6 +89,49 @@ class ScmPrintBatchIT extends ScmW5PgITBase {
         // 同一次点击的重试沿用同一个批量键，逐单命中幂等重放
         scmPrintBatchService.print(form);
         assertThat(printRecords(firstOrder) + printRecords(secondOrder)).isEqualTo(records);
+    }
+
+    @Test
+    @DisplayName("#1b 送货单按已完成分拣结果打印：缺货称出 0 也印 0，不再回落到下单量")
+    void deliveryNotePrintsSortedZeroInsteadOfOrderedQuantity() {
+        Long customerId = newCustomer();
+        Long orderId = confirmedSalesOrder(customerId, newOnShelfSku("PB0"), "3.0000", "3.0000");
+        moveDeliveryDate(orderId, LocalDate.now(ZONE));
+        Long taskId = jdbc.queryForObject("""
+                INSERT INTO xsy_sorting_task (task_no, warehouse_id, warehouse_name_snapshot, status, completed_at,
+                    version, deleted, created_at, updated_at, created_by)
+                VALUES (?, ?, '测试仓', 'COMPLETED', CURRENT_TIMESTAMP, 0, FALSE, CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP, '1:1') RETURNING id
+                """, Long.class, "SRTIT" + UUID.randomUUID().toString().substring(0, 8), seedWarehouseId());
+        jdbc.update("""
+                INSERT INTO xsy_sorting_task_item (task_id, sales_order_id, sales_order_item_id, order_no_snapshot,
+                    customer_id, customer_name_snapshot, spu_id, sku_id, product_name_snapshot, sale_unit_snapshot,
+                    product_type_snapshot, planned_quantity_snapshot, sorted_quantity, result, reason,
+                    occupation_status, version, deleted, created_at, updated_at, created_by)
+                SELECT ?, oi.order_id, oi.id, o.order_no, o.customer_id, o.customer_name_snapshot, oi.spu_id,
+                    oi.sku_id, oi.product_name_snapshot, oi.sale_unit_snapshot, oi.product_type_snapshot,
+                    oi.ordered_quantity, 0, 'OUT_OF_STOCK', '缺货', 'ACTIVE', 0, FALSE, CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP, '1:1'
+                FROM xsy_sales_order_item oi JOIN xsy_sales_order o ON o.id = oi.order_id
+                WHERE oi.order_id = ?
+                """, taskId, orderId);
+
+        ScmPrintBatchForm form = new ScmPrintBatchForm();
+        form.setDocumentType("CUSTOMER_DELIVERY_NOTE");
+        form.setBusinessDate(LocalDate.now(ZONE));
+        form.setOrderIds(List.of(orderId));
+
+        ScmPrintBatchResultVO preview = scmPrintBatchService.preview(form);
+
+        assertThat(preview.getSucceeded()).isEqualTo(1);
+        assertThat(preview.getRenders()).singleElement().satisfies(render -> {
+            assertThat(render.getRows()).singleElement().satisfies(row -> {
+                assertThat(row.get("actualQuantity")).isEqualTo("0.0000");
+                assertThat(row.get("settlementLineAmount")).isEqualTo("0.0000");
+            });
+            assertThat(render.getTotals()).filteredOn(field -> "settlementTotalAmount".equals(field.getKey()))
+                .singleElement().satisfies(field -> assertThat(field.getValue()).isEqualTo("0.0000"));
+        });
     }
 
     @Test

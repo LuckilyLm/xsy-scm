@@ -118,8 +118,11 @@ public class TraceInspectionReportService {
     }
 
     @Transactional(readOnly = true)
-    public List<TraceInspectionReportVO> photos(Long beforeId) {
-        var reports = traceInspectionReportDao.photos(beforeId);
+    public List<TraceInspectionReportVO> photos(Long beforeId, LocalDate startDate, LocalDate endDate, String keyword) {
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_PHOTO_DATE_RANGE_INVALID);
+        }
+        var reports = traceInspectionReportDao.photos(beforeId, startDate, endDate, keyword);
         reports.forEach(this::fillAttachments);
         return reports;
     }

@@ -40,8 +40,17 @@
         <template v-else-if="column.dataIndex === 'receivedQuantity'">
           <span class="scm-quantity">{{ quantityText(record.receivedQuantity) }}</span>
         </template>
+        <template v-else-if="column.dataIndex === 'confirmedQuantity'">
+          <span class="scm-quantity">{{ quantityText(record.confirmedQuantity) }}</span>
+        </template>
         <template v-else-if="column.dataIndex === 'orderAmount'">
           <span class="scm-money">{{ moneyText(record.orderAmount) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'confirmedAmount'">
+          <span class="scm-money">{{ moneyText(record.confirmedAmount) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'adjustmentAmount'">
+          <span class="scm-money">{{ moneyText(record.adjustmentAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'avgPurchasePrice'">
           <span class="scm-money">{{ formatPrice(record.avgPurchasePrice, 'purchase') }}</span>

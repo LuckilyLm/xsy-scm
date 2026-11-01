@@ -3,6 +3,7 @@ package com.xsy.scm.trace.dao;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.trace.domain.vo.TraceInspectionReportVO;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -11,7 +12,8 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface TraceInspectionReportDao {
     Long nextPhotoNo();
-    List<TraceInspectionReportVO> photos(@Param("beforeId") Long beforeId);
+    List<TraceInspectionReportVO> photos(@Param("beforeId") Long beforeId, @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate, @Param("keyword") String keyword);
     TraceInspectionReportVO lockPhoto(@Param("id") Long id);
     int removePhoto(TraceInspectionReportVO report);
 

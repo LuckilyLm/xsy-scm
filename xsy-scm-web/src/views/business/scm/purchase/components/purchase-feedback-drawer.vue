@@ -3,12 +3,11 @@
     <a-space class="scm-detail-actions">
       <a-button :loading="loading" @click="load(false)">刷新</a-button>
       <a-button @click="showOrder">查看采购单</a-button>
-      <a-button v-privilege="'scm:purchase:receipt:add'" @click="receive">登记收货</a-button>
-      <a-button v-if="createdReceiptId" v-privilege="'scm:purchase:receipt:confirm'" @click="confirmReceipt?.open(createdReceiptId)">
-        核对并确认收货
-      </a-button>
+      <a-button v-privilege="'scm:purchase:finance-confirm'" @click="confirmPurchase">确认采购</a-button>
     </a-space>
-    <p class="scm-note">以下为现场回填记录，尚未计入收货与库存。请核对数量、单价后在正式收货单中登记；同一明细的多次回填不可累加。</p>
+    <p class="scm-note">
+      以下为现场回填记录，尚未成为实际采购。请核对数量和单价后点击「确认采购」，系统会保存实采数量并生成应付；回填不会自动改写采购单。
+    </p>
     <a-alert v-if="error" type="error" show-icon :message="error" />
     <a-table :columns="columns" :data-source="rows" row-key="id" :loading="loading" :pagination="false" :scroll="{x: 1060}">
       <template #bodyCell="{column, record}">
@@ -18,8 +17,7 @@
     </a-table>
     <a-button v-if="more" :loading="loading" @click="load(true)">加载更早记录</a-button>
   </a-drawer>
-  <PurchaseReceiptFormDrawer ref="receipt" @created="(id) => (createdReceiptId = id)" @saved="load(false)" />
-  <PurchaseReceiptConfirm ref="confirmReceipt" @saved="load(false)" />
+  <PurchaseFinanceConfirmModal ref="financeConfirm" @saved="load(false)" />
 </template>
 <script setup lang="ts">
 import {ref} from 'vue';
@@ -28,8 +26,7 @@ import {purchaseShareApi, type PurchaseShareFeedback} from '/@/api/business/scm/
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {purchaseError} from '../purchase-errors';
-import PurchaseReceiptFormDrawer from './purchase-receipt-form-drawer.vue';
-import PurchaseReceiptConfirm from './purchase-receipt-confirm-modal.vue';
+import PurchaseFinanceConfirmModal from './purchase-finance-confirm-modal.vue';
 const emit = defineEmits<{detail: [id: Id]}>();
 const visible = ref(false),
   loading = ref(false),
@@ -37,9 +34,7 @@ const visible = ref(false),
   error = ref('');
 const orderId = ref<Id>();
 const rows = ref<PurchaseShareFeedback[]>([]);
-const receipt = ref<InstanceType<typeof PurchaseReceiptFormDrawer>>();
-const confirmReceipt = ref<InstanceType<typeof PurchaseReceiptConfirm>>();
-const createdReceiptId = ref<Id>();
+const financeConfirm = ref<InstanceType<typeof PurchaseFinanceConfirmModal>>();
 let generation = 0;
 const columns = [
   {title: '商品', dataIndex: 'productName', width: 180},
@@ -68,7 +63,6 @@ async function load(append = false) {
   }
 }
 function open(id: Id) {
-  createdReceiptId.value = undefined;
   orderId.value = id;
   rows.value = [];
   more.value = false;
@@ -83,8 +77,8 @@ function close() {
 function showOrder() {
   if (orderId.value != null) emit('detail', orderId.value);
 }
-function receive() {
-  if (orderId.value != null) void receipt.value?.openForOrder(orderId.value);
+function confirmPurchase() {
+  if (orderId.value != null) financeConfirm.value?.open(orderId.value);
 }
 defineExpose({open});
 </script>

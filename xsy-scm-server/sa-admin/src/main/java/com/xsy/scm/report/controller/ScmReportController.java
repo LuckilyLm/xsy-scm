@@ -72,7 +72,8 @@ public class ScmReportController {
         new Column("orderCount", "采购单数"), new Column("plannedQuantity", "计划采购数量"),
         new Column("receivedQuantity", "已收数量"), new Column("orderAmount", "采购订单金额"),
         new Column("avgPurchasePrice", "采购成交均价"), new Column("inboundQuantityText", "采购入库数量"),
-        new Column("inboundCostAmount", "采购入库成本金额", true));
+        new Column("inboundCostAmount", "采购入库成本金额", true), new Column("confirmedQuantity", "实采确认数量"),
+        new Column("confirmedAmount", "实采确认金额"), new Column("adjustmentAmount", "采购价差净额"));
 
     private static final List<String> OVERVIEW_DAILY_TITLES = List.of("业务日期", "确认订单数", "客户数", "确认订单金额", "已完成退款金额",
         "提交采购金额", "采购入库成本金额", "成本缺失行数");
@@ -405,11 +406,12 @@ public class ScmReportController {
     public void exportPurchaseProduct(@RequestBody ScmPurchaseReportQueryForm form, HttpServletResponse response)
         throws IOException {
         List<String> titles = List.of("商品名称", "商品规格编码", "商品规格", "采购单位", "采购单数", "计划采购数量", "已收数量", "采购订单金额", "采购成交均价",
-            "采购入库数量", "采购入库成本金额");
+            "采购入库数量", "采购入库成本金额", "实采确认数量", "实采确认金额", "采购价差净额");
         List<List<Object>> rows = exportRows(form, () -> purchaseReportService.byProduct(form)).stream()
             .map(r -> ScmExcel.row(titles, r.getProductName(), r.getSkuCode(), r.getSkuName(), r.getPurchaseUnit(),
                 r.getOrderCount(), r.getPlannedQuantity(), r.getReceivedQuantity(), r.getOrderAmount(),
-                r.getAvgPurchasePrice(), r.getInboundQuantityText(), r.getInboundCostAmount()))
+                r.getAvgPurchasePrice(), r.getInboundQuantityText(), r.getInboundCostAmount(), r.getConfirmedQuantity(),
+                r.getConfirmedAmount(), r.getAdjustmentAmount()))
             .toList();
         var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(), PURCHASE_PRODUCT_EXPORT_COLUMNS,
             StpUtil.hasPermission(ScmReportPermission.COST_QUERY));

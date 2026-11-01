@@ -12,7 +12,19 @@
         <a-button type="primary" :loading="uploading > 0">{{ uploading ? '上传中' : '拍照 / 上传报告' }}</a-button>
       </a-upload>
     </template>
-    <p class="scm-note">上传市场提供的检测报告照片，点击照片即可放大查看。</p>
+    <div class="photo-filters">
+      <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD" :placeholder="['上传开始日期', '上传结束日期']" />
+      <a-input
+        v-model:value="keyword"
+        allow-clear
+        placeholder="按报告名或姓名搜索"
+        class="photo-keyword"
+        @press-enter="search"
+      />
+      <a-button type="primary" @click="search">查询</a-button>
+      <a-button @click="reset">重置</a-button>
+    </div>
+    <p class="scm-note">上传市场提供的检测报告照片，点击照片即可放大查看；可按上传日期或报告名筛选。</p>
     <a-alert v-if="error || uploadError" :message="uploadError || error" type="error" show-icon class="photo-error" />
     <a-spin :spinning="loading">
       <a-empty v-if="!reports.length && !loading" description="暂无报告照片" />
@@ -57,6 +69,8 @@ const uploading = ref(0);
 const hasMore = ref(false);
 const previewOpen = ref(false);
 const previewUrl = ref('');
+const dateRange = ref<[string, string]>();
+const keyword = ref('');
 let active = true;
 let loadVersion = 0;
 
@@ -71,7 +85,12 @@ async function load(more = false) {
   loading.value = true;
   error.value = '';
   try {
-    const response = await traceInspectionApi.photos(more ? reports.value[reports.value.length - 1]?.id : undefined);
+    const response = await traceInspectionApi.photos({
+      beforeId: more ? reports.value[reports.value.length - 1]?.id : undefined,
+      startDate: dateRange.value?.[0],
+      endDate: dateRange.value?.[1],
+      keyword: keyword.value.trim() || undefined,
+    });
     if (!active || version !== loadVersion) return;
     const rows = response.data ?? [];
     reports.value = more ? [...reports.value, ...rows] : rows;
@@ -133,6 +152,14 @@ async function remove(report: PhotoReport) {
     removing.value = false;
   }
 }
+function search() {
+  void load();
+}
+function reset() {
+  dateRange.value = undefined;
+  keyword.value = '';
+  void load();
+}
 onMounted(() => load());
 onBeforeUnmount(() => {
   active = false;
@@ -141,6 +168,15 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.photo-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.photo-keyword {
+  width: 260px;
+}
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

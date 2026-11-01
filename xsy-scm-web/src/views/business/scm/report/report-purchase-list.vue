@@ -183,8 +183,17 @@
       <template v-else-if="column.dataIndex === 'receivedQuantity'">
         <span class="scm-quantity">{{ quantityText(record.receivedQuantity) }}</span>
       </template>
+      <template v-else-if="column.dataIndex === 'confirmedQuantity'">
+        <span class="scm-quantity">{{ quantityText(record.confirmedQuantity) }}</span>
+      </template>
       <template v-else-if="column.dataIndex === 'orderAmount'">
         <span class="scm-money">{{ moneyText(record.orderAmount) }}</span>
+      </template>
+      <template v-else-if="column.dataIndex === 'confirmedAmount'">
+        <span class="scm-money">{{ moneyText(record.confirmedAmount) }}</span>
+      </template>
+      <template v-else-if="column.dataIndex === 'adjustmentAmount'">
+        <span class="scm-money">{{ moneyText(record.adjustmentAmount) }}</span>
       </template>
       <template v-else-if="column.dataIndex === 'avgPurchasePrice'">
         <span class="scm-money">{{ formatPrice(record.avgPurchasePrice, 'purchase') }}</span>
@@ -347,7 +356,10 @@ const productColumns = ref<TableColumnsType<PurchaseProductRow>>([
   {title: '采购单数', dataIndex: 'orderCount', width: 92},
   {title: '计划采购数量', dataIndex: 'plannedQuantity', width: 140},
   {title: '已收数量', dataIndex: 'receivedQuantity', width: 120},
+  {title: '实采确认数量', dataIndex: 'confirmedQuantity', width: 140},
   {title: '采购订单金额', dataIndex: 'orderAmount', width: 148},
+  {title: '实采确认金额', dataIndex: 'confirmedAmount', width: 148},
+  {title: '采购价差净额', dataIndex: 'adjustmentAmount', width: 140},
   {title: '采购成交均价', dataIndex: 'avgPurchasePrice', width: 140},
   {title: '采购入库数量', dataIndex: 'inboundQuantityText', width: 180},
   {title: '采购入库成本金额', dataIndex: 'inboundCostAmount', width: 148},

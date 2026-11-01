@@ -107,6 +107,23 @@ class PurchaseDemandSummaryPreviewIT extends ScmW5PgITBase {
     }
 
     @Test
+    @DisplayName("账面负库存只按 0 计可用：-100 斤 + 本批 30 斤 → 缺口 30，不是 130")
+    void negativeStockDoesNotInflateGap() {
+        Fixture fixture = fixture("S2N", "5.0000", "30.0000");
+        seedBalance(seedWarehouseId(), fixture.skuId(), DEFAULT_PURCHASE_UNIT, "-100.0000", "0.0000");
+
+        PurchaseDemandSummaryVO row = rowFor(fixture.skuId(), preview(seedWarehouseId(), fixture.confirmedAt()));
+
+        // 负余额本身照实展示（财务要能核对欠账），但不再作为本批额外需求叠加。
+        assertThat(row.getOnHandQuantity()).isEqualByComparingTo("-100.0000");
+        assertThat(row.getAvailableQuantity()).isEqualByComparingTo("-100.0000");
+        assertThat(row.getStockAvailableForSelectedOrders()).isEqualByComparingTo("0.0000");
+        assertThat(row.getStockComparisonGap()).isEqualByComparingTo("30.0000");
+        assertThat(row.getNetPurchaseGap()).isEqualByComparingTo("30.0000");
+        assertThat(row.getCalculationStatus()).isEqualTo("ZERO_STOCK");
+    }
+
+    @Test
     @DisplayName("库存不足且占用属于其他订单：其他预留照扣，差额按本批可用算")
     void shortage() {
         Long customerId = newCustomer();

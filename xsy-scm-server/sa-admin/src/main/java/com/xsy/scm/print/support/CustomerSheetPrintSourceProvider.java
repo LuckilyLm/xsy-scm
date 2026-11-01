@@ -2,9 +2,11 @@ package com.xsy.scm.print.support;
 
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
+import com.xsy.scm.order.manager.OrderAmountCalculator;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +19,12 @@ import java.util.Map;
  */
 public abstract class CustomerSheetPrintSourceProvider extends ScmOrderPrintSourceProvider {
 
+    /** 打印取数服务；子类可用它读取分拣实发结果，但仍只读正式订单详情。 */
+    protected final SalesOrderQueryService orderQueryService;
+
     protected CustomerSheetPrintSourceProvider(SalesOrderQueryService orderQueryService) {
         super(orderQueryService);
+        this.orderQueryService = orderQueryService;
     }
 
     /** 是否印销售单价和行金额。 */
@@ -44,39 +50,70 @@ public abstract class CustomerSheetPrintSourceProvider extends ScmOrderPrintSour
 
         List<Map<String, String>> rows = new ArrayList<>();
         List<SalesOrderItemVO> items = order.getItems() == null ? List.of() : order.getItems();
+        Map<Long, BigDecimal> sorted = showActualQuantity() ? sortedQuantities(order) : Map.of();
         for (int index = 0; index < items.size(); index++) {
             SalesOrderItemVO item = items.get(index);
+            BigDecimal sortedQuantity = sorted.get(item.getItemId());
             var row = ScmPrintSource.row();
             row.put("rowNo", String.valueOf(index + 1));
             row.put("productName", ScmPrintText.text(item.getProductNameSnapshot()));
             row.put("specName", ScmPrintText.text(item.getSpecNameSnapshot()));
             row.put("saleUnit", ScmPrintText.text(item.getSaleUnitSnapshot()));
             row.put("orderedQuantity", ScmPrintText.fixed(item.getOrderedQuantity()));
-            row.put("actualQuantity", actualQuantity(item));
+            row.put("actualQuantity", actualQuantity(item, sortedQuantity));
             if (showPrices()) {
                 row.put("lockedUnitPrice", ScmPrintText.fixed(item.getLockedUnitPrice()));
-                row.put("settlementLineAmount", ScmPrintText.fixed(item.getSettlementLineAmount()));
+                row.put("settlementLineAmount", ScmPrintText.fixed(lineAmount(item, sortedQuantity)));
             }
             row.put("remark", ScmPrintText.text(item.getRemark()));
             rows.add(row);
         }
         var totals = ScmPrintSource.values();
         if (showTotals()) {
-            totals.put("settlementTotalAmount", ScmPrintText.fixed(order.getSettlementTotalAmount()));
+            totals.put("settlementTotalAmount", ScmPrintText.fixed(printedTotal(order, items, sorted)));
         }
         return new ScmPrintSource(order.getOrderNo(), header, rows, totals);
     }
 
     /**
-     * 送货单在分拣前打印时还没有实数量，先按下单量占位；分拣完成后重印会显示真实称重结果。
+     * 已完成分拣的实发数量（订单行 ID → 数量）。默认没有，分拣单不需要实数量；送货单覆盖它读取正式分拣结果。
      */
-    private String actualQuantity(SalesOrderItemVO item) {
+    protected Map<Long, BigDecimal> sortedQuantities(SalesOrderDetailVO order) {
+        return Map.of();
+    }
+
+    /**
+     * 送货单在分拣前打印时还没有实数量，先按下单量占位；分拣完成后（含缺货 0）重印会显示真实结果。
+     */
+    private String actualQuantity(SalesOrderItemVO item, BigDecimal sortedQuantity) {
         if (!showActualQuantity()) {
             return "";
         }
+        if (sortedQuantity != null)
+            return ScmPrintText.fixed(sortedQuantity);
         return item.getActualQuantity() == null
             ? ScmPrintText.fixed(item.getOrderedQuantity())
             : ScmPrintText.fixed(item.getActualQuantity());
+    }
+
+    /**
+     * 有分拣结果的行按「实发量 × 锁定单价」打印，与签收应收的行金额同源；还没有分拣结果时沿用订单结算快照。
+     */
+    private BigDecimal lineAmount(SalesOrderItemVO item, BigDecimal sortedQuantity) {
+        if (sortedQuantity == null)
+            return item.getSettlementLineAmount();
+        return OrderAmountCalculator.lineAmount(sortedQuantity, item.getLockedUnitPrice());
+    }
+
+    /** 合计跟着纸上逐行金额走：任一有分拣结果的行缺价时整体留空，不用部分金额冒充合计。 */
+    private BigDecimal printedTotal(SalesOrderDetailVO order, List<SalesOrderItemVO> items,
+        Map<Long, BigDecimal> sorted) {
+        if (sorted.isEmpty())
+            return order.getSettlementTotalAmount();
+        List<BigDecimal> amounts = items.stream().map(item -> lineAmount(item, sorted.get(item.getItemId()))).toList();
+        if (amounts.stream().anyMatch(java.util.Objects::isNull))
+            return null;
+        return OrderAmountCalculator.orderAmount(amounts);
     }
 
     /** 子类用来声明负责的单据类型，避免两个实现复制字段定义。 */

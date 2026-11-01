@@ -172,7 +172,8 @@ internal sealed partial class StateStore
         return new BasketSummary(rows.Length, rows.Sum(row => decimal.Parse(row.Measurement.NetWeight, CultureInfo.InvariantCulture))
             .ToString(CultureInfo.InvariantCulture), rows.FirstOrDefault()?.Measurement.BusinessUnit ?? item.SaleUnit,
             item.PlannedQuantity, item.SortedQuantity, WireJson.Digest(rows.Select(row => row.EventKey).ToArray()),
-            authorizationExpired, completion != null, completion, "WAITING_CONTRACT");
+            authorizationExpired, completion != null, completion,
+            completion == null ? "WAITING_CONTRACT" : ReadCommandState(db, transaction, completion.OperationId));
     }
 
     /// <summary>按筐序号分页读取，结果不包含原始帧或平台凭证。</summary>
@@ -208,6 +209,41 @@ internal sealed partial class StateStore
         return result.ToArray();
     }
 
+    /// <summary>下一条待同步的筐/完成命令；按序号严格返回，前一条未成功时不能越过它。</summary>
+    internal BasketPendingCommand? NextBasketCommand()
+    {
+        using var db = Open(); using var command = db.CreateCommand();
+        command.CommandText = """
+            SELECT sequence,operation_id,kind,payload FROM basket_commands
+            WHERE state IN ('WAITING_CONTRACT','SYNC_RETRY') ORDER BY sequence LIMIT 1
+            """;
+        using var rows = command.ExecuteReader();
+        return rows.Read()
+            ? new BasketPendingCommand(rows.GetInt64(0), rows.GetString(1), rows.GetString(2), rows.GetString(3))
+            : null;
+    }
+
+    /// <summary>命令当前同步状态；完成接口据此回报真实进度，不能再写死「等待对接」。</summary>
+    internal string? BasketCommandState(string operationId)
+    {
+        using var db = Open(); using var command = db.CreateCommand();
+        command.CommandText = "SELECT state FROM basket_commands WHERE operation_id=$op";
+        command.Parameters.AddWithValue("$op", operationId);
+        return command.ExecuteScalar() as string;
+    }
+
+    /// <summary>记录一次上传结果；失败可重试的保留在队列里，平台明确拒绝的转人工处理。</summary>
+    internal void FinishBasketCommand(string operationId, string state)
+    {
+        using var db = Open(); using var command = db.CreateCommand();
+        command.CommandText = """
+            UPDATE basket_commands SET state=$state
+            WHERE operation_id=$op AND state IN ('WAITING_CONTRACT','SYNC_RETRY')
+            """;
+        command.Parameters.AddWithValue("$state", state); command.Parameters.AddWithValue("$op", operationId);
+        command.ExecuteNonQuery();
+    }
+
     private static void InsertBasketCommand(SqliteConnection db, SqliteTransaction transaction, string operationId,
         string scopeKey, string kind, string? eventKey, string requestHash, string payload)
     {
@@ -237,6 +273,14 @@ internal sealed partial class StateStore
         while (rows.Read()) result.Add(new(rows.GetString(0), rows.GetString(1), rows.GetInt32(2), rows.GetString(3),
             WireJson.Decode<Measurement>(rows.GetString(4)), rows.GetString(5), rows.GetString(6), rows.GetString(7)));
         return result.ToArray();
+    }
+
+    private static string ReadCommandState(SqliteConnection db, SqliteTransaction? transaction, string operationId)
+    {
+        using var command = db.CreateCommand(); command.Transaction = transaction;
+        command.CommandText = "SELECT state FROM basket_commands WHERE operation_id=$op";
+        command.Parameters.AddWithValue("$op", operationId);
+        return command.ExecuteScalar() as string ?? "WAITING_CONTRACT";
     }
 
     private static ItemCompletion? ReadCompletion(SqliteConnection db, SqliteTransaction? transaction, string scopeKey)

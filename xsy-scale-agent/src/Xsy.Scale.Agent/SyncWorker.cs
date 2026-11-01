@@ -18,6 +18,9 @@ internal sealed class SyncWorker(AgentOptions options, StateStore store, Platfor
                 {
                     for (int count = 0; count < 10 && platform.Credential() != null; count++)
                         if (!await UploadOne(stoppingToken)) break;
+                    // 多筐采集与集合完成走同一设备协议：先逐筐上报，全部受理后才提交完成命令。
+                    for (int count = 0; count < 10 && platform.Credential() != null; count++)
+                        if (!await UploadNextBasketCommand(stoppingToken)) break;
                     // 三类同步互不阻塞：打印接口故障不能让设备心跳消失。
                     if (platform.Credential() != null && DateTimeOffset.UtcNow - lastHeartbeat >= TimeSpan.FromSeconds(options.HeartbeatSeconds))
                     {
@@ -52,6 +55,43 @@ internal sealed class SyncWorker(AgentOptions options, StateStore store, Platfor
             }
             try { await Task.Delay(TimeSpan.FromSeconds(options.PlatformPollSeconds), stoppingToken); }
             catch (OperationCanceledException) { break; }
+        }
+    }
+
+    /// <summary>
+    /// 按序号上传一条筐/完成命令。
+    /// </summary>
+    /// <returns>继续处理下一条返回 true；队首命令暂时传不出去返回 false，等待下一轮轮询。</returns>
+    internal async Task<bool> UploadNextBasketCommand(CancellationToken cancellation)
+    {
+        BasketPendingCommand? pending = store.NextBasketCommand();
+        if (pending == null) return false;
+        try
+        {
+            if (pending.Kind == "CAPTURE_BASKET")
+                await platform.UploadBasket(WireJson.Decode<BasketRecord>(pending.Payload), cancellation);
+            else if (pending.Kind == "COMPLETE_ITEM")
+                await platform.CompleteItem(WireJson.Decode<ItemCompletion>(pending.Payload), cancellation);
+            else
+            {
+                // 未知命令说明本机数据比程序版本新，不能悄悄当成已发送。
+                store.FinishBasketCommand(pending.OperationId, "NEEDS_REVIEW");
+                return true;
+            }
+            store.FinishBasketCommand(pending.OperationId, "SENT");
+            return true;
+        }
+        catch (PlatformFault error)
+        {
+            bool retry = error.Retryable || error.Code == "DEVICE_UNAUTHORIZED";
+            store.FinishBasketCommand(pending.OperationId, retry ? "SYNC_RETRY" : "NEEDS_REVIEW");
+            return !retry;
+        }
+        catch (Exception error) when (error is HttpRequestException or OperationCanceledException or JsonException
+            or InvalidOperationException)
+        {
+            store.FinishBasketCommand(pending.OperationId, "SYNC_RETRY");
+            return false;
         }
     }
 

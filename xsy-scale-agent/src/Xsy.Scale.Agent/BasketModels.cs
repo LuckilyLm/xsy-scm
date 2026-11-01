@@ -36,3 +36,6 @@ internal sealed record BasketPage(BasketRecord[] Items, int? NextAfter);
 /// <summary>待对接命令摘要；完成依赖列出未获正式回执的本筐事件键。</summary>
 internal sealed record BasketCommand(long Sequence, string OperationId, string Kind, string State, string? EventKey,
     string[] DependsOnEventKeys, DateTimeOffset CreatedAt);
+
+/// <summary>后台同步看到的原始待上传命令；payload 形态由 Kind 决定，不在这里再包一层。</summary>
+internal sealed record BasketPendingCommand(long Sequence, string OperationId, string Kind, string Payload);

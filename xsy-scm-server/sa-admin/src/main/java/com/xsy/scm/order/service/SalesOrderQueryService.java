@@ -16,6 +16,7 @@ import com.xsy.scm.order.domain.vo.OrderAddressSnapshotVO;
 import com.xsy.scm.order.domain.vo.OrderLastPurchasePriceVO;
 import com.xsy.scm.order.domain.vo.OrderOperationLogVO;
 import com.xsy.scm.order.domain.vo.OrderRecentPriceVO;
+import com.xsy.scm.order.domain.dto.SalesOrderSortedQuantityDto;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
 import com.xsy.scm.order.domain.vo.SalesOrderVO;
@@ -43,6 +44,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.BeanUtils;
 
+import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -145,6 +147,9 @@ public class SalesOrderQueryService {
 
     private SalesOrderDetailVO detailSnapshot(SalesOrderEntity salesOrder) {
         var salesOrderDetailVO = new SalesOrderDetailVO();
+        // 详情按主键读取时不带列表查询的 EXISTS 列，这里补一次签收事实，保证编辑按钮与写接口结论一致。
+        if (salesOrder.getSignedFlag() == null)
+            salesOrder.setSignedFlag(salesOrderDao.hasSignedFact(salesOrder.getId()));
         BeanUtils.copyProperties(order(salesOrder), salesOrderDetailVO);
         salesOrderDetailVO.setItems(salesOrderItemDao.list(salesOrder.getId()).stream()
             .sorted(Comparator.comparing(SalesOrderItemEntity::getSortOrder).thenComparing(SalesOrderItemEntity::getId))
@@ -163,6 +168,19 @@ public class SalesOrderQueryService {
         salesOrderDetailVO.setDiscount(promotionDiscountService.getByOrder(salesOrder.getId()));
         salesOrderDetailVO.setGifts(promotionDiscountService.listGifts(salesOrder.getId()));
         return salesOrderDetailVO;
+    }
+
+    /**
+     * 订单行已完成分拣的实发数量（订单行 ID → 数量）。
+     *
+     * <p>
+     * 只给客户送货单取数：分拣为 0 的缺货行也在结果里，未分拣的行不返回，打印时回落到订单实发量/下单量。 实体仍按订单实发量保存，不能把 0 写回订单行（数据库要求实发量大于 0）。
+     */
+    public Map<Long, BigDecimal> sortedQuantities(Long orderId) {
+        return salesOrderDao.sortedQuantities(orderId).stream()
+            .filter(row -> row.getSalesOrderItemId() != null && row.getSortedQuantity() != null)
+            .collect(Collectors.toMap(SalesOrderSortedQuantityDto::getSalesOrderItemId,
+                SalesOrderSortedQuantityDto::getSortedQuantity, (first, second) -> second));
     }
 
     /**

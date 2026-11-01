@@ -41,7 +41,8 @@ export interface InspectionReportSave {
 const options = {suppressGlobalErrorMessage: true};
 const base = '/scm/trace/inspection';
 export const traceInspectionApi = {
-  photos: (beforeId?: number | string) => getRequest<InspectionPhoto[]>(`${base}/photos`, {beforeId}, options),
+  photos: (params: {beforeId?: number | string; startDate?: string; endDate?: string; keyword?: string} = {}) =>
+    getRequest<InspectionPhoto[]>(`${base}/photos`, params, options),
   uploadPhotos: (fileKeys: string[]) => postRequest<InspectionPhoto>(`${base}/photos`, {fileKeys}, options),
   removePhotos: (report: InspectionPhoto) => postRequest(`${base}/photos/${report.id}/remove`, {version: report.version}),
   list: async (lotId: number | string) => {

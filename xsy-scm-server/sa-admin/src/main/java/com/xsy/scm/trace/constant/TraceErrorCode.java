@@ -109,7 +109,8 @@ public enum TraceErrorCode implements ScmErrorCode {
     TRACE_REPORT_DATE_INVALID(41539, "检测日期不能晚于今天，有效期不能早于检测日期；过期报告不能发布"),
     TRACE_REPORT_FILE_INVALID(41540, "请上传有权访问的私有PDF或图片，单个不超过20MB；发布时至少需要一个附件"),
     TRACE_REPORT_NO_EXISTS(41541, "报告编号已存在，请刷新列表或核对编号"),
-    TRACE_REPORT_LOT_IMMUTABLE(41542, "报告所属批次不能修改，请在正确批次下新建报告");
+    TRACE_REPORT_LOT_IMMUTABLE(41542, "报告所属批次不能修改，请在正确批次下新建报告"),
+    TRACE_PHOTO_DATE_RANGE_INVALID(41543, "筛选开始日期不能晚于结束日期");
 
     private final int code;
 

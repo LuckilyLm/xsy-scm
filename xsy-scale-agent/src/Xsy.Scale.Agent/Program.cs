@@ -193,7 +193,10 @@ app.MapGet("/api/agent/basket-queue", (string jobId, string taskId, string taskI
     HttpContext context, BasketService baskets) =>
     Results.Ok(baskets.Queue(new(Session(context), jobId, taskId, taskItemId), after ?? 0, limit ?? 50)));
 app.MapPost("/api/agent/item-completions", (CompleteItemRequest input, HttpContext context, BasketService baskets) =>
-    Results.Ok(new { state = "WAITING_CONTRACT", locallyCompleted = true, completion = baskets.Complete(input, Session(context)) }));
+{
+    ItemCompletion completion = baskets.Complete(input, Session(context));
+    return Results.Ok(new { state = baskets.CommandState(completion.OperationId), locallyCompleted = true, completion });
+});
 app.MapGet("/api/agent/jobs/{jobId}", async (string jobId, HttpContext context, PlatformClient platform, CancellationToken cancellation) =>
     Results.Ok(await platform.Job(jobId, Session(context), cancellation)));
 app.MapPost("/api/agent/jobs/{jobId}/{action}", async (string jobId, string action, HttpContext context,

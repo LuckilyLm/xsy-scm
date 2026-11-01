@@ -90,6 +90,11 @@ public class SalesOrderEntity {
     /** MANUAL 手动锁单；AUTO_7_DAYS 发车满 7 天自动锁单。 */
     private String lockReason;
     private OffsetDateTime autoLockAt;
+    /**
+     * 是否已经签收（含异常签收）。只由列表/详情查询补出，不落列；签收后订单金额已进入应收，直接改单会让纸面与账面对不上。
+     */
+    @TableField(exist = false)
+    private Boolean signedFlag;
     @Version
     private Integer version = 0;
     @TableLogic(value = "false", delval = "true")

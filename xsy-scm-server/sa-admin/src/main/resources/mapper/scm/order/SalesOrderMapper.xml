@@ -16,6 +16,26 @@
             OR EXISTS (SELECT 1 FROM xsy_sorting_task_item WHERE sales_order_id = #{orderId})
     </select>
 
+    <select id="hasSignedFact" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM xsy_delivery_route_order WHERE order_id = #{orderId}
+            AND deleted = FALSE AND fulfillment_status IN ('SIGNED', 'EXCEPTION'))
+    </select>
+
+    <!--
+      与发车出库同一取数口径（xsy_delivery_route_order → SortingQueryDao.sortedLines）：已完成任务的有效明细。
+      含 0 数量，缺货行也必须按 0 打送货单；行还没分拣时整行不返回，调用方回落到订单实发/下单量。
+    -->
+    <select id="sortedQuantities" resultType="com.xsy.scm.order.domain.dto.SalesOrderSortedQuantityDto">
+        SELECT si.sales_order_item_id AS salesOrderItemId, si.sorted_quantity AS sortedQuantity
+        FROM xsy_sorting_task_item si
+        JOIN xsy_sorting_task t ON t.id = si.task_id AND t.deleted = FALSE AND t.status = 'COMPLETED'
+        WHERE si.deleted = FALSE
+            AND si.occupation_status = 'ACTIVE'
+            AND si.sales_order_id = #{orderId}
+            AND si.sorted_quantity IS NOT NULL
+        ORDER BY si.id
+    </select>
+
     <select id="unassignedMallOrders" resultMap="row">
         SELECT *
         FROM xsy_sales_order
@@ -135,6 +155,7 @@
         <result column="locked_by" property="lockedBy"/>
         <result column="lock_reason" property="lockReason"/>
         <result column="auto_lock_at" property="autoLockAt"/>
+        <result column="signed_flag" property="signedFlag"/>
         <result column="version" property="version"/>
         <result column="deleted" property="deleted"/>
         <result column="created_at" property="createdAt"/>
@@ -152,7 +173,8 @@
     </select>
 
     <select id="query" resultMap="row">
-        SELECT *
+        SELECT *, EXISTS (SELECT 1 FROM xsy_delivery_route_order d WHERE d.order_id = xsy_sales_order.id
+            AND d.deleted = FALSE AND d.fulfillment_status IN ('SIGNED', 'EXCEPTION')) AS signed_flag
         FROM xsy_sales_order
         WHERE deleted = FALSE
         <!--

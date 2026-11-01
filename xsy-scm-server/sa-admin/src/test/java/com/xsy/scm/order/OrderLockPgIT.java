@@ -192,6 +192,32 @@ class OrderLockPgIT extends ScmW3PgITBase {
     }
 
     @Test
+    @DisplayName("签收后不能再直接改单：即使持发车后改单权限也拒绝，金额差异走退货或红字")
+    void signedOrderCannotBeEdited() {
+        var c = customer();
+        var sku = newOnShelfSku("SIGNED");
+        var order = confirmed(c, sku);
+        salesOrderDao.markDispatched(order.getOrderId(), OffsetDateTime.now(), "1:1");
+        jdbc.update("""
+                INSERT INTO xsy_delivery_route_order (route_id, stop_id, order_id, customer_id, order_no_snapshot,
+                    assignment_status, fulfillment_status, signed_at, signed_by)
+                VALUES (0, 0, ?, ?, ?, 'ACTIVE', 'SIGNED', CURRENT_TIMESTAMP, '1:1')
+                """, order.getOrderId(), c, order.getOrderNo());
+        session.clearCache();
+        // markDispatched 自己会推进版本号，夹具按服务端的新版本继续。
+        order.setVersion(order.getVersion() + 1);
+
+        assertThat(salesOrderDao.hasSignedFact(order.getOrderId())).isTrue();
+        // 发车后改单权限也不能覆盖签收事实：应收已按出库量生成，纸面与账面的差异必须走红字。
+        as(OrderPermission.EDIT_AFTER_DISPATCH, () -> {
+            expectCode(() -> orders.update(updateOf(form(c, sku), order, "3.0000")), 41217);
+            return null;
+        });
+        assertThat(jdbc.queryForObject("SELECT ordered_quantity FROM xsy_sales_order_item WHERE id=?",
+                java.math.BigDecimal.class, order.getItems().getFirst().getItemId())).isEqualByComparingTo("2.0000");
+    }
+
+    @Test
     @DisplayName("持发车后改单权限时改单成功，并单独记发车后改单日志")
     void dispatchedEditWithPermissionIsLoggedSeparately() {
         var c = customer();

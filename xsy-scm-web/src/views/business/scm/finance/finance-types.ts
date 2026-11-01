@@ -12,6 +12,15 @@ export interface CustomerExpenseAdd {
   commissionAmount: string;
   reason: string;
 }
+export interface CustomerExpenseBatchRow
+  extends Omit<CustomerExpenseAdd, 'customerId' | 'expenseMonth' | 'reason'> {
+  customerId: FinanceId;
+}
+export interface CustomerExpenseBatchAdd {
+  expenseMonth: string;
+  reason: string;
+  rows: CustomerExpenseBatchRow[];
+}
 export interface CustomerExpense extends CustomerExpenseAdd {
   expenseId: FinanceId;
   expenseNo: string;

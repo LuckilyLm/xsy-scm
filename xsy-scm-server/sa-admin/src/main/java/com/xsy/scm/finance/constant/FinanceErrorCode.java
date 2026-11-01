@@ -128,7 +128,8 @@ public enum FinanceErrorCode implements ScmErrorCode {
     EXPENSE_NOT_FOUND(41290, "客户或费用记录不存在"),
     EXPENSE_AMOUNT_INVALID(41291, "成本费用不能为负；请登记实际商品成本或至少一项费用"),
     EXPENSE_MONTH_INVALID(41292, "请选择有效的费用月份"),
-    EXPENSE_ALREADY_VOIDED(41293, "该费用记录已作废");
+    EXPENSE_ALREADY_VOIDED(41293, "该费用记录已作废"),
+    EXPENSE_BATCH_DUPLICATE(41294, "同一批次不能重复登记同一客户");
 
     private final int code;
     private final String msg;

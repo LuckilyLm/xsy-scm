@@ -80,7 +80,36 @@ internal sealed class PlatformClient(AgentOptions options, StateStore store, Htt
     }
 
     internal Task<JsonElement> Upload(Measurement measurement, CancellationToken cancellation) =>
-        Send<JsonElement>(HttpMethod.Post, "/measurements", measurement, cancellation);
+        Send<JsonElement>(HttpMethod.Post, "/measurements", measurement, cancellation, measurement.OperatorSessionId);
+
+    /** 多筐流程逐筐上报：同一设备端点，额外带上本筐操作号与筐号，服务端按筐号重算。 */
+    internal Task<JsonElement> UploadBasket(BasketRecord record, CancellationToken cancellation)
+    {
+        Measurement measurement = record.Measurement;
+        var payload = new
+        {
+            protocolVersion = measurement.ProtocolVersion, eventKey = measurement.EventKey,
+            operationId = record.OperationId, basketNo = record.BasketNumber, taskId = measurement.TaskId,
+            taskItemId = measurement.TaskItemId, taskItemVersion = measurement.TaskItemVersion,
+            jobId = measurement.JobId, jobVersion = measurement.JobVersion, capturedAt = measurement.CapturedAt,
+            rawValue = measurement.RawValue, rawUnit = measurement.RawUnit, netWeight = measurement.NetWeight,
+            businessUnit = measurement.BusinessUnit, weightKind = measurement.WeightKind,
+            stableFlag = measurement.StableFlag, stabilitySource = measurement.StabilitySource,
+            conversionRule = measurement.ConversionRule, tareWeight = measurement.TareWeight,
+            readingSequence = measurement.ReadingSequence, protocolType = measurement.ProtocolType,
+            agentVersion = measurement.AgentVersion
+        };
+        return Send<JsonElement>(HttpMethod.Post, "/measurements", payload, cancellation, measurement.OperatorSessionId);
+    }
+
+    /** 集合完成：服务端按已上报的筐重算数量，设备不提交合计。 */
+    internal Task<JsonElement> CompleteItem(ItemCompletion completion, CancellationToken cancellation) =>
+        Send<JsonElement>(HttpMethod.Post, $"/items/{Uri.EscapeDataString(completion.TaskItemId)}/complete", new
+        {
+            operationId = completion.OperationId, jobId = completion.JobId, jobVersion = completion.JobVersion,
+            taskId = completion.TaskId, taskItemVersion = completion.TaskItemVersion,
+            manifestHash = completion.ManifestHash, result = completion.Result, reason = completion.Reason
+        }, cancellation, completion.OperatorSessionId);
 
     internal Task<PrintPage> PrintJobs(CancellationToken cancellation) =>
         Send<PrintPage>(HttpMethod.Get, "/print-jobs/pull?limit=5", null, cancellation);

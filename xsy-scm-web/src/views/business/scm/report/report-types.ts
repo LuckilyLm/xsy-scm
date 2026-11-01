@@ -313,6 +313,11 @@ export interface PurchaseProductRow {
   inboundQuantityText?: string | null;
   inboundCostAmount?: string | null;
   inboundCostMissingCount?: number | null;
+  /** 财务「确认采购」保存的实采数量与金额；没有确认事实时后端返回 0。 */
+  confirmedQuantity?: string | null;
+  confirmedAmount?: string | null;
+  /** 采购价差净额：调增为正、调减为负。 */
+  adjustmentAmount?: string | null;
 }
 
 /** 粒度：供应商。 */

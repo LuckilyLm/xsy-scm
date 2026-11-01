@@ -29,6 +29,7 @@
     <a-row class="smart-table-btn-block" justify="space-between">
       <a-space>
         <a-button v-if="canAdd" type="primary" @click="openAdd">登记成本费用</a-button>
+        <a-button v-if="canAdd" @click="openBatch">批量登记</a-button>
         <a-button v-if="canQueryExpenses" @click="openExpenses()">成本费用明细</a-button>
         <a-button v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows">导出当前列</a-button>
       </a-space>
@@ -113,6 +114,72 @@
     <p class="scm-note">填写本次登记的实际金额，多笔记录会累加。商品成本含赠品及分摊价差，不重复填写整月合计。登记错误时作废原记录，再重新登记。</p>
   </a-modal>
 
+  <a-modal
+    v-model:open="batchOpen"
+    title="批量登记客户月成本与费用"
+    :width="1080"
+    :confirm-loading="batchSaving"
+    :mask-closable="!batchSaving"
+    :closable="!batchSaving"
+    :cancel-button-props="{disabled: batchSaving}"
+    ok-text="整批登记"
+    @ok="saveBatch"
+  >
+    <a-form layout="vertical" :disabled="batchSaving">
+      <a-row :gutter="16">
+        <a-col :span="8"
+          ><a-form-item label="月份"
+            ><a-date-picker v-model:value="batchForm.month" picker="month" value-format="YYYY-MM"
+              :allow-clear="false" style="width: 100%" /></a-form-item
+        ></a-col>
+        <a-col :span="16"
+          ><a-form-item label="登记说明"
+            ><a-input v-model:value="batchForm.reason" :maxlength="500" placeholder="例如：2026-10 月配送服务费"
+          /></a-form-item>
+        </a-col>
+      </a-row>
+    </a-form>
+    <div class="batch-scroll">
+      <div class="batch-grid batch-grid-head">
+        <span>客户</span>
+        <span>实际商品成本</span>
+        <span v-for="field in amountFields" :key="field.key">{{ field.label }}</span>
+        <span />
+      </div>
+      <div v-for="(row, index) in batchForm.rows" :key="index" class="batch-grid">
+        <CustomerSelect v-model:value="row.customerId" :disabled="batchSaving" />
+        <a-input-number
+          v-model:value="row.goodsCostAmount"
+          string-mode
+          :min="0"
+          :max="99999999999999"
+          :precision="4"
+          :disabled="batchSaving"
+          placeholder="选填"
+        />
+        <a-input-number
+          v-for="field in amountFields"
+          :key="field.key"
+          v-model:value="row[field.key]"
+          string-mode
+          :min="0"
+          :max="99999999999999"
+          :precision="4"
+          :disabled="batchSaving"
+        />
+        <a-button type="text" danger :disabled="batchSaving || batchForm.rows.length <= 1" @click="removeBatchRow(index)">
+          删除
+        </a-button>
+      </div>
+    </div>
+    <a-button type="dashed" block :disabled="batchSaving || batchForm.rows.length >= 200" class="batch-add-row" @click="addBatchRow">
+      添加一行
+    </a-button>
+    <p class="scm-note">
+      整批使用同一月份与说明，每行一个客户；实际商品成本未核实时留空，费用无则填0。任一行不完整或同一客户重复时整批不会写入。
+    </p>
+  </a-modal>
+
   <a-modal v-model:open="expenseOpen" title="客户月成本与费用明细" :width="1100" :footer="null" @cancel="expenseRequestId++">
     <a-alert v-if="expenseError" type="error" show-icon :message="expenseError"
       ><template #action><a-button @click="loadExpenses">重试</a-button></template></a-alert
@@ -165,7 +232,7 @@ import Decimal from 'decimal.js';
 import {message, type FormInstance, type TableColumnsType} from 'ant-design-vue';
 import {financeProfitApi, type FinanceProfitQuery, type CustomerMonthlyProfitRow} from '/@/api/business/scm/finance-profit-api';
 import {financeApi} from '/@/api/business/scm/finance-api';
-import type {FinanceId, CustomerExpense} from '../finance/finance-types';
+import type {FinanceId, CustomerExpense, CustomerExpenseBatchRow} from '../finance/finance-types';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -355,6 +422,106 @@ async function saveExpense() {
     saving.value = false;
   }
 }
+type BatchRow = {
+  customerId?: FinanceId;
+  goodsCostAmount: string | null;
+  taxAmount: string;
+  serviceAmount: string;
+  freightAmount: string;
+  commissionAmount: string;
+};
+const batchForm = reactive({month: filters.month, reason: '', rows: [] as BatchRow[]});
+const batchOpen = ref(false),
+  batchSaving = ref(false);
+function emptyBatchRow(customerId?: FinanceId): BatchRow {
+  return {
+    customerId,
+    goodsCostAmount: null,
+    taxAmount: '0.0000',
+    serviceAmount: '0.0000',
+    freightAmount: '0.0000',
+    commissionAmount: '0.0000',
+  };
+}
+function openBatch() {
+  batchForm.month = filters.month;
+  batchForm.reason = '';
+  batchForm.rows = [emptyBatchRow(filters.customerId), emptyBatchRow(), emptyBatchRow()];
+  batchOpen.value = true;
+}
+function addBatchRow() {
+  if (batchForm.rows.length < 200) batchForm.rows.push(emptyBatchRow());
+}
+function removeBatchRow(index: number) {
+  if (batchForm.rows.length > 1) batchForm.rows.splice(index, 1);
+}
+function rowIsBlank(row: BatchRow) {
+  return (
+    row.customerId == null &&
+    row.goodsCostAmount == null &&
+    amountFields.every((field) => !Number(row[field.key] || 0))
+  );
+}
+function fixedAmount(value: string | null | undefined) {
+  return new Decimal(value ?? 0).toFixed(4);
+}
+async function saveBatch() {
+  if (batchSaving.value) return;
+  if (!batchForm.month) {
+    message.warning('请选择费用月份');
+    return;
+  }
+  if (!batchForm.reason.trim()) {
+    message.warning('请填写登记说明');
+    return;
+  }
+  const filled = batchForm.rows.filter((row) => !rowIsBlank(row));
+  if (!filled.length) {
+    message.warning('请至少填写一个客户');
+    return;
+  }
+  const customerIds = new Set<string>();
+  for (const [index, row] of filled.entries()) {
+    if (row.customerId == null) {
+      message.warning(`第 ${index + 1} 行还未选择客户`);
+      return;
+    }
+    const key = String(row.customerId);
+    if (customerIds.has(key)) {
+      message.warning(`第 ${index + 1} 行的客户重复，请合并后再登记`);
+      return;
+    }
+    customerIds.add(key);
+    if (row.goodsCostAmount == null && amountFields.every((field) => !Number(row[field.key] || 0))) {
+      message.warning(`第 ${index + 1} 行请填写实际商品成本，或至少填写一项费用`);
+      return;
+    }
+  }
+  const rows: CustomerExpenseBatchRow[] = filled.map((row) => ({
+    customerId: row.customerId as FinanceId,
+    goodsCostAmount: row.goodsCostAmount == null ? null : fixedAmount(row.goodsCostAmount),
+    taxAmount: fixedAmount(row.taxAmount),
+    serviceAmount: fixedAmount(row.serviceAmount),
+    freightAmount: fixedAmount(row.freightAmount),
+    commissionAmount: fixedAmount(row.commissionAmount),
+  }));
+  batchSaving.value = true;
+  try {
+    const result = await financeApi.customerExpenseBatchAdd({
+      expenseMonth: batchForm.month + '-01',
+      reason: batchForm.reason.trim(),
+      rows,
+    });
+    message.success(`已登记 ${result.data.length} 个客户`);
+    batchOpen.value = false;
+    await load();
+  } catch {
+    /* 全局提示 */
+  } finally {
+    batchSaving.value = false;
+  }
+}
+
 const expenseOpen = ref(false),
   expenseLoading = ref(false),
   expenseError = ref(''),
@@ -449,5 +616,35 @@ onBeforeUnmount(() => {
   font-size: 22px;
   font-weight: 600;
   margin-top: 8px;
+}
+.batch-scroll {
+  max-height: 46vh;
+  overflow: auto;
+  padding-right: 4px;
+}
+.batch-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) repeat(5, minmax(110px, 1fr)) 56px;
+  gap: 8px;
+  align-items: center;
+  min-width: 900px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--scm-border, #f0f0f0);
+}
+.batch-grid :deep(.ant-input-number),
+.batch-grid :deep(.ant-select) {
+  width: 100%;
+}
+.batch-grid-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--scm-surface, #fff);
+  color: var(--scm-text-secondary, #666);
+  font-size: 12px;
+  font-weight: 500;
+}
+.batch-add-row {
+  margin-top: 12px;
 }
 </style>

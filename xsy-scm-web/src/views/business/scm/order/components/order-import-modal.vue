@@ -38,7 +38,7 @@
       v-if="result && !result.totalErrors"
       status="success"
       title="订单导入完成"
-      :sub-title="`共 ${result.totalOrders} 张：已确认 ${result.confirmedOrders} 张，待称重 ${result.pendingOrders} 张`"
+      :sub-title="`共 ${result.totalOrders} 张：已确认 ${result.confirmedOrders} 张，待确认 ${result.pendingOrders} 张`"
     >
       <template #extra>
         <a-table :data-source="result.orders" :columns="importedColumns" row-key="orderId" size="small" :pagination="{pageSize: 5}">
@@ -67,7 +67,8 @@ const IMPORT_RULES = [
   '一份客户订单生成一张销售订单：收货单位填客户档案里的客户名称，日期即期望送货日期。',
   '商品按「商品名称 + 规格 + 单位」匹配商品档案，实数量作为下单数量；合计行与签字栏不导入。',
   '填写销售单价即按客户订单单价下单，需要订单改价权限，改价原因由系统记为「客户订单导入」；留空按系统定价。',
-  '纯标品自动确认；含非标品时整单待确认，等待电子秤回写实重。',
+  '导入后订单进入待确认：核对商品与价格后确认订单，非标品可在分拣时称重，不必等称重再确认。',
+  '确认后的订单才会进入采购汇总与分拣；再按商品指派采购员安排采购。',
 ];
 
 const emit = defineEmits<{saved: []}>();

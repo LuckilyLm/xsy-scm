@@ -30,6 +30,12 @@ public interface SalesOrderDao extends BaseMapper<SalesOrderEntity> {
     /** 是否已有分拣任务或出库记录：有这些事实后增删商品会让分拣与出库对不上单。 */
     boolean hasSortingOrOutbound(@Param("orderId") Long orderId);
 
+    /** 订单是否已签收（含异常签收）：签收是订单级终态，应收已按出库事实生成，不能再直接改单。 */
+    boolean hasSignedFact(@Param("orderId") Long orderId);
+
+    /** 已完成的实发数量（出库与送货单的同一口径，含分拣为 0 的行）；未分拣的行不返回。 */
+    List<com.xsy.scm.order.domain.dto.SalesOrderSortedQuantityDto> sortedQuantities(@Param("orderId") Long orderId);
+
     /**
      * 列表查询；{@code scope} 必须由 Service 通过 {@code ScmDataScopeService#resolve()} 传入，传 {@code null} 时 SQL
      * 渲染成恒假条件，按拒绝处理。{@code lock} / {@code selectById} 等写路径不带范围。

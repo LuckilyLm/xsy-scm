@@ -3,7 +3,11 @@ package com.xsy.scm.finance.service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.constant.ScmOperator;
@@ -17,6 +21,7 @@ import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.dao.FinanceCounterpartySourceDao;
 import com.xsy.scm.finance.dao.FinanceCustomerExpenseDao;
 import com.xsy.scm.finance.domain.form.FinanceCustomerExpenseForm;
+import com.xsy.scm.finance.domain.dto.FinanceCustomerFactDto;
 import com.xsy.scm.finance.domain.entity.FinanceCustomerExpenseEntity;
 import com.xsy.scm.finance.domain.vo.FinanceCustomerExpenseVO;
 import lombok.RequiredArgsConstructor;
@@ -65,22 +70,63 @@ public class FinanceCustomerExpenseService {
         if (claim.replay()) {
             return expenseDao.find(idempotencyService.replay(claim, Long.class));
         }
+        FinanceCustomerExpenseEntity expense = insert(customer, form.getExpenseMonth(), goodsCost, amounts,
+            form.getReason());
+        idempotencyService.complete(claim, "FINANCE_CUSTOMER_EXPENSE", expense.getId(), expense.getId());
+        return expenseDao.find(expense.getId());
+    }
+
+    /**
+     * 批量登记同一月份的多客户费用。整批一个幂等键：任一行失败整批回滚，重试同键不会重复写入。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public List<FinanceCustomerExpenseVO> addBatch(FinanceCustomerExpenseForm.BatchAdd form, String key) {
+        requireMonth(form.getExpenseMonth());
+        var claim = idempotencyService.claim("FINANCE_CUSTOMER_EXPENSE_BATCH_ADD", key, form);
+        if (claim.replay()) {
+            Long[] ids = idempotencyService.replay(claim, Long[].class);
+            return Arrays.stream(ids).map(expenseDao::find).toList();
+        }
+        List<Long> ids = new ArrayList<>();
+        Set<Long> seen = new HashSet<>();
+        for (FinanceCustomerExpenseForm.Row row : form.getRows()) {
+            if (!seen.add(row.getCustomerId())) {
+                throw new ScmBusinessException(FinanceErrorCode.EXPENSE_BATCH_DUPLICATE);
+            }
+            var customer = counterpartySourceDao.selectCustomer(row.getCustomerId());
+            if (customer == null) {
+                throw new ScmBusinessException(FinanceErrorCode.EXPENSE_NOT_FOUND);
+            }
+            requireVisible(customer.getSellerId());
+            List<BigDecimal> amounts = List.of(amount(row.getTaxAmount()), amount(row.getServiceAmount()),
+                amount(row.getFreightAmount()), amount(row.getCommissionAmount()));
+            BigDecimal goodsCost = row.getGoodsCostAmount() == null ? null : amount(row.getGoodsCostAmount());
+            if (goodsCost == null && amounts.stream().reduce(BigDecimal.ZERO, BigDecimal::add).signum() <= 0) {
+                throw new ScmBusinessException(FinanceErrorCode.EXPENSE_AMOUNT_INVALID);
+            }
+            ids.add(insert(customer, form.getExpenseMonth(), goodsCost, amounts, form.getReason()).getId());
+        }
+        idempotencyService.complete(claim, "FINANCE_CUSTOMER_EXPENSE_BATCH", ids.getFirst(), ids.toArray(Long[]::new));
+        return ids.stream().map(expenseDao::find).toList();
+    }
+
+    private FinanceCustomerExpenseEntity insert(FinanceCustomerFactDto customer, LocalDate expenseMonth,
+        BigDecimal goodsCost, List<BigDecimal> amounts, String reason) {
         FinanceCustomerExpenseEntity expense = new FinanceCustomerExpenseEntity();
         expense.setExpenseNo(ScmDocumentNumbers.next());
         expense.setCustomerId(customer.getCustomerId());
         expense.setCustomerNameSnapshot(customer.getCustomerName());
-        expense.setExpenseMonth(form.getExpenseMonth());
+        expense.setExpenseMonth(expenseMonth);
         expense.setGoodsCostAmount(goodsCost);
         expense.setTaxAmount(amounts.get(0));
         expense.setServiceAmount(amounts.get(1));
         expense.setFreightAmount(amounts.get(2));
         expense.setCommissionAmount(amounts.get(3));
-        expense.setReason(form.getReason().trim());
+        expense.setReason(reason.trim());
         expense.setCreatedAt(OffsetDateTime.now());
         expense.setCreatedBy(ScmOperator.current());
         expenseDao.insert(expense);
-        idempotencyService.complete(claim, "FINANCE_CUSTOMER_EXPENSE", expense.getId(), expense.getId());
-        return expenseDao.find(expense.getId());
+        return expense;
     }
 
     @Transactional(rollbackFor = Exception.class)

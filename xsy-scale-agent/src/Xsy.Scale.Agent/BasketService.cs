@@ -105,6 +105,9 @@ internal sealed class BasketService(CaptureService captures, StateStore store, A
         return store.SummarizeBaskets(scope, context.Item, context.Expired);
     }
 
+    /// <summary>完成意图的同步状态；平台尚未回执时仍是等待对接。</summary>
+    internal string CommandState(string operationId) => store.BasketCommandState(operationId) ?? "WAITING_CONTRACT";
+
     /// <summary>分页查询本商品已落盘筐记录，不从当前页推算累计。</summary>
     /// <param name="scope">非空并属于当前员工缓存的范围。</param>
     /// <param name="after">排他筐号，默认0，不可负数。</param>

@@ -10,11 +10,13 @@ import static org.mockito.Mockito.when;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.finance.domain.form.FinanceCustomerExpenseForm;
+import com.xsy.scm.finance.domain.vo.FinanceCustomerExpenseVO;
 import com.xsy.scm.finance.service.FinanceCustomerExpenseService;
 import com.xsy.scm.inventory.domain.InventoryOutboundFact;
 import com.xsy.scm.inventory.service.InventoryFulfillmentService;
@@ -52,6 +54,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 class FinanceReportCompletionPgIT extends ScmW6PgITBase {
     private static final AtomicLong SOURCE_IDS = new AtomicLong(System.currentTimeMillis());
@@ -65,6 +70,7 @@ class FinanceReportCompletionPgIT extends ScmW6PgITBase {
     @Autowired private OrderReturnService returnService;
     @Autowired private OrderReturnReceiptService returnReceiptService;
     @Autowired private InventoryFulfillmentService fulfillmentService;
+    @Autowired private TransactionTemplate transactionTemplate;
     private MockedStatic<StpUtil> permissions;
     private Long warehouseId;
 
@@ -122,6 +128,52 @@ class FinanceReportCompletionPgIT extends ScmW6PgITBase {
             Integer.class, expense.getExpenseId())).isEqualTo(1);
         expectSqlFailure("UPDATE xsy_finance_customer_expense SET tax_amount = 0 WHERE id = ?", expense.getExpenseId());
         expectSqlFailure("DELETE FROM xsy_finance_customer_expense_void WHERE expense_id = ?", expense.getExpenseId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void batchExpenseWritesAllCustomersAndRollsBackTheWholeBatchOnOneBadRow() {
+        Long first = newCustomer();
+        Long second = newCustomer();
+        FinanceCustomerExpenseForm.BatchAdd form = new FinanceCustomerExpenseForm.BatchAdd();
+        form.setExpenseMonth(month());
+        form.setReason("批量登记十月费用");
+        form.setRows(List.of(batchRow(first, "100.0000"), batchRow(second, "50.0000")));
+
+        var created = expenseService.addBatch(form, prefix + ":batch-expense");
+        assertThat(created).hasSize(2);
+        assertThat(created).extracting(FinanceCustomerExpenseVO::getCustomerId).containsExactlyInAnyOrder(first, second);
+        // 同键重试直接返回原批次，不重复登记。
+        assertThat(expenseService.addBatch(form, prefix + ":batch-expense")).hasSize(2);
+        assertThat(countExpense(first)).isEqualTo(1);
+
+        Long untouched = newCustomer();
+        FinanceCustomerExpenseForm.BatchAdd invalid = new FinanceCustomerExpenseForm.BatchAdd();
+        invalid.setExpenseMonth(month());
+        invalid.setReason("包含无效客户");
+        invalid.setRows(List.of(batchRow(untouched, "1.0000"), batchRow(987_654_321L, "1.0000")));
+        // 直接调用 Bean 不会经过 @Transactional 代理，这里用显式事务模拟控制器入口的整批回滚。
+        assertThatThrownBy(() -> transactionTemplate.execute(status -> {
+            expenseService.addBatch(invalid, prefix + ":batch-expense-bad");
+            return null;
+        })).isInstanceOf(ScmBusinessException.class);
+        assertThat(countExpense(untouched)).isZero();
+    }
+
+    private FinanceCustomerExpenseForm.Row batchRow(Long customerId, String goodsCost) {
+        FinanceCustomerExpenseForm.Row row = new FinanceCustomerExpenseForm.Row();
+        row.setCustomerId(customerId);
+        row.setGoodsCostAmount(goodsCost);
+        row.setTaxAmount("10.0000");
+        row.setServiceAmount("0.0000");
+        row.setFreightAmount("0.0000");
+        row.setCommissionAmount("0.0000");
+        return row;
+    }
+
+    private int countExpense(Long customerId) {
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_finance_customer_expense WHERE customer_id = ?",
+            Integer.class, customerId);
     }
 
     @Test
