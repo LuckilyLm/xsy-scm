@@ -4,13 +4,10 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.no.ScmBusinessNoService;
 import com.xsy.scm.common.no.ScmBusinessNoType;
-import com.xsy.scm.common.constant.ScmEnableStatusEnum;
-import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductSpuDao;
 import com.xsy.scm.product.domain.entity.ProductSkuEntity;
 import com.xsy.scm.product.domain.entity.ProductSpuEntity;
-import com.xsy.scm.product.constant.ScmProductMasterStatusEnum;
 import com.xsy.scm.product.domain.form.ProductDeleteForm;
 import com.xsy.scm.product.domain.form.ProductSkuForm;
 import com.xsy.scm.product.domain.form.ProductSpuAddForm;
@@ -34,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.MASTER_STATUS_SALE_CONFLICT;
 import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_BUSINESS_REFERENCED;
 import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_CODE_DUPLICATE;
 import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
@@ -106,8 +102,6 @@ public class ProductSpuService {
     @Transactional
     public void updateStatus(ProductStatusForm form) {
         var entity = require(form.getSpuId(), form.getVersion());
-        // 归档商品退出经营，DB 有 CHECK 兜底；这里先给出可解释的业务错误。
-        assertSaleCompatible(entity.getMasterStatus(), form.getStatus());
         entity.setStatus(form.getStatus());
         stamp(entity);
         if (productSpuDao.updateById(entity) != 1)
@@ -141,7 +135,7 @@ public class ProductSpuService {
     }
 
     private void apply(ProductSpuEntity entity, ProductSpuAddForm form) {
-        BeanUtils.copyProperties(form, entity, "version", "masterStatus", "spuCode");
+        BeanUtils.copyProperties(form, entity, "version", "spuCode");
         entity.setName(form.getName().trim());
         entity.setAlias(trimToNull(form.getAlias()));
         entity.setDescription(trimToNull(form.getDescription()));
@@ -150,19 +144,7 @@ public class ProductSpuService {
         entity.setOrigin(trimToNull(form.getOrigin()));
         entity.setInvoiceName(trimToNull(form.getInvoiceName()));
         entity.setTaxCategoryCode(trimToNull(form.getTaxCategoryCode()));
-        // 主档状态与在售状态互不影响：表单不传表示不改，新增时默认 ENABLED。
-        if (form.getMasterStatus() != null)
-            entity.setMasterStatus(form.getMasterStatus());
-        if (entity.getMasterStatus() == null)
-            entity.setMasterStatus(ScmEnableStatusEnum.ENABLED.name());
-        assertSaleCompatible(entity.getMasterStatus(), entity.getStatus());
         stamp(entity);
-    }
-
-    private void assertSaleCompatible(String masterStatus, String status) {
-        if (ScmProductMasterStatusEnum.ARCHIVED.name().equals(masterStatus)
-            && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
-            throw new ScmBusinessException(MASTER_STATUS_SALE_CONFLICT);
     }
 
     /**

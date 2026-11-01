@@ -7,7 +7,6 @@ import type {
   ImageMatchTarget,
   ImageReorderForm,
   ImageSetPrimaryForm,
-  MasterStatus,
   ProductBatchItem,
   ProductBatchResult,
   ProductForm,
@@ -50,7 +49,7 @@ export const productApi = {
     }),
   delete: (spuId: ProductId, version: number) => postRequest('/scm/product/delete', {spuId, version}),
   // 批量命令整批一个事务：预校验不过时 updatedCount 为 0，失败行逐条返回。
-  batchStatus: (items: ProductBatchItem[], target: {status?: ShelfStatus; masterStatus?: MasterStatus}) =>
+  batchStatus: (items: ProductBatchItem[], target: {status?: ShelfStatus}) =>
     postRequest<ProductBatchResult>('/scm/product/batch/updateStatus', {items, ...target}),
   batchCategory: (items: ProductBatchItem[], categoryId: ProductId) =>
     postRequest<ProductBatchResult>('/scm/product/batch/updateCategory', {

@@ -1,8 +1,6 @@
 export type ProductId = string | number;
 export type ShelfStatus = 'ON_SHELF' | 'OFF_SHELF';
 export type ProductType = 'STANDARD' | 'NON_STANDARD';
-/** 主档生命周期，与 status（是否在售）正交；ARCHIVED 不允许与 ON_SHELF 并存。 */
-export type MasterStatus = 'ENABLED' | 'DISABLED' | 'ARCHIVED';
 export type StorageMethod = 'AMBIENT' | 'CHILLED' | 'FROZEN';
 export type AssistantStatus = 'ENABLED' | 'DISABLED';
 export type UomCategory = 'WEIGHT' | 'COUNT' | 'VOLUME' | 'LENGTH' | 'OTHER';
@@ -110,8 +108,6 @@ export interface ProductForm extends ProductMasterFields {
   status: ShelfStatus;
   skuList: ProductSku[];
   images: ProductImage[];
-  /** null 表示新增时取 ENABLED、编辑时保持原值。 */
-  masterStatus?: MasterStatus | null;
   /** 提交时的标签全集：编辑接口按它整批替换，漏传等于清空标签。 */
   tagIds: ProductId[];
 }
@@ -128,7 +124,6 @@ export interface ProductRow extends ProductMasterFields {
   categoryPath: string;
   categoryName: string;
   skuCount: number;
-  masterStatus: MasterStatus;
   tags: ProductTagRef[];
   skuList: ProductSku[];
   images?: ProductImage[];
@@ -151,7 +146,6 @@ export interface ProductQuery {
   status?: ShelfStatus;
   skuStatus?: ShelfStatus;
   productType?: ProductType;
-  masterStatus?: MasterStatus;
   storageMethod?: StorageMethod;
   tagIds?: ProductId[];
   hasPrimaryImage?: boolean;

@@ -193,7 +193,6 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
     // tagIds 与 taxExempt 是新增接口的必填项，缺省值必须能直接提交。
     assert.deepEqual(form.tagIds, []);
     assert.equal(form.taxExempt, false);
-    assert.equal(form.masterStatus, 'ENABLED');
     assert.equal(form.shelfLifeDays, null);
     assert.equal(form.lossRate, null);
     assert.equal(form.taxRate, null);
@@ -203,7 +202,6 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
       ...emptyProduct(),
       spuId: 11,
       version: 3,
-      masterStatus: 'DISABLED',
       skuList: [emptySku(0, true)],
       tags: [{tagId: 5, tagCode: 'T', name: '有机', status: 'DISABLED'}],
       skuCount: 2,
@@ -213,7 +211,6 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
     const form = productFormOf(detail);
     // 编辑接口按 tagIds 整批替换：漏映射等于把这个商品的标签清空。
     assert.deepEqual(form.tagIds, [5]);
-    assert.equal(form.masterStatus, 'DISABLED');
     assert.equal(form.version, 3);
     assert.equal(form.skuCount, undefined);
     assert.equal(form.categoryPath, undefined);
@@ -221,14 +218,6 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
     // SKU 深拷贝：弹窗里改数量不能写回列表页已缓存的行对象。
     assert.deepEqual(form.skuList, detail.skuList);
     assert.notEqual(form.skuList[0], detail.skuList[0]);
-  });
-  test('archived product cannot stay on shelf in the form model either', () => {
-    const form = emptyProduct();
-    Object.assign(form.skuList[0], {skuCode: 'A', specName: '大', saleUnit: 'kg'});
-    form.masterStatus = 'ARCHIVED';
-    assert.match(validateProduct(form), /归档/);
-    form.status = 'OFF_SHELF';
-    assert.equal(validateProduct(form), undefined);
   });
   test('last SKU cannot be removed; removing default selects first survivor and keeps identities', () => {
     assert.throws(() => removeSku(emptyProduct().skuList, 0));

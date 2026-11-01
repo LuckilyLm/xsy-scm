@@ -41,11 +41,6 @@
                   <a-select v-model:value="form.status" :options="SHELF_STATUS_ENUM" />
                 </a-form-item>
               </div>
-              <div class="product-form-field">
-                <a-form-item label="主档状态" name="masterStatus" class="app-drawer-field--compact">
-                  <a-select v-model:value="form.masterStatus" :options="MASTER_STATUS_ENUM" />
-                </a-form-item>
-              </div>
               <div class="product-form-field product-form-field--wide">
                 <a-form-item label="商品简介" name="description">
                   <a-textarea v-model:value="form.description" :maxlength="1000" :rows="2" show-count />
@@ -194,7 +189,7 @@ import {productApi} from '/@/api/business/scm/product-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {productTagApi, productUomApi} from '/@/api/business/scm/product-assistant-api';
 import {useUserStore} from '/@/store/modules/system/user';
-import {MASTER_STATUS_ENUM, SHELF_STATUS_ENUM, STORAGE_METHOD_ENUM} from '/@/constants/business/scm/product-const';
+import {SHELF_STATUS_ENUM, STORAGE_METHOD_ENUM} from '/@/constants/business/scm/product-const';
 import type {ProductCategory, ProductForm, ProductId, ProductTag, ProductTagRef, ProductUom} from '/@/types/business/scm/product';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
 import ImageUpload from './product-image-upload.vue';

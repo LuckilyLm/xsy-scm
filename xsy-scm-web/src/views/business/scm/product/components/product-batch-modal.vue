@@ -22,9 +22,6 @@
         <a-form-item label="在售状态" name="status">
           <a-select v-model:value="form.status" :options="SHELF_STATUS_ENUM" allow-clear placeholder="不修改" />
         </a-form-item>
-        <a-form-item label="主档状态" name="masterStatus">
-          <a-select v-model:value="form.masterStatus" :options="MASTER_STATUS_ENUM" allow-clear placeholder="不修改" />
-        </a-form-item>
       </template>
       <a-form-item
         v-else-if="command === 'CATEGORY'"
@@ -53,12 +50,11 @@
 </template>
 <script setup lang="ts">
 import {reactive, ref} from 'vue';
-import {message, Modal} from 'ant-design-vue';
+import {message} from 'ant-design-vue';
 import type {FormInstance} from 'ant-design-vue';
 import {productApi} from '/@/api/business/scm/product-api';
-import {MASTER_STATUS_ENUM, SHELF_STATUS_ENUM, TAG_MODE_ENUM} from '/@/constants/business/scm/product-const';
+import {SHELF_STATUS_ENUM, TAG_MODE_ENUM} from '/@/constants/business/scm/product-const';
 import type {
-  MasterStatus,
   ProductBatchItem,
   ProductBatchResult,
   ProductCategory,
@@ -83,7 +79,6 @@ const items = ref<ProductBatchItem[]>([]),
 const hiddenFailures = ref(0);
 const defaults = () => ({
   status: undefined as ShelfStatus | undefined,
-  masterStatus: undefined as MasterStatus | undefined,
   categoryId: undefined as ProductId | undefined,
   mode: 'ADD' as TagMode,
   tagIds: [] as ProductId[],
@@ -107,30 +102,16 @@ async function submit() {
     notifyFormInvalid(err, formRef.value);
     return;
   }
-  // 两个状态都可留空（表示不改），「至少选一个」只能手写判断。
-  if (command.value === 'STATUS' && !form.status && !form.masterStatus) {
-    error.value = '请至少选择一个要修改的状态';
+  if (command.value === 'STATUS' && !form.status) {
+    error.value = '请选择要修改的在售状态';
     return;
   }
   error.value = '';
-  // 停止引用会影响后续单据，提交前再确认一次。
-  if (command.value === 'STATUS' && form.masterStatus === 'DISABLED') {
-    try {
-      await Modal.confirm({
-        title: '确认停止引用',
-        content: `将把选中的 ${items.value.length} 个商品设为「停止引用」：新单据不再能选到它们，已生成的订单与采购不变。`,
-        okText: '确认停止引用',
-        cancelText: '取消',
-      });
-    } catch {
-      return;
-    }
-  }
   saving.value = true;
   try {
     const response =
       command.value === 'STATUS'
-        ? await productApi.batchStatus(items.value, {status: form.status, masterStatus: form.masterStatus})
+        ? await productApi.batchStatus(items.value, {status: form.status})
         : command.value === 'CATEGORY'
         ? await productApi.batchCategory(items.value, form.categoryId as ProductId)
         : await productApi.batchTags(items.value, form.tagIds, form.mode);

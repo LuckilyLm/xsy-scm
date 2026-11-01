@@ -25,15 +25,13 @@ public final class ProductEnumLabels {
      */
     public static final Map<String,
         List<String>> OPTIONS = Map.of("储存方式", labels(ScmStorageMethodEnum.values(), ScmStorageMethodEnum::getDesc),
-            "主档状态", labels(ScmProductMasterStatusEnum.values(), ScmProductMasterStatusEnum::getDesc), "商品状态",
-            labels(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品规格状态",
+            "商品状态", labels(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品规格状态",
             labels(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品类型",
             labels(ScmProductTypeEnum.values(), ScmProductTypeEnum::getDesc));
 
     private static final Map<String,
         Map<String, String>> ALIASES = Map.of("储存方式",
-            aliases(ScmStorageMethodEnum.values(), ScmStorageMethodEnum::getDesc), "主档状态",
-            aliases(ScmProductMasterStatusEnum.values(), ScmProductMasterStatusEnum::getDesc), "商品状态",
+            aliases(ScmStorageMethodEnum.values(), ScmStorageMethodEnum::getDesc), "商品状态",
             aliases(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品规格状态",
             aliases(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品类型",
             aliases(ScmProductTypeEnum.values(), ScmProductTypeEnum::getDesc));

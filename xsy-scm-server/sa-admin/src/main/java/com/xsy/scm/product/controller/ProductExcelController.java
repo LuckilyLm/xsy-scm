@@ -48,15 +48,15 @@ import java.util.stream.Collectors;
 public class ProductExcelController {
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
     private static final int EXPORT_MAX_ROWS = 100000;
-    private static final List<Column> PRODUCT_EXPORT_COLUMNS = List.of(new Column("spuId", "商品ID"),
-        new Column("spuVersion", "商品版本"), new Column("skuId", "商品规格ID"), new Column("skuVersion", "商品规格版本"),
-        new Column("spuCode", "商品编码"), new Column("spuName", "商品名称"), new Column("alias", "别名"),
-        new Column("categoryPath", "分类"), new Column("mnemonicCode", "助记码"), new Column("brandName", "品牌"),
-        new Column("origin", "产地"), new Column("storageMethod", "储存方式"), new Column("masterStatus", "主档状态"),
-        new Column("spuStatus", "商品状态"), new Column("tagNames", "标签"), new Column("skuCode", "商品规格编码"),
-        new Column("barcode", "条码"), new Column("specName", "商品规格名称"), new Column("saleUnit", "销售单位"),
-        new Column("productType", "商品类型"), new Column("marketPrice", "市场价"), new Column("skuStatus", "商品规格状态"),
-        new Column("defaultFlag", "默认商品规格"), new Column("sortOrder", "排序"));
+    private static final List<
+        Column> PRODUCT_EXPORT_COLUMNS = List.of(new Column("spuId", "商品ID"), new Column("spuVersion", "商品版本"),
+            new Column("skuId", "商品规格ID"), new Column("skuVersion", "商品规格版本"), new Column("spuCode", "商品编码"),
+            new Column("spuName", "商品名称"), new Column("alias", "别名"), new Column("categoryPath", "分类"),
+            new Column("mnemonicCode", "助记码"), new Column("brandName", "品牌"), new Column("origin", "产地"),
+            new Column("storageMethod", "储存方式"), new Column("spuStatus", "商品状态"), new Column("tagNames", "标签"),
+            new Column("skuCode", "商品规格编码"), new Column("barcode", "条码"), new Column("specName", "商品规格名称"),
+            new Column("saleUnit", "销售单位"), new Column("productType", "商品类型"), new Column("marketPrice", "市场价"),
+            new Column("skuStatus", "商品规格状态"), new Column("defaultFlag", "默认商品规格"), new Column("sortOrder", "排序"));
     private final ProductImportService productImportService;
     private final ProductQueryService productQueryService;
     private final SecurityFileService securityFileService;
@@ -125,10 +125,9 @@ public class ProductExcelController {
         List<List<Object>> values = rows.stream()
             .map(row -> Arrays.<Object>asList(row.getSpuId(), row.getSpuVersion(), row.getSkuId(), row.getSkuVersion(),
                 row.getSpuCode(), row.getSpuName(), row.getAlias(), row.getCategoryPath(), row.getMnemonicCode(),
-                row.getBrandName(), row.getOrigin(), row.getStorageMethod(), row.getMasterStatus(), row.getSpuStatus(),
-                row.getTagNames(), row.getSkuCode(), row.getBarcode(), row.getSpecName(), row.getSaleUnit(),
-                row.getProductType(), row.getMarketPrice(), row.getSkuStatus(), row.getDefaultFlag(),
-                row.getSortOrder()))
+                row.getBrandName(), row.getOrigin(), row.getStorageMethod(), row.getSpuStatus(), row.getTagNames(),
+                row.getSkuCode(), row.getBarcode(), row.getSpecName(), row.getSaleUnit(), row.getProductType(),
+                row.getMarketPrice(), row.getSkuStatus(), row.getDefaultFlag(), row.getSortOrder()))
             .toList();
         ScmExportColumnSelection.writeSelected(response, "商品档案导出.xlsx", "商品", selection, values);
     }
@@ -155,7 +154,6 @@ public class ProductExcelController {
             vo.setOrigin(spu.getOrigin());
             // 导出给人看，枚举一律写业务中文；保存与接口仍用枚举名，对应关系集中在 ProductEnumLabels。
             vo.setStorageMethod(ProductEnumLabels.label("储存方式", spu.getStorageMethod()));
-            vo.setMasterStatus(ProductEnumLabels.label("主档状态", spu.getMasterStatus()));
             vo.setSpuStatus(ProductEnumLabels.label("商品状态", spu.getStatus()));
             vo.setTagNames(tagNames);
             vo.setSkuCode(sku.getSkuCode());
@@ -186,7 +184,6 @@ public class ProductExcelController {
         vo.setBrandName(spu.getBrandName());
         vo.setOrigin(spu.getOrigin());
         vo.setStorageMethod(spu.getStorageMethod());
-        vo.setMasterStatus(spu.getMasterStatus());
         vo.setSpuStatus(spu.getStatus());
         vo.setTagNames(tagNames);
         return vo;

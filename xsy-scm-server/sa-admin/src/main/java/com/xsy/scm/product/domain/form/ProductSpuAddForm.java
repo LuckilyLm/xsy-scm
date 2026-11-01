@@ -2,7 +2,6 @@ package com.xsy.scm.product.domain.form;
 
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.validation.ScmEnumValue;
-import com.xsy.scm.product.constant.ScmProductMasterStatusEnum;
 import com.xsy.scm.product.constant.ScmStorageMethodEnum;
 
 import jakarta.validation.Valid;
@@ -72,11 +71,6 @@ public class ProductSpuAddForm {
     @DecimalMin(value = "0", message = "税率不能小于0")
     @DecimalMax(value = "100", message = "税率不能大于100")
     private BigDecimal taxRate;
-    /**
-     * 主档生命周期；null 表示新增时取 ENABLED、编辑时保持原值，上下架仍由 status 表达。
-     */
-    @ScmEnumValue(enumClass = ScmProductMasterStatusEnum.class, message = "商品主档状态无效")
-    private String masterStatus;
     @Size(max = 50, message = "标签 ID 列表不能超过50项")
     @NotNull(message = "标签 ID 列表不能为空")
     private List<@NotNull(message = "标签 ID 不能为空") @Positive(message = "标签 ID 必须大于0") Long> tagIds = new ArrayList<>();

@@ -20,10 +20,6 @@ public class ProductSpuVO {
     private Long categoryId;
     private String description;
     private String status;
-    /**
-     * 主档生命周期：ENABLED 可用 / DISABLED 停止新引用 / ARCHIVED 已归档，与 status（是否在售）相互独立。
-     */
-    private String masterStatus;
     private String mnemonicCode;
     private String brandName;
     private String origin;

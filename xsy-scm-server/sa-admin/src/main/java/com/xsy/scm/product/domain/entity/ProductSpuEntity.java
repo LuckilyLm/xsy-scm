@@ -54,5 +54,4 @@ public class ProductSpuEntity {
     private Boolean taxExempt;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal taxRate;
-    private String masterStatus;
 }

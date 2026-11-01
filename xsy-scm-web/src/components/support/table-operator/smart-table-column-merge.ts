@@ -16,7 +16,6 @@ const legacyDefaults: Record<number, Record<string, readonly number[]>> = {
     price: [180, 184],
     skuCount: [76, 80],
     status: [84, 96],
-    masterStatus: [88, 96],
     tags: [150],
     action: [120, 144],
   },

@@ -2,7 +2,6 @@ package com.xsy.scm.product.domain.form;
 
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.validation.ScmEnumValue;
-import com.xsy.scm.product.constant.ScmProductMasterStatusEnum;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
@@ -14,7 +13,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * 批量上下架（status）与批量主档启停（masterStatus）共用一个入口，至少给一个目标状态。
+ * 批量上下架入口，必须给出目标状态。
  */
 @Data
 public class ProductSpuBatchStatusForm {
@@ -24,15 +23,13 @@ public class ProductSpuBatchStatusForm {
     private List<ProductBatchItemForm> items;
     @ScmEnumValue(enumClass = ScmShelfStatusEnum.class, message = "商品销售状态无效")
     private String status;
-    @ScmEnumValue(enumClass = ScmProductMasterStatusEnum.class, message = "商品主档状态无效")
-    private String masterStatus;
 
     /**
-     * 两个目标状态可以只给一个（只改在售 / 只改主档），但全空就是一次无效命令。
+     * 批量上下架必须给出目标状态。
      */
-    @AssertTrue(message = "status 与 masterStatus 至少提供一个")
+    @AssertTrue(message = "请选择商品销售状态")
     @JsonIgnore
     public boolean isTargetPresent() {
-        return status != null || masterStatus != null;
+        return status != null;
     }
 }

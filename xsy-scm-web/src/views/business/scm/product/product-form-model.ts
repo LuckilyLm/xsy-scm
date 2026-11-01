@@ -80,7 +80,6 @@ export function emptyProduct(): ProductForm {
     taxCategoryCode: '',
     taxExempt: false,
     taxRate: null,
-    masterStatus: 'ENABLED',
     tagIds: [],
   };
 }
@@ -114,7 +113,6 @@ export function productFormOf(row: ProductRow): ProductForm {
     taxCategoryCode: row.taxCategoryCode ?? '',
     taxExempt: row.taxExempt ?? false,
     taxRate: row.taxRate ?? null,
-    masterStatus: row.masterStatus,
     tagIds: row.tags.map((tag) => tag.tagId),
   };
 }
@@ -133,7 +131,6 @@ export function removeSku(rows: ProductSku[], index: number): ProductSku[] {
 
 export function validateProduct(form: ProductForm): string | undefined {
   // 与数据库约束一致；服务端也会拒绝，这里提前给出提示
-  if (form.masterStatus === 'ARCHIVED' && form.status === 'ON_SHELF') return '已归档商品不能处于上架状态';
   if (!form.skuList.length) return '至少保留一个商品规格';
   if (form.skuList.filter((s) => s.defaultFlag).length !== 1) return '请选择且仅选择一个默认商品规格';
   const barcodes = new Set<string>(),

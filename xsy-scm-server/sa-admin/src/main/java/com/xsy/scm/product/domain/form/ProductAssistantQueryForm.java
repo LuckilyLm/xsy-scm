@@ -12,6 +12,6 @@ import com.xsy.scm.common.validation.ScmEnumValue;
 public class ProductAssistantQueryForm {
     @Size(max = 64, message = "查询关键词不能超过64个字符")
     private String keyword;
-    @ScmEnumValue(enumClass = ScmEnableStatusEnum.class, message = "主档状态无效")
+    @ScmEnumValue(enumClass = ScmEnableStatusEnum.class, message = "状态无效")
     private String status;
 }

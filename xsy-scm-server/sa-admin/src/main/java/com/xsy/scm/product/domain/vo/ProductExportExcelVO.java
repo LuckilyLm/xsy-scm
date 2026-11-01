@@ -35,8 +35,6 @@ public class ProductExportExcelVO {
     private String origin;
     @ExcelProperty("储存方式")
     private String storageMethod;
-    @ExcelProperty("主档状态")
-    private String masterStatus;
     @ExcelProperty("商品状态")
     private String spuStatus;
     @ExcelProperty("标签")

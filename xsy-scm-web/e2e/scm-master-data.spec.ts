@@ -661,13 +661,11 @@ test.describe('scm-product', () => {
     await expectDrawerClosed();
     row = page.locator('.ant-table-tbody tr.ant-table-row').filter({hasText: prefix + '苹果'});
     await expect(row).toBeVisible();
-    await expect(row.getByText('可用', {exact: true})).toBeVisible();
     await row.locator('.ant-table-row-expand-icon').click();
     await expect(page.getByText(prefix + 'BAR', {exact: true})).toBeVisible();
     const before = (await (await api.get(`/scm/product/detail/${id}`)).json()).data;
     expect(before.mnemonicCode).toBe(prefix + 'PG');
     expect(before.storageMethod).toBe('CHILLED');
-    expect(before.masterStatus).toBe('ENABLED');
     await button(row, '编辑').click();
     await expect(drawer.getByLabel('第 1 个商品规格的第 1 个规格值', {exact: true})).toHaveValue('大果');
     // 编辑态必须回显字典值，否则停用单位会让历史商品看不出原值
@@ -700,7 +698,6 @@ test.describe('scm-product', () => {
     const queryForm = page.locator('form.smart-query-form');
     const querySelect = (label: string) => queryForm.locator('.ant-form-item').filter({hasText: label}).locator('.ant-select').first();
     await pick(page, querySelect('储存方式'), '冷藏');
-    await pick(page, querySelect('主档状态'), '可用');
     await button(page, '查询').click();
     await expect(row).toBeVisible();
     await button(row, prefix + '苹果').click();
@@ -736,17 +733,12 @@ test.describe('scm-product', () => {
     const modal = page.locator('.ant-modal:visible');
     await button(page, '批量改状态').click();
     await modal.getByRole('button', {name: /确.*定/}).click();
-    await expect(modal.getByText('请至少选择一个要修改的状态')).toBeVisible();
-    await pick(page, modal.getByLabel('主档状态', {exact: true}), '停止引用');
+    await expect(modal.getByText('请选择要修改的在售状态')).toBeVisible();
+    await pick(page, modal.getByLabel('在售状态', {exact: true}), '下架');
     const statusChanged = page.waitForResponse((r) => r.url().endsWith('/scm/product/batch/updateStatus'));
     await modal.getByRole('button', {name: /确.*定/}).click();
-    // 「停止引用」属危险动作：批量弹窗提交后还会再弹一次确认，命令在确认之后才发出
-    await page
-      .locator('.ant-modal-confirm:visible')
-      .getByRole('button', {name: /确认停止引用/})
-      .click();
     expect((await (await statusChanged).json()).data.updatedCount).toBe(1);
-    await expect(row.getByText('停止引用', {exact: true})).toBeVisible();
+    await expect(button(row, '上架')).toBeVisible();
     // 每次批量命令都会重载列表并清空选择，所以第二条命令要重新勾选
     await expect(row.first()).toBeVisible();
     await row.first().locator('.ant-checkbox-wrapper').click();
@@ -758,7 +750,6 @@ test.describe('scm-product', () => {
     await modal.getByRole('button', {name: /确.*定/}).click();
     expect((await (await tagged).json()).data.updatedCount).toBe(1);
     await expect(row.getByText(prefix + '礼盒', {exact: true})).toBeVisible();
-    expect((await (await api.get(`/scm/product/detail/${id}`)).json()).data.masterStatus).toBe('DISABLED');
 
     await button(row, '删除').click();
     await page
@@ -855,7 +846,7 @@ test.describe('scm-product', () => {
     expect(result.code).toBe(30005);
     // 批量命令的权限码里没有 add/update/delete 之类关键词，只读授权必须单独排除它
     const batch = await (
-      await client.post('/scm/product/batch/updateStatus', {data: {items: [{spuId: 1, version: 0}], masterStatus: 'DISABLED'}})
+      await client.post('/scm/product/batch/updateStatus', {data: {items: [{spuId: 1, version: 0}], status: 'OFF_SHELF'}})
     ).json();
     expect(batch.code).toBe(30005);
     await authenticate(page, readToken);

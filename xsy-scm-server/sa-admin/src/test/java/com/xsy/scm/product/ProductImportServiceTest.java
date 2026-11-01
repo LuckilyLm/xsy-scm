@@ -130,7 +130,6 @@ class ProductImportServiceTest {
         spu.setCategoryId(100L);
         spu.setStatus("ON_SHELF");
         spu.setStorageMethod("CHILLED");
-        spu.setMasterStatus("ENABLED");
         spu.setDescription("原有详情描述");
         return spu;
     }
@@ -433,7 +432,6 @@ class ProductImportServiceTest {
                     && "SPU0001".equals(form.getSpuCode())
                     && "示例蔬菜".equals(form.getName())
                     && "原有详情描述".equals(form.getDescription())
-                    && "ENABLED".equals(form.getMasterStatus())
                     && Long.valueOf(100L).equals(form.getCategoryId())
                     && List.of(200L).equals(form.getTagIds())
                     && Long.valueOf(70L).equals(sku.getSkuId()) && sku.getVersion().equals(2)

@@ -29,8 +29,7 @@ public interface ProductSpuDao extends BaseMapper<ProductSpuEntity> {
      * 对已加锁、已复核版本的行做一条批量 UPDATE；调用方必须先在事务内持有这些行锁，因此这里不再带 version 条件，只刷新 version 与审计列。null 字段表示本次不改。
      */
     int batchApply(@Param("spuIds") List<Long> spuIds, @Param("status") String status,
-        @Param("masterStatus") String masterStatus, @Param("categoryId") Long categoryId,
-        @Param("operator") String operator);
+        @Param("categoryId") Long categoryId, @Param("operator") String operator);
 
     /**
      * 图片批量匹配：按已归一化（trim + lower）的商品编码反查活动商品，重复编码会返回多行。

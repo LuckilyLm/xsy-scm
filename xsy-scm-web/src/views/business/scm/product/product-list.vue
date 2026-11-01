@@ -25,9 +25,6 @@
         <a-form-item label="商品类型" class="smart-query-form-item"
           ><a-select v-model:value="filters.productType" allow-clear :options="PRODUCT_TYPE_ENUM" style="width: 120px"
         /></a-form-item>
-        <a-form-item label="主档状态" class="smart-query-form-item"
-          ><a-select v-model:value="filters.masterStatus" allow-clear :options="MASTER_STATUS_ENUM" style="width: 120px"
-        /></a-form-item>
         <a-form-item label="储存方式" class="smart-query-form-item"
           ><a-select v-model:value="filters.storageMethod" allow-clear :options="STORAGE_METHOD_ENUM" style="width: 110px"
         /></a-form-item>
@@ -151,9 +148,6 @@
             un-checked-children="下架"
             @change="(checked: unknown) => onStatusSwitch(record, Boolean(checked))"
           />
-          <a-tag v-else-if="column.dataIndex === 'masterStatus'" :color="MASTER_STATUS_COLOR[record.masterStatus]">
-            {{ enumText(MASTER_STATUS_ENUM, record.masterStatus) }}
-          </a-tag>
           <span v-else-if="column.dataIndex === 'storageMethod'">{{ enumText(STORAGE_METHOD_ENUM, record.storageMethod) }}</span>
           <span v-else-if="column.dataIndex === 'shelfLifeDays'">{{ days(record.shelfLifeDays) }}</span>
           <span v-else-if="column.dataIndex === 'lossRate'">{{ percent(record.lossRate) }}</span>
@@ -207,8 +201,6 @@ import type {
   ShelfStatus,
 } from '/@/types/business/scm/product';
 import {
-  MASTER_STATUS_COLOR,
-  MASTER_STATUS_ENUM,
   priceRange,
   PRODUCT_TYPE_ENUM,
   SHELF_STATUS_ENUM,
@@ -279,7 +271,6 @@ const columns = ref<TableColumnsType<ProductRow>>([
   {title: '市场价', dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange},
   {title: '规格数', dataIndex: 'skuCount', width: SCM_COLUMN_WIDTH.count},
   {title: '在售状态', dataIndex: 'status', width: SCM_COLUMN_WIDTH.status, align: 'center', sorter: true},
-  {title: '主档状态', dataIndex: 'masterStatus', width: SCM_COLUMN_WIDTH.status, align: 'center'},
   {title: '标签', dataIndex: 'tags', width: 132},
   {title: '操作', dataIndex: 'action', width: SCM_COLUMN_WIDTH.actionThree, align: 'center', fixed: 'right'},
 ]);
@@ -373,7 +364,6 @@ function reset() {
     status: undefined,
     skuStatus: undefined,
     productType: undefined,
-    masterStatus: undefined,
     storageMethod: undefined,
     tagIds: undefined,
     hasPrimaryImage: undefined,

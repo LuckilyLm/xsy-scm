@@ -31,16 +31,6 @@ export const ENABLE_STATUS_ENUM = [
   {value: 'ENABLED', label: '启用'},
   {value: 'DISABLED', label: '停用'},
 ];
-/** 主档生命周期：与「是否在售」正交，DISABLED 只停止新引用，不改动在售状态。 */
-export const MASTER_STATUS_ENUM = [
-  {value: 'ENABLED', label: '可用'},
-  {
-    value: 'DISABLED',
-    label: '停止引用',
-  },
-  {value: 'ARCHIVED', label: '已归档'},
-];
-export const MASTER_STATUS_COLOR: Record<string, string> = {ENABLED: 'green', DISABLED: 'orange', ARCHIVED: 'default'};
 export const STORAGE_METHOD_ENUM = [
   {value: 'AMBIENT', label: '常温'},
   {

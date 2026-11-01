@@ -379,7 +379,6 @@ public class ProductImportService {
         form.setTaxCategoryCode(spu.getTaxCategoryCode());
         form.setTaxExempt(spu.getTaxExempt());
         form.setTaxRate(spu.getTaxRate());
-        form.setMasterStatus(spu.getMasterStatus());
         var tagCodes = trim(first.getTagCodes());
         // 标记=解除全部标签，空白=保持现有标签，两者语义不同
         form.setTagIds(CLEAR_TOKEN.equals(tagCodes)

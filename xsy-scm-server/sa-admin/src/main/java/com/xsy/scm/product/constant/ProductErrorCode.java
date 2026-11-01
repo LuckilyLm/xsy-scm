@@ -26,7 +26,6 @@ public enum ProductErrorCode implements ScmErrorCode {
     PRODUCT_CODE_DUPLICATE(40923, "商品或分类编码已存在"),
     UOM_NOT_USABLE(40027, "计量单位不存在或已停用，请重新选择"),
     TAG_NOT_USABLE(40028, "商品标签不存在或已停用，请重新选择"),
-    MASTER_STATUS_SALE_CONFLICT(40029, "归档商品必须处于下架状态"),
     // 40030 / 40031 属定价域，商品域使用空闲码 40038。
     IMAGE_NOT_PUBLIC(40038, "商品图片只能引用公开图片目录的文件，请重新上传"),
     UOM_NOT_FOUND(40421, "计量单位不存在"),
@@ -37,7 +36,7 @@ public enum ProductErrorCode implements ScmErrorCode {
     TAG_NAME_DUPLICATE(40927, "商品标签名称已存在"),
     UOM_REFERENCED(40928, "计量单位已被商品或供应商关系引用，不能删除，请改为停用"),
     TAG_REFERENCED(40929, "标签下仍有商品，不能删除"),
-    PRODUCT_BUSINESS_REFERENCED(40931, "商品已产生业务数据，不能删除，请改为停用或归档"),
+    PRODUCT_BUSINESS_REFERENCED(40931, "商品已产生业务数据，不能删除，请改为下架"),
     BUNDLE_COMPONENT_INVALID(40077, "组合商品组成规格或用量不正确"),
     BUNDLE_COMPONENT_IN_USE(40976, "商品规格已被其他组合商品使用");
 

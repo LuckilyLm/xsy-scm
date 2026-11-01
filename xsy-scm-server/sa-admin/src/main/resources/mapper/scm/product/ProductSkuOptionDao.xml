@@ -23,17 +23,13 @@
             AND c.deleted = FALSE
     </sql>
 
-    <!--
-      可选范围：主档停用或归档的商品不再出现在新的选择器结果里（PCO-1 裁决：只作用于可选范围，
-      不改订单/采购写入路径）。selectByIds / selectByCodes 仍按原样返回，历史行照旧解析。
-    -->
+    <!-- 可选范围只看规格自身状态；selectByIds / selectByCodes 仍按原样返回，历史行照旧解析。 -->
     <select id="options" resultMap="sku">
         SELECT
         <include refid="columns"/>
         <include refid="joins"/>
         WHERE s.deleted = FALSE
             AND p.id IS NOT NULL
-            AND p.master_status = 'ENABLED'
         <if test="query.status != null">AND s.status = #{query.status}</if>
         <if test="query.spuId != null">AND s.spu_id = #{query.spuId}</if>
         <if test="query.keyword != null and query.keyword != ''">

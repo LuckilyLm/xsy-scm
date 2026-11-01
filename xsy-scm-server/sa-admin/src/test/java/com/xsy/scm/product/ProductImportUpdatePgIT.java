@@ -140,12 +140,11 @@ class ProductImportUpdatePgIT {
         assertThat(String.valueOf(sku.get("specs"))).contains("1kg/箱");
         assertThat((Integer) sku.get("version")).isGreaterThan(0);
 
-        var spu = jdbc.queryForMap("SELECT name, alias, description, storage_method, master_status, version FROM xsy_product_spu WHERE id=?", product);
+        var spu = jdbc.queryForMap("SELECT name, alias, description, storage_method, version FROM xsy_product_spu WHERE id=?", product);
         assertThat(spu.get("name")).isEqualTo(lastProductName);
         assertThat(spu.get("alias")).isEqualTo("原别名");
         assertThat(spu.get("description")).isEqualTo("原详情描述，不能被只改市场价的导入清空");
         assertThat(spu.get("storage_method")).isEqualTo("CHILLED");
-        assertThat(spu.get("master_status")).isEqualTo("ENABLED");
         assertThat((Integer) spu.get("version")).isEqualTo(1);
 
         // 未出现在文件里的第二个 SKU 不能被删掉，默认标记也必须还留在它身上；标签关系同理

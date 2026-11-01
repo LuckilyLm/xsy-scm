@@ -1,11 +1,9 @@
 package com.xsy.scm.product.service;
 
 import lombok.RequiredArgsConstructor;
-import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmErrorCode;
 import com.xsy.scm.product.dao.ProductSpuDao;
-import com.xsy.scm.product.constant.ScmProductMasterStatusEnum;
 import com.xsy.scm.product.constant.ScmProductTagUpdateModeEnum;
 import com.xsy.scm.product.domain.entity.ProductSpuEntity;
 import com.xsy.scm.product.domain.form.ProductBatchItemForm;
@@ -24,12 +22,11 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.MASTER_STATUS_SALE_CONFLICT;
 import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
 import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 /**
- * 商品批量维护：上下架、主档启停、改分类、打标签。整批一个事务，且先逐行预校验再写入： 任何一行不存在或版本冲突时 updatedCount 为 0、不做任何写入，并将每个失败商品及其错误原因逐条返回。
+ * 商品批量维护：上下架、改分类、打标签。整批一个事务，且先逐行预校验再写入： 任何一行不存在或版本冲突时 updatedCount 为 0、不做任何写入，并将每个失败商品及其错误原因逐条返回。
  */
 @Service
 @RequiredArgsConstructor
@@ -53,14 +50,9 @@ public class ProductBatchService {
                 failures.add(failure);
                 continue;
             }
-            // 归档即退出经营：批量入口同样不能造出「已归档还在架」的组合。
-            var status = form.getStatus() != null ? form.getStatus() : entity.getStatus();
-            if (ScmProductMasterStatusEnum.ARCHIVED.name().equals(form.getMasterStatus())
-                && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
-                failures.add(failure(entity, MASTER_STATUS_SALE_CONFLICT));
         }
-        return commit(failures, form.getItems(), (ids) -> productSpuDao.batchApply(ids, form.getStatus(),
-            form.getMasterStatus(), null, ScmOperator.current()));
+        return commit(failures, form.getItems(),
+            (ids) -> productSpuDao.batchApply(ids, form.getStatus(), null, ScmOperator.current()));
     }
 
     @Transactional
@@ -68,7 +60,7 @@ public class ProductBatchService {
         productCategoryService.requireSelectableCategory(form.getCategoryId());
         var failures = verify(form.getItems());
         return commit(failures, form.getItems(),
-            (ids) -> productSpuDao.batchApply(ids, null, null, form.getCategoryId(), ScmOperator.current()));
+            (ids) -> productSpuDao.batchApply(ids, null, form.getCategoryId(), ScmOperator.current()));
     }
 
     /**

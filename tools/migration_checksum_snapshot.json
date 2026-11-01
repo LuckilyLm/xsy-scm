@@ -932,6 +932,10 @@
     "233": {
       "file": "V233__scm_retire_legacy_price_source.sql",
       "checksum": -1371377545
+    },
+    "234": {
+      "file": "V234__scm_drop_product_master_status.sql",
+      "checksum": -878820759
     }
   }
 }

@@ -41,10 +41,6 @@
                 <dt class="scm-field__label">在售状态</dt>
                 <dd class="scm-field__value">{{ enumLabel(SHELF_STATUS_ENUM, product.status) }}</dd>
               </div>
-              <div class="scm-field">
-                <dt class="scm-field__label">主档状态</dt>
-                <dd class="scm-field__value">{{ enumLabel(MASTER_STATUS_ENUM, product.masterStatus) }}</dd>
-              </div>
             </dl>
           </section>
 
@@ -172,7 +168,7 @@ import {Empty} from 'ant-design-vue';
 import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import {productApi} from '/@/api/business/scm/product-api';
 import type {ProductRow} from '/@/types/business/scm/product';
-import {enumLabel, MASTER_STATUS_ENUM, priceRange, SHELF_STATUS_ENUM, STORAGE_METHOD_ENUM} from '/@/constants/business/scm/product-const';
+import {enumLabel, priceRange, SHELF_STATUS_ENUM, STORAGE_METHOD_ENUM} from '/@/constants/business/scm/product-const';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import SkuTable from './components/product-sku-table.vue';
 import StockConversionEditor from './components/product-stock-conversion-editor.vue';

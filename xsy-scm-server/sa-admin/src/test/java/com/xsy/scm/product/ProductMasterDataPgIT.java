@@ -5,7 +5,6 @@ import net.lab1024.sa.admin.AdminApplication;
 import com.xsy.scm.common.error.ScmErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.controller.*;
-import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.domain.form.*;
 import com.xsy.scm.product.domain.vo.*;
 import com.xsy.scm.product.service.*;
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +29,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.*;
 import static org.assertj.core.api.Assertions.*;
 
 /**
- * 商品主档增强：单位与标签字典、master_status 作用域、删除保护、批量维护与高级筛选。
+ * 商品主档增强：单位与标签字典、删除保护、批量维护与高级筛选。
  * 用例只覆盖主数据侧的口径，订单与采购写入路径的既有行为由 {@link ProductPgIT} 守住了事实验证。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
@@ -53,10 +51,6 @@ class ProductMasterDataPgIT {
     ProductTagService tags;
     @Autowired
     ProductCategoryService categories;
-    @Autowired
-    ProductSkuOptionQueryService optionService;
-    @Autowired
-    ProductSkuOptionDao optionDao;
     @Autowired
     JdbcTemplate jdbc;
     private String prefix;
@@ -200,13 +194,6 @@ class ProductMasterDataPgIT {
         return query.query(form).getList().stream().map(ProductSpuVO::getSpuId).toList();
     }
 
-    private List<String> selectableSkuCodes() {
-        var form = new ProductSkuOptionQueryForm();
-        form.setKeyword(prefix);
-        form.setLimit(50);
-        return optionService.optionList(form).options().stream().map(ProductSkuOptionVO::getSkuCode).toList();
-    }
-
     @Test
     void uomIsUniqueByCodeAndNameAndRetiredOnceReferenced() {
         assertThat(uom.options()).extracting(ProductUomVO::getName).contains("kg", "箱", "把");
@@ -273,53 +260,6 @@ class ProductMasterDataPgIT {
         known.getSkuList().getFirst().setSaleUnit("箱");
         service.update(known);
         assertThat(query.detail(spu).getSkuList().getFirst().getSaleUnit()).isEqualTo("箱");
-    }
-
-    @Test
-    void masterStatusOnlyNarrowsTheSelectableScope() {
-        var form = product("kg");
-        form.setMasterStatus("DISABLED");
-        Long spu = service.add(form);
-        var skuCode = query.detail(spu).getSkuList().getFirst().getSkuCode();
-        assertThat(selectableSkuCodes()).doesNotContain(skuCode);
-        // 写入路径不动：已存在的 SKU 仍按 id 解析，历史单据不会被查不到商品。
-        assertThat(optionDao.selectByIds(List.of(skuId(spu)))).extracting(ProductSkuOptionVO::getSkuCode).containsExactly(skuCode);
-        var enable = edit(spu);
-        enable.setMasterStatus("ENABLED");
-        service.update(enable);
-        assertThat(selectableSkuCodes()).containsExactly(skuCode);
-        var archived = product("kg");
-        archived.setMasterStatus("ARCHIVED");
-        Long archivedId = service.add(archived);
-        assertThat(selectableSkuCodes()).containsExactly(skuCode);
-        assertThat(query.detail(archivedId).getSkuList()).extracting(ProductSkuVO::getSaleUnit).containsExactly("kg");
-    }
-
-    @Test
-    void archivedProductCannotStayOnShelfAtServiceAndDatabaseLevel() {
-        var form = product("kg");
-        form.setStatus("ON_SHELF");
-        form.setMasterStatus("ARCHIVED");
-        conflict(() -> service.add(form), MASTER_STATUS_SALE_CONFLICT);
-        // 被校验拒绝的 update 在抛出前已改过 MyBatis 一级缓存里的实体（没有写入语句就不清缓存），
-        // 同一事务内再读同一行会读到那个脏对象，所以拒绝断言和后续流程各用一个商品。
-        Long rejected = service.add(product("kg"));
-        var archive = edit(rejected);
-        archive.setStatus("ON_SHELF");
-        archive.setMasterStatus("ARCHIVED");
-        conflict(() -> service.update(archive), MASTER_STATUS_SALE_CONFLICT);
-        Long spu = service.add(product("kg"));
-        var off = edit(spu);
-        off.setMasterStatus("ARCHIVED");
-        service.update(off);
-        var backOnline = new ProductStatusForm();
-        backOnline.setSpuId(spu);
-        backOnline.setVersion(version(spu));
-        backOnline.setStatus("ON_SHELF");
-        conflict(() -> service.updateStatus(backOnline), MASTER_STATUS_SALE_CONFLICT);
-        // CHECK 是服务层之外的兜底。PG 的语句级错误会终止整个事务，所以这条必须放在最后。
-        assertThatThrownBy(() -> jdbc.update("UPDATE xsy_product_spu SET status='ON_SHELF' WHERE id=?", spu))
-                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -409,24 +349,15 @@ class ProductMasterDataPgIT {
         Long a = service.add(product("kg")), b = service.add(product("kg"));
         var status = new ProductSpuBatchStatusForm();
         status.setItems(List.of(item(a, version(a)), item(b, version(b) + 9)));
-        status.setMasterStatus("DISABLED");
+        status.setStatus("ON_SHELF");
         var partial = batch.updateStatus(status);
         assertThat(partial.getUpdatedCount()).isZero();
         assertThat(partial.getFailures()).extracting(ProductBatchResultVO.Failure::getSpuId).containsExactly(b);
-        assertThat(query.detail(a).getMasterStatus()).isEqualTo("ENABLED");
+        assertThat(query.detail(a).getStatus()).isEqualTo("OFF_SHELF");
         status.setItems(List.of(item(a, version(a)), item(b, version(b))));
         assertThat(batch.updateStatus(status).getUpdatedCount()).isEqualTo(2);
-        assertThat(query.detail(a).getMasterStatus()).isEqualTo("DISABLED");
+        assertThat(query.detail(a).getStatus()).isEqualTo("ON_SHELF");
         assertThat(query.detail(b).getVersion()).isEqualTo(1);
-        // 归档 + 在售的非法组合同样整批不落库，失败按行回报。
-        var archived = new ProductSpuBatchStatusForm();
-        archived.setStatus("ON_SHELF");
-        archived.setMasterStatus("ARCHIVED");
-        archived.setItems(List.of(item(a, version(a)), item(b, version(b))));
-        assertThat(batch.updateStatus(archived).getFailures()).extracting(ProductBatchResultVO.Failure::getReasonCode)
-                .containsExactly(MASTER_STATUS_SALE_CONFLICT.getCode(), MASTER_STATUS_SALE_CONFLICT.getCode());
-        assertThat(query.detail(a).getStatus()).isEqualTo("OFF_SHELF");
-        assertThat(query.detail(a).getMasterStatus()).isEqualTo("DISABLED");
     }
 
     @Test
@@ -494,9 +425,6 @@ class ProductMasterDataPgIT {
         var byMissingTag = search();
         byMissingTag.setTagIds(List.of(tag("OTHER")));
         assertThat(hits(byMissingTag)).isEmpty();
-        var byMaster = search();
-        byMaster.setMasterStatus("DISABLED");
-        assertThat(hits(byMaster)).isEmpty();
         var byStorage = search();
         byStorage.setStorageMethod("CHILLED");
         assertThat(hits(byStorage)).containsExactly(spu);
