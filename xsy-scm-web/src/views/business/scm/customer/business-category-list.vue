@@ -1,66 +1,56 @@
-<!-- 客户 / 供应商业务分类：按 scope 维护两棵独立小树，供档案筛选和对账归类。 -->
+<!-- 客户配送分类 / 供应商采购分类：两棵独立小树同时展示，供档案筛选和对账归类。 -->
 <template>
   <a-card size="small" :bordered="false">
-    <div class="smart-query-form">
-      <a-space wrap>
-        <a-radio-group v-model:value="scope" button-style="solid" @change="reload">
-          <a-radio-button value="CUSTOMER">客户分类</a-radio-button>
-          <a-radio-button value="SUPPLIER">供应商分类</a-radio-button>
-        </a-radio-group>
-        <a-button type="primary" v-privilege="'scm:business-category:add'" @click="openCreate">{{ createLabel }}</a-button>
-      </a-space>
-    </div>
+    <section v-for="table in tables" :key="table.scope" class="category-section">
+      <div class="category-section__header">
+        <h3 class="category-section__title">{{ table.title }}</h3>
+        <a-button type="primary" v-privilege="'scm:business-category:add'" @click="openCreate(table)">新建{{ table.title }}</a-button>
+      </div>
 
-    <a-alert v-if="error" :message="error" type="error" show-icon class="banner">
-      <template #action>
-        <a-button size="small" @click="reload">重试</a-button>
-      </template>
-    </a-alert>
+      <a-alert v-if="table.error" :message="table.error" type="error" show-icon class="banner">
+        <template #action>
+          <a-button size="small" @click="load(table)">重试</a-button>
+        </template>
+      </a-alert>
 
-    <a-table
-      :columns="columns"
-      :data-source="pagedTree"
-      :loading="loading"
-      :pagination="false"
-      row-key="categoryId"
-      default-expand-all-rows
-      :scroll="{x: 760}"
-    >
-      <template #bodyCell="{record, column}">
-        <template v-if="column.dataIndex === 'name'">
-          <span class="category-name">{{ record.name }}</span>
+      <a-table
+        :columns="columns"
+        :data-source="pagedTree(table)"
+        :loading="table.loading"
+        :pagination="false"
+        row-key="categoryId"
+        default-expand-all-rows
+        :scroll="{x: 760}"
+      >
+        <template #bodyCell="{record, column}">
+          <template v-if="column.dataIndex === 'name'">
+            <span class="category-name">{{ record.name }}</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'status'">
+            <ScmStatusTag :tone="record.status === 'ENABLED' ? 'success' : 'neutral'" :label="enumLabel(ENABLE_STATUS_ENUM, record.status)" />
+          </template>
+          <template v-else-if="column.dataIndex === 'action'">
+            <a-space :size="0">
+              <a-button v-privilege="'scm:business-category:update'" type="link" size="small" @click="openEdit(record)">编辑</a-button>
+              <a-button v-privilege="'scm:business-category:delete'" type="link" size="small" danger @click="remove(record)">删除</a-button>
+            </a-space>
+          </template>
         </template>
-        <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="record.status === 'ENABLED' ? 'success' : 'neutral'" :label="enumLabel(ENABLE_STATUS_ENUM, record.status)" />
-        </template>
-        <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0">
-            <a-button v-privilege="'scm:business-category:update'" type="link" size="small" @click="openEdit(record)">编辑</a-button>
-            <a-button v-privilege="'scm:business-category:delete'" type="link" size="small" danger @click="remove(record)">删除</a-button>
-          </a-space>
-        </template>
-      </template>
-    </a-table>
-    <div class="smart-query-table-page">
-      <a-pagination
-        v-model:current="pageNum"
-        v-model:page-size="pageSize"
-        :total="total"
-        show-size-changer
-        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
-        :show-total="(n: number) => `共 ${n} 条`"
-      />
-    </div>
+      </a-table>
+      <div class="smart-query-table-page">
+        <a-pagination
+          v-model:current="table.pageNum"
+          v-model:page-size="table.pageSize"
+          :total="table.tree.length"
+          show-size-changer
+          :page-size-options="SCM_PAGE_SIZE_OPTIONS"
+          :show-total="(n: number) => `共 ${n} 条`"
+        />
+      </div>
+    </section>
   </a-card>
 
-  <a-modal
-    v-model:open="formOpen"
-    :title="form.categoryId == null ? createLabel : `编辑${scopeLabel}`"
-    :confirm-loading="saving"
-    :width="520"
-    destroy-on-close
-    @ok="save"
-  >
+  <a-modal v-model:open="formOpen" :title="formTitle" :confirm-loading="saving" :width="520" destroy-on-close @ok="save">
     <a-form ref="formRef" :model="form" :rules="rules" layout="vertical">
       <a-form-item label="分类名称" name="name">
         <a-input v-model:value="form.name" :maxlength="64" placeholder="例如：蔬菜" />
@@ -71,7 +61,7 @@
       <a-form-item label="上级分类" name="parentId">
         <BusinessCategoryTreeSelect
           v-model:value="form.parentId"
-          :scope="scope"
+          :scope="form.scope"
           mode="select"
           :exclude-id="form.categoryId"
           placeholder="不选表示一级分类"
@@ -97,31 +87,43 @@ import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {ENABLE_STATUS_ENUM, enumLabel} from '/@/constants/business/scm/product-const';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
-const scope = ref<BusinessCategoryScope>('CUSTOMER');
-const tree = ref<BusinessCategory[]>([]);
-const pageNum = ref(1);
-const pageSize = ref(20);
-const total = computed(() => tree.value.length);
-// 接口一次返回整棵树，按一级分类分页；子分类跟随父节点展示，不单独拆页。
-const pagedTree = computed(() => tree.value.slice((pageNum.value - 1) * pageSize.value, pageNum.value * pageSize.value));
-const scopeLabel = computed(() => (scope.value === 'CUSTOMER' ? '客户分类' : '供应商分类'));
-const createLabel = computed(() => `新建${scopeLabel.value}`);
-const loading = ref(false);
-const error = ref('');
+interface CategoryTable {
+  scope: BusinessCategoryScope;
+  title: string;
+  tree: BusinessCategory[];
+  loading: boolean;
+  error: string;
+  pageNum: number;
+  pageSize: number;
+  requestId: number;
+}
+
+// 两张表各自加载、分页，互不影响。
+const tables = reactive<CategoryTable[]>([
+  {scope: 'CUSTOMER', title: '客户配送分类', tree: [], loading: false, error: '', pageNum: 1, pageSize: 20, requestId: 0},
+  {scope: 'SUPPLIER', title: '供应商采购分类', tree: [], loading: false, error: '', pageNum: 1, pageSize: 20, requestId: 0},
+]);
+
 const formOpen = ref(false);
 const saving = ref(false);
 const formRef = ref<FormInstance>();
-let requestId = 0;
 
-const emptyForm = (): BusinessCategoryForm => ({
-  scope: scope.value,
+const emptyForm = (scope: BusinessCategoryScope): BusinessCategoryForm => ({
+  categoryId: undefined,
+  version: undefined,
+  scope,
   parentId: null,
   categoryCode: '',
   name: '',
   sortOrder: 0,
   status: 'ENABLED',
 });
-const form = reactive<BusinessCategoryForm>(emptyForm());
+const form = reactive<BusinessCategoryForm>(emptyForm('CUSTOMER'));
+
+const formTitle = computed(() => {
+  const table = tables.find((item) => item.scope === form.scope);
+  return `${form.categoryId == null ? '新建' : '编辑'}${table?.title ?? '分类'}`;
+});
 
 const rules = {
   name: [{required: true, message: '请输入分类名称', trigger: 'blur'}],
@@ -129,43 +131,47 @@ const rules = {
   status: [{required: true, message: '请选择状态', trigger: 'change'}],
 };
 
-const columns = computed<TableColumnsType<BusinessCategory>>(() => [
+const columns: TableColumnsType<BusinessCategory> = [
   {title: '分类名称', dataIndex: 'name', width: 320},
   {title: '层级', dataIndex: 'level', width: 80, align: 'center'},
   {title: '排序', dataIndex: 'sortOrder', width: 80},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
   {title: '操作', dataIndex: 'action', width: 140, align: 'center', fixed: 'right'},
-]);
+];
 
-async function load() {
-  const request = ++requestId;
-  loading.value = true;
-  error.value = '';
+// 接口一次返回整棵树，按一级分类分页；子分类跟随父节点展示，不单独拆页。
+function pagedTree(table: CategoryTable): BusinessCategory[] {
+  const start = (table.pageNum - 1) * table.pageSize;
+  return table.tree.slice(start, start + table.pageSize);
+}
+
+async function load(table: CategoryTable) {
+  const request = ++table.requestId;
+  table.loading = true;
+  table.error = '';
   try {
-    const response = await businessCategoryApi.tree(scope.value, {suppressGlobalErrorMessage: true});
-    if (request === requestId) {
-      tree.value = response.data ?? [];
-      const maxPage = Math.max(1, Math.ceil(tree.value.length / pageSize.value));
-      if (pageNum.value > maxPage) pageNum.value = maxPage;
+    const response = await businessCategoryApi.tree(table.scope, {suppressGlobalErrorMessage: true});
+    if (request === table.requestId) {
+      table.tree = response.data ?? [];
+      const maxPage = Math.max(1, Math.ceil(table.tree.length / table.pageSize));
+      if (table.pageNum > maxPage) table.pageNum = maxPage;
     }
   } catch (e) {
-    if (request === requestId) {
-      tree.value = [];
-      error.value = e instanceof Error ? e.message : '分类加载失败，请重试';
+    if (request === table.requestId) {
+      table.tree = [];
+      table.error = e instanceof Error ? e.message : '分类加载失败，请重试';
     }
   } finally {
-    if (request === requestId) loading.value = false;
+    if (request === table.requestId) table.loading = false;
   }
 }
 
-function reload() {
-  formOpen.value = false;
-  pageNum.value = 1;
-  void load();
+function tableOf(scope: BusinessCategoryScope): CategoryTable | undefined {
+  return tables.find((item) => item.scope === scope);
 }
 
-function openCreate() {
-  Object.assign(form, emptyForm());
+function openCreate(table: CategoryTable) {
+  Object.assign(form, emptyForm(table.scope));
   formOpen.value = true;
 }
 
@@ -188,16 +194,19 @@ async function save() {
   if (!valid) return;
   saving.value = true;
   try {
-    const payload: BusinessCategoryForm = {...form, scope: scope.value};
-    if (payload.categoryId == null) {
-      await businessCategoryApi.add(payload);
+    if (form.categoryId == null) {
+      await businessCategoryApi.add({...form});
       message.success('分类已创建');
     } else {
-      await businessCategoryApi.update(payload);
+      await businessCategoryApi.update({...form});
       message.success('分类已保存');
     }
     formOpen.value = false;
-    await load();
+    const table = tableOf(form.scope);
+    if (table) {
+      table.pageNum = 1;
+      await load(table);
+    }
   } catch {
     // 失败信息由请求层统一提示
   } finally {
@@ -213,15 +222,32 @@ function remove(row: BusinessCategory) {
     onOk: async () => {
       await businessCategoryApi.delete(row.categoryId, row.version ?? 0);
       message.success('分类已删除');
-      await load();
+      const table = tableOf(row.scope);
+      if (table) await load(table);
     },
   });
 }
 
-onMounted(load);
+onMounted(() => {
+  tables.forEach((table) => void load(table));
+});
 </script>
 
 <style scoped lang="less">
+.category-section + .category-section {
+  margin-top: 24px;
+}
+.category-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.category-section__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
 .banner {
   margin-bottom: 12px;
 }
