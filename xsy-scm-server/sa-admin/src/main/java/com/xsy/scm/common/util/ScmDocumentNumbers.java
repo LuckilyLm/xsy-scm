@@ -21,7 +21,14 @@ public final class ScmDocumentNumbers {
      * 下一个业务单据号：{@code XSY} + 雪花 ID。
      */
     public static String next() {
-        return DOCUMENT_PREFIX + IdWorker.getIdStr();
+        return next(DOCUMENT_PREFIX);
+    }
+
+    /**
+     * 指定前缀的单据号：{@code 前缀} + 雪花 ID，用于价格批次等非订单编号。
+     */
+    public static String next(String prefix) {
+        return prefix + IdWorker.getIdStr();
     }
 
     /** 主数据编码（客户 / 供应商 / 仓库等）：没有业务日期，只拼前缀与序号。 */

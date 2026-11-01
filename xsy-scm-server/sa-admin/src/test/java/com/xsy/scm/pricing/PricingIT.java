@@ -253,6 +253,27 @@ class PricingIT extends ScmW3PgITBase {
     }
 
     @Test
+    void batchGeneratesKeyWhenClientOmitsIt() {
+        var typeId = customerTypeId("ENTERPRISE");
+        var sku = newOnShelfSku("BATCHGEN");
+        var row = new PriceBatchRowForm();
+        row.setRowNumber(1);
+        row.setCustomerTypeId(typeId);
+        row.setSkuId(sku);
+        row.setUnitPrice("5.0000");
+        row.setEffectiveFrom(AT.plusDays(20));
+        var form = new PriceBatchForm();
+        form.setRows(List.of(row));
+        var service = (PriceBatchService) applicationContext.getBean(PriceBatchService.class);
+        var result = service.submit(form);
+        assertThat(result.committed()).isTrue();
+        assertThat(result.batchKey()).startsWith(PriceBatchService.BATCH_KEY_PREFIX);
+        var auditKey = jdbc.queryForObject(
+            "SELECT batch_key FROM xsy_customer_price_batch_audit WHERE batch_key=?", String.class, result.batchKey());
+        assertThat(auditKey).isEqualTo(result.batchKey());
+    }
+
+    @Test
     void historyInvalidSourceIsUnfilteredAndHalfOpenDatesAreStable() {
         var query = new PriceHistoryQueryForm();
         query.setPageNum(1L);

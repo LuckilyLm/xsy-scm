@@ -11,6 +11,7 @@ import com.xsy.scm.pricing.domain.form.PriceBatchForm;
 import com.xsy.scm.pricing.domain.vo.PriceBatchResultVO;
 import com.xsy.scm.pricing.manager.PriceBatchValidator;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 
 import static com.xsy.scm.pricing.constant.PricingErrorCode.PRICE_BATCH_KEY_DUPLICATE;
 import static com.xsy.scm.pricing.constant.PricingErrorCode.PRICE_BATCH_ROW_INVALID;
@@ -18,13 +19,19 @@ import static com.xsy.scm.pricing.constant.PricingErrorCode.PRICE_BATCH_ROW_INVA
 @Service
 @RequiredArgsConstructor
 public class PriceBatchService {
+    /** 价格批次号前缀，后接雪花 ID；前端不再手填。 */
+    public static final String BATCH_KEY_PREFIX = "PRICE-";
+
     private final PriceBatchWriter priceBatchWriter;
     private final PriceBatchAuditService priceBatchAuditService;
     private final PriceBatchAuditDao priceBatchAuditDao;
 
     public PriceBatchResultVO submit(PriceBatchForm form) {
-        if (form.getBatchKey() == null || form.getBatchKey().isBlank() || form.getBatchKey().length() > 100
-            || form.getRows() == null || form.getRows().isEmpty() || form.getRows().size() > 500)
+        if (form.getBatchKey() == null || form.getBatchKey().isBlank()) {
+            form.setBatchKey(ScmDocumentNumbers.next(BATCH_KEY_PREFIX));
+        }
+        if (form.getBatchKey().length() > 100 || form.getRows() == null || form.getRows().isEmpty()
+            || form.getRows().size() > 500)
             throw new ScmBusinessException(PRICE_BATCH_ROW_INVALID);
         if (priceBatchAuditDao.successCount(form.getBatchKey()) > 0) {
             throw new ScmBusinessException(PRICE_BATCH_KEY_DUPLICATE);

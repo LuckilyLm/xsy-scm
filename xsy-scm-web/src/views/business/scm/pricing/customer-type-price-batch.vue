@@ -4,11 +4,9 @@
     <template #title>
       <span>客户类型价批量调价</span>
     </template>
-    <a-form ref="formRef" :model="formModel" :rules="formRules" layout="inline" class="smart-query-form">
+    <a-form layout="inline" class="smart-query-form">
       <a-row class="smart-query-form-row">
-        <a-form-item label="批次号" name="batchKey" class="smart-query-form-item"
-          ><a-input v-model:value="batchKey" aria-label="批次号" :maxlength="100" style="width: 320px"
-        /></a-form-item>
+        <a-form-item class="smart-query-form-item"><span class="batch-hint">批次号由系统自动生成，提交后回显</span></a-form-item>
         <a-form-item class="smart-query-form-item"><a-button @click="add" :disabled="rows.length >= 500 || saving">新增行</a-button></a-form-item>
         <a-form-item class="smart-query-form-item"
           ><a-button type="primary" :loading="saving" v-privilege="'scm:pricing:type-price:batch'" @click="submit">提交整批</a-button></a-form-item
@@ -68,11 +66,10 @@
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, reactive, ref} from 'vue';
-import {message} from 'ant-design-vue';
-import type {TableColumnsType, FormInstance} from 'ant-design-vue';
+import {computed, ref} from 'vue';
+import {message, Modal} from 'ant-design-vue';
+import type {TableColumnsType} from 'ant-design-vue';
 import {useRouter} from 'vue-router';
-import dayjs from 'dayjs';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
@@ -80,20 +77,13 @@ import {moneyPayload} from '/@/utils/scm-amount';
 import type {BatchRow} from '/@/types/business/scm/pricing';
 import {emptyPrice, validateBatch} from './pricing-form-model';
 import {pricingError} from './pricing-errors';
-import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 
 const router = useRouter(),
-  batchKey = ref('PRICE-' + dayjs().format('YYYYMMDD-HHmmss')),
   rows = ref<BatchRow[]>([]),
   failures = ref<{rowNumber: number; message: string}[]>([]),
   saving = ref(false),
   error = ref('');
 let number = 0;
-const formRef = ref<FormInstance>();
-/** 必填项逐项校验，错误显示在输入框下方。 */
-const formRules = {batchKey: [{required: true, message: '请填写批次号', trigger: 'blur'}]};
-/** 校验模型必须是稳定对象；reactive 会解包内部 ref，值仍是响应式的。 */
-const formModel = reactive({batchKey});
 /** 错误列只在整批校验失败后出现，空表时不占一列位置。 */
 const BASE_COLUMNS: TableColumnsType<BatchRow> = [
   {title: '行号', dataIndex: 'rowNumber', width: 65},
@@ -133,13 +123,6 @@ function setPeriod(row: BatchRow, value: unknown) {
 async function submit() {
   error.value = '';
   failures.value = validateBatch(rows.value);
-  // 批次号走字段校验；至少一行用 toast 提示
-  try {
-    await formRef.value?.validate();
-  } catch (err) {
-    notifyFormInvalid(err, formRef.value);
-    return;
-  }
   if (!rows.value.length) {
     message.warning('请至少添加一行');
     return;
@@ -151,13 +134,18 @@ async function submit() {
   saving.value = true;
   try {
     const payloadRows = rows.value.map((row) => ({...row, unitPrice: moneyPayload(row.unitPrice)}));
-    const r = await pricingApi.batch({batchKey: batchKey.value, rows: payloadRows});
+    const r = await pricingApi.batch({rows: payloadRows});
     if (!r.data.committed) {
       failures.value = r.data.failures;
       error.value = `${r.data.failures.length} 项错误，整批未写入`;
     } else {
-      message.success(`已提交 ${r.data.rowCount} 条价格`);
-      router.push('/pricing/customer-type-price-list');
+      // 批次号由服务端生成，提交成功后回显给操作人。
+      Modal.success({
+        title: '批量调价已提交',
+        content: `批次号：${r.data.batchKey}`,
+        okText: '知道了',
+        onOk: () => router.push('/pricing/customer-type-price-list'),
+      });
     }
   } catch (e) {
     error.value = pricingError(e);
@@ -169,6 +157,9 @@ async function submit() {
 add();
 </script>
 <style scoped>
+.batch-hint {
+  color: var(--scm-text-secondary, #8c8c8c);
+}
 .row-error {
   color: var(--scm-error);
 }
