@@ -7,7 +7,7 @@
           <a-radio-button value="CUSTOMER">客户分类</a-radio-button>
           <a-radio-button value="SUPPLIER">供应商分类</a-radio-button>
         </a-radio-group>
-        <a-button type="primary" v-privilege="'scm:business-category:add'" @click="openCreate">新建分类</a-button>
+        <a-button type="primary" v-privilege="'scm:business-category:add'" @click="openCreate">{{ createLabel }}</a-button>
       </a-space>
     </div>
 
@@ -19,7 +19,7 @@
 
     <a-table
       :columns="columns"
-      :data-source="tree"
+      :data-source="pagedTree"
       :loading="loading"
       :pagination="false"
       row-key="categoryId"
@@ -41,11 +41,21 @@
         </template>
       </template>
     </a-table>
+    <div class="smart-query-table-page">
+      <a-pagination
+        v-model:current="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
+        :show-total="(n: number) => `共 ${n} 条`"
+      />
+    </div>
   </a-card>
 
   <a-modal
     v-model:open="formOpen"
-    :title="form.categoryId == null ? '新建分类' : '编辑分类'"
+    :title="form.categoryId == null ? createLabel : `编辑${scopeLabel}`"
     :confirm-loading="saving"
     :width="520"
     destroy-on-close
@@ -85,9 +95,17 @@ import type {BusinessCategory, BusinessCategoryForm, BusinessCategoryScope} from
 import BusinessCategoryTreeSelect from '/@/components/business/scm/business-category-tree-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {ENABLE_STATUS_ENUM, enumLabel} from '/@/constants/business/scm/product-const';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const scope = ref<BusinessCategoryScope>('CUSTOMER');
 const tree = ref<BusinessCategory[]>([]);
+const pageNum = ref(1);
+const pageSize = ref(20);
+const total = computed(() => tree.value.length);
+// 接口一次返回整棵树，按一级分类分页；子分类跟随父节点展示，不单独拆页。
+const pagedTree = computed(() => tree.value.slice((pageNum.value - 1) * pageSize.value, pageNum.value * pageSize.value));
+const scopeLabel = computed(() => (scope.value === 'CUSTOMER' ? '客户分类' : '供应商分类'));
+const createLabel = computed(() => `新建${scopeLabel.value}`);
 const loading = ref(false);
 const error = ref('');
 const formOpen = ref(false);
@@ -125,7 +143,11 @@ async function load() {
   error.value = '';
   try {
     const response = await businessCategoryApi.tree(scope.value, {suppressGlobalErrorMessage: true});
-    if (request === requestId) tree.value = response.data ?? [];
+    if (request === requestId) {
+      tree.value = response.data ?? [];
+      const maxPage = Math.max(1, Math.ceil(tree.value.length / pageSize.value));
+      if (pageNum.value > maxPage) pageNum.value = maxPage;
+    }
   } catch (e) {
     if (request === requestId) {
       tree.value = [];
@@ -138,6 +160,7 @@ async function load() {
 
 function reload() {
   formOpen.value = false;
+  pageNum.value = 1;
   void load();
 }
 
