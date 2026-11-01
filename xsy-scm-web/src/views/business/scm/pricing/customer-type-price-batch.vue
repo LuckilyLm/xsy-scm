@@ -6,7 +6,6 @@
     </template>
     <a-form layout="inline" class="smart-query-form">
       <a-row class="smart-query-form-row">
-        <a-form-item class="smart-query-form-item"><span class="batch-hint">批次号由系统自动生成，提交后回显</span></a-form-item>
         <a-form-item class="smart-query-form-item"><a-button @click="add" :disabled="rows.length >= 500 || saving">新增行</a-button></a-form-item>
         <a-form-item class="smart-query-form-item"
           ><a-button type="primary" :loading="saving" v-privilege="'scm:pricing:type-price:batch'" @click="submit">提交整批</a-button></a-form-item
@@ -157,9 +156,6 @@ async function submit() {
 add();
 </script>
 <style scoped>
-.batch-hint {
-  color: var(--scm-text-secondary, #8c8c8c);
-}
 .row-error {
   color: var(--scm-error);
 }
