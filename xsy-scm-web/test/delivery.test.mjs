@@ -263,7 +263,7 @@ import {
   });
 
   test('按钮出现条件与后端状态机一致，且每个写动作都有二次确认与 busy 闸门', () => {
-    assert.deepEqual(Object.keys(routeStatuses), ['DRAFT', 'PLANNED', 'DISPATCHED', 'COMPLETED', 'CANCELLED']);
+    assert.deepEqual(Object.keys(routeStatuses), ['PENDING', 'PLANNED', 'DISPATCHED', 'COMPLETED', 'CANCELLED']);
     const tags = [...view.matchAll(/<a-button\b[\s\S]*?<\/a-button\s*>/g)].map((m) => m[0]);
     const tagWith = (needle) => tags.find((tag) => tag.includes(needle));
 
@@ -365,8 +365,8 @@ import {
     assert.match(list, /coverageOk\(record\)/);
     assert.match(list, /coverageText\(record\)/);
     assert.doesNotMatch(list, /'green' : 'orange'/, '覆盖率不应再靠内联色名判断');
-    // 状态走统一档位映射：草稿 = 待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰
-    assert.match(list, /DRAFT: 'warning'/);
+    // 状态走统一档位映射：待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰
+    assert.match(list, /PENDING: 'warning'/);
     assert.match(list, /PLANNED: 'processing'/);
     assert.match(list, /DISPATCHED: 'processing'/);
     assert.match(list, /COMPLETED: 'success'/);

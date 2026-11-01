@@ -591,8 +591,8 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
       assert.match(page, new RegExp(perm.replace(/:/g, ':')), page + ' 缺少权限 ' + perm);
     }
 
-    // 只有草稿可写：确认 / 取消 / 删除都必须挂在 status === 'DRAFT' 上
-    assert.match(page, /record\.status === 'DRAFT'/);
+    // 只有待确认可写：确认 / 取消 / 删除都必须挂在 status === 'PENDING' 上
+    assert.match(page, /record\.status === 'PENDING'/);
 
     // 实盘量允许 0（确实一件不剩）：InputNumber 的下限是 0（不是 0.0001），
     // 提交走 fixed4 补足 4 位定点 —— 空值（null）与 0.0000 必须区分。
@@ -706,8 +706,8 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
   // ------------------------------------------------------------------
 
   test('the transfer status machine is two-step and in-transit is not cancellable', () => {
-    // 两步式：DRAFT → SHIPPED（在途）→ RECEIVED，草稿可 CANCELLED
-    assert.deepEqual(Object.keys(SCM_INVENTORY_TRANSFER_STATUS_ENUM), ['DRAFT', 'SHIPPED', 'RECEIVED', 'CANCELLED']);
+    // 两步式：PENDING（待发货）→ SHIPPED（在途）→ RECEIVED，待发货可 CANCELLED
+    assert.deepEqual(Object.keys(SCM_INVENTORY_TRANSFER_STATUS_ENUM), ['PENDING', 'SHIPPED', 'RECEIVED', 'CANCELLED']);
     for (const [key, item] of Object.entries(SCM_INVENTORY_TRANSFER_STATUS_ENUM)) {
       assert.equal(item.value, key);
       assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
@@ -736,8 +736,8 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
       assert.match(page, new RegExp(perm), page + ' 缺少权限 ' + perm);
     }
 
-    // 发出只能对草稿、收货只能对在途 —— 两个动作各挂在自己的状态上
-    assert.match(page, /record\.status === 'DRAFT'/);
+    // 发出只能对待发货、收货只能对在途 —— 两个动作各挂在自己的状态上
+    assert.match(page, /record\.status === 'PENDING'/);
     assert.match(page, /record\.status === 'SHIPPED'/);
 
     // 页面必须写明「在途期间货不在任何余额行里」，否则用户会以为货丢了
@@ -915,7 +915,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     assert.match(page, /title: '出库时间', dataIndex: 'confirmedAt'/);
 
     // 状态走语义档位
-    assert.match(page, /DRAFT: 'warning'/);
+    assert.match(page, /PENDING: 'warning'/);
     assert.match(page, /CONFIRMED: 'success'/);
     assert.match(page, /CANCELLED: 'neutral'/);
     assert.doesNotMatch(page, /'orange'|'green'/, '状态色应由 tone 档位给出');
@@ -924,7 +924,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 150/);
     assert.match(
       page,
-      /v-if="record\.status === 'DRAFT'"[\s\S]{0,200}scm:inventory:outbound:confirm/,
+      /v-if="record\.status === 'PENDING'"[\s\S]{0,200}scm:inventory:outbound:confirm/,
       '确认出库是当前状态唯一的推进动作，必须留在行内'
     );
     assert.match(page, /ScmActionMore/);
@@ -1022,13 +1022,13 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 
   test('the stocktake page keeps the confirm action inline and re-counts copied rows', () => {
     const page = code('../src/views/business/scm/inventory/inventory-stocktake-list.vue');
-    assert.match(page, /DRAFT: 'warning'/);
+    assert.match(page, /PENDING: 'warning'/);
     assert.match(page, /CONFIRMED: 'success'/);
     assert.match(page, /CANCELLED: 'neutral'/);
     assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 150/);
     assert.match(
       page,
-      /v-if="record\.status === 'DRAFT'"[\s\S]{0,200}scm:inventory:stocktake:confirm/,
+      /v-if="record\.status === 'PENDING'"[\s\S]{0,200}scm:inventory:stocktake:confirm/,
       '确认盘点是当前状态唯一的推进动作，必须留在行内'
     );
     assert.match(page, /key: 'copy', label: '复制到新建'/);

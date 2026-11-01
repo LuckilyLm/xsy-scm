@@ -105,7 +105,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     const width = actionWidth(receipt, '采购收货');
     assert.ok(width <= 160, `采购收货操作列 ${width}px 超出 160px`);
     // 当前状态唯一的推进动作仍常驻行内
-    assert.match(receipt, /record\.status === 'DRAFT'/);
+    assert.match(receipt, /record\.status === 'PENDING'/);
     assert.match(receipt, /record\.putawayStatus === 'PENDING'/);
     // 已确认的收货单没有推进动作，但必须保留只读详情入口，操作列不能整列空白
     assert.match(receipt, /PurchaseReceiptDetailDrawer/);
@@ -814,7 +814,6 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
 
   test('purchase enums expose exactly the states the backend state machine allows', () => {
     assert.deepEqual(Object.keys(SCM_PURCHASE_STATUS_ENUM), [
-      'DRAFT',
       'SUBMITTED',
       'ACCOUNTED',
       'PARTIALLY_RECEIVED',
@@ -826,7 +825,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
       Object.values(SCM_PURCHASE_STATUS_ENUM).map((e) => e.value),
       Object.keys(SCM_PURCHASE_STATUS_ENUM)
     );
-    assert.deepEqual(Object.keys(SCM_RECEIPT_STATUS_ENUM), ['DRAFT', 'CONFIRMED']);
+    assert.deepEqual(Object.keys(SCM_RECEIPT_STATUS_ENUM), ['PENDING', 'CONFIRMED']);
     assert.deepEqual(Object.keys(SCM_DEMAND_STATUS_ENUM), ['PENDING', 'PARTIALLY_ALLOCATED', 'ALLOCATED']);
     assert.deepEqual(Object.keys(SCM_WAREHOUSE_STATUS_ENUM), ['ENABLED', 'DISABLED']);
     assert.deepEqual(Object.keys(SCM_RECEIPT_MODE_ENUM), ['DIRECT', 'WAREHOUSE_CONFIRM']);

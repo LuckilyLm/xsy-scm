@@ -148,7 +148,7 @@ onBeforeUnmount(() => {
   margin-bottom: 16px;
 }
 .photo-card {
-  border: 1px solid var(--ant-color-border, #e8e8e8);
+  border: 1px solid var(--scm-border, #e8e8e8);
   border-radius: 8px;
   padding: 12px;
   min-width: 0;

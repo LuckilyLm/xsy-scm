@@ -73,10 +73,10 @@ const hasPendingPrice = computed(() => lines.value.some((line) => line.pricePend
 const columns: TableColumnsType<ConfirmLine> = [
   {title: '商品名称', dataIndex: 'productName', width: 200},
   {title: '规格', dataIndex: 'skuName', width: 140},
-  {title: '单位', dataIndex: 'purchaseUnit', width: 76, align: 'center'},
-  {title: '计划采购数量', dataIndex: 'plannedQuantity', width: 120, align: 'right'},
-  {title: '采购单价', dataIndex: 'purchasePrice', width: 132, align: 'right'},
-  {title: '实际采购数量', dataIndex: 'confirmedQuantity', width: 160, align: 'right'},
+  {title: '单位', dataIndex: 'purchaseUnit', width: 76},
+  {title: '计划采购数量', dataIndex: 'plannedQuantity', width: 120},
+  {title: '采购单价', dataIndex: 'purchasePrice', width: 132},
+  {title: '实际采购数量', dataIndex: 'confirmedQuantity', width: 160},
 ];
 function open(id: Id) {
   orderId.value = id;

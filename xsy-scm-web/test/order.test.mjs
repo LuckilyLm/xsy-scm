@@ -10,12 +10,9 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {transformSync} from 'esbuild';
 import {
-  draftKey,
   nextOrderForCustomer,
   newOrder,
-  serializeDraft,
   fromHistory,
-  applyDraft,
   createRecentPriceCache,
   isLoadingRecentPrice,
   loadRecentPrices,
@@ -48,7 +45,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     orderId: '9007199254740993',
     orderNo: 'SO-123',
     version: 3,
-    status: 'DRAFT',
+    status: 'PENDING',
     customerId: '9',
     customerNameSnapshot: '甲客户',
     items,
@@ -109,9 +106,9 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     assert.equal(result.changed, 3);
   });
 
-  test('拒绝对已确认订单生成草稿核价报告', () => {
-    assert.throws(() => compareOrderPrices({...order([]), status: 'CONFIRMED'}, []), /草稿订单/);
-    assert.throws(() => compareOrderPrices({...order([]), version: undefined}, []), /草稿订单/);
+  test('拒绝对已确认订单生成核价报告', () => {
+    assert.throws(() => compareOrderPrices({...order([]), status: 'CONFIRMED'}, []), /待确认订单/);
+    assert.throws(() => compareOrderPrices({...order([]), version: undefined}, []), /待确认订单/);
   });
 
   test('UI 禁止直接批量改价：每次操作基于可见订单详情和版本核对', () => {
@@ -136,14 +133,13 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 
   test('连续录单复用原 create-and-progress 命令，不新增隐蔽的自动确认、复制或批量写入端点', () => {
     assert.match(drawer, /创建并继续录单/);
-    assert.match(drawer, /save\(false, true\)/);
+    assert.match(drawer, /save\(true\)/);
     assert.match(drawer, /orderApi\.createAndProgress\(f\)/);
-    assert.match(drawer, /isNew && !exchangeReturnId\.value && !draft && continueCreating && visible\.value/);
+    assert.match(drawer, /isNew && !exchangeReturnId\.value && continueCreating && visible\.value/);
     assert.doesNotMatch(drawer, /orderApi\.copy\(|orderApi\.clone\(|orderApi\.batchCreate\(/);
   });
 
-  test('只有创建成功才清草稿和继续；后续客户地址从服务端重取且失败时清空客户', () => {
-    assert.match(drawer, /if \(isNew && !exchangeReturnId\.value\) clearDraft\(\)/);
+  test('只有创建成功才继续录单；后续客户地址从服务端重取且失败时清空客户', () => {
     assert.match(drawer, /await continueWithNextOrder\(f\)/);
     assert.match(drawer, /nextOrderForCustomer\(previous\)/);
     assert.match(drawer, /customerApi\.detail\(form\.value\.customerId/);
@@ -161,13 +157,12 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 // ---------------------------------------------------------------- 来源：order-form-model.test.mjs
 {
   /**
-   * 订单录单效率纯模型测试：草稿压缩 / 还原 / 历史复用。
+   * 订单录单效率纯模型测试：连续录单与历史复用。
    *
-   * 这三件事都涉及「什么能存、什么绝不能存」的安全边界，违背后不报错但会造成
-   * 草稿互串、把历史价 / version 当新单事实等隐患，因此对纯函数逐条钉死：
-   * 1. 草稿只存用户录入，绝不落 PriceResolver 解析价、lockedUnitPrice、version、status、快照；
-   * 2. 恢复只回填用户字段，解析价留空由调用方重新请求；
-   * 3. 历史复用不复制 orderId / orderNo / version / status / 历史价 / 人工改价，来源回落后台录单。
+   * 这两件事都涉及「什么能复制、什么绝不能复制」的安全边界，违背后不报错但会把
+   * 历史价 / version 当新单事实，因此对纯函数逐条钉死：
+   * 1. 连续录单只保留客户与仓库，其余来源快照全部清空；
+   * 2. 历史复用不复制 orderId / orderNo / version / status / 历史价 / 人工改价，来源回落后台录单。
    */
 
   function itemOf(over) {
@@ -213,105 +208,6 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     assert.notEqual(next.address, previous.address);
     const chosen = nextOrderForCustomer({...previous, deliveryWarehouseId: '42'});
     assert.equal(chosen.deliveryWarehouseId, '42', '显式选仓优先于历史商城履约仓');
-  });
-
-  test('草稿键按登录用户隔离，不同操作员互不串', () => {
-    assert.equal(draftKey(44), 'xsy-scm:order-draft:44');
-    assert.notEqual(draftKey('44'), draftKey('45'));
-  });
-
-  test('serializeDraft 丢弃一切服务端解析 / 快照 / version / 状态字段', () => {
-    const form = {
-      ...newOrder(),
-      orderId: 99,
-      orderNo: 'SO-1',
-      version: 7,
-      status: 'DRAFT',
-      customerId: 12,
-      orderSource: 'ADMIN',
-      expectDeliveryTime: '2026-09-22T00:00:00Z',
-      remark: 'r',
-      items: [
-        itemOf({
-          skuId: 5,
-          itemId: 3,
-          version: 2,
-          draftUnitPrice: '8.0000',
-          draftPriceSource: 'MARKET',
-          lockedUnitPrice: '8.0000',
-          productNameSnapshot: 'P',
-          saleUnitSnapshot: 'kg',
-        }),
-      ],
-    };
-    const draft = serializeDraft(form);
-    assert.equal(draft.orderId, undefined);
-    assert.equal(draft.orderNo, undefined);
-    assert.equal(draft.version, undefined);
-    assert.equal(draft.status, undefined);
-    const line = draft.items[0];
-    // 解析价 / 锁定价 / 快照 / 行 version 一律不进草稿
-    assert.equal(line.draftUnitPrice, undefined);
-    assert.equal(line.lockedUnitPrice, undefined);
-    assert.equal(line.productNameSnapshot, undefined);
-    assert.equal(line.version, undefined);
-    assert.equal(line.itemId, undefined);
-    // 保留用户录入
-    assert.equal(line.skuId, 5);
-    assert.equal(line.orderedQuantity, '2.0000');
-  });
-
-  test('serializeDraft 只在补单来源下保留补单上下文，并过滤空行', () => {
-    const base = {
-      ...newOrder(),
-      customerId: 12,
-      items: [
-        {orderedQuantity: '', manualPriceOverride: false},
-        {orderedQuantity: '1.0000', manualPriceOverride: false, skuId: 8},
-        {orderedQuantity: '', manualPriceOverride: false, skuId: 9},
-      ],
-    };
-    const admin = serializeDraft({...base, orderSource: 'ADMIN', supplementReason: 'x', originalOrderId: 3});
-    assert.equal(admin.supplementReason, null);
-    assert.equal(admin.originalOrderId, null);
-    // 只丢弃「无 SKU 且无数量」的占位行；有 SKU 或有数量都算用户在录的半行
-    assert.equal(admin.items.length, 2);
-
-    const sup = serializeDraft({...base, orderSource: 'SUPPLEMENT', supplementReason: 'x', originalOrderId: 3});
-    assert.equal(sup.supplementReason, 'x');
-    assert.equal(sup.originalOrderId, 3);
-  });
-
-  test('serializeDraft 仅在人工改价开启时保留单价与原因', () => {
-    const form = {...newOrder(), items: [itemOf({skuId: 5, manualPriceOverride: true, unitPrice: '6.6000', overrideReason: '促销'})]};
-    assert.deepEqual(serializeDraft(form).items[0], {
-      skuId: 5,
-      orderedQuantity: '2.0000',
-      manualPriceOverride: true,
-      unitPrice: '6.6000',
-      overrideReason: '促销',
-    });
-    const off = {...newOrder(), items: [itemOf({skuId: 5, manualPriceOverride: false, unitPrice: '6.6000'})]};
-    assert.equal(serializeDraft(off).items[0].unitPrice, null);
-  });
-
-  test('applyDraft 还原为新建草稿：保留用户字段，来源缺省回落 ADMIN', () => {
-    const draft = {
-      customerId: 12,
-      orderSource: 'ADMIN',
-      expectDeliveryTime: '2026-09-22T00:00:00Z',
-      remark: 'r',
-      supplementReason: null,
-      originalOrderId: null,
-      items: [{skuId: 5, orderedQuantity: '3.0000', manualPriceOverride: false}],
-    };
-    const form = applyDraft(draft);
-    assert.equal(form.orderId, undefined);
-    assert.equal(form.customerId, 12);
-    assert.equal(form.items.length, 1);
-    assert.equal(form.items[0].orderedQuantity, '3.0000');
-    // 解析价不在草稿里，恢复后由 preview 重填
-    assert.equal(form.items[0].draftUnitPrice, undefined);
   });
 
   test('fromHistory 复制允许字段但绝不带历史价 / 状态 / version / 人工改价', () => {
@@ -390,15 +286,15 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     assert.match(service, /@Transactional[\s\S]*?void apply\(/);
   });
 
-  test('订单列表的原负责人范围先于标签过滤；非草稿可打标，但不可批量删除或核价', () => {
+  test('订单列表的原负责人范围先于标签过滤；非待确认可打标，但不可批量删除或核价', () => {
     assert.match(mapper, /scope\.all == false/);
     assert.match(mapper, /AND EXISTS \(SELECT 1 FROM xsy_order_tag_link/);
     assert.match(readService, /orderTagDao\.tagsByOrders\(/);
     assert.match(list, /queryForm\.tagId/);
     assert.match(list, /record\.tags/);
     assert.doesNotMatch(list, /getCheckboxProps/);
-    assert.match(list, /selectedAllDraft/);
-    assert.match(list, /!selectedAllDraft/);
+    assert.match(list, /selectedAllPending/);
+    assert.match(list, /!selectedAllPending/);
     assert.match(list, /key: 'tag', label: '订单标签'/);
   });
 
@@ -495,53 +391,15 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   });
 }
 
-// ---------------------------------------------------------------- 来源：draft-off-page.test.mjs
-{
-  /**
-   * 录单草稿「离页不丢」的前端契约测试。
-   *
-   * 草稿只在主动点「关闭」时落本地，曾是这个能力最容易被误改回去的地方：刷新、切换路由、
-   * 直接离开页面都不经过 `closeDrawer()`，一旦有人把它退回成单一关闭路径，页面上看不出任何异常，
-   * 用户却会整单丢失。这里锁三条：
-   * 1. 三类离页通道（beforeunload / 路由离开 / 组件卸载）都挂到同一个 `persistUnsavedDraft`；
-   * 2. 写草稿只有 `persistUnsavedDraft` 一处出口，且抽屉已关闭时不写（创建成功后不得把已保存的单写回草稿）；
-   * 3. `beforeunload` 监听必须被摘除，不给 keep-alive 页面留重复监听。
-   */
-
-  /** 剥掉模板 / 块 / 行注释，门禁只针对代码。 */
-  const src = readFileSync(new URL('../src/views/business/scm/order/components/order-form-drawer.vue', import.meta.url), 'utf8')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '');
-
-  test('all three off-page channels persist the draft through the same entry point', () => {
-    assert.match(src, /window\.addEventListener\('beforeunload',\s*persistUnsavedDraft\)/);
-    assert.match(src, /onBeforeRouteLeave\(\(\)\s*=>\s*persistUnsavedDraft\(\)\)/);
-    assert.match(src, /onBeforeUnmount\(\(\)\s*=>\s*\{[\s\S]*?persistUnsavedDraft\(\);/);
-  });
-
-  test('draft writing has a single exit that refuses while the drawer is closed', () => {
-    const writeCalls = src.match(/writeDraft\(serializeDraft/g) ?? [];
-    assert.equal(writeCalls.length, 1, '落草稿只应有 persistUnsavedDraft 一个出口');
-    assert.match(src, /function persistUnsavedDraft\(\)\s*\{\s*if\s*\(!visible\.value\)\s*return;/);
-    assert.match(src, /function closeDrawer\(\)\s*\{\s*persistUnsavedDraft\(\);/);
-  });
-
-  test('the beforeunload listener is removed on both close and unmount', () => {
-    const removeCalls = src.match(/window\.removeEventListener\('beforeunload',\s*persistUnsavedDraft\)/g) ?? [];
-    assert.equal(removeCalls.length, 2, '关闭抽屉与组件卸载都要摘掉 beforeunload 监听');
-  });
-}
-
 // ---------------------------------------------------------------- 来源：order-entry-contract.test.mjs
 {
   /**
-   * 订单录单效率（草稿恢复 / 历史复用 / 最近已确认订单价）的前端契约测试。
+   * 订单录单效率（历史复用 / 最近已确认订单价）的前端契约测试。
    *
    * 钉死这一波最容易被日后改动悄悄破坏、且破坏后不报错的前端边界（后端读路径 / 权限由 Java 测试覆盖）：
    * 1. 最近已确认订单价是只读查询：走 getRequest，绝不复用带 Idempotency-Key 的 orderCommand；
    * 2. 最近已确认订单价仅旁证：不写回解析单价、不前端重算，preview / 定价路径保持不变；
-   * 3. 草稿恢复 / 历史复用接在既有 Drawer，无新增路由 / 菜单；创建成功清草稿；
+   * 3. 历史复用接在既有 Drawer，无新增路由 / 菜单；
    * 4. 历史复用只读 GET detail，不引入后端「复制订单」命令；
    * 5. 「复用为新单」沿用 scm:order:add，明细「历史价」按客户 + SKU 现查。
    */
@@ -562,13 +420,11 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     assert.match(api, /preview:[\s\S]*?postRequest(?:<[^']*>)?\('\/scm\/order\/price\/preview'/);
   });
 
-  test('录单页把草稿恢复 / 历史复用接在既有 Drawer，创建成功清草稿', () => {
+  test('录单页把历史复用接在既有 Drawer', () => {
     const drawer = code('../src/views/business/scm/order/components/order-form-drawer.vue');
-    assert.match(drawer, /promptRestoreDraft/);
     assert.match(drawer, /closeDrawer/);
     assert.match(drawer, /openFromHistory/);
     assert.match(drawer, /defineExpose\(\{open,\s*openFromHistory,\s*openForExchange\}\)/);
-    assert.match(drawer, /if \(isNew && !exchangeReturnId\.value\) clearDraft\(\)/);
     // 关闭 / 保存动作走 closeDrawer，不再直接置 visible=false
     assert.doesNotMatch(drawer, /@close="visible=false"/);
   });
@@ -867,7 +723,8 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   });
   test('frontend enum excludes fulfillment and unpriced source values', () => {
     const source = readFileSync(new URL('../src/constants/business/scm/order-const.ts', import.meta.url), 'utf8');
-    assert.match(source, /DRAFT[\s\S]*PENDING[\s\S]*CONFIRMED[\s\S]*CANCELLED/);
+    assert.match(source, /PENDING[\s\S]*CONFIRMED[\s\S]*CANCELLED/);
+    assert.doesNotMatch(source, /DRAFT/);
     assert.doesNotMatch(source, /UNPRICED|DELIVERING|PURCHASING|SIGNED/);
   });
   test('order operation enum matches backend ScmOrderOperationTypeEnum', () => {

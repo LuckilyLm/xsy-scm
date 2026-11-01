@@ -82,6 +82,7 @@ import {fixed, price, quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 import {scmColumnsWidth} from '../../common/scm-column';
 import {datetime} from '../../common/scm-display';
+import {notifyFormInvalid} from '../../common/scm-form-feedback';
 
 const visible = ref(false),
   loading = ref(false),
@@ -98,18 +99,18 @@ let requestId = 0;
 const sourceColumns: TableColumnsType<PurchaseCostAdjustment> = [
   {title: '确认单号', dataIndex: 'sourceNo', width: 190},
   {title: '商品名称', dataIndex: 'productNameSnapshot', width: 180},
-  {title: '单位', dataIndex: 'unitSnapshot', width: 76, align: 'center'},
-  {title: '实际采购数量', dataIndex: 'quantity', width: 120, align: 'right'},
-  {title: '当前结算单价', dataIndex: 'previousPrice', width: 144, align: 'right'},
+  {title: '单位', dataIndex: 'unitSnapshot', width: 76},
+  {title: '实际采购数量', dataIndex: 'quantity', width: 120},
+  {title: '当前结算单价', dataIndex: 'previousPrice', width: 144},
   {title: '操作', dataIndex: 'action', width: 100, align: 'center', fixed: 'right'},
 ];
 const historyColumns: TableColumnsType<PurchaseCostAdjustment> = [
   {title: '更正单号', dataIndex: 'adjustmentNo', width: 190},
   {title: '商品名称', dataIndex: 'productNameSnapshot', width: 180},
-  {title: '原单价', dataIndex: 'previousPrice', width: 132, align: 'right'},
-  {title: '更正单价', dataIndex: 'newPrice', width: 132, align: 'right'},
+  {title: '原单价', dataIndex: 'previousPrice', width: 132},
+  {title: '更正单价', dataIndex: 'newPrice', width: 132},
   {title: '方向', dataIndex: 'direction', width: 76, align: 'center'},
-  {title: '价差金额', dataIndex: 'amount', width: 144, align: 'right'},
+  {title: '价差金额', dataIndex: 'amount', width: 144},
   {title: '更正时间', dataIndex: 'occurredAt', width: 180},
   {title: '原因', dataIndex: 'reason', width: 220},
 ];
@@ -154,7 +155,8 @@ async function submit() {
   if (!target.value || saving.value) return;
   try {
     await formRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
     return;
   }
   if (!(Number(form.newPrice) >= 0) || fixed(form.newPrice) === fixed(target.value.previousPrice)) {

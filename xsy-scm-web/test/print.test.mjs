@@ -91,7 +91,9 @@ import {readFileSync} from 'node:fs';
   const list = read('../src/views/business/scm/order/order-list.vue');
   const detail = read('../src/views/business/scm/order/order-detail-page.vue');
   const modal = read('../src/views/business/scm/print/print-document-modal.vue');
-  const provider = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/support/SalesOrderPrintSourceProvider.java');
+  const provider =
+    read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/support/ScmOrderPrintSourceProvider.java') +
+    read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/support/SalesOrderPrintSourceProvider.java');
   const service = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/service/ScmPrintService.java');
   const migration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V146__scm_sales_order_print.sql');
 

@@ -339,13 +339,15 @@ import {readFileSync, existsSync} from 'node:fs';
   test('系统信息使用四类财务单据的真实表头审计列', () => {
     const section = drawer.slice(drawer.indexOf('<h3>系统信息</h3>'), drawer.indexOf('</section>', drawer.indexOf('<h3>系统信息</h3>')));
     const root = '../../xsy-scm-server/sa-admin/src/main/';
+    // 公共审计字段在 FinanceLedgerVO 里，应收 / 应付 VO 继承它，按实际可读字段校验。
+    const ledgerModel = code(`${root}java/com/xsy/scm/finance/domain/vo/FinanceLedgerVO.java`);
     for (const [vo, dao, alias] of [
       ['FinanceReceivableVO', 'FinanceReceivableDao', 'r'],
       ['FinancePayableVO', 'FinancePayableDao', 'p'],
       ['FinanceReceiptQueryVO', 'FinanceReceiptDao', 'r'],
       ['FinancePaymentQueryVO', 'FinancePaymentDao', 'p'],
     ]) {
-      const model = code(`${root}java/com/xsy/scm/finance/domain/vo/${vo}.java`);
+      const model = code(`${root}java/com/xsy/scm/finance/domain/vo/${vo}.java`) + ledgerModel;
       const mapper = code(`${root}resources/mapper/scm/finance/${dao}.xml`);
       for (const [column, field] of [
         ['created_at', 'createdAt'],

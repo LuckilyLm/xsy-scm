@@ -12,7 +12,7 @@
       >
     </a-row>
   </a-form>
-  <p class="scm-note">按客户和月份核对销售收入，登记实际商品成本与税费等费用后计算利润。商品成本包含赠品及已分摊的采购价差；未登记成本时利润留空。</p>
+  <p class="scm-note">按月核对客户收入、成本与费用后计算利润。</p>
   <a-alert v-if="error" type="error" show-icon :message="error"
     ><template #action><a-button @click="load">重试</a-button></template></a-alert
   >
@@ -176,6 +176,7 @@ import {hasPermission} from '../common/scm-permission';
 import {scmColumnsWidth} from '../common/scm-column';
 import {moneyText, dateTimeText} from '../finance/finance-form-model';
 import {reportError} from './report-errors';
+import {notifyFormInvalid} from '../common/scm-form-feedback';
 
 const filters = reactive({month: dayjs().format('YYYY-MM'), customerId: undefined as FinanceId | undefined});
 const pageNum = ref(1),
@@ -214,8 +215,8 @@ const columns = ref<TableColumnsType<CustomerMonthlyProfitRow>>([
     ...amountFields,
     {key: 'expenseAmount', label: '费用合计'},
     {key: 'netProfit', label: '扣费后利润'},
-  ].map((field) => ({title: field.label, dataIndex: field.key, width: 144, align: 'right' as const})),
-  {title: '成本状态', dataIndex: 'costMissingCount', width: 110, align: 'right'},
+  ].map((field) => ({title: field.label, dataIndex: field.key, width: 144})),
+  {title: '成本状态', dataIndex: 'costMissingCount', width: 110},
   {title: '操作', dataIndex: 'action', width: 100, fixed: 'right', align: 'center'},
 ]);
 function payload(): FinanceProfitQuery {
@@ -324,7 +325,8 @@ async function saveExpense() {
   if (saving.value) return;
   try {
     await addFormRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, addFormRef.value);
     return;
   }
   if (expenseForm.customerId == null) return;
@@ -364,9 +366,9 @@ const expenseQuery = reactive({expenseMonth: '', customerId: undefined as Financ
 const expenseColumns: TableColumnsType<CustomerExpense> = [
   {title: '登记单号', dataIndex: 'expenseNo', width: 190},
   {title: '客户名称', dataIndex: 'customerName', width: 180},
-  {title: '实际商品成本', dataIndex: 'goodsCostAmount', width: 144, align: 'right'},
+  {title: '实际商品成本', dataIndex: 'goodsCostAmount', width: 144},
   ...amountFields.map((field) => ({title: field.label, dataIndex: field.key, width: 132, align: 'right' as const})),
-  {title: '状态', dataIndex: 'voided', width: 80, align: 'center'},
+  {title: '状态', dataIndex: 'voided', width: 80},
   {title: '说明', dataIndex: 'reason', width: 180},
   {title: '登记时间', dataIndex: 'createdAt', width: 180},
   {title: '作废原因', dataIndex: 'voidReason', width: 180},
@@ -417,7 +419,8 @@ async function voidExpense() {
   if (voidSaving.value || voidForm.expenseId == null) return;
   try {
     await voidFormRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, voidFormRef.value);
     return;
   }
   voidSaving.value = true;

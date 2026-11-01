@@ -102,6 +102,7 @@ import {datetime} from '../../common/scm-display';
 import {moneyText} from '../../finance/finance-form-model';
 import {quantityText} from '../../inventory/inventory-model';
 import {reportError} from '../report-errors';
+import {notifyFormInvalid} from '../../common/scm-form-feedback';
 
 const visible = ref(false),
   loading = ref(false),
@@ -117,18 +118,18 @@ const columns: TableColumnsType<NegativeStockSnapshot> = [
   {title: '留存编号', dataIndex: 'snapshotNo', width: 190},
   {title: '仓库', dataIndex: 'warehouseName', width: 160},
   {title: '留存时间', dataIndex: 'capturedAt', width: 180},
-  {title: '规格数', dataIndex: 'rowCount', width: 90, align: 'right'},
-  {title: '待确认成本数', dataIndex: 'zeroCostRowCount', width: 110, align: 'right'},
-  {title: '估算金额', dataIndex: 'estimatedAmount', width: 148, align: 'right'},
+  {title: '规格数', dataIndex: 'rowCount', width: 90},
+  {title: '待确认成本数', dataIndex: 'zeroCostRowCount', width: 110},
+  {title: '估算金额', dataIndex: 'estimatedAmount', width: 148},
   {title: '操作', dataIndex: 'action', width: 120, align: 'center', fixed: 'right'},
 ];
 const detailColumns: TableColumnsType<InventoryNegativeStockRow> = [
   {title: '商品名称', dataIndex: 'productName', width: 200},
   {title: '规格', dataIndex: 'specName', width: 160},
-  {title: '单位', dataIndex: 'unit', width: 76, align: 'center'},
-  {title: '负数量', dataIndex: 'quantity', width: 132, align: 'right'},
-  {title: '余额均价', dataIndex: 'avgCost', width: 144, align: 'right'},
-  {title: '估算金额', dataIndex: 'estimatedAmount', width: 148, align: 'right'},
+  {title: '单位', dataIndex: 'unit', width: 76},
+  {title: '负数量', dataIndex: 'quantity', width: 132},
+  {title: '余额均价', dataIndex: 'avgCost', width: 144},
+  {title: '估算金额', dataIndex: 'estimatedAmount', width: 148},
 ];
 function open() {
   visible.value = true;
@@ -174,7 +175,8 @@ async function create() {
   if (creating.value) return;
   try {
     await createFormRef.value?.validate();
-  } catch {
+  } catch (err) {
+    notifyFormInvalid(err, createFormRef.value);
     return;
   }
   if (createForm.warehouseId == null) return;
