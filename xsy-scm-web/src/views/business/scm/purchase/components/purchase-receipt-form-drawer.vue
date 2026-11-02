@@ -1,7 +1,13 @@
 <!-- 采购收货单表单。待确认时只能改备注，数量在确认收货时一次填写。
      表单里没有状态字段；采购单下拉只列可收货的单。 -->
 <template>
-  <a-drawer :title="form.id ? '编辑收货单备注' : '新建收货单'" :open="visible" :width="scmDrawerWidth('s')" @close="visible = false">
+  <a-drawer
+    :title="form.id ? '编辑收货单备注' : '新建收货单'"
+    :open="visible"
+    :width="scmDrawerWidth('s')"
+    :mask-closable="!saving"
+    @close="requestClose"
+  >
     <a-alert v-if="error" :message="error" type="error" show-icon />
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
@@ -57,7 +63,7 @@
 
     <template #footer>
       <a-space>
-        <a-button @click="visible = false">关闭</a-button>
+        <a-button :disabled="saving" @click="requestClose">关闭</a-button>
         <a-button type="primary" :loading="saving" :disabled="loading" @click="save">
           {{ form.id ? '保存备注' : '新建收货单' }}
         </a-button>
@@ -77,6 +83,7 @@ import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {createUnsavedGuard} from '../../common/scm-unsaved-guard';
 
 const emit = defineEmits<{saved: []; created: [id: Id]}>();
 
@@ -84,6 +91,7 @@ const emit = defineEmits<{saved: []; created: [id: Id]}>();
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 
 const form = ref<Receipt>({});
+const unsaved = createUnsavedGuard(() => form.value);
 const formRef = ref<FormInstance>();
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
@@ -115,10 +123,12 @@ async function loadOrders(keyword: string) {
 async function open(id?: Id) {
   const current = ++requestId;
   error.value = '';
+  unsaved.clear();
   form.value = {};
   visible.value = true;
   if (!id) {
     await loadOrders('');
+    unsaved.capture();
     return;
   }
   loading.value = true;
@@ -126,6 +136,7 @@ async function open(id?: Id) {
     const r = await purchaseReceiptApi.detail(id, {suppressGlobalErrorMessage: true});
     if (current === requestId) {
       form.value = r.data;
+      unsaved.capture();
     }
   } catch (e) {
     if (current === requestId) {
@@ -136,6 +147,12 @@ async function open(id?: Id) {
       loading.value = false;
     }
   }
+}
+
+/** 点遮罩、X 或关闭时，有未保存修改先确认。 */
+async function requestClose() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) visible.value = false;
 }
 
 async function save() {
@@ -177,9 +194,11 @@ async function save() {
 async function openForOrder(orderId: Id) {
   const current = ++requestId;
   error.value = '';
+  unsaved.clear();
   form.value = {purchaseOrderId: orderId};
   visible.value = true;
   loading.value = true;
+  unsaved.capture();
   try {
     const result = await purchaseOrderApi.detail(orderId);
     if (current !== requestId) return;

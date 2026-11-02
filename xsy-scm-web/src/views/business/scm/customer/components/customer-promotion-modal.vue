@@ -60,7 +60,8 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue';
 import QRCode from 'qrcode';
-import {message, Modal} from 'ant-design-vue';
+import {message} from 'ant-design-vue';
+import {confirmDialog} from '../../common/scm-unsaved-guard';
 import {customerPromotionApi, type CustomerPromotion, type CustomerPromotionScan} from '/@/api/business/scm/customer-promotion-api';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';
 
@@ -151,17 +152,14 @@ async function create() {
 }
 
 async function revoke(record: CustomerPromotion) {
-  try {
-    await Modal.confirm({
-      title: '撤销推广码',
-      content: '撤销后已印刷或转发出去的推广二维码将立即失效。',
-      okText: '确认撤销',
-      okType: 'danger',
-      cancelText: '取消',
-    });
-  } catch {
-    return;
-  }
+  const confirmed = await confirmDialog({
+    title: '撤销推广码',
+    content: '撤销后已印刷或转发出去的推广二维码将立即失效。',
+    okText: '确认撤销',
+    okType: 'danger',
+    cancelText: '取消',
+  });
+  if (!confirmed) return;
   revokingId.value = record.id;
   try {
     await customerPromotionApi.revoke(record.id);

@@ -47,7 +47,8 @@
 import {reactive, ref} from 'vue';
 import QRCode from 'qrcode';
 import {purchaseShareApi, type PurchaseShare} from '/@/api/business/scm/purchase-share-api';
-import {message, Modal} from 'ant-design-vue';
+import {message} from 'ant-design-vue';
+import {confirmDialog} from '../../common/scm-unsaved-guard';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';
 
 const VALID_DAY_OPTIONS = [
@@ -132,17 +133,14 @@ async function create() {
 }
 
 async function revoke(record: PurchaseShare) {
-  try {
-    await Modal.confirm({
-      title: '撤销分享链接',
-      content: '撤销后该二维码立即失效，已打印或转发出去的二维码将无法打开采购单。',
-      okText: '确认撤销',
-      okType: 'danger',
-      cancelText: '取消',
-    });
-  } catch {
-    return;
-  }
+  const confirmed = await confirmDialog({
+    title: '撤销分享链接',
+    content: '撤销后该二维码立即失效，已打印或转发出去的二维码将无法打开采购单。',
+    okText: '确认撤销',
+    okType: 'danger',
+    cancelText: '取消',
+  });
+  if (!confirmed) return;
   revokingId.value = record.id;
   try {
     await purchaseShareApi.revoke(record.id);

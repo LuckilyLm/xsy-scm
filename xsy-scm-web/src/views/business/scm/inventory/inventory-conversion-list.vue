@@ -237,6 +237,7 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import {scmColumnsWidth, type ScmListColumn} from '/@/views/business/scm/common/scm-column';
+import {createUnsavedGuard} from '/@/views/business/scm/common/scm-unsaved-guard';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import InventoryConversionDetailDrawer from './components/inventory-conversion-detail-drawer.vue';
@@ -411,6 +412,7 @@ const form = reactive<{
   remark?: string;
   items: EditableItem[];
 }>({items: []});
+const unsaved = createUnsavedGuard(() => form);
 
 const formRules = {
   warehouseId: [{required: true, message: '请选择仓库'}],
@@ -432,6 +434,7 @@ function removeItem(index: number) {
 }
 
 function openCreate() {
+  unsaved.clear();
   form.id = undefined;
   form.conversionNo = undefined;
   form.warehouseId = queryForm.warehouseId ?? singleWarehouseDefault(warehouses.value);
@@ -441,9 +444,11 @@ function openCreate() {
   form.items = [];
   addItem();
   drawerOpen.value = true;
+  unsaved.capture();
 }
 
 async function openEdit(record: InventoryConversion) {
+  unsaved.clear();
   const r = await inventoryConversionApi.detail(record.id);
   const d = r.data;
   form.id = d.id;
@@ -467,10 +472,13 @@ async function openEdit(record: InventoryConversion) {
     addItem();
   }
   drawerOpen.value = true;
+  unsaved.capture();
 }
 
-function closeDrawer() {
-  drawerOpen.value = false;
+/** 点遮罩、X 或取消时，有未保存修改先确认。 */
+async function closeDrawer() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) drawerOpen.value = false;
 }
 
 /** 提交前逐行校验，并指出第几行缺什么。 */

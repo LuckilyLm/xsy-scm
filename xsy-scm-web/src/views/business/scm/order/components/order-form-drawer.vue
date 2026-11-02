@@ -3,6 +3,7 @@
     :title="exchangeReturnId ? '创建关联换货订单' : form.orderId ? '编辑销售订单' : '新建销售订单'"
     :open="visible"
     :width="scmDrawerWidth('xl')"
+    :mask-closable="!saving"
     @close="closeDrawer"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon />
@@ -103,9 +104,7 @@
     <template #footer>
       <a-space>
         <a-button @click="closeDrawer">关闭</a-button>
-        <a-button v-if="!form.orderId && !exchangeReturnId" :loading="saving" :disabled="loading" @click="save(true)">
-          创建并继续录单
-        </a-button>
+        <a-button v-if="!form.orderId && !exchangeReturnId" :loading="saving" :disabled="loading" @click="save(true)"> 创建并继续录单 </a-button>
         <a-button type="primary" :loading="saving" :disabled="loading" @click="save()">
           {{ exchangeReturnId ? '创建换货单' : form.orderId ? '保存修改' : '创建订单' }}
         </a-button>
@@ -121,20 +120,14 @@ import CustomerSelect from '/@/components/business/scm/customer-select/index.vue
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {orderApi} from '/@/api/business/scm/order-api';
-import {
-  newOrder,
-  nextOrderForCustomer,
-  payload,
-  validateOrder,
-  fixed,
-  fromHistory,
-} from '../order-form-model';
+import {newOrder, nextOrderForCustomer, payload, validateOrder, fixed, fromHistory} from '../order-form-model';
 import {orderError} from '../order-errors';
 import type {Order, Id, Item} from '../order-types';
 import ItemTable from './order-item-editable-table.vue';
 import OrderPasteModal from './order-paste-modal.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {createUnsavedGuard} from '../../common/scm-unsaved-guard';
 
 const emit = defineEmits<{saved: []}>();
 const form = ref<Order>(newOrder()),
@@ -145,6 +138,8 @@ const form = ref<Order>(newOrder()),
   error = ref(''),
   originals = ref<{value: Id; label: string}[]>([]);
 const exchangeReturnId = ref<Id>();
+/** 关闭前拦截未保存修改；加载失败时基线为空，不拦截。 */
+const unsaved = createUnsavedGuard(() => ({form: form.value, exchangeReturnId: exchangeReturnId.value, originals: originals.value}));
 const pasteOpen = ref(false);
 const formRef = ref<FormInstance>();
 const existingSkuIds = computed(() => form.value.items.map((item) => item.skuId).filter((skuId): skuId is Id => skuId != null && skuId !== ''));
@@ -189,8 +184,13 @@ async function open(id?: Id) {
   const current = ++requestId;
   exchangeReturnId.value = undefined;
   error.value = '';
+  unsaved.clear();
   form.value = newOrder();
   visible.value = true;
+  if (!id) {
+    unsaved.capture();
+    return;
+  }
   if (id) {
     loading.value = true;
     try {
@@ -201,6 +201,7 @@ async function open(id?: Id) {
         i.unitPrice = i.manualPriceOverride ? i.draftUnitPrice : null;
         i.overrideReason = i.manualPriceReason;
       });
+      unsaved.capture();
     } catch (e) {
       if (current === requestId) error.value = orderError(e);
     } finally {
@@ -226,19 +227,30 @@ watch(visible, (opened) => {
   if (!opened) itemTableRef.value?.closeRecentPopover();
 });
 
-function closeDrawer() {
+function forceClose() {
   requestId++;
   visible.value = false;
 }
 
+/** 点遮罩、X 或关闭时，有未保存修改先确认。 */
+async function closeDrawer() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) forceClose();
+}
+
 // 列表页会被 keep-alive 缓存；切走菜单时必须收起抽屉，否则遮罩会一直盖在新页面上。
-onBeforeRouteLeave(() => closeDrawer());
+// 有未保存修改时先留在当前页确认，避免切页后数据被静默丢弃。
+onBeforeRouteLeave(async () => {
+  if (!(await unsaved.confirmDiscard())) return false;
+  forceClose();
+});
 
 /** 复用历史订单：只复制基本信息，价格和可用性重新解析。 */
 async function openFromHistory(id: Id) {
   const current = ++requestId;
   exchangeReturnId.value = undefined;
   error.value = '';
+  unsaved.clear();
   visible.value = true;
   loading.value = true;
   try {
@@ -246,6 +258,7 @@ async function openFromHistory(id: Id) {
     if (current !== requestId) return;
     form.value = fromHistory(detail);
     await preview();
+    unsaved.capture();
   } catch (e) {
     if (current === requestId) error.value = orderError(e);
   } finally {
@@ -262,6 +275,7 @@ async function openForExchange(
   const current = ++requestId;
   exchangeReturnId.value = returnId;
   error.value = '';
+  unsaved.clear();
   visible.value = true;
   loading.value = true;
   try {
@@ -279,6 +293,7 @@ async function openForExchange(
     form.value = next;
     originals.value = [{value: originalOrderId, label: original.orderNo ?? String(originalOrderId)}];
     await preview();
+    unsaved.capture();
   } catch (cause) {
     if (current === requestId) error.value = orderError(cause);
   } finally {

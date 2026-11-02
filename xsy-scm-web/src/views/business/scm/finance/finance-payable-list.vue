@@ -112,12 +112,13 @@
   />
 
   <a-drawer
-    v-model:open="redOpen"
+    :open="redOpen"
     :width="scmDrawerWidth('l')"
     :destroy-on-close="true"
     :closable="!redSaving"
     :keyboard="!redSaving"
     :mask-closable="!redSaving"
+    @close="requestCloseRed"
   >
     <template #title>
       登记红字应付
@@ -182,7 +183,7 @@
     </a-spin>
     <template #footer>
       <a-space>
-        <a-button :disabled="redSaving" @click="redOpen = false">取消</a-button>
+        <a-button :disabled="redSaving" @click="requestCloseRed">取消</a-button>
         <a-button type="primary" :loading="redSaving" :disabled="redLoading || !redDrafts.length" @click="submitRed">提交红字</a-button>
       </a-space>
     </template>
@@ -191,6 +192,7 @@
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {createUnsavedGuard} from '/@/views/business/scm/common/scm-unsaved-guard';
 import {onDeactivated, onMounted, onScopeDispose, reactive, ref, watch} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -246,6 +248,7 @@ const redOpen = ref(false),
   redReason = ref('');
 const redSource = ref<FinancePayable | null>(null);
 const redDrafts = ref<RedDraft[]>([]);
+const redUnsaved = createUnsavedGuard(() => ({reason: redReason.value, drafts: redDrafts.value}));
 let redRequestId = 0;
 watch(
   redOpen,
@@ -330,6 +333,7 @@ async function openRed(row: FinancePayable) {
   if (redSaving.value) return;
   const generation = ++redRequestId;
   redOpen.value = true;
+  redUnsaved.clear();
   redLoading.value = true;
   redError.value = '';
   redReason.value = '';
@@ -339,11 +343,18 @@ async function openRed(row: FinancePayable) {
     const detail = (await financeApi.payableDetail(row.payableId, {suppressGlobalErrorMessage: true})).data;
     if (generation !== redRequestId || !redOpen.value) return;
     redDrafts.value = detail.items.map((item) => ({...item, redQuantity: '', redUnitPrice: item.unitPrice}));
+    redUnsaved.capture();
   } catch (cause) {
     if (generation === redRequestId) redError.value = financeError(cause);
   } finally {
     if (generation === redRequestId) redLoading.value = false;
   }
+}
+
+/** 红字登记有未保存内容时，关闭前先确认。 */
+async function requestCloseRed() {
+  if (redSaving.value) return;
+  if (await redUnsaved.confirmDiscard()) redOpen.value = false;
 }
 
 function retryRed() {

@@ -1,5 +1,11 @@
 <template>
-  <a-drawer :title="form.id ? '编辑采购单' : '新建采购单'" :open="visible" :width="scmDrawerWidth('xl')" @close="visible = false">
+  <a-drawer
+    :title="form.id ? '编辑采购单' : '新建采购单'"
+    :open="visible"
+    :width="scmDrawerWidth('xl')"
+    :mask-closable="!saving"
+    @close="requestClose"
+  >
     <a-alert v-if="error" :message="error" type="error" show-icon />
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
@@ -51,7 +57,7 @@
 
     <template #footer>
       <a-space>
-        <a-button @click="visible = false">关闭</a-button>
+        <a-button :disabled="saving" @click="requestClose">关闭</a-button>
         <a-button type="primary" :loading="saving" :disabled="loading" @click="save">保存</a-button>
       </a-space>
     </template>
@@ -73,10 +79,12 @@ import ItemTable from './purchase-order-item-editable-table.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {createUnsavedGuard} from '../../common/scm-unsaved-guard';
 
 const emit = defineEmits<{saved: []}>();
 
 const form = ref<Order>(newOrder());
+const unsaved = createUnsavedGuard(() => form.value);
 const formRef = ref<FormInstance>();
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
@@ -128,10 +136,12 @@ async function loadWarehouses() {
 async function open(id?: Id) {
   const current = ++requestId;
   error.value = '';
+  unsaved.clear();
   form.value = newOrder();
   visible.value = true;
   await loadWarehouses();
   if (!id) {
+    unsaved.capture();
     return;
   }
   loading.value = true;
@@ -152,6 +162,7 @@ async function open(id?: Id) {
         })),
       })),
     };
+    unsaved.capture();
   } catch (e) {
     if (current === requestId) {
       error.value = purchaseError(e);
@@ -161,6 +172,12 @@ async function open(id?: Id) {
       loading.value = false;
     }
   }
+}
+
+/** 点遮罩、X 或关闭时，有未保存修改先确认。 */
+async function requestClose() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) visible.value = false;
 }
 
 async function save() {

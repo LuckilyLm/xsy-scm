@@ -226,6 +226,7 @@ import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {createUnsavedGuard} from '../common/scm-unsaved-guard';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<InventoryLossGainQuery>({pageNum: 1, pageSize: 20});
@@ -381,6 +382,7 @@ const form = reactive<{
   remark?: string;
   items: EditableItem[];
 }>({items: []});
+const unsaved = createUnsavedGuard(() => form);
 
 const formRules = {
   adjustType: [{required: true, message: '请选择调整类型'}],
@@ -397,6 +399,7 @@ function removeItem(index: number) {
 }
 
 function openCreate() {
+  unsaved.clear();
   form.id = undefined;
   form.lossGainNo = undefined;
   form.adjustType = 'LOSS';
@@ -406,9 +409,11 @@ function openCreate() {
   form.items = [];
   addItem();
   drawerOpen.value = true;
+  unsaved.capture();
 }
 
 async function openEdit(record: InventoryLossGain) {
+  unsaved.clear();
   const r = await inventoryLossGainApi.detail(record.id);
   const d = r.data;
   form.id = d.id;
@@ -428,10 +433,13 @@ async function openEdit(record: InventoryLossGain) {
     addItem();
   }
   drawerOpen.value = true;
+  unsaved.capture();
 }
 
-function closeDrawer() {
-  drawerOpen.value = false;
+/** 点遮罩、X 或取消时，有未保存修改先确认。 */
+async function closeDrawer() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) drawerOpen.value = false;
 }
 
 /** 提交前逐行校验，并指出第几行缺什么。 */

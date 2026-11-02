@@ -205,7 +205,7 @@
 </template>
 <script setup lang="ts">
 import {computed, nextTick, ref} from 'vue';
-import {message, Modal} from 'ant-design-vue';
+import {message} from 'ant-design-vue';
 import type {FormInstance} from 'ant-design-vue';
 import {PlusOutlined} from '@ant-design/icons-vue';
 import {productApi} from '/@/api/business/scm/product-api';
@@ -223,6 +223,7 @@ import {emptyProduct, productFormOf, validateProduct} from '../product-form-mode
 import {productError} from '../product-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {confirmDialog} from '../../common/scm-unsaved-guard';
 
 const emit = defineEmits<{saved: []}>();
 const form = ref<ProductForm>(emptyProduct()),
@@ -337,17 +338,14 @@ async function requestClose() {
     visible.value = false;
     return;
   }
-  try {
-    await Modal.confirm({
-      title: '放弃未保存的修改？',
-      content: '关闭后本次修改将丢失。',
-      okText: '放弃修改',
-      okType: 'danger',
-      cancelText: '继续编辑',
-    });
-  } catch {
-    return;
-  }
+  const confirmed = await confirmDialog({
+    title: '放弃未保存的修改？',
+    content: '关闭后本次修改将丢失。',
+    okText: '放弃修改',
+    okType: 'danger',
+    cancelText: '继续编辑',
+  });
+  if (!confirmed) return;
   visible.value = false;
 }
 

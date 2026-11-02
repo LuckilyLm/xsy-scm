@@ -186,6 +186,7 @@
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {createUnsavedGuard} from '/@/views/business/scm/common/scm-unsaved-guard';
 import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
@@ -351,6 +352,7 @@ const form = reactive<{
   remark?: string;
   items: EditableItem[];
 }>({items: []});
+const unsaved = createUnsavedGuard(() => form);
 
 const formRules = {
   fromWarehouseId: [{required: true, message: '请选择源仓库'}],
@@ -366,6 +368,7 @@ function removeItem(index: number) {
 }
 
 function openCreate() {
+  unsaved.clear();
   form.id = undefined;
   form.transferNo = undefined;
   form.fromWarehouseId = queryForm.fromWarehouseId ?? singleWarehouseDefault(warehouses.value);
@@ -374,9 +377,11 @@ function openCreate() {
   form.items = [];
   addItem();
   drawerOpen.value = true;
+  unsaved.capture();
 }
 
 async function openEdit(record: InventoryTransfer) {
+  unsaved.clear();
   const r = await inventoryTransferApi.detail(record.id);
   const d = r.data;
   form.id = d.id;
@@ -395,10 +400,13 @@ async function openEdit(record: InventoryTransfer) {
     addItem();
   }
   drawerOpen.value = true;
+  unsaved.capture();
 }
 
-function closeDrawer() {
-  drawerOpen.value = false;
+/** 点遮罩、X 或取消时，有未保存修改先确认。 */
+async function closeDrawer() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) drawerOpen.value = false;
 }
 
 /** 提交前逐行校验，并指出第几行缺什么。 */

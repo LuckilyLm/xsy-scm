@@ -1,6 +1,6 @@
 <!-- 供应商新建/编辑抽屉：状态固定启用，变更在列表里操作。 -->
 <template>
-  <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('s')" @close="close">
+  <a-drawer :open="visible" :title="title" :width="scmDrawerWidth('s')" :mask-closable="!saving" @close="requestClose">
     <a-spin :spinning="loading">
       <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
       <a-form ref="formRef" :model="form" layout="vertical" class="app-drawer-form">
@@ -76,7 +76,7 @@
     </a-spin>
     <template #footer>
       <a-space>
-        <a-button @click="visible = false">取消</a-button>
+        <a-button :disabled="saving" @click="requestClose">取消</a-button>
         <a-button type="primary" :loading="saving" @click="submit">保存</a-button>
       </a-space>
     </template>
@@ -100,6 +100,7 @@ import {supplierError} from '../supplier-errors';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import BusinessCategoryTreeSelect from '/@/components/business/scm/business-category-tree-select/index.vue';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {createUnsavedGuard} from '../../common/scm-unsaved-guard';
 
 const emit = defineEmits<{saved: []}>();
 
@@ -110,6 +111,8 @@ const error = ref('');
 const formRef = ref<FormInstance>();
 
 const form = reactive<SupplierFormModel>(emptySupplier());
+/** 关闭前拦截未保存修改；加载失败时基线为空，不拦截。 */
+const unsaved = createUnsavedGuard(() => form);
 
 /** 省市区选择路径，与表单的地区列互转。 */
 const area = ref<AreaNode[]>([]);
@@ -125,11 +128,13 @@ const title = computed(() => (form.supplierId ? '编辑供应商' : '新增供�
 async function open(supplierId?: ScmId) {
   visible.value = true;
   error.value = '';
+  unsaved.clear();
   Object.assign(form, emptySupplier());
   area.value = [];
   if (supplierId == null) {
     await nextTick();
     formRef.value?.clearValidate();
+    unsaved.capture();
     return;
   }
   loading.value = true;
@@ -158,6 +163,7 @@ async function open(supplierId?: ScmId) {
       geomCrs: detail.geomCrs ?? null,
       remark: detail.remark ?? '',
     });
+    unsaved.capture();
   } catch (e) {
     error.value = supplierError(e);
   } finally {
@@ -169,8 +175,13 @@ async function open(supplierId?: ScmId) {
   }
 }
 
-function close() {
-  error.value = '';
+/** 点遮罩、X 或取消时，有未保存修改先确认。 */
+async function requestClose() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) {
+    error.value = '';
+    visible.value = false;
+  }
 }
 
 async function submit() {

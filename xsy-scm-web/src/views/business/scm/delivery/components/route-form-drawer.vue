@@ -1,5 +1,11 @@
 <template>
-  <a-drawer v-model:open="visible" :title="routeId == null ? '新建配送线路' : '编辑配送线路'" :width="scmDrawerWidth('s')" :mask-closable="!saving">
+  <a-drawer
+    :open="visible"
+    :title="routeId == null ? '新建配送线路' : '编辑配送线路'"
+    :width="scmDrawerWidth('s')"
+    :mask-closable="!saving"
+    @close="requestClose"
+  >
     <a-alert v-if="error" type="error" :message="error" show-icon class="drawer-error" />
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
@@ -73,7 +79,7 @@
     </a-spin>
     <template #footer>
       <a-space>
-        <a-button @click="visible = false">取消</a-button>
+        <a-button :disabled="saving" @click="requestClose">取消</a-button>
         <a-button type="primary" :loading="saving" :disabled="loading || !optionsReady" @click="save">保存线路</a-button>
       </a-space>
     </template>
@@ -89,6 +95,7 @@ import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import type {Warehouse} from '../../purchase/purchase-types';
 import {deliveryError, type Id, type RouteForm, type Driver, type Vehicle, type DeliveryRoute} from '../delivery-types';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {createUnsavedGuard} from '../../common/scm-unsaved-guard';
 
 const emit = defineEmits<{saved: [Id]}>();
 const visible = ref(false),
@@ -107,6 +114,7 @@ const formRules = {
   warehouseId: [{required: true, message: '请选择起点仓库', trigger: 'change'}],
 };
 const departure = ref<string>();
+const unsaved = createUnsavedGuard(() => ({form: form.value, departure: departure.value}));
 const warehouses = ref<Warehouse[]>([]),
   drivers = ref<Driver[]>([]),
   vehicles = ref<Vehicle[]>([]);
@@ -116,6 +124,7 @@ async function open(route?: DeliveryRoute) {
   routeId.value = route?.id;
   error.value = '';
   visible.value = true;
+  unsaved.clear();
   loading.value = true;
   optionsReady.value = false;
   form.value = route
@@ -130,6 +139,7 @@ async function open(route?: DeliveryRoute) {
       }
     : {routeName: '', deliveryDate: dayjs().format('YYYY-MM-DD')};
   departure.value = route?.plannedDepartureTime ? dayjs(route.plannedDepartureTime).format('YYYY-MM-DD HH:mm:ss') : undefined;
+  unsaved.capture();
   try {
     // 选项加载失败由抽屉内的 Alert 提示
     const [w, d, v] = await Promise.all([
@@ -146,6 +156,12 @@ async function open(route?: DeliveryRoute) {
   } finally {
     loading.value = false;
   }
+}
+
+/** 点遮罩、X 或取消时，有未保存修改先确认。 */
+async function requestClose() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) visible.value = false;
 }
 
 async function save() {

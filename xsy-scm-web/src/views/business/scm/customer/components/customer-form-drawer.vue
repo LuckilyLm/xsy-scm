@@ -1,6 +1,6 @@
 <!-- 客户新建/编辑抽屉：状态随表单提交（需状态权限）；上级客户只选集团。 -->
 <template>
-  <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('m')" @close="close">
+  <a-drawer :open="visible" :title="title" :width="scmDrawerWidth('m')" :mask-closable="!saving" @close="requestClose">
     <a-spin :spinning="loading">
       <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
       <a-form ref="formRef" :model="form" layout="vertical" class="app-drawer-form">
@@ -229,7 +229,7 @@
     </a-spin>
     <template #footer>
       <a-space :size="12">
-        <a-button @click="visible = false">取消</a-button>
+        <a-button :disabled="saving" @click="requestClose">取消</a-button>
         <a-button type="primary" :loading="saving" @click="submit">保存</a-button>
       </a-space>
     </template>
@@ -263,6 +263,7 @@ import {applyCreditPeriodType, applyCreditPeriodUnit, emptyCustomer, toCustomerP
 import {customerError} from '../customer-errors';
 import {hasPermission} from '../../common/scm-permission';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {createUnsavedGuard} from '../../common/scm-unsaved-guard';
 
 const emit = defineEmits<{saved: []}>();
 
@@ -285,6 +286,8 @@ const canWarehouseUpdate = computed(
 const isEdit = computed(() => form.customerId != null);
 
 const form = reactive<CustomerFormModel>(emptyCustomer());
+/** 关闭前拦截未保存修改；加载失败时基线为空，不拦截。 */
+const unsaved = createUnsavedGuard(() => form);
 
 /** 省市区选择路径，与表单的地区列互转。 */
 const area = ref<AreaNode[]>([]);
@@ -319,6 +322,7 @@ const mallWarehouseValue = computed<string | number | undefined>({
 async function open(customerId?: ScmId) {
   visible.value = true;
   error.value = '';
+  unsaved.clear();
   Object.assign(form, emptyCustomer());
   area.value = [];
   sellerName.value = '';
@@ -334,6 +338,7 @@ async function open(customerId?: ScmId) {
     } catch {
       // 预填失败不影响新建
     }
+    unsaved.capture();
     return;
   }
   loading.value = true;
@@ -380,6 +385,7 @@ async function open(customerId?: ScmId) {
       remark: detail.remark ?? '',
     });
     sellerName.value = detail.sellerName ?? '';
+    unsaved.capture();
   } catch (e) {
     error.value = customerError(e);
   } finally {
@@ -407,8 +413,13 @@ const creditPeriodUnitValue = computed<string | undefined>({
   },
 });
 
-function close() {
-  error.value = '';
+/** 点遮罩、X 或取消时，有未保存修改先确认。 */
+async function requestClose() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) {
+    error.value = '';
+    visible.value = false;
+  }
 }
 
 async function submit() {

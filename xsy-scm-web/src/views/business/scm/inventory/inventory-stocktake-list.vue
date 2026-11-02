@@ -198,6 +198,7 @@ import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {createUnsavedGuard} from '../common/scm-unsaved-guard';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<InventoryStocktakeQuery>({pageNum: 1, pageSize: 20});
@@ -343,6 +344,7 @@ const form = reactive<{
   remark?: string;
   items: EditableItem[];
 }>({items: []});
+const unsaved = createUnsavedGuard(() => form);
 
 const formRules = {
   warehouseId: [{required: true, message: '请选择盘点仓库'}],
@@ -357,6 +359,7 @@ function removeItem(index: number) {
 }
 
 function openCreate() {
+  unsaved.clear();
   form.id = undefined;
   form.stocktakeNo = undefined;
   form.warehouseId = queryForm.warehouseId ?? singleWarehouseDefault(warehouses.value);
@@ -364,9 +367,11 @@ function openCreate() {
   form.items = [];
   addItem();
   drawerOpen.value = true;
+  unsaved.capture();
 }
 
 async function openEdit(record: InventoryStocktake) {
+  unsaved.clear();
   const r = await inventoryStocktakeApi.detail(record.id);
   const d = r.data;
   form.id = d.id;
@@ -384,10 +389,13 @@ async function openEdit(record: InventoryStocktake) {
     addItem();
   }
   drawerOpen.value = true;
+  unsaved.capture();
 }
 
-function closeDrawer() {
-  drawerOpen.value = false;
+/** 点遮罩、X 或取消时，有未保存修改先确认。 */
+async function closeDrawer() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) drawerOpen.value = false;
 }
 
 // 复制历史盘点：只填表单，不写库
@@ -397,6 +405,7 @@ function closeDrawer() {
  * 实盘量一律留空；任一规格已无余额时整单不复制。
  */
 async function openCopy(record: InventoryStocktake) {
+  unsaved.clear();
   try {
     const r = await inventoryStocktakeApi.detail(record.id);
     const d = r.data;
@@ -435,6 +444,7 @@ async function openCopy(record: InventoryStocktake) {
     form.remark = undefined;
     form.items = items;
     drawerOpen.value = true;
+    unsaved.capture();
     message.info('已复制到新建表单（未保存）：请重新清点并逐行填写实盘量');
   } catch (e) {
     message.error(inventoryError(e));

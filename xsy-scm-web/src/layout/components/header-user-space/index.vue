@@ -19,7 +19,7 @@
         i18n
       </a-button> -->
       <!---设置--->
-      <a-button type="text" @click="showSetting" class="operate-icon">
+      <a-button type="text" @click="showSetting" class="operate-icon" title="设置" aria-label="设置">
         <template #icon>
           <setting-outlined />
         </template>

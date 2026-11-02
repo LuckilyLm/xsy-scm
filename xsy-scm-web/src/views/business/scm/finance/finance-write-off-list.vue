@@ -126,7 +126,14 @@
     </div>
   </a-card>
 
-  <a-drawer v-model:open="addOpen" title="登记核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
+  <a-drawer
+    :open="addOpen"
+    title="登记核销"
+    :width="scmDrawerWidth('l')"
+    :destroy-on-close="true"
+    :mask-closable="!addSaving"
+    @close="requestCloseAdd"
+  >
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError" />
     <a-form ref="addFormRef" :model="addModel" :rules="addRules" layout="vertical" class="app-drawer-form">
       <a-form-item name="sourceType">
@@ -205,7 +212,7 @@
     </template>
     <template #footer>
       <a-space>
-        <a-button @click="addOpen = false">取消</a-button>
+        <a-button :disabled="addSaving" @click="requestCloseAdd">取消</a-button>
         <a-button
           type="primary"
           :loading="addSaving"
@@ -227,9 +234,7 @@
   </a-modal>
 
   <a-modal v-model:open="waiverReverseOpen" title="反向抹零" :confirm-loading="waiverReverseSaving" @ok="submitWaiverReverse">
-    <p v-if="waiverReverseRow" class="scm-note">
-      确认后本次抹零将作废，应收未结金额恢复 {{ moneyText(waiverReverseRow.amount) }}。
-    </p>
+    <p v-if="waiverReverseRow" class="scm-note">确认后本次抹零将作废，应收未结金额恢复 {{ moneyText(waiverReverseRow.amount) }}。</p>
     <a-form ref="waiverReverseFormRef" :model="waiverReverseModel" :rules="waiverReverseRules" layout="vertical">
       <a-form-item label="反向原因" name="waiverReverseReason">
         <a-textarea v-model:value="waiverReverseReason" :maxlength="500" :rows="3" show-count />
@@ -243,6 +248,7 @@
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {createUnsavedGuard} from '/@/views/business/scm/common/scm-unsaved-guard';
 import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
@@ -284,6 +290,13 @@ const source = ref<FinanceCandidate | null>(null),
 const allocMode = ref<'AUTO' | 'MANUAL'>('AUTO');
 const plan = ref<FinanceWriteOffAutoPlan[]>([]),
   planLoading = ref(false);
+const addUnsaved = createUnsavedGuard(() => ({
+  sourceType: sourceType.value,
+  source: source.value,
+  allocMode: allocMode.value,
+  targets: targets.value,
+  plan: plan.value,
+}));
 const pickerOpen = ref(false),
   pickerKind = ref<'RECEIPT' | 'PAYMENT' | 'RECEIVABLE' | 'PAYABLE'>('RECEIPT'),
   picking = ref<'SOURCE' | 'TARGET'>('SOURCE');
@@ -399,12 +412,20 @@ async function exportData() {
 
 function openAdd() {
   addError.value = '';
+  addUnsaved.clear();
   sourceType.value = undefined;
   source.value = null;
   targets.value = [];
   plan.value = [];
   allocMode.value = 'AUTO';
   addOpen.value = true;
+  addUnsaved.capture();
+}
+
+/** 登记核销有未保存内容时，关闭前先确认。 */
+async function requestCloseAdd() {
+  if (addSaving.value) return;
+  if (await addUnsaved.confirmDiscard()) addOpen.value = false;
 }
 function resetAllocation() {
   source.value = null;

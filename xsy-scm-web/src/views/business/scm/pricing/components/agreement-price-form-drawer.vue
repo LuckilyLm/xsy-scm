@@ -1,5 +1,11 @@
 <template>
-  <a-drawer :title="editingId ? '编辑客户协议价' : '新增客户协议价'" :open="visible" :width="scmDrawerWidth('s')" @close="visible = false">
+  <a-drawer
+    :title="editingId ? '编辑客户协议价' : '新增客户协议价'"
+    :open="visible"
+    :width="scmDrawerWidth('s')"
+    :mask-closable="!saving"
+    @close="requestClose"
+  >
     <a-spin :spinning="loading">
       <a-alert v-if="error" :message="error" type="error" show-icon class="drawer-error">
         <template #action>
@@ -93,7 +99,7 @@
     </a-spin>
     <template #footer>
       <a-space>
-        <a-button @click="visible = false">取消</a-button>
+        <a-button :disabled="saving" @click="requestClose">取消</a-button>
         <a-button type="primary" :loading="saving" :disabled="loading || (!!editingId && !!error)" @click="submit">保存</a-button>
       </a-space>
     </template>
@@ -114,6 +120,7 @@ import {pricingError} from '../pricing-errors';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {moneyPayload, normalizeMoneyInput, toScale} from '/@/utils/scm-amount';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {createUnsavedGuard} from '../../common/scm-unsaved-guard';
 
 /** 表单模型：单价输入和有效期是本地字段，提交时再写进 PriceForm（后端要定点数字符串）。 */
 type AgreementPriceModel = PriceForm & {
@@ -128,6 +135,7 @@ const visible = ref(false),
   error = ref('');
 /** 表单模型必须是同一个对象；每次渲染新建对象会让校验读到旧值。单价和有效期也放在这个模型里。 */
 const form = reactive<AgreementPriceModel>({...emptyPrice(), unitPriceInput: null, effectiveRange: undefined});
+const unsaved = createUnsavedGuard(() => form);
 const formulaOptions: {value: AgreementFormulaType; label: string}[] = [
   {value: 'FIXED', label: '固定协议价'},
   {value: 'MARKET_PLUS_AMOUNT', label: '市场价加固定金额'},
@@ -175,13 +183,17 @@ async function open(id?: ScmId) {
   editingId.value = id;
   visible.value = true;
   error.value = '';
+  unsaved.clear();
   for (const key of Object.keys(form)) delete (form as unknown as Record<string, unknown>)[key];
   Object.assign(form, emptyPrice());
   form.formulaType = 'FIXED';
   form.formulaParameter = null;
   form.effectiveRange = undefined;
   form.unitPriceInput = null;
-  if (!id) return;
+  if (!id) {
+    unsaved.capture();
+    return;
+  }
   loading.value = true;
   try {
     const r = await api.detail(id, {suppressGlobalErrorMessage: true});
@@ -193,12 +205,19 @@ async function open(id?: ScmId) {
       if (form.formulaType === 'MARKET_PLUS_AMOUNT') {
         form.formulaParameter = normalizeMoneyInput(r.data.formulaParameter);
       }
+      unsaved.capture();
     }
   } catch (e) {
     error.value = pricingError(e);
   } finally {
     if (request === requestId) loading.value = false;
   }
+}
+
+/** 点遮罩、X 或取消时，有未保存修改先确认。 */
+async function requestClose() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) visible.value = false;
 }
 
 async function submit() {
