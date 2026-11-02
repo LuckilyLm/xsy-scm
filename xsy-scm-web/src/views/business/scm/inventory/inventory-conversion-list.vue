@@ -128,6 +128,7 @@
             <template v-if="column.dataIndex === 'sourceSkuId'">
               <SkuSelect
                 :value="record.sourceSkuId"
+                :selected-options="selectedSkuOptions(record.sourceSkuId, record.sourceProductName, record.sourceSkuName)"
                 :disabled-statuses="[]"
                 width="200px"
                 @update:value="(v) => (record.sourceSkuId = Array.isArray(v) ? v[0] : v)"
@@ -149,6 +150,7 @@
             <template v-else-if="column.dataIndex === 'targetSkuId'">
               <SkuSelect
                 :value="record.targetSkuId"
+                :selected-options="selectedSkuOptions(record.targetSkuId, record.targetProductName, record.targetSkuName)"
                 :disabled-statuses="[]"
                 width="200px"
                 @update:value="(v) => (record.targetSkuId = Array.isArray(v) ? v[0] : v)"
@@ -258,6 +260,7 @@ import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
+import {notifyFormInvalid} from '../common/scm-form-feedback';
 
 const queryForm = reactive<InventoryConversionQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryConversion[]>([]);
@@ -388,11 +391,16 @@ function resetQuery() {
 interface EditableItem {
   _key: number;
   sourceSkuId?: string | number;
+  /** 编辑回显用：商品名称和规格名称，不提交。 */
+  sourceProductName?: string;
+  sourceSkuName?: string;
   /** 表单里用 number，提交时转成 4 位定点字符串；null 表示未填。 */
   sourceQuantity?: number | null;
   /** 单据声明的单位，不做换算。 */
   sourceUnit: string;
   targetSkuId?: string | number;
+  targetProductName?: string;
+  targetSkuName?: string;
   targetQuantity?: number | null;
   targetUnit: string;
   remark?: string;
@@ -418,6 +426,12 @@ const formRules = {
   warehouseId: [{required: true, message: '请选择仓库'}],
   convertType: [{required: true, message: '请选择转换类型'}],
 };
+
+/** 编辑旧单据时用已保存快照回显，避免首屏之外的规格只显示数字 ID。 */
+function selectedSkuOptions(skuId?: string | number, productName?: string, skuName?: string) {
+  if (skuId == null || !productName) return [];
+  return [{skuId, productName, specName: skuName || '默认规格'}];
+}
 
 function addItem() {
   form.items.push({
@@ -460,10 +474,14 @@ async function openEdit(record: InventoryConversion) {
   form.items = (d.items ?? []).map((i) => ({
     _key: ++keySeq,
     sourceSkuId: i.sourceSkuId,
+    sourceProductName: i.sourceProductName,
+    sourceSkuName: i.sourceSkuName,
     // 后端返回定点字符串，InputNumber 需要 number；空值保持 null
     sourceQuantity: i.sourceQuantity == null ? null : Number(i.sourceQuantity),
     sourceUnit: i.sourceUnit ?? '',
     targetSkuId: i.targetSkuId,
+    targetProductName: i.targetProductName,
+    targetSkuName: i.targetSkuName,
     targetQuantity: i.targetQuantity == null ? null : Number(i.targetQuantity),
     targetUnit: i.targetUnit ?? '',
     remark: i.remark,
@@ -530,7 +548,12 @@ function buildPayload(): InventoryConversionAdd | null {
 }
 
 async function onSubmit() {
-  await formRef.value?.validate();
+  try {
+    await formRef.value?.validate();
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
+    return;
+  }
   const payload = buildPayload();
   if (!payload) return;
   saving.value = true;

@@ -103,10 +103,15 @@
             <template v-if="column.dataIndex === 'skuId'">
               <SkuSelect
                 :value="record.skuId"
+                :selected-options="selectedSkuOptions(record)"
                 :disabled-statuses="[]"
                 width="260px"
+                @select="(option) => (record.unit = option?.saleUnit)"
                 @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
               />
+            </template>
+            <template v-else-if="column.dataIndex === 'unit'">
+              <a-typography-text type="secondary">{{ record.unit || '—' }}</a-typography-text>
             </template>
             <template v-else-if="column.dataIndex === 'quantity'">
               <a-input-number v-model:value="record.quantity" :min="0.0001" :precision="4" :step="1" placeholder="0.0000" style="width: 140px" />
@@ -192,6 +197,7 @@ import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {createUnsavedGuard} from '../common/scm-unsaved-guard';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
+import {notifyFormInvalid} from '../common/scm-form-feedback';
 
 const queryForm = reactive<InventoryOutboundQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryOutbound[]>([]);
@@ -229,6 +235,7 @@ const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
+  {title: '记账单位', dataIndex: 'unit', width: 90},
   {title: '出库数量', dataIndex: 'quantity', width: 160},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
@@ -340,6 +347,11 @@ watch(
 interface EditableItem {
   _key: number;
   skuId?: string | number;
+  /** 编辑回显用：商品名称、规格名称和规格值，不提交。 */
+  productName?: string;
+  skuName?: string;
+  specValues?: Record<string, unknown> | null;
+  unit?: string;
   /** 表单里用 number，提交时转成 4 位定点字符串；null 表示未填。 */
   quantity?: number | null;
   remark?: string;
@@ -362,6 +374,13 @@ const unsaved = createUnsavedGuard(() => form);
 const formRules = {
   warehouseId: [{required: true, message: '请选择出库仓库'}],
 };
+
+/** 编辑旧单据时用快照回显商品和规格，避免首屏之外的规格只显示数字 ID。 */
+function selectedSkuOptions(record: EditableItem) {
+  if (record.skuId == null || !record.productName) return [];
+  const spec = Object.values(record.specValues ?? {}).join('/') || record.skuName || '默认规格';
+  return [{skuId: record.skuId, productName: record.productName, specName: spec}];
+}
 
 function addItem() {
   form.items.push({_key: ++keySeq, quantity: null});
@@ -394,6 +413,10 @@ async function openEdit(record: InventoryOutbound) {
   form.items = (d.items ?? []).map((i) => ({
     _key: ++keySeq,
     skuId: i.skuId,
+    productName: i.productName,
+    skuName: i.skuName,
+    specValues: i.specValues,
+    unit: i.unitSnapshot ?? undefined,
     // 后端返回定点字符串，InputNumber 需要 number；空值保持 null
     quantity: i.quantity == null ? null : Number(i.quantity),
     remark: i.remark,
@@ -437,7 +460,12 @@ function buildPayload(): InventoryOutboundAdd | null {
 }
 
 async function onSubmit() {
-  await formRef.value?.validate();
+  try {
+    await formRef.value?.validate();
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
+    return;
+  }
   const payload = buildPayload();
   if (!payload) return;
   saving.value = true;

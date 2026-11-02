@@ -405,6 +405,12 @@ const canRecordPrint = computed(() =>
 const printTargetCount = computed(() =>
   printMode.value === 'orders' ? orderSelection.value.length : customerSelection.value.length || customersShown.value.length
 );
+/** 改打印范围后清空已勾选，避免把已经筛掉的客户/订单一起提交。 */
+watch([customerStatusFilter, customerFilter, printMode], () => {
+  customerSelection.value = [];
+  orderSelection.value = [];
+});
+
 /** 出库单只在发车后存在，之前不显示。 */
 const showOutbound = computed(() => ['DISPATCHED', 'COMPLETED'].includes(detail.value?.route.status ?? ''));
 

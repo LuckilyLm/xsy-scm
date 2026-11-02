@@ -1,7 +1,8 @@
 <template>
   <div class="trace-page">
     <div class="trace-page__card">
-      <a-spin :spinning="loading">
+      <p class="sr-only" role="status" aria-live="polite">{{ loading ? '正在加载溯源信息' : view ? '溯源信息已加载' : '' }}</p>
+      <a-spin :spinning="loading" :aria-busy="loading">
         <a-alert v-if="error" type="error" show-icon :message="error" class="trace-page__alert">
           <template #action>
             <a-button size="small" @click="load">重试</a-button>
@@ -9,7 +10,12 @@
         </a-alert>
 
         <template v-if="view">
-          <div class="trace-page__status" :class="voided ? 'trace-page__status--void' : 'trace-page__status--active'">
+          <div
+            class="trace-page__status"
+            :class="voided ? 'trace-page__status--void' : 'trace-page__status--active'"
+            role="status"
+            aria-live="polite"
+          >
             {{ voided ? '该码已作废，请勿食用' : '溯源信息查询' }}
           </div>
 
@@ -51,6 +57,7 @@
                 :href="fileUrl(file.fileKey)"
                 target="_blank"
                 rel="noopener"
+                :aria-label="`${file.fileName}（在新窗口打开）`"
                 >{{ file.fileName }}</a
               >
             </article>
@@ -58,7 +65,15 @@
 
           <div v-if="attachments.length && !voided" class="trace-page__files">
             <div class="trace-page__files-title">长期资质证明</div>
-            <a v-for="file in attachments" :key="file.fileKey" class="trace-page__file" :href="fileUrl(file.fileKey)" target="_blank" rel="noopener">
+            <a
+              v-for="file in attachments"
+              :key="file.fileKey"
+              class="trace-page__file"
+              :href="fileUrl(file.fileKey)"
+              target="_blank"
+              rel="noopener"
+              :aria-label="`${file.fileName}（在新窗口打开）`"
+            >
               {{ file.fileName }}
             </a>
           </div>
@@ -184,6 +199,18 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .trace-page {
   min-height: 100vh;
   padding: 16px;

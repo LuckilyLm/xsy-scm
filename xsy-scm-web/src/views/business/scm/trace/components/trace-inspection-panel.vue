@@ -102,7 +102,7 @@
         </fieldset>
         <a-space>
           <a-button type="primary" :loading="busy" @click="submit">保存草稿</a-button>
-          <a-button :disabled="busy" @click="editing = false">取消</a-button>
+          <a-button :disabled="busy" @click="closeEditing">取消</a-button>
         </a-space>
       </a-form>
     </a-spin>
@@ -127,6 +127,7 @@ import {fileApi} from '/@/api/support/file-api';
 import {traceInspectionApi} from '/@/api/business/scm/trace-inspection-api';
 import type {InspectionReport, InspectionReportSave} from '/@/api/business/scm/trace-inspection-api';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {createUnsavedGuard} from '/@/views/business/scm/common/scm-unsaved-guard';
 
 dayjs.extend(utc);
 
@@ -142,6 +143,7 @@ const formRef = ref<FormInstance>();
 const defaultFiles = ref<Record<string, unknown>[]>([]);
 const expiryInput = ref('');
 const form = ref<InspectionReportSave>(blankForm());
+const unsaved = createUnsavedGuard(() => ({form: form.value, expiryInput: expiryInput.value}));
 let requestId = 0;
 
 const conclusionOptions = Object.values(REPORT_CONCLUSION).map(({value, desc}) => ({value, label: desc}));
@@ -187,6 +189,7 @@ async function load() {
 }
 function edit(report?: InspectionReport) {
   editError.value = '';
+  unsaved.clear();
   form.value = report
     ? {
         id: report.id,
@@ -204,6 +207,13 @@ function edit(report?: InspectionReport) {
   defaultFiles.value = report?.attachments.map((file) => ({...file, name: file.fileName, uid: file.fileKey, fileId: file.fileKey})) ?? [];
   editorKey.value++;
   editing.value = true;
+  unsaved.capture();
+}
+
+/** 取消编辑前确认未保存内容。 */
+async function closeEditing() {
+  if (busy.value) return;
+  if (await unsaved.confirmDiscard()) editing.value = false;
 }
 function filesChanged(files: Array<{fileKey?: string}>) {
   form.value.fileKeys = files.flatMap((file) => (file.fileKey ? [file.fileKey] : []));

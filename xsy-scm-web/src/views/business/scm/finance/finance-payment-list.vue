@@ -402,6 +402,7 @@ function onPartyTypeChange() {
   addForm.sourceType = undefined;
   addForm.sourceId = undefined;
   addForm.amount = '';
+  addForm.method = 'BANK_TRANSFER';
   addForm.selectedRefund = null;
   addForm.supplierId = undefined;
 }

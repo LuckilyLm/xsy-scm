@@ -4,7 +4,7 @@
     v-model:open="visible"
     :title="isView ? '该仓库已授权员工' : '员工仓库授权维护'"
     :width="isView ? 560 : 640"
-    :ok-button-props="{style: isView ? {display: 'none'} : undefined}"
+    :ok-button-props="{style: isView ? {display: 'none'} : undefined, disabled: scopeLoading}"
     :confirm-loading="saving"
     @ok="save"
   >
@@ -91,6 +91,10 @@ const formModel = reactive({employeeId});
 const warehouseIds = ref<Id[]>([]);
 const warehouses = ref<Warehouse[]>([]);
 const warehouseLoading = ref(false);
+/** 授权载入中禁止保存，避免把上一名员工的授权写进当前员工。 */
+const scopeLoading = ref(false);
+/** 员工切换时旧请求可能后到，新结果优先。 */
+let scopeRequestId = 0;
 
 const viewColumns: TableColumnsType = [
   {title: '员工姓名', dataIndex: 'actualName'},
@@ -130,15 +134,23 @@ async function ensureWarehouses() {
 }
 
 async function loadEmployeeWarehouses(id?: number) {
+  const current = ++scopeRequestId;
   if (id == null) {
     warehouseIds.value = [];
+    scopeLoading.value = false;
     return;
   }
+  scopeLoading.value = true;
   try {
     const r = await warehouseApi.scopeWarehouses(id, {suppressGlobalErrorMessage: true});
+    if (current !== scopeRequestId) return;
     warehouseIds.value = r.data.map((row) => row.warehouseId);
   } catch (e) {
+    if (current !== scopeRequestId) return;
+    warehouseIds.value = [];
     error.value = purchaseError(e);
+  } finally {
+    if (current === scopeRequestId) scopeLoading.value = false;
   }
 }
 
@@ -147,11 +159,14 @@ async function open() {
   error.value = '';
   employeeId.value = undefined;
   warehouseIds.value = [];
+  scopeRequestId++;
+  scopeLoading.value = false;
   visible.value = true;
   await ensureWarehouses();
 }
 
 async function openEmployees(warehouseId: Id, warehouseName: string) {
+  const current = ++scopeRequestId;
   isView.value = true;
   error.value = '';
   viewWarehouseName.value = warehouseName;
@@ -160,15 +175,20 @@ async function openEmployees(warehouseId: Id, warehouseName: string) {
   viewLoading.value = true;
   try {
     const r = await warehouseApi.scopeEmployees(warehouseId, {suppressGlobalErrorMessage: true});
+    if (current !== scopeRequestId) return;
     employees.value = r.data;
   } catch (e) {
-    error.value = purchaseError(e);
+    if (current === scopeRequestId) error.value = purchaseError(e);
   } finally {
-    viewLoading.value = false;
+    if (current === scopeRequestId) viewLoading.value = false;
   }
 }
 
 async function save() {
+  if (scopeLoading.value) {
+    message.warning('仓库授权还在加载，请稍候再保存');
+    return;
+  }
   // 必填项走表单校验：错误显示在输入框下方
   try {
     await formRef.value?.validate();

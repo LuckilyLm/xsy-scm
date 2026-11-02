@@ -109,8 +109,10 @@
             <template v-if="column.dataIndex === 'skuId'">
               <SkuSelect
                 :value="record.skuId"
+                :selected-options="selectedSkuOptions(record)"
                 :disabled-statuses="[]"
                 width="260px"
+                @select="(option) => (record.unit = option?.saleUnit)"
                 @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
               />
             </template>
@@ -200,6 +202,7 @@ import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {createUnsavedGuard} from '../common/scm-unsaved-guard';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
+import {notifyFormInvalid} from '../common/scm-form-feedback';
 
 const queryForm = reactive<InventoryStocktakeQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryStocktake[]>([]);
@@ -325,7 +328,11 @@ function resetQuery() {
 interface EditableItem {
   _key: number;
   skuId?: string | number;
-  /** 记账单位，仅复制到新建时带入。 */
+  /** 编辑回显用：商品名称、规格名称和规格值，不提交。 */
+  productName?: string;
+  skuName?: string;
+  specValues?: Record<string, unknown> | null;
+  /** 记账单位，仅复制或编辑时带入。 */
   unit?: string;
   /** 表单里用 number，提交时转成 4 位定点字符串；null 表示未清点，0 表示确实没有。 */
   actualQuantity?: number | null;
@@ -349,6 +356,13 @@ const unsaved = createUnsavedGuard(() => form);
 const formRules = {
   warehouseId: [{required: true, message: '请选择盘点仓库'}],
 };
+
+/** 编辑旧盘点单时用快照回显商品和规格，避免首屏之外的规格只显示数字 ID。 */
+function selectedSkuOptions(record: EditableItem) {
+  if (record.skuId == null || !record.productName) return [];
+  const spec = Object.values(record.specValues ?? {}).join('/') || record.skuName || '默认规格';
+  return [{skuId: record.skuId, productName: record.productName, specName: spec}];
+}
 
 function addItem() {
   form.items.push({_key: ++keySeq, actualQuantity: null});
@@ -381,6 +395,10 @@ async function openEdit(record: InventoryStocktake) {
   form.items = (d.items ?? []).map((i) => ({
     _key: ++keySeq,
     skuId: i.skuId,
+    productName: i.productName,
+    skuName: i.skuName,
+    specValues: i.specValues,
+    unit: i.unitSnapshot ?? undefined,
     // 后端以 4 位定点字符串返回实盘量，InputNumber 要 number；空值保持 null
     actualQuantity: i.actualQuantity == null ? null : Number(i.actualQuantity),
     remark: i.remark,
@@ -433,6 +451,9 @@ async function openCopy(record: InventoryStocktake) {
       items.push({
         _key: ++keySeq,
         skuId: i.skuId,
+        productName: i.productName,
+        skuName: i.skuName,
+        specValues: i.specValues,
         unit: unitBySku.get(key),
         actualQuantity: null,
         remark: undefined,
@@ -537,7 +558,12 @@ function buildPayload(): InventoryStocktakeAdd | null {
 }
 
 async function onSubmit() {
-  await formRef.value?.validate();
+  try {
+    await formRef.value?.validate();
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
+    return;
+  }
   const payload = buildPayload();
   if (!payload) return;
   saving.value = true;

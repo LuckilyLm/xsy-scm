@@ -230,7 +230,7 @@
     <template #footer>
       <a-space :size="12">
         <a-button :disabled="saving" @click="requestClose">取消</a-button>
-        <a-button type="primary" :loading="saving" @click="submit">保存</a-button>
+        <a-button type="primary" :loading="saving" :disabled="loading || loadFailed" @click="submit">保存</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -272,6 +272,10 @@ const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
 const formRef = ref<FormInstance>();
+/** 编辑对象独立保存：详情加载失败时仍保持“编辑”语义，不能退化成新增。 */
+const editingId = ref<ScmId>();
+const loadFailed = ref(false);
+let requestSeq = 0;
 
 /** 负责人姓名用于无分配权限时的只读展示。 */
 const sellerName = ref('');
@@ -283,7 +287,7 @@ const canAssign = computed(() => hasPermission('scm:customer:assign'));
 const canWarehouseUpdate = computed(
   () => hasPermission('scm:customer:update') && hasPermission('scm:warehouse:update') && hasPermission('scm:warehouse:query')
 );
-const isEdit = computed(() => form.customerId != null);
+const isEdit = computed(() => editingId.value != null);
 
 const form = reactive<CustomerFormModel>(emptyCustomer());
 /** 关闭前拦截未保存修改；加载失败时基线为空，不拦截。 */
@@ -296,7 +300,7 @@ function onAreaChange(_value: unknown, nodes: AreaNode[]) {
   Object.assign(form, areaColumnsOf(nodes), emptyLocation());
 }
 
-const title = computed(() => (form.customerId ? '编辑客户' : '新增客户'));
+const title = computed(() => (isEdit.value ? '编辑客户' : '新增客户'));
 const statusText = computed(() => {
   const value = form.status ?? 'COOPERATING';
   return CUSTOMER_STATUS_ENUM[value]?.desc || value;
@@ -320,9 +324,12 @@ const mallWarehouseValue = computed<string | number | undefined>({
 
 /** 传 customerId 进入编辑，否则新建。 */
 async function open(customerId?: ScmId) {
+  const seq = ++requestSeq;
   visible.value = true;
   error.value = '';
   unsaved.clear();
+  editingId.value = customerId;
+  loadFailed.value = false;
   Object.assign(form, emptyCustomer());
   area.value = [];
   sellerName.value = '';
@@ -338,6 +345,7 @@ async function open(customerId?: ScmId) {
     } catch {
       // 预填失败不影响新建
     }
+    if (seq !== requestSeq) return;
     unsaved.capture();
     return;
   }
@@ -345,6 +353,7 @@ async function open(customerId?: ScmId) {
   try {
     // 加载失败由抽屉内 Alert 提示，不再弹全局 toast
     const response = await customerApi.detail(customerId, {suppressGlobalErrorMessage: true});
+    if (seq !== requestSeq) return;
     const detail = response.data;
     // 列表数据不含地址、账期等字段，编辑要先取详情。
     Object.assign(form, {
@@ -387,8 +396,11 @@ async function open(customerId?: ScmId) {
     sellerName.value = detail.sellerName ?? '';
     unsaved.capture();
   } catch (e) {
+    if (seq !== requestSeq) return;
+    loadFailed.value = true;
     error.value = customerError(e);
   } finally {
+    if (seq !== requestSeq) return;
     loading.value = false;
     // 区划选择器挂载后才生效，回填要等 nextTick。
     await nextTick();
@@ -423,6 +435,11 @@ async function requestClose() {
 }
 
 async function submit() {
+  // 编辑对象未加载成功时禁止保存，避免空表单走新增
+  if (editingId.value != null && loadFailed.value) {
+    error.value = '客户详情加载失败，请重新打开后再保存';
+    return;
+  }
   try {
     await formRef.value?.validate();
   } catch (err) {
@@ -439,7 +456,7 @@ async function submit() {
   error.value = '';
   const payload = toCustomerPayload({...form});
   try {
-    if (form.customerId) {
+    if (editingId.value != null) {
       await customerApi.update(payload);
       message.success('客户已保存');
     } else {

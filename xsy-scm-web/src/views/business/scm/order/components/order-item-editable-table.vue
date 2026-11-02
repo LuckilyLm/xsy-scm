@@ -13,6 +13,7 @@
       <template v-if="column.dataIndex === 'skuId'">
         <SkuSelect
           :value="record.skuId"
+          :selected-options="selectedSkuOptions(record)"
           @select="(option) => applySku(record, option)"
           @update:value="
             (v) => {
@@ -333,6 +334,12 @@ function purchaseSupplierText(record: Item): string {
 /** 人工改价优先于解析价：两者都是用户即将成交的单价口径。 */
 function effectivePrice(record: Item): string | null {
   return record.manualPriceOverride ? record.unitPrice ?? null : record.draftUnitPrice ?? null;
+}
+
+/** 编辑旧订单时用已保存快照回显，避免首屏 50 条之外只显示数字 ID。 */
+function selectedSkuOptions(record: Item) {
+  if (record.skuId == null || !record.productNameSnapshot) return [];
+  return [{skuId: record.skuId, productName: record.productNameSnapshot, specName: record.specNameSnapshot || '默认规格'}];
 }
 
 /** 选中规格后立即回填快照，录单区不用等保存就能看到规格和单位。 */

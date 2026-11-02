@@ -127,6 +127,7 @@ import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-mod
 import {inventoryError} from './inventory-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
+import {notifyFormInvalid} from '../common/scm-form-feedback';
 
 const queryForm = reactive<InventoryWarningThresholdQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryWarningThreshold[]>([]);
@@ -271,7 +272,12 @@ function buildPayload(): InventoryWarningThresholdAdd | null {
 }
 
 async function onSubmit() {
-  await formRef.value?.validate();
+  try {
+    await formRef.value?.validate();
+  } catch (err) {
+    notifyFormInvalid(err, formRef.value);
+    return;
+  }
   const payload = buildPayload();
   if (!payload) return;
   saving.value = true;

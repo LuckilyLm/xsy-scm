@@ -22,11 +22,16 @@
       <a-button @click="queryData">重试</a-button>
     </template>
   </a-alert>
+  <a-alert v-if="documentTypesError" :message="documentTypesError" type="error" show-icon class="smart-margin-bottom10">
+    <template #action>
+      <a-button @click="loadDocumentTypes">重新加载单据类型</a-button>
+    </template>
+  </a-alert>
 
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button type="primary" v-privilege="'scm:print:template:add'" @click="openCreate">新建模板</a-button>
+        <a-button type="primary" v-privilege="'scm:print:template:add'" :disabled="!documentTypes.length" @click="openCreate">新建模板</a-button>
         <a-button v-privilege="'scm:print:template:update'" @click="bindingOpen = true">客户专属模板</a-button>
       </div>
     </a-row>
@@ -79,14 +84,14 @@
     width="860px"
     :confirm-loading="saving"
     @ok="submit"
-    @cancel="editOpen = false"
+    @cancel="requestClose"
   >
     <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner" />
     <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical">
       <a-row :gutter="12">
         <a-col :span="12">
           <a-form-item label="单据类型" name="documentType">
-            <a-select v-model:value="form.documentType" :options="typeOptions" :disabled="!!form.id" @change="loadCatalog" />
+            <a-select v-model:value="form.documentType" :options="typeOptions" :disabled="!!form.id" @change="onDocumentTypeChange" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
@@ -186,6 +191,7 @@ import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/act
 import {hasPermission} from '../common/scm-permission';
 import {printError} from './print-errors';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {createUnsavedGuard} from '../common/scm-unsaved-guard';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<PrintTemplateQuery>({pageNum: 1, pageSize: 20});
@@ -195,6 +201,7 @@ const loading = ref(false);
 const error = ref('');
 
 const documentTypes = ref<PrintDocumentTypeOption[]>([]);
+const documentTypesError = ref('');
 const catalog = ref<PrintFieldCatalog>();
 const editOpen = ref(false);
 const bindingOpen = ref(false);
@@ -253,6 +260,9 @@ const form = reactive<PrintTemplateSave & {id?: Id}>({
   },
 });
 const formRef = ref<FormInstance>();
+const unsaved = createUnsavedGuard(() => form);
+/** 单据类型切得快时，旧的字段目录不能覆盖新类型。 */
+let catalogRequestId = 0;
 /** 展平一份只给表单校验用，避免用数组路径配 rules。 */
 const flatModel = computed(() => ({...form, title: form.model.title}));
 /** 必填项逐项校验，错误显示在对应输入框下方。 */
@@ -286,20 +296,32 @@ async function queryData() {
 }
 
 async function loadDocumentTypes() {
+  documentTypesError.value = '';
   try {
     const r = await printApi.documentTypes({suppressGlobalErrorMessage: true});
     documentTypes.value = r.data ?? [];
   } catch (e) {
-    error.value = printError(e);
+    documentTypesError.value = printError(e);
   }
 }
 
+/** 切换单据类型后旧字段已不属于新目录，必须清空，避免保存时报「不支持字段」。 */
+function onDocumentTypeChange(): void {
+  form.model.headerFields = [];
+  form.model.columns = [];
+  void loadCatalog();
+}
+
 async function loadCatalog() {
+  const id = ++catalogRequestId;
+  catalog.value = undefined;
+  editError.value = '';
   try {
     const r = await printApi.templateCatalog(form.documentType as PrintDocumentType, {suppressGlobalErrorMessage: true});
+    if (id !== catalogRequestId) return;
     catalog.value = r.data;
   } catch (e) {
-    editError.value = printError(e);
+    if (id === catalogRequestId) editError.value = printError(e);
   }
 }
 
@@ -315,6 +337,7 @@ function resetQuery() {
 }
 
 function openCreate() {
+  unsaved.clear();
   Object.assign(form, {
     id: undefined,
     documentType: documentTypes.value[0]?.documentType ?? 'PURCHASE_ORDER',
@@ -337,9 +360,11 @@ function openCreate() {
   editError.value = '';
   editOpen.value = true;
   void loadCatalog();
+  unsaved.capture();
 }
 
 function openEdit(record: PrintTemplate) {
+  unsaved.clear();
   Object.assign(form, {
     id: record.id,
     documentType: record.documentType,
@@ -362,6 +387,13 @@ function openEdit(record: PrintTemplate) {
   editError.value = '';
   editOpen.value = true;
   void loadCatalog();
+  unsaved.capture();
+}
+
+/** 关闭模板编辑前确认未保存内容。 */
+async function requestClose() {
+  if (saving.value) return;
+  if (await unsaved.confirmDiscard()) editOpen.value = false;
 }
 
 /** 80mm 小票没有横向，切到小票时把方向拉回纵向。 */
@@ -378,6 +410,10 @@ async function submit() {
     await formRef.value?.validate();
   } catch (err) {
     notifyFormInvalid(err, formRef.value);
+    return;
+  }
+  if (!catalog.value) {
+    editError.value = '打印字段目录加载失败，请重新选择单据类型或稍后重试';
     return;
   }
   // 明细列不是表单字段，用 toast 提示

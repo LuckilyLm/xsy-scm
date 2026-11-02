@@ -55,19 +55,25 @@
                 <a-select v-model:value="item.linkType" :options="linkOptions" @change="onLinkTypeChange(item)" />
               </a-form-item>
               <a-form-item v-if="item.linkType === 'PRODUCT'" label="目标商品规格">
-                <SkuSelect v-model:value="item.productTargetId" />
+                <SkuSelect v-model:value="item.productTargetId" @update:value="dirty = true" />
               </a-form-item>
               <a-form-item v-else-if="item.linkType === 'CATEGORY'" label="目标分类">
-                <CategorySelect v-model:value="item.categoryTargetId" :categories="categories" />
+                <CategorySelect v-model:value="item.categoryTargetId" :categories="categories" @update:value="dirty = true" />
               </a-form-item>
               <a-form-item v-else-if="item.linkType === 'ACTIVITY'" label="目标活动">
-                <a-select v-model:value="item.activityTargetId" show-search option-filter-prop="label" :options="activityOptions" />
+                <a-select
+                  v-model:value="item.activityTargetId"
+                  show-search
+                  option-filter-prop="label"
+                  :options="activityOptions"
+                  @change="dirty = true"
+                />
               </a-form-item>
               <a-form-item v-else-if="item.linkType === 'EXTERNAL_URL'" label="外部网页地址">
-                <a-input v-model:value="item.externalUrl" placeholder="仅限已授权的 HTTPS 域名" />
+                <a-input v-model:value="item.externalUrl" placeholder="仅限已授权的 HTTPS 域名" @change="dirty = true" />
               </a-form-item>
               <a-form-item label="图片说明（可选）">
-                <a-input v-model:value="item.title" :maxlength="80" placeholder="选填" />
+                <a-input v-model:value="item.title" :maxlength="80" placeholder="选填" @change="dirty = true" />
               </a-form-item>
             </div>
           </div>

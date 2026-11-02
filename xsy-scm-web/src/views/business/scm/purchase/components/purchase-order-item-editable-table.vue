@@ -15,7 +15,13 @@
   >
     <template #bodyCell="{record, column, index}">
       <template v-if="column.dataIndex === 'skuId'">
-        <SkuSelect :value="record.skuId" width="270px" :disabled-statuses="[]" @update:value="(v: Id | Id[] | undefined) => onSkuChange(record, v)" />
+        <SkuSelect
+          :value="record.skuId"
+          :selected-options="selectedSkuOptions(record)"
+          width="270px"
+          :disabled-statuses="[]"
+          @update:value="(v: Id | Id[] | undefined) => onSkuChange(record, v)"
+        />
       </template>
       <template v-else-if="column.dataIndex === 'plannedQuantity'">
         <a-input-number
@@ -193,6 +199,13 @@ function normalizeNumber(target: object, key: 'plannedQuantity' | 'purchasePrice
   if (normalized !== self[key]) {
     self[key] = normalized;
   }
+}
+
+/** 编辑旧采购单时用已保存商品/规格快照回显，避免显示数字 ID。 */
+function selectedSkuOptions(record: OrderItem) {
+  if (record.skuId == null || !record.productName) return [];
+  const spec = Object.values(record.specValues ?? {}).join('/') || '默认规格';
+  return [{skuId: record.skuId, productName: record.productName, specName: spec}];
 }
 
 function onSkuChange(item: OrderItem, value: Id | Id[] | undefined) {

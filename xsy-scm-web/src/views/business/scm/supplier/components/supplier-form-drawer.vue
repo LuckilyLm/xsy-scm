@@ -77,7 +77,7 @@
     <template #footer>
       <a-space>
         <a-button :disabled="saving" @click="requestClose">取消</a-button>
-        <a-button type="primary" :loading="saving" @click="submit">保存</a-button>
+        <a-button type="primary" :loading="saving" :disabled="loading || loadFailed" @click="submit">保存</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -109,6 +109,10 @@ const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
 const formRef = ref<FormInstance>();
+/** 编辑对象独立保存：详情加载失败时仍保持“编辑”语义，不能退化成新增。 */
+const editingId = ref<ScmId>();
+const loadFailed = ref(false);
+let requestSeq = 0;
 
 const form = reactive<SupplierFormModel>(emptySupplier());
 /** 关闭前拦截未保存修改；加载失败时基线为空，不拦截。 */
@@ -122,13 +126,16 @@ function onAreaChange(_value: unknown, nodes: AreaNode[]) {
   Object.assign(form, areaColumnsOf(nodes), emptyLocation());
 }
 
-const title = computed(() => (form.supplierId ? '编辑供应商' : '新增供应商'));
+const title = computed(() => (editingId.value != null ? '编辑供应商' : '新增供应商'));
 
 /** 传 supplierId 进入编辑，否则新建。 */
 async function open(supplierId?: ScmId) {
+  const seq = ++requestSeq;
   visible.value = true;
   error.value = '';
   unsaved.clear();
+  editingId.value = supplierId;
+  loadFailed.value = false;
   Object.assign(form, emptySupplier());
   area.value = [];
   if (supplierId == null) {
@@ -140,6 +147,7 @@ async function open(supplierId?: ScmId) {
   loading.value = true;
   try {
     const response = await supplierApi.detail(supplierId, {suppressGlobalErrorMessage: true});
+    if (seq !== requestSeq) return;
     const detail = response.data;
     // 列表数据不含地址和备注，编辑要先取详情。
     Object.assign(form, {
@@ -165,8 +173,11 @@ async function open(supplierId?: ScmId) {
     });
     unsaved.capture();
   } catch (e) {
+    if (seq !== requestSeq) return;
+    loadFailed.value = true;
     error.value = supplierError(e);
   } finally {
+    if (seq !== requestSeq) return;
     loading.value = false;
     // 区划选择器挂载后才生效，回填要等 nextTick。
     await nextTick();
@@ -185,6 +196,11 @@ async function requestClose() {
 }
 
 async function submit() {
+  // 编辑对象未加载成功时禁止保存，避免空表单走新增
+  if (editingId.value != null && loadFailed.value) {
+    error.value = '供应商详情加载失败，请重新打开后再保存';
+    return;
+  }
   try {
     await formRef.value?.validate();
   } catch (err) {
@@ -201,7 +217,7 @@ async function submit() {
   error.value = '';
   const payload = toSupplierPayload({...form});
   try {
-    if (form.supplierId) {
+    if (editingId.value != null) {
       await supplierApi.update(payload);
       message.success('供应商已保存');
     } else {

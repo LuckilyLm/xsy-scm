@@ -87,14 +87,7 @@
     </div>
   </a-card>
 
-  <a-modal
-    :open="editOpen"
-    :title="form.id ? '编辑活动' : '新建活动'"
-    width="760px"
-    :confirm-loading="saving"
-    @ok="submit"
-    @cancel="editOpen = false"
-  >
+  <a-modal :open="editOpen" :title="form.id ? '编辑活动' : '新建活动'" width="760px" :confirm-loading="saving" @ok="submit" @cancel="requestClose">
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <section class="scm-form-section">
         <div class="scm-form-section__head">
@@ -283,6 +276,7 @@ import {
   type PromotionStatus,
 } from './promotion-types';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {confirmDialog, createUnsavedGuard} from '../common/scm-unsaved-guard';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<PromotionActivityQuery>({pageNum: 1, pageSize: 20});
@@ -385,6 +379,7 @@ const form = reactive<PromotionActivitySave & RuleForm>({
 });
 /** 规则字段与表单共用同一个模型。 */
 const rule = form;
+const unsaved = createUnsavedGuard(() => form);
 const RULE_FIELDS = Object.keys(emptyRule());
 
 /** 规则摘要，显示在列表上。 */
@@ -465,6 +460,7 @@ function resetQuery() {
 }
 
 function openCreate() {
+  unsaved.clear();
   Object.assign(form, {
     id: undefined,
     activityCode: '',
@@ -480,9 +476,11 @@ function openCreate() {
   });
   Object.assign(rule, emptyRule());
   editOpen.value = true;
+  unsaved.capture();
 }
 
 function openEdit(record: PromotionActivity) {
+  unsaved.clear();
   Object.assign(form, {
     id: record.id,
     activityCode: record.activityCode,
@@ -498,6 +496,12 @@ function openEdit(record: PromotionActivity) {
   });
   ruleToForm(record.rule);
   editOpen.value = true;
+  unsaved.capture();
+}
+
+/** 点取消或右上角关闭时，有未保存修改先确认。 */
+async function requestClose() {
+  if (await unsaved.confirmDiscard()) editOpen.value = false;
 }
 
 /** 切换类型时清空旧规则，避免后端拒收未知键。 */
@@ -530,6 +534,16 @@ async function submit() {
 }
 
 async function changeStatus(record: PromotionActivity, status: 'ACTIVE' | 'STOPPED') {
+  if (status === 'STOPPED') {
+    const confirmed = await confirmDialog({
+      title: '停用活动',
+      content: `停用「${record.activityName}」后将立即停止生效，确认停用？`,
+      okText: '确认停用',
+      okType: 'danger',
+      cancelText: '取消',
+    });
+    if (!confirmed) return;
+  }
   try {
     await promotionApi.activityStatus(record.id, record.version, status);
     message.success(status === 'ACTIVE' ? '活动已上线' : '活动已停用');

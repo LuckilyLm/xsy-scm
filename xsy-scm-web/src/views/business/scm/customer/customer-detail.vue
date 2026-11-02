@@ -482,6 +482,7 @@ import {orderError} from '../order/order-errors';
 import {pricingError} from '../pricing/pricing-errors';
 import {formatAmount, formatAmountOrDash} from '/@/utils/scm-amount';
 import {datetime} from '../common/scm-display';
+import {confirmDialog} from '../common/scm-unsaved-guard';
 import {hasPermission} from '../common/scm-permission';
 import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 
@@ -667,6 +668,16 @@ async function saveMallAccount(): Promise<void> {
 }
 
 async function toggleMallAccount(account: MallAccount): Promise<void> {
+  if (account.status === 'ENABLED') {
+    const confirmed = await confirmDialog({
+      title: '禁用商城账号',
+      content: `禁用后手机号 ${account.loginPhone} 将无法登录商城下单，确认禁用？`,
+      okText: '确认禁用',
+      okType: 'danger',
+      cancelText: '取消',
+    });
+    if (!confirmed) return;
+  }
   try {
     await mallAccountApi.status({accountId: account.accountId, enabled: account.status !== 'ENABLED'});
     await loadMallAccount();

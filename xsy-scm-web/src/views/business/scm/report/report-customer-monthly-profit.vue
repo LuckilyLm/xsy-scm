@@ -68,13 +68,14 @@
   </a-card>
 
   <a-modal
-    v-model:open="addOpen"
+    :open="addOpen"
     title="登记客户月成本与费用"
     :confirm-loading="saving"
     :mask-closable="!saving"
     :closable="!saving"
     :cancel-button-props="{disabled: saving}"
     @ok="saveExpense"
+    @cancel="requestCloseAdd"
   >
     <a-form ref="addFormRef" :model="expenseForm" layout="vertical" :disabled="saving">
       <a-form-item name="customerId" label="客户" :rules="[{required: true, message: '请选择客户'}]"
@@ -114,7 +115,7 @@
   </a-modal>
 
   <a-modal
-    v-model:open="batchOpen"
+    :open="batchOpen"
     title="批量登记客户月成本与费用"
     :width="1080"
     :confirm-loading="batchSaving"
@@ -123,13 +124,18 @@
     :cancel-button-props="{disabled: batchSaving}"
     ok-text="整批登记"
     @ok="saveBatch"
+    @cancel="requestCloseBatch"
   >
     <a-form layout="vertical" :disabled="batchSaving">
       <a-row :gutter="16">
         <a-col :span="8"
           ><a-form-item label="月份"
-            ><a-date-picker v-model:value="batchForm.month" picker="month" value-format="YYYY-MM"
-              :allow-clear="false" style="width: 100%" /></a-form-item
+            ><a-date-picker
+              v-model:value="batchForm.month"
+              picker="month"
+              value-format="YYYY-MM"
+              :allow-clear="false"
+              style="width: 100%" /></a-form-item
         ></a-col>
         <a-col :span="16"
           ><a-form-item label="登记说明"
@@ -166,17 +172,13 @@
           :precision="4"
           :disabled="batchSaving"
         />
-        <a-button type="text" danger :disabled="batchSaving || batchForm.rows.length <= 1" @click="removeBatchRow(index)">
-          删除
-        </a-button>
+        <a-button type="text" danger :disabled="batchSaving || batchForm.rows.length <= 1" @click="removeBatchRow(index)"> 删除 </a-button>
       </div>
     </div>
     <a-button type="dashed" block :disabled="batchSaving || batchForm.rows.length >= 200" class="batch-add-row" @click="addBatchRow">
       添加一行
     </a-button>
-    <p class="scm-note">
-      整批使用同一月份与说明，每行一个客户；实际商品成本未核实时留空，费用无则填0。任一行不完整或同一客户重复时整批不会写入。
-    </p>
+    <p class="scm-note">整批使用同一月份与说明，每行一个客户；实际商品成本未核实时留空，费用无则填0。任一行不完整或同一客户重复时整批不会写入。</p>
   </a-modal>
 
   <a-modal v-model:open="expenseOpen" title="客户月成本与费用明细" :width="1100" :footer="null" @cancel="expenseRequestId++">
@@ -243,6 +245,7 @@ import {scmColumnsWidth} from '../common/scm-column';
 import {moneyText, dateTimeText} from '../finance/finance-form-model';
 import {reportError} from './report-errors';
 import {notifyFormInvalid} from '../common/scm-form-feedback';
+import {createUnsavedGuard} from '../common/scm-unsaved-guard';
 
 const filters = reactive({month: dayjs().format('YYYY-MM'), customerId: undefined as FinanceId | undefined});
 const pageNum = ref(1),
@@ -383,7 +386,9 @@ const expenseForm = reactive({
 const addOpen = ref(false),
   saving = ref(false),
   addFormRef = ref<FormInstance>();
+const addUnsaved = createUnsavedGuard(() => expenseForm);
 function openAdd() {
+  addUnsaved.clear();
   Object.assign(expenseForm, {
     customerId: filters.customerId,
     month: filters.month,
@@ -396,6 +401,13 @@ function openAdd() {
   });
   addFormRef.value?.clearValidate();
   addOpen.value = true;
+  addUnsaved.capture();
+}
+
+/** 单笔登记关闭前确认未保存内容。 */
+async function requestCloseAdd() {
+  if (saving.value) return;
+  if (await addUnsaved.confirmDiscard()) addOpen.value = false;
 }
 async function saveExpense() {
   if (saving.value) return;
@@ -442,6 +454,7 @@ type BatchRow = {
 const batchForm = reactive({month: filters.month, reason: '', rows: [] as BatchRow[]});
 const batchOpen = ref(false),
   batchSaving = ref(false);
+const batchUnsaved = createUnsavedGuard(() => batchForm);
 function emptyBatchRow(customerId?: FinanceId): BatchRow {
   return {
     customerId,
@@ -453,10 +466,18 @@ function emptyBatchRow(customerId?: FinanceId): BatchRow {
   };
 }
 function openBatch() {
+  batchUnsaved.clear();
   batchForm.month = filters.month;
   batchForm.reason = '';
   batchForm.rows = [emptyBatchRow(filters.customerId), emptyBatchRow(), emptyBatchRow()];
   batchOpen.value = true;
+  batchUnsaved.capture();
+}
+
+/** 批量登记关闭前确认未保存内容。 */
+async function requestCloseBatch() {
+  if (batchSaving.value) return;
+  if (await batchUnsaved.confirmDiscard()) batchOpen.value = false;
 }
 function addBatchRow() {
   if (batchForm.rows.length < 200) batchForm.rows.push(emptyBatchRow());
@@ -465,11 +486,7 @@ function removeBatchRow(index: number) {
   if (batchForm.rows.length > 1) batchForm.rows.splice(index, 1);
 }
 function rowIsBlank(row: BatchRow) {
-  return (
-    row.customerId == null &&
-    row.goodsCostAmount == null &&
-    amountFields.every((field) => !Number(row[field.key] || 0))
-  );
+  return row.customerId == null && row.goodsCostAmount == null && amountFields.every((field) => !Number(row[field.key] || 0));
 }
 function fixedAmount(value: string | null | undefined) {
   return new Decimal(value ?? 0).toFixed(4);

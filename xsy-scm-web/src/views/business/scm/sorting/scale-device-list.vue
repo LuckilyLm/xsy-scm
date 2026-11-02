@@ -332,7 +332,14 @@ const registerRules = {
 
 function openRegister() {
   registerError.value = '';
-  Object.assign(registerForm, {deviceCode: '', deviceName: undefined, deviceModel: undefined, stationCode: undefined});
+  Object.assign(registerForm, {
+    deviceCode: '',
+    deviceName: undefined,
+    deviceModel: undefined,
+    stationCode: undefined,
+    // 新秤必须重新选择绑定仓库，不能沿用上一台的仓库。
+    warehouseId: undefined,
+  });
   registerOpen.value = true;
 }
 

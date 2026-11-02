@@ -124,7 +124,7 @@
     width="700px"
     :confirm-loading="saving"
     @ok="submit"
-    @cancel="editOpen = false"
+    @cancel="requestClose"
   >
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <section class="scm-form-section">
@@ -284,6 +284,7 @@ import {
   type PromotionStatus,
 } from './promotion-types';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
+import {confirmDialog, createUnsavedGuard} from '../common/scm-unsaved-guard';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 
 const queryForm = reactive<PromotionCouponQuery>({pageNum: 1, pageSize: 20});
@@ -374,6 +375,7 @@ const formRules = {
 
 /** 门槛金额用数字输入，提交时转字符串。 */
 const minOrderAmount = ref<number | null>(0);
+const unsaved = createUnsavedGuard(() => ({form, minOrderAmount: minOrderAmount.value}));
 
 const issueForm = reactive<{couponId?: Id; customerId?: Id; quantity: number}>({quantity: 1});
 
@@ -424,6 +426,7 @@ function resetQuery() {
 }
 
 function openCreate() {
+  unsaved.clear();
   Object.assign(form, {
     id: undefined,
     couponCode: '',
@@ -442,9 +445,11 @@ function openCreate() {
   form.discountValueInput = null;
   minOrderAmount.value = 0;
   editOpen.value = true;
+  unsaved.capture();
 }
 
 function openEdit(record: PromotionCoupon) {
+  unsaved.clear();
   Object.assign(form, {
     id: record.id,
     couponCode: record.couponCode,
@@ -468,6 +473,12 @@ function openEdit(record: PromotionCoupon) {
       : Number(normalizeMoneyInput(record.discountValue));
   minOrderAmount.value = record.minOrderAmount == null ? null : Number(normalizeMoneyInput(record.minOrderAmount));
   editOpen.value = true;
+  unsaved.capture();
+}
+
+/** 点取消或右上角关闭时，有未保存修改先确认。 */
+async function requestClose() {
+  if (await unsaved.confirmDiscard()) editOpen.value = false;
 }
 
 async function submit() {
@@ -503,6 +514,16 @@ function openIssue(record: PromotionCoupon) {
 
 /** 启停券模板；草稿必须先启用才能发券。 */
 async function changeStatus(record: PromotionCoupon, status: 'ACTIVE' | 'STOPPED') {
+  if (status === 'STOPPED') {
+    const confirmed = await confirmDialog({
+      title: '停用优惠券',
+      content: `停用「${record.couponName}」后将不能继续发放或领取，确认停用？`,
+      okText: '确认停用',
+      okType: 'danger',
+      cancelText: '取消',
+    });
+    if (!confirmed) return;
+  }
   try {
     await promotionApi.couponStatus(record.id, record.version, status);
     message.success(status === 'ACTIVE' ? '优惠券已启用' : '优惠券已停用');
