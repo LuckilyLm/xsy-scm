@@ -293,6 +293,15 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
     // 规格行没挂 rules，validateProduct 的失败同样要 toast
     assert.match(source, /if \(error\.value\) \{[\s\S]{0,160}message\.error\(error\.value\)/);
   });
+  test('组合商品组成允许清空，并在清除前二次确认', () => {
+    const source = readFileSync(
+      new URL('../src/views/business/scm/product/components/product-bundle-editor.vue', import.meta.url),
+      'utf8'
+    );
+    assert.match(source, /Modal\.confirm/);
+    assert.match(source, /清除组合商品组成/);
+    assert.doesNotMatch(source, /!draft\.value\.length\s*\|\|/, '空组成不应再被当作无效输入');
+  });
   test('validates four decimal prices and normalized duplicate specifications', () => {
     const form = emptyProduct();
     Object.assign(form.skuList[0], {skuCode: 'A', specName: '大', saleUnit: 'kg', specValues: {Size: ' Large '}});

@@ -58,6 +58,22 @@ class ScmBundleServicePgIT extends ScmW3PgITBase {
     }
 
     @Test
+    void emptyComponentListClearsBundleAndBumpsSkuVersion() {
+        Long bundle = createStandardSku("CLEAR_BUNDLE");
+        Long apple = createStandardSku("CLEAR_APPLE");
+        bundleService.replace(form(bundle, skuVersion(bundle), item(apple, "1.0000")));
+        int version = skuVersion(bundle);
+
+        bundleService.replace(form(bundle, version));
+
+        assertThat(bundleService.components(bundle)).isEmpty();
+        assertThat(skuVersion(bundle)).isEqualTo(version + 1);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_product_bundle_component WHERE bundle_sku_id=? AND deleted=TRUE",
+                Integer.class, bundle)).isEqualTo(1);
+    }
+
+    @Test
     void realBundleConfigurationFreezesAllocationWithoutReservingStockAtConfirmation() {
         Long bundle = createStandardSku("FREEZE_BUNDLE");
         Long apple = createStandardSku("FREEZE_APPLE");

@@ -5,7 +5,6 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -21,7 +20,8 @@ public class ProductBundleReplaceForm {
     @NotNull(message = "组合商品规格版本不能为空")
     @Min(value = 0, message = "组合商品规格版本不能小于0")
     private Integer version;
-    @NotEmpty(message = "组合商品至少包含一个组成规格")
+    /** 允许空列表：表示清除该规格的组合组成，恢复为普通商品规格。 */
+    @NotNull(message = "组合商品组成参数不能为空")
     @Size(max = 50, message = "组合商品最多包含50个组成规格")
     private List<@Valid Component> components;
 

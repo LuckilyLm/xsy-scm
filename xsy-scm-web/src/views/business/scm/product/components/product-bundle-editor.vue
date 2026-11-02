@@ -17,6 +17,12 @@
       :pagination="false"
     />
     <a-modal :open="visible" title="组合商品组成" :confirm-loading="saving" @ok="save" @cancel="visible = false">
+      <a-alert
+        v-if="rows.length && !draft.length"
+        type="info"
+        show-icon
+        message="未添加组成规格；确定后将清除组合组成，恢复为普通商品规格。"
+      />
       <div v-for="(row, index) in draft" :key="index" class="bundle-editor__line">
         <SkuSelect v-model:value="row.skuId" :disabled-statuses="[]" />
         <a-input-number
@@ -38,7 +44,7 @@
 </template>
 <script setup lang="ts">
 import {onMounted, ref, watch} from 'vue';
-import {message, type TableColumnsType} from 'ant-design-vue';
+import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import {productApi} from '/@/api/business/scm/product-api';
 import type {ProductId, ProductSku} from '/@/types/business/scm/product';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
@@ -94,7 +100,6 @@ async function save(): Promise<void> {
   if (
     props.sku.skuId == null ||
     props.sku.version == null ||
-    !draft.value.length ||
     draft.value.some(
       (row) =>
         row.skuId == null ||
@@ -106,6 +111,26 @@ async function save(): Promise<void> {
     void message.warning('请填写有效组成商品规格和每套用量');
     return;
   }
+  if (!draft.value.length && !rows.value.length) {
+    visible.value = false;
+    return;
+  }
+  const clearing = rows.value.length > 0 && !draft.value.length;
+  if (clearing) {
+    // 静态 Modal.confirm 返回 {destroy, update} 而不是 Promise，需自己包一层等待用户选择。
+    const confirmed = await new Promise<boolean>((resolve) => {
+      Modal.confirm({
+        title: '清除组合商品组成？',
+        content: '清除后该规格将恢复为普通商品规格；历史订单已冻结的组成快照不受影响。',
+        okText: '清除',
+        okType: 'danger',
+        cancelText: '取消',
+        onOk: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+    if (!confirmed) return;
+  }
   saving.value = true;
   try {
     await productApi.saveBundle({
@@ -115,7 +140,7 @@ async function save(): Promise<void> {
     });
     visible.value = false;
     emit('saved');
-    void message.success('组合商品组成已保存');
+    void message.success(clearing ? '组合商品组成已清除' : '组合商品组成已保存');
   } catch (cause) {
     void message.error(productError(cause));
   } finally {
