@@ -13,9 +13,9 @@ public class PurchaseShareFeedbackVO {
     private String productName;
     private String skuName;
     private String purchaseUnit;
-    @JsonSerialize(using = ScmFixedScale4Serializer.class)
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal unitPrice;
-    @JsonSerialize(using = ScmFixedScale4Serializer.class)
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal receivedQuantity;
     private String remark;
     private OffsetDateTime submittedAt;
