@@ -13,6 +13,7 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface PurchaseShareDao {
+    List<PurchaseShareFeedbackVO> latestFeedback(@Param("purchaseOrderId") Long purchaseOrderId);
 
     /**
      * 撤销该采购单上仍有效的链接：重新分享时旧码立即失效。

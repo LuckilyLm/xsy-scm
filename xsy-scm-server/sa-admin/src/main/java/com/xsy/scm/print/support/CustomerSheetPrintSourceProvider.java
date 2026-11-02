@@ -5,9 +5,11 @@ import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
 import com.xsy.scm.order.manager.OrderAmountCalculator;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
+import com.xsy.scm.promotion.support.PromotionDiscountAllocator;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +53,12 @@ public abstract class CustomerSheetPrintSourceProvider extends ScmOrderPrintSour
         List<Map<String, String>> rows = new ArrayList<>();
         List<SalesOrderItemVO> items = order.getItems() == null ? List.of() : order.getItems();
         Map<Long, BigDecimal> sorted = showActualQuantity() ? sortedQuantities(order) : Map.of();
+        Map<Long, BigDecimal> discounts = new HashMap<>();
+        if (order.getDiscount() != null && order.getDiscount().getAllocations() != null) {
+            order.getDiscount().getAllocations()
+                .forEach(line -> discounts.put(line.getOrderItemId(), line.getDiscountAmount()));
+        }
+        List<BigDecimal> printedAmounts = new ArrayList<>();
         for (int index = 0; index < items.size(); index++) {
             SalesOrderItemVO item = items.get(index);
             BigDecimal sortedQuantity = sorted.get(item.getItemId());
@@ -63,14 +71,19 @@ public abstract class CustomerSheetPrintSourceProvider extends ScmOrderPrintSour
             row.put("actualQuantity", actualQuantity(item, sortedQuantity));
             if (showPrices()) {
                 row.put("lockedUnitPrice", ScmPrintText.fixed(item.getLockedUnitPrice()));
-                row.put("settlementLineAmount", ScmPrintText.fixed(lineAmount(item, sortedQuantity)));
+                BigDecimal amount = lineAmount(item, sortedQuantity, discounts.get(item.getItemId()));
+                row.put("settlementLineAmount", ScmPrintText.fixed(amount));
+                printedAmounts.add(amount);
             }
             row.put("remark", ScmPrintText.text(item.getRemark()));
             rows.add(row);
         }
         var totals = ScmPrintSource.values();
         if (showTotals()) {
-            totals.put("settlementTotalAmount", ScmPrintText.fixed(printedTotal(order, items, sorted)));
+            totals.put("settlementTotalAmount",
+                ScmPrintText.fixed(printedAmounts.stream().anyMatch(java.util.Objects::isNull)
+                    ? null
+                    : OrderAmountCalculator.orderAmount(printedAmounts)));
         }
         return new ScmPrintSource(order.getOrderNo(), header, rows, totals);
     }
@@ -96,24 +109,15 @@ public abstract class CustomerSheetPrintSourceProvider extends ScmOrderPrintSour
             : ScmPrintText.fixed(item.getActualQuantity());
     }
 
-    /**
-     * 有分拣结果的行按「实发量 × 锁定单价」打印，与签收应收的行金额同源；还没有分拣结果时沿用订单结算快照。
-     */
-    private BigDecimal lineAmount(SalesOrderItemVO item, BigDecimal sortedQuantity) {
-        if (sortedQuantity == null)
-            return item.getSettlementLineAmount();
-        return OrderAmountCalculator.lineAmount(sortedQuantity, item.getLockedUnitPrice());
-    }
-
-    /** 合计跟着纸上逐行金额走：任一有分拣结果的行缺价时整体留空，不用部分金额冒充合计。 */
-    private BigDecimal printedTotal(SalesOrderDetailVO order, List<SalesOrderItemVO> items,
-        Map<Long, BigDecimal> sorted) {
-        if (sorted.isEmpty())
-            return order.getSettlementTotalAmount();
-        List<BigDecimal> amounts = items.stream().map(item -> lineAmount(item, sorted.get(item.getItemId()))).toList();
-        if (amounts.stream().anyMatch(java.util.Objects::isNull))
+    private BigDecimal lineAmount(SalesOrderItemVO item, BigDecimal sortedQuantity, BigDecimal allocatedDiscount) {
+        BigDecimal gross = sortedQuantity == null
+            ? item.getSettlementLineAmount()
+            : OrderAmountCalculator.lineAmount(sortedQuantity, item.getLockedUnitPrice());
+        if (gross == null) {
             return null;
-        return OrderAmountCalculator.orderAmount(amounts);
+        }
+        return gross
+            .subtract(PromotionDiscountAllocator.proratedShare(gross, item.getOrderedLineAmount(), allocatedDiscount));
     }
 
     /** 子类用来声明负责的单据类型，避免两个实现复制字段定义。 */

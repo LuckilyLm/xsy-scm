@@ -14,6 +14,16 @@
         ORDER BY f.id DESC LIMIT 100
     </select>
 
+    <select id="latestFeedback" resultType="com.xsy.scm.purchase.domain.vo.PurchaseShareFeedbackVO">
+        SELECT DISTINCT ON (f.purchase_order_item_id) f.id, f.purchase_order_item_id,
+            i.product_name_snapshot AS product_name, i.sku_name_snapshot AS sku_name,
+            i.purchase_unit_snapshot AS purchase_unit, f.unit_price, f.received_quantity, f.remark, f.submitted_at
+        FROM xsy_purchase_share_feedback f JOIN xsy_purchase_order_item i
+            ON i.id = f.purchase_order_item_id AND i.purchase_order_id = f.purchase_order_id AND NOT i.deleted
+        WHERE f.purchase_order_id = #{purchaseOrderId}
+        ORDER BY f.purchase_order_item_id, f.id DESC
+    </select>
+
     <sql id="tokenColumns">
         id, purchase_order_id AS purchaseOrderId, token_hash AS tokenHash, token_prefix AS tokenPrefix,
             expires_at AS expiresAt, revoked_at AS revokedAt, last_used_at AS lastUsedAt, use_count AS useCount,

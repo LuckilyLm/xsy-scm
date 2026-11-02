@@ -14,17 +14,11 @@
     </template>
     <div class="photo-filters">
       <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD" :placeholder="['上传开始日期', '上传结束日期']" />
-      <a-input
-        v-model:value="keyword"
-        allow-clear
-        placeholder="按报告名或姓名搜索"
-        class="photo-keyword"
-        @press-enter="search"
-      />
+      <a-input v-model:value="keyword" allow-clear placeholder="按报告名或姓名搜索" class="photo-keyword" @press-enter="search" />
       <a-button type="primary" @click="search">查询</a-button>
       <a-button @click="reset">重置</a-button>
     </div>
-    <p class="scm-note">上传市场提供的检测报告照片，点击照片即可放大查看；可按上传日期或报告名筛选。</p>
+    <p class="scm-note">上传报告照片，点击可放大；可按上传日期、报告名或姓名筛选。</p>
     <a-alert v-if="error || uploadError" :message="uploadError || error" type="error" show-icon class="photo-error" />
     <a-spin :spinning="loading">
       <a-empty v-if="!reports.length && !loading" description="暂无报告照片" />

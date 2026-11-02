@@ -108,6 +108,24 @@ internal sealed partial class StateStore
         return result.ToArray();
     }
 
+    // 旧单次队列也按同一明细的持久化顺序编号；不按重试次数或最近200条投影编号。
+    internal int LegacyBasketNumber(LocalEvent record)
+    {
+        using var db = Open(); using var command = db.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*) FROM events e
+            WHERE e.rowid <= (SELECT rowid FROM events WHERE event_key=$key)
+              AND json_extract(e.payload,'$.taskItemId')=$item
+              AND json_extract(e.payload,'$.taskId')=$task
+            """;
+        command.Parameters.AddWithValue("$key", record.EventKey);
+        command.Parameters.AddWithValue("$item", record.Measurement.TaskItemId);
+        command.Parameters.AddWithValue("$task", record.Measurement.TaskId);
+        int number = Convert.ToInt32(command.ExecuteScalar());
+        if (number < 1) throw new InvalidOperationException("未找到已持久化的称重记录");
+        return number;
+    }
+
     internal LocalEvent? NextEvent()
     {
         lock (gate)

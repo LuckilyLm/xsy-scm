@@ -49,6 +49,16 @@ public final class PromotionDiscountAllocator {
         Long roundingTargetItemId) {
     }
 
+    // 优惠按确认时的行金额冻结；少发、超发和退货使用同一比例，结果不能超过本次毛额。
+    public static BigDecimal proratedShare(BigDecimal gross, BigDecimal orderedGross, BigDecimal allocated) {
+        if (allocated == null || allocated.signum() <= 0 || gross.signum() <= 0 || orderedGross == null
+            || orderedGross.signum() <= 0) {
+            return BigDecimal.ZERO.setScale(SCALE);
+        }
+        return gross.multiply(allocated).divide(orderedGross, SCALE, RoundingMode.HALF_UP).min(gross)
+            .max(BigDecimal.ZERO);
+    }
+
     /**
      * 按行金额比例分摊优惠。
      */

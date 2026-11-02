@@ -79,17 +79,19 @@ internal sealed class PlatformClient(AgentOptions options, StateStore store, Htt
         return changed;
     }
 
-    internal Task<JsonElement> Upload(Measurement measurement, CancellationToken cancellation) =>
-        Send<JsonElement>(HttpMethod.Post, "/measurements", measurement, cancellation, measurement.OperatorSessionId);
+    internal Task<JsonElement> Upload(LocalEvent record, int basketNo, CancellationToken cancellation) =>
+        UploadMeasurement(record.Measurement, record.OperationId, basketNo, cancellation);
 
-    /** 多筐流程逐筐上报：同一设备端点，额外带上本筐操作号与筐号，服务端按筐号重算。 */
-    internal Task<JsonElement> UploadBasket(BasketRecord record, CancellationToken cancellation)
+    internal Task<JsonElement> UploadBasket(BasketRecord record, CancellationToken cancellation) =>
+        UploadMeasurement(record.Measurement, record.OperationId, record.BasketNumber, cancellation);
+
+    private Task<JsonElement> UploadMeasurement(Measurement measurement, string operationId, int basketNo,
+        CancellationToken cancellation)
     {
-        Measurement measurement = record.Measurement;
         var payload = new
         {
             protocolVersion = measurement.ProtocolVersion, eventKey = measurement.EventKey,
-            operationId = record.OperationId, basketNo = record.BasketNumber, taskId = measurement.TaskId,
+            operationId, basketNo, taskId = measurement.TaskId,
             taskItemId = measurement.TaskItemId, taskItemVersion = measurement.TaskItemVersion,
             jobId = measurement.JobId, jobVersion = measurement.JobVersion, capturedAt = measurement.CapturedAt,
             rawValue = measurement.RawValue, rawUnit = measurement.RawUnit, netWeight = measurement.NetWeight,
@@ -108,7 +110,7 @@ internal sealed class PlatformClient(AgentOptions options, StateStore store, Htt
         {
             operationId = completion.OperationId, jobId = completion.JobId, jobVersion = completion.JobVersion,
             taskId = completion.TaskId, taskItemVersion = completion.TaskItemVersion,
-            manifestHash = completion.ManifestHash, result = completion.Result, reason = completion.Reason
+            manifestHash = WireJson.Digest(completion.EventKeys), result = completion.Result, reason = completion.Reason
         }, cancellation, completion.OperatorSessionId);
 
     internal Task<PrintPage> PrintJobs(CancellationToken cancellation) =>

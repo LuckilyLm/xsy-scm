@@ -7,7 +7,7 @@
     :closable="!saving"
     :mask-closable="!saving"
     :cancel-button-props="{disabled: saving}"
-    :ok-button-props="{disabled: loading || !!error || !acknowledged || !order || hasPendingPrice}"
+    :ok-button-props="{disabled: loading || !!error || !acknowledged || !order || hasPendingPrice || priceChangeForbidden}"
     @ok="confirm"
     @cancel="requestId++"
   >
@@ -15,7 +15,10 @@
       ><template #action><a-button @click="load">重试</a-button></template></a-alert
     >
     <p class="scm-note">核对实际采购数量与单价后即可生成供应商应付。未采购的商品填写0，至少一项实际数量大于0。</p>
-    <a-alert v-if="hasPendingPrice" type="warning" show-icon message="采购明细尚有待定价项，请返回采购单补价后重新打开。" />
+    <a-alert v-if="pendingPriceBlocked" type="warning" show-icon message="存在待定价或未回填的商品，需要补价或改价权限后才能确认。" />
+    <a-alert v-else-if="hasPendingPrice" type="warning" show-icon message="请补齐本次确认单价；采购价格未经核对不能确认应付。" />
+    <a-alert v-if="priceChangeForbidden" type="warning" show-icon message="采用回填报价需要补价或改价权限，请由有权限的人员核对。" />
+    <p v-if="fromFeedback" class="scm-note">已带入各商品最新一次现场回填，不累加多次回填；缺失的数量和报价请核对后补齐。</p>
     <a-table
       :data-source="lines"
       :columns="columns"
@@ -32,6 +35,19 @@
         <template v-else-if="column.dataIndex === 'plannedQuantity'"
           ><span class="scm-quantity">{{ quantity(record.plannedQuantity) }}</span></template
         >
+        <template v-else-if="column.dataIndex === 'confirmedPrice'">
+          <a-input-number
+            v-model:value="record.confirmedPrice"
+            string-mode
+            :precision="4"
+            :min="0"
+            :disabled="saving || !canChangePrice(record)"
+            style="width: 100%"
+          />
+        </template>
+        <template v-else-if="column.dataIndex === 'feedbackAt'">{{
+          record.feedbackAt ? dayjs(record.feedbackAt).format('YYYY-MM-DD HH:mm') : '—'
+        }}</template>
         <template v-else-if="column.dataIndex === 'confirmedQuantity'"
           ><a-input-number
             v-model:value="record.confirmedQuantity"
@@ -40,7 +56,9 @@
             :min="0"
             :disabled="saving"
             style="width: 100%"
-            @blur="record.confirmedQuantity = fixed(record.confirmedQuantity)"
+            @blur="
+              record.confirmedQuantity != null && record.confirmedQuantity !== '' && (record.confirmedQuantity = fixed(record.confirmedQuantity))
+            "
         /></template>
       </template>
     </a-table>
@@ -51,6 +69,8 @@
 </template>
 <script setup lang="ts">
 import {computed, onBeforeUnmount, ref} from 'vue';
+import dayjs from 'dayjs';
+import {hasPermission} from '../../common/scm-permission';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import type {Id, Order, OrderItem} from '../purchase-types';
@@ -58,7 +78,8 @@ import {fixed, price, quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 import {scmColumnsWidth} from '../../common/scm-column';
 
-type ConfirmLine = OrderItem & {confirmedQuantity: string};
+type ConfirmLine = OrderItem & {confirmedQuantity: string; confirmedPrice?: string | null; feedbackId?: Id; feedbackAt?: string};
+const fromFeedback = ref(false);
 const emit = defineEmits<{saved: []}>();
 const visible = ref(false),
   loading = ref(false),
@@ -69,16 +90,32 @@ const order = ref<Order>(),
   orderId = ref<Id>(),
   lines = ref<ConfirmLine[]>([]);
 let requestId = 0;
-const hasPendingPrice = computed(() => lines.value.some((line) => line.pricePending || line.purchasePrice == null));
+const hasPendingPrice = computed(() => lines.value.some((line) => line.confirmedPrice == null || line.confirmedPrice === ''));
+function canChangePrice(line: ConfirmLine) {
+  return hasPermission('scm:purchase:price:adjust') || (line.pricePending && hasPermission('scm:purchase:price:fill'));
+}
+const priceChangeForbidden = computed(() =>
+  lines.value.some(
+    (line) =>
+      !canChangePrice(line) && line.confirmedPrice != null && (line.purchasePrice == null || fixed(line.confirmedPrice) !== fixed(line.purchasePrice))
+  )
+);
+/** 待定价行没有可回退的原价，又无权补价/改价时，输入框是禁用的，要给出权限提示而不是让用户反复补空。 */
+const pendingPriceBlocked = computed(() =>
+  lines.value.some((line) => (line.confirmedPrice == null || line.confirmedPrice === '') && !canChangePrice(line))
+);
 const columns: TableColumnsType<ConfirmLine> = [
   {title: '商品名称', dataIndex: 'productName', width: 200},
   {title: '规格', dataIndex: 'skuName', width: 140},
   {title: '单位', dataIndex: 'purchaseUnit', width: 76},
   {title: '计划采购数量', dataIndex: 'plannedQuantity', width: 120},
-  {title: '采购单价', dataIndex: 'purchasePrice', width: 132},
+  {title: '原采购单价', dataIndex: 'purchasePrice', width: 132},
+  {title: '本次确认单价', dataIndex: 'confirmedPrice', width: 144},
+  {title: '回填时间', dataIndex: 'feedbackAt', width: 176},
   {title: '实际采购数量', dataIndex: 'confirmedQuantity', width: 160},
 ];
-function open(id: Id) {
+function open(id: Id, useFeedback = false) {
+  fromFeedback.value = useFeedback;
   orderId.value = id;
   visible.value = true;
   acknowledged.value = false;
@@ -100,7 +137,20 @@ async function load() {
       return;
     }
     order.value = response.data;
-    lines.value = (response.data.items ?? []).map((line) => ({...line, confirmedQuantity: fixed(line.plannedQuantity)}));
+    const feedback = fromFeedback.value ? (await purchaseOrderApi.confirmationFeedback(orderId.value)).data ?? [] : [];
+    if (id !== requestId) return;
+    const byItem = new Map(feedback.map((row) => [String(row.purchaseOrderItemId), row]));
+    lines.value = (response.data.items ?? []).map((line) => {
+      const row = byItem.get(String(line.id));
+      return {
+        ...line,
+        confirmedQuantity: fromFeedback.value ? row?.receivedQuantity ?? '' : fixed(line.plannedQuantity),
+        // 回填没给单价时沿用采购单原价；只有待定价行才留空等有权限的人补价。
+        confirmedPrice: fromFeedback.value ? row?.unitPrice ?? line.purchasePrice ?? null : line.purchasePrice,
+        feedbackId: row?.id,
+        feedbackAt: row?.submittedAt,
+      };
+    });
   } catch (e) {
     if (id === requestId) error.value = purchaseError(e);
   } finally {
@@ -108,7 +158,7 @@ async function load() {
   }
 }
 async function confirm() {
-  if (saving.value || !order.value?.id || !acknowledged.value || hasPendingPrice.value) return;
+  if (saving.value || !order.value?.id || !acknowledged.value || hasPendingPrice.value || priceChangeForbidden.value) return;
   if (
     !lines.value.length ||
     lines.value.some(
@@ -117,6 +167,7 @@ async function confirm() {
         line.version == null ||
         !line.purchaseUnit ||
         line.confirmedQuantity == null ||
+        line.confirmedQuantity === '' ||
         !Number.isFinite(Number(line.confirmedQuantity)) ||
         Number(line.confirmedQuantity) < 0
     ) ||
@@ -134,7 +185,9 @@ async function confirm() {
         orderItemId: line.id!,
         version: line.version!,
         quantity: fixed(line.confirmedQuantity),
-        expectedPrice: fixed(line.purchasePrice),
+        expectedPrice: line.purchasePrice == null ? null : fixed(line.purchasePrice),
+        confirmedPrice: fixed(line.confirmedPrice),
+        feedbackId: line.feedbackId,
         purchaseUnit: line.purchaseUnit!,
       })),
     });

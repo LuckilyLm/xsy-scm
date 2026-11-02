@@ -394,14 +394,8 @@ public class FinanceReceivableService {
      */
     static BigDecimal discountShare(Long orderItemId, BigDecimal lineAmount, BigDecimal orderedLineAmount,
         Map<Long, BigDecimal> orderLineDiscounts) {
-        BigDecimal allocated = orderLineDiscounts.get(orderItemId);
-        if (allocated == null || allocated.signum() <= 0 || lineAmount.signum() <= 0 || orderedLineAmount == null
-            || orderedLineAmount.signum() <= 0) {
-            return BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE);
-        }
-        BigDecimal share = lineAmount.multiply(allocated).divide(orderedLineAmount, FinanceConstant.AMOUNT_SCALE,
-            RoundingMode.HALF_UP);
-        return share.min(lineAmount).max(BigDecimal.ZERO);
+        return com.xsy.scm.promotion.support.PromotionDiscountAllocator.proratedShare(lineAmount, orderedLineAmount,
+            orderLineDiscounts.get(orderItemId));
     }
 
     private FinanceReceivableItemEntity newItem(String operator, OffsetDateTime now) {

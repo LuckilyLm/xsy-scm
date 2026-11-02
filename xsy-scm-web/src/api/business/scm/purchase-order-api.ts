@@ -1,3 +1,4 @@
+import type {PurchaseShareFeedback} from './purchase-share-api';
 import {getRequest, postDownload, postRequest, request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
@@ -39,6 +40,8 @@ export async function purchaseCommand<T>(path: string, data: unknown, options?: 
 }
 
 export const purchaseOrderApi = {
+  confirmationFeedback: (orderId: Id) =>
+    getRequest<PurchaseShareFeedback[]>(`/scm/purchase/finance-confirm/${orderId}/feedback`, {}, {suppressGlobalErrorMessage: true}),
   costAdjustmentOptions: (id: Id, options?: RequestOptions) =>
     getRequest<PurchaseCostAdjustment[]>(`/scm/purchase/cost-adjustment/options/${id}`, {}, options),
   costAdjustmentHistory: (id: Id, options?: RequestOptions) =>
@@ -54,7 +57,15 @@ export const purchaseOrderApi = {
   financeConfirm: (data: {
     purchaseOrderId: Id;
     version: number;
-    items: {orderItemId: Id; version: number; quantity: string; expectedPrice: string; purchaseUnit: string}[];
+    items: {
+      orderItemId: Id;
+      version: number;
+      quantity: string;
+      expectedPrice?: string | null;
+      confirmedPrice?: string;
+      feedbackId?: Id;
+      purchaseUnit: string;
+    }[];
   }) => purchaseCommand('/scm/purchase/finance-confirm', data),
   query: (data: OrderQuery, options?: RequestOptions) => postRequest<ScmPage<Order>>('/scm/purchase/query', data, options),
   detail: (id: Id, options?: RequestOptions) => getRequest<Order>(`/scm/purchase/detail/${id}`, {}, options),

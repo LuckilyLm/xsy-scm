@@ -78,7 +78,7 @@ function showOrder() {
   if (orderId.value != null) emit('detail', orderId.value);
 }
 function confirmPurchase() {
-  if (orderId.value != null) financeConfirm.value?.open(orderId.value);
+  if (orderId.value != null) financeConfirm.value?.open(orderId.value, true);
 }
 defineExpose({open});
 </script>

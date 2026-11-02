@@ -99,7 +99,12 @@
         <!-- 按上传日筛选时用业务时区，避免跨零点照片落到前一天。 -->
         <if test="startDate != null">AND (r.created_at AT TIME ZONE 'Asia/Shanghai')::date &gt;= #{startDate}</if>
         <if test="endDate != null">AND (r.created_at AT TIME ZONE 'Asia/Shanghai')::date &lt;= #{endDate}</if>
-        <if test="keyword != null and keyword != ''">AND r.report_name ILIKE '%' || #{keyword} || '%'</if>
+        <if test="keyword != null and keyword != ''">
+            AND (r.report_name ILIKE '%' || #{keyword} || '%'
+                OR EXISTS (SELECT 1 FROM t_employee employee
+                    WHERE r.created_by = '1:' || CAST(employee.employee_id AS TEXT)
+                        AND employee.actual_name ILIKE '%' || #{keyword} || '%'))
+        </if>
         ORDER BY r.id DESC LIMIT 50
     </select>
     <select id="lockPhoto" resultType="com.xsy.scm.trace.domain.vo.TraceInspectionReportVO">

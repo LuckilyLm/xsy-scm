@@ -61,6 +61,11 @@ app.MapPost(prefix + "/measurements", (JsonElement body) =>
 {
     string? key = body.TryGetProperty("eventKey", out var keyField) ? keyField.GetString() : null;
     if (string.IsNullOrWhiteSpace(key)) return Results.BadRequest(new { code = "INVALID_EVENT_KEY" });
+    // 与正式设备接口一致：单次和多筐上报都必须带操作号与从 1 开始的筐号。
+    string? operationId = body.TryGetProperty("operationId", out var operationField) ? operationField.GetString() : null;
+    if (string.IsNullOrWhiteSpace(operationId)) return Results.BadRequest(new { code = "INVALID_OPERATION_ID" });
+    if (!body.TryGetProperty("basketNo", out var basketField) || basketField.ValueKind != JsonValueKind.Number
+        || basketField.GetInt32() < 1) return Results.BadRequest(new { code = "INVALID_BASKET_NO" });
     string digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(body.GetRawText())));
     var created = (digest, Guid.NewGuid().ToString("N"));
     var existing = events.GetOrAdd(key, created);

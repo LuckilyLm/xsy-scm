@@ -37,9 +37,12 @@ public class PurchaseFinanceConfirmForm {
         @NotBlank(message = "请填写实际采购数量")
         @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "实际采购数量格式无效")
         private String quantity;
-        @NotBlank(message = "请核对采购单价")
         @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "采购单价格式无效")
         private String expectedPrice;
+        @Positive(message = "回填记录无效")
+        private Long feedbackId;
+        @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "确认采购单价格式无效")
+        private String confirmedPrice;
         @NotBlank(message = "采购单位不能为空")
         @Size(max = 32, message = "采购单位过长")
         private String purchaseUnit;

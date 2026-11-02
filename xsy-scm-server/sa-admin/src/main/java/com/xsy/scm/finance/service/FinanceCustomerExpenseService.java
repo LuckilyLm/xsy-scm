@@ -85,7 +85,14 @@ public class FinanceCustomerExpenseService {
         var claim = idempotencyService.claim("FINANCE_CUSTOMER_EXPENSE_BATCH_ADD", key, form);
         if (claim.replay()) {
             Long[] ids = idempotencyService.replay(claim, Long[].class);
-            return Arrays.stream(ids).map(expenseDao::find).toList();
+            return Arrays.stream(ids).map(id -> {
+                var expense = expenseDao.find(id);
+                if (expense == null) {
+                    throw new ScmBusinessException(FinanceErrorCode.EXPENSE_NOT_FOUND);
+                }
+                requireVisible(expense.getSellerId());
+                return expense;
+            }).toList();
         }
         List<Long> ids = new ArrayList<>();
         Set<Long> seen = new HashSet<>();

@@ -94,6 +94,9 @@ var cases = new (string Name, Func<Task> Run)[]
         var second = context.Capture.Capture(Request(sample));
         if (first.EventKey == second.EventKey) throw new Exception("Distinct operations must not be merged by weight");
         Equal(2L, context.Store.QueueDepth());
+        // 单次上传仍要满足服务端的筐号唯一约束：同明细按落盘顺序编 1、2。
+        Equal(1, context.Store.LegacyBasketNumber(first));
+        Equal(2, context.Store.LegacyBasketNumber(second));
     })),
     ("重用操作编号更改任务被拒绝", () => Sync(() =>
     {
@@ -165,6 +168,9 @@ var cases = new (string Name, Func<Task> Run)[]
             using var doc = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
             keys.Add(doc.RootElement.GetProperty("eventKey").GetString()!);
             Equal("Bearer", request.Headers.Authorization?.Scheme);
+            // 服务端要求单次上传同样带操作号和筐号；重试必须复用同一编号。
+            Equal(first.OperationId, doc.RootElement.GetProperty("operationId").GetString());
+            Equal(1, doc.RootElement.GetProperty("basketNo").GetInt32());
             if (++calls == 1) throw new HttpRequestException("response lost after server commit");
             Equal("4.850", doc.RootElement.GetProperty("rawValue").GetString());
             Equal("NET", doc.RootElement.GetProperty("weightKind").GetString());

@@ -52,12 +52,14 @@
     </sql>
 
     <!-- ============ 采购口径片段：只认提交后的采购事实 ============ -->
-    <sql id="purchaseSubmitted">
+    <sql id="purchaseStatus">
         o.deleted = FALSE
             AND o.status IN ('SUBMITTED', 'ACCOUNTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED')
         <if test="query.status != null and query.status != ''">AND o.status = #{query.status}</if>
-        AND o.submitted_at &gt;= #{startAt}
-            AND o.submitted_at &lt; #{endAt}
+    </sql>
+    <sql id="purchaseSubmitted">
+        <include refid="purchaseStatus"/>
+        AND o.submitted_at &gt;= #{startAt} AND o.submitted_at &lt; #{endAt}
     </sql>
 
     <!--
@@ -561,42 +563,47 @@
         <if test="query.skuId != null">AND m.sku_id = #{query.skuId}</if>
         GROUP BY m.sku_id, m.unit_snapshot) q
         GROUP BY q.sku_id),
-            <!--
-              新流程的「确认采购」不写收货与库存，实采数量/金额只落在 xsy_purchase_account_item。
-              与收货侧并列汇总，财务不必再逐单点开采购单；取数与 po 同一批采购单（提交日 + 供应商/采购员/
-              仓库/关键字），避免同一 SKU 把区间外采购单的确认量混进本期。
-            -->
-            ac AS(SELECT oi.sku_id, oi.purchase_unit_snapshot AS unit_snapshot, SUM(ai.quantity) AS confirmed_quantity,
+            ac AS(SELECT oi.sku_id, ai.unit_snapshot, MAX(oi.spu_code_snapshot) AS spu_code,
+            MAX(ai.product_name_snapshot) AS product_name, MAX(oi.sku_code_snapshot) AS sku_code,
+            MAX(ai.sku_name_snapshot) AS sku_name, SUM(ai.quantity) AS confirmed_quantity,
             SUM(ai.amount) AS confirmed_amount FROM xsy_purchase_account_item ai JOIN xsy_purchase_account a ON
             a.id = ai.account_id JOIN xsy_purchase_order_item oi ON oi.id = ai.purchase_order_item_id AND
-            oi.deleted = FALSE JOIN xsy_purchase_order o ON o.id = a.purchase_order_id AND o.deleted = FALSE WHERE
-            oi.deleted = FALSE AND
-        <include refid="purchaseSubmitted"/>
+            oi.deleted = FALSE JOIN xsy_purchase_order o ON o.id = a.purchase_order_id WHERE
+        <include refid="purchaseStatus"/>
+            AND a.confirmed_at &gt;= #{startAt} AND a.confirmed_at &lt; #{endAt}
         <include refid="purchaseFilters"/>
-        GROUP BY oi.sku_id, oi.purchase_unit_snapshot),
-            <!-- 采购价差按同一批采购单汇总：调增为正、调减为负，只表示采购成本方向，不改原采购价与库存成本。 -->
-            adj AS(SELECT ca.sku_id, ca.unit_snapshot, SUM(CASE WHEN ca.direction = 'INCREASE' THEN ca.amount ELSE
-            -ca.amount END) AS adjustment_amount FROM xsy_purchase_cost_adjustment ca JOIN xsy_purchase_order_item oi
+        GROUP BY oi.sku_id, ai.unit_snapshot),
+            adj AS(SELECT ca.sku_id, ca.unit_snapshot, MAX(oi.spu_code_snapshot) AS spu_code,
+            MAX(ca.product_name_snapshot) AS product_name, MAX(oi.sku_code_snapshot) AS sku_code,
+            MAX(oi.sku_name_snapshot) AS sku_name,
+            SUM(CASE WHEN ca.direction = 'INCREASE' THEN ca.amount ELSE -ca.amount END) AS adjustment_amount
+            FROM xsy_purchase_cost_adjustment ca JOIN xsy_purchase_order_item oi
             ON oi.id = ca.purchase_order_item_id AND oi.deleted = FALSE JOIN xsy_purchase_order o ON
-            o.id = ca.purchase_order_id AND o.deleted = FALSE WHERE oi.deleted = FALSE AND
-        <include refid="purchaseSubmitted"/>
+            o.id = ca.purchase_order_id WHERE
+        <include refid="purchaseStatus"/>
+            AND ca.occurred_at &gt;= #{startAt} AND ca.occurred_at &lt; #{endAt}
         <include refid="purchaseFilters"/>
-        GROUP BY ca.sku_id, ca.unit_snapshot)
-        SELECT po.sku_id AS skuId, po.spu_code AS spuCode, po.product_name AS productName, po.sku_code AS skuCode,
-            po.sku_name AS skuName, po.purchase_unit_snapshot AS purchaseUnit, po.order_count AS orderCount,
-            po.planned_quantity AS plannedQuantity, po.received_quantity AS receivedQuantity,
-            po.order_amount AS orderAmount,
+        GROUP BY ca.sku_id, ca.unit_snapshot),
+            product_units AS(SELECT sku_id, purchase_unit_snapshot AS unit_snapshot FROM po
+                UNION SELECT sku_id, unit_snapshot FROM ac UNION SELECT sku_id, unit_snapshot FROM adj)
+        SELECT k.sku_id AS skuId, COALESCE(po.spu_code, ac.spu_code, adj.spu_code) AS spuCode,
+            COALESCE(po.product_name, ac.product_name, adj.product_name) AS productName,
+            COALESCE(po.sku_code, ac.sku_code, adj.sku_code) AS skuCode,
+            COALESCE(po.sku_name, ac.sku_name, adj.sku_name) AS skuName, k.unit_snapshot AS purchaseUnit,
+            COALESCE(po.order_count, 0) AS orderCount, COALESCE(po.planned_quantity, 0) AS plannedQuantity,
+            COALESCE(po.received_quantity, 0) AS receivedQuantity, COALESCE(po.order_amount, 0) AS orderAmount,
             ROUND(po.order_amount / NULLIF(po.planned_quantity, 0), 4) AS avgPurchasePrice,
             ic.inbound_quantity_text AS inboundQuantityText, COALESCE(ic.inbound_cost_amount, 0) AS inboundCostAmount,
             COALESCE(ic.inbound_cost_missing_count, 0) AS inboundCostMissingCount,
             COALESCE(ac.confirmed_quantity, 0) AS confirmedQuantity,
             COALESCE(ac.confirmed_amount, 0) AS confirmedAmount,
             COALESCE(adj.adjustment_amount, 0) AS adjustmentAmount
-        FROM po
-        LEFT JOIN ic ON ic.sku_id = po.sku_id
-        LEFT JOIN ac ON ac.sku_id = po.sku_id AND ac.unit_snapshot = po.purchase_unit_snapshot
-        LEFT JOIN adj ON adj.sku_id = po.sku_id AND adj.unit_snapshot = po.purchase_unit_snapshot
-        ORDER BY po.order_amount DESC NULLS LAST, po.sku_id
+        FROM product_units k
+        LEFT JOIN po ON po.sku_id = k.sku_id AND po.purchase_unit_snapshot = k.unit_snapshot
+        LEFT JOIN ic ON ic.sku_id = k.sku_id
+        LEFT JOIN ac ON ac.sku_id = k.sku_id AND ac.unit_snapshot = k.unit_snapshot
+        LEFT JOIN adj ON adj.sku_id = k.sku_id AND adj.unit_snapshot = k.unit_snapshot
+        ORDER BY orderAmount DESC NULLS LAST, k.sku_id, k.unit_snapshot
     </select>
 
     <!--

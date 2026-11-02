@@ -101,7 +101,7 @@ internal sealed class SyncWorker(AgentOptions options, StateStore store, Platfor
         if (record == null) return false;
         try
         {
-            JsonElement result = await platform.Upload(record.Measurement, cancellation);
+            JsonElement result = await platform.Upload(record, store.LegacyBasketNumber(record), cancellation);
             if (!result.TryGetProperty("measurementId", out JsonElement id) || id.ValueKind != JsonValueKind.String
                 || string.IsNullOrWhiteSpace(id.GetString()) || !result.TryGetProperty("status", out var status)
                 || status.GetString() is not ("PENDING" or "ACCEPTED" or "REJECTED"))
