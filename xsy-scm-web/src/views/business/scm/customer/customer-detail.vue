@@ -336,13 +336,17 @@
 
       <!-- 可售商品 -->
       <a-tab-pane key="visibility" tab="可售商品">
+        <!-- 入口不受列表读取失败影响：有更新权限就能调整。 -->
+        <div class="scm-visibility-toolbar">
+          <p v-if="visPolicyText" class="scm-note">{{ visPolicyText }}</p>
+          <a-button v-if="hasPermission('scm:customer:update')" type="primary" @click="openVisibility()">调整可售商品</a-button>
+        </div>
         <a-alert v-if="visibility.error.value" :message="visibility.error.value" type="error" show-icon>
           <template #action>
             <a-button size="small" @click="visibility.reload()">重新加载</a-button>
           </template>
         </a-alert>
         <template v-else>
-          <p v-if="visPolicyText" class="scm-note">{{ visPolicyText }}</p>
           <a-table
             :data-source="visRows"
             :columns="visibilityCols"
@@ -433,6 +437,22 @@
         </a-form-item>
       </a-form>
     </a-modal>
+    <a-modal v-model:open="visibilityModal" title="调整可售商品" :confirm-loading="visibilitySaving" @ok="saveVisibility">
+      <a-spin :spinning="visibilitySeeding">
+        <a-form layout="vertical">
+          <a-form-item label="可见范围">
+            <a-radio-group v-model:value="visibilityPolicy">
+              <a-radio value="ALL_ENABLED">全部已启用商品</a-radio>
+              <a-radio value="ALLOWLIST">只售指定规格</a-radio>
+            </a-radio-group>
+          </a-form-item>
+          <a-form-item v-if="visibilityPolicy === 'ALLOWLIST'" label="可售规格" required>
+            <SkuSelect v-model:value="visibilitySkuIds" mode="multiple" :limit="200" :selected-options="visibilitySeeds" :disabled-statuses="[]" />
+            <div class="scm-note scm-note--block">未勾选的规格，客户在商城看不到，也无法下单。</div>
+          </a-form-item>
+        </a-form>
+      </a-spin>
+    </a-modal>
   </a-card>
 </template>
 
@@ -448,7 +468,7 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {orderApi} from '/@/api/business/scm/order-api';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
 import {customerVisibilityApi} from '/@/api/business/scm/customer-visibility-api';
-import type {CustomerDetail, CustomerFrequentSku, CustomerStatus} from '/@/types/business/scm/customer';
+import type {CustomerDetail, CustomerFrequentSku, CustomerStatus, CustomerVisibilityPolicy, ScmId} from '/@/types/business/scm/customer';
 import type {PriceRow, VisibilityRow} from '/@/types/business/scm/pricing';
 import type {Order} from '/@/views/business/scm/order/order-types';
 import {orderStatusTone} from '/@/views/business/scm/order/order-status-tone';
@@ -783,6 +803,12 @@ function resetAllTabs(): void {
   aliasError.value = '';
   aliasModal.value = false;
   aliasSkuId.value = undefined;
+  visibilityModal.value = false;
+  visibilitySaving.value = false;
+  visibilitySeeding.value = false;
+  visibilityPolicy.value = 'ALL_ENABLED';
+  visibilitySkuIds.value = [];
+  visibilitySeeds.value = [];
   orders.reset();
   frequent.reset();
   agreement.reset();
@@ -791,6 +817,92 @@ function resetAllTabs(): void {
 
 function onFreqDaysChange(): void {
   if (customerId.value) void frequent.reload();
+}
+
+// 调整可售商品：详情里的 visibilities 是 id + version 的权威清单，列表只用来回显名称。
+const visibilityModal = ref(false);
+const visibilitySaving = ref(false);
+const visibilitySeeding = ref(false);
+const visibilityPolicy = ref<CustomerVisibilityPolicy>('ALL_ENABLED');
+const visibilitySkuIds = ref<ScmId[]>([]);
+const visibilitySeeds = ref<
+  Array<{
+    skuId: ScmId;
+    productName: string;
+    specName: string;
+    status?: string;
+    spuStatus?: string;
+    categoryStatus?: string;
+  }>
+>([]);
+
+async function openVisibility(): Promise<void> {
+  // 清单的 id/version 以详情为准；资料还没加载完就打开会把已有白名单当成空清单。
+  if (!customer.value && customerId.value) await loadBase();
+  if (!customer.value) {
+    void message.warning('客户资料尚未加载，请稍后重试');
+    return;
+  }
+  visibilityPolicy.value = customer.value.visibilityPolicy ?? 'ALL_ENABLED';
+  visibilitySkuIds.value = (customer.value.visibilities ?? []).map((item) => item.skuId);
+  visibilitySeeds.value = [];
+  visibilityModal.value = true;
+  visibilitySeeding.value = true;
+  try {
+    const response = await customerVisibilityApi.query({
+      pageNum: 1,
+      pageSize: 500,
+      customerId: customerId.value,
+    });
+    if (!visibilityModal.value) return;
+    visibilitySeeds.value = (response.data.list ?? [])
+      .filter((row) => row.skuId != null)
+      .map((row) => ({
+        skuId: row.skuId as ScmId,
+        productName: row.productName || '',
+        specName: row.specName || '',
+        status: row.skuStatus ?? undefined,
+        spuStatus: row.spuStatus ?? undefined,
+        categoryStatus: 'ENABLED',
+      }));
+  } catch (error) {
+    // 名称回显失败不阻断调整：已选 ID 仍能按详情清单提交。
+    void message.warning(customerError(error));
+  } finally {
+    visibilitySeeding.value = false;
+  }
+}
+
+async function saveVisibility(): Promise<void> {
+  if (!customerId.value) return;
+  if (visibilityPolicy.value === 'ALLOWLIST' && visibilitySkuIds.value.length === 0) {
+    void message.warning('只售指定规格时，至少要选择一个商品规格');
+    return;
+  }
+  const existingBySku = new Map((customer.value?.visibilities ?? []).map((item) => [String(item.skuId), item]));
+  const visibilities =
+    visibilityPolicy.value === 'ALL_ENABLED'
+      ? []
+      : visibilitySkuIds.value.map((skuId) => {
+          const existing = existingBySku.get(String(skuId));
+          return existing ? {id: existing.id, version: existing.version, skuId} : {skuId};
+        });
+  visibilitySaving.value = true;
+  try {
+    await customerVisibilityApi.replace({
+      customerId: customerId.value,
+      visibilityPolicy: visibilityPolicy.value,
+      visibilities,
+    });
+    visibilityModal.value = false;
+    await loadBase();
+    await visibility.reload();
+    void message.success('可售商品已更新');
+  } catch (error) {
+    void message.error(customerError(error));
+  } finally {
+    visibilitySaving.value = false;
+  }
 }
 
 // 全部可见时接口返回一行策略行，拆成说明文字和 SKU 明细。
@@ -850,3 +962,17 @@ onMounted(() => {
   ensureTab(activeTab.value);
 });
 </script>
+
+<style scoped>
+.scm-visibility-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.scm-visibility-toolbar .scm-note {
+  margin: 0;
+}
+</style>

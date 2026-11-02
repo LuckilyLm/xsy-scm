@@ -86,11 +86,12 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
         childForm.setParentCustomerId(group);
         Long child = service.add(childForm);
 
-        CustomerStatusForm status = new CustomerStatusForm();
-        status.setCustomerId(child);
-        status.setVersion(0);
-        status.setStatus("COOPERATING");
-        service.updateStatus(status);
+        // 新建客户默认都是合作中，先把集团停用，状态筛选才有区分度。
+        CustomerStatusForm groupStatus = new CustomerStatusForm();
+        groupStatus.setCustomerId(group);
+        groupStatus.setVersion(0);
+        groupStatus.setStatus("SUSPENDED");
+        service.updateStatus(groupStatus);
 
         CustomerQueryForm byStatus = queryForm();
         byStatus.setStatus("COOPERATING");
@@ -202,7 +203,7 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
         List<CustomerOptionVO> options = queryService.optionList();
         CustomerOptionVO mine = options.stream()
                 .filter(vo -> vo.getCustomerId().equals(id)).findFirst().orElseThrow();
-        assertThat(mine.getStatus()).isEqualTo("POTENTIAL");
+        assertThat(mine.getStatus()).isEqualTo("COOPERATING");
         assertThat(mine.getCustomerCode()).matches("^CUS\\d{6,}$");
     }
 

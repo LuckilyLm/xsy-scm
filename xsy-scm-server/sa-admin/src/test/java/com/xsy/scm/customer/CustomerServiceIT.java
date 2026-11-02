@@ -1,5 +1,6 @@
 package com.xsy.scm.customer;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.businesscategory.domain.form.BusinessCategoryAddForm;
 import com.xsy.scm.businesscategory.domain.entity.BusinessCategoryEntity;
 import com.xsy.scm.businesscategory.domain.form.BusinessCategoryUpdateForm;
@@ -10,11 +11,13 @@ import com.xsy.scm.customer.domain.form.CustomerDeleteForm;
 import com.xsy.scm.customer.domain.form.CustomerSkuVisibilityItemForm;
 import com.xsy.scm.customer.domain.form.CustomerStatusForm;
 import com.xsy.scm.customer.domain.form.CustomerUpdateForm;
+import com.xsy.scm.customer.domain.form.CustomerVisibilityReplaceForm;
 import com.xsy.scm.customer.service.CustomerService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
@@ -22,6 +25,8 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mockStatic;
 
 /**
  * 客户写路径在真实 PostgreSQL 上的行为。
@@ -57,15 +62,23 @@ class CustomerServiceIT extends ScmW2PgITBase {
         return jdbc.queryForObject("SELECT customer_code FROM xsy_customer WHERE id = ?", String.class, id);
     }
 
+    private String statusOf(Long id) {
+        return jdbc.queryForObject("SELECT status FROM xsy_customer WHERE id = ?", String.class, id);
+    }
+
+    private Long sellerOf(Long id) {
+        return jdbc.queryForObject("SELECT seller_id FROM xsy_customer WHERE id = ?", Long.class, id);
+    }
+
     @Test
-    @DisplayName("新建客户状态恒为 POTENTIAL，授信额度缺省落 0.0000，审计写入操作人")
-    void newCustomerStartsAsPotentialWithZeroCreditLimit() {
+    @DisplayName("新建客户默认合作中，授信额度缺省落 0.0000，审计写入操作人")
+    void newCustomerStartsAsCooperatingWithZeroCreditLimit() {
         Long id = service.add(form("C1"));
 
         Map<String, Object> row = jdbc.queryForMap(
                 "SELECT status, version, deleted, settle_mode, credit_limit, created_by "
                         + "FROM xsy_customer WHERE id = ?", id);
-        assertThat(row.get("status")).isEqualTo("POTENTIAL");
+        assertThat(row.get("status")).isEqualTo("COOPERATING");
         assertThat(((Number) row.get("version")).intValue()).isZero();
         assertThat(row.get("deleted")).isEqualTo(false);
         assertThat(row.get("settle_mode")).isEqualTo("INDEPENDENT");
@@ -97,7 +110,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("update 不触碰 status：先停用再编辑，状态保持 DISABLED（legacy C7）")
+    @DisplayName("不传状态时 update 不触碰 status：先停用再编辑，状态保持 DISABLED（legacy C7）")
     void updateNeverTouchesStatus() {
         Long id = service.add(form("U1"));
 
@@ -113,6 +126,50 @@ class CustomerServiceIT extends ScmW2PgITBase {
                 .isEqualTo("SUSPENDED");
         assertThat(jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class, id))
                 .isEqualTo("改名");
+    }
+
+    @Test
+    @DisplayName("新增/编辑表单可直接改状态：与其它字段同一事务落库")
+    void formCanChangeStatusWithStatusPermission() {
+        try (MockedStatic<StpUtil> permissions = mockStatic(StpUtil.class)) {
+            permissions.when(() -> StpUtil.hasPermission(anyString())).thenReturn(true);
+
+            CustomerAddForm add = form("S2");
+            add.setStatus("COOPERATING");
+            Long id = service.add(add);
+            assertThat(statusOf(id)).isEqualTo("COOPERATING");
+
+            CustomerUpdateForm update = updateForm(id, 0);
+            update.setStatus("SUSPENDED");
+            service.update(update);
+            assertThat(statusOf(id)).isEqualTo("SUSPENDED");
+            assertThat(jdbc.queryForObject("SELECT version FROM xsy_customer WHERE id = ?", Integer.class, id))
+                    .isEqualTo(1);
+        }
+    }
+
+    @Test
+    @DisplayName("编辑表单可改派业务员，也可显式清空；需要客户分配权限")
+    void formCanReassignSellerWithAssignPermission() {
+        Long id = service.add(form("S3"));
+        Long seller = anyEmployeeId();
+        jdbc.update("UPDATE xsy_customer SET seller_id = NULL WHERE id = ?", id);
+
+        CustomerUpdateForm assign = updateForm(id, 0);
+        assign.setSellerId(seller);
+        try (MockedStatic<StpUtil> permissions = mockStatic(StpUtil.class)) {
+            permissions.when(() -> StpUtil.hasPermission(anyString())).thenReturn(true);
+            service.update(assign);
+        }
+        assertThat(sellerOf(id)).isEqualTo(seller);
+
+        CustomerUpdateForm clear = updateForm(id, 1);
+        clear.setClearSeller(true);
+        try (MockedStatic<StpUtil> permissions = mockStatic(StpUtil.class)) {
+            permissions.when(() -> StpUtil.hasPermission(anyString())).thenReturn(true);
+            service.update(clear);
+        }
+        assertThat(sellerOf(id)).isNull();
     }
 
     @Test
@@ -146,7 +203,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"POTENTIAL", "SUSPENDED", "BLACKLIST"})
+    @ValueSource(strings = {"SUSPENDED", "BLACKLIST"})
     @DisplayName("非 COOPERATING 状态不可交易（40930）")
     void requireTradableRejectsEveryOtherStatus(String target) {
         Long id = service.add(form("T2"));
@@ -369,6 +426,63 @@ class CustomerServiceIT extends ScmW2PgITBase {
      * 所以「切到 ALL_ENABLED 且不动清单」这一唯一合法请求会以 {@code visibilities == null} 抵达
      * replace，必须按空清单处理，不能当成明细行不合法。
      */
+    @Test
+    @DisplayName("详情页可整体替换可售商品：白名单增删后切回全部可售会清空明细")
+    void replaceVisibilityAddsRemovesAndSwitchesToAllEnabled() {
+        Long id = service.add(form("VIS-REPLACE"));
+        Long firstSku = newOnShelfSku("VIS-REPLACE-1");
+        Long secondSku = newOnShelfSku("VIS-REPLACE-2");
+
+        CustomerVisibilityReplaceForm whitelist = new CustomerVisibilityReplaceForm();
+        whitelist.setCustomerId(id);
+        whitelist.setVisibilityPolicy("ALLOWLIST");
+        whitelist.setVisibilities(new java.util.ArrayList<>(java.util.List.of(item(firstSku), item(secondSku))));
+        service.replaceVisibility(whitelist);
+
+        assertThat(jdbc.queryForObject(
+                "SELECT visibility_policy FROM xsy_customer WHERE id = ?", String.class, id)).isEqualTo("ALLOWLIST");
+        var rows = jdbc.queryForList(
+                "SELECT id, version, sku_id FROM xsy_customer_sku_visibility "
+                        + "WHERE customer_id = ? AND deleted = FALSE ORDER BY sku_id", id);
+        assertThat(rows).hasSize(2);
+
+        // 只保留 firstSku：secondSku 软删，firstSku 带 id + version 原样保留。
+        var retained = rows.stream()
+                .filter(row -> ((Number) row.get("sku_id")).longValue() == firstSku)
+                .findFirst()
+                .orElseThrow();
+        CustomerVisibilityReplaceForm shrink = new CustomerVisibilityReplaceForm();
+        shrink.setCustomerId(id);
+        shrink.setVisibilityPolicy("ALLOWLIST");
+        var kept = new CustomerSkuVisibilityItemForm();
+        kept.setId(((Number) retained.get("id")).longValue());
+        kept.setVersion(((Number) retained.get("version")).intValue());
+        kept.setSkuId(firstSku);
+        shrink.setVisibilities(new java.util.ArrayList<>(java.util.List.of(kept)));
+        service.replaceVisibility(shrink);
+
+        assertThat(jdbc.queryForList(
+                "SELECT sku_id FROM xsy_customer_sku_visibility WHERE customer_id = ? AND deleted = FALSE",
+                Long.class, id)).containsExactly(firstSku);
+
+        CustomerVisibilityReplaceForm all = new CustomerVisibilityReplaceForm();
+        all.setCustomerId(id);
+        all.setVisibilityPolicy("ALL_ENABLED");
+        service.replaceVisibility(all);
+
+        assertThat(jdbc.queryForObject(
+                "SELECT visibility_policy FROM xsy_customer WHERE id = ?", String.class, id)).isEqualTo("ALL_ENABLED");
+        assertThat(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM xsy_customer_sku_visibility WHERE customer_id = ? AND deleted = FALSE",
+                Integer.class, id)).isZero();
+    }
+
+    private CustomerSkuVisibilityItemForm item(Long skuId) {
+        CustomerSkuVisibilityItemForm item = new CustomerSkuVisibilityItemForm();
+        item.setSkuId(skuId);
+        return item;
+    }
+
     @Test
     @DisplayName("只改可见性策略、visibilities 留空时不得被 40034 拒掉")
     void policyOnlyWithoutVisibilityListIsAccepted() {

@@ -73,21 +73,6 @@
           <ScmStatusTag v-else-if="column.dataIndex === 'status'" :color="statusColor(record.status)" :label="statusText(record.status)" />
           <a-space v-else-if="column.dataIndex === 'action'" :size="4" class="smart-table-operate scm-table-actions">
             <a-button v-privilege="'scm:customer:update'" type="link" size="small" @click="drawer?.open(record.customerId)">编辑 </a-button>
-            <a-dropdown>
-              <a-button v-privilege="'scm:customer:status'" type="link" size="small">状态</a-button>
-              <template #overlay>
-                <a-menu>
-                  <a-menu-item
-                    v-for="item in statusOptions"
-                    :key="item.value"
-                    :disabled="item.value === record.status"
-                    @click="changeStatus(record, item.value)"
-                  >
-                    {{ item.desc }}
-                  </a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
             <ScmActionMore :actions="rowActions()" @select="onRowAction($event, record)" />
           </a-space>
         </template>
@@ -107,28 +92,6 @@
 
     <CustomerDrawer ref="drawer" @saved="load" />
     <CustomerPromotionModal ref="promotionModal" />
-
-    <a-modal
-      v-model:open="reassignVisible"
-      title="改派业务员"
-      :confirm-loading="reassignSaving"
-      :ok-button-props="{disabled: reassignSaving}"
-      @ok="submitReassign"
-    >
-      <p>
-        客户：<strong>{{ reassignTarget?.name }}</strong>
-      </p>
-      <p class="reassign-current">当前负责人：{{ reassignTarget?.sellerName || '未分配' }}</p>
-      <a-form layout="vertical">
-        <a-form-item>
-          <template #label>
-            新负责人
-            <ScmFieldHelp label="新负责人" text="留空则取消当前业务员的负责关系；只有有权分配客户的人员才能重新分配" />
-          </template>
-          <EmployeeSelect v-model:value="reassignSeller" placeholder="留空即收回为未分配" width="100%" />
-        </a-form-item>
-      </a-form>
-    </a-modal>
   </section>
 </template>
 
@@ -151,9 +114,7 @@ import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/act
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import BusinessCategoryTreeSelect from '/@/components/business/scm/business-category-tree-select/index.vue';
 import CustomerGroupSelect from '/@/components/business/scm/customer-group-select/index.vue';
-import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerDrawer from './components/customer-form-drawer.vue';
-import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {customerError} from './customer-errors';
 import {hasPermission} from '../common/scm-permission';
 import {formatAmountOrDash} from '/@/utils/scm-amount';
@@ -171,49 +132,11 @@ const drawer = ref<InstanceType<typeof CustomerDrawer>>();
 // 查询条件记在浏览器本地，不写业务表。
 const queryMemory = useQueryFilterMemory<CustomerQuery>('scm:customer:list');
 
-/** 改派业务员：独立权限，带乐观锁版本。 */
-const reassignVisible = ref(false);
-const reassignSaving = ref(false);
-const reassignTarget = ref<CustomerRow>();
-/** 收回负责关系时用 undefined；EmployeeSelect 不接受 null。 */
-const reassignSeller = ref<number | undefined>(undefined);
-
 /** 没有全量权限时空表要说明，可能只是授权范围内没有数据。 */
 const canSeeAllCustomers = computed(() => hasPermission('scm:customer:scope:all:query'));
 const emptyText = computed(() =>
   canSeeAllCustomers.value ? '暂无数据' : '当前仅显示您授权范围内的客户；若无数据，可能是尚未分配业务员或授权范围未配置，请联系管理员确认。'
 );
-
-function openReassign(row: CustomerRow) {
-  reassignTarget.value = row;
-  reassignSeller.value = row.sellerId ?? undefined;
-  reassignVisible.value = true;
-}
-
-async function submitReassign() {
-  const row = reassignTarget.value;
-  if (!row) {
-    return;
-  }
-  reassignSaving.value = true;
-  try {
-    await customerApi.reassignSeller({
-      customerId: row.customerId,
-      sellerId: reassignSeller.value ?? null,
-      version: row.version,
-    });
-    message.success('归属已改派');
-    reassignVisible.value = false;
-    await load();
-  } catch {
-    // 改派失败由全局 toast 提示
-  } finally {
-    reassignSaving.value = false;
-  }
-}
-
-/** 状态选项直接来自枚举，不另写文案表。 */
-const statusOptions = Object.values(CUSTOMER_STATUS_ENUM);
 
 const statusText = (value: CustomerStatus): string => CUSTOMER_STATUS_ENUM[value]?.desc || value;
 const settleModeText = (value: string): string => SETTLE_MODE_ENUM[value]?.desc || value;
@@ -301,21 +224,6 @@ function detail(id: ScmId) {
   void router.push({path: '/customer/customer-detail', query: {customerId: String(id)}});
 }
 
-/** 值来自枚举，必然是后端枚举码。 */
-async function changeStatus(row: CustomerRow, status: string) {
-  try {
-    await customerApi.updateStatus({
-      customerId: row.customerId,
-      version: row.version,
-      status: status as CustomerStatus,
-    });
-    message.success('客户状态已更新');
-    await load();
-  } catch {
-    // 状态更新失败由全局 toast 提示
-  }
-}
-
 async function remove(row: CustomerRow) {
   try {
     await customerApi.delete({customerId: row.customerId, version: row.version});
@@ -327,7 +235,6 @@ async function remove(row: CustomerRow) {
 }
 
 /** 菜单项不能挂 v-privilege，用 hasPermission 判断。 */
-const canAssign = computed(() => hasPermission('scm:customer:assign'));
 const canPromotion = computed(() => hasPermission('scm:customer:promotion:manage'));
 const promotionModal = ref<InstanceType<typeof CustomerPromotionModal>>();
 const canDelete = computed(() => hasPermission('scm:customer:delete'));
@@ -340,7 +247,6 @@ function rowActions(): ScmActionItem[] {
   return [
     {key: 'detail', label: '详情', hidden: !entryHidden.value},
     {key: 'promotion', label: '推广二维码', hidden: !canPromotion.value},
-    {key: 'reassign', label: '改派业务员', hidden: !canAssign.value},
     {key: 'delete', label: '删除', danger: true, hidden: !canDelete.value},
   ];
 }
@@ -350,8 +256,6 @@ function onRowAction(key: string, row: CustomerRow) {
     detail(row.customerId);
   } else if (key === 'promotion') {
     promotionModal.value?.openFor(row.customerId, row.name);
-  } else if (key === 'reassign') {
-    openReassign(row);
   } else if (key === 'delete') {
     // 菜单项不能挂 a-popconfirm，改用 Modal 确认。
     Modal.confirm({

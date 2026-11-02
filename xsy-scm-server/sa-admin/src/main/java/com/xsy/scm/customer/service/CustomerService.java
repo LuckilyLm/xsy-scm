@@ -23,7 +23,9 @@ import com.xsy.scm.customer.domain.form.CustomerDeleteForm;
 import com.xsy.scm.customer.domain.form.CustomerSellerReassignForm;
 import com.xsy.scm.customer.domain.form.CustomerStatusForm;
 import com.xsy.scm.customer.domain.form.CustomerUpdateForm;
+import com.xsy.scm.customer.domain.form.CustomerVisibilityReplaceForm;
 import com.xsy.scm.customer.manager.CustomerValidator;
+import com.xsy.scm.customer.permission.CustomerPermission;
 import com.xsy.scm.warehouse.permission.WarehousePermission;
 import com.xsy.scm.warehouse.service.WarehouseService;
 import cn.dev33.satoken.stp.StpUtil;
@@ -53,7 +55,7 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_TRADA
 public class CustomerService {
 
     /** 新建客户的初始状态。 */
-    public static final String INITIAL_STATUS = ScmCustomerStatusEnum.POTENTIAL.name();
+    public static final String INITIAL_STATUS = ScmCustomerStatusEnum.COOPERATING.name();
 
     private final CustomerDao customerDao;
     private final ScmDataScopeService dataScopeService;
@@ -150,13 +152,16 @@ public class CustomerService {
     public Long add(CustomerAddForm form) {
         customerValidator.validateCreditPeriod(form);
         customerValidator.validateParent(form.getParentCustomerId(), null);
+        String status = form.getStatus() == null ? INITIAL_STATUS : form.getStatus();
+        if (!INITIAL_STATUS.equals(status))
+            StpUtil.checkPermission(CustomerPermission.STATUS);
 
         CustomerEntity entity = new CustomerEntity();
         entity.setCustomerCode(businessNoService.next(ScmBusinessNoType.CUSTOMER));
         apply(entity, form);
         applyMallDeliveryWarehouse(entity, form);
         entity.setSellerId(resolveSellerOnCreate(form.getSellerId()));
-        entity.setStatus(INITIAL_STATUS);
+        entity.setStatus(status);
         entity.setVersion(0);
         entity.setDeleted(false);
         stamp(entity, true);
@@ -181,8 +186,18 @@ public class CustomerService {
         requireCurrentCustomerScope(entity);
         customerValidator.validateParent(form.getParentCustomerId(), form.getCustomerId());
 
-        // apply 不碰 status：状态只能走 updateStatus；也不碰 seller_id：归属只能走 reassignSeller。
-        // 编辑表单里的 sellerId 只是回显，否则普通销售把客户回传成别人的 id，就能把客户挪出自己的范围。
+        // 状态与业务员可与编辑一起提交，但各自要有独立权限；apply 不碰这两个字段。
+        // 只有表单显式提交 sellerId 或 clearSeller 时才改归属，老客户端不传时不会把负责人清空。
+        if (form.getStatus() != null && !form.getStatus().equals(entity.getStatus())) {
+            StpUtil.checkPermission(CustomerPermission.STATUS);
+            entity.setStatus(form.getStatus());
+        }
+        boolean clearSeller = Boolean.TRUE.equals(form.getClearSeller());
+        boolean sellerChanged = form.getSellerId() != null && !form.getSellerId().equals(entity.getSellerId());
+        if ((clearSeller && entity.getSellerId() != null) || sellerChanged) {
+            StpUtil.checkPermission(CustomerPermission.ASSIGN);
+            entity.setSellerId(clearSeller ? null : form.getSellerId());
+        }
         apply(entity, form);
         applyMallDeliveryWarehouse(entity, form);
         entity.setVersion(form.getVersion());
@@ -196,6 +211,25 @@ public class CustomerService {
         }
         if (form.getVisibilityPolicy() != null || form.getVisibilities() != null)
             customerSkuVisibilityService.replace(entity.getId(), entity.getVisibilityPolicy(), form.getVisibilities());
+    }
+
+    /**
+     * 客户详情页调整可售商品：策略落在客户主表，清单由可见性服务整单替换，两者同一事务。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void replaceVisibility(CustomerVisibilityReplaceForm form) {
+        customerSkuVisibilityDao.lockCustomer(form.getCustomerId());
+        CustomerEntity entity = require(form.getCustomerId());
+        requireCurrentCustomerScope(entity);
+        if (!Objects.equals(entity.getVisibilityPolicy(), form.getVisibilityPolicy())) {
+            entity.setVisibilityPolicy(form.getVisibilityPolicy());
+            entity.setVersion(entity.getVersion());
+            stamp(entity, false);
+            if (customerDao.updateById(entity) != 1) {
+                throw new ScmBusinessException(VERSION_CONFLICT);
+            }
+        }
+        customerSkuVisibilityService.replace(entity.getId(), form.getVisibilityPolicy(), form.getVisibilities());
     }
 
     /**
@@ -270,7 +304,10 @@ public class CustomerService {
     }
 
     private void requireCurrentCustomerScope(CustomerEntity entity) {
-        if (!dataScopeService.resolve().getCustomerSellerScope().allows(entity.getSellerId())) {
+        boolean canAssign = ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM);
+        // 未分配客户对持分配权的人可见；他们也要能直接在编辑表单里认领/改派。
+        if (!dataScopeService.resolve().getCustomerSellerScope().allows(entity.getSellerId())
+            && !(canAssign && entity.getSellerId() == null)) {
             throw new ScmDataScopeException();
         }
     }

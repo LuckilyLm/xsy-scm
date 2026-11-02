@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 编辑客户。字段与 {@link CustomerAddForm} 一致，只追加主键与乐观锁版本号；不包含 {@code status}，状态只能通过专用接口修改。
+ * 编辑客户。字段与 {@link CustomerAddForm} 一致，只追加主键与乐观锁版本号；状态与业务员可与其它字段一起提交，但变更状态需客户状态权限，改派业务员需客户分配权限。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

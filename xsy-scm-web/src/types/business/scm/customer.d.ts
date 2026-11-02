@@ -4,7 +4,7 @@ import type {ScmLocation} from '/@/components/business/scm/map/types';
  *
  * 约定（与 `product.d.ts` 一致）：
  * - 金额字段是4 位定点字符串（`"0.0000"`），不是 number；`null` 表示「未设置」，与 `"0.0000"` 语义不同。
- * - 枚举一律用后端字符串码（`POTENTIAL` / `GROUP` / `BY_AMOUNT` …），不用数字。
+ * - 枚举一律用后端字符串码（`COOPERATING` / `GROUP` / `BY_AMOUNT` …），不用数字。
  * - `version` 是乐观锁版本，编辑 / 状态 / 删除都必须回传。
  */
 
@@ -12,7 +12,7 @@ import type {AreaColumns} from './area';
 
 export type ScmId = string | number;
 
-export type CustomerStatus = 'POTENTIAL' | 'COOPERATING' | 'SUSPENDED' | 'BLACKLIST';
+export type CustomerStatus = 'COOPERATING' | 'SUSPENDED' | 'BLACKLIST';
 
 export type SettleMode = 'INDEPENDENT' | 'GROUP';
 
@@ -90,6 +90,8 @@ export interface CustomerFormModel extends Partial<AreaColumns>, ScmLocation {
   /** 只读回显：编码由服务端生成，不进入写请求（见 `CustomerPayload`）。 */
   customerCode: string;
   name: string;
+  /** 客户状态；新建缺省为合作中，变更状态需要客户状态权限。 */
+  status?: CustomerStatus;
   /** 客户业务分类；null 表示未分类。 */
   businessCategoryId?: ScmId | null;
   /** 客户分组；分组价按分组生效，null 表示不参与分组定价。 */
@@ -106,6 +108,8 @@ export interface CustomerFormModel extends Partial<AreaColumns>, ScmLocation {
    * 后端是 Java `Long`，JSON 里本来就是 number，所以收窄成 number 也更贴近实际。
    */
   sellerId?: number | null;
+  /** 编辑时显式清空业务员；新建忽略。 */
+  clearSeller?: boolean;
   supplierId?: ScmId | null;
   contactName?: string | null;
   contactPhone?: string | null;
@@ -144,11 +148,23 @@ export interface CustomerRow extends CustomerFormModel {
   updatedAt: string;
 }
 
+/** 可售商品策略；ALL_ENABLED 时不落明细，ALLOWLIST 时按清单授权。 */
+export type CustomerVisibilityPolicy = 'ALL_ENABLED' | 'ALLOWLIST';
+
+/** 客户可售规格明细（对应 CustomerSkuVisibilityVO）。 */
+export interface CustomerSkuVisibilityItem {
+  id: number;
+  version: number;
+  skuId: ScmId;
+}
+
 /** 详情（对应 CustomerDetailVO，比列表行多出绑定供应商名与创建时间）。 */
 export interface CustomerDetail extends CustomerRow {
   supplierName?: string;
   settlementCustomerName?: string;
   createdAt?: string;
+  visibilityPolicy?: CustomerVisibilityPolicy;
+  visibilities?: CustomerSkuVisibilityItem[];
 }
 
 /** 下拉选项（对应 CustomerOptionVO）。 */

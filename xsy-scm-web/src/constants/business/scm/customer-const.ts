@@ -9,12 +9,11 @@ export const SETTLE_MODE_ENUM: SmartEnum<string> = {
 };
 
 /**
- * 客户状态：潜在 / 合作中 / 暂停合作 / 黑名单
+ * 客户状态：合作中 / 暂停合作 / 黑名单
  *
- * 只有「合作中」可交易（后端 `ScmCustomerStatusEnum.tradable()` 是唯一判定点）。
+ * 新建客户默认「合作中」；只有「合作中」可交易（后端 `ScmCustomerStatusEnum.tradable()` 是唯一判定点）。
  */
 export const CUSTOMER_STATUS_ENUM: SmartEnum<string> = {
-  POTENTIAL: {value: 'POTENTIAL', desc: '潜在'},
   COOPERATING: {value: 'COOPERATING', desc: '合作中'},
   SUSPENDED: {value: 'SUSPENDED', desc: '暂停合作'},
   BLACKLIST: {value: 'BLACKLIST', desc: '黑名单'},

@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import com.xsy.scm.common.constant.ScmCreditPeriodTypeEnum;
 import com.xsy.scm.common.constant.ScmCreditPeriodUnitEnum;
+import com.xsy.scm.common.constant.ScmCustomerStatusEnum;
 import com.xsy.scm.common.constant.ScmSettleModeEnum;
 import com.xsy.scm.common.domain.ScmPartyForm;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
@@ -22,7 +23,7 @@ import com.xsy.scm.customer.constant.CustomerVisibilityPolicy;
 import java.util.List;
 
 /**
- * 新客户默认是潜在客户，状态通过专门接口变更。客户编码由服务端生成，不接受客户端自行填写。
+ * 新客户默认是合作中；表单可直接带状态，但变更状态仍需客户状态权限。客户编码由服务端生成，不接受客户端自行填写。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -36,6 +37,10 @@ public class CustomerAddForm extends ScmPartyForm {
     @NotBlank(message = "客户名称不能为空")
     @Size(max = 150, message = "客户名称不能超过150个字符")
     private String name;
+
+    /** 缺省为 COOPERATING；改为其它状态需要客户状态权限。 */
+    @ScmEnumValue(enumClass = ScmCustomerStatusEnum.class, message = "客户状态无效")
+    private String status;
 
     @Positive(message = "客户分类必须大于0")
     private Long businessCategoryId;
@@ -51,6 +56,9 @@ public class CustomerAddForm extends ScmPartyForm {
 
     @Positive(message = "业务员 ID 必须大于0")
     private Long sellerId;
+
+    /** 编辑时显式清空业务员；仅 update 使用，add 忽略。 */
+    private Boolean clearSeller;
 
     @Positive(message = "供应商 ID 必须大于0")
     private Long supplierId;

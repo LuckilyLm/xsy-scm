@@ -219,6 +219,20 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     assert.doesNotMatch(DETAIL, /title:\s*'商品规格编码'/);
     assert.doesNotMatch(DETAIL, /title:\s*'商品规格状态'/);
   });
+
+  test('可售商品在详情内直接调整：策略切换、多选规格并回传已有明细 id/version', () => {
+    // 入口必须在「可售商品」Tab 内，不能又跳去另一个页面操作
+    assert.match(DETAIL, /调整可售商品/);
+    assert.match(DETAIL, /v-model:value="visibilityPolicy"/);
+    assert.match(DETAIL, /value="ALL_ENABLED"/);
+    assert.match(DETAIL, /value="ALLOWLIST"/);
+    assert.match(DETAIL, /<SkuSelect[\s\S]{0,240}mode="multiple"/);
+    assert.match(DETAIL, /customerVisibilityApi\.replace\(/);
+    // 保留的白名单行必须带回 id + version，否则服务端按新增处理或报版本冲突
+    assert.match(DETAIL, /existing\s*\?\s*\{id:\s*existing\.id,\s*version:\s*existing\.version,\s*skuId\}/);
+    // 只售指定规格时不允许空清单
+    assert.match(DETAIL, /visibilityPolicy\.value\s*===\s*'ALLOWLIST'\s*&&\s*visibilitySkuIds\.value\.length\s*===\s*0/);
+  });
 }
 
 // ---------------------------------------------------------------- 来源：customer-form-model.test.mjs
@@ -236,6 +250,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
   test('新建客户默认独立结算，授信额度是字符串零而不是数字零', () => {
     const form = emptyCustomer();
     assert.equal(form.settleMode, 'INDEPENDENT');
+    assert.equal(form.status, 'COOPERATING');
     // 关键：金额是 4 位定点字符串。如果这里变成数字 0，说明有人偷偷做了 Number() 运算。
     assert.equal(form.creditLimit, '0.0000');
     assert.equal(form.creditPeriodType, undefined);
@@ -370,6 +385,33 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     assert.equal(fresh.codAllowed, false);
     assert.equal(toCustomerPayload(fresh).codAllowed, false);
     assert.equal(toCustomerPayload({...fresh, codAllowed: true}).codAllowed, true);
+  });
+
+  test('客户状态与业务员随新增/编辑表单提交，列表不再保留独立动作', () => {
+    const payload = toCustomerPayload({
+      ...emptyCustomer(),
+      name: '客户甲',
+      status: 'COOPERATING',
+      clearSeller: true,
+    });
+    assert.equal(payload.status, 'COOPERATING');
+    assert.equal(payload.clearSeller, true);
+    assert.equal(emptyCustomer().clearSeller, false);
+
+    const drawer = readFileSync(new URL('../src/views/business/scm/customer/components/customer-form-drawer.vue', import.meta.url), 'utf8');
+    assert.match(drawer, /v-model:value="form\.status"/);
+    assert.match(drawer, /enum-name="CUSTOMER_STATUS_ENUM"/);
+    assert.match(drawer, /v-model:value="sellerValue"/);
+    assert.match(drawer, /form\.clearSeller = value == null/);
+
+    const list = readFileSync(new URL('../src/views/business/scm/customer/customer-list.vue', import.meta.url), 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    assert.doesNotMatch(list, /scm:customer:status/);
+    assert.doesNotMatch(list, /customerApi\.updateStatus/);
+    assert.doesNotMatch(list, /改派业务员/);
+    assert.doesNotMatch(list, /customerApi\.reassignSeller/);
   });
 }
 

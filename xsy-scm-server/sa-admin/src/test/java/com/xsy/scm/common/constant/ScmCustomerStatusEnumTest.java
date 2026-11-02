@@ -14,18 +14,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ScmCustomerStatusEnumTest {
 
     @Test
-    @DisplayName("四态齐备，取值域与 DB CHECK 一致")
-    void exposesExactlyFourStates() {
+    @DisplayName("三态齐备，取值域与 DB CHECK 一致")
+    void exposesExactlyThreeStates() {
         assertThat(ScmCustomerStatusEnum.values())
                 .extracting(Enum::name)
-                .containsExactlyInAnyOrder("POTENTIAL", "COOPERATING", "SUSPENDED", "BLACKLIST");
+                .containsExactlyInAnyOrder("COOPERATING", "SUSPENDED", "BLACKLIST");
     }
 
     @Test
     @DisplayName("只有 COOPERATING 可交易")
     void onlyCooperatingIsTradable() {
         assertThat(ScmCustomerStatusEnum.COOPERATING.tradable()).isTrue();
-        assertThat(ScmCustomerStatusEnum.POTENTIAL.tradable()).isFalse();
         assertThat(ScmCustomerStatusEnum.SUSPENDED.tradable()).isFalse();
         assertThat(ScmCustomerStatusEnum.BLACKLIST.tradable()).isFalse();
     }

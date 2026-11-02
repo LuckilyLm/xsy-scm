@@ -1,4 +1,4 @@
-<!-- 客户新建/编辑抽屉：状态只读，变更在列表里操作；上级客户只选集团。 -->
+<!-- 客户新建/编辑抽屉：状态随表单提交（需状态权限）；上级客户只选集团。 -->
 <template>
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('m')" @close="close">
     <a-spin :spinning="loading">
@@ -28,13 +28,10 @@
                 <CustomerGroupSelect v-model:value="form.customerGroupId" />
               </a-form-item>
             </a-col>
-            <a-col v-if="isEdit" :xs="24" :sm="12">
-              <a-form-item>
-                <template #label>
-                  客户状态
-                  <ScmFieldHelp label="客户状态" text="请在客户列表中变更状态" />
-                </template>
-                <div class="scm-form-readonly">{{ statusText }}</div>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="客户状态" name="status">
+                <SmartEnumSelect v-if="canChangeStatus" v-model:value="form.status" enum-name="CUSTOMER_STATUS_ENUM" width="100%" />
+                <div v-else class="scm-form-readonly">{{ statusText }}</div>
               </a-form-item>
             </a-col>
           </a-row>
@@ -49,10 +46,13 @@
               <a-form-item>
                 <template #label>
                   归属业务员
-                  <ScmFieldHelp label="归属业务员" :text="isEdit ? '请在客户列表中改派业务员' : '可留空，保存后暂不分配'" />
+                  <ScmFieldHelp
+                    label="归属业务员"
+                    :text="canAssign ? '留空则未分配；改派需要客户分配权限' : '当前账号没有改派权限，业务员只读展示'"
+                  />
                 </template>
-                <span v-if="isEdit" class="scm-form-readonly">{{ sellerName || '未分配' }}</span>
-                <EmployeeSelect v-else v-model:value="sellerValue" placeholder="请选择业务员" width="100%" />
+                <EmployeeSelect v-if="canAssign" v-model:value="sellerValue" placeholder="留空即未分配" width="100%" />
+                <span v-else class="scm-form-readonly">{{ sellerName || '未分配' }}</span>
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
@@ -245,7 +245,7 @@ import {message} from 'ant-design-vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {customerPromotionApi} from '/@/api/business/scm/customer-promotion-api';
-import type {CreditPeriodType, CreditPeriodUnit, CustomerFormModel, CustomerStatus, ScmId} from '/@/types/business/scm/customer';
+import type {CreditPeriodType, CreditPeriodUnit, CustomerFormModel, ScmId} from '/@/types/business/scm/customer';
 import {CUSTOMER_STATUS_ENUM} from '/@/constants/business/scm/customer-const';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
@@ -272,11 +272,11 @@ const saving = ref(false);
 const error = ref('');
 const formRef = ref<FormInstance>();
 
-/** 状态只读展示；新建时固定为「潜在」。 */
-const status = ref<CustomerStatus>('POTENTIAL');
-/** 负责人姓名只读；改派在列表里操作。 */
+/** 负责人姓名用于无分配权限时的只读展示。 */
 const sellerName = ref('');
 
+/** 状态随表单提交，但只有持状态权限的账号才能改；其余账号只读展示。 */
+const canChangeStatus = hasPermission('scm:customer:status');
 /** 没有分配权限时，新建客户默认归自己。 */
 const canAssign = computed(() => hasPermission('scm:customer:assign'));
 const canWarehouseUpdate = computed(
@@ -294,13 +294,17 @@ function onAreaChange(_value: unknown, nodes: AreaNode[]) {
 }
 
 const title = computed(() => (form.customerId ? '编辑客户' : '新增客户'));
-const statusText = computed(() => CUSTOMER_STATUS_ENUM[status.value]?.desc || status.value);
+const statusText = computed(() => {
+  const value = form.status ?? 'COOPERATING';
+  return CUSTOMER_STATUS_ENUM[value]?.desc || value;
+});
 
-/** 业务员下拉桥接：null 折成 undefined，避免类型报错。 */
+/** 业务员下拉桥接：null 折成 undefined；用户主动清空时把 clearSeller 一起提交。 */
 const sellerValue = computed<number | undefined>({
   get: () => form.sellerId ?? undefined,
   set: (value) => {
     form.sellerId = value ?? null;
+    form.clearSeller = value == null;
   },
 });
 const mallWarehouseValue = computed<string | number | undefined>({
@@ -317,7 +321,6 @@ async function open(customerId?: ScmId) {
   error.value = '';
   Object.assign(form, emptyCustomer());
   area.value = [];
-  status.value = 'POTENTIAL';
   sellerName.value = '';
   if (customerId == null) {
     await nextTick();
@@ -344,6 +347,7 @@ async function open(customerId?: ScmId) {
       version: detail.version,
       customerCode: detail.customerCode,
       name: detail.name,
+      status: detail.status,
       businessCategoryId: detail.businessCategoryId ?? null,
       customerGroupId: detail.customerGroupId ?? null,
       parentCustomerId: detail.parentCustomerId ?? null,
@@ -375,7 +379,6 @@ async function open(customerId?: ScmId) {
       settleDay: detail.settleDay ?? undefined,
       remark: detail.remark ?? '',
     });
-    status.value = detail.status;
     sellerName.value = detail.sellerName ?? '';
   } catch (e) {
     error.value = customerError(e);

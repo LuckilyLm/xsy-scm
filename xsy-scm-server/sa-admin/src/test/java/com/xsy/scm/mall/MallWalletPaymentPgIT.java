@@ -332,7 +332,7 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     // 夹具
     // ------------------------------------------------------------------
 
-    /** 新建的客户是「潜在」状态，不能交易；商城链路要求「合作中」。 */
+    /** 新建客户默认「合作中」，这里保留幂等确认，防止夹具后续被改成其它初始状态。 */
     private void cooperate(Long customerId) {
         var status = new com.xsy.scm.customer.domain.form.CustomerStatusForm();
         status.setCustomerId(customerId);
