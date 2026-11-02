@@ -78,7 +78,7 @@ try {
     $resultFile = Join-Path $reportRoot 'result.json'
     $writer = [IO.StreamWriter]::new((Join-Path $reportRoot 'readings.jsonl'), $false, [Text.UTF8Encoding]::new($false))
     $writer.AutoFlush = $true
-    Write-Host '鲜蔬园 · 实秤读数检查' -ForegroundColor Cyan
+    Write-Host '鲜蔬源 · 实秤读数检查' -ForegroundColor Cyan
     Write-Host ('使用 ' + $SerialPort + '，9600 / 8N1；请先关闭串口调试助手。')
     Write-Host '请依次：空秤 → 放物品并等待稳定 → 移除物品。'
     Write-Host ('观察 ' + $Seconds + ' 秒，按 Q 可提前结束。只读重量，不去皮、置零、保存业务或打印。')

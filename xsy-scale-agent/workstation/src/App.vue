@@ -28,7 +28,7 @@ onMounted(start);onUnmounted(dispose);
   <a-config-provider :locale="zhCN" :theme="theme">
     <div class="app-shell">
       <aside class="navigation">
-        <router-link to="/tasks" class="brand"><img src="/mark.svg" alt=""><span>鲜蔬园<small>分拣称重</small></span></router-link>
+        <router-link to="/tasks" class="brand"><img src="/mark.svg" alt=""><span>鲜蔬源<small>分拣称重</small></span></router-link>
         <div class="nav-caption">工作台</div>
         <nav aria-label="工作台导航">
           <router-link v-for="item in navigation" :key="item.path" :aria-label="item.label" :to="item.path==='/weigh'?rememberRoute():item.path" :class="['nav-item',{active:selected===item.path}]">
@@ -47,7 +47,7 @@ onMounted(start);onUnmounted(dispose);
           <template #action><a-button size="small" @click="start"><reload-outlined class="workstation-icon"/>重新连接</a-button></template>
         </a-alert>
         <main class="main-content"><router-view v-if="boot"/><div v-else class="startup panel"><a-spin size="large"/><h2>正在连接本机工作台</h2><p>请保持设备服务运行</p><a-button @click="start">重新连接</a-button></div></main>
-        <footer class="app-footer"><span>鲜蔬园 · 仓库分拣作业</span><span>本地保存优先 · 同步状态独立记录</span></footer>
+        <footer class="app-footer"><span>鲜蔬源 · 仓库分拣作业</span><span>本地保存优先 · 同步状态独立记录</span></footer>
       </div>
     </div>
     <a-modal v-model:open="sessionOpen" title="连接员工授权" ok-text="验证并进入" :confirm-loading="sessionBusy" @ok="connectSession">

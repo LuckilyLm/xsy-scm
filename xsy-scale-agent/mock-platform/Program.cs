@@ -117,7 +117,7 @@ if (fixture)
     app.MapPost("/test/network", (JsonElement body) =>
     { fixtureOnline = body.GetProperty("online").GetBoolean(); return Results.Ok(new { mode = "LOCAL_TEST", online = fixtureOnline }); });
     app.MapGet("/", () => Results.Content("""
-        <!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>鲜蔬园隔离演练控制台</title>
+        <!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>鲜蔬源隔离演练控制台</title>
         <style>body{font:18px 'Microsoft YaHei';max-width:700px;margin:60px auto;background:#f5f7fa}button,input{font:inherit;padding:16px;margin:8px;border:1px solid #ccd7e5;border-radius:6px}button{cursor:pointer;background:white}</style>
         <h1>隔离演练控制台</h1><p>仅改变测试替身，不读取真实秤、不发纸、不连接正式平台。</p>
         <input id="weight" value="5.000" aria-label="演练重量（斤）"><button onclick="scale(true)">设置稳定重量</button><button onclick="scale(false)">设置不稳定</button>

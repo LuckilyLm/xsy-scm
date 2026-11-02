@@ -3,7 +3,7 @@
     <!-- 左：品牌 + 运行状态 -->
     <div class="scm-header-side is-left">
       <div class="scm-brand">
-        <span class="scm-brand-name">鲜蔬园智链</span>
+        <span class="scm-brand-name">鲜蔬源智链</span>
       </div>
       <span class="scm-brand-divider" />
       <!-- 运行状态放在品牌旁，右侧空间留给时钟和按钮 -->

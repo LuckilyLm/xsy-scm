@@ -2,7 +2,7 @@
   "name": "xsy-scm-miniprogram",
   "version": "3.0.0",
   "private": true,
-  "description": "鲜蔬园智链 · 微信小程序（用户端，uni-app + Vue3 + Vite）",
+  "description": "鲜蔬源智链 · 微信小程序（用户端，uni-app + Vue3 + Vite）",
   "scripts": {
     "dev:h5": "uni",
     "dev:mp-weixin": "uni -p mp-weixin",

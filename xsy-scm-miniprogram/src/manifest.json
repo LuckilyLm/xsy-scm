@@ -1,7 +1,7 @@
 {
-    "name" : "鲜蔬园微信小程序",
+    "name" : "鲜蔬源微信小程序",
     "appid" : "",
-    "description" : "鲜蔬园智链 · 给用户使用的微信小程序",
+    "description" : "鲜蔬源智链 · 给用户使用的微信小程序",
     "versionName" : "1.0.0",
     "versionCode" : "100",
     "transformPx" : false,
@@ -30,7 +30,7 @@
         "__usePrivacyCheck__" : true
     },
     "h5" : {
-        "title" : "鲜蔬园"
+        "title" : "鲜蔬源"
     },
     "uniStatistics" : {
         "enable" : false

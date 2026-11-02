@@ -10,7 +10,7 @@
     <XsyBrandLockup :dark="sidebarStore.sideMenuTheme === 'dark'" />
   </div>
   <div class="min-logo" @click="onGoHome" v-if="collapsed">
-    <img class="logo-img" :src="logoMinImg" alt="鲜蔬园" />
+    <img class="logo-img" :src="logoMinImg" alt="鲜蔬源" />
   </div>
 
   <!-- 2、下方菜单区域： 这里使用一个递归菜单解决 -->

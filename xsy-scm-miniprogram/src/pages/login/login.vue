@@ -2,7 +2,7 @@
   <view class="login" :style="themeStyle">
     <view class="login__hero">
       <text class="login__mark">鲜</text>
-      <text class="login__title">鲜蔬园</text>
+      <text class="login__title">鲜蔬源</text>
       <text class="login__subtitle">客户专属商品与价格</text>
     </view>
     <view class="login__panel">
@@ -42,7 +42,7 @@
       >
         {{ submitting ? '登录中…' : '登录' }}
       </view>
-      <text class="login__help">账号由鲜蔬园后台管理员开通。如无法登录，请联系业务员。</text>
+      <text class="login__help">账号由鲜蔬源后台管理员开通。如无法登录，请联系业务员。</text>
     </view>
   </view>
 </template>

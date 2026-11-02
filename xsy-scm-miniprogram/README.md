@@ -1,4 +1,4 @@
-# 鲜蔬园微信小程序
+# 鲜蔬源微信小程序
 
 `xsy-scm-miniprogram/` 是给用户使用的正式微信小程序工作区，采用 uni-app + Vue 3 + Vite。旧 Taro/React 小程序已归档于 Git 历史；后续员工端使用独立工作区。
 

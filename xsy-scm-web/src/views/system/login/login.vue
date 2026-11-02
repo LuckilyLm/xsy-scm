@@ -7,9 +7,9 @@
   <div class="login-container">
     <div class="box-item desc">
       <div class="welcome">
-        <p>欢迎登录 鲜蔬园智链</p>
+        <p>欢迎登录 鲜蔬源智链</p>
         <p class="desc">
-          鲜蔬园智慧供应链管理平台，覆盖商品、客户、供应商、价格、销售订单、采购、收货、
+          鲜蔬源智慧供应链管理平台，覆盖商品、客户、供应商、价格、销售订单、采购、收货、
           仓储等全链路业务，支持客户专属定价、实际重量收货与订单全流程追溯。
           <br />
           <br />
@@ -19,7 +19,7 @@
             &nbsp;&nbsp;&nbsp;&nbsp;从客户下单、订单聚合、采购需求到实际称重收货、分拣发运， 用一套统一的业务链路串联起采购、销售与交付。
             <br />
             数据驱动决策，效率成就新鲜 !<br />
-            鲜蔬园，让好食材更快抵达 !<br />
+            鲜蔬源，让好食材更快抵达 !<br />
           </span>
         </p>
       </div>
@@ -104,7 +104,7 @@ onMounted(() => {
 
   notification['success']({
     message: '温馨提示',
-    description: '鲜蔬园智链 · 智慧供应链管理平台已就绪',
+    description: '鲜蔬源智链 · 智慧供应链管理平台已就绪',
     duration: 8,
     onClick: () => {},
   });

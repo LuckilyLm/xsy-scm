@@ -11,5 +11,5 @@ $agentPrincipal = New-ScheduledTaskPrincipal -UserId $agentUser -LogonType Inter
 $agentSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 3 `
     -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero)
 Register-ScheduledTask -TaskName 'XSY-ScaleAgent' -Action $agentAction -Trigger $agentTrigger `
-    -Principal $agentPrincipal -Settings $agentSettings -Description '鲜蔬园电子秤采集与打印服务' -Force | Out-Null
+    -Principal $agentPrincipal -Settings $agentSettings -Description '鲜蔬源电子秤采集与打印服务' -Force | Out-Null
 Write-Output '已为当前 Windows 用户配置登录自启；凭证和打印驱动应使用同一用户。'

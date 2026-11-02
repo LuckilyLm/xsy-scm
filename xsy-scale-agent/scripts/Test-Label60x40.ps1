@@ -43,7 +43,7 @@ namespace Xsy.Scale.Diagnostics
             {
                 // 四边保留2mm，实纸可直观看到裁切或驱动原点偏移。
                 graphics.DrawRectangle(pen, 2f, 2f, 56f, 36f);
-                graphics.DrawString("鲜蔬园 · 打印测试", title, Brushes.Black, new RectangleF(4f, 3f, 52f, 5.5f), format);
+                graphics.DrawString("鲜蔬源 · 打印测试", title, Brushes.Black, new RectangleF(4f, 3f, 52f, 5.5f), format);
                 graphics.DrawString("60×40毫米  中文 ABC 123", normal, Brushes.Black, new RectangleF(4f, 9f, 52f, 4f), format);
                 graphics.DrawString("示例净重 1.250 kg", weight, Brushes.Black, new RectangleF(4f, 14f, 52f, 6f), format);
                 graphics.DrawString("编号 " + testCode, small, Brushes.Black, new RectangleF(4f, 21f, 52f, 3.5f), format);
@@ -92,7 +92,7 @@ $result=[ordered]@{
 $document=$null
 $exitCode=1
 try {
-    Write-Host '鲜蔬园 · X7 60×40毫米标签测试' -ForegroundColor Cyan
+    Write-Host '鲜蔬源 · X7 60×40毫米标签测试' -ForegroundColor Cyan
     $bitmap=[Drawing.Bitmap]::new(709,472)
     try {
         $bitmap.SetResolution(300,300)

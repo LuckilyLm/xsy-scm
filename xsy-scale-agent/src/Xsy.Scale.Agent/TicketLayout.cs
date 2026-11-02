@@ -49,7 +49,7 @@ internal static class TicketLayout
         format.Trimming = StringTrimming.None;
         format.FormatFlags |= StringFormatFlags.NoClip;
         (string Text, Font Font)[] lines = compact
-            ? [($"鲜蔬园 · 第{snapshot.BasketNumber}筐" + (ticket.Reprint ? " · 补打" : ""), title), (status, normal),
+            ? [($"鲜蔬源 · 第{snapshot.BasketNumber}筐" + (ticket.Reprint ? " · 补打" : ""), title), (status, normal),
                 ("客户：" + (snapshot.CustomerName ?? "平台未提供"), normal),
                 (snapshot.ProductName + " / " + snapshot.SpecName, title),
                 ("净重 " + snapshot.NetWeight + " " + snapshot.Unit, weight),
@@ -57,7 +57,7 @@ internal static class TicketLayout
                 (snapshot.CapturedAt.ToOffset(TimeSpan.FromHours(8)).ToString("yyyy-MM-dd HH:mm:ss"), normal),
                 ("设备：" + snapshot.DeviceCode + "  皮重：" + (snapshot.TareWeight ?? "未知"), normal),
                 ("记录：" + snapshot.EventKey, normal)]
-            : [("鲜蔬园 · 称重凭条", title), (status, normal),
+            : [("鲜蔬源 · 称重凭条", title), (status, normal),
                 ((ticket.Reprint ? "补打 · " : "") + "第 " + snapshot.BasketNumber + " 筐", normal),
                 ("客户：" + (snapshot.CustomerName ?? "平台未提供"), normal),
                 ("订单：" + (snapshot.OrderNo ?? snapshot.TaskNo), normal),
@@ -100,7 +100,7 @@ internal static class TicketLayout
         var measured = new List<(string Text, Font Font, RectangleF Bounds)>();
         // 先完成所有测量，最后一次性画内容，避免发生半张票。
         foreach (var line in new[] {
-            ($"鲜蔬园 · 第{s.BasketNumber}筐" + (ticket.Reprint ? " · 补打" : ""), title),
+            ($"鲜蔬源 · 第{s.BasketNumber}筐" + (ticket.Reprint ? " · 补打" : ""), title),
             ((s.TemplateVersion == "HARDWARE_TEST_6040_TRACE_V2" ? "设备联动测试 · 非业务记录" : s.TestOnly ? "演练样张 · 不出纸" : "待同步 · 非平台正式单据") + SourceSuffix(s.EntrySource), normal),
             ("客户：" + (s.CustomerName ?? "平台未提供"), normal),
             (s.ProductName + " / " + s.SpecName, title) })

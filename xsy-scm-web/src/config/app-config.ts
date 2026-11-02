@@ -47,7 +47,7 @@ export const appDefaultConfig: Omit<AppConfig, 'fullScreenFlag'> = {
   // 水印
   watermarkFlag: false,
   // 网站名称
-  websiteName: '鲜蔬园智链',
+  websiteName: '鲜蔬源智链',
   // 主题颜色
   primaryColor: '#1677ff',
   // 紧凑

@@ -1,4 +1,4 @@
-# 鲜蔬园智链管理后台（xsy-scm-web）
+# 鲜蔬源智链管理后台（xsy-scm-web）
 
 SCM 管理后台前端，基于 Vue 3、TypeScript、Ant Design Vue、Vite 和 Pinia，并在 SmartAdmin 基础上改造。
 

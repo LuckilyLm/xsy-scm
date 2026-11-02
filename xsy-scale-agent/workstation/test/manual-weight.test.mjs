@@ -24,7 +24,7 @@ test('市斤实称与手输、触屏键盘、离线/断秤和未知结果恢复'
   async function open(){await page.getByRole('button',{name:'手工录入净重',exact:true}).click();await expect(page.getByRole('dialog',{name:'手工录入净重'})).toBeVisible();}
   async function shot(name,width){await page.setViewportSize({width,height:768});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:path.join(output,name+'.png'),fullPage:true,animations:'disabled'});}
   try{
-    await page.goto(base);assert.equal((await api('/workstation')).version,'0.4.1');assert((await page.title()).includes('鲜蔬园'));
+    await page.goto(base);assert.equal((await api('/workstation')).version,'0.4.1');assert((await page.title()).includes('鲜蔬源'));
     await page.getByRole('link',{name:/按商品分拣/}).click();await page.locator('.sorting-group').filter({hasText:'测试散装'}).click();
     await page.getByRole('button',{name:'领取并称重'}).first().click();
     const save=page.getByRole('button',{name:'记录上传并打印'});

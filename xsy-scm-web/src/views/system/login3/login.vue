@@ -13,10 +13,10 @@
   >
     <section class="xsy-login__shell">
       <aside class="xsy-login__brand">
-        <img class="xsy-login__logo" :src="logoImg" alt="鲜蔬园智链" />
+        <img class="xsy-login__logo" :src="logoImg" alt="鲜蔬源智链" />
 
         <div class="xsy-login__brand-copy">
-          <h1 class="xsy-login__headline">鲜蔬园智链</h1>
+          <h1 class="xsy-login__headline">鲜蔬源智链</h1>
           <p class="xsy-login__tagline">智慧供应链管理平台</p>
         </div>
 
@@ -49,7 +49,7 @@
       <section class="xsy-login__panel">
         <header class="xsy-login__header">
           <h2 class="xsy-login__title">欢迎回来</h2>
-          <p class="xsy-login__subtitle">登录鲜蔬园智链管理后台</p>
+          <p class="xsy-login__subtitle">登录鲜蔬源智链管理后台</p>
         </header>
 
         <a-form ref="formRef" class="xsy-login__form" layout="vertical" :model="loginForm" :rules="rules">
@@ -102,7 +102,7 @@
       </section>
     </section>
 
-    <footer class="xsy-login__footer">© 2026 鲜蔬园智慧供应链管理平台</footer>
+    <footer class="xsy-login__footer">© 2026 鲜蔬源智慧供应链管理平台</footer>
   </main>
 </template>
 <script setup lang="ts">

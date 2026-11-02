@@ -43,7 +43,7 @@ internal static class WindowsTicketOutput
         document.PrinterSettings.PrinterName = ticket.PrinterName;
         document.PrinterSettings.Copies = 1;
         if (!document.PrinterSettings.IsValid) throw new AgentFault("PRINTER_UNAVAILABLE", "Windows打印队列不可用");
-        document.DocumentName = "鲜蔬园待同步称重凭条-" + ticket.Snapshot.BasketNumber;
+        document.DocumentName = "鲜蔬源待同步称重凭条-" + ticket.Snapshot.BasketNumber;
         document.PrintController = new StandardPrintController();
         var paper = document.PrinterSettings.PaperSizes.Cast<PaperSize>().FirstOrDefault(size =>
             Math.Abs(size.Width * .254 - ticket.PaperWidthMm) < .6 && Math.Abs(size.Height * .254 - ticket.PaperHeightMm) < .6);

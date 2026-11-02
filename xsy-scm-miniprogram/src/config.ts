@@ -4,7 +4,7 @@
  */
 export const API_BASE: string = process.env.TARO_APP_API_BASE || 'https://api.example.com'
 
-export const APP_NAME = '鲜蔬园'
+export const APP_NAME = '鲜蔬源'
 
 /** 结算幂等键过期时间（毫秒），用于避免重复提交。 */
 export const IDEMPOTENCY_TTL = 5 * 60 * 1000
