@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import net.lab1024.sa.base.common.annoation.NoNeedLogin;
 import net.lab1024.sa.base.common.constant.RequestHeaderConst;
 import net.lab1024.sa.base.common.controller.SupportBaseController;
 import net.lab1024.sa.base.common.domain.RequestUser;
@@ -56,6 +57,7 @@ public class FileController extends SupportBaseController {
     }
 
     @Operation(summary = "获取文件URL：根据fileKey")
+    @NoNeedLogin
     @GetMapping("/file/getFileUrl")
     public ResponseDTO<String> getUrl(@RequestParam String fileKey) {
         fileAccessGuard.checkRead(fileKey, SmartRequestUtil.getRequestUser());
@@ -63,6 +65,7 @@ public class FileController extends SupportBaseController {
     }
 
     @Operation(summary = "下载文件流（根据fileKey）")
+    @NoNeedLogin
     @GetMapping("/file/downLoad")
     public void downLoad(@RequestParam String fileKey, HttpServletRequest request, HttpServletResponse response) throws IOException {
         fileAccessGuard.checkRead(fileKey, SmartRequestUtil.getRequestUser());

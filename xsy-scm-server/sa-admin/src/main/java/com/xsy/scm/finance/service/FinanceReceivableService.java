@@ -1,5 +1,6 @@
 package com.xsy.scm.finance.service;
 
+import com.xsy.scm.common.util.ScmDiscountShares;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.finance.constant.FinanceConstant;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
@@ -394,8 +395,7 @@ public class FinanceReceivableService {
      */
     static BigDecimal discountShare(Long orderItemId, BigDecimal lineAmount, BigDecimal orderedLineAmount,
         Map<Long, BigDecimal> orderLineDiscounts) {
-        return com.xsy.scm.promotion.support.PromotionDiscountAllocator.proratedShare(lineAmount, orderedLineAmount,
-            orderLineDiscounts.get(orderItemId));
+        return ScmDiscountShares.proratedShare(lineAmount, orderedLineAmount, orderLineDiscounts.get(orderItemId));
     }
 
     private FinanceReceivableItemEntity newItem(String operator, OffsetDateTime now) {

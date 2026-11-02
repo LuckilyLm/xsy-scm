@@ -300,18 +300,19 @@ class ProductPgIT {
         conflict(() -> service.add(form), 40026);
     }
     /**
-     * 私有目录的 key 在文件模块里真实存在，绑定它等于把他人附件晋升为所有商品查看者可读，因此必须拒绝。
+     * 通用目录的 key 虽然在文件模块里真实存在（且同样公开），但它不是图片中心上传的商品图，
+     * 绑定会绕过图片中心的校验，因此必须拒绝。
      */
-    @Test void rejectsBindingPrivateDirectoryImage() {
+    @Test void rejectsBindingNonImageDirectoryImage() {
         var form=product(); form.setImages(new ArrayList<>(List.of(upload("w1-private.png",FileFolderTypeEnum.COMMON.getValue()))));
         conflict(() -> service.add(form),40038);
     }
     /**
-     * 商品图只能引用 public 前缀，两层各自取证：换绑私有 key 由 Java 侧拒绝（40038，前端提示可定位），
-     * 绕过服务层直写私有 key 由数据库 CHECK 拒绝 —— 只有 Java 判断时，任何旁路写入都能重新造出
-     * 「私有 key 的活商品图」，而读侧会按公开资产把它展示给所有查看者。
+     * 商品图只能引用 public/image/ 前缀，两层各自取证：换绑其它目录由 Java 侧拒绝（40038，前端提示可定位），
+     * 绕过服务层直写由数据库 CHECK 拒绝 —— 只有 Java 判断时，任何旁路写入都能重新造出
+     * 「非商品图目录的活商品图」，而读侧会按商品资产把它展示给所有查看者。
      */
-    @Test void rejectsPrivateKeyOnBothLayers() {
+    @Test void rejectsNonImageDirectoryKeyOnBothLayers() {
         var legacyKey=upload("w1-legacy-private.png",FileFolderTypeEnum.COMMON.getValue()).getFileKey();
         var form=product(); form.setImages(new ArrayList<>(List.of(upload("w1-public.png"))));
         Long id=service.add(form);

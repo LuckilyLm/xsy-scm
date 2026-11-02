@@ -66,6 +66,24 @@ public class SecurityFileService {
     }
 
     /**
+     * 公开目录专用校验：大小 + 文件内容必须在白名单内。
+     *
+     * <p>公开对象会以静态地址直接对外提供，不能跟随「文件安全检测」开关一起关闭，
+     * 否则任意 HTML/脚本都能挂到 API 域名下执行。
+     */
+    public ResponseDTO<String> checkPublicFile(MultipartFile file) {
+        ResponseDTO<String> sizeCheck = checkFileSize(file);
+        if (!sizeCheck.getOk()) {
+            return sizeCheck;
+        }
+        String fileType = getFileMimeType(file);
+        if (ALLOWED_MIME_TYPES.stream().noneMatch(allowedType -> matchesMimeType(fileType, allowedType))) {
+            return ResponseDTO.userErrorParam("禁止上传此文件类型");
+        }
+        return ResponseDTO.ok();
+    }
+
+    /**
      * 图片目录专用校验：大小 + 文件内容必须是受支持的图片。
      *
      * <p>SVG 能内嵌脚本，不纳入白名单；扩展名不可信，统一用 Tika 识别真实 MIME。

@@ -16,7 +16,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** 私有文件仅允许管理员、拥有业务对象查看权限的人或上传者本人读取。目录前缀不能代替授权检查。 */
+/**
+ * 文件读取判定：{@code public/} 前缀对所有调用者开放（包括未登录请求）；
+ * 存量 {@code private/} 文件仍只允许管理员、拥有业务对象查看权限的人或上传者本人读取。
+ *
+ * <p>2026-11-02 起新上传全部落在 {@code public/}，私有分支只服务改造前的存量文件与后续敏感资料。
+ */
 @Component
 public class FileAccessGuard {
 
@@ -33,8 +38,7 @@ public class FileAccessGuard {
     }
 
     public void checkRead(String keys, RequestUser user) {
-        if (keys == null || user == null || user.getUserId() == null
-                || user.getUserType() != UserTypeEnum.ADMIN_EMPLOYEE) {
+        if (keys == null) {
             throw new AccessDenied();
         }
         List<String> keyList = List.of(keys.split(",", -1));
@@ -55,8 +59,7 @@ public class FileAccessGuard {
      * through one path is readable through the other and vice versa.
      */
     public List<String> filterReadable(List<String> keys, RequestUser user) {
-        if (keys == null || keys.isEmpty() || user == null || user.getUserId() == null
-                || user.getUserType() != UserTypeEnum.ADMIN_EMPLOYEE) {
+        if (keys == null || keys.isEmpty()) {
             return List.of();
         }
         Map<String, List<FileRelationEntity>> relations = loadRelations(keys);
@@ -84,19 +87,10 @@ public class FileAccessGuard {
         return byKey;
     }
 
-    /** key 是否落在上传白名单声明的私有目录下；不在白名单里的前缀一律不放行。 */
+    /** key 是否落在存量私有目录白名单内；未知的 private/ 子目录仍然失败关闭。 */
     private boolean isManagedPrivate(String key) {
         return FileKeyPolicy.isValid(key) && !key.endsWith("/")
-                && folderOf(key) != null && folderOf(key).startsWith(FileFolderTypeEnum.FOLDER_PRIVATE);
-    }
-
-    private String folderOf(String key) {
-        for (FileFolderTypeEnum folder : FileFolderTypeEnum.values()) {
-            if (key.startsWith(folder.getFolder())) {
-                return folder.getFolder();
-            }
-        }
-        return null;
+                && FileFolderTypeEnum.LEGACY_PRIVATE_FOLDERS.stream().anyMatch(key::startsWith);
     }
 
     private boolean canRead(String key, RequestUser user, Map<String, List<FileRelationEntity>> relations) {
@@ -106,7 +100,8 @@ public class FileAccessGuard {
         if (key.startsWith(FileFolderTypeEnum.FOLDER_PUBLIC + "/")) {
             return true;
         }
-        if (!isManagedPrivate(key)) {
+        if (!isManagedPrivate(key) || user == null || user.getUserId() == null
+                || user.getUserType() != UserTypeEnum.ADMIN_EMPLOYEE) {
             return false;
         }
         if (identity.canReadAllFiles(user)) {

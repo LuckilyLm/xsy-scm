@@ -71,7 +71,8 @@ class FileAccessGuardTest {
     @Test
     void publicFolderNeedsNoAuthorizationLookup() {
         assertThatCode(() -> guard.checkRead("public/a.png", employee)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> guard.checkRead("public/a.png", null)).isInstanceOf(FileAccessGuard.AccessDenied.class);
+        // 公开对象要能被未登录的客户页直接取用，不再要求先有员工身份。
+        assertThatCode(() -> guard.checkRead("public/a.png", null)).doesNotThrowAnyException();
         verifyNoInteractions(dao, identity, relations);
     }
 
@@ -195,8 +196,10 @@ class FileAccessGuardTest {
     }
 
     @Test
-    void filterReadableReturnsEmptyRatherThanThrowingWithNoAuthenticatedCaller() {
-        assertThat(guard.filterReadable(List.of("public/a"), null)).isEmpty();
+    void filterReadableServesPublicKeysWithoutACallerButDropsPrivateOnes() {
+        assertThat(guard.filterReadable(List.of("public/a"), null)).containsExactly("public/a");
+        assertThat(guard.filterReadable(List.of("public/a", "private/common/a.png"), null))
+                .containsExactly("public/a");
         assertThat(guard.filterReadable(null, employee)).isEmpty();
         assertThat(guard.filterReadable(List.of(), employee)).isEmpty();
     }

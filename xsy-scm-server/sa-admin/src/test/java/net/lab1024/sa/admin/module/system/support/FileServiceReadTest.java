@@ -105,12 +105,14 @@ class FileServiceReadTest {
     }
 
     @Test
-    void controlledEntryWithoutACallerResolvesNothing() {
-        stubLookup(List.of(stored("public/a.png", null)));
+    void controlledEntryWithoutACallerResolvesPublicFilesOnly() {
+        stubLookup(List.of(stored("public/a.png", null), stored("private/common/b.png", 44L)));
         stubStorageUrl();
 
-        assertThat(fileService.getFileList(List.of("public/a.png"), null)).isEmpty();
-        verify(storage, never()).getFileUrl(anyString());
+        assertThat(fileService.getFileList(List.of("public/a.png", "private/common/b.png"), null))
+                .extracting(FileVO::getFileKey).containsExactly("public/a.png");
+        verify(storage).getFileUrl("public/a.png");
+        verify(storage, never()).getFileUrl("private/common/b.png");
     }
 
     @Test

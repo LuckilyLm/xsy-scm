@@ -88,10 +88,11 @@ public class FileService {
             return ResponseDTO.userErrorParam("文件名称最大长度为：" + FILE_NAME_MAX_LENGTH);
         }
 
-        // 校验文件大小以及安全性；公开图片目录无论全局检测开关如何，都必须是真实图片
+        // 2026-11-02 起所有目录都落在 public/，对象会以静态地址对外提供：
+        // 图片目录必须是真实图片，其余目录也必须在文件白名单内，不跟随全局检测开关关闭。
         ResponseDTO<String> validateFile = folderTypeEnum == FileFolderTypeEnum.PUBLIC_IMAGE
                 ? securityFileService.checkImageFile(file)
-                : securityFileService.checkFile(file);
+                : securityFileService.checkPublicFile(file);
         if (!validateFile.getOk()) {
             return ResponseDTO.error(validateFile);
         }

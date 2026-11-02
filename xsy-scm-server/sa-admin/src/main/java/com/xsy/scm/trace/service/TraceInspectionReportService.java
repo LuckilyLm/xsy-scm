@@ -25,6 +25,7 @@ import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.module.support.file.constant.FileRelationBizTypeEnum;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileVO;
 import net.lab1024.sa.base.module.support.file.service.FileAccessGuard;
+import net.lab1024.sa.base.module.support.file.service.FileKeyPolicy;
 import net.lab1024.sa.base.module.support.file.service.FileRelationService;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.springframework.dao.DuplicateKeyException;
@@ -203,8 +204,9 @@ public class TraceInspectionReportService {
 
     private List<String> validateFiles(List<String> fileKeys, boolean publishing) {
         List<String> keys = fileKeys.stream().map(String::trim).distinct().toList();
+        // 新上传落 public/，改造前的报告仍可能引用 private/；两者都必须是合法文件 key。
         if (keys.size() > 20 || (publishing && keys.isEmpty())
-            || keys.stream().anyMatch(key -> !key.startsWith("private/"))) {
+            || keys.stream().anyMatch(key -> !FileKeyPolicy.isValid(key))) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_REPORT_FILE_INVALID);
         }
         if (keys.isEmpty()) {

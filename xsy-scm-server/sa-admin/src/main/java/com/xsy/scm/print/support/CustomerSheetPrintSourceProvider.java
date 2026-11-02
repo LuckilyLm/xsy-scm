@@ -1,11 +1,11 @@
 package com.xsy.scm.print.support;
 
+import com.xsy.scm.common.util.ScmDiscountShares;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
 import com.xsy.scm.order.manager.OrderAmountCalculator;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
-import com.xsy.scm.promotion.support.PromotionDiscountAllocator;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -116,8 +116,7 @@ public abstract class CustomerSheetPrintSourceProvider extends ScmOrderPrintSour
         if (gross == null) {
             return null;
         }
-        return gross
-            .subtract(PromotionDiscountAllocator.proratedShare(gross, item.getOrderedLineAmount(), allocatedDiscount));
+        return gross.subtract(ScmDiscountShares.proratedShare(gross, item.getOrderedLineAmount(), allocatedDiscount));
     }
 
     /** 子类用来声明负责的单据类型，避免两个实现复制字段定义。 */

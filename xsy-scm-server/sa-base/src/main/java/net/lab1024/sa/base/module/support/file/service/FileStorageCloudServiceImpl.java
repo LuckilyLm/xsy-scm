@@ -35,7 +35,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 云计算 实现
@@ -58,6 +60,9 @@ public class FileStorageCloudServiceImpl implements IFileStorageService {
      * 自定义元数据 文件大小
      */
     private static final String USER_METADATA_FILE_SIZE = "file-size";
+
+    /** 图片对象需要内联展示；其它公开文件仍以下载方式返回。 */
+    private static final Set<String> INLINE_IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "gif", "bmp", "webp");
 
     @Resource
     private S3Client s3Client;
@@ -109,8 +114,8 @@ public class FileStorageCloudServiceImpl implements IFileStorageService {
                 .metadata(userMetadata)
                 .contentLength(file.getSize())
                 .contentType(this.getContentType(fileType))
-                // 图片需要在 HTTPS 页面内联展示；二进制对象不能声明 UTF-8 内容编码。
-                .contentDisposition(path.startsWith("public/image/")
+                // 图片需要在 HTTPS 页面内联展示；其它公开文件仍以下载方式返回。
+                .contentDisposition(INLINE_IMAGE_EXTENSIONS.contains(fileType.toLowerCase(Locale.ROOT))
                         ? "inline;filename=" + urlEncoderFilename
                         : "attachment;filename=" + urlEncoderFilename);
         if (cloudConfig.isCloudSendObjectAcl()) {

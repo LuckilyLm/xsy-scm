@@ -96,7 +96,7 @@ public class ProductImageSyncManager {
     }
 
     /**
-     * 商品只能绑定文件模块确认存在的公开图片，不允许把他人的私有附件设为商品图片。
+     * 商品只能绑定图片中心上传的公开图片；其它公开目录（公告附件、反馈截图等）不能充当商品图。
      */
     private void requirePublicImageKey(ProductImageForm form) {
         if (!form.getFileKey().startsWith(PUBLIC_IMAGE_FOLDER)) {

@@ -265,7 +265,7 @@ class ProductImageCenterPgIT {
     }
 
     @Test
-    void rejectsBindingPrivateDirectoryKey() {
+    void rejectsBindingNonImageDirectoryKey() {
         Long spuId = newSpu();
         byte[] png = Base64.getDecoder().decode(
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=");
