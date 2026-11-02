@@ -12,7 +12,6 @@
       >
     </a-row>
   </a-form>
-  <p class="scm-note">按月核对客户收入、成本与费用后计算利润。</p>
   <a-alert v-if="error" type="error" show-icon :message="error"
     ><template #action><a-button @click="load">重试</a-button></template></a-alert
   >
@@ -282,6 +281,16 @@ const columns = ref<TableColumnsType<CustomerMonthlyProfitRow>>([
     ...amountFields,
     {key: 'expenseAmount', label: '费用合计'},
     {key: 'netProfit', label: '扣费后利润'},
+    {key: 'statementAmount', label: '对账金额'},
+    {key: 'paidAmount', label: '实付金额'},
+    {key: 'unpaidAmount', label: '未付金额'},
+    {key: 'invoiceAmount', label: '开票金额'},
+    {key: 'postingAmount', label: '过账金额'},
+    {key: 'postingTaxAmount', label: '过账税金'},
+    {key: 'actualGoodsAmount', label: '实际货款'},
+    {key: 'invoiceTaxAmount', label: '1%专票税费'},
+    {key: 'serviceFeeAmount', label: '6%服务费'},
+    {key: 'statementProfit', label: '利润'},
   ].map((field) => ({title: field.label, dataIndex: field.key, width: 144})),
   {title: '成本状态', dataIndex: 'costMissingCount', width: 110},
   {title: '操作', dataIndex: 'action', width: 100, fixed: 'right', align: 'center'},

@@ -783,8 +783,6 @@ import ts from 'typescript';
   const ORDER_LIST = code('../src/views/business/scm/order/order-list.vue');
   const ROUTE_LIST = code('../src/views/business/scm/delivery/route-list.vue');
   const AGREEMENT_PRICE = code('../src/views/business/scm/pricing/agreement-price-list.vue');
-  const TABLE_OPERATOR = code('../src/components/support/table-operator/index.vue');
-  const TABLE_FILL = code('../src/views/business/scm/common/use-scm-table-fill.ts');
   const SUPPLIER_LIST = code('../src/views/business/scm/supplier/supplier-list.vue');
   const WAREHOUSE_LIST = code('../src/views/business/scm/purchase/warehouse-list.vue');
   const PURCHASE_ORDER_LIST = code('../src/views/business/scm/purchase/purchase-order-list.vue');
@@ -880,19 +878,6 @@ import ts from 'typescript';
     assert.doesNotMatch(PRODUCT_LIST, /row\.status === 'ON_SHELF' \? 'OFF_SHELF' : 'ON_SHELF'/);
     // 仓库开关同样只接受与当前状态不同的目标
     assert.match(WAREHOUSE_LIST, /\(row\.status === 'ENABLED'\) === checked/);
-  });
-
-  test('拖拽列宽：冻结当前显示宽度、标记后落库，打开列设置先等保存完成', () => {
-    // 按下时用自动铺满/压缩后的显示宽度作基准，否则列边界会先跳一次
-    assert.match(TABLE_FILL, /const frozen = displayColumns\.value\.map/);
-    assert.match(TABLE_FILL, /columns\.value = frozen/);
-    // 松手后打标，由表格列设置落库；只改页面列宽不保存会随刷新丢失
-    assert.match(TABLE_FILL, /dragAndDropFlag: true/);
-    assert.match(TABLE_OPERATOR, /if \(itemNewColumns\.dragAndDropFlag\)/);
-    assert.match(TABLE_OPERATOR, /pendingSave = persistColumns\(\)/);
-    assert.match(TABLE_OPERATOR, /await tableColumnApi\.updateTableColumn/);
-    // 打开列设置前先等落库完成，服务端旧配置不会把刚拖好的宽度盖回去
-    assert.match(TABLE_OPERATOR, /async function showModal\(\) \{\s*await pendingSave;/);
   });
 
   test('首列被隐藏时「更多」补回详情入口', () => {

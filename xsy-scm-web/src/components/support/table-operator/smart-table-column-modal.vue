@@ -131,8 +131,6 @@ function hide() {
   visible.value = false;
 }
 
-const saveFlag = ref(false);
-
 //获取用户的列数据
 async function getUserTableColumns(tableId: number | string | null, columns: unknown[]) {
   if (!tableId) {
@@ -158,15 +156,11 @@ async function getUserTableColumns(tableId: number | string | null, columns: unk
   //根据前端列和后端列构建新的列数据
   let obj = mergeColumn(columns, userTableColumnArray, tableId);
   tableData.value = obj.newColumns;
-  saveFlag.value = obj.saveFlag;
   //将已经显示的展示出来
   for (const item of tableData.value) {
     if (item.showFlag) {
       selectedRowKeyList.value.push(item.columnKey);
     }
-  }
-  if (saveFlag.value) {
-    save(false);
   }
 
   nextTick(() => {

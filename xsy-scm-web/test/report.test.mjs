@@ -892,3 +892,30 @@ import {
     }
   });
 }
+
+// ---------------------------------------------------------------- 客户月利润对账口径
+{
+  const page = readFileSync(
+    new URL('../src/views/business/scm/report/report-customer-monthly-profit.vue', import.meta.url),
+    'utf8'
+  );
+  const api = readFileSync(new URL('../src/api/business/scm/finance-profit-api.ts', import.meta.url), 'utf8');
+
+  test('客户月利润展示对账派生列，公式只由服务端计算', () => {
+    for (const key of [
+      'statementAmount',
+      'paidAmount',
+      'unpaidAmount',
+      'invoiceAmount',
+      'postingAmount',
+      'postingTaxAmount',
+      'actualGoodsAmount',
+      'invoiceTaxAmount',
+      'serviceFeeAmount',
+      'statementProfit',
+    ]) {
+      assert.match(page, new RegExp(`key: '${key}'`));
+      assert.match(api, new RegExp(`${key}: string`));
+    }
+  });
+}

@@ -24,7 +24,6 @@ const legacyDefaults: Record<number, Record<string, readonly number[]>> = {
 
 /** 将页面默认列和已保存的个人列设置合并、排序。 */
 export function mergeColumn(originalTableColumnArray, userTableColumnArray, tableId?: number | string) {
-  let saveFlag = false;
   if (!userTableColumnArray) {
     return originalTableColumnArray;
   }
@@ -49,14 +48,9 @@ export function mergeColumn(originalTableColumnArray, userTableColumnArray, tabl
     if (userColumn) {
       fontColumn.sort = userColumn.sort;
       fontColumn.showFlag = userColumn.showFlag;
-      if (fontColumn.dragAndDropFlag) {
-        saveFlag = true;
-        delete fontColumn.dragAndDropFlag;
-      } else {
-        const knownDefaults = tableId == null ? [] : legacyDefaults[Number(tableId)]?.[fontColumn.columnKey] ?? [];
-        if (userColumn.width && !knownDefaults.includes(Number(userColumn.width))) {
-          fontColumn.width = userColumn.width;
-        }
+      const knownDefaults = tableId == null ? [] : legacyDefaults[Number(tableId)]?.[fontColumn.columnKey] ?? [];
+      if (userColumn.width && !knownDefaults.includes(Number(userColumn.width))) {
+        fontColumn.width = userColumn.width;
       }
     }
     newColumns.push(fontColumn);
@@ -90,8 +84,5 @@ export function mergeColumn(originalTableColumnArray, userTableColumnArray, tabl
   newColumns.forEach((column: any, index: number) => {
     column.sort = index + 1;
   });
-  return {
-    newColumns,
-    saveFlag,
-  };
+  return {newColumns};
 }

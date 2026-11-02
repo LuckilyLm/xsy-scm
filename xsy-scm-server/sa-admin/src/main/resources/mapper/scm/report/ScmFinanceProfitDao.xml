@@ -534,6 +534,24 @@
             WHERE expense.expense_month = #{query.startDate}
                 AND NOT EXISTS (SELECT 1 FROM xsy_finance_customer_expense_void v WHERE v.expense_id = expense.id)
             GROUP BY expense.customer_id
+        ), monthly_receipts AS (
+            SELECT receipt.customer_id,
+                SUM(CASE WHEN receipt.entry_type = 'NORMAL' THEN receipt.amount ELSE -receipt.amount END) AS receipt_net
+            FROM xsy_finance_receipt receipt
+            WHERE NOT receipt.deleted
+                AND receipt.entry_type IN ('NORMAL', 'REVERSE')
+                AND receipt.received_at &gt;= #{startAt} AND receipt.received_at &lt; #{endAt}
+            GROUP BY receipt.customer_id
+        ), monthly_postings AS (
+            SELECT posting.customer_id, SUM(posting.amount) AS posting_amount,
+                SUM(ROUND(posting.amount * COALESCE(posting.tax_rate, 0) / 100, 4)) AS posting_tax_amount
+            FROM xsy_finance_posting posting
+            WHERE NOT posting.deleted
+                AND posting.document_date &gt;= #{query.startDate}
+                AND posting.document_date &lt;= #{query.endDate}
+                AND NOT EXISTS (SELECT 1 FROM xsy_finance_posting_void v
+                    WHERE v.posting_id = posting.id AND NOT v.deleted)
+            GROUP BY posting.customer_id
         ), monthly_base AS (
             SELECT c.id AS dimension_id, c.name AS dimension_name, COALESCE(p.revenue_amount, 0) AS revenue_amount,
                 CASE WHEN p.customer_id IS NOT NULL AND e.goods_cost_amount IS NULL THEN NULL
@@ -541,8 +559,12 @@
                 0::NUMERIC AS gift_cost_amount,
                 CASE WHEN p.customer_id IS NOT NULL AND e.goods_cost_amount IS NULL THEN 1::BIGINT ELSE 0::BIGINT END AS cost_missing_count,
                 COALESCE(e.tax_amount, 0) AS tax_amount, COALESCE(e.service_amount, 0) AS service_amount,
-                COALESCE(e.freight_amount, 0) AS freight_amount, COALESCE(e.commission_amount, 0) AS commission_amount
+                COALESCE(e.freight_amount, 0) AS freight_amount, COALESCE(e.commission_amount, 0) AS commission_amount,
+                COALESCE(r.receipt_net, 0) AS paid_amount, COALESCE(po.posting_amount, 0) AS posting_amount,
+                COALESCE(po.posting_tax_amount, 0) AS posting_tax_amount
             FROM monthly_revenue p FULL JOIN monthly_expenses e ON e.customer_id = p.customer_id
+            LEFT JOIN monthly_receipts r ON r.customer_id = COALESCE(p.customer_id, e.customer_id)
+            LEFT JOIN monthly_postings po ON po.customer_id = COALESCE(p.customer_id, e.customer_id)
             JOIN xsy_customer c ON c.id = COALESCE(p.customer_id, e.customer_id) AND NOT c.deleted
             WHERE TRUE
             <choose>
@@ -561,7 +583,18 @@
                 CASE WHEN cost_missing_count &gt; 0 THEN NULL
                     ELSE revenue_amount - sales_cost_amount END AS gross_profit,
                 CASE WHEN cost_missing_count &gt; 0 THEN NULL
-                    ELSE revenue_amount - sales_cost_amount - tax_amount - service_amount - freight_amount - commission_amount END AS net_profit
+                    ELSE revenue_amount - sales_cost_amount - tax_amount - service_amount - freight_amount - commission_amount END AS net_profit,
+                revenue_amount + posting_amount AS statement_amount,
+                revenue_amount + posting_amount - paid_amount AS unpaid_amount,
+                revenue_amount + posting_amount AS invoice_amount,
+                revenue_amount + posting_amount - posting_amount - posting_tax_amount AS actual_goods_amount,
+                ROUND((revenue_amount + posting_amount) * 0.01, 4) AS invoice_tax_amount,
+                ROUND((revenue_amount + posting_amount) * 0.06, 4) AS service_fee_amount,
+                CASE WHEN cost_missing_count &gt; 0 THEN NULL
+                    ELSE ROUND(revenue_amount + posting_amount - sales_cost_amount
+                        - (revenue_amount + posting_amount) * 0.01
+                        - (revenue_amount + posting_amount) * 0.06 - freight_amount - commission_amount,
+                        4) END AS statement_profit
             FROM monthly_base
         )
     </sql>
@@ -580,7 +613,17 @@
             COALESCE(SUM(freight_amount), 0) AS freight_amount, COALESCE(SUM(commission_amount), 0) AS commission_amount,
             COALESCE(SUM(expense_amount), 0) AS expense_amount, COALESCE(SUM(cost_missing_count), 0) AS cost_missing_count,
             CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL ELSE COALESCE(SUM(gross_profit), 0) END AS gross_profit,
-            CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL ELSE COALESCE(SUM(net_profit), 0) END AS net_profit
+            CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL ELSE COALESCE(SUM(net_profit), 0) END AS net_profit,
+            COALESCE(SUM(statement_amount), 0) AS statement_amount,
+            COALESCE(SUM(paid_amount), 0) AS paid_amount,
+            COALESCE(SUM(unpaid_amount), 0) AS unpaid_amount,
+            COALESCE(SUM(invoice_amount), 0) AS invoice_amount,
+            COALESCE(SUM(posting_amount), 0) AS posting_amount,
+            COALESCE(SUM(posting_tax_amount), 0) AS posting_tax_amount,
+            COALESCE(SUM(actual_goods_amount), 0) AS actual_goods_amount,
+            COALESCE(SUM(invoice_tax_amount), 0) AS invoice_tax_amount,
+            COALESCE(SUM(service_fee_amount), 0) AS service_fee_amount,
+            CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL ELSE COALESCE(SUM(statement_profit), 0) END AS statement_profit
         FROM monthly_rows
     </select>
 </mapper>

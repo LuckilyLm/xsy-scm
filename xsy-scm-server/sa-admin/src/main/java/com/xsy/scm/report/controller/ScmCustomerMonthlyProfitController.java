@@ -32,7 +32,11 @@ public class ScmCustomerMonthlyProfitController {
         new Column("revenueAmount", "销售收入"), new Column("salesCostAmount", "实际商品成本"), new Column("grossProfit", "销售毛利"),
         new Column("taxAmount", "税费"), new Column("serviceAmount", "服务费"), new Column("freightAmount", "运费"),
         new Column("commissionAmount", "扣点金额"), new Column("expenseAmount", "费用合计"), new Column("netProfit", "扣费后利润"),
-        new Column("costMissingCount", "待确认成本数"));
+        new Column("statementAmount", "对账金额"), new Column("paidAmount", "实付金额"), new Column("unpaidAmount", "未付金额"),
+        new Column("invoiceAmount", "开票金额"), new Column("postingAmount", "过账金额"),
+        new Column("postingTaxAmount", "过账税金"), new Column("actualGoodsAmount", "实际货款"),
+        new Column("invoiceTaxAmount", "1%专票税费"), new Column("serviceFeeAmount", "6%服务费"),
+        new Column("statementProfit", "利润"), new Column("costMissingCount", "待确认成本数"));
     private final ScmCustomerMonthlyProfitService profitService;
 
     @PostMapping("/query")
@@ -69,7 +73,10 @@ public class ScmCustomerMonthlyProfitController {
         List<List<Object>> rows = profitService.export(form).stream()
             .map(row -> ScmExcel.row(titles, row.getDimensionName(), row.getRevenueAmount(), row.getSalesCostAmount(),
                 row.getGrossProfit(), row.getTaxAmount(), row.getServiceAmount(), row.getFreightAmount(),
-                row.getCommissionAmount(), row.getExpenseAmount(), row.getNetProfit(), row.getCostMissingCount()))
+                row.getCommissionAmount(), row.getExpenseAmount(), row.getNetProfit(), row.getStatementAmount(),
+                row.getPaidAmount(), row.getUnpaidAmount(), row.getInvoiceAmount(), row.getPostingAmount(),
+                row.getPostingTaxAmount(), row.getActualGoodsAmount(), row.getInvoiceTaxAmount(),
+                row.getServiceFeeAmount(), row.getStatementProfit(), row.getCostMissingCount()))
             .toList();
         ScmExportColumnSelection.writeSelected(response, "客户月利润.xlsx", "客户月利润", selection, rows);
     }
