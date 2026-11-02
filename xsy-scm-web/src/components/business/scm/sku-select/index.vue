@@ -31,6 +31,9 @@ import {productSkuApi} from '/@/api/business/scm/product-sku-api';
 import type {ScmId} from '/@/types/business/scm/customer';
 import type {SkuOption} from '/@/types/business/scm/pricing';
 
+/** 回显用：已有值可能不在首屏选项里，调用方补一份最小快照即可显示名称。 */
+type SelectedSku = Pick<SkuOption, 'skuId' | 'productName' | 'specName'> & Partial<Pick<SkuOption, 'status' | 'spuStatus' | 'categoryStatus'>>;
+
 const props = withDefaults(
   defineProps<{
     value?: ScmId | ScmId[] | null;
@@ -43,6 +46,10 @@ const props = withDefaults(
     limit?: number;
     disabled?: boolean;
     disabledStatuses?: string[];
+    /** 回显已选规格的名称，避免首屏未加载到时只显示 ID。 */
+    selectedOptions?: SelectedSku[];
+    /** 已在本表其他行使用的规格，禁止重复选择。 */
+    disabledValues?: ScmId[];
   }>(),
   {
     placeholder: '请选择商品规格',
@@ -51,6 +58,8 @@ const props = withDefaults(
     status: null,
     limit: 50,
     disabledStatuses: () => ['OFF_SHELF'],
+    selectedOptions: () => [],
+    disabledValues: () => [],
   }
 );
 const emit = defineEmits<{
@@ -65,27 +74,51 @@ const rows = ref<SkuOption[]>([]),
   error = ref('');
 let requestId = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
-const options = computed(() =>
-  rows.value.map((s) => ({
+const options = computed(() => {
+  const merged = new Map<string, SelectedSku>();
+  for (const sku of [...props.selectedOptions, ...rows.value]) merged.set(String(sku.skuId), sku);
+  return [...merged.values()].map((s) => ({
     value: s.skuId,
     label: `${s.productName} / ${s.specName}`,
     disabled:
-      props.disabledStatuses.length > 0 &&
-      (props.disabledStatuses.includes(s.status) || s.spuStatus !== 'ON_SHELF' || s.categoryStatus !== 'ENABLED'),
-  }))
-);
+      props.disabledValues.some((value) => String(value) === String(s.skuId)) ||
+      (props.disabledStatuses.length > 0 &&
+        ((s.status != null && props.disabledStatuses.includes(s.status)) ||
+          (s.spuStatus != null && s.spuStatus !== 'ON_SHELF') ||
+          (s.categoryStatus != null && s.categoryStatus !== 'ENABLED'))),
+  }));
+});
+
+/** 同页多个下拉同时挂载时共享首屏请求，避免一行一个全量查询。 */
+const initialRequests = new Map<string, Promise<{options: SkuOption[]; truncated: boolean}>>();
+
+function loadInitial() {
+  const key = `${props.status ?? ''}|${props.spuId ?? ''}|${props.limit}`;
+  let request = initialRequests.get(key);
+  if (!request) {
+    request = productSkuApi.optionList({keyword: '', status: props.status, spuId: props.spuId, limit: props.limit}).then((response) => response.data);
+    initialRequests.set(key, request);
+    void request.then(
+      () => initialRequests.delete(key),
+      () => initialRequests.delete(key)
+    );
+  }
+  return request;
+}
 
 async function load(keyword: string) {
   const id = ++requestId;
   loading.value = true;
   error.value = '';
   try {
-    const r = await productSkuApi.optionList({keyword, status: props.status, spuId: props.spuId, limit: props.limit});
+    const data = keyword
+      ? (await productSkuApi.optionList({keyword, status: props.status, spuId: props.spuId, limit: props.limit})).data
+      : await loadInitial();
     if (id === requestId) {
       const selected = new Set(Array.isArray(props.value) ? props.value : [props.value]);
       const retained = rows.value.filter((s) => selected.has(s.skuId));
-      rows.value = [...r.data.options, ...retained.filter((s) => !r.data.options.some((n) => n.skuId === s.skuId))];
-      truncated.value = r.data.truncated;
+      rows.value = [...data.options, ...retained.filter((s) => !data.options.some((n) => n.skuId === s.skuId))];
+      truncated.value = data.truncated;
     }
   } catch {
     if (id === requestId) error.value = '加载失败';

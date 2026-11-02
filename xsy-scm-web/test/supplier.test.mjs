@@ -6,6 +6,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {
   removeSkuDraft,
   emptySupplier,
@@ -53,6 +54,8 @@ import {
         id: 5,
         version: 3,
         skuId: 9,
+        skuNameSnapshot: '西红柿',
+        specValuesSnapshot: {size: '500g'},
         purchaseUnit: 'kg',
         referencePrice: '3.5000',
         purchaserId: 2,
@@ -64,6 +67,8 @@ import {
       id: 5,
       version: 3,
       skuId: 9,
+      skuNameSnapshot: '西红柿',
+      specValuesSnapshot: {size: '500g'},
       purchaseUnit: 'kg',
       supplierItemCode: null,
       referencePrice: '3.5000',
@@ -177,5 +182,44 @@ import {
     );
     assert.equal(validateSkuDrafts([input[0], {skuId: 11, purchaseUnit: 'kg', supplierItemCode: 'ab-00007', defaultFlag: false}]), undefined);
     assert.match(validateSkuDrafts([{skuId: 10, purchaseUnit: 'kg', supplierItemCode: 'a'.repeat(101), defaultFlag: false}]), /100/);
+  });
+
+  test('关联商品行：标准 a-table，采购单位下拉、参考价数值输入、优先采购和状态都走开关', () => {
+    const source = readFileSync(new URL('../src/views/business/scm/supplier/components/supplier-sku-editable-table.vue', import.meta.url), 'utf8');
+    assert.match(source, /<a-table[\s\S]{0,400}:columns="columns"/);
+    assert.doesNotMatch(source, /<table>/);
+    assert.match(source, /<a-select[\s\S]{0,300}record\.purchaseUnit/);
+    assert.doesNotMatch(source, /<a-input[^>]*record\.purchaseUnit/);
+    assert.match(source, /<a-input-number[\s\S]{0,300}record\.referencePrice/);
+    assert.match(source, /record\.referencePrice[\s\S]{0,300}:controls="false"/);
+    assert.match(source, /<a-switch[\s\S]{0,300}record\.defaultFlag/);
+    assert.match(source, /<a-switch[\s\S]{0,400}record\.status/);
+    assert.doesNotMatch(source, /<a-checkbox/);
+    // 压缩到抽屉内容宽度，只固定右侧操作列（SCM 不允许冻结首屏字段）。
+    assert.match(source, /:scroll="\{x: 960\}"/);
+    assert.match(source, /dataIndex: 'action'[\s\S]{0,120}fixed: 'right'/);
+    assert.doesNotMatch(source, /fixed: 'left'/);
+    // 已有关联行用快照回显名称，且同一表内不允许重复选规格。
+    assert.match(source, /selected-options="selectedSkuOptions\(record\)"/);
+    assert.match(source, /disabled-values="otherSkuIds\(record\.skuId\)"/);
+    // 员工选项由表格组件统一加载一次，不再每行请求。
+    assert.match(source, /:options="employees"/);
+    assert.match(source, /:auto-load="false"/);
+  });
+
+  test('关联商品抽屉：加载完成前/失败时不能保存，关闭前确认未保存修改', () => {
+    const source = readFileSync(new URL('../src/views/business/scm/supplier/components/supplier-sku-drawer.vue', import.meta.url), 'utf8');
+    // 打开时重置上一个供应商的条数和加载状态，避免沿用旧值触发错误确认。
+    assert.match(source, /loadedCount\.value = 0/);
+    assert.match(source, /loadState = ref<LoadState>\('loading'\)/);
+    // 只用最新一次请求的响应，快速切换供应商不会被旧响应覆盖。
+    assert.match(source, /const seq = \+\+requestSeq/);
+    assert.match(source, /if \(seq !== requestSeq\) return/);
+    // 只有加载完成、供应商启用且有权限时才允许编辑和保存。
+    assert.match(source, /loadState\.value === 'ready'/);
+    assert.match(source, /:disabled="!editable \|\| !dirty"/);
+    // 点遮罩/X/取消时，有未保存修改必须先确认。
+    assert.match(source, /@close="requestClose"/);
+    assert.match(source, /有未保存的修改/);
   });
 }

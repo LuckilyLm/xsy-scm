@@ -18,7 +18,7 @@
     @change="onChange"
   >
     <!-- label 是过滤键，展示仍带部门：只绑 actualName 才能让「按姓名搜」命中带后缀的渲染文本。 -->
-    <a-select-option v-for="item in employeeList" :key="item.employeeId" :value="item.employeeId" :label="item.actualName">
+    <a-select-option v-for="item in displayList" :key="item.employeeId" :value="item.employeeId" :label="item.actualName">
       {{ item.actualName }}
       <template v-if="item.departmentName"> （{{ item.departmentName }}）</template>
     </a-select-option>
@@ -26,9 +26,11 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, ref, watch} from 'vue';
+import {computed, onMounted, ref, watch} from 'vue';
 import {employeeApi} from '/@/api/system/employee-api';
 import {smartSentry} from '/@/lib/smart-sentry';
+
+type EmployeeOption = {employeeId: number; actualName: string; departmentName?: string};
 
 // =========== 属性定义 和 事件方法暴露 =============
 
@@ -60,6 +62,16 @@ const props = defineProps({
     type: Number,
     default: null,
   },
+  // 调用方已有一份员工选项时直接复用，避免每行重复查询
+  options: {
+    type: Array as () => EmployeeOption[] | undefined,
+    default: undefined,
+  },
+  // 由调用方统一加载选项时关闭组件内查询
+  autoLoad: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits(['update:value', 'change']);
@@ -68,13 +80,14 @@ const emit = defineEmits(['update:value', 'change']);
 
 //员工列表数据
 // 只声明模板真正消费的字段：接口返回的是未类型化的 any，靠字面量 [] 推导会变成 never[]。
-const employeeList = ref<{employeeId: number; actualName: string; departmentName?: string}[]>([]);
+const employeeList = ref<EmployeeOption[]>([]);
+const displayList = computed(() => props.options ?? employeeList.value);
 
 async function query() {
   try {
-    let params = {};
+    const params: Record<string, unknown> = {};
     if (props.roleId) {
-      params = {roleId: props.roleId};
+      params.roleId = props.roleId;
     }
     if (null != props.disabledFlag) {
       params.disabledFlag = props.disabledFlag;
@@ -86,7 +99,9 @@ async function query() {
   }
 }
 
-onMounted(query);
+onMounted(() => {
+  if (props.autoLoad && !props.options) query();
+});
 
 // =========== 选择 监听、事件 =============
 
@@ -98,7 +113,7 @@ watch(
   }
 );
 
-function onChange(value) {
+function onChange(value: unknown) {
   emit('update:value', value);
   emit('change', value);
 }

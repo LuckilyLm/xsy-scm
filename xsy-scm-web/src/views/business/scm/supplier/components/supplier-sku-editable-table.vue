@@ -1,159 +1,220 @@
 <!-- 关联商品可编辑多行；允许多个优先采购来源，价格用字符串。 -->
 <template>
-  <div class="sku-editor">
-    <div class="sku-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>商品规格 *</th>
-            <th>供应商货号</th>
-            <th>采购单位 *</th>
-            <th>参考价</th>
-            <th>优先采购</th>
-            <th>采购员</th>
-            <th>状态</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(draft, index) in modelValue" :key="draft.id ?? `new-${index}`">
-            <td>
-              <SkuSelect
-                :value="draft.skuId"
-                :disabled="readonly"
-                :aria-label="`第 ${index + 1} 行商品规格`"
-                @update:value="(value) => (draft.skuId = Array.isArray(value) ? value[0] : value)"
-              />
-            </td>
-            <td>
-              <a-input v-model:value="draft.supplierItemCode" :maxlength="100" :disabled="readonly" :aria-label="`第 ${index + 1} 行供应商货号`" />
-            </td>
-            <td>
-              <a-input v-model:value="draft.purchaseUnit" :maxlength="32" :disabled="readonly" :aria-label="`第 ${index + 1} 行采购单位`" />
-            </td>
-            <td>
-              <a-input-number
-                v-model:value="draft.referencePrice"
-                string-mode
-                :min="'0'"
-                :precision="4"
-                :step="'0.0001'"
-                :controls="false"
-                :disabled="readonly"
-                placeholder="例如 3.5000"
-                :aria-label="`第 ${index + 1} 行参考价`"
-                style="width: 100%"
-              />
-            </td>
-            <td class="center">
-              <a-checkbox v-model:checked="draft.defaultFlag" :disabled="readonly" :aria-label="`第 ${index + 1} 行设为优先采购`" />
-            </td>
-            <td>
-              <EmployeeSelect
-                :value="draft.purchaserId ?? undefined"
-                width="100%"
-                placeholder="请选择"
-                :disabled="readonly"
-                :aria-label="`第 ${index + 1} 行采购员`"
-                @update:value="(value: number | undefined) => (draft.purchaserId = value ?? null)"
-              />
-            </td>
-            <td>
-              <SmartEnumSelect
-                :value="draft.status ?? 'ENABLED'"
-                enum-name="SUPPLIER_SKU_STATUS_ENUM"
-                width="100%"
-                :disabled="readonly"
-                :aria-label="`第 ${index + 1} 行状态`"
-                @update:value="(value: string) => (draft.status = value as EnableStatus)"
-              />
-            </td>
-            <td class="center">
-              <a-popconfirm v-if="!readonly" title="确认移除该关联？" @confirm="emit('update:modelValue', removeSkuDraft(modelValue, index))">
-                <a-button type="link" danger size="small" :aria-label="`移除第 ${index + 1} 行`">移除</a-button>
-              </a-popconfirm>
-            </td>
-          </tr>
-          <tr v-if="modelValue.length === 0">
-            <td colspan="8" class="empty">尚未关联任何商品；保存后将清空该供应商的全部关联</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <a-button v-if="!readonly" class="add-sku" @click="emit('update:modelValue', [...modelValue, emptySkuDraft()])">添加商品</a-button>
+  <div
+    ref="tableScroll"
+    class="sku-table-scroll"
+    tabindex="0"
+    role="region"
+    aria-label="关联商品表格，左右方向键可横向滚动"
+    @keydown="onTableKeydown"
+  >
+    <a-table
+      :data-source="modelValue"
+      :columns="columns"
+      :pagination="false"
+      size="small"
+      bordered
+      :row-key="(record: SkuDraft, index?: number) => record.id ?? `new-${index}`"
+      :scroll="{x: 960}"
+    >
+      <template #bodyCell="{column, record, index}">
+        <template v-if="column.dataIndex === 'skuId'">
+          <SkuSelect
+            :value="record.skuId"
+            :disabled="readonly"
+            :selected-options="selectedSkuOptions(record)"
+            :disabled-values="otherSkuIds(record.skuId)"
+            :aria-label="`第 ${index + 1} 行商品规格`"
+            @update:value="(value) => (record.skuId = Array.isArray(value) ? value[0] : value)"
+          />
+        </template>
+        <template v-else-if="column.dataIndex === 'supplierItemCode'">
+          <a-input v-model:value="record.supplierItemCode" :maxlength="100" :disabled="readonly" :aria-label="`第 ${index + 1} 行供应商货号`" />
+        </template>
+        <template v-else-if="column.dataIndex === 'purchaseUnit'">
+          <a-select
+            :value="record.purchaseUnit || undefined"
+            :options="unitOptions"
+            show-search
+            option-filter-prop="label"
+            placeholder="选择单位"
+            :disabled="readonly"
+            :aria-label="`第 ${index + 1} 行采购单位`"
+            @update:value="(value: string) => (record.purchaseUnit = value)"
+          />
+        </template>
+        <template v-else-if="column.dataIndex === 'referencePrice'">
+          <a-input-number
+            v-model:value="record.referencePrice"
+            string-mode
+            :min="'0'"
+            :precision="4"
+            :controls="false"
+            addon-after="元"
+            :disabled="readonly"
+            placeholder="例如 3.5000"
+            :aria-label="`第 ${index + 1} 行参考价`"
+            style="width: 100%"
+          />
+        </template>
+        <template v-else-if="column.dataIndex === 'defaultFlag'">
+          <a-switch
+            v-model:checked="record.defaultFlag"
+            checked-children="优先"
+            un-checked-children="普通"
+            size="small"
+            :disabled="readonly"
+            :aria-label="`第 ${index + 1} 行优先采购`"
+          />
+        </template>
+        <template v-else-if="column.dataIndex === 'purchaserId'">
+          <EmployeeSelect
+            :value="record.purchaserId ?? undefined"
+            :options="employees"
+            :auto-load="false"
+            width="100%"
+            placeholder="请选择"
+            :disabled="readonly"
+            :aria-label="`第 ${index + 1} 行采购员`"
+            @update:value="(value: number | undefined) => (record.purchaserId = value ?? null)"
+          />
+        </template>
+        <template v-else-if="column.dataIndex === 'status'">
+          <a-switch
+            :checked="(record.status ?? 'ENABLED') === 'ENABLED'"
+            checked-children="启用"
+            un-checked-children="停用"
+            size="small"
+            :disabled="readonly"
+            :aria-label="`第 ${index + 1} 行状态`"
+            @update:checked="(checked: boolean) => (record.status = checked ? 'ENABLED' : 'DISABLED')"
+          />
+        </template>
+        <template v-else-if="column.dataIndex === 'action'">
+          <a-popconfirm v-if="!readonly" title="确认移除该关联？" @confirm="emit('update:modelValue', removeSkuDraft(modelValue, index))">
+            <a-button type="link" danger size="small" :aria-label="`移除第 ${index + 1} 行`">移除</a-button>
+          </a-popconfirm>
+        </template>
+      </template>
+      <template #emptyText>
+        <span class="empty">{{ emptyText }}</span>
+      </template>
+    </a-table>
   </div>
+  <a-button v-if="!readonly" class="add-sku" @click="emit('update:modelValue', [...modelValue, emptySkuDraft()])">添加商品</a-button>
 </template>
 
 <script setup lang="ts">
+import {computed, onMounted, ref} from 'vue';
+import type {TableColumnsType} from 'ant-design-vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
-import type {EnableStatus} from '/@/types/business/scm/supplier';
+import {productUomApi} from '/@/api/business/scm/product-assistant-api';
+import {employeeApi} from '/@/api/system/employee-api';
+import type {ProductUom} from '/@/types/business/scm/product';
+import type {ScmId} from '/@/types/business/scm/supplier';
 import {emptySkuDraft, removeSkuDraft} from '../supplier-form-model';
 import type {SkuDraft} from '../supplier-form-model';
 
-const props = defineProps<{modelValue: SkuDraft[]; readonly?: boolean}>();
+const props = defineProps<{modelValue: SkuDraft[]; readonly?: boolean; emptyText?: string}>();
 const emit = defineEmits<{'update:modelValue': [rows: SkuDraft[]]}>();
 
-// 显式引用 props，避免 noUnusedLocals 报警。
-void props;
+type EmployeeOption = {employeeId: number; actualName: string; departmentName?: string};
+
+const columns: TableColumnsType<SkuDraft> = [
+  {title: '商品规格 *', dataIndex: 'skuId', width: 220},
+  {title: '供应商货号', dataIndex: 'supplierItemCode', width: 110},
+  {title: '采购单位 *', dataIndex: 'purchaseUnit', width: 110},
+  {title: '参考价', dataIndex: 'referencePrice', width: 140},
+  {title: '优先采购', dataIndex: 'defaultFlag', width: 90, align: 'center'},
+  {title: '采购员', dataIndex: 'purchaserId', width: 120},
+  {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
+  {title: '操作', dataIndex: 'action', width: 70, align: 'center', fixed: 'right'},
+];
+
+const units = ref<ProductUom[]>([]);
+const employees = ref<EmployeeOption[]>([]);
+const tableScroll = ref<HTMLElement>();
+
+onMounted(async () => {
+  await Promise.allSettled([loadUnits(), loadEmployees()]);
+});
+
+async function loadUnits() {
+  try {
+    const response = await productUomApi.options({suppressGlobalErrorMessage: true});
+    units.value = response.data ?? [];
+  } catch {
+    // 单位字典读取失败时只保留历史值，不阻断整表编辑；保存仍由后端校验。
+  }
+}
+
+async function loadEmployees() {
+  try {
+    const response = await employeeApi.queryAll();
+    employees.value = response.data ?? [];
+  } catch {
+    // 员工选项失败时仍可保存已有采购员，新行只能留空。
+  }
+}
+
+/**
+ * 采购单位必须从计量单位字典选择；历史手填或已停用的值原样保留，避免编辑旧关联时丢值。
+ */
+const unitOptions = computed(() => {
+  const enabled = units.value.filter((unit) => unit.status !== 'DISABLED');
+  const known = new Map(units.value.map((unit) => [unit.name, unit]));
+  const current = [...new Set(props.modelValue.map((draft) => draft.purchaseUnit).filter(Boolean))];
+  return [
+    ...enabled.map((unit) => ({value: unit.name, label: unit.name})),
+    ...current
+      .filter((name) => !enabled.some((unit) => unit.name === name))
+      .map((name) => ({value: name, label: known.has(name) ? `${name}（已停用）` : name})),
+  ];
+});
+
+const emptyText = computed(() => props.emptyText ?? '尚未关联任何商品；点击“添加商品”开始');
+
+/** 已有关联行用列表快照回显，避免首屏 50 条之外只剩数字 ID。 */
+function selectedSkuOptions(record: SkuDraft) {
+  if (record.skuId == null || !record.skuNameSnapshot) return [];
+  const spec = Object.values(record.specValuesSnapshot ?? {}).join('/') || '默认规格';
+  return [{skuId: record.skuId, productName: record.skuNameSnapshot, specName: spec}];
+}
+
+/** 同一张表里已选过的规格不允许重复添加。 */
+function otherSkuIds(current?: ScmId): ScmId[] {
+  const key = current == null ? undefined : String(current);
+  return props.modelValue.filter((draft) => draft.skuId != null && String(draft.skuId) !== key).map((draft) => draft.skuId as ScmId);
+}
+
+/** 聚焦表格容器后，左右方向键横向滚动；在输入框内不拦截方向键。 */
+function onTableKeydown(event: KeyboardEvent) {
+  if (event.target !== event.currentTarget) return;
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  event.preventDefault();
+  const scroller = tableScroll.value?.querySelector<HTMLElement>('.ant-table-content, .ant-table-body');
+  if (!scroller) return;
+  scroller.scrollLeft += event.key === 'ArrowLeft' ? -120 : 120;
+}
 </script>
 
 <style scoped>
-.sku-scroll {
+.sku-table-scroll {
   overflow-x: auto;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  padding: 8px;
-  border: 1px solid var(--scm-border, #f0f0f0);
-  vertical-align: middle;
-  text-align: left;
-}
-
-th {
-  background: var(--scm-fill, #fafafa);
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-td:nth-child(1) {
-  min-width: 260px;
-}
-
-td:nth-child(2) {
-  min-width: 110px;
-}
-
-td:nth-child(3) {
-  min-width: 130px;
-}
-
-td:nth-child(5) {
-  min-width: 160px;
-}
-
-td:nth-child(6) {
-  min-width: 110px;
-}
-
-.center {
-  text-align: center;
-}
-
-.empty {
-  text-align: center;
-  color: var(--scm-text-secondary, #8c8c8c);
+.sku-table-scroll:focus-visible {
+  outline: 2px solid var(--scm-primary, #2d8c4d);
+  outline-offset: 2px;
 }
 
 .ant-select {
   width: 100%;
+}
+
+.empty {
+  color: var(--scm-text-secondary, #8c8c8c);
 }
 
 .add-sku {

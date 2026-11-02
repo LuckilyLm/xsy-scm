@@ -1450,7 +1450,7 @@ import ts from 'typescript';
     const expected = {
       'pricing/components/agreement-price-form-drawer.vue': 'form.formulaParameter',
       'product/components/product-bundle-editor.vue': 'row.quantityPerBundleSaleUnit',
-      'supplier/components/supplier-sku-editable-table.vue': 'draft.referencePrice',
+      'supplier/components/supplier-sku-editable-table.vue': 'record.referencePrice',
     };
     const byName = new Map(files);
     for (const [name, binding] of Object.entries(expected)) {
@@ -1524,7 +1524,7 @@ import ts from 'typescript';
     // 加价金额两位，加价率仍可四位
     assert.match(inputTag('pricing/components/agreement-price-form-drawer.vue', 'form.formulaParameter'), /MARKET_PLUS_AMOUNT' \? 2 : 4/);
     const procurement = {
-      'supplier/components/supplier-sku-editable-table.vue': 'draft.referencePrice',
+      'supplier/components/supplier-sku-editable-table.vue': 'record.referencePrice',
       'purchase/components/purchase-order-item-editable-table.vue': 'record.purchasePrice',
     };
     for (const [name, binding] of Object.entries(procurement)) {
@@ -1694,7 +1694,8 @@ import ts from 'typescript';
   test('全局表格样式不覆盖列水平对齐，并让数据单元垂直居中', () => {
     assert.doesNotMatch(tableStyle, /\.ant-table-thead\s*>\s*tr\s*>\s*th\s*\{[^}]*text-align:\s*center\s*!important/s);
     assert.match(tableStyle, /\.ant-table-tbody\s*>\s*tr\s*>\s*td\s*\{[^}]*vertical-align:\s*middle/s);
-    assert.match(supplierEditableTable, /th\s*,\s*td\s*\{[^}]*vertical-align:\s*middle/s);
+    assert.match(supplierEditableTable, /<a-table[\s\S]*bordered/);
+    assert.doesNotMatch(supplierEditableTable, /<table>/);
   });
 
   test('供应商与应付样板按字段语义设置同轴对齐', () => {

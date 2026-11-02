@@ -11,6 +11,9 @@ export interface SkuDraft {
   id?: ScmId;
   version?: number;
   skuId?: ScmId;
+  /** 回显用：已有关联行的商品名称和规格快照，不提交。 */
+  skuNameSnapshot?: string;
+  specValuesSnapshot?: Record<string, string>;
   purchaseUnit: string;
   supplierItemCode?: string | null;
   referencePrice?: string | null;
@@ -59,6 +62,8 @@ export function fromRows(rows: SupplierSkuRow[]): SkuDraft[] {
     id: row.id,
     version: row.version,
     skuId: row.skuId,
+    skuNameSnapshot: row.skuNameSnapshot,
+    specValuesSnapshot: row.specValuesSnapshot,
     purchaseUnit: row.purchaseUnit,
     supplierItemCode: row.supplierItemCode ?? null,
     referencePrice: row.referencePrice,

@@ -9,8 +9,8 @@ export const employeeApi = {
   /**
    * 查询所有员工
    */
-  queryAll: () => {
-    return getRequest('/employee/queryAll');
+  queryAll: (params?: Record<string, unknown>) => {
+    return getRequest('/employee/queryAll', params);
   },
   /**
    * 员工管理查询
