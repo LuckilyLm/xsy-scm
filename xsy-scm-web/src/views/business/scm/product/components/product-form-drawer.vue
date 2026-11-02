@@ -86,12 +86,30 @@
               </div>
               <div class="product-form-field">
                 <a-form-item label="损耗率" name="lossRate" class="app-drawer-field--compact" :rules="[rangeRule(0, 100, '损耗率须在 0–100 之间')]">
-                  <a-input-number v-model:value="form.lossRate" :precision="4" :controls="false" addon-after="%" />
+                  <a-input-number
+                    v-model:value="form.lossRate"
+                    :min="0"
+                    :max="100"
+                    :precision="0"
+                    :step="1"
+                    addon-after="%"
+                    placeholder="未设置"
+                    style="width: 100%"
+                  />
                 </a-form-item>
               </div>
               <div class="product-form-field">
                 <a-form-item label="税率" name="taxRate" class="app-drawer-field--compact" :rules="[rangeRule(0, 100, '税率须在 0–100 之间')]">
-                  <a-input-number v-model:value="form.taxRate" :precision="4" :controls="false" addon-after="%" />
+                  <a-input-number
+                    v-model:value="form.taxRate"
+                    :min="0"
+                    :max="100"
+                    :precision="0"
+                    :step="1"
+                    addon-after="%"
+                    placeholder="未设置"
+                    style="width: 100%"
+                  />
                 </a-form-item>
               </div>
               <div class="product-form-field">

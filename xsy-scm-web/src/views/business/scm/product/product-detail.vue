@@ -71,7 +71,7 @@
               </div>
               <div class="scm-field">
                 <dt class="scm-field__label">损耗率</dt>
-                <dd class="scm-field__value">{{ product.lossRate == null ? '—' : `${product.lossRate}%` }}</dd>
+                <dd class="scm-field__value">{{ rateText(product.lossRate) }}</dd>
               </div>
               <div class="scm-field">
                 <dt class="scm-field__label">开票品名</dt>
@@ -87,7 +87,7 @@
               </div>
               <div class="scm-field">
                 <dt class="scm-field__label">税率</dt>
-                <dd class="scm-field__value">{{ product.taxRate == null ? '—' : `${product.taxRate}%` }}</dd>
+                <dd class="scm-field__value">{{ rateText(product.taxRate) }}</dd>
               </div>
             </dl>
           </section>
@@ -213,6 +213,11 @@ async function load() {
   } finally {
     if (request === requestId) loading.value = false;
   }
+}
+
+/** 百分比按数值展示，去掉后端定点小数补出的尾零。 */
+function rateText(value?: number | string | null) {
+  return value == null || value === '' ? '—' : `${Number(value)}%`;
 }
 
 watch(() => route.query.spuId, load, {immediate: true});
