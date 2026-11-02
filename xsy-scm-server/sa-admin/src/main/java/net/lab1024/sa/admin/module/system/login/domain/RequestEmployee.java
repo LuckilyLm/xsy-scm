@@ -43,9 +43,6 @@ public class RequestEmployee implements RequestUser, Serializable {
     @Schema(description = "部门名称")
     private String departmentName;
 
-    @Schema(description = "职务级别ID")
-    private Long positionId;
-
     @Schema(description = "邮箱")
     private String email;
 

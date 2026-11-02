@@ -11,8 +11,6 @@
     @close="onClose"
     destroyOnClose
   >
-    <a-alert message="超管需要直接在数据库表 t_employee修改哦" type="error" closable />
-    <br />
     <a-form ref="formRef" :model="form" :rules="rules" layout="vertical" class="app-drawer-form">
       <a-form-item label="姓名" name="actualName" class="app-drawer-field--compact">
         <a-input v-model:value.trim="form.actualName" :maxlength="30" placeholder="请输入姓名" />
@@ -44,10 +42,6 @@
           <a-select-option :value="1">禁用</a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item label="职务" name="positionId">
-        <PositionSelect v-model:value="form.positionId" placeholder="请选择职务" />
-      </a-form-item>
-
       <a-form-item label="角色" name="roleIdList" class="app-drawer-field--multi">
         <a-select mode="multiple" v-model:value="form.roleIdList" optionFilterProp="title" placeholder="请选择角色">
           <a-select-option v-for="item in roleList" :key="item.roleId" :title="item.roleName">{{ item.roleName }} </a-select-option>
@@ -70,7 +64,6 @@ import {employeeApi} from '/@/api/system/employee-api';
 import {roleApi} from '/@/api/system/role-api';
 import DepartmentTreeSelect from '/@/components/system/department-tree-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
-import PositionSelect from '/@/components/system/position-select/index.vue';
 import {GENDER_ENUM} from '/@/constants/common-const';
 import {regular} from '/@/constants/regular-const';
 import {SmartLoading} from '/@/components/framework/smart-loading';
@@ -120,7 +113,6 @@ const formDefault = {
   loginName: undefined,
   phone: undefined,
   roleIdList: undefined,
-  positionId: undefined,
   email: undefined,
 };
 

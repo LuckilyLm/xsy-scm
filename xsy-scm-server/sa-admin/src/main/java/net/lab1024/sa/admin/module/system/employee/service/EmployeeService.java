@@ -14,8 +14,6 @@ import net.lab1024.sa.admin.module.system.employee.domain.form.*;
 import net.lab1024.sa.admin.module.system.employee.domain.vo.EmployeeVO;
 import net.lab1024.sa.admin.module.system.employee.manager.EmployeeManager;
 import net.lab1024.sa.admin.module.system.login.service.LoginService;
-import net.lab1024.sa.admin.module.system.position.dao.PositionDao;
-import net.lab1024.sa.admin.module.system.position.domain.entity.PositionEntity;
 import net.lab1024.sa.admin.module.system.role.dao.RoleEmployeeDao;
 import net.lab1024.sa.admin.module.system.role.domain.vo.RoleEmployeeVO;
 import net.lab1024.sa.base.common.code.UserErrorCode;
@@ -64,9 +62,6 @@ public class EmployeeService {
     @Lazy
     private LoginService loginService;
 
-    @Resource
-    private PositionDao positionDao;
-
     public EmployeeEntity getById(Long employeeId) {
         return employeeDao.selectById(employeeId);
     }
@@ -96,16 +91,10 @@ public class EmployeeService {
         Map<Long, List<Long>> employeeRoleIdListMap = roleEmployeeEntityList.stream().collect(Collectors.groupingBy(RoleEmployeeVO::getEmployeeId, Collectors.mapping(RoleEmployeeVO::getRoleId, Collectors.toList())));
         Map<Long, List<String>> employeeRoleNameListMap = roleEmployeeEntityList.stream().collect(Collectors.groupingBy(RoleEmployeeVO::getEmployeeId, Collectors.mapping(RoleEmployeeVO::getRoleName, Collectors.toList())));
 
-        // 查询员工职位
-        List<Long> positionIdList = employeeList.stream().map(EmployeeVO::getPositionId).filter(Objects::nonNull).collect(Collectors.toList());
-        List<PositionEntity> positionEntityList = positionIdList.isEmpty() ? Collections.emptyList() : positionDao.selectBatchIds(positionIdList);
-        Map<Long, String> positionNameMap = positionEntityList.stream().collect(Collectors.toMap(PositionEntity::getPositionId, PositionEntity::getPositionName));
-
         employeeList.forEach(e -> {
             e.setRoleIdList(employeeRoleIdListMap.getOrDefault(e.getEmployeeId(), Lists.newArrayList()));
             e.setRoleNameList(employeeRoleNameListMap.getOrDefault(e.getEmployeeId(), Lists.newArrayList()));
             e.setDepartmentName(departmentService.getDepartmentPath(e.getDepartmentId()));
-            e.setPositionName(positionNameMap.get(e.getPositionId()));
         });
         PageResult<EmployeeVO> pageResult = SmartPageUtil.convert2PageResult(pageParam, employeeList);
         return ResponseDTO.ok(pageResult);

@@ -33,9 +33,6 @@
             <a-form-item label="邮箱" name="email">
               <a-input v-model:value.trim="form.email" placeholder="请输入邮箱" />
             </a-form-item>
-            <a-form-item label="职务" name="positionId">
-              <PositionSelect v-model:value="form.positionId" placeholder="请选择职务" />
-            </a-form-item>
             <a-form-item label="备注" name="remark">
               <a-textarea class="form-item" v-model:value="form.remark" placeholder="请输入备注" :rows="4" />
             </a-form-item>
@@ -78,7 +75,6 @@
 import {onMounted, reactive, ref} from 'vue';
 import {regular} from '/@/constants/regular-const';
 import DepartmentTreeSelect from '/@/components/system/department-tree-select/index.vue';
-import PositionSelect from '/@/components/system/position-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import {loginApi} from '/@/api/system/login-api';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -109,8 +105,6 @@ const formDefault = {
   departmentId: undefined,
   // 邮箱
   email: undefined,
-  // 职务级别
-  positionId: undefined,
   // 是否禁用
   disabledFlag: undefined,
   // 备注
@@ -148,7 +142,6 @@ async function getLoginInfo() {
     form.phone = data.phone;
     form.departmentId = data.departmentId;
     form.email = data.email;
-    form.positionId = data.positionId;
     form.remark = data.remark;
     form.disabledFlag = data.disabledFlag;
     // 头像展示

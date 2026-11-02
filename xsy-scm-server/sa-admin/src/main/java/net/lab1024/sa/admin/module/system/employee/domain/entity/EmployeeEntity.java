@@ -65,11 +65,6 @@ public class EmployeeEntity {
     private Long departmentId;
 
     /**
-     * 职务级别ID
-     */
-    private Long positionId;
-
-    /**
      * 是否为超级管理员: 0 不是，1是
      */
     private Boolean administratorFlag;

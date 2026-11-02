@@ -170,12 +170,6 @@ const columns = ref([
     align: 'center',
   },
   {
-    title: '职务',
-    dataIndex: 'positionName',
-    width: 100,
-    ellipsis: true,
-  },
-  {
     title: '角色',
     dataIndex: 'roleNameList',
     width: 100,

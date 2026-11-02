@@ -39,9 +39,6 @@ public class EmployeeUpdateCenterForm {
     @Pattern(regexp = SmartVerificationUtil.EMAIL, message = "邮箱账号格式不正确")
     private String email;
 
-    @Schema(description = "职务级别ID")
-    private Long positionId;
-
     @Schema(description = "头像")
     private String avatar;
 
