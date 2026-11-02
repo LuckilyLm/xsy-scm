@@ -12,6 +12,33 @@ Directory.CreateDirectory(testRoot);
 int passed = 0;
 var cases = new (string Name, Func<Task> Run)[]
 {
+    ("集合完成从持久事件列表生成平台摘要", async () =>
+    {
+        var context = Context();
+        string[] events = ["event-one", "event-two"];
+        string expected = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("[\"event-one\",\"event-two\"]")));
+        using var client = Client(context.Store, async request =>
+        {
+            using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
+            Equal(expected, body.RootElement.GetProperty("manifestHash").GetString());
+            Equal("complete-one", body.RootElement.GetProperty("operationId").GetString());
+            Equal("operator", request.Headers.GetValues("X-Operator-Session").Single());
+            return Json(new { state = "COMPLETED" });
+        });
+        var completion = new ItemCompletion("complete-one", "work1", "0", "task1", "item1", 0, "operator", events,
+            "9", "斤", "NORMAL", null, DateTimeOffset.UtcNow);
+        await new PlatformClient(Options(), context.Store, client).CompleteItem(completion, default);
+    }),
+    ("旧单次队列筐号跨重启保持稳定", () => Sync(() =>
+    {
+        var context = Context(); var sample = Reading(); context.State.Set(sample);
+        var first = context.Capture.Capture(Request(sample));
+        sample = Reading(); context.State.Set(sample);
+        var second = context.Capture.Capture(Request(sample));
+        Equal(1, context.Store.LegacyBasketNumber(first)); Equal(2, context.Store.LegacyBasketNumber(second));
+        var reopened = new StateStore(context.Store.DirectoryPath);
+        Equal(1, reopened.LegacyBasketNumber(first)); Equal(2, reopened.LegacyBasketNumber(second));
+    })),
     ("串口拆包粘包与短噪声恢复", () => Sync(() =>
     {
         var decoder = new SoheFrameDecoder();
@@ -167,6 +194,9 @@ var cases = new (string Name, Func<Task> Run)[]
         {
             using var doc = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
             keys.Add(doc.RootElement.GetProperty("eventKey").GetString()!);
+            Equal(first.OperationId, doc.RootElement.GetProperty("operationId").GetString());
+            Equal(1, doc.RootElement.GetProperty("basketNo").GetInt32());
+            Equal("operator", request.Headers.GetValues("X-Operator-Session").Single());
             Equal("Bearer", request.Headers.Authorization?.Scheme);
             // 服务端要求单次上传同样带操作号和筐号；重试必须复用同一编号。
             Equal(first.OperationId, doc.RootElement.GetProperty("operationId").GetString());

@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * 检测报告照片的只读筛选：上传日期按北京时间业务日折算，关键字只匹配报告名。
+ * 检测报告照片的只读筛选：上传日期按北京时间业务日折算，关键字匹配报告名或上传员工姓名。
  */
 @DisplayName("检测报告照片筛选（PG IT）")
 class TracePhotoQueryPgIT extends ScmW3PgITBase {
@@ -38,6 +38,15 @@ class TracePhotoQueryPgIT extends ScmW3PgITBase {
         assertThatThrownBy(() -> reports.photos(null, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 10, 1), null))
             .isInstanceOf(ScmBusinessException.class)
             .extracting(error -> ((ScmBusinessException) error).getErrorCode().getCode()).isEqualTo(41543);
+    }
+
+    @Test
+    void uploaderNameMatchesEvenWhenFileNameContainsNoName() {
+        String name = "报告上传员" + UUID.randomUUID();
+        jdbc.update("UPDATE t_employee SET actual_name = ? WHERE employee_id = 1", name);
+        insertPhoto("market-inspection-2026.jpg", "2026-11-01T10:00:00+08:00");
+        assertThat(reports.photos(null, null, null, name)).extracting(report -> report.getReportName())
+            .containsExactly("market-inspection-2026.jpg");
     }
 
     private void insertPhoto(String reportName, String createdAt) {

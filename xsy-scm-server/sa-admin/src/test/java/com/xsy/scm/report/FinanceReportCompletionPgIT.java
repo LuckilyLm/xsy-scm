@@ -61,6 +61,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 class FinanceReportCompletionPgIT extends ScmW6PgITBase {
     private static final AtomicLong SOURCE_IDS = new AtomicLong(System.currentTimeMillis());
     @Autowired private FinanceCustomerExpenseService expenseService;
+    @Autowired private com.xsy.scm.report.dao.ReportDao purchaseReportDao;
     @Autowired private ScmCustomerMonthlyProfitService monthlyProfitService;
     @Autowired private PurchaseFinanceConfirmService confirmationService;
     @Autowired private PurchaseCostAdjustmentService costAdjustmentService;
@@ -273,6 +274,58 @@ class FinanceReportCompletionPgIT extends ScmW6PgITBase {
         assertThat(profitService.summary(profit).getSalesCostAmount()).isEqualByComparingTo("-50.0000");
         expectSqlFailure("UPDATE xsy_purchase_cost_adjustment SET amount = 1 WHERE id = ?", increased.getId());
         expectSqlFailure("DELETE FROM xsy_finance_purchase_cost_entry WHERE adjustment_id = ?", increased.getId());
+    }
+
+    @Test
+    void correctionOfPriorMonthPurchaseAppearsOnlyInCorrectionMonth() {
+        Long sku = newOnShelfSku("PERIOD-PRICE");
+        var receipt = confirmPurchase(sku, "5.0000");
+        jdbc.update("UPDATE xsy_purchase_order SET submitted_at = ? WHERE id = ?",
+            month().minusMonths(1).atStartOfDay(ZoneId.of("Asia/Shanghai")).toOffsetDateTime(), receipt.getPurchaseOrderId());
+        evictMybatisCache();
+        var source = costAdjustmentService.options(receipt.getPurchaseOrderId()).getFirst();
+        var adjustment = new PurchaseCostAdjustmentForm();
+        adjustment.setReceiptItemId(source.getReceiptItemId());
+        adjustment.setExpectedPrice("5.0000"); adjustment.setNewPrice("6.0000"); adjustment.setReason("跨月对账更正");
+        costAdjustmentService.add(adjustment, prefix + ":period-adjust");
+        var query = new com.xsy.scm.report.domain.form.ScmPurchaseReportQueryForm();
+        query.setSkuId(sku);
+        var from = month().atStartOfDay(ZoneId.of("Asia/Shanghai")).toOffsetDateTime();
+        var current = purchaseReportDao.purchaseByProduct(new Page<>(1, 20), from, from.plusMonths(1), query, ScmValueScope.all());
+        assertThat(current).hasSize(1);
+        assertThat(current.getFirst().getAdjustmentAmount()).isEqualByComparingTo("10");
+        assertThat(current.getFirst().getOrderAmount()).isEqualByComparingTo("0");
+        var previous = purchaseReportDao.purchaseByProduct(new Page<>(1, 20), from.minusMonths(1), from, query, ScmValueScope.all());
+        assertThat(previous).hasSize(1);
+        assertThat(previous.getFirst().getAdjustmentAmount()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void confirmationUsesReviewedFeedbackPriceAndActualQuantity() {
+        Long sku = newOnShelfSku("FEEDBACK-CONFIRM");
+        var order = submittedPurchase(sku, "5.0000");
+        Long itemId = order.getItems().getFirst().getId();
+        Long feedbackId = jdbc.queryForObject("INSERT INTO xsy_purchase_share_feedback(share_token_id,purchase_order_id,"
+            + "purchase_order_item_id,unit_price,received_quantity,created_by) VALUES (1,?,?,6,8,'it') RETURNING id",
+            Long.class, order.getId(), itemId);
+        evictMybatisCache();
+        assertThat(confirmationService.feedback(order.getId())).singleElement().satisfies(row -> {
+            assertThat(row.getId()).isEqualTo(feedbackId);
+            assertThat(row.getReceivedQuantity()).isEqualByComparingTo("8");
+        });
+        var form = confirmationForm(order);
+        form.getItems().getFirst().setQuantity("8.0000");
+        form.getItems().getFirst().setFeedbackId(feedbackId);
+        form.getItems().getFirst().setConfirmedPrice("6.0000");
+        var account = confirmationService.confirm(form, prefix + ":feedback-confirm");
+        assertThat(account.getItems()).singleElement().satisfies(row -> {
+            assertThat(row.getQuantity()).isEqualByComparingTo("8");
+            assertThat(row.getUnitPrice()).isEqualByComparingTo("6");
+            assertThat(row.getAmount()).isEqualByComparingTo("48");
+        });
+        assertThat(payableNet(order.getId())).isEqualByComparingTo("48");
+        assertThat(confirmationService.confirm(form, prefix + ":feedback-confirm").getId()).isEqualTo(account.getId());
+        assertThat(balanceRow(warehouseId, sku)).isNull();
     }
 
     @Test
