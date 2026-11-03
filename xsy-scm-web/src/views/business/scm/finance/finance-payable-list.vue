@@ -26,7 +26,6 @@
       </a-row>
     </a-form>
     <a-row data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">应付明细</div>
       <div class="smart-table-setting-block">
         <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_PAYABLE" :refresh="queryData" />

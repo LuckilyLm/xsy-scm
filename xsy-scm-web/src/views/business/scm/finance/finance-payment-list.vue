@@ -39,7 +39,6 @@
 
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">付款明细</div>
       <div class="smart-table-setting-block">
         <a-button v-privilege="PERM.PAYMENT_ADD" type="primary" @click="openAdd">登记付款</a-button>
         <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
