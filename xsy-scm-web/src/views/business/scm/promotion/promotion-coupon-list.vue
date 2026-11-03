@@ -75,7 +75,7 @@
         <template v-else-if="column.dataIndex === 'usedDiscountAmount'">
           <span class="scm-money">{{ record.usageStats?.usedDiscountAmount ?? '—' }}</span>
           <span v-if="record.usageStats?.discountMissingCount" class="scm-cell-hint">
-            （{{ record.usageStats.discountMissingCount }} 张缺少冻结让利）
+            （{{ record.usageStats.discountMissingCount }} 张未记录优惠金额）
           </span>
         </template>
         <template v-else-if="column.dataIndex === 'action'">

@@ -22,7 +22,7 @@
             <a-descriptions-item label="往来方">{{ partyName }}</a-descriptions-item>
             <a-descriptions-item v-if="header.settlementCustomerName" label="单据结算方">{{ header.settlementCustomerName }}</a-descriptions-item>
             <a-descriptions-item label="关联单号">{{ linkedNo }}</a-descriptions-item>
-            <a-descriptions-item v-if="isAccount" label="冻结到期日">{{ header.dueDate || '未设置（不推算历史账期）' }}</a-descriptions-item>
+            <a-descriptions-item v-if="isAccount" label="到期日">{{ header.dueDate || '未设置（不推算历史账期）' }}</a-descriptions-item>
           </a-descriptions>
 
           <h3 class="detail-section--nested">金额组成</h3>

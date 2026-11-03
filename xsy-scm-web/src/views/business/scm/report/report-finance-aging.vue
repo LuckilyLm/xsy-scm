@@ -176,7 +176,7 @@ const columns: TableColumnsType<AgingRow> = [
   {title: '来源单号', dataIndex: 'sourceNo', width: 190},
   {title: '往来方', dataIndex: 'counterpartyName', width: 160},
   {title: '结算方', dataIndex: 'settlementCustomerName', width: 160},
-  {title: '冻结到期日', dataIndex: 'dueDate', width: 120},
+  {title: '到期日', dataIndex: 'dueDate', width: 120},
   {title: '逾期天数', dataIndex: 'overdueDays', width: 100},
   {title: '账龄分组', dataIndex: 'agingBucket', width: 140},
   ...(['amount', 'redAmount', 'netAmount', 'writtenOffAmount', 'openAmount'] as const).map((key, index) => ({

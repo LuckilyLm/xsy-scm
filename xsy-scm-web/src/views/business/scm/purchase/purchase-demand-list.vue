@@ -27,7 +27,7 @@
         </a-form>
         <a-row data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
           <div class="smart-table-operate-block">
-            <a-button type="primary" v-privilege="'scm:purchase:demand:batch:create'" @click="generateOpen = true"> 冻结批次生成需求 </a-button>
+            <a-button type="primary" v-privilege="'scm:purchase:demand:batch:create'" @click="generateOpen = true"> 生成采购需求 </a-button>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_DEMAND" :refresh="queryData" />

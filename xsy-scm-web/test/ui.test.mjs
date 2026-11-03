@@ -975,7 +975,7 @@ import ts from 'typescript';
   });
 
   test('purchase demand and threshold pages keep rules at the action and validation point', () => {
-    assert.match(PURCHASE_DEMAND, /冻结批次生成需求/);
+    assert.match(PURCHASE_DEMAND, /生成采购需求/);
     assert.doesNotMatch(PURCHASE_DEMAND, /按仓库\s*×\s*商品规格\s*×\s*单位冻结批次后生成需求/);
     assert.doesNotMatch(THRESHOLD, /只有配置了阈值的仓库/);
     assert.match(THRESHOLD, /validator: validateAtLeastOneThreshold/);

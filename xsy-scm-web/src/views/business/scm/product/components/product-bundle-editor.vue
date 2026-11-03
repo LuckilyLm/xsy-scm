@@ -17,12 +17,7 @@
       :pagination="false"
     />
     <a-modal :open="visible" title="组合商品组成" :confirm-loading="saving" @ok="save" @cancel="visible = false">
-      <a-alert
-        v-if="rows.length && !draft.length"
-        type="info"
-        show-icon
-        message="未添加组成规格；确定后将清除组合组成，恢复为普通商品规格。"
-      />
+      <a-alert v-if="rows.length && !draft.length" type="info" show-icon message="未添加组成规格；确定后将清除组合组成，恢复为普通商品规格。" />
       <div v-for="(row, index) in draft" :key="index" class="bundle-editor__line">
         <SkuSelect v-model:value="row.skuId" :disabled-statuses="[]" />
         <a-input-number
@@ -121,7 +116,7 @@ async function save(): Promise<void> {
     const confirmed = await new Promise<boolean>((resolve) => {
       Modal.confirm({
         title: '清除组合商品组成？',
-        content: '清除后该规格将恢复为普通商品规格；历史订单已冻结的组成快照不受影响。',
+        content: '清除后该规格将恢复为普通商品规格；历史订单已保存的组成快照不受影响。',
         okText: '清除',
         okType: 'danger',
         cancelText: '取消',

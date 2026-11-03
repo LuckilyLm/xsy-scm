@@ -32,7 +32,7 @@
       <a-descriptions-item label="汇总商品规格">{{ batch.summary?.length ?? 0 }}</a-descriptions-item>
     </a-descriptions>
     <div v-if="batch" class="batch-actions">
-      <a-button v-privilege="'scm:purchase:demand:batch:query'" @click="viewBatch"> 查看冻结批次明细 </a-button>
+      <a-button v-privilege="'scm:purchase:demand:batch:query'" @click="viewBatch"> 查看本次计算明细 </a-button>
     </div>
     <a-descriptions v-if="result" bordered size="small" :column="2">
       <a-descriptions-item label="区间内来源行">{{ result.sourceLineCount }}</a-descriptions-item>
@@ -154,7 +154,7 @@ async function generate() {
     batch.value = r.data;
     const generated = await purchaseDemandApi.generateBatch({batchId: r.data.batchId});
     result.value = generated.data;
-    message.success(`冻结批次 ${r.data.batchId} 已生成 ${generated.data.createdCount} 条需求，跳过 ${generated.data.skippedCount} 条`);
+    message.success(`已生成 ${generated.data.createdCount} 条需求，跳过 ${generated.data.skippedCount} 条`);
     emit('generated');
   } catch {
     // 生成失败只走全局 toast；弹窗里的 error 留给本地校验

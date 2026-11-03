@@ -28,7 +28,7 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 @RequestMapping("/scm/report/customer/statement")
 @RequiredArgsConstructor
 public class ScmCustomerStatementController {
-    private static final List<String> TITLES = List.of("对账版本", "结算方", "范围口径", "冻结时间", "期初日", "截止日", "期初净应收", "新增应收",
+    private static final List<String> TITLES = List.of("对账版本", "结算方", "范围口径", "生成时间", "期初日", "截止日", "期初净应收", "新增应收",
         "红字应收", "核销净额", "抹零净额", "期末净应收", "本期实收净额", "期末未分配资金", "本期实退净额", "事件时间", "类型", "单号", "关联单号", "原客户", "应收变动",
         "收款变动", "核销变动", "退款变动", "过账金额", "滚动净应收");
     private final ScmCustomerStatementService statementService;
@@ -80,6 +80,6 @@ public class ScmCustomerStatementController {
                 version.getClosingUnallocated(), version.getRefundNet(), null, null, null, null, null, null, null, null,
                 null, null, null));
         }
-        ScmExcel.write(response, "客户对账单-" + id + ".xlsx", "冻结明细", TITLES, rows);
+        ScmExcel.write(response, "客户对账单-" + id + ".xlsx", "对账明细", TITLES, rows);
     }
 }

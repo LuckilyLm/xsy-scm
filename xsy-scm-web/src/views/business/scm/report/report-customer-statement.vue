@@ -36,7 +36,7 @@
     <div ref="printArea" class="statement-print">
       <h2>{{ selected.settlementCustomerName }} · 客户对账单</h2>
       <p>
-        期间 {{ selected.startDate }} 至 {{ selected.endDate }}　冻结时间 {{ datetime(selected.generatedAt) }}
+        期间 {{ selected.startDate }} 至 {{ selected.endDate }}　生成时间 {{ datetime(selected.generatedAt) }}
         <a-tag v-if="selected.includePosting" color="blue">含过账记录</a-tag>
       </p>
       <a-alert
@@ -131,7 +131,7 @@ const historyColumns: TableColumnsType<CustomerStatement> = [
   {title: '起始日', dataIndex: 'startDate'},
   {title: '截止日', dataIndex: 'endDate'},
   {title: '范围', dataIndex: 'partialScope'},
-  {title: '冻结时间', dataIndex: 'generatedAt'},
+  {title: '生成时间', dataIndex: 'generatedAt'},
   {title: '操作', dataIndex: 'action', align: 'center', width: 130},
 ];
 const lineColumns: TableColumnsType<CustomerStatementLine> = [

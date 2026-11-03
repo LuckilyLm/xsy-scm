@@ -51,7 +51,7 @@ public enum OrderErrorCode implements ScmErrorCode {
     // 由 PurchaseErrorCodeTest 撞码门禁拦下后整体迁移。
     ORDER_LOCKED(40912, "订单已锁单，请新建加单而不是修改原单"),
     ORDER_EDIT_AFTER_DISPATCH_FORBIDDEN(40913, "订单已发车出库，改单需要发车后改单权限"),
-    ORDER_DISCOUNT_EDIT_BLOCKED(40914, "订单已冻结优惠，不能直接改单；请取消后重下或新建加单"),
+    ORDER_DISCOUNT_EDIT_BLOCKED(40914, "订单已使用优惠，不能直接改单；请取消后重下或新建加单"),
     ORDER_SORTED_ITEM_CHANGE_BLOCKED(40915, "订单已分拣或出库，不能增删商品；请新建加单"),
     ORDER_CONFIRMED_NON_STANDARD_INSERT_BLOCKED(40916, "已确认订单不能直接新增需称重的商品；请新建加单"),
     ORDER_ACTUAL_AFTER_DISPATCH_BLOCKED(40917, "订单已发车出库，不能再修改实发数量"),

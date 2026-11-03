@@ -46,7 +46,7 @@ public enum PromotionErrorCode implements ScmErrorCode {
      */
     THRESHOLD_NOT_REACHED(41332, "订单金额未达到优惠门槛"),
 
-    DISCOUNT_ALREADY_FROZEN(41333, "该订单的优惠已冻结，不能重复计算"),
+    DISCOUNT_ALREADY_FROZEN(41333, "该订单的优惠已生效，不能重复计算"),
 
     /**
      * 模板未开放自助领取、未生效或已过期时，商城领取入口统一拒绝。

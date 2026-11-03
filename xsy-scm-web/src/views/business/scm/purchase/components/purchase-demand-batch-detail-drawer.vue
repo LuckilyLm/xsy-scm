@@ -1,7 +1,7 @@
 <!-- workspace：冻结批次明细的两张宽表要横向铺开才看得清。
      只读，数字都由后端下发，前端不重算；接口同时校验批次和库存余额权限。 -->
 <template>
-  <a-drawer :open="open" title="冻结批次明细" :width="scmDrawerWidth('workspace')" @close="close">
+  <a-drawer :open="open" title="需求计算明细" :width="scmDrawerWidth('workspace')" @close="close">
     <a-alert v-if="error" :message="error" type="error" show-icon>
       <template #action>
         <a-button @click="load">重试</a-button>
@@ -12,9 +12,9 @@
       <template v-if="detail">
         <a-descriptions bordered size="small" :column="3" class="head">
           <a-descriptions-item label="状态">{{ batchStatusText(detail.status) }}</a-descriptions-item>
-          <a-descriptions-item label="冻结时间">{{ datetime(detail.createdAt) }}</a-descriptions-item>
+          <a-descriptions-item label="生成时间">{{ datetime(detail.createdAt) }}</a-descriptions-item>
           <a-descriptions-item label="统计时间段" :span="2">{{ datetime(detail.startAt) }} ~ {{ datetime(detail.endAt) }}</a-descriptions-item>
-          <a-descriptions-item label="冻结人">{{ detail.createdBy || '—' }}</a-descriptions-item>
+          <a-descriptions-item label="生成人">{{ detail.createdBy || '—' }}</a-descriptions-item>
           <a-descriptions-item label="仓库">{{ detail.warehouseName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="供应商">{{ detail.supplierName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="采购员">{{ detail.purchaserName || '—' }}</a-descriptions-item>
@@ -75,7 +75,7 @@
           </template>
         </LocalTable>
       </template>
-      <a-empty v-else-if="!loading && !error" description="请选择一个冻结批次" />
+      <a-empty v-else-if="!loading && !error" description="请选择一次需求计算记录" />
     </a-spin>
   </a-drawer>
 </template>

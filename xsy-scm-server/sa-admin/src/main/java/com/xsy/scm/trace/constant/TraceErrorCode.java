@@ -54,7 +54,7 @@ public enum TraceErrorCode implements ScmErrorCode {
     TRACE_UNIT_WAREHOUSE_MISMATCH(41516, "包装码所属批次与分拣任务不在同一仓库，不能绑定"),
 
     /** 实拣量是销售单位、包装码量是库存记账单位；缺少当时保存的换算关系时，两种量不能直接比较。 */
-    TRACE_UNIT_UNIT_MISMATCH(41517, "包装码的计量单位与分拣行销售单位之间没有可用的冻结换算，不能绑定"),
+    TRACE_UNIT_UNIT_MISMATCH(41517, "包装码的计量单位与分拣行销售单位之间没有可用的换算关系，不能绑定"),
 
     /** 更正申请不存在。 */
     TRACE_CORRECTION_NOT_FOUND(41520, "更正申请不存在"),

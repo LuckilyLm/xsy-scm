@@ -3,7 +3,7 @@
     <a-card title="采购询价" :bordered="false" size="small">
       <a-form layout="inline" class="scm-inquiry__toolbar" @submit.prevent="loadBatch(1)">
         <a-form-item label="净需求批次">
-          <a-input v-model:value="batchInput" placeholder="输入已冻结的批次编号" style="width: 220px" />
+          <a-input v-model:value="batchInput" placeholder="输入需求计算批次号" style="width: 220px" />
         </a-form-item>
         <a-button type="primary" :loading="loading" v-privilege="'scm:purchase:inquiry:query'" @click="loadBatch(1)">查询</a-button>
       </a-form>
