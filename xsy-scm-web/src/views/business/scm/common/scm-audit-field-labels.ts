@@ -1,7 +1,7 @@
 /** 审计字段的中文名；没有映射时显示原字段名。 */
 export const SCM_AUDIT_FIELD_LABELS: Record<string, string> = {
   // ---- 通用审计列 ----
-  id: '主键',
+  id: '记录 ID',
   version: '版本号',
   deleted: '已删除',
   sortOrder: '排序',
@@ -51,12 +51,12 @@ export const SCM_AUDIT_FIELD_LABELS: Record<string, string> = {
   inventoryReservations: '库存预留',
   sortingProgress: '分拣进度',
   deliveryProgress: '配送进度',
-  activitySnapshot: '活动快照',
+  activitySnapshot: '活动信息',
   activityCode: '活动编码',
   activityName: '活动名称',
   activityType: '活动类型',
   applied: '已生效活动',
-  couponSnapshot: '优惠券快照',
+  couponSnapshot: '优惠券信息',
   rule: '活动规则',
   thresholdAmount: '满减门槛',
   reduceAmount: '满减金额',

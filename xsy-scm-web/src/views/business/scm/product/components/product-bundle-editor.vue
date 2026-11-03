@@ -116,7 +116,7 @@ async function save(): Promise<void> {
     const confirmed = await new Promise<boolean>((resolve) => {
       Modal.confirm({
         title: '清除组合商品组成？',
-        content: '清除后该规格将恢复为普通商品规格；历史订单已保存的组成快照不受影响。',
+        content: '清除后该规格将恢复为普通商品规格；历史订单中已保存的商品组成不受影响。',
         okText: '清除',
         okType: 'danger',
         cancelText: '取消',

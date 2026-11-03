@@ -20,8 +20,8 @@ public class ScaleOperatorSessionForm {
     /**
      * 会话有效分钟数；现场一个班次通常不超过 12 小时，超过由管理员重新签发。
      */
-    @NotNull(message = "会话有效时长不能为空")
-    @Min(value = 5, message = "会话有效时长至少 5 分钟")
-    @Max(value = 720, message = "会话有效时长最多 720 分钟")
+    @NotNull(message = "登录有效时长不能为空")
+    @Min(value = 5, message = "登录有效时长至少 5 分钟")
+    @Max(value = 720, message = "登录有效时长最多 720 分钟")
     private Integer validMinutes;
 }

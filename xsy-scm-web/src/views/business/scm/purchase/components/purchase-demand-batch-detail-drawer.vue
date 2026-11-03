@@ -49,7 +49,7 @@
           </template>
         </LocalTable>
 
-        <a-divider orientation="left">缺口分摊到订单行</a-divider>
+        <a-divider orientation="left">缺口分配到订单行</a-divider>
         <LocalTable
           :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
           size="small"

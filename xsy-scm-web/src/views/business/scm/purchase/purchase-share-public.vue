@@ -45,11 +45,11 @@
             </div>
             <a-input v-model:value="draft[line.itemId].remark" :maxlength="200" placeholder="备注（可空）" />
             <div v-if="line.lastSubmittedAt" class="share-page__last">
-              上次回填：单价 {{ line.lastUnitPrice ?? '—' }}，实收 {{ line.lastReceivedQuantity ?? '—' }}
+              上次提交：单价 {{ line.lastUnitPrice ?? '—' }}，实收 {{ line.lastReceivedQuantity ?? '—' }}
             </div>
           </div>
 
-          <a-button type="primary" block :loading="submitting" @click="submit">提交回填</a-button>
+          <a-button type="primary" block :loading="submitting" @click="submit">提交</a-button>
         </template>
       </a-spin>
     </div>

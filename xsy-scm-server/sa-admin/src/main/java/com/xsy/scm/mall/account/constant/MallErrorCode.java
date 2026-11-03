@@ -26,7 +26,7 @@ public enum MallErrorCode implements ScmErrorCode {
     WAREHOUSE_UNAVAILABLE(41281, "配送仓已不可用，请重新选择地址或联系管理员"),
     CHECKOUT_EMPTY(40084, "请选择要结算的商品"),
     CHECKOUT_ADDRESS_REQUIRED(40085, "请选择收货地址"),
-    CHECKOUT_IDEMPOTENCY_REQUIRED(40086, "缺少幂等键，无法安全提交订单"),
+    CHECKOUT_IDEMPOTENCY_REQUIRED(40086, "提交信息不完整，请刷新页面后重试"),
     CHECKOUT_SETTLEMENT_METHOD_REQUIRED(40087, "请选择结算方式后再提交订单"),
     CHECKOUT_ITEM_UNAVAILABLE(40984, "所选商品中有不可售项，请返回购物车调整"),
     CHECKOUT_PRICE_CHANGED(40985, "商品价格已变化，请重新确认结算金额"),

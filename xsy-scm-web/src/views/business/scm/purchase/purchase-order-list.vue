@@ -238,7 +238,7 @@ async function submitReassign() {
       purchaserId: reassignPurchaser.value ?? null,
       reason: reassignReason.value.trim() || null,
     });
-    message.success('归属已改派');
+    message.success('采购员已改派');
     reassignVisible.value = false;
     await queryData();
   } catch {
@@ -331,7 +331,7 @@ function moreActions(row: Order): ScmActionItem[] {
     {key: 'detail', label: '详情', hidden: !entryHidden.value},
     {key: 'print', label: '打印', hidden: !submitted},
     {key: 'share', label: '分享', hidden: !(canShare.value && SHAREABLE_STATUSES.includes(row.status ?? ''))},
-    {key: 'feedback', label: '现场回填', hidden: row.status === 'CANCELLED'},
+    {key: 'feedback', label: '现场录入', hidden: row.status === 'CANCELLED'},
     {key: 'reassign', label: '改派', hidden: !canAssign.value},
     {
       key: 'lock',

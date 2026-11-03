@@ -108,7 +108,7 @@ const upload: UploadProps['customRequest'] = async (options) => {
       FILE_FOLDER_TYPE_ENUM.PUBLIC_IMAGE.value,
       {suppressGlobalErrorMessage: true}
     );
-    if (!response.data?.fileKey) throw new Error('上传接口未返回文件信息');
+    if (!response.data?.fileKey) throw new Error('上传失败，请重试');
     if (!props.modelValue.some((image) => image.fileKey === response.data.fileKey)) {
       emit('update:modelValue', [
         ...props.modelValue,

@@ -83,7 +83,7 @@ public enum FinanceErrorCode implements ScmErrorCode {
     PAYMENT_RECEIPT_AMOUNT_MISSING(41145, "支付交易缺少渠道实收金额，无法登记收款"),
     ORDER_FUNDING_INVALID(41146, "订单资金来源不完整或身份金额不一致，请核对支付与资金流水"),
     RECHARGE_RECEIPT_RESERVED(41147, "充值收款已形成钱包权益，请通过余额支付结算订单"),
-    REFUND_ALLOCATION_REQUIRED(41148, "该退款需要支付来源分摊，不能从单笔交易或人工付款直接退款"),
+    REFUND_ALLOCATION_REQUIRED(41148, "该退款需要按原支付方式分别退回，不能从单笔交易或人工付款直接退款"),
     BALANCE_REFUND_REQUIRES_WALLET(41149, "纯余额订单请通过售后退款单返还钱包余额"),
     BALANCE_PAYMENT_AFTER_REFUND(41150, "订单已发起资金退款，暂不支持继续余额支付"),
     PAYMENT_AFTER_BALANCE_REFUND(41151, "订单已返还余额，不能继续发起支付，请另建订单"),

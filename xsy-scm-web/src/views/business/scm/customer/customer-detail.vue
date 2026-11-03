@@ -74,7 +74,7 @@
 
                 <!-- 归属关系 -->
                 <section class="scm-detail-card">
-                  <h3 class="scm-detail-card__title">归属关系</h3>
+                  <h3 class="scm-detail-card__title">客户关系</h3>
                   <dl class="scm-field-list">
                     <div class="scm-field">
                       <dt class="scm-field__label">客户分类</dt>
@@ -89,7 +89,7 @@
                       <dd class="scm-field__value">{{ customer.settlementCustomerName || customer.name }}</dd>
                     </div>
                     <div class="scm-field">
-                      <dt class="scm-field__label">归属业务员</dt>
+                      <dt class="scm-field__label">负责业务员</dt>
                       <dd class="scm-field__value">{{ customer.sellerName || '未分配' }}</dd>
                     </div>
                     <div class="scm-field">

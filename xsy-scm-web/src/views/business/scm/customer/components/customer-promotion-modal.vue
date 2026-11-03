@@ -17,7 +17,7 @@
           <img v-if="qrDataUrl" class="promo__qr" :src="qrDataUrl" alt="客户推广二维码" />
           <div class="promo__meta">
             <a-typography-text class="promo__url" copyable>{{ shareUrl }}</a-typography-text>
-            <span class="promo__hint">归属业务员：{{ active.sellerName || '未分配' }}</span>
+            <span class="promo__hint">负责业务员：{{ active.sellerName || '未分配' }}</span>
           </div>
         </div>
         <a-empty v-else-if="!loading && !error" description="该客户还没有推广码" />

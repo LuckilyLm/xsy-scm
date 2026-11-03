@@ -20,7 +20,7 @@ public enum ScmCommonErrorCode implements ScmErrorCode {
 
     IDEMPOTENCY_KEY_INVALID(40070, "Idempotency-Key 长度不能超过 200 个字符"),
 
-    IDEMPOTENCY_CONFLICT(40966, "相同幂等键的请求内容不一致");
+    IDEMPOTENCY_CONFLICT(40966, "重复提交的内容与上次不一致");
 
     private final int code;
 

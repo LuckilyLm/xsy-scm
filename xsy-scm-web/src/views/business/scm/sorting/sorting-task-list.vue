@@ -474,7 +474,7 @@ function confirmComplete(record: SortingTask) {
     title: `完成分拣任务 ${record.taskNo}？`,
     content:
       `任务内每条活动明细都要有结果才能完成（当前已处理 ${record.processedCount} / ${record.itemCount}）。` +
-      '完成只锁定任务和实发数量，不扣库存、不生成出库单，也不回写订单。',
+      '完成只锁定任务和实发数量，不扣库存、不生成出库单，也不更新订单。',
     okText: '确认完成',
     cancelText: '返回',
     onOk: async () => {

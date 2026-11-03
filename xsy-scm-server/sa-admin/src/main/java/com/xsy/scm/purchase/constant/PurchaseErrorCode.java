@@ -55,7 +55,7 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_WAREHOUSE_DISABLED(40987, "仓库已停用，不能用于新采购单"),
     PURCHASE_RECEIPT_STATE_INVALID(40988, "当前收货单状态不允许此操作"),
     PURCHASE_RECEIPT_OVER_RECEIVED(40989, "本次收货数量超过剩余可收数量"),
-    PURCHASE_IDEMPOTENCY_CONFLICT(40990, "相同幂等键的请求内容不一致"),
+    PURCHASE_IDEMPOTENCY_CONFLICT(40990, "重复提交的内容与上次不一致"),
     PURCHASE_RECEIPT_ORDER_STATE_INVALID(40991, "当前采购单状态不允许创建或确认收货"),
     PURCHASE_SUPPLIER_SKU_DISABLED(40992, "该供应商未启用此商品规格的采购配置"),
     PURCHASE_ORDER_DELETE_STATE_INVALID(40993, "仅未确认且没有收货记录的采购单可以删除"),

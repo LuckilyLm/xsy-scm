@@ -24,7 +24,7 @@ public enum ScaleDeviceErrorCode implements ScmErrorCode {
     PAIRING_CODE_INVALID(41172, "配对码无效或已过期，请向管理员重新索取"),
 
     /** 设备凭证缺失、过期或与请求设备不一致。 */
-    DEVICE_UNAUTHORIZED(41173, "设备凭证无效，请重新激活"),
+    DEVICE_UNAUTHORIZED(41173, "设备授权无效，请重新激活"),
 
     /** 员工授权会话缺失、过期或已结束。 */
     OPERATOR_SESSION_INVALID(41174, "员工授权已失效，请重新登录"),

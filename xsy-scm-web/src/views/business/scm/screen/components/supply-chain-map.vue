@@ -14,7 +14,7 @@
     <div v-else class="scm-map">
       <div class="scm-map-main">
         <div ref="mapEl" class="scm-map-canvas" />
-        <div v-if="!cities.length" class="scm-map-empty">暂无已归属到市的客户 / 供应商 / 仓库</div>
+        <div v-if="!cities.length" class="scm-map-empty">暂无已定位到城市的客户 / 供应商 / 仓库</div>
       </div>
 
       <!-- 仓库明细：地图只到市，逐仓数据单独列出 -->
@@ -106,7 +106,7 @@ const unlocatedText = computed(() => {
   if (warehouse > 0) {
     parts.push(`仓库 ${formatInt(warehouse)}`);
   }
-  return parts.length ? `未归属：${parts.join(' · ')}` : '';
+  return parts.length ? `未定位到城市：${parts.join(' · ')}` : '';
 });
 
 /** 底图只加载一次；失败时清掉缓存，便于重试。 */

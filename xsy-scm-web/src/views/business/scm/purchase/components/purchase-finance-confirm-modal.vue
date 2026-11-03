@@ -15,10 +15,10 @@
       ><template #action><a-button @click="load">重试</a-button></template></a-alert
     >
     <p class="scm-note">核对实际采购数量与单价后即可生成供应商应付。未采购的商品填写0，至少一项实际数量大于0。</p>
-    <a-alert v-if="pendingPriceBlocked" type="warning" show-icon message="存在待定价或未回填的商品，需要补价或改价权限后才能确认。" />
+    <a-alert v-if="pendingPriceBlocked" type="warning" show-icon message="存在待定价或未录入的商品，需要补价或改价权限后才能确认。" />
     <a-alert v-else-if="hasPendingPrice" type="warning" show-icon message="请补齐本次确认单价；采购价格未经核对不能确认应付。" />
-    <a-alert v-if="priceChangeForbidden" type="warning" show-icon message="采用回填报价需要补价或改价权限，请由有权限的人员核对。" />
-    <p v-if="fromFeedback" class="scm-note">已带入各商品最新一次现场回填，不累加多次回填；缺失的数量和报价请核对后补齐。</p>
+    <a-alert v-if="priceChangeForbidden" type="warning" show-icon message="采用现场录入的报价需要补价或改价权限，请由有权限的人员核对。" />
+    <p v-if="fromFeedback" class="scm-note">已带入各商品最新一次现场录入，不累加多次录入；缺失的数量和报价请核对后补齐。</p>
     <a-table
       bordered
       :data-source="lines"
@@ -112,7 +112,7 @@ const columns: TableColumnsType<ConfirmLine> = [
   {title: '计划采购数量', dataIndex: 'plannedQuantity', width: 120},
   {title: '原采购单价', dataIndex: 'purchasePrice', width: 132},
   {title: '本次确认单价', dataIndex: 'confirmedPrice', width: 144},
-  {title: '回填时间', dataIndex: 'feedbackAt', width: 176},
+  {title: '录入时间', dataIndex: 'feedbackAt', width: 176},
   {title: '实际采购数量', dataIndex: 'confirmedQuantity', width: 160},
 ];
 function open(id: Id, useFeedback = false) {

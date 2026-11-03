@@ -1,12 +1,12 @@
 <template>
-  <a-drawer :open="visible" title="采购现场回填" :width="scmDrawerWidth('xl')" @close="close">
+  <a-drawer :open="visible" title="采购现场录入" :width="scmDrawerWidth('xl')" @close="close">
     <a-space class="scm-detail-actions">
       <a-button :loading="loading" @click="load(false)">刷新</a-button>
       <a-button @click="showOrder">查看采购单</a-button>
       <a-button v-privilege="'scm:purchase:finance-confirm'" @click="confirmPurchase">确认采购</a-button>
     </a-space>
     <p class="scm-note">
-      以下为现场回填记录，尚未成为实际采购。请核对数量和单价后点击「确认采购」，系统会保存实采数量并生成应付；回填不会自动改写采购单。
+      以下为现场录入记录，尚未成为实际采购。请核对数量和单价后点击「确认采购」，系统会保存实采数量并生成应付；录入不会自动改写采购单。
     </p>
     <a-alert v-if="error" type="error" show-icon :message="error" />
     <a-table size="small" bordered :columns="columns" :data-source="rows" row-key="id" :loading="loading" :pagination="false" :scroll="{x: 1060}">
@@ -40,9 +40,9 @@ const columns = [
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '规格', dataIndex: 'skuName', width: 140},
   {title: '单位', dataIndex: 'purchaseUnit', width: 76},
-  {title: '回填单价', dataIndex: 'unitPrice', width: 140},
-  {title: '回填实收量', dataIndex: 'receivedQuantity', width: 128},
-  {title: '回填时间', dataIndex: 'submittedAt', width: 180},
+  {title: '录入单价', dataIndex: 'unitPrice', width: 140},
+  {title: '录入实收量', dataIndex: 'receivedQuantity', width: 128},
+  {title: '录入时间', dataIndex: 'submittedAt', width: 180},
   {title: '备注', dataIndex: 'remark', width: 220},
 ];
 async function load(append = false) {

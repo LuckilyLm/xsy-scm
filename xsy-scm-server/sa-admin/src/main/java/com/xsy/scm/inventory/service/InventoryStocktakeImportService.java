@@ -256,7 +256,7 @@ public class InventoryStocktakeImportService {
                 // 凭证：每行携带同一份；首行确立基准，后续不一致即视为被篡改 / 混用两份导出。
                 var rowCredential = cells.get(COL_CREDENTIAL);
                 if (rowCredential == null) {
-                    addError(result, rowNumber, null, "模板校验码", "CREDENTIAL_MISSING", "该行缺少模板校验码，请勿删除凭证列");
+                    addError(result, rowNumber, null, "模板校验码", "CREDENTIAL_MISSING", "该行缺少模板校验码，请勿删除校验码列");
                 } else if (credential == null) {
                     credential = rowCredential;
                 } else if (!credential.equals(rowCredential)) {

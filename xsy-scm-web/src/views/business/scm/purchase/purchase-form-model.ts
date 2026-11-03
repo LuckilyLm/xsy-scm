@@ -340,7 +340,7 @@ export function confirmPayload(receipt: Receipt, lines: ReceiptConfirmItemPayloa
 /** 超收容差由服务端配置，前端只提示剩余可收量。 */
 export function toleranceHint(item: ReceiptItem): string {
   const remaining = quantity(item.remainingQuantity);
-  return `剩余可收 ${remaining}（可超出剩余量的比例由服务端「采购超收容差」配置决定，超出将被拒绝）`;
+  return `剩余可收 ${remaining}（可超出剩余量的比例由系统「采购超收容差」配置决定，超出将被拒绝）`;
 }
 
 /** 该行本次收货是否超出剩余可收量（仅提示，最终以服务端 40989 为准）。 */

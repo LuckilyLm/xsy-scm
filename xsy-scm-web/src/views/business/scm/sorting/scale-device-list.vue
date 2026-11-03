@@ -74,9 +74,9 @@
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="PERM.SESSION_ISSUE" :disabled="record.status !== 'ACTIVE'" @click="openSession(record)">
-              签发会话
+              生成登录码
             </a-button>
-            <a-button type="link" size="small" v-privilege="PERM.QUERY" @click="openSessions(record)">会话记录</a-button>
+            <a-button type="link" size="small" v-privilege="PERM.QUERY" @click="openSessions(record)">登录记录</a-button>
             <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
@@ -136,8 +136,8 @@
   </a-modal>
 
   <!-- 签发员工会话 -->
-  <a-modal :open="sessionOpen" title="签发员工会话" :confirm-loading="issuing" ok-text="签发" @ok="submitSession" @cancel="sessionOpen = false">
-    <p class="scm-note">该会话仅代表员工使用本台电子秤，不包含后台菜单权限；可查看与可操作的范围仍按本人账号权限校验。</p>
+  <a-modal :open="sessionOpen" title="生成员工登录码" :confirm-loading="issuing" ok-text="生成" @ok="submitSession" @cancel="sessionOpen = false">
+    <p class="scm-note">该登录仅代表员工使用本台电子秤，不包含后台菜单权限；可查看与可操作的范围仍按本人账号权限校验。</p>
     <a-alert v-if="sessionError" :message="sessionError" type="error" show-icon class="smart-margin-bottom10" />
     <a-form layout="vertical">
       <a-form-item label="操作员工" required>
@@ -145,7 +145,7 @@
       </a-form-item>
       <a-form-item label="有效时长（分钟）" required>
         <!-- 口径收进悬停提示：录一次班次不需要常驻一行解释（常驻解释受棘轮约束） -->
-        <a-tooltip title="一个班次通常不超过 12 小时；到期后重新签发，不提供无限续期。">
+        <a-tooltip title="一个班次通常不超过 12 小时；到期后重新生成，不提供无限续期。">
           <a-input-number v-model:value="sessionForm.validMinutes" :min="5" :max="720" :step="5" style="width: 100%" />
         </a-tooltip>
       </a-form-item>
@@ -153,21 +153,21 @@
   </a-modal>
 
   <!-- 会话令牌：离开弹窗即不可查看 -->
-  <a-modal :open="tokenVisible" title="会话令牌已签发" :footer="null" @cancel="tokenVisible = false">
-    <a-result status="success" title="把令牌配置到秤端工作台">
+  <a-modal :open="tokenVisible" title="登录码已生成" :footer="null" @cancel="tokenVisible = false">
+    <a-result status="success" title="把登录码填入秤端工作台">
       <template #subTitle>
-        <p>令牌只显示这一次，关闭后无法再次查看；泄露时请在「会话记录」里结束该会话。</p>
+        <p>登录码只显示这一次，关闭后无法再次查看；泄露时请在「登录记录」里结束该登录。</p>
         <p class="scale-secret">{{ tokenResult?.sessionToken }}</p>
         <p>有效期至 {{ datetime(tokenResult?.expiresAt) }}</p>
       </template>
       <template #extra>
-        <a-button type="primary" @click="copyText(tokenResult?.sessionToken, '令牌已复制')">复制令牌</a-button>
+        <a-button type="primary" @click="copyText(tokenResult?.sessionToken, '登录码已复制')">复制登录码</a-button>
       </template>
     </a-result>
   </a-modal>
 
   <!-- 会话记录 -->
-  <a-drawer :open="sessionsOpen" title="员工会话记录" :width="scmDrawerWidth('m')" @close="sessionsOpen = false">
+  <a-drawer :open="sessionsOpen" title="员工登录记录" :width="scmDrawerWidth('m')" @close="sessionsOpen = false">
     <a-alert v-if="sessionsError" :message="sessionsError" type="error" show-icon class="smart-margin-bottom10">
       <template #action>
         <a-button @click="loadSessions">重试</a-button>
@@ -259,8 +259,8 @@ const columns = ref<TableColumnsType<ScaleDevice>>([
   {title: '工位', dataIndex: 'stationCode', width: 90, ellipsis: true},
   {title: '状态', dataIndex: 'status', width: 90, align: 'center'},
   {title: '在线', dataIndex: 'online', width: 220},
-  {title: '有效会话', dataIndex: 'activeSessionCount', width: 85},
-  {title: '凭证到期', dataIndex: 'credentialExpiresAt', width: 150},
+  {title: '登录人数', dataIndex: 'activeSessionCount', width: 85},
+  {title: '授权到期', dataIndex: 'credentialExpiresAt', width: 150},
   {title: '操作', dataIndex: 'action', align: 'center', width: 180, fixed: 'right'},
 ]);
 const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
@@ -429,7 +429,7 @@ const sessionDeviceId = ref<Id>();
 const sessionColumns: TableColumnsType<ScaleDeviceSession> = [
   {title: '员工', dataIndex: 'employeeName', width: 120},
   {title: '状态', dataIndex: 'active', width: 90},
-  {title: '签发时间', dataIndex: 'issuedAt', width: 170},
+  {title: '生成时间', dataIndex: 'issuedAt', width: 170},
   {title: '到期时间', dataIndex: 'expiresAt', width: 170},
   {title: '结束', dataIndex: 'endedAt', width: 170},
   {title: '操作', dataIndex: 'action', align: 'center', width: 80},
@@ -449,7 +449,7 @@ async function loadSessions() {
     const response = await scaleDeviceApi.sessions(sessionDeviceId.value, {suppressGlobalErrorMessage: true});
     sessions.value = response.data;
   } catch {
-    sessionsError.value = '会话记录加载失败，请重试';
+    sessionsError.value = '登录记录加载失败，请重试';
   } finally {
     sessionsLoading.value = false;
   }
@@ -459,7 +459,7 @@ async function endSession(record: ScaleDeviceSession) {
   if (sessionDeviceId.value === undefined) return;
   try {
     await scaleDeviceApi.endSession(sessionDeviceId.value, record.id);
-    message.success('会话已结束，秤端下次请求即失效');
+    message.success('登录已结束，秤端下次操作即失效');
     await loadSessions();
     await queryData();
   } catch {
@@ -472,7 +472,7 @@ async function endSession(record: ScaleDeviceSession) {
 function revoke(record: ScaleDevice) {
   Modal.confirm({
     title: `撤销「${record.deviceCode}」的绑定？`,
-    content: '撤销后该设备不能再领取任务或上报读数，仍在有效期内的员工会话一起结束；历史读数与打印记录保留，设备编号不会被复用。',
+    content: '撤销后该设备不能再领取任务或上报读数，仍在有效期内的员工登录一起结束；历史读数与打印记录保留，设备编号不会被复用。',
     okText: '撤销绑定',
     okType: 'danger',
     onOk: async () => {

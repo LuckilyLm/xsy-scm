@@ -450,7 +450,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
   }
 
   test('客户详情按「经营概览 / 联系 / 归属 / 授信 / 系统信息」分区', () => {
-    const sections = ['客户经营概览', '联系与地址', '归属关系', '授信与账期', '系统信息'];
+    const sections = ['客户经营概览', '联系与地址', '客户关系', '授信与账期', '系统信息'];
     const positions = sections.map((title) => posOf(customer, title));
     // 顺序固定，系统信息在最后
     assert.deepEqual(

@@ -39,15 +39,15 @@
 
         <section class="scm-form-section">
           <div class="scm-form-section__head">
-            <h3 class="scm-form-section__title">归属与结算</h3>
+            <h3 class="scm-form-section__title">业务员与结算</h3>
           </div>
           <a-row :gutter="20">
             <a-col v-if="isEdit || canAssign" :xs="24" :sm="12">
               <a-form-item>
                 <template #label>
-                  归属业务员
+                  负责业务员
                   <ScmFieldHelp
-                    label="归属业务员"
+                    label="负责业务员"
                     :text="canAssign ? '留空则未分配；改派需要客户分配权限' : '当前账号没有改派权限，业务员只读展示'"
                   />
                 </template>

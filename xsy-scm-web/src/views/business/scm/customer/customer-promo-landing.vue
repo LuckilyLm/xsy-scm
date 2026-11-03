@@ -7,7 +7,7 @@
         <template v-if="landing">
           <a-descriptions :column="1" size="small" bordered>
             <a-descriptions-item label="推荐方">{{ landing.customerName }}</a-descriptions-item>
-            <a-descriptions-item label="归属业务员">{{ landing.sellerName || '待分配' }}</a-descriptions-item>
+            <a-descriptions-item label="负责业务员">{{ landing.sellerName || '待分配' }}</a-descriptions-item>
             <a-descriptions-item label="扫码时间">{{ formatDateTime(landing.scannedAt) }}</a-descriptions-item>
           </a-descriptions>
         </template>

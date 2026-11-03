@@ -78,7 +78,7 @@ export function useScreenData() {
       return false;
     }
     error.value = '';
-    staleError.value = failed > 0 ? `${failed} 个接口加载失败` : '';
+    staleError.value = failed > 0 ? `${failed} 项数据加载失败` : '';
     return true;
   }
 

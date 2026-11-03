@@ -301,7 +301,7 @@ const logColumns: TableColumnsType<FinanceOperationLog> = [
   {title: '操作人', dataIndex: 'operator', width: 130},
   // 无宽度的列在窄屏可滚动表里会被压成 0，原因列必须给宽度
   {title: '原因 / 备注', dataIndex: 'reason', width: 220, ellipsis: true},
-  {title: '快照', dataIndex: 'snapshot', width: 100},
+  {title: '变更详情', dataIndex: 'snapshot', width: 100},
 ];
 
 function refundStatusText(value: string | null | undefined): string {

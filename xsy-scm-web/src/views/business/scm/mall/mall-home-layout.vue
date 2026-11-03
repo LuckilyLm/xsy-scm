@@ -212,9 +212,9 @@
           </template>
         </a-drawer>
 
-        <a-modal :open="rollbackOpen" title="回滚首页发布版本" :confirm-loading="publishing" @ok="rollback" @cancel="rollbackOpen = false">
+        <a-modal :open="rollbackOpen" title="恢复首页历史版本" :confirm-loading="publishing" @ok="rollback" @cancel="rollbackOpen = false">
           <p>将目标版本复制为新的发布记录，当前版本仍保留在历史中。</p>
-          <a-form-item label="回滚原因" required><a-textarea v-model:value="rollbackReason" :maxlength="500" :rows="3" /></a-form-item>
+          <a-form-item label="恢复原因" required><a-textarea v-model:value="rollbackReason" :maxlength="500" :rows="3" /></a-form-item>
         </a-modal>
       </div>
     </a-tab-pane>
@@ -229,7 +229,7 @@
         <div class="console-head">
           <div class="console-head__intro">
             <h2>发布记录</h2>
-            <p class="console-history-intro">每次正式发布或回滚都会生成一个新版本；回滚不会改写历史记录。</p>
+            <p class="console-history-intro">每次正式发布或恢复历史版本都会生成一个新版本；恢复不会改写历史记录。</p>
           </div>
           <span class="console-history-count">共 {{ releases.length }} 次</span>
         </div>
@@ -239,7 +239,7 @@
               <span class="console-release__version">v{{ item.id }}</span>
               <div class="console-release__main">
                 <div class="console-release__heading">
-                  <strong>{{ item.publishKind === 'ROLLBACK' ? '回滚发布' : '正式发布' }}</strong>
+                  <strong>{{ item.publishKind === 'ROLLBACK' ? '恢复历史版本' : '正式发布' }}</strong>
                   <a-tag v-if="String(item.id) === String(currentReleaseId)" color="green">当前线上</a-tag>
                 </div>
                 <span class="console-release__meta">{{ item.publishedAt }} · {{ item.publishedBy }}</span>
@@ -249,7 +249,7 @@
                 :disabled="dirty"
                 v-privilege="'scm:mall:home:publish'"
                 @click="openRollback(item)"
-                >回滚到此版本</a-button
+                >恢复此版本</a-button
               >
             </article>
           </div>
@@ -686,7 +686,7 @@ function openRollback(release: HomeRelease): void {
 }
 async function rollback(): Promise<void> {
   if (!rollbackTarget.value || !rollbackReason.value.trim()) {
-    void message.warning('请填写回滚原因');
+    void message.warning('请填写恢复原因');
     return;
   }
   publishing.value = true;
@@ -694,9 +694,9 @@ async function rollback(): Promise<void> {
     await mallHomeApi.rollback(rollbackTarget.value.id, pointerVersion.value, rollbackReason.value.trim());
     rollbackOpen.value = false;
     await load();
-    void message.success('已发布回滚版本');
+    void message.success('已恢复该版本');
   } catch (cause) {
-    void message.error(String((cause as Error)?.message || '回滚失败'));
+    void message.error(String((cause as Error)?.message || '恢复失败'));
   } finally {
     publishing.value = false;
   }
