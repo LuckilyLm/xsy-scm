@@ -34,7 +34,15 @@
         bordered
         size="small"
         :loading="loading"
-        :pagination="{current: currentPage, pageSize: 20, total: total, showSizeChanger: false}"
+        :pagination="{
+          current: currentPage,
+          pageSize: 20,
+          total: total,
+          showSizeChanger: false,
+          showQuickJumper: true,
+          showLessItems: true,
+          showTotal: (total: number) => `共${total}条`,
+        }"
         :scroll="{x: scmColumnsWidth(columns)}"
         @change="onPageChange"
       >

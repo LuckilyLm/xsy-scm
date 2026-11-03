@@ -68,10 +68,10 @@
       <PurchaseDailyReport />
     </a-tab-pane>
     <a-tab-pane key="overview" tab="采购概览">
-      <a-row class="smart-table-btn-block scm-table-toolbar">
+      <a-row data-toolbar-layout="single" class="smart-table-btn-block scm-table-toolbar">
         <div class="smart-table-operate-block">
-          <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="overviewExport.exporting" @click="exportOverview"
-            ><template #icon><DownloadOutlined /></template>导出</a-button
+          <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="overviewExport.exporting" @click="exportOverview"
+            >导出</a-button
           >
         </div>
       </a-row>

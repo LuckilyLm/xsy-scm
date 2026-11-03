@@ -13,6 +13,8 @@
     </a-alert>
 
     <a-table
+      size="small"
+      bordered
       :columns="columns"
       :data-source="pagedTree"
       :loading="loading"
@@ -38,6 +40,8 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-quick-jumper
+        show-less-items
         v-model:current="pageNum"
         v-model:page-size="pageSize"
         :total="tree.length"

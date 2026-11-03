@@ -41,13 +41,7 @@
   margin-left: 4px;
 }
 
-/*
- * 固定列必须自带底色。主题把表头、表体底色显式设为透明，横向滚动时被固定的操作列会与
- * 下方滚过的列重叠，看起来像「核销金额操作」这样两列文字粘在一起。
- * 选择器要压过 shell.less 里的透明背景规则，否则只修好一半。
- */
-.scm-module .admin-layout .ant-table-wrapper .ant-table-thead > tr > th.ant-table-cell-fix-right,
-.scm-module .admin-layout .ant-table-wrapper .ant-table-thead > tr > th.ant-table-cell-fix-left,
+/* 固定列表体保持实底，避免横向滚动时与下层文字重叠；表头由组件库提供主题底色。 */
 .scm-module .admin-layout .ant-table-wrapper .ant-table-tbody > tr > td.ant-table-cell-fix-right,
 .scm-module .admin-layout .ant-table-wrapper .ant-table-tbody > tr > td.ant-table-cell-fix-left {
   background: var(--scm-surface, #fff);

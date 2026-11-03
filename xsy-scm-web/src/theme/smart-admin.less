@@ -113,22 +113,99 @@
 .smart-query-table-page {
   margin-top: 10px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+
+  .ant-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 0;
+  }
 }
 
 .smart-table-btn-block {
-  margin-bottom: 15px;
+  margin-bottom: 12px;
   display: flex;
   flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   justify-content: space-between;
 
   .smart-table-operate-block {
-    .ant-btn {
-      margin-right: 12px;
-    }
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .smart-table-setting-block {
-    float: right;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-left: auto;
   }
+
+  .smart-table-operate-block > .ant-btn,
+  .smart-table-setting-block > .ant-btn {
+    margin-inline: 0;
+  }
+}
+
+.smart-table-setting-block > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 单一表格操作与查询区共行，两个区域独立保留权限和表单提交边界。 */
+.smart-query-layout {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.smart-query-layout > .smart-query-form {
+  flex: 1 1 640px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.smart-table-btn-block[data-toolbar-layout] {
+  justify-content: flex-end;
+
+  .smart-table-setting-block {
+    margin-left: 0;
+  }
+}
+
+.smart-query-layout > .smart-table-btn-block[data-toolbar-layout='query'] {
+  flex: 0 0 auto;
+  margin: 0 0 0 auto;
+}
+
+.smart-query-layout > .smart-table-btn-block[data-toolbar-layout='query']:empty {
+  display: none;
+}
+
+.smart-query-table-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.smart-query-table-actions > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ant-table-wrapper .ant-table-pagination {
+  flex-wrap: wrap;
+  row-gap: 8px;
 }

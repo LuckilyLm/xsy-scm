@@ -15,6 +15,7 @@
         仓库：<strong>{{ viewWarehouseName }}</strong>
       </p>
       <a-table
+        bordered
         size="small"
         :columns="viewColumns"
         :data-source="employees"

@@ -50,6 +50,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper

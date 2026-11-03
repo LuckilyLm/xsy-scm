@@ -94,6 +94,8 @@
       </a-table>
       <div class="smart-query-table-page">
         <a-pagination
+          show-quick-jumper
+          show-less-items
           v-model:current="filters.pageNum"
           v-model:page-size="filters.pageSize"
           :total="total"

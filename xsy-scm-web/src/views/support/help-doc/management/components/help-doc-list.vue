@@ -3,37 +3,36 @@
   *
 -->
 <template>
-  <a-form class="smart-query-form" v-privilege="'support:helpDoc:query'">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="标题、作者" />
-      </a-form-item>
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" v-privilege="'support:helpDoc:query'">
+      <a-row class="smart-query-form-row">
+        <a-form-item label="关键字" class="smart-query-form-item">
+          <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="标题、作者" />
+        </a-form-item>
 
-      <a-form-item label="创建时间" class="smart-query-form-item">
-        <a-range-picker :presets="defaultTimeRanges" v-model:value="createDate" @change="createDateChange" style="width: 220px" />
-      </a-form-item>
+        <a-form-item label="创建时间" class="smart-query-form-item">
+          <a-range-picker :presets="defaultTimeRanges" v-model:value="createDate" @change="createDateChange" style="width: 220px" />
+        </a-form-item>
 
-      <a-form-item class="smart-query-form-item smart-margin-left10">
-        <a-button-group>
-          <a-button type="primary" @click="onSearch">
-            <template #icon>
-              <SearchOutlined />
-            </template>
-            查询
-          </a-button>
-          <a-button @click="onReload">
-            <template #icon>
-              <ReloadOutlined />
-            </template>
-            重置
-          </a-button>
-        </a-button-group>
-      </a-form-item>
-    </a-row>
-  </a-form>
-
-  <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+        <a-form-item class="smart-query-form-item smart-margin-left10">
+          <a-button-group>
+            <a-button type="primary" @click="onSearch">
+              <template #icon>
+                <SearchOutlined />
+              </template>
+              查询
+            </a-button>
+            <a-button @click="onReload">
+              <template #icon>
+                <ReloadOutlined />
+              </template>
+              重置
+            </a-button>
+          </a-button-group>
+        </a-form-item>
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="addOrUpdate()" v-privilege="'support:helpDoc:add'">
           <template #icon>
@@ -46,7 +45,9 @@
         <TableOperator v-model="tableColumns" :tableId="TABLE_ID_CONST.SUPPORT.HELP_DOC" :refresh="queryHelpDocList" />
       </div>
     </a-row>
+  </div>
 
+  <a-card size="small" :bordered="false">
     <a-table
       rowKey="helpDocId"
       :columns="tableColumns"

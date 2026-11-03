@@ -124,7 +124,7 @@ export function useScmTableFill<T extends ScmTableColumn>(columns: Ref<readonly 
     if (-extra <= hostWidth.value * MAX_SHRINK_RATIO) {
       return shrinkToFit(columns.value, -extra);
     }
-    return columns.value;
+    return [...columns.value];
   });
   const scrollX = computed(() => scmColumnsWidth(displayColumns.value) + auxiliaryWidth());
 

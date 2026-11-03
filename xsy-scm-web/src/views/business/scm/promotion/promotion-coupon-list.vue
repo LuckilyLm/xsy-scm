@@ -1,21 +1,28 @@
 <!-- 优惠券：发放、领取和使用统计以服务端为准；券来源与让利投影的缺口见 docs/status.md B7。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键词" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" placeholder="优惠券名称" allow-clear @pressEnter="onSearch" />
-      </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.status" :options="statusOptions" style="width: 140px" placeholder="全部" allow-clear />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-button-group>
-          <a-button type="primary" v-privilege="'scm:promotion:coupon:query'" @click="onSearch">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-button-group>
-      </a-form-item>
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" layout="inline" @submit.prevent>
+      <a-row class="smart-query-form-row">
+        <a-form-item label="关键词" class="smart-query-form-item">
+          <a-input v-model:value="queryForm.keyword" placeholder="优惠券名称" allow-clear @pressEnter="onSearch" />
+        </a-form-item>
+        <a-form-item label="状态" class="smart-query-form-item">
+          <a-select v-model:value="queryForm.status" :options="statusOptions" style="width: 140px" placeholder="全部" allow-clear />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-button-group>
+            <a-button type="primary" v-privilege="'scm:promotion:coupon:query'" @click="onSearch">查询</a-button>
+            <a-button @click="resetQuery">重置</a-button>
+          </a-button-group>
+        </a-form-item>
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
+      <div class="smart-table-operate-block">
+        <a-button type="primary" v-privilege="'scm:promotion:coupon:edit'" @click="openCreate">新建券</a-button>
+      </div>
     </a-row>
-  </a-form>
+  </div>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
     <template #action>
@@ -24,12 +31,6 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-        <a-button type="primary" v-privilege="'scm:promotion:coupon:edit'" @click="openCreate">新建券</a-button>
-      </div>
-    </a-row>
-
     <a-table
       size="small"
       :data-source="tableData"
@@ -106,6 +107,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper

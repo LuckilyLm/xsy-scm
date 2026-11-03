@@ -94,12 +94,12 @@
           </a-descriptions>
 
           <h3 class="detail-section--nested">商品明细</h3>
-          <a-table
+          <LocalTable
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
             class="items"
             :data-source="order.items"
             :columns="columns"
             row-key="itemId"
-            :pagination="false"
             :scroll="{x: scmColumnsWidth(columns)}"
             size="small"
             bordered
@@ -118,7 +118,7 @@
                 </a-button>
               </template>
             </template>
-          </a-table>
+          </LocalTable>
 
           <h3 class="detail-section--nested">操作记录</h3>
           <a-button v-privilege="'scm:order:log:query'" @click="loadLogs">查看操作记录</a-button>
@@ -244,6 +244,8 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, reactive, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';

@@ -30,7 +30,13 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:stocktake:add'"> 新建盘点单 </a-button>
-        <a-button style="margin-left: 8px" :loading="templateLoading" @click="onDownloadTemplate" v-privilege="'scm:inventory:stocktake:import'">
+        <a-button
+          type="primary"
+          style="margin-left: 8px"
+          :loading="templateLoading"
+          @click="onDownloadTemplate"
+          v-privilege="'scm:inventory:stocktake:import'"
+        >
           导出盘点模板
         </a-button>
         <a-upload :show-upload-list="false" :custom-request="onUploadImport" accept=".xlsx" style="display: inline-block; margin-left: 8px">
@@ -82,6 +88,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
@@ -159,6 +166,7 @@
       description="来源行按导出时的盘点清单锁定，不能增删或替换；实盘量不能为空；清单过期或账面已变动时请重新导出。"
     />
     <a-table
+      bordered
       v-if="importResult && importResult.errors.length"
       style="margin-top: 12px"
       size="small"

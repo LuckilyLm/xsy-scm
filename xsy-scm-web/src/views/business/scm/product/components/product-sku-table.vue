@@ -1,5 +1,13 @@
 <template>
-  <a-table :columns="columns" :data-source="rows" row-key="skuId" :pagination="false" size="small" :scroll="{x: scmColumnsWidth(columns)}">
+  <LocalTable
+    :page-size-options="SCM_PAGE_SIZE_OPTIONS"
+    bordered
+    :columns="columns"
+    :data-source="rows"
+    row-key="skuId"
+    size="small"
+    :scroll="{x: scmColumnsWidth(columns)}"
+  >
     <template #bodyCell="{column, record}">
       <span v-if="column.dataIndex === 'marketPrice'" class="scm-money">{{
         record.marketPrice === null ? '未定价' : formatPrice(record.marketPrice, 'sales')
@@ -17,9 +25,11 @@
           .join(' / ') || '—'
       }}</span>
     </template>
-  </a-table>
+  </LocalTable>
 </template>
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {formatPrice} from '/@/utils/scm-amount';
 import type {TableColumnsType} from 'ant-design-vue';

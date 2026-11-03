@@ -1,24 +1,34 @@
 <!-- 包装码：一个码对应一个批次，由系统发号且不复用。页面提供发码、绑定和回放。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="批次号">
-        <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch" />
-      </a-form-item>
-      <a-form-item label="包装码">
-        <a-input v-model:value="queryForm.unitCode" placeholder="包装码" allow-clear @pressEnter="onSearch" />
-      </a-form-item>
-      <a-form-item label="状态">
-        <a-select v-model:value="queryForm.status" :options="STATUS_OPTIONS" allow-clear placeholder="全部" style="width: 140px" />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-space>
-          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:unit:query'">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-space>
-      </a-form-item>
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
+      <a-row class="smart-query-form-row">
+        <a-form-item label="批次号">
+          <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch" />
+        </a-form-item>
+        <a-form-item label="包装码">
+          <a-input v-model:value="queryForm.unitCode" placeholder="包装码" allow-clear @pressEnter="onSearch" />
+        </a-form-item>
+        <a-form-item label="状态">
+          <a-select v-model:value="queryForm.status" :options="STATUS_OPTIONS" allow-clear placeholder="全部" style="width: 140px" />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-space>
+            <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:unit:query'">查询</a-button>
+            <a-button @click="resetQuery">重置</a-button>
+          </a-space>
+        </a-form-item>
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
+      <div class="smart-table-operate-block">
+        <a-button type="primary" @click="openIssue" v-privilege="'scm:inventory:unit:issue'">按批次发码</a-button>
+      </div>
+      <div class="smart-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRACE_UNIT" :refresh="queryData" />
+      </div>
     </a-row>
-  </a-form>
+  </div>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
     <template #action>
@@ -27,15 +37,6 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
-        <a-button type="primary" @click="openIssue" v-privilege="'scm:inventory:unit:issue'">按批次发码</a-button>
-      </div>
-      <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRACE_UNIT" :refresh="queryData" />
-      </div>
-    </a-row>
-
     <a-table
       :id="SCM_INVENTORY_TABLE_ID.TRACE_UNIT"
       size="small"
@@ -77,6 +78,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper

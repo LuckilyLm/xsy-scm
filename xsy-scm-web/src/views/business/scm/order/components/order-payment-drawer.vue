@@ -43,6 +43,7 @@
     <a-divider />
     <a-button v-privilege="'scm:payment:transaction:query'" :loading="loading" @click="load(1)">查询支付记录</a-button>
     <a-table
+      bordered
       v-if="queried"
       class="payment-records"
       size="small"
@@ -70,7 +71,18 @@
         </template>
       </template>
     </a-table>
-    <a-pagination v-if="queried && total > 10" :current="pageNum" :page-size="10" :total="total" @change="load" />
+    <div v-if="queried" class="smart-query-table-page">
+      <a-pagination
+        show-quick-jumper
+        show-less-items
+        :show-size-changer="false"
+        :show-total="(total: number) => `共${total}条`"
+        :current="pageNum"
+        :page-size="10"
+        :total="total"
+        @change="load"
+      />
+    </div>
     <a-descriptions v-for="transaction in detail?.transactions || []" :key="transaction.id" bordered size="small" :column="1" class="payment-records">
       <a-descriptions-item :label="detail?.method === 'BALANCE' ? '内部结算编号' : '渠道交易号'">{{
         transaction.providerTransactionNo

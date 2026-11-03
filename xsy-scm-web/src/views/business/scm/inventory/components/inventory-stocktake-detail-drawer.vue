@@ -9,14 +9,14 @@
       <a-descriptions-item label="创建时间">{{ datetime(detail.createdAt) }}</a-descriptions-item>
       <a-descriptions-item label="备注" :span="2">{{ detail.remark || '—' }}</a-descriptions-item>
     </a-descriptions>
-    <a-table
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       style="margin-top: 12px"
       size="small"
       :data-source="detail.items || []"
       :columns="itemColumns"
       row-key="id"
       bordered
-      :pagination="false"
       :scroll="{x: scmColumnsWidth(itemColumns)}"
     >
       <template #bodyCell="{record, column}">
@@ -34,7 +34,7 @@
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
-    </a-table>
+    </LocalTable>
     <a-typography-text v-if="detail.status === 'CONFIRMED'" type="secondary" style="display: block; margin-top: 8px">
       差异按确认时的账面量计算；保存后若有收货或出库，确认结果以当时账面为准。
     </a-typography-text>
@@ -42,6 +42,8 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import type {TableColumnsType} from 'ant-design-vue';
 import {quantityText} from '../inventory-model';

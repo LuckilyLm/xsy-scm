@@ -55,7 +55,7 @@
       <div class="detail-actions">
         <a-button size="small" @click="downloadErrors">下载失败明细</a-button>
       </div>
-      <a-table :data-source="groups" :columns="errorColumns" row-key="rowNumber" size="small" :pagination="false" :scroll="{y: 320}">
+      <a-table bordered :data-source="groups" :columns="errorColumns" row-key="rowNumber" size="small" :pagination="false" :scroll="{y: 320}">
         <template #bodyCell="{column, record}">
           <template v-if="column.dataIndex === 'cells'">
             <div v-for="(cell, i) in record.cells" :key="i" class="cell-error">

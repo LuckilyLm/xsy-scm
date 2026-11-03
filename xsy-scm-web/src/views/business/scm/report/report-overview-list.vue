@@ -1,41 +1,58 @@
 <!-- 经营概览：只读。库存金额是当前时点数据，不受日期区间限制。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="确认日期" class="smart-query-form-item">
-        <ReportDateRangePicker v-model:value="dateRange" />
-      </a-form-item>
-      <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="filters.warehouseId" width="180px" />
-      </a-form-item>
-      <a-form-item label="客户" class="smart-query-form-item">
-        <CustomerSelect v-model:value="filters.customerId" width="200px" />
-      </a-form-item>
-      <a-form-item label="销售员" class="smart-query-form-item">
-        <EmployeeSelect v-model:value="filters.sellerId" width="160px" />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-button-group>
-          <a-button type="primary" v-privilege="PERM.OVERVIEW_QUERY" @click="onSearch">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-button-group>
-        <a-button class="smart-margin-left10" @click="advanced = !advanced">
-          {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
-        </a-button>
-      </a-form-item>
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" layout="inline" @submit.prevent>
+      <a-row class="smart-query-form-row">
+        <a-form-item label="确认日期" class="smart-query-form-item">
+          <ReportDateRangePicker v-model:value="dateRange" />
+        </a-form-item>
+        <a-form-item label="仓库" class="smart-query-form-item">
+          <WarehouseSelect v-model:value="filters.warehouseId" width="180px" />
+        </a-form-item>
+        <a-form-item label="客户" class="smart-query-form-item">
+          <CustomerSelect v-model:value="filters.customerId" width="200px" />
+        </a-form-item>
+        <a-form-item label="销售员" class="smart-query-form-item">
+          <EmployeeSelect v-model:value="filters.sellerId" width="160px" />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-button-group>
+            <a-button type="primary" v-privilege="PERM.OVERVIEW_QUERY" @click="onSearch">查询</a-button>
+            <a-button @click="resetQuery">重置</a-button>
+          </a-button-group>
+          <a-button class="smart-margin-left10" @click="advanced = !advanced">
+            {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
+          </a-button>
+        </a-form-item>
+      </a-row>
+      <a-row v-if="advanced" class="smart-query-form-row">
+        <a-form-item label="订单来源" class="smart-query-form-item">
+          <SmartEnumSelect v-model:value="filters.orderSource" enum-name="SCM_ORDER_SOURCE_ENUM" width="150px" />
+        </a-form-item>
+        <a-form-item label="商品分类" class="smart-query-form-item">
+          <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
+        </a-form-item>
+        <a-form-item label="商品关键字" class="smart-query-form-item">
+          <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
+        </a-form-item>
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
+      <div class="smart-table-operate-block">
+        <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="dailyExport.exporting" @click="exportDaily"
+          >导出</a-button
+        >
+      </div>
+      <div class="smart-table-setting-block">
+        <TableOperator
+          v-model="columns"
+          :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_OVERVIEW_DAILY"
+          :refresh="queryAll"
+          :exclude-column-keys="canViewCost ? [] : COST_INDEXES"
+        />
+      </div>
     </a-row>
-    <a-row v-if="advanced" class="smart-query-form-row">
-      <a-form-item label="订单来源" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.orderSource" enum-name="SCM_ORDER_SOURCE_ENUM" width="150px" />
-      </a-form-item>
-      <a-form-item label="商品分类" class="smart-query-form-item">
-        <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
-      </a-form-item>
-      <a-form-item label="商品关键字" class="smart-query-form-item">
-        <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
-      </a-form-item>
-    </a-row>
-  </a-form>
+  </div>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
     <template #action>
@@ -64,23 +81,8 @@
   <ReportLineChart class="smart-margin-top10" title="每日金额趋势" :x-axis="trendAxis" :series="trendSeries" />
 
   <a-card size="small" :bordered="false" class="smart-margin-top10">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
-        <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="dailyExport.exporting" @click="exportDaily"
-          ><template #icon><DownloadOutlined /></template>导出</a-button
-        >
-      </div>
-      <div class="smart-table-setting-block">
-        <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_OVERVIEW_DAILY"
-          :refresh="queryAll"
-          :exclude-column-keys="canViewCost ? [] : COST_INDEXES"
-        />
-      </div>
-    </a-row>
-
-    <a-table
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       :id="SCM_REPORT_TABLE_ID.OVERVIEW_DAILY"
       size="small"
       :data-source="dailyRows"
@@ -88,7 +90,6 @@
       row-key="bizDate"
       bordered
       :loading="loading"
-      :pagination="false"
       :locale="{emptyText: '暂无每日统计'}"
       :scroll="{x: scmColumnsWidth(visibleColumns), y: 420}"
     >
@@ -128,11 +129,13 @@
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
-    </a-table>
+    </LocalTable>
   </a-card>
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute, useRouter} from 'vue-router';

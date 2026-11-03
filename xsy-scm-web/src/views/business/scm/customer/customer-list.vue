@@ -1,43 +1,45 @@
 <!-- 客户档案列表：只有单条删除；翻页时用请求序号丢弃过期响应。 -->
 <template>
   <section aria-label="客户档案">
-    <a-form class="smart-query-form" layout="inline">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input v-model:value="filters.keyword" allow-clear placeholder="客户名称 / 联系人 / 电话" style="width: 200px" />
-        </a-form-item>
-        <a-form-item label="客户分类" class="smart-query-form-item">
-          <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="CUSTOMER" style="width: 150px" />
-        </a-form-item>
-        <a-form-item label="客户分组" class="smart-query-form-item">
-          <CustomerGroupSelect v-model:value="filters.customerGroupId" width="150px" />
-        </a-form-item>
-        <a-form-item label="状态" class="smart-query-form-item">
-          <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_STATUS_ENUM" width="120px" />
-        </a-form-item>
-        <a-form-item class="smart-query-form-item">
-          <a-space :size="10" wrap>
-            <a-button type="primary" @click="search">查询</a-button>
-            <a-button @click="reset">重置</a-button>
-            <a-button type="link" @click="advanced = !advanced">{{ advanced ? '收起筛选' : '高级筛选' }}</a-button>
-          </a-space>
-        </a-form-item>
-      </a-row>
-      <a-row v-if="advanced" class="smart-query-form-row">
-        <a-form-item label="结算方式" class="smart-query-form-item">
-          <SmartEnumSelect v-model:value="filters.settleMode" enum-name="SETTLE_MODE_ENUM" width="140px" />
-        </a-form-item>
-        <a-form-item label="上级客户" class="smart-query-form-item">
-          <CustomerSelect v-model:value="filters.parentCustomerId" width="220px" placeholder="请选择上级客户" />
-        </a-form-item>
-      </a-row>
-    </a-form>
-
-    <a-card size="small" :bordered="false">
-      <a-row class="smart-table-btn-block" justify="space-between" align="middle">
+    <div class="smart-query-layout">
+      <a-form class="smart-query-form" layout="inline">
+        <a-row class="smart-query-form-row">
+          <a-form-item label="关键字" class="smart-query-form-item">
+            <a-input v-model:value="filters.keyword" allow-clear placeholder="客户名称 / 联系人 / 电话" style="width: 200px" />
+          </a-form-item>
+          <a-form-item label="客户分类" class="smart-query-form-item">
+            <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="CUSTOMER" style="width: 150px" />
+          </a-form-item>
+          <a-form-item label="客户分组" class="smart-query-form-item">
+            <CustomerGroupSelect v-model:value="filters.customerGroupId" width="150px" />
+          </a-form-item>
+          <a-form-item label="状态" class="smart-query-form-item">
+            <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_STATUS_ENUM" width="120px" />
+          </a-form-item>
+          <a-form-item class="smart-query-form-item">
+            <a-space :size="10" wrap>
+              <a-button type="primary" @click="search">查询</a-button>
+              <a-button @click="reset">重置</a-button>
+              <a-button type="link" @click="advanced = !advanced">{{ advanced ? '收起筛选' : '高级筛选' }}</a-button>
+            </a-space>
+          </a-form-item>
+        </a-row>
+        <a-row v-if="advanced" class="smart-query-form-row">
+          <a-form-item label="结算方式" class="smart-query-form-item">
+            <SmartEnumSelect v-model:value="filters.settleMode" enum-name="SETTLE_MODE_ENUM" width="140px" />
+          </a-form-item>
+          <a-form-item label="上级客户" class="smart-query-form-item">
+            <CustomerSelect v-model:value="filters.parentCustomerId" width="220px" placeholder="请选择上级客户" />
+          </a-form-item>
+        </a-row>
+      </a-form>
+      <a-row data-toolbar-layout="query" class="smart-table-btn-block" justify="space-between" align="middle">
         <a-button v-privilege="'scm:customer:add'" type="primary" @click="drawer?.open()">新增客户</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER" :refresh="load" />
       </a-row>
+    </div>
+
+    <a-card size="small" :bordered="false">
       <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
         <template #action>
           <a-button size="small" @click="load">重新加载</a-button>
@@ -79,6 +81,8 @@
       </a-table>
       <div class="smart-query-table-page">
         <a-pagination
+          show-quick-jumper
+          show-less-items
           v-model:current="filters.pageNum"
           v-model:page-size="filters.pageSize"
           :total="total"

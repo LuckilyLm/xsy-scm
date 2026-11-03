@@ -30,21 +30,20 @@
             重置
           </a-button>
         </a-button-group>
-
-        <a-button @click="addOrUpdate()" type="primary" class="smart-margin-left20" v-if="$privilege('oa:invoice:add')">
+      </a-form-item>
+      <div class="smart-query-table-actions">
+        <a-button @click="addOrUpdate()" type="primary" v-if="$privilege('oa:invoice:add')">
           <template #icon>
             <PlusOutlined />
           </template>
           新建发票
         </a-button>
-      </a-form-item>
+        <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.OA.ENTERPRISE_INVOICE" :refresh="ajaxQuery" />
+      </div>
     </a-row>
   </a-form>
 
   <a-card size="small" :bordered="false" :hoverable="false">
-    <a-row justify="end">
-      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.OA.ENTERPRISE_INVOICE" :refresh="ajaxQuery" />
-    </a-row>
     <a-table :scroll="{x: 1300}" size="small" :dataSource="tableData" :columns="columns" rowKey="invoiceId" :pagination="false" bordered>
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'disabledFlag'">

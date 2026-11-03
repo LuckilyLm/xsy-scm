@@ -108,7 +108,7 @@
 
   <template v-if="history.length > 1">
     <a-divider orientation="left">历史建议</a-divider>
-    <a-table size="small" :data-source="history" :columns="planHistoryColumns" row-key="id" bordered :pagination="false">
+    <LocalTable :page-size-options="SCM_PAGE_SIZE_OPTIONS" size="small" :data-source="history" :columns="planHistoryColumns" row-key="id" bordered>
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
           <a-tag :color="planProposalStatuses[record.status]?.color || 'default'">
@@ -120,11 +120,13 @@
           <a-button type="link" :disabled="busy || loading" @click="emit('select', record)">查看</a-button>
         </template>
       </template>
-    </a-table>
+    </LocalTable>
   </template>
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref} from 'vue';
 import {type TableColumnsType} from 'ant-design-vue';

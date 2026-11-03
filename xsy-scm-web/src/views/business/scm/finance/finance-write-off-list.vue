@@ -42,9 +42,7 @@
       <div class="smart-table-operate-block">核销流水</div>
       <div class="smart-table-setting-block">
         <a-button v-privilege="PERM.WRITE_OFF_ADD" type="primary" @click="openAdd">登记核销</a-button>
-        <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData"
-          ><template #icon><DownloadOutlined /></template>导出</a-button
-        >
+        <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_WRITE_OFF" :refresh="queryData" />
       </div>
     </a-row>
@@ -116,6 +114,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
@@ -169,6 +168,7 @@
       <p class="scm-note">按账单日期由早到晚自动分配，单张单据不会超额核销；单次最多处理 100 张，未分配完的金额保留在收款单的待核销额中。</p>
       <a-empty v-if="!plan.length" description="点击「预览分配」查看将要核销的单据" />
       <a-table
+        bordered
         v-else
         class="plan-table"
         size="small"
@@ -193,6 +193,7 @@
       </div>
       <a-empty v-if="!targets.length" description="先选择一笔资金单，再添加一个或多个目标单" />
       <a-table
+        bordered
         v-else
         size="small"
         :data-source="targets"

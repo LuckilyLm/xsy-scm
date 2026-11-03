@@ -1,5 +1,5 @@
 <template>
-  <div class="smart-table-btn-block">
+  <div data-toolbar-layout="single" class="smart-table-btn-block">
     <a-segmented
       :value="printMode"
       :options="[

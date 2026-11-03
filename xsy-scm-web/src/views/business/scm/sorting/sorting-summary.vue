@@ -128,6 +128,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         show-quick-jumper
         :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"

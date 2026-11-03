@@ -46,7 +46,16 @@
       </a-form-item>
     </a-form>
 
-    <a-table size="small" :data-source="bindings" :columns="columns" row-key="id" bordered :loading="loading" :pagination="false" :scroll="{x: 720}">
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS"
+      size="small"
+      :data-source="bindings"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :scroll="{x: 720}"
+    >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'templateEnabled'">
           <ScmStatusTag :tone="record.templateEnabled ? 'success' : 'neutral'" :label="record.templateEnabled ? '启用' : '已停用'" />
@@ -55,11 +64,13 @@
           <a-button type="link" size="small" danger @click="unbind(record)">解除绑定</a-button>
         </template>
       </template>
-    </a-table>
+    </LocalTable>
   </a-drawer>
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {computed, reactive, ref, watch} from 'vue';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import {printApi} from '/@/api/business/scm/print-api';

@@ -74,6 +74,9 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-quick-jumper
+        show-less-items
+        :show-total="(total: number) => `共${total}条`"
         v-model:current="query.pageNum"
         v-model:page-size="query.pageSize"
         :total="total"

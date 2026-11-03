@@ -15,6 +15,7 @@
       ><template #action><a-button @click="load">重试</a-button></template></a-alert
     >
     <a-table
+      bordered
       :columns="sourceColumns"
       :data-source="sources"
       :row-key="(row: PurchaseCostAdjustment) => (row.accountItemId != null ? `ACCOUNT:${row.accountItemId}` : `RECEIPT:${row.receiptItemId}`)"
@@ -34,6 +35,7 @@
     </a-table>
     <a-divider orientation="left">更正记录</a-divider>
     <a-table
+      bordered
       :columns="historyColumns"
       :data-source="history"
       row-key="id"

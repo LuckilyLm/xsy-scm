@@ -1,11 +1,11 @@
 <template>
   <section v-if="order.inventoryFactsVisible" class="order-fact-section">
     <h3>库存预留</h3>
-    <a-table
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       :data-source="order.inventoryReservations ?? []"
       :columns="reservationColumns"
       row-key="reservationId"
-      :pagination="false"
       size="small"
       bordered
       :scroll="{x: scmColumnsWidth(reservationColumns)}"
@@ -17,16 +17,16 @@
         </template>
         <template v-else-if="column.dataIndex === 'occurredAt'">{{ datetime(record.occurredAt) }}</template>
       </template>
-    </a-table>
+    </LocalTable>
   </section>
 
   <section v-if="order.sortingFactsVisible" class="order-fact-section">
     <h3>分拣进度</h3>
-    <a-table
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       :data-source="order.sortingProgress ?? []"
       :columns="sortingColumns"
       :row-key="(record: OrderSorting) => `${record.taskId}-${record.orderItemId}`"
-      :pagination="false"
       size="small"
       bordered
       :scroll="{x: scmColumnsWidth(sortingColumns)}"
@@ -43,7 +43,7 @@
           {{ record.sortedQuantity == null ? '—' : `${record.sortedQuantity} ${record.unit || ''}` }}
         </template>
       </template>
-    </a-table>
+    </LocalTable>
   </section>
 
   <section v-if="order.deliveryFactsVisible" class="order-fact-section">
@@ -68,11 +68,11 @@
 
   <section v-if="order.returnFactsVisible" class="order-fact-section">
     <h3>退货与应收更正</h3>
-    <a-table
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       :data-source="order.returns ?? []"
       :columns="returnColumns"
       row-key="returnId"
-      :pagination="false"
       size="small"
       bordered
       :scroll="{x: scmColumnsWidth(returnColumns)}"
@@ -91,7 +91,7 @@
           <template v-else>{{ record.status === 'APPROVED' ? '未形成红字应收' : '待审批或未批准' }}</template>
         </template>
       </template>
-    </a-table>
+    </LocalTable>
   </section>
 
   <section v-if="order.fundingFactsVisible" class="order-fact-section">
@@ -112,11 +112,11 @@
       <h3>退款与资金返还</h3>
       <span class="order-fact-desc">退款单完成与资金到账分开记录，以实际返还结果为准</span>
     </div>
-    <a-table
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       :data-source="order.refunds ?? []"
       :columns="refundColumns"
       row-key="refundId"
-      :pagination="false"
       size="small"
       bordered
       :scroll="{x: scmColumnsWidth(refundColumns)}"
@@ -132,11 +132,13 @@
           <span v-if="record.fundingSucceededAmount != null">（已返还 {{ amount(record.fundingSucceededAmount) }}）</span>
         </template>
       </template>
-    </a-table>
+    </LocalTable>
   </section>
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import type {TableColumnsType} from 'ant-design-vue';
 import {SCM_INVENTORY_RESERVATION_STATUS_ENUM} from '/@/constants/business/scm/inventory-const';

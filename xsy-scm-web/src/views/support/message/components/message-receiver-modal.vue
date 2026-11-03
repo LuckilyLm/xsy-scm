@@ -24,6 +24,7 @@
       </a-row>
     </a-form>
     <a-table
+      size="small"
       rowKey="employeeId"
       :loading="tableLoading"
       :columns="columns"

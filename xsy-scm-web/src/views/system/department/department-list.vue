@@ -20,13 +20,15 @@
             重置
           </a-button>
         </a-button-group>
-        <a-button v-privilege="'system:department:add'" type="primary" @click="addDepartment" class="smart-margin-left20">
+      </a-form-item>
+      <div class="smart-query-table-actions">
+        <a-button v-privilege="'system:department:add'" type="primary" @click="addDepartment">
           <template #icon>
             <PlusOutlined />
           </template>
           新建
         </a-button>
-      </a-form-item>
+      </div>
     </a-row>
   </a-form>
 

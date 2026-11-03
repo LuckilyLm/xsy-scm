@@ -25,11 +25,12 @@
   </a-alert>
   <a-card size="small" :bordered="false">
     <div class="report-toolbar">
-      <a-button v-privilege="'scm:report:export'" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
+      <a-button type="primary" v-privilege="'scm:report:export'" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
         >导出当前结果</a-button
       >
     </div>
     <a-table
+      bordered
       size="small"
       :data-source="summary"
       :columns="summaryColumns"
@@ -73,6 +74,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         v-model:current="pageNum"
         v-model:page-size="pageSize"
         :total="total"

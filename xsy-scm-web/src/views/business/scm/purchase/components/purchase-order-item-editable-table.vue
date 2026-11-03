@@ -66,6 +66,7 @@
     <template #expandedRowRender="slot">
       <div class="alloc-block">
         <a-table
+          bordered
           size="small"
           :data-source="asItem(slot.record).allocations ?? []"
           :columns="allocationColumns"
@@ -110,7 +111,7 @@
   <a-modal :open="picker.open" title="选择采购需求" width="900px" :footer="null" @cancel="picker.open = false">
     <a-alert v-if="picker.error" :message="picker.error" type="error" show-icon />
     <a-spin :spinning="picker.loading">
-      <a-table size="small" :data-source="picker.rows" :columns="pickerColumns" :pagination="false" row-key="id">
+      <a-table bordered size="small" :data-source="picker.rows" :columns="pickerColumns" :pagination="false" row-key="id">
         <template #bodyCell="{record: demand, column}">
           <template v-if="column.dataIndex === 'unallocatedQuantity'">
             <span class="scm-quantity">{{ quantity(demand.unallocatedQuantity) }}</span>

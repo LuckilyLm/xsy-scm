@@ -10,14 +10,14 @@
     <a-alert v-if="error" type="error" show-icon :message="error">
       <template #action><a-button size="small" @click="load">重试</a-button></template>
     </a-alert>
-    <a-table
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       :data-source="rows"
       :columns="columns"
       row-key="id"
       size="small"
       bordered
       :loading="loading"
-      :pagination="false"
       :scroll="{x: scmColumnsWidth(columns)}"
       class="correction-table"
     >
@@ -25,7 +25,7 @@
         <span v-if="quantityKeys.has(String(column.dataIndex))" class="scm-quantity">{{ text }} {{ record.saleUnitSnapshot }}</span>
         <span v-else>{{ text ?? '—' }}</span>
       </template>
-    </a-table>
+    </LocalTable>
     <a-modal
       :open="visible"
       title="记录客户实收更正"
@@ -66,6 +66,8 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {computed, ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {orderApi, type ReceivedCorrection, type ReceivedCorrectionCandidate} from '/@/api/business/scm/order-api';

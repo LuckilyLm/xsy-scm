@@ -12,14 +12,14 @@
       <a-descriptions-item label="创建时间">{{ datetime(detail.createdAt) }}</a-descriptions-item>
       <a-descriptions-item label="备注">{{ detail.remark || '—' }}</a-descriptions-item>
     </a-descriptions>
-    <a-table
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       style="margin-top: 12px"
       size="small"
       :data-source="detail.items || []"
       :columns="itemColumns"
       row-key="id"
       bordered
-      :pagination="false"
       :scroll="{x: scmColumnsWidth(itemColumns)}"
     >
       <template #bodyCell="{record, column}">
@@ -31,7 +31,7 @@
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
-    </a-table>
+    </LocalTable>
     <a-typography-text v-if="detail.status === 'COMPLETED'" type="secondary" style="display: block; margin-top: 8px">
       审批已生成两条流水：源商品规格「转换出」、目标商品规格「转换入」。若要冲销，请新建一张反向转换单 —— 流水不可修改、不可删除。
     </a-typography-text>
@@ -39,6 +39,8 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import type {TableColumnsType} from 'ant-design-vue';
 import {quantityText} from '../inventory-model';

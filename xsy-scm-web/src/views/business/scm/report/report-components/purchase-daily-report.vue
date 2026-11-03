@@ -15,7 +15,12 @@
           <a-button type="primary" :loading="loading" @click="search">查询</a-button>
           <a-button @click="reset">重置</a-button>
           <a-button :disabled="!report?.generatedAt || loading || !!error" @click="printReport">打印</a-button>
-          <a-button v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!report?.generatedAt || loading || !!error" @click="exportReport"
+          <a-button
+            type="primary"
+            v-privilege="PERM.EXPORT"
+            :loading="exporting"
+            :disabled="!report?.generatedAt || loading || !!error"
+            @click="exportReport"
             >导出清单</a-button
           >
         </a-space>
@@ -57,6 +62,9 @@
     </a-table>
     <div class="daily-pagination">
       <a-pagination
+        show-quick-jumper
+        show-less-items
+        :show-total="(total: number) => `共${total}条`"
         v-model:current="pageNum"
         v-model:pageSize="pageSize"
         :total="report?.products.total ?? 0"

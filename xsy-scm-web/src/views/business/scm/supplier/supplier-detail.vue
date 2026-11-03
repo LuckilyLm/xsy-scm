@@ -69,13 +69,13 @@
 
         <section class="scm-detail-card scm-detail-block">
           <h3 class="scm-detail-card__title">已关联商品</h3>
-          <a-table
+          <LocalTable
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
             :data-source="relations"
             :columns="relationColumns"
             row-key="id"
             size="small"
             bordered
-            :pagination="false"
             :scroll="{x: scmColumnsWidth(relationColumns)}"
           >
             <template #bodyCell="{column, record}">
@@ -90,7 +90,7 @@
                 {{ skuStatusText(record.status) }}
               </a-tag>
             </template>
-          </a-table>
+          </LocalTable>
           <a-alert v-if="relationsError" type="error" show-icon :message="relationsError" class="smart-margin-bottom10">
             <template #action>
               <a-button size="small" @click="loadRelations(supplier.supplierId)">重试</a-button>
@@ -127,6 +127,8 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';

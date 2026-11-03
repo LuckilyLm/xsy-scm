@@ -1,31 +1,33 @@
 <!-- 客户分组价：按「分组 + 商品 + 销售单位」维护，组内同单位规格共用一条价格。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键字" class="smart-query-form-item"
-        ><a-input v-model:value="query.keyword" placeholder="分组或商品名称" allow-clear
-      /></a-form-item>
-      <a-form-item label="客户分组" class="smart-query-form-item"><CustomerGroupSelect v-model:value="query.groupId" width="190px" /></a-form-item>
-      <a-form-item label="有效区间" class="smart-query-form-item"
-        ><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]"
-      /></a-form-item>
-      <a-form-item class="smart-query-form-item"
-        ><a-space
-          ><a-button type="primary" @click="search" v-privilege="'scm:pricing:group-price:query'">查询</a-button
-          ><a-button @click="reset">重置</a-button></a-space
-        ></a-form-item
-      >
-    </a-row>
-  </a-form>
-  <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error = ''" />
-  <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block"
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" layout="inline">
+      <a-row class="smart-query-form-row">
+        <a-form-item label="关键字" class="smart-query-form-item"
+          ><a-input v-model:value="query.keyword" placeholder="分组或商品名称" allow-clear
+        /></a-form-item>
+        <a-form-item label="客户分组" class="smart-query-form-item"><CustomerGroupSelect v-model:value="query.groupId" width="190px" /></a-form-item>
+        <a-form-item label="有效区间" class="smart-query-form-item"
+          ><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]"
+        /></a-form-item>
+        <a-form-item class="smart-query-form-item"
+          ><a-space
+            ><a-button type="primary" @click="search" v-privilege="'scm:pricing:group-price:query'">查询</a-button
+            ><a-button @click="reset">重置</a-button></a-space
+          ></a-form-item
+        >
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block"
       ><div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:pricing:group-price:add'" @click="drawer?.open()">新增客户分组价</a-button>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_GROUP_PRICE" :refresh="load" /></div
     ></a-row>
+  </div>
+  <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error = ''" />
+  <a-card size="small" :bordered="false">
     <a-table
       :data-source="rows"
       :columns="columns"
@@ -54,6 +56,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         v-model:current="query.pageNum"
         v-model:page-size="query.pageSize"
         :total="total"

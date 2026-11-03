@@ -1,18 +1,28 @@
 <!-- 预警阈值配置。同一仓库和商品规格只能有一条配置，修改后立即生效。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="仓库">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-space>
-          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-space>
-      </a-form-item>
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
+      <a-row class="smart-query-form-row">
+        <a-form-item label="仓库">
+          <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-space>
+            <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
+            <a-button @click="resetQuery">重置</a-button>
+          </a-space>
+        </a-form-item>
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
+      <div class="smart-table-operate-block">
+        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:threshold:add'"> 新建阈值配置 </a-button>
+      </div>
+      <div class="smart-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING_THRESHOLD" :refresh="queryData" />
+      </div>
     </a-row>
-  </a-form>
+  </div>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
     <template #action>
@@ -21,15 +31,6 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
-        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:threshold:add'"> 新建阈值配置 </a-button>
-      </div>
-      <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING_THRESHOLD" :refresh="queryData" />
-      </div>
-    </a-row>
-
     <a-table
       :id="SCM_INVENTORY_TABLE_ID.WARNING_THRESHOLD"
       size="small"
@@ -67,6 +68,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper

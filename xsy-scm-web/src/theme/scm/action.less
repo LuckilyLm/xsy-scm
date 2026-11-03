@@ -49,49 +49,6 @@
   border-color: transparent;
 }
 
-/*
- * 表格工具栏的导出按钮：白底主题色描边，和右侧表格工具图标区分开。
- * 颜色跟随 --scm-primary 系列变量，用户换主题或切暗色时不会残留一套写死的绿。
- * 选择器带 .scm-module .admin-layout 与 .ant-btn-default，压过主题里统一的默认按钮描边。
- */
-.scm-module .admin-layout .ant-btn.ant-btn-default.scm-export-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--scm-primary-border, #b7d9c5);
-  border-radius: 6px;
-  color: var(--scm-primary, #167c45);
-  background: var(--scm-bg-container, #fff);
-  font-size: 13px;
-  font-weight: 500;
-  transition:
-    background-color 0.15s,
-    border-color 0.15s,
-    color 0.15s;
-}
-
-.scm-module .admin-layout .ant-btn.ant-btn-default.scm-export-btn > .anticon {
-  display: inline-flex;
-  align-items: center;
-  margin-right: 6px;
-  font-size: 14px;
-}
-
-.scm-module .admin-layout .ant-btn.ant-btn-default.scm-export-btn:not(:disabled):hover {
-  border-color: var(--scm-primary, #167c45);
-  color: var(--scm-primary, #167c45);
-  background: var(--scm-primary-bg, #f0f8f3);
-}
-
-/* 禁用态保持 antd 的灰底灰字，不因为自定义白底看起来仍可点击 */
-.scm-module .admin-layout .ant-btn.ant-btn-default.scm-export-btn:disabled {
-  border-color: #d9d9d9;
-  color: rgba(0, 0, 0, 0.25);
-  background: rgba(0, 0, 0, 0.04);
-}
-
 /* 整行虚线按钮：提示"还能继续加"，但不与保存争焦点 */
 .ant-btn.scm-btn-add-row {
   height: 40px;

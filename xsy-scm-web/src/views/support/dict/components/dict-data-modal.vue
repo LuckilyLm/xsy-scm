@@ -55,12 +55,11 @@
       <div class="smart-table-setting-block"></div>
     </a-row>
 
-    <a-table
+    <LocalTable
       size="small"
       :dataSource="tableData"
       :columns="columns"
       rowKey="dictDataId"
-      :pagination="false"
       :row-selection="{selectedRowKeys: selectedRowKeyList, onChange: onSelectChange}"
       bordered
     >
@@ -81,13 +80,14 @@
           <a-button @click="addOrUpdateData(record)" type="link" v-privilege="'support:dictData:update'">编辑</a-button>
         </template>
       </template>
-    </a-table>
+    </LocalTable>
 
     <div class="smart-query-table-page">共计 {{ tableData.length }} 条</div>
     <DictDataFormModal ref="dictDataFormModalRef" @reloadList="queryData" />
   </a-drawer>
 </template>
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
 import {reactive, ref} from 'vue';
 import DictDataFormModal from './dict-data-form-modal.vue';
 import {dictApi} from '/@/api/support/dict-api';

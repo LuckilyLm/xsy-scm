@@ -33,7 +33,8 @@
       </a-space>
     </div>
   </div>
-  <a-table
+  <LocalTable
+    :page-size-options="SCM_PAGE_SIZE_OPTIONS"
     v-else
     id="scm-delivery-route-fulfillment"
     size="small"
@@ -41,7 +42,6 @@
     :data-source="orders"
     row-key="id"
     :loading="loading"
-    :pagination="false"
     :locale="{emptyText}"
     :scroll="{x: scmColumnsWidth(columns)}"
     bordered
@@ -87,10 +87,12 @@
         </a-space>
       </template>
     </template>
-  </a-table>
+  </LocalTable>
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';

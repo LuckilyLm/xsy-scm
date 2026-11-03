@@ -89,6 +89,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
@@ -116,6 +117,8 @@
           <a-descriptions-item label="处理原因">{{ detail.decisionReason || '—' }}</a-descriptions-item>
         </a-descriptions>
         <a-table
+          size="small"
+          bordered
           :data-source="detail.items"
           row-key="returnItemId"
           :pagination="false"
@@ -153,6 +156,8 @@
       <template v-if="active">
         <fieldset :disabled="saving" class="return-edit-fields">
           <a-table
+            size="small"
+            bordered
             v-if="action === 'approve'"
             :data-source="active.items"
             :columns="[
@@ -179,6 +184,8 @@
           <template v-else-if="action === 'receive'">
             <a-form-item label="接收仓库" required><WarehouseSelect v-model:value="warehouseId" :disabled="saving" /></a-form-item>
             <a-table
+              size="small"
+              bordered
               :data-source="active.items"
               :scroll="{x: scmColumnsWidth(receiveItemColumns)}"
               :columns="receiveItemColumns"

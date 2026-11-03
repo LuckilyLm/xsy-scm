@@ -29,16 +29,7 @@
       <TableOperator class="smart-margin-bottom5 smart-margin-top5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.RELOAD" :refresh="ajaxQuery" />
     </a-row>
 
-    <a-table
-      size="small"
-      bordered
-      class="smart-margin-top10"
-      :dataSource="tableData"
-      :loading="tableLoading"
-      :columns="columns"
-      rowKey="tag"
-      :pagination="false"
-    >
+    <LocalTable size="small" bordered class="smart-margin-top10" :dataSource="tableData" :loading="tableLoading" :columns="columns" rowKey="tag">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
@@ -47,13 +38,14 @@
           </div>
         </template>
       </template>
-    </a-table>
+    </LocalTable>
 
     <DoReloadForm @refresh="ajaxQuery" ref="doReloadForm" />
     <ReloadResultList ref="reloadResultList" />
   </a-card>
 </template>
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
 import {onMounted, ref} from 'vue';
 import DoReloadForm from './do-reload-form-modal.vue';
 import ReloadResultList from './reload-result-list.vue';

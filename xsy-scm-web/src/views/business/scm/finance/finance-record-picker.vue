@@ -17,6 +17,7 @@
     </a-form>
     <a-alert v-if="error" class="picker-error" type="error" show-icon :message="error" />
     <a-table
+      bordered
       size="small"
       row-key="id"
       :data-source="rows"
@@ -34,6 +35,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper

@@ -1,27 +1,38 @@
 <!-- 计量单位：只作取值来源，编码和名称不可改。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键字" class="smart-query-form-item"
-        ><a-input v-model:value="query.keyword" allow-clear placeholder="单位名称" style="width: 200px"
-      /></a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item"
-        ><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px"
-      /></a-form-item>
-      <a-form-item class="smart-query-form-item"
-        ><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item
-      >
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" layout="inline">
+      <a-row class="smart-query-form-row">
+        <a-form-item label="关键字" class="smart-query-form-item"
+          ><a-input v-model:value="query.keyword" allow-clear placeholder="单位名称" style="width: 200px"
+        /></a-form-item>
+        <a-form-item label="状态" class="smart-query-form-item"
+          ><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px"
+        /></a-form-item>
+        <a-form-item class="smart-query-form-item"
+          ><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item
+        >
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
+      <a-button v-privilege="'scm:product:uom:add'" type="primary" @click="modal?.open()">新增单位</a-button>
     </a-row>
-  </a-form>
-  <a-row class="smart-table-btn-block">
-    <a-button v-privilege="'scm:product:uom:add'" type="primary" @click="modal?.open()">新增单位</a-button>
-  </a-row>
+  </div>
+
   <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10">
     <template #action>
       <a-button size="small" @click="load">重新加载</a-button>
     </template>
   </a-alert>
-  <a-table :data-source="rows" :columns="columns" row-key="uomId" :loading="loading" :pagination="false" size="small" bordered>
+  <LocalTable
+    :page-size-options="SCM_PAGE_SIZE_OPTIONS"
+    :data-source="rows"
+    :columns="columns"
+    row-key="uomId"
+    :loading="loading"
+    size="small"
+    bordered
+  >
     <template #bodyCell="{column, record}">
       <span v-if="column.dataIndex === 'category'">{{ enumLabel(UOM_CATEGORY_ENUM, record.category) }}</span>
       <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
@@ -38,10 +49,12 @@
         </a-popconfirm>
       </a-space>
     </template>
-  </a-table>
+  </LocalTable>
   <UomModal ref="modal" @saved="load" />
 </template>
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';

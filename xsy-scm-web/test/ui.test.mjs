@@ -746,7 +746,7 @@ import ts from 'typescript';
     assert.match(FILTER_STYLE, /\.scm-table-toolbar\.smart-table-btn-block\s*\{[\s\S]*?flex-wrap:\s*wrap/);
     assert.match(
       FILTER_STYLE,
-      /\.smart-table-setting-block\s*\{[\s\S]*?display:\s*flex[\s\S]*?gap:\s*8px[\s\S]*?float:\s*none[\s\S]*?margin-left:\s*auto/
+      /\.smart-table-setting-block\s*\{[\s\S]*?display:\s*flex[\s\S]*?gap:\s*12px[\s\S]*?float:\s*none[\s\S]*?margin-left:\s*auto/
     );
     assert.match(FILTER_STYLE, /\.smart-table-operate-block[\s\S]*?gap:\s*8px[\s\S]*?margin-right:\s*0/);
     assert.doesNotMatch(SMART_ADMIN_STYLE, /scm-table-toolbar/);
@@ -759,7 +759,7 @@ import ts from 'typescript';
     }
   });
 
-  test('表格导出按钮统一使用 scm-export-btn 与下载图标', () => {
+  test('表格导出恢复文字按钮并由组件库主题填充背景', () => {
     const ACTION_STYLE = source('../src/theme/scm/action.less');
     const root = fileURLToPath(new URL('../src/views/business/scm', import.meta.url));
     const files = [];
@@ -774,11 +774,12 @@ import ts from 'typescript';
 
     let exportButtons = 0;
     for (const page of files) {
-      // 只看工具栏普通按钮；行内 link 按钮和弹窗主按钮不套用工具栏样式。
-      for (const match of page.matchAll(/<a-button\b(?![^>]*\btype=)[^>]*>(?:<template #icon>[\s\S]*?<\/template>)?\s*导出\s*<\/a-button\s*>/g)) {
+      for (const match of page.matchAll(/<a-button\b[^>]*class="scm-export-btn"[^>]*>[\s\S]*?<\/a-button\s*>/g)) {
         exportButtons++;
-        assert.match(match[0], /class="scm-export-btn"/, '导出按钮缺统一样式类');
-        assert.match(match[0], /DownloadOutlined/, '导出按钮缺下载图标');
+        assert.match(match[0], /type="primary"/, '导出按钮应由组件库提供主题色填充');
+        assert.doesNotMatch(match[0], /DownloadOutlined|#icon/, '恢复提交前的纯文字形式');
+        assert.match(match[0], /v-privilege=/, '导出按钮必须保留权限限制');
+        assert.match(match[0], /@click=/, '导出按钮必须保留原操作入口');
       }
       // 导出按钮所在的工具栏必须走 flex gap，间距不再靠按钮自身外边距硬凑。
       if (page.includes('scm-export-btn')) {
@@ -787,16 +788,7 @@ import ts from 'typescript';
     }
     assert.ok(exportButtons >= 25, `表格导出按钮数量异常：${exportButtons}`);
 
-    assert.match(ACTION_STYLE, /\.scm-module \.admin-layout \.ant-btn\.ant-btn-default\.scm-export-btn\s*\{/);
-    assert.match(ACTION_STYLE, /height:\s*32px/);
-    assert.match(ACTION_STYLE, /padding:\s*0 12px/);
-    assert.match(ACTION_STYLE, /border:\s*1px solid var\(--scm-primary-border/);
-    assert.match(ACTION_STYLE, /border-radius:\s*6px/);
-    assert.match(ACTION_STYLE, /font-size:\s*13px/);
-    assert.match(ACTION_STYLE, /font-weight:\s*500/);
-    assert.match(ACTION_STYLE, /color:\s*var\(--scm-primary/);
-    assert.match(ACTION_STYLE, /background:\s*var\(--scm-primary-bg/);
-    assert.match(ACTION_STYLE, /background-color 0\.15s/);
+    assert.doesNotMatch(ACTION_STYLE, /scm-export-btn/, '导出按钮不再单独覆盖组件库外观和交互状态');
     assert.match(FILTER_STYLE, /\.smart-table-setting-block\s*\{[\s\S]*?> \.ant-btn\s*\{[\s\S]*?margin-left:\s*0/);
     assert.doesNotMatch(FILTER_STYLE, /scm-export-btn[\s\S]{0,80}margin-right:\s*10px/, '导出按钮不应再单独设置右外边距');
   });

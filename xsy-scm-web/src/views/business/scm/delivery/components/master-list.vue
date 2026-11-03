@@ -1,27 +1,29 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
-    <a-form-item :label="isDriver ? '司机编码' : '车牌号'">
-      <a-input v-model:value="query.keyword" allow-clear @pressEnter="search" />
-    </a-form-item>
-    <a-form-item label="状态">
-      <a-select v-model:value="query.status" allow-clear :options="statusOptions" class="status-select" />
-    </a-form-item>
-    <a-form-item class="smart-query-form-item">
-      <a-space>
-        <a-button type="primary" @click="search">查询</a-button>
-        <a-button @click="reset">重置</a-button>
-      </a-space>
-    </a-form-item>
-  </a-form>
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
+      <a-form-item :label="isDriver ? '司机编码' : '车牌号'">
+        <a-input v-model:value="query.keyword" allow-clear @pressEnter="search" />
+      </a-form-item>
+      <a-form-item label="状态">
+        <a-select v-model:value="query.status" allow-clear :options="statusOptions" class="status-select" />
+      </a-form-item>
+      <a-form-item class="smart-query-form-item">
+        <a-space>
+          <a-button type="primary" @click="search">查询</a-button>
+          <a-button @click="reset">重置</a-button>
+        </a-space>
+      </a-form-item>
+    </a-form>
+    <div data-toolbar-layout="query" class="smart-table-btn-block">
+      <a-button type="primary" v-privilege="editPermission" @click="open()">新建{{ label }}</a-button>
+    </div>
+  </div>
   <a-alert v-if="error" :message="error" type="error" show-icon>
     <template #action>
       <a-button @click="load">重试</a-button>
     </template>
   </a-alert>
   <a-card size="small" :bordered="false">
-    <div class="smart-table-btn-block">
-      <a-button type="primary" v-privilege="editPermission" @click="open()">新建{{ label }}</a-button>
-    </div>
     <a-table
       :id="`scm-delivery-${kind}-table`"
       :columns="columns"
@@ -50,6 +52,8 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-quick-jumper
+        show-less-items
         v-model:current="query.pageNum"
         v-model:page-size="query.pageSize"
         :total="total"

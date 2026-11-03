@@ -32,16 +32,7 @@
       />
     </a-row>
 
-    <a-table
-      size="small"
-      :loading="tableLoading"
-      bordered
-      class="smart-margin-top10"
-      :dataSource="tableData"
-      :columns="columns"
-      rowKey="tag"
-      :pagination="false"
-    >
+    <LocalTable size="small" :loading="tableLoading" bordered class="smart-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
@@ -50,7 +41,7 @@
           </div>
         </template>
       </template>
-    </a-table>
+    </LocalTable>
   </a-card>
 
   <!---生成表单--->
@@ -59,6 +50,7 @@
   <SerialNumberRecordList ref="recordList" />
 </template>
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
 import {onMounted, ref} from 'vue';
 import SerialNumberGenerateFormModal from './serial-number-generate-form-modal.vue';
 import SerialNumberRecordList from './serial-number-record-list.vue';

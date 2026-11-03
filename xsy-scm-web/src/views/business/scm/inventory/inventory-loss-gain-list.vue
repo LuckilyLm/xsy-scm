@@ -1,27 +1,37 @@
 <!-- 库存报损报溢单：创建后需审批。审批会调整库存并写流水，审批时必须带上打开单据时的 version。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="单据号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.lossGainNo" placeholder="单据号" allow-clear @pressEnter="onSearch" />
-      </a-form-item>
-      <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
-      </a-form-item>
-      <a-form-item label="类型" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.adjustType" :options="typeOptions" placeholder="全部" allow-clear style="width: 120px" />
-      </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 130px" />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-button-group>
-          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:loss-gain:query'">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-button-group>
-      </a-form-item>
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" layout="inline" @submit.prevent>
+      <a-row class="smart-query-form-row">
+        <a-form-item label="单据号" class="smart-query-form-item">
+          <a-input v-model:value="queryForm.lossGainNo" placeholder="单据号" allow-clear @pressEnter="onSearch" />
+        </a-form-item>
+        <a-form-item label="仓库" class="smart-query-form-item">
+          <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
+        </a-form-item>
+        <a-form-item label="类型" class="smart-query-form-item">
+          <a-select v-model:value="queryForm.adjustType" :options="typeOptions" placeholder="全部" allow-clear style="width: 120px" />
+        </a-form-item>
+        <a-form-item label="状态" class="smart-query-form-item">
+          <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 130px" />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-button-group>
+            <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:loss-gain:query'">查询</a-button>
+            <a-button @click="resetQuery">重置</a-button>
+          </a-button-group>
+        </a-form-item>
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
+      <div class="smart-table-operate-block">
+        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:loss-gain:add'"> 新建报损报溢单 </a-button>
+      </div>
+      <div class="smart-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_LOSS_GAIN" :refresh="queryData" />
+      </div>
     </a-row>
-  </a-form>
+  </div>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
     <template #action>
@@ -30,15 +40,6 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:loss-gain:add'"> 新建报损报溢单 </a-button>
-      </div>
-      <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_LOSS_GAIN" :refresh="queryData" />
-      </div>
-    </a-row>
-
     <a-table
       :id="SCM_INVENTORY_TABLE_ID.LOSS_GAIN"
       size="small"
@@ -83,6 +84,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper

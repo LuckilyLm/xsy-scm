@@ -69,11 +69,12 @@
         <section v-if="order.account" class="items">
           <h3>已确认采购</h3>
           <p>{{ order.account.accountNo }} · {{ datetime(order.account.confirmedAt) }} · {{ order.account.confirmedBy }}</p>
-          <a-table
+          <LocalTable
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
+            bordered
             :data-source="order.account.items"
             :columns="accountColumns"
             row-key="id"
-            :pagination="false"
             size="small"
             :scroll="{x: scmColumnsWidth(accountColumns)}"
           >
@@ -82,15 +83,15 @@
               <span v-else-if="column.dataIndex === 'unitPrice'" class="scm-money">{{ price(record.unitPrice) }}</span>
               <span v-else-if="column.dataIndex === 'amount'" class="scm-money">{{ amount(record.amount) }}</span>
             </template>
-          </a-table>
+          </LocalTable>
           <h3>原采购计划</h3>
         </section>
-        <a-table
+        <LocalTable
+          :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
           class="items"
           :data-source="order.items ?? []"
           :columns="itemColumns"
           row-key="id"
-          :pagination="false"
           :scroll="{x: scmColumnsWidth(itemColumns)}"
           size="small"
           bordered
@@ -136,10 +137,17 @@
               {{ (record.allocations ?? []).length }}
             </template>
           </template>
-        </a-table>
+        </LocalTable>
 
         <a-divider orientation="left">需求分配明细</a-divider>
-        <a-table :data-source="order.allocations ?? []" :columns="allocationColumns" row-key="allocationId" :pagination="false" size="small" bordered>
+        <LocalTable
+          :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
+          :data-source="order.allocations ?? []"
+          :columns="allocationColumns"
+          row-key="allocationId"
+          size="small"
+          bordered
+        >
           <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'salesOrderNo'">{{ record.salesOrderNo || '—' }}</template>
             <template v-else-if="column.dataIndex === 'quantity'">
@@ -150,7 +158,7 @@
               <a-tag>{{ SCM_DEMAND_STATUS_ENUM[record.demandStatus ?? '']?.desc || '—' }}</a-tag>
             </template>
           </template>
-        </a-table>
+        </LocalTable>
 
         <a-divider orientation="left">操作记录（最新在前）</a-divider>
         <a-button class="logs-trigger" :loading="logsLoading" v-privilege="'scm:purchase:log:query'" @click="loadLogs">
@@ -213,6 +221,8 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import PurchaseFinanceConfirmModal from './purchase-finance-confirm-modal.vue';
 import PurchaseCostAdjustmentModal from './purchase-cost-adjustment-modal.vue';
@@ -283,9 +293,7 @@ function windowOpen(item: OrderItem): boolean {
 
 /** 补价只对待定价行，且提交后、未锁单、窗口未过期；这四条后端都会再校验。 */
 function canFill(item: OrderItem): boolean {
-  return (
-    order.value?.accountId == null && Boolean(item.pricePending) && !order.value?.lockedFlag && windowOpen(item)
-  );
+  return order.value?.accountId == null && Boolean(item.pricePending) && !order.value?.lockedFlag && windowOpen(item);
 }
 
 /** 改价只对「还没有确认收货」的行：确认后库存成本已冻结，改价会造成账实不符。 */

@@ -1,44 +1,44 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="业务日期">
-        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" />
-        <span class="date-separator">至</span>
-        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" />
-      </a-form-item>
-      <a-form-item label="供应商"
-        ><a-input v-model:value="query.supplierName" allow-clear placeholder="按供应商名称搜索" @press-enter="onSearch"
-      /></a-form-item>
-      <a-form-item label="采购单号"><a-input v-model:value="query.purchaseOrderNo" allow-clear @press-enter="onSearch" /></a-form-item>
-      <a-form-item label="方向">
-        <a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px" />
-      </a-form-item>
-      <a-form-item label="结清状态">
-        <a-select v-model:value="query.settleState" allow-clear :options="settleOptions" placeholder="全部" style="width: 140px" />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-space>
-          <a-button type="primary" v-privilege="PERM.PAYABLE_QUERY" @click="onSearch">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-space>
-      </a-form-item>
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
+      <a-row class="smart-query-form-row">
+        <a-form-item label="业务日期">
+          <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" />
+          <span class="date-separator">至</span>
+          <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" />
+        </a-form-item>
+        <a-form-item label="供应商"
+          ><a-input v-model:value="query.supplierName" allow-clear placeholder="按供应商名称搜索" @press-enter="onSearch"
+        /></a-form-item>
+        <a-form-item label="采购单号"><a-input v-model:value="query.purchaseOrderNo" allow-clear @press-enter="onSearch" /></a-form-item>
+        <a-form-item label="方向">
+          <a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px" />
+        </a-form-item>
+        <a-form-item label="结清状态">
+          <a-select v-model:value="query.settleState" allow-clear :options="settleOptions" placeholder="全部" style="width: 140px" />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-space>
+            <a-button type="primary" v-privilege="PERM.PAYABLE_QUERY" @click="onSearch">查询</a-button>
+            <a-button @click="resetQuery">重置</a-button>
+          </a-space>
+        </a-form-item>
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
+      <div class="smart-table-operate-block">应付明细</div>
+      <div class="smart-table-setting-block">
+        <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_PAYABLE" :refresh="queryData" />
+      </div>
     </a-row>
-  </a-form>
+  </div>
 
   <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
     <template #action><a-button @click="queryData">重试</a-button></template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">应付明细</div>
-      <div class="smart-table-setting-block">
-        <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData"
-          ><template #icon><DownloadOutlined /></template>导出</a-button
-        >
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_PAYABLE" :refresh="queryData" />
-      </div>
-    </a-row>
     <div class="finance-mobile-balance-list">
       <div v-for="record in page.tableData.value" :key="record.payableId" class="finance-mobile-balance-row">
         <div class="mobile-balance-heading">
@@ -92,6 +92,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
@@ -143,6 +144,7 @@
         /></a-form-item>
       </a-form>
       <a-table
+        bordered
         size="small"
         :data-source="redDrafts"
         :columns="redDraftColumns"

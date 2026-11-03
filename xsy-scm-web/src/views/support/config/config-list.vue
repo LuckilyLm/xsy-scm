@@ -25,21 +25,20 @@
               重置
             </a-button>
           </a-button-group>
-          <a-button @click="toEditOrAdd()" v-privilege="'support:config:add'" type="primary" class="smart-margin-left20">
+        </a-form-item>
+        <div class="smart-query-table-actions">
+          <a-button @click="toEditOrAdd()" v-privilege="'support:config:add'" type="primary">
             <template #icon>
               <PlusOutlined />
             </template>
             新建
           </a-button>
-        </a-form-item>
+          <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.CONFIG" :refresh="ajaxQuery" />
+        </div>
       </a-row>
     </a-form>
 
     <a-card size="small" :bordered="false" :hoverable="true">
-      <a-row justify="end">
-        <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.CONFIG" :refresh="ajaxQuery" />
-      </a-row>
-
       <a-table size="small" :loading="tableLoading" bordered :dataSource="tableData" :columns="columns" rowKey="configId" :pagination="false">
         <template #bodyCell="{record, column}">
           <template v-if="column.dataIndex === 'action'">

@@ -33,12 +33,12 @@
       </a-row>
     </a-form>
     <p v-if="result" class="resolve-meta">查询时间：{{ result.at }}</p>
-    <a-table
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS"
       :columns="columns"
       :data-source="result?.items || []"
       row-key="skuId"
       :loading="loading"
-      :pagination="false"
       size="small"
       bordered
       :scroll="{x: scmColumnsWidth(columns)}"
@@ -68,9 +68,17 @@
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
-    </a-table>
+    </LocalTable>
     <a-modal :open="trialOpen" title="协议价计算依据" :footer="null" width="760px" @cancel="trialOpen = false">
-      <a-table :data-source="trialRows" :columns="trialColumns" row-key="skuId" size="small" :pagination="false" style="margin-top: 12px">
+      <LocalTable
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
+        bordered
+        :data-source="trialRows"
+        :columns="trialColumns"
+        row-key="skuId"
+        size="small"
+        style="margin-top: 12px"
+      >
         <template #bodyCell="{record, column}">
           <template v-if="column.dataIndex === 'formula'">{{ formulaLabel(record.calculationBasis?.formulaType) }}</template>
           <template v-else-if="column.dataIndex === 'source'">{{ basisSourceLabel(record.calculationBasis?.basisSource) }}</template>
@@ -81,11 +89,13 @@
             record.unpricedReason ? UNPRICED_REASON_ENUM[record.unpricedReason]?.desc || record.unpricedReason : '—'
           }}</template>
         </template>
-      </a-table>
+      </LocalTable>
     </a-modal>
   </a-card>
 </template>
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';

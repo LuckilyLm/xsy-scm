@@ -148,7 +148,7 @@ function showDetail(record) {
   visibleDiff.value = true;
   let diffOld = record.diffOld.replaceAll('<br/>', '\r\n');
   let diffNew = record.diffNew.replaceAll('<br/>', '\r\n');
-  const args = ['', diffOld, diffNew, '变更前', '变更后'];
+  const args: [string, string, string, string, string] = ['', diffOld, diffNew, '变更前', '变更后'];
 
   let diffPatch = Diff.createPatch(...args);
   let html = Diff2Html.html(diffPatch, {

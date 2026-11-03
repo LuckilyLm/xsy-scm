@@ -10,8 +10,10 @@
             <a-button type="primary" v-privilege="PERM.FINANCE_QUERY" @click="queryAll">查询</a-button>
             <a-button @click="resetQuery">重置</a-button>
           </a-button-group>
-          <a-button class="smart-margin-left10" v-privilege="PERM.EXPORT" :loading="exportingOverview" @click="exportOverview">导出概览</a-button>
         </a-form-item>
+        <div class="smart-query-table-actions">
+          <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exportingOverview" @click="exportOverview">导出概览</a-button>
+        </div>
       </a-row>
     </a-form>
 
@@ -36,7 +38,7 @@
               <a-button @click="clearKeyword">清除关键字</a-button>
             </div>
             <div class="smart-table-setting-block">
-              <a-button v-privilege="PERM.EXPORT" :loading="exportingReceivable" @click="exportReceivables">导出应收</a-button>
+              <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exportingReceivable" @click="exportReceivables">导出应收</a-button>
               <div class="finance-table-operator">
                 <TableOperator
                   v-model="receivableColumns"
@@ -119,6 +121,7 @@
           </div>
           <div class="smart-query-table-page">
             <a-pagination
+              show-less-items
               show-size-changer
               :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
               show-quick-jumper
@@ -139,7 +142,7 @@
               <a-button @click="clearKeyword">清除关键字</a-button>
             </div>
             <div class="smart-table-setting-block">
-              <a-button v-privilege="PERM.EXPORT" :loading="exportingPayable" @click="exportPayables">导出应付</a-button>
+              <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exportingPayable" @click="exportPayables">导出应付</a-button>
               <div class="finance-table-operator">
                 <TableOperator v-model="payableColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_FINANCE_PAYABLE" :refresh="loadPayables" />
               </div>
@@ -218,6 +221,7 @@
           </div>
           <div class="smart-query-table-page">
             <a-pagination
+              show-less-items
               show-size-changer
               :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
               show-quick-jumper

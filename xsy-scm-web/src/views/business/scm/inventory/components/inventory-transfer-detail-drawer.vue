@@ -11,7 +11,15 @@
       <a-descriptions-item label="收货时间">{{ datetime(detail.receivedAt) }}</a-descriptions-item>
       <a-descriptions-item label="备注" :span="2">{{ detail.remark || '—' }}</a-descriptions-item>
     </a-descriptions>
-    <a-table style="margin-top: 12px" size="small" :data-source="detail.items || []" :columns="itemColumns" row-key="id" bordered :pagination="false">
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
+      style="margin-top: 12px"
+      size="small"
+      :data-source="detail.items || []"
+      :columns="itemColumns"
+      row-key="id"
+      bordered
+    >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -21,7 +29,7 @@
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
-    </a-table>
+    </LocalTable>
     <a-typography-text v-if="detail.status === 'SHIPPED'" type="secondary" style="display: block; margin-top: 8px">
       在途：源仓已扣减、目标仓尚未增加。这批货当前不在任何仓库的余额里，需由目标仓收货后才落地。
     </a-typography-text>
@@ -29,6 +37,8 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import type {TableColumnsType} from 'ant-design-vue';
 import {quantityText} from '../inventory-model';
 import type {InventoryTransfer} from '../inventory-types';

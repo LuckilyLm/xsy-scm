@@ -37,7 +37,7 @@
       </a-row>
     </a-form>
 
-    <a-table
+    <LocalTable
       size="small"
       bordered
       :scroll="{x: tableColumnsWidth(columns)}"
@@ -45,11 +45,11 @@
       class="smart-margin-top10"
       :dataSource="tableData"
       :columns="columns"
-      :pagination="false"
     />
   </a-card>
 </template>
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
 import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {onMounted, reactive, ref} from 'vue';
 import {heartBeatApi} from '/@/api/support/heart-beat-api';

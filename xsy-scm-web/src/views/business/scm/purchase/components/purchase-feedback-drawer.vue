@@ -9,7 +9,7 @@
       以下为现场回填记录，尚未成为实际采购。请核对数量和单价后点击「确认采购」，系统会保存实采数量并生成应付；回填不会自动改写采购单。
     </p>
     <a-alert v-if="error" type="error" show-icon :message="error" />
-    <a-table :columns="columns" :data-source="rows" row-key="id" :loading="loading" :pagination="false" :scroll="{x: 1060}">
+    <a-table size="small" bordered :columns="columns" :data-source="rows" row-key="id" :loading="loading" :pagination="false" :scroll="{x: 1060}">
       <template #bodyCell="{column, record}">
         <span v-if="column.dataIndex === 'unitPrice'" class="scm-money">{{ formatPrice(record.unitPrice, 'purchase') }}</span>
         <span v-else-if="column.dataIndex === 'receivedQuantity'" class="scm-quantity">{{ record.receivedQuantity ?? '—' }}</span>

@@ -20,7 +20,7 @@ Caffeine ：
       </template>
     </a-alert>
 
-    <a-table size="small" bordered class="smart-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag" :pagination="false">
+    <LocalTable size="small" bordered class="smart-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
@@ -29,10 +29,11 @@ Caffeine ：
           </div>
         </template>
       </template>
-    </a-table>
+    </LocalTable>
   </a-card>
 </template>
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
 import {message} from 'ant-design-vue';
 import {onMounted, reactive, ref, h} from 'vue';
 import {cacheApi} from '/@/api/support/cache-api';

@@ -34,8 +34,8 @@
           批量少收关单
         </a-button>
         <a-button :disabled="!selected.length" @click="batchPrint">批量打印</a-button>
-        <a-button class="scm-export-btn" v-privilege="'scm:purchase:query'" :loading="listExport.exporting" @click="onExport"
-          ><template #icon><DownloadOutlined /></template>导出</a-button
+        <a-button type="primary" class="scm-export-btn" v-privilege="'scm:purchase:query'" :loading="listExport.exporting" @click="onExport"
+          >导出</a-button
         >
         <a-button v-privilege="'scm:purchase:query'" @click="exportSettingsOpen = true">导出设置</a-button>
       </div>
@@ -101,6 +101,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper

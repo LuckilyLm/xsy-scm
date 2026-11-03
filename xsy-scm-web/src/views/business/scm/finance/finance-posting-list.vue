@@ -46,9 +46,7 @@
         <span class="posting-hint">虚拟单据：不生成应收应付，不参与核销</span>
       </div>
       <div class="smart-table-setting-block">
-        <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData"
-          ><template #icon><DownloadOutlined /></template>导出</a-button
-        >
+        <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_POSTING" :refresh="queryData" />
       </div>
     </a-row>
@@ -107,6 +105,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper
@@ -212,6 +211,7 @@
           <h3>操作日志</h3>
           <a-empty v-if="!logs.length" description="暂无操作日志" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
           <a-table
+            bordered
             v-else
             size="small"
             :data-source="logs"

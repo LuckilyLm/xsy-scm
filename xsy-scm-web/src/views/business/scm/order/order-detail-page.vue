@@ -96,11 +96,11 @@
 
           <section class="scm-detail-card scm-detail-block">
             <h3 class="scm-detail-card__title">商品明细</h3>
-            <a-table
+            <LocalTable
+              :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
               :data-source="order.items ?? []"
               :columns="itemColumns"
               row-key="itemId"
-              :pagination="false"
               size="small"
               bordered
               :scroll="{x: scmColumnsWidth(itemColumns)}"
@@ -119,7 +119,7 @@
                   {{ amount(record.settlementLineAmount) }}
                 </template>
               </template>
-            </a-table>
+            </LocalTable>
           </section>
 
           <section v-if="order.discount || order.gifts?.length" class="scm-detail-card scm-detail-block">
@@ -163,6 +163,8 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';

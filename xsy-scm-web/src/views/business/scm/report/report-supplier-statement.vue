@@ -12,7 +12,7 @@
   </a-form>
   <a-alert v-if="error" class="statement-note" type="error" show-icon :message="error" />
   <a-card title="历史对账单" size="small" :bordered="false" class="statement-card">
-    <a-table :columns="historyColumns" :data-source="history" row-key="id" size="small" :pagination="{pageSize: 10}" :loading="busy">
+    <a-table bordered :columns="historyColumns" :data-source="history" row-key="id" size="small" :pagination="{pageSize: 10}" :loading="busy">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'"><a-button type="link" @click="openVersion(record.id)">查看对账单</a-button></template>
         <template v-else-if="column.dataIndex === 'partialScope'">{{ record.partialScope ? '部分应付范围' : '完整供应商范围' }}</template>
@@ -22,7 +22,9 @@
   <a-card v-if="selected" title="供应商对账单" size="small" :bordered="false">
     <template #extra>
       <a-space>
-        <a-button v-privilege="PERM.EXPORT" size="small" :loading="versionExport.exporting" @click="exportVersion">导出 Excel</a-button>
+        <a-button type="primary" v-privilege="PERM.EXPORT" size="small" :loading="versionExport.exporting" @click="exportVersion"
+          >导出 Excel</a-button
+        >
         <a-button size="small" @click="printVersion">打印 / 保存 PDF</a-button>
       </a-space>
     </template>

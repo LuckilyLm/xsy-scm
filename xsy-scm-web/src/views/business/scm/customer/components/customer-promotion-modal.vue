@@ -22,7 +22,15 @@
         </div>
         <a-empty v-else-if="!loading && !error" description="该客户还没有推广码" />
 
-        <a-table v-if="rows.length" :data-source="rows" :columns="columns" :pagination="false" row-key="id" size="small">
+        <LocalTable
+          :page-size-options="SCM_PAGE_SIZE_OPTIONS"
+          bordered
+          v-if="rows.length"
+          :data-source="rows"
+          :columns="columns"
+          row-key="id"
+          size="small"
+        >
           <template #bodyCell="{column, record}">
             <template v-if="column.dataIndex === 'status'">
               <a-tag :color="record.revokedAt ? 'default' : 'green'">{{ record.revokedAt ? '已撤销' : '有效' }}</a-tag>
@@ -41,7 +49,7 @@
               >
             </template>
           </template>
-        </a-table>
+        </LocalTable>
 
         <a-alert v-if="scanError" class="promo__scan-error" type="error" show-icon :message="scanError" />
         <div v-if="scanRows.length" class="promo__scans">
@@ -58,6 +66,8 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {computed, ref} from 'vue';
 import QRCode from 'qrcode';
 import {message} from 'ant-design-vue';

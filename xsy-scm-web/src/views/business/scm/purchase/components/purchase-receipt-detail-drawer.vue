@@ -35,11 +35,11 @@
         </a-descriptions>
 
         <a-divider orientation="left">收货明细</a-divider>
-        <a-table
+        <LocalTable
+          :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
           :data-source="receipt.items ?? []"
           :columns="columns"
           row-key="id"
-          :pagination="false"
           :scroll="{x: scmColumnsWidth(columns)}"
           size="small"
           bordered
@@ -76,7 +76,7 @@
             </template>
             <template v-else-if="column.dataIndex === 'correctionReason'">{{ record.correctionReason || '—' }}</template>
           </template>
-        </a-table>
+        </LocalTable>
       </template>
     </a-spin>
 
@@ -87,6 +87,8 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';

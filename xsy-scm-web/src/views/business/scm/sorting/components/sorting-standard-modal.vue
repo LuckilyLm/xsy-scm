@@ -18,6 +18,7 @@
     <a-alert v-if="error" type="error" show-icon :message="error" />
     <a-button :disabled="saving || loading" @click="load">刷新预览</a-button>
     <a-table
+      bordered
       size="small"
       row-key="id"
       :loading="loading"

@@ -5,7 +5,7 @@
       <a-form-item label="退货原因" name="reason">
         <a-input v-model:value="reason" :maxlength="500" />
       </a-form-item>
-      <a-table :data-source="rows" :columns="columns" :pagination="false" row-key="itemId">
+      <a-table size="small" bordered :data-source="rows" :columns="columns" :pagination="false" row-key="itemId">
         <template #bodyCell="{record, column}">
           <template v-if="column.dataIndex === 'quantity'">
             <a-input-number

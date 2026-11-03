@@ -4,6 +4,7 @@
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
+  gap: 12px;
   justify-content: flex-end;
   margin-left: auto;
   min-height: 28px;
@@ -27,11 +28,15 @@
   white-space: nowrap;
 }
 
+.scm-module .admin-layout .smart-query-layout > .smart-query-form {
+  margin-bottom: 0;
+}
+
 .scm-table-toolbar.smart-table-btn-block {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
   margin: 0 0 12px;
 
   .smart-table-operate-block {
@@ -48,11 +53,12 @@
   .smart-table-setting-block {
     display: flex;
     align-items: center;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 12px;
     float: none;
     margin-left: auto;
 
-    /* 直接子按钮的左右间距都交给 gap，避免与下方 4px 规则叠加成 12px */
+    /* 直接子按钮的间距交给父容器，避免与历史外边距叠加。 */
     > .ant-btn {
       margin-right: 0;
       margin-left: 0;
@@ -61,12 +67,5 @@
     .ant-btn {
       margin-right: 0;
     }
-  }
-}
-
-/* 相邻图标按钮留 4px 间距，避免 hover 背景连成一条 */
-.smart-table-setting-block {
-  .ant-btn + .ant-btn:not(.ant-btn-group .ant-btn) {
-    margin-left: 4px;
   }
 }

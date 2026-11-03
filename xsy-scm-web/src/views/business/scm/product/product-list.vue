@@ -54,9 +54,7 @@
         <a-space>
           <a-button v-privilege="'scm:product:add'" type="primary" @click="drawer?.open()">新增商品</a-button>
           <a-button v-privilege="'scm:product:import'" @click="importModal?.show()">导入</a-button>
-          <a-button class="scm-export-btn" v-privilege="'scm:product:export'" @click="openExport"
-            ><template #icon><DownloadOutlined /></template>导出</a-button
-          >
+          <a-button type="primary" class="scm-export-btn" v-privilege="'scm:product:export'" @click="openExport">导出</a-button>
           <!-- 批量操作只在选中记录后出现，避免常驻工具栏过挤 -->
           <template v-if="selectedRows.length">
             <a-button v-privilege="'scm:product:batch'" @click="batch?.open('STATUS', selectedItems)">批量改状态</a-button>
@@ -166,6 +164,8 @@
       </a-table>
       <div class="smart-query-table-page">
         <a-pagination
+          show-quick-jumper
+          show-less-items
           v-model:current="filters.pageNum"
           v-model:page-size="filters.pageSize"
           :total="total"

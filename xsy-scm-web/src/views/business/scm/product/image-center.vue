@@ -7,11 +7,12 @@
             <a-form-item><a-input v-model:value="keyword" allow-clear placeholder="商品名称" style="width: 200px" /></a-form-item>
             <a-form-item><a-checkbox v-model:checked="onlyNoPrimary">仅无主图</a-checkbox></a-form-item>
             <a-form-item
-              ><a-space><a-button type="primary" @click="search">查询</a-button> <a-button @click="resetPick">重置</a-button></a-space></a-form-item
+              ><a-space><a-button type="primary" @click="onSearch">查询</a-button> <a-button @click="resetPick">重置</a-button></a-space></a-form-item
             >
           </a-form>
           <a-alert v-if="pickError" :message="pickError" type="error" show-icon class="gap" />
           <a-table
+            bordered
             :data-source="products"
             :columns="pickColumns"
             row-key="spuId"
@@ -29,6 +30,19 @@
               </template>
             </template>
           </a-table>
+          <div class="smart-query-table-page">
+            <a-pagination
+              :current="pickPage"
+              :page-size="pickPageSize"
+              :total="pickTotal"
+              :page-size-options="SCM_PAGE_SIZE_OPTIONS"
+              show-size-changer
+              show-quick-jumper
+              show-less-items
+              :show-total="(total: number) => `共${total}条`"
+              @change="changePickPage"
+            />
+          </div>
         </a-card>
       </a-col>
 
@@ -208,6 +222,7 @@
           <a-button size="small" :disabled="bulkTargetId == null" @click="applyBulkTarget">应用到全部</a-button>
         </div>
         <a-table
+          bordered
           v-if="rows.length"
           :data-source="rows"
           :columns="importColumns"
@@ -254,6 +269,7 @@
 </template>
 <script setup lang="ts">
 import {computed, onMounted, ref} from 'vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {message} from 'ant-design-vue';
 import type {UploadProps} from 'ant-design-vue';
 import {ArrowLeftOutlined, ArrowRightOutlined, InboxOutlined, StarOutlined} from '@ant-design/icons-vue';
@@ -280,6 +296,9 @@ const keyword = ref(''),
   products = ref<ProductRow[]>([]),
   pickLoading = ref(false),
   pickError = ref('');
+const pickPage = ref(1),
+  pickPageSize = ref(20),
+  pickTotal = ref(0);
 // 左侧选择区三列：编码、名称、主图状态。
 const pickColumns = [
   {title: '商品名称', dataIndex: 'name'},
@@ -354,12 +373,22 @@ async function search() {
   pickError.value = '';
   try {
     const response = await productApi.query({
-      pageNum: 1,
-      pageSize: 50,
+      pageNum: pickPage.value,
+      pageSize: pickPageSize.value,
       keyword: keyword.value || undefined,
       hasPrimaryImage: onlyNoPrimary.value ? false : undefined,
     });
-    if (current === searchRequestId) products.value = response.data.list;
+    if (current === searchRequestId) {
+      pickTotal.value = response.data.total;
+      const lastPage = Math.max(1, Math.ceil(pickTotal.value / pickPageSize.value));
+      // 删除或筛选导致末页消失时，重新请求有效页，不能把空页当成没有商品。
+      if (pickPage.value > lastPage) {
+        pickPage.value = lastPage;
+        await search();
+        return;
+      }
+      products.value = response.data.list;
+    }
   } catch (e) {
     if (current === searchRequestId) pickError.value = productError(e);
   } finally {
@@ -367,12 +396,23 @@ async function search() {
   }
 }
 
+function onSearch() {
+  pickPage.value = 1;
+  void search();
+}
+
+function changePickPage(page: number, pageSize: number) {
+  pickPage.value = pageSize === pickPageSize.value ? page : 1;
+  pickPageSize.value = pageSize;
+  void search();
+}
+
 function resetPick() {
   keyword.value = '';
   onlyNoPrimary.value = false;
   view.value = null;
   // 重置只清筛选条件，列表重新加载。
-  search();
+  onSearch();
 }
 
 let selectRequestId = 0;

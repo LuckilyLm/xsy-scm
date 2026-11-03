@@ -50,9 +50,7 @@
       <div class="smart-table-setting-block">
         <a-button v-privilege="PERM.RECEIPT_ADD" type="primary" @click="openAdd">登记收款</a-button>
         <a-button v-privilege="PERM.RECEIPT_ADD" @click="openCod">货到付款收款</a-button>
-        <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData"
-          ><template #icon><DownloadOutlined /></template>导出</a-button
-        >
+        <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_RECEIPT" :refresh="queryData" />
       </div>
     </a-row>
@@ -118,6 +116,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper

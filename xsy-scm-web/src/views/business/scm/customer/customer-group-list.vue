@@ -1,28 +1,30 @@
 <!-- 客户分组：组内客户共用分组价；每个分组至少保留一个客户。 -->
 <template>
   <section aria-label="客户分组">
-    <a-form class="smart-query-form" layout="inline">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input v-model:value="query.keyword" allow-clear placeholder="分组编码 / 分组名称" style="width: 220px" />
-        </a-form-item>
-        <a-form-item label="状态" class="smart-query-form-item">
-          <a-select v-model:value="query.status" allow-clear placeholder="全部" style="width: 120px" :options="statusOptions" />
-        </a-form-item>
-        <a-form-item class="smart-query-form-item">
-          <a-space :size="10">
-            <a-button type="primary" v-privilege="'scm:customer:group:query'" @click="search">查询</a-button>
-            <a-button @click="reset">重置</a-button>
-          </a-space>
-        </a-form-item>
-      </a-row>
-    </a-form>
-
-    <a-card size="small" :bordered="false">
-      <a-row class="smart-table-btn-block" justify="space-between" align="middle">
+    <div class="smart-query-layout">
+      <a-form class="smart-query-form" layout="inline">
+        <a-row class="smart-query-form-row">
+          <a-form-item label="关键字" class="smart-query-form-item">
+            <a-input v-model:value="query.keyword" allow-clear placeholder="分组编码 / 分组名称" style="width: 220px" />
+          </a-form-item>
+          <a-form-item label="状态" class="smart-query-form-item">
+            <a-select v-model:value="query.status" allow-clear placeholder="全部" style="width: 120px" :options="statusOptions" />
+          </a-form-item>
+          <a-form-item class="smart-query-form-item">
+            <a-space :size="10">
+              <a-button type="primary" v-privilege="'scm:customer:group:query'" @click="search">查询</a-button>
+              <a-button @click="reset">重置</a-button>
+            </a-space>
+          </a-form-item>
+        </a-row>
+      </a-form>
+      <a-row data-toolbar-layout="query" class="smart-table-btn-block" justify="space-between" align="middle">
         <a-button type="primary" v-privilege="'scm:customer:group:add'" @click="openForm()">新增分组</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER_GROUP" :refresh="load" />
       </a-row>
+    </div>
+
+    <a-card size="small" :bordered="false">
       <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
         <template #action>
           <a-button size="small" @click="load">重新加载</a-button>
@@ -53,6 +55,8 @@
       </a-table>
       <div class="smart-query-table-page">
         <a-pagination
+          show-quick-jumper
+          show-less-items
           v-model:current="query.pageNum"
           v-model:page-size="query.pageSize"
           :total="total"

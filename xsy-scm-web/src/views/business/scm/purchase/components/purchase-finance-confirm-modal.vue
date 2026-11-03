@@ -20,6 +20,7 @@
     <a-alert v-if="priceChangeForbidden" type="warning" show-icon message="采用回填报价需要补价或改价权限，请由有权限的人员核对。" />
     <p v-if="fromFeedback" class="scm-note">已带入各商品最新一次现场回填，不累加多次回填；缺失的数量和报价请核对后补齐。</p>
     <a-table
+      bordered
       :data-source="lines"
       :columns="columns"
       row-key="id"

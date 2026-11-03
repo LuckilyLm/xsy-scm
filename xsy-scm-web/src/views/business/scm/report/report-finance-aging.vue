@@ -41,9 +41,12 @@
         >截至 {{ applied.asOfDate }} · {{ applied.accountType === 'RECEIVABLE' ? '应收' : '应付' }}未核销余额</a-typography-text
       >
       <a-typography-text v-else type="secondary">请选择截止日后查询</a-typography-text>
-      <a-button v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows">导出当前结果</a-button>
+      <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows"
+        >导出当前结果</a-button
+      >
     </div>
     <a-table
+      bordered
       size="small"
       :data-source="summaryRows"
       :columns="summaryColumns"
@@ -82,6 +85,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         v-model:current="query.pageNum"
         v-model:page-size="query.pageSize"
         :total="total"

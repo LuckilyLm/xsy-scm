@@ -1,31 +1,33 @@
 <!-- 供应商列表：只有单条删除；关联商品走独立的整表替换接口。 -->
 <template>
   <section aria-label="供应商档案">
-    <a-form class="smart-query-form" layout="inline">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input v-model:value="filters.keyword" allow-clear placeholder="编码 / 名称 / 联系人 / 电话" style="width: 240px" />
-        </a-form-item>
-        <a-form-item label="供应商分类" class="smart-query-form-item">
-          <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="SUPPLIER" style="width: 160px" />
-        </a-form-item>
-        <a-form-item label="状态" class="smart-query-form-item">
-          <SmartEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_STATUS_ENUM" width="130px" />
-        </a-form-item>
-        <a-form-item class="smart-query-form-item">
-          <a-space>
-            <a-button type="primary" @click="search">查询</a-button>
-            <a-button @click="reset">重置</a-button>
-          </a-space>
-        </a-form-item>
-      </a-row>
-    </a-form>
-
-    <a-card size="small" :bordered="false">
-      <a-row class="smart-table-btn-block" justify="space-between" align="middle">
+    <div class="smart-query-layout">
+      <a-form class="smart-query-form" layout="inline">
+        <a-row class="smart-query-form-row">
+          <a-form-item label="关键字" class="smart-query-form-item">
+            <a-input v-model:value="filters.keyword" allow-clear placeholder="编码 / 名称 / 联系人 / 电话" style="width: 240px" />
+          </a-form-item>
+          <a-form-item label="供应商分类" class="smart-query-form-item">
+            <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="SUPPLIER" style="width: 160px" />
+          </a-form-item>
+          <a-form-item label="状态" class="smart-query-form-item">
+            <SmartEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_STATUS_ENUM" width="130px" />
+          </a-form-item>
+          <a-form-item class="smart-query-form-item">
+            <a-space>
+              <a-button type="primary" @click="search">查询</a-button>
+              <a-button @click="reset">重置</a-button>
+            </a-space>
+          </a-form-item>
+        </a-row>
+      </a-form>
+      <a-row data-toolbar-layout="query" class="smart-table-btn-block" justify="space-between" align="middle">
         <a-button v-privilege="'scm:supplier:add'" type="primary" @click="drawer?.open()">新增供应商</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER" :refresh="load" />
       </a-row>
+    </div>
+
+    <a-card size="small" :bordered="false">
       <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
         <template #action>
           <a-button size="small" @click="load">重新加载</a-button>
@@ -83,6 +85,8 @@
       </a-table>
       <div class="smart-query-table-page">
         <a-pagination
+          show-quick-jumper
+          show-less-items
           v-model:current="filters.pageNum"
           v-model:page-size="filters.pageSize"
           :total="total"

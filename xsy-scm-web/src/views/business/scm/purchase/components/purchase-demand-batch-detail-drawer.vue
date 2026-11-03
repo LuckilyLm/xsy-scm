@@ -27,13 +27,13 @@
         <a-button type="primary" style="margin: 12px 0" v-privilege="'scm:purchase:inquiry:query'" @click="openInquiry">查看本批次询价</a-button>
 
         <a-divider orientation="left">各规格的计算依据</a-divider>
-        <a-table
+        <LocalTable
+          :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
           size="small"
           :data-source="detail.summary ?? []"
           :columns="summaryColumns"
           row-key="skuId"
           bordered
-          :pagination="false"
           :scroll="{x: scmColumnsWidth(summaryColumns)}"
         >
           <template #bodyCell="{record, column}">
@@ -47,16 +47,16 @@
             </template>
             <template v-else-if="column.dataIndex === 'demandUnit'">{{ record.demandUnit || '—' }}</template>
           </template>
-        </a-table>
+        </LocalTable>
 
         <a-divider orientation="left">缺口分摊到订单行</a-divider>
-        <a-table
+        <LocalTable
+          :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
           size="small"
           :data-source="detail.items ?? []"
           :columns="itemColumns"
           row-key="lineNo"
           bordered
-          :pagination="false"
           :scroll="{x: scmColumnsWidth(itemColumns)}"
         >
           <template #bodyCell="{record, column}">
@@ -73,7 +73,7 @@
             <template v-else-if="column.dataIndex === 'demandUnit'">{{ record.demandUnit || '—' }}</template>
             <template v-else-if="column.dataIndex === 'skuName'">{{ record.skuName || '—' }}</template>
           </template>
-        </a-table>
+        </LocalTable>
       </template>
       <a-empty v-else-if="!loading && !error" description="请选择一个冻结批次" />
     </a-spin>
@@ -81,12 +81,18 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
-import {SCM_DEMAND_BATCH_STATUS_ENUM, SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
+import {
+  SCM_DEMAND_BATCH_STATUS_ENUM,
+  SCM_DEMAND_SUMMARY_STATUS_COLOR,
+  SCM_DEMAND_SUMMARY_STATUS_ENUM,
+} from '/@/constants/business/scm/purchase-const';
 import type {DemandBatchDetail, DemandBatchItem, DemandBatchSummaryRow, Id} from '../purchase-types';
 import {quantity} from '../purchase-form-model';
 import {datetime} from '../../common/scm-display';

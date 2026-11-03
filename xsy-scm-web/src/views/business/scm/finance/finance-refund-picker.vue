@@ -14,6 +14,7 @@
       <template #action><a-button @click="queryData">重试</a-button></template>
     </a-alert>
     <a-table
+      bordered
       size="small"
       row-key="refundId"
       :data-source="rows"
@@ -31,6 +32,7 @@
     <a-empty v-if="!loading && !rows.length" description="没有可登记的退款；请确认退款已完成且未登记付款。" />
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper

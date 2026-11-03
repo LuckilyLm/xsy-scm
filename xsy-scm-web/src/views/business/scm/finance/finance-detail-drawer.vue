@@ -69,13 +69,14 @@
 
         <section v-if="receivableItems.length || payableItems.length" class="detail-section">
           <h3>来源单据</h3>
-          <a-table
+          <LocalTable
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
+            bordered
             v-if="isReceivable"
             size="small"
             :data-source="receivableItems"
             :columns="receivableColumns"
             row-key="receivableItemId"
-            :pagination="false"
             :scroll="{x: scmColumnsWidth(receivableColumns)}"
           >
             <template #bodyCell="{record, column}">
@@ -83,14 +84,15 @@
               <span v-else-if="column.dataIndex === 'quantity'" class="scm-quantity">{{ numberText(record.quantity) }}</span>
               <span v-else-if="isMoneyColumn(column.dataIndex)" class="scm-money">{{ moneyText(record[column.dataIndex]) }}</span>
             </template>
-          </a-table>
-          <a-table
+          </LocalTable>
+          <LocalTable
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
+            bordered
             v-else
             size="small"
             :data-source="payableItems"
             :columns="payableColumns"
             row-key="payableItemId"
-            :pagination="false"
             :scroll="{x: scmColumnsWidth(payableColumns)}"
           >
             <template #bodyCell="{record, column}">
@@ -98,7 +100,7 @@
               <span v-else-if="column.dataIndex === 'quantity'" class="scm-quantity">{{ numberText(record.quantity) }}</span>
               <span v-else-if="isMoneyColumn(column.dataIndex)" class="scm-money">{{ moneyText(record[column.dataIndex]) }}</span>
             </template>
-          </a-table>
+          </LocalTable>
         </section>
 
         <section class="detail-section">
@@ -110,47 +112,50 @@
           />
           <a-alert v-if="relationText" class="relation-alert" type="info" show-icon :message="relationText" />
           <h4 v-if="writeOffs.length" class="detail-subtitle">核销记录</h4>
-          <a-table
+          <LocalTable
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
+            bordered
             v-if="writeOffs.length"
             size="small"
             :data-source="writeOffs"
             :columns="writeOffColumns"
             row-key="writeOffId"
-            :pagination="false"
             :scroll="{x: scmColumnsWidth(writeOffColumns)}"
           >
             <template #bodyCell="{record, column}">
               <span v-if="column.dataIndex === 'amount'" class="scm-money">{{ moneyText(record.amount) }}</span>
               <span v-else-if="column.dataIndex === 'entryType'">{{ entryTypeText(record.entryType) }}</span>
             </template>
-          </a-table>
+          </LocalTable>
           <h4 v-if="redEntries.length" class="detail-subtitle">红字关联</h4>
-          <a-table
+          <LocalTable
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
+            bordered
             v-if="redEntries.length"
             size="small"
             :data-source="redEntries"
             :columns="redColumns"
             :row-key="redEntryKey"
-            :pagination="false"
             :scroll="{x: scmColumnsWidth(redColumns)}"
           >
             <template #bodyCell="{record, column}">
               <span v-if="column.dataIndex === 'amount'" class="scm-money">{{ moneyText(record.amount) }}</span>
               <span v-else-if="column.dataIndex === 'eventAt'">{{ dateTimeText(record.eventAt) }}</span>
             </template>
-          </a-table>
+          </LocalTable>
         </section>
 
         <section class="detail-section">
           <h3>流水记录</h3>
           <a-empty v-if="!operationLogs.length" description="暂无流水记录" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
-          <a-table
+          <LocalTable
+            :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
+            bordered
             v-else
             size="small"
             :data-source="operationLogs"
             :columns="logColumns"
             row-key="id"
-            :pagination="false"
             :scroll="{x: scmColumnsWidth(logColumns)}"
           >
             <template #bodyCell="{record, column}">
@@ -159,7 +164,7 @@
                 <span v-else>—</span>
               </template>
             </template>
-          </a-table>
+          </LocalTable>
         </section>
 
         <section class="detail-section">
@@ -183,6 +188,8 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref} from 'vue';
 import {Empty} from 'ant-design-vue';

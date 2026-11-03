@@ -38,6 +38,7 @@
       </a-form-item>
     </a-form>
     <a-table
+      bordered
       :id="SCM_SORTING_TABLE_ID.CANDIDATE_LINE"
       size="small"
       :data-source="rows"
@@ -64,6 +65,9 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-quick-jumper
+        show-less-items
+        :show-total="(total: number) => `共${total}条`"
         :current="pageNum"
         :page-size="pageSize"
         :total="total"

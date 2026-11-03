@@ -2,32 +2,41 @@
   <a-tabs v-model:active-key="profitView">
     <a-tab-pane key="monthly" tab="客户月利润"><CustomerMonthlyProfit v-if="profitView === 'monthly'" /></a-tab-pane>
     <a-tab-pane key="gross" tab="库存成本毛利">
-      <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
-        <a-row class="smart-query-form-row">
-          <a-form-item label="分析日期"><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>
-          <a-form-item label="分析维度">
-            <a-select v-model:value="filters.dimension" :options="dimensionOptions" style="width: 130px" />
-          </a-form-item>
-          <a-form-item label="客户"><CustomerSelect v-model:value="filters.customerId" width="190px" /></a-form-item>
-          <a-form-item label="销售员"><EmployeeSelect v-model:value="filters.sellerId" width="150px" /></a-form-item>
-          <a-form-item label="仓库"><WarehouseSelect v-model:value="filters.warehouseId" width="170px" /></a-form-item>
+      <div class="smart-query-layout">
+        <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
+          <a-row class="smart-query-form-row">
+            <a-form-item label="分析日期"><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>
+            <a-form-item label="分析维度">
+              <a-select v-model:value="filters.dimension" :options="dimensionOptions" style="width: 130px" />
+            </a-form-item>
+            <a-form-item label="客户"><CustomerSelect v-model:value="filters.customerId" width="190px" /></a-form-item>
+            <a-form-item label="销售员"><EmployeeSelect v-model:value="filters.sellerId" width="150px" /></a-form-item>
+            <a-form-item label="仓库"><WarehouseSelect v-model:value="filters.warehouseId" width="170px" /></a-form-item>
+          </a-row>
+          <a-row class="smart-query-form-row">
+            <a-form-item label="商品分类">
+              <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
+            </a-form-item>
+            <a-form-item label="商品 / 单号"
+              ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称或订单号" @pressEnter="search"
+            /></a-form-item>
+            <!-- 按钮放在表单最后一项之后，窄屏换行时不会被夹在字段中间 -->
+            <a-form-item>
+              <a-space>
+                <a-button type="primary" :loading="loading" v-privilege="PERM.FINANCE_PROFIT_QUERY" @click="search">查询</a-button>
+                <a-button @click="reset">重置</a-button>
+              </a-space>
+            </a-form-item>
+          </a-row>
+        </a-form>
+        <a-row data-toolbar-layout="query" class="smart-table-btn-block">
+          <div class="smart-table-operate-block">
+            <a-button type="primary" v-privilege="PERM.EXPORT" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
+              >导出当前结果</a-button
+            >
+          </div>
         </a-row>
-        <a-row class="smart-query-form-row">
-          <a-form-item label="商品分类">
-            <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
-          </a-form-item>
-          <a-form-item label="商品 / 单号"
-            ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称或订单号" @pressEnter="search"
-          /></a-form-item>
-          <!-- 按钮放在表单最后一项之后，窄屏换行时不会被夹在字段中间 -->
-          <a-form-item>
-            <a-space>
-              <a-button type="primary" :loading="loading" v-privilege="PERM.FINANCE_PROFIT_QUERY" @click="search">查询</a-button>
-              <a-button @click="reset">重置</a-button>
-            </a-space>
-          </a-form-item>
-        </a-row>
-      </a-form>
+      </div>
 
       <a-alert v-if="error" :message="error" type="error" show-icon class="profit-alert">
         <template #action><a-button @click="load">重试</a-button></template>
@@ -75,13 +84,6 @@
       </a-row>
 
       <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
-              >导出当前结果</a-button
-            >
-          </div>
-        </a-row>
         <a-table
           id="scm-report-finance-profit-table"
           size="small"
@@ -106,6 +108,7 @@
         </a-table>
         <div class="smart-query-table-page">
           <a-pagination
+            show-less-items
             v-model:current="pageNum"
             v-model:page-size="pageSize"
             :total="total"

@@ -1,40 +1,37 @@
 <template>
   <!---------- 查询表单form begin ----------->
-  <a-form class="smart-query-form">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键词" class="smart-query-form-item">
-        <a-input style="width: 150px" v-model:value="queryForm.searchWord" placeholder="关键词" />
-      </a-form-item>
-      <a-form-item label="类型" class="smart-query-form-item">
-        <smart-enum-select style="width: 150px" v-model:value="queryForm.messageType" placeholder="消息类型" enum-name="MESSAGE_TYPE_ENUM" />
-      </a-form-item>
-      <a-form-item label="是否已读" class="smart-query-form-item">
-        <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.readFlag" />
-      </a-form-item>
-      <a-form-item label="创建时间" class="smart-query-form-item">
-        <a-range-picker v-model:value="queryForm.createTime" :presets="defaultTimeRanges" style="width: 200px" @change="onChangeCreateTime" />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-button type="primary" @click="searchQuery">
-          <template #icon>
-            <SearchOutlined />
-          </template>
-          查询
-        </a-button>
-        <a-button @click="resetQuery" class="smart-margin-left10">
-          <template #icon>
-            <ReloadOutlined />
-          </template>
-          重置
-        </a-button>
-      </a-form-item>
-    </a-row>
-  </a-form>
-  <!---------- 查询表单form end ----------->
-
-  <a-card size="small" :bordered="false" :hoverable="true">
-    <!---------- 表格操作行 begin ----------->
-    <a-row class="smart-table-btn-block">
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form">
+      <a-row class="smart-query-form-row">
+        <a-form-item label="关键词" class="smart-query-form-item">
+          <a-input style="width: 150px" v-model:value="queryForm.searchWord" placeholder="关键词" />
+        </a-form-item>
+        <a-form-item label="类型" class="smart-query-form-item">
+          <smart-enum-select style="width: 150px" v-model:value="queryForm.messageType" placeholder="消息类型" enum-name="MESSAGE_TYPE_ENUM" />
+        </a-form-item>
+        <a-form-item label="是否已读" class="smart-query-form-item">
+          <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.readFlag" />
+        </a-form-item>
+        <a-form-item label="创建时间" class="smart-query-form-item">
+          <a-range-picker v-model:value="queryForm.createTime" :presets="defaultTimeRanges" style="width: 200px" @change="onChangeCreateTime" />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-button type="primary" @click="searchQuery">
+            <template #icon>
+              <SearchOutlined />
+            </template>
+            查询
+          </a-button>
+          <a-button @click="resetQuery" class="smart-margin-left10">
+            <template #icon>
+              <ReloadOutlined />
+            </template>
+            重置
+          </a-button>
+        </a-form-item>
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button @click="showForm" type="primary">
           <template #icon>
@@ -47,6 +44,12 @@
         <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.MAIL" :refresh="queryData" />
       </div>
     </a-row>
+  </div>
+  <!---------- 查询表单form end ----------->
+
+  <a-card size="small" :bordered="false" :hoverable="true">
+    <!---------- 表格操作行 begin ----------->
+
     <!---------- 表格操作行 end ----------->
 
     <!---------- 表格 begin ----------->

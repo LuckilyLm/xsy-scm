@@ -30,7 +30,9 @@
         <a-button v-if="canAdd" type="primary" @click="openAdd">登记成本费用</a-button>
         <a-button v-if="canAdd" @click="openBatch">批量登记</a-button>
         <a-button v-if="canQueryExpenses" @click="openExpenses()">成本费用明细</a-button>
-        <a-button v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows">导出当前列</a-button>
+        <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows"
+          >导出当前列</a-button
+        >
       </a-space>
       <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_CUSTOMER_MONTHLY_PROFIT" :refresh="load" />
     </a-row>
@@ -57,6 +59,9 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-quick-jumper
+        show-less-items
+        :show-total="(total: number) => `共${total}条`"
         v-model:current="pageNum"
         v-model:page-size="pageSize"
         :total="total"
@@ -186,6 +191,7 @@
       ><template #action><a-button @click="loadExpenses">重试</a-button></template></a-alert
     >
     <a-table
+      bordered
       :columns="expenseColumns"
       :data-source="expenses"
       row-key="expenseId"
@@ -207,7 +213,17 @@
       </template>
     </a-table>
     <div class="smart-query-table-page">
-      <a-pagination v-model:current="expensePage" :page-size="20" :total="expenseTotal" @change="loadExpenses" />
+      <a-pagination
+        show-quick-jumper
+        show-less-items
+        show-size-changer
+        :page-size-options="SCM_PAGE_SIZE_OPTIONS"
+        :show-total="(total: number) => `共${total}条`"
+        :current="expensePage"
+        :page-size="expensePageSize"
+        :total="expenseTotal"
+        @change="changeExpensePage"
+      />
     </div>
   </a-modal>
   <a-modal
@@ -553,7 +569,8 @@ const expenseOpen = ref(false),
   expenseError = ref(''),
   expenses = ref<CustomerExpense[]>([]),
   expenseTotal = ref(0),
-  expensePage = ref(1);
+  expensePage = ref(1),
+  expensePageSize = ref(20);
 let expenseRequestId = 0;
 const expenseQuery = reactive({expenseMonth: '', customerId: undefined as FinanceId | undefined});
 const expenseColumns: TableColumnsType<CustomerExpense> = [
@@ -576,13 +593,19 @@ function openExpenses(customerId?: FinanceId | null) {
   expenseOpen.value = true;
   void loadExpenses();
 }
+function changeExpensePage(page: number, pageSize: number) {
+  expensePage.value = pageSize === expensePageSize.value ? page : 1;
+  expensePageSize.value = pageSize;
+  void loadExpenses();
+}
+
 async function loadExpenses() {
   const id = ++expenseRequestId;
   expenseLoading.value = true;
   expenseError.value = '';
   try {
     const response = await financeApi.customerExpenseQuery(
-      {...expenseQuery, pageNum: expensePage.value, pageSize: 20},
+      {...expenseQuery, pageNum: expensePage.value, pageSize: expensePageSize.value},
       {suppressGlobalErrorMessage: true}
     );
     if (id !== expenseRequestId) return;

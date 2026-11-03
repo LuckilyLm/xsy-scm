@@ -19,6 +19,7 @@
       ><template #action><a-button @click="load">重试</a-button></template></a-alert
     >
     <a-table
+      bordered
       :columns="columns"
       :data-source="rows"
       row-key="id"
@@ -40,7 +41,17 @@
         >
       </template>
     </a-table>
-    <div class="smart-query-table-page"><a-pagination v-model:current="pageNum" :page-size="20" :total="total" @change="load" /></div>
+    <div class="smart-query-table-page">
+      <a-pagination
+        show-quick-jumper
+        show-less-items
+        :show-total="(total: number) => `共${total}条`"
+        v-model:current="pageNum"
+        :page-size="20"
+        :total="total"
+        @change="load"
+      />
+    </div>
   </a-modal>
   <a-modal
     v-model:open="createOpen"
@@ -71,6 +82,7 @@
           :message="'有 ' + selected.zeroCostRowCount + ' 行成本待确认，估算金额不代表完整损耗。'"
         />
         <a-table
+          bordered
           :columns="detailColumns"
           :data-source="selected.rows || []"
           row-key="balanceId"

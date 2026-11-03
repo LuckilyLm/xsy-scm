@@ -242,6 +242,8 @@
         </a-table>
         <div v-if="!orders.error.value" class="smart-query-table-page">
           <a-pagination
+            show-quick-jumper
+            show-less-items
             v-model:current="ordersPage.pageNum"
             v-model:page-size="ordersPage.pageSize"
             :total="orders.total.value"
@@ -322,6 +324,8 @@
         </a-table>
         <div v-if="!agreement.error.value" class="smart-query-table-page">
           <a-pagination
+            show-quick-jumper
+            show-less-items
             v-model:current="agreementPage.pageNum"
             v-model:page-size="agreementPage.pageSize"
             :total="agreement.total.value"
@@ -369,6 +373,8 @@
           </a-table>
           <div class="smart-query-table-page">
             <a-pagination
+              show-quick-jumper
+              show-less-items
               v-model:current="visibilityPage.pageNum"
               v-model:page-size="visibilityPage.pageSize"
               :total="visibility.total.value"

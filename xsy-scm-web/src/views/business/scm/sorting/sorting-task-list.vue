@@ -1,26 +1,36 @@
 <!-- 分拣列表用于记录已分拣数量，计划量保留任务创建时的数据；取消和重开必须填写原因。 -->
 <template>
-  <SortingTaskFilterForm
-    :keyword="queryForm.keyword"
-    :status="queryForm.status"
-    :warehouse-id="queryForm.warehouseId"
-    :unassigned-only="queryForm.unassignedOnly"
-    :assignee-id="assigneeFilter"
-    :delivery-range="deliveryRange"
-    :delivery-wave="queryForm.deliveryWave"
-    :supplier-id="queryForm.supplierId"
-    :is-queue-manager="isQueueManager"
-    @update:keyword="queryForm.keyword = $event"
-    @update:status="queryForm.status = $event"
-    @update:warehouse-id="queryForm.warehouseId = $event"
-    @update:unassigned-only="queryForm.unassignedOnly = $event"
-    @update:assignee-id="assigneeFilter = $event"
-    @update:delivery-range="deliveryRange = $event"
-    @update:delivery-wave="queryForm.deliveryWave = $event"
-    @update:supplier-id="queryForm.supplierId = $event"
-    @search="onSearch"
-    @reset="resetQuery"
-  />
+  <div class="smart-query-layout">
+    <SortingTaskFilterForm
+      :keyword="queryForm.keyword"
+      :status="queryForm.status"
+      :warehouse-id="queryForm.warehouseId"
+      :unassigned-only="queryForm.unassignedOnly"
+      :assignee-id="assigneeFilter"
+      :delivery-range="deliveryRange"
+      :delivery-wave="queryForm.deliveryWave"
+      :supplier-id="queryForm.supplierId"
+      :is-queue-manager="isQueueManager"
+      @update:keyword="queryForm.keyword = $event"
+      @update:status="queryForm.status = $event"
+      @update:warehouse-id="queryForm.warehouseId = $event"
+      @update:unassigned-only="queryForm.unassignedOnly = $event"
+      @update:assignee-id="assigneeFilter = $event"
+      @update:delivery-range="deliveryRange = $event"
+      @update:delivery-wave="queryForm.deliveryWave = $event"
+      @update:supplier-id="queryForm.supplierId = $event"
+      @search="onSearch"
+      @reset="resetQuery"
+    />
+    <div data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
+      <div class="smart-table-operate-block">
+        <a-button type="primary" v-privilege="'scm:sorting:task:add'" @click="openCreate">新建分拣任务</a-button>
+      </div>
+      <div class="smart-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_TASK" :refresh="queryData" />
+      </div>
+    </div>
+  </div>
 
   <a-alert v-if="listError" :message="listError" type="error" show-icon>
     <template #action>
@@ -29,15 +39,6 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <div class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
-        <a-button type="primary" v-privilege="'scm:sorting:task:add'" @click="openCreate">新建分拣任务</a-button>
-      </div>
-      <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_TASK" :refresh="queryData" />
-      </div>
-    </div>
-
     <a-table
       :id="SCM_SORTING_TABLE_ID.TASK"
       ref="tableRef"
@@ -98,6 +99,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         show-quick-jumper
         :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"

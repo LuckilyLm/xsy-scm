@@ -1,22 +1,19 @@
 <template>
-  <a-form class="smart-query-form" layout="inline">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input v-model:value="query.keyword" placeholder="商品名称或规格" allow-clear />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-space>
-          <a-button type="primary" @click="search" v-privilege="'scm:pricing:time-price:manage'">查询</a-button>
-          <a-button @click="reset">重置</a-button>
-        </a-space>
-      </a-form-item>
-    </a-row>
-  </a-form>
-
-  <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error = ''" />
-
-  <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" layout="inline">
+      <a-row class="smart-query-form-row">
+        <a-form-item label="关键字" class="smart-query-form-item">
+          <a-input v-model:value="query.keyword" placeholder="商品名称或规格" allow-clear />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-space>
+            <a-button type="primary" @click="search" v-privilege="'scm:pricing:time-price:manage'">查询</a-button>
+            <a-button @click="reset">重置</a-button>
+          </a-space>
+        </a-form-item>
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:pricing:time-price:manage'" @click="openDrawer()">新增时价</a-button>
       </div>
@@ -24,7 +21,11 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_TIME_PRICE" :refresh="load" />
       </div>
     </a-row>
+  </div>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error = ''" />
+
+  <a-card size="small" :bordered="false">
     <a-table
       id="scm-pricing-time-price-table"
       :data-source="rows"
@@ -58,6 +59,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         v-model:current="query.pageNum"
         v-model:page-size="query.pageSize"
         :total="total"

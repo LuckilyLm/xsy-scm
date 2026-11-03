@@ -1,10 +1,10 @@
 <template>
   <ReportBarChart class="smart-margin-bottom10" title="供应商采购入库成本 TOP10" :items="items" series-name="采购入库成本金额" />
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
+    <a-row data-toolbar-layout="single" class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
-        <a-button class="scm-export-btn" v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')"
-          ><template #icon><DownloadOutlined /></template>导出</a-button
+        <a-button type="primary" class="scm-export-btn" v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')"
+          >导出</a-button
         >
       </div>
       <div class="smart-table-setting-block">
@@ -65,6 +65,7 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         :disabled="exporting"
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"

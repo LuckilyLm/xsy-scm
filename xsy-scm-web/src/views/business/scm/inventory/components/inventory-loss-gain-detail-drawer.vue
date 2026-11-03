@@ -12,7 +12,15 @@
       <a-descriptions-item label="创建时间">{{ datetime(detail.createdAt) }}</a-descriptions-item>
       <a-descriptions-item label="备注">{{ detail.remark || '—' }}</a-descriptions-item>
     </a-descriptions>
-    <a-table style="margin-top: 12px" size="small" :data-source="detail.items || []" :columns="itemColumns" row-key="id" bordered :pagination="false">
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
+      style="margin-top: 12px"
+      size="small"
+      :data-source="detail.items || []"
+      :columns="itemColumns"
+      row-key="id"
+      bordered
+    >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -22,11 +30,13 @@
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
-    </a-table>
+    </LocalTable>
   </a-drawer>
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import type {TableColumnsType} from 'ant-design-vue';
 import {quantityText} from '../inventory-model';
 import type {InventoryLossGain} from '../inventory-types';

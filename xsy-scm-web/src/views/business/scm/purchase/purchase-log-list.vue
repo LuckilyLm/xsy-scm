@@ -29,7 +29,8 @@
 
   <a-card size="small" :bordered="false">
     <!-- 查询过才出表格：未查询时表格自带空状态会和下面的提示叠成两块「没有数据」 -->
-    <a-table
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS"
       v-if="queried"
       :id="SCM_PURCHASE_TABLE_ID.LOG"
       size="small"
@@ -38,7 +39,6 @@
       row-key="id"
       bordered
       :loading="loading"
-      :pagination="false"
       :scroll="{x: scmColumnsWidth(columns)}"
     >
       <template #bodyCell="{record, column}">
@@ -59,7 +59,7 @@
           </div>
         </template>
       </template>
-    </a-table>
+    </LocalTable>
 
     <a-empty v-if="!queried && !loading" description="请先输入采购单号查询操作日志" />
   </a-card>
@@ -70,6 +70,8 @@
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';

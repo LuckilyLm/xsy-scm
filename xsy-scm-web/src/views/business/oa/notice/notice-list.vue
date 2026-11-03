@@ -4,61 +4,60 @@
 -->
 
 <template>
-  <a-form class="smart-query-form" v-privilege="'oa:notice:query'">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="分类" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.noticeTypeId" style="width: 100px" :showSearch="true" :allowClear="true" placeholder="分类">
-          <a-select-option v-for="item in noticeTypeList" :key="item.noticeTypeId" :value="item.noticeTypeId">
-            {{ item.noticeTypeName }}
-          </a-select-option>
-        </a-select>
-      </a-form-item>
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" v-privilege="'oa:notice:query'">
+      <a-row class="smart-query-form-row">
+        <a-form-item label="分类" class="smart-query-form-item">
+          <a-select v-model:value="queryForm.noticeTypeId" style="width: 100px" :showSearch="true" :allowClear="true" placeholder="分类">
+            <a-select-option v-for="item in noticeTypeList" :key="item.noticeTypeId" :value="item.noticeTypeId">
+              {{ item.noticeTypeName }}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
 
-      <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="标题、作者、来源" />
-      </a-form-item>
+        <a-form-item label="关键字" class="smart-query-form-item">
+          <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="标题、作者、来源" />
+        </a-form-item>
 
-      <a-form-item label="文号" class="smart-query-form-item">
-        <a-input style="width: 150px" v-model:value="queryForm.documentNumber" placeholder="文号" />
-      </a-form-item>
+        <a-form-item label="文号" class="smart-query-form-item">
+          <a-input style="width: 150px" v-model:value="queryForm.documentNumber" placeholder="文号" />
+        </a-form-item>
 
-      <a-form-item label="创建人" class="smart-query-form-item">
-        <a-input style="width: 100px" v-model:value="queryForm.createUserName" placeholder="创建人" />
-      </a-form-item>
+        <a-form-item label="创建人" class="smart-query-form-item">
+          <a-input style="width: 100px" v-model:value="queryForm.createUserName" placeholder="创建人" />
+        </a-form-item>
 
-      <a-form-item label="是否删除" class="smart-query-form-item">
-        <SmartBooleanSelect v-model:value="queryForm.deletedFlag" style="width: 70px" />
-      </a-form-item>
+        <a-form-item label="是否删除" class="smart-query-form-item">
+          <SmartBooleanSelect v-model:value="queryForm.deletedFlag" style="width: 70px" />
+        </a-form-item>
 
-      <a-form-item label="发布时间" class="smart-query-form-item">
-        <a-range-picker v-model:value="publishDate" :presets="defaultTimeRanges" @change="publishDateChange" style="width: 220px" />
-      </a-form-item>
+        <a-form-item label="发布时间" class="smart-query-form-item">
+          <a-range-picker v-model:value="publishDate" :presets="defaultTimeRanges" @change="publishDateChange" style="width: 220px" />
+        </a-form-item>
 
-      <a-form-item label="创建时间" class="smart-query-form-item">
-        <a-range-picker v-model:value="createDate" :presets="defaultTimeRanges" @change="createDateChange" style="width: 220px" />
-      </a-form-item>
+        <a-form-item label="创建时间" class="smart-query-form-item">
+          <a-range-picker v-model:value="createDate" :presets="defaultTimeRanges" @change="createDateChange" style="width: 220px" />
+        </a-form-item>
 
-      <a-form-item class="smart-query-form-item smart-margin-left10">
-        <a-button-group>
-          <a-button type="primary" @click="onSearch">
-            <template #icon>
-              <SearchOutlined />
-            </template>
-            查询
-          </a-button>
-          <a-button @click="onReload">
-            <template #icon>
-              <ReloadOutlined />
-            </template>
-            重置
-          </a-button>
-        </a-button-group>
-      </a-form-item>
-    </a-row>
-  </a-form>
-
-  <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+        <a-form-item class="smart-query-form-item smart-margin-left10">
+          <a-button-group>
+            <a-button type="primary" @click="onSearch">
+              <template #icon>
+                <SearchOutlined />
+              </template>
+              查询
+            </a-button>
+            <a-button @click="onReload">
+              <template #icon>
+                <ReloadOutlined />
+              </template>
+              重置
+            </a-button>
+          </a-button-group>
+        </a-form-item>
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="addOrUpdate()" v-privilege="'oa:notice:add'">
           <template #icon>
@@ -71,7 +70,9 @@
         <TableOperator v-model="tableColumns" :tableId="TABLE_ID_CONST.BUSINESS.OA.NOTICE" :refresh="queryNoticeList" />
       </div>
     </a-row>
+  </div>
 
+  <a-card size="small" :bordered="false">
     <a-table
       rowKey="noticeId"
       :columns="tableColumns"

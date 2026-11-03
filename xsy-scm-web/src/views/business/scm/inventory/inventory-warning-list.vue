@@ -1,21 +1,31 @@
 <!-- 库存预警列表只读，按可用量（现有量 − 预留量）判断。写操作只有“检查并发送预警通知”。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
-      </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.status" :options="statusOptions" style="width: 150px" />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-button-group>
-          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:warning:query'">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-button-group>
-      </a-form-item>
+  <div class="smart-query-layout">
+    <a-form class="smart-query-form" layout="inline" @submit.prevent>
+      <a-row class="smart-query-form-row">
+        <a-form-item label="仓库" class="smart-query-form-item">
+          <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
+        </a-form-item>
+        <a-form-item label="状态" class="smart-query-form-item">
+          <a-select v-model:value="queryForm.status" :options="statusOptions" style="width: 150px" />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-button-group>
+            <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:warning:query'">查询</a-button>
+            <a-button @click="resetQuery">重置</a-button>
+          </a-button-group>
+        </a-form-item>
+      </a-row>
+    </a-form>
+    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
+      <div class="smart-table-operate-block">
+        <a-button v-privilege="'scm:inventory:warning:scan'" :loading="scanning" @click="scan"> 检查并发送预警通知 </a-button>
+      </div>
+      <div class="smart-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING" :refresh="queryData" />
+      </div>
     </a-row>
-  </a-form>
+  </div>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
     <template #action>
@@ -25,14 +35,6 @@
 
   <a-card size="small" :bordered="false">
     <a-alert v-if="anchorThresholdId" class="anchor" type="info" show-icon :message="'已定位到相关的库存预警配置'" />
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-        <a-button v-privilege="'scm:inventory:warning:scan'" :loading="scanning" @click="scan"> 检查并发送预警通知 </a-button>
-      </div>
-      <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING" :refresh="queryData" />
-      </div>
-    </a-row>
 
     <a-table
       :id="SCM_INVENTORY_TABLE_ID.WARNING"
@@ -74,6 +76,7 @@
 
     <div class="smart-query-table-page">
       <a-pagination
+        show-less-items
         show-size-changer
         :page-size-options="SCM_PAGE_SIZE_OPTIONS"
         show-quick-jumper

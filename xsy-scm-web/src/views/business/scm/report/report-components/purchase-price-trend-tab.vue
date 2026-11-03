@@ -1,10 +1,10 @@
 <template>
   <ReportLineChart class="smart-margin-bottom10" title="采购成交价波动" :x-axis="trendAxis" :series="trendSeries" />
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
+    <a-row data-toolbar-layout="single" class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
-        <a-button class="scm-export-btn" v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')"
-          ><template #icon><DownloadOutlined /></template>导出</a-button
+        <a-button type="primary" class="scm-export-btn" v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')"
+          >导出</a-button
         >
       </div>
       <div class="smart-table-setting-block">
@@ -16,7 +16,8 @@
         <a-button @click="refresh">重试</a-button>
       </template>
     </a-alert>
-    <a-table
+    <LocalTable
+      :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       :id="SCM_REPORT_TABLE_ID.PURCHASE_PRICE_TREND"
       size="small"
       :data-source="rows"
@@ -24,7 +25,6 @@
       :row-key="(row: PurchasePriceTrendPoint) => `${row.bizDate}-${row.skuId}-${row.purchaseUnit}`"
       bordered
       :loading="loading"
-      :pagination="false"
       :locale="{emptyText: '暂无价格波动数据'}"
       :scroll="{x: scmColumnsWidth(columns)}"
     >
@@ -46,11 +46,13 @@
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
-    </a-table>
+    </LocalTable>
   </a-card>
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';

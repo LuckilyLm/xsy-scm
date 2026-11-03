@@ -1,5 +1,5 @@
 <template>
-  <div class="smart-table-btn-block">
+  <div data-toolbar-layout="single" class="smart-table-btn-block">
     <a-button v-if="routeStatus === 'PENDING'" type="primary" v-privilege="'scm:delivery:route:update'" :disabled="busy" @click="emit('addOrders')"
       >加入订单
     </a-button>
@@ -33,14 +33,14 @@
       </div>
     </div>
   </div>
-  <a-table
+  <LocalTable
+    :page-size-options="SCM_PAGE_SIZE_OPTIONS"
     v-else
     id="scm-delivery-route-orders"
     size="small"
     :columns="orderColumns"
     :data-source="orders"
     row-key="id"
-    :pagination="false"
     :scroll="{x: scmColumnsWidth(orderColumns)}"
     bordered
   >
@@ -74,10 +74,12 @@
         </a-button>
       </template>
     </template>
-  </a-table>
+  </LocalTable>
 </template>
 
 <script setup lang="ts">
+import LocalTable from '/@/components/support/local-table/index.vue';
+import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';

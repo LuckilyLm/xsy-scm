@@ -41,7 +41,7 @@
       :sub-title="`共 ${result.totalOrders} 张：已确认 ${result.confirmedOrders} 张，待确认 ${result.pendingOrders} 张`"
     >
       <template #extra>
-        <a-table :data-source="result.orders" :columns="importedColumns" row-key="orderId" size="small" :pagination="{pageSize: 5}">
+        <a-table bordered :data-source="result.orders" :columns="importedColumns" row-key="orderId" size="small" :pagination="{pageSize: 5}">
           <template #bodyCell="{column, record}">
             <a-button v-if="column.dataIndex === 'review'" v-privilege="'scm:order:update'" type="link" @click="reviewImported(record.orderId)"
               >核对商品与价格</a-button
