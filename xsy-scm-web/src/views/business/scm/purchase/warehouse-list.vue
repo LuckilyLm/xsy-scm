@@ -66,8 +66,8 @@
         <template v-else-if="column.dataIndex === 'located'">
           <!-- 未定位的仓库无法参与路线规划，用图标 + Tooltip 表达，不占一整列文字 -->
           <a-tooltip :title="isLocated(record) ? '已定位，可参与路线规划' : '未定位，无法参与路线规划'">
-            <CheckCircleOutlined v-if="isLocated(record)" class="located located--ok" />
-            <ExclamationCircleOutlined v-else class="located located--warn" />
+            <CheckCircleOutlined v-if="isLocated(record)" class="located located--ok" :aria-label="`${record.name}：已定位，可参与路线规划`" />
+            <ExclamationCircleOutlined v-else class="located located--warn" :aria-label="`${record.name}：未定位，无法参与路线规划`" />
           </a-tooltip>
         </template>
         <template v-else-if="column.dataIndex === 'remark'">{{ record.remark || '—' }}</template>
@@ -168,7 +168,7 @@ const formError = ref('');
 const form = ref<WarehouseFormModel>({warehouseCode: '', name: ''});
 
 /** 手改地址后旧坐标不再可信；清掉并明确提示，避免静默变成未定位。 */
-function onAddressChange() {
+function onAddressChange(): void {
   if (!isLocated(form.value)) {
     return;
   }
@@ -187,7 +187,7 @@ const area = ref<AreaNode[]>([]);
 const scopeModal = ref<InstanceType<typeof WarehouseScopeModal>>();
 const districtModal = ref<InstanceType<typeof MallDistrictWarehouseModal>>();
 
-function onAreaChange(_value: unknown, nodes: AreaNode[]) {
+function onAreaChange(_value: unknown, nodes: AreaNode[]): void {
   Object.assign(form.value, areaColumnsOf(nodes), emptyLocation());
 }
 
@@ -217,7 +217,7 @@ const canEnable = computed(() => hasPermission('scm:warehouse:enable'));
 const canDisable = computed(() => hasPermission('scm:warehouse:disable'));
 
 /** 开关值由数据驱动：确认框取消或请求失败时，开关保持原状态。 */
-function onStatusSwitch(row: Warehouse, checked: boolean) {
+function onStatusSwitch(row: Warehouse, checked: boolean): void {
   // 已处于目标状态的事件（键盘方向键等重复触发）直接忽略，不发无意义的启停请求
   if ((row.status === 'ENABLED') === checked) {
     return;
@@ -229,7 +229,7 @@ function onStatusSwitch(row: Warehouse, checked: boolean) {
   }
 }
 
-async function queryData() {
+async function queryData(): Promise<void> {
   const id = ++requestId;
   loading.value = true;
   error.value = '';
@@ -251,18 +251,18 @@ async function queryData() {
   }
 }
 
-function onSearch() {
+function onSearch(): void {
   queryForm.pageNum = 1;
   queryData();
 }
 
-function resetQuery() {
+function resetQuery(): void {
   queryForm.name = undefined;
   queryForm.status = undefined;
   onSearch();
 }
 
-async function open(row?: Warehouse) {
+async function open(row?: Warehouse): Promise<void> {
   formError.value = '';
   form.value = row
     ? {
@@ -292,7 +292,7 @@ async function open(row?: Warehouse) {
   area.value = areaNodesOf(form.value);
 }
 
-async function save() {
+async function save(): Promise<void> {
   // 必填项走表单校验（错误显示在字段下方）；定位是跨字段的业务前置条件，仍用顶部提示
   try {
     await formRef.value?.validate();
@@ -321,7 +321,7 @@ async function save() {
   }
 }
 
-async function enable(row: Warehouse) {
+async function enable(row: Warehouse): Promise<void> {
   try {
     await warehouseApi.enable({id: row.id, version: row.version!});
     message.success('仓库已启用');
@@ -332,7 +332,7 @@ async function enable(row: Warehouse) {
 }
 
 /** 停用是严格模式命令，后端会挡下仍有库存余额 / 在途采购单 / 待入库收货单的仓库。 */
-function disable(row: Warehouse) {
+function disable(row: Warehouse): void {
   Modal.confirm({
     title: '停用该仓库？',
     content: '停用后不能再用于新的采购需求、采购单与收货单。',
