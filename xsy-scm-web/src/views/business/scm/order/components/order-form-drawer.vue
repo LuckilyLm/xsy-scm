@@ -22,77 +22,61 @@
     </p>
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical" class="app-drawer-form">
-        <a-row :gutter="20">
-          <a-col :span="12">
-            <a-form-item label="客户" name="customerId" required>
-              <CustomerSelect v-if="!form.orderId" v-model:value="form.customerId" :disabled="!!exchangeReturnId" @change="customerChanged" />
-              <a-input v-else :value="form.customerNameSnapshot" disabled />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="订单来源" name="orderSource">
-              <a-select
-                v-model:value="form.orderSource"
-                :disabled="!!exchangeReturnId"
-                :options="[
-                  {value: 'ADMIN', label: '后台录单'},
-                  {value: 'SUPPLEMENT', label: '补单'},
-                ]"
-                style="width: 100%"
-              />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12" v-if="form.orderSource === 'SUPPLEMENT'">
-            <a-form-item label="关联原订单" name="originalOrderId">
-              <a-select
-                v-model:value="form.originalOrderId"
-                show-search
-                allow-clear
-                :filter-option="false"
-                :disabled="!!exchangeReturnId"
-                :options="originals"
-                @search="loadOriginals"
-                placeholder="搜索已确认订单号"
-              />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12" v-if="form.orderSource === 'SUPPLEMENT'">
-            <a-form-item label="补单原因" name="supplementReason" required>
-              <a-textarea v-model:value="form.supplementReason" :maxlength="500" :rows="2" show-count />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12" v-if="!form.orderId">
-            <a-form-item label="配送仓库" name="deliveryWarehouseId">
-              <WarehouseSelect v-model:value="warehouseValue" placeholder="组合商品 / 成本公式须明确选仓" width="100%" />
-              <p class="scm-note">仅用于本次订单，选仓后重新计算该仓的成本公式价格。</p>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="期望配送时间" name="expectDeliveryTime">
-              <a-date-picker v-model:value="form.expectDeliveryTime" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="24">
-            <a-form-item label="备注" name="remark">
-              <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="收货人" name="receiverName" required>
-              <a-input v-model:value="form.address.receiverName" :disabled="!!form.orderId" :maxlength="100" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="联系电话" name="receiverPhone" required class="app-drawer-field--compact">
-              <a-input v-model:value="form.address.receiverPhone" :disabled="!!form.orderId" :maxlength="32" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="24">
-            <a-form-item label="收货地址" name="address" required class="app-drawer-field--wide">
-              <a-input v-model:value="form.address.address" :disabled="!!form.orderId" :maxlength="500" />
-            </a-form-item>
-          </a-col>
-        </a-row>
+        <!-- 表头字段按内容宽度紧凑排布，不跟随下方商品明细表的整宽拉伸 -->
+        <div class="order-head">
+          <a-form-item label="客户" name="customerId" required class="order-head__customer">
+            <CustomerSelect v-if="!form.orderId" v-model:value="form.customerId" :disabled="!!exchangeReturnId" @change="customerChanged" />
+            <a-input v-else :value="form.customerNameSnapshot" disabled />
+          </a-form-item>
+          <a-form-item label="订单来源" name="orderSource" class="order-head__source">
+            <a-select
+              v-model:value="form.orderSource"
+              :disabled="!!exchangeReturnId"
+              :options="[
+                {value: 'ADMIN', label: '后台录单'},
+                {value: 'SUPPLEMENT', label: '补单'},
+              ]"
+              style="width: 100%"
+            />
+          </a-form-item>
+          <a-form-item v-if="form.orderSource === 'SUPPLEMENT'" label="关联原订单" name="originalOrderId" class="order-head__original">
+            <a-select
+              v-model:value="form.originalOrderId"
+              show-search
+              allow-clear
+              :filter-option="false"
+              :disabled="!!exchangeReturnId"
+              :options="originals"
+              @search="loadOriginals"
+              placeholder="搜索已确认订单号"
+            />
+          </a-form-item>
+          <a-form-item v-if="form.orderSource === 'SUPPLEMENT'" label="补单原因" name="supplementReason" required class="order-head__reason">
+            <a-textarea v-model:value="form.supplementReason" :maxlength="500" :rows="2" show-count />
+          </a-form-item>
+          <a-form-item v-if="!form.orderId" name="deliveryWarehouseId" class="order-head__warehouse">
+            <template #label>
+              配送仓库
+              <ScmFieldHelp label="配送仓库" text="仅用于本次订单，选仓后重新计算该仓的成本公式价格。" />
+            </template>
+            <WarehouseSelect v-model:value="warehouseValue" placeholder="组合商品 / 成本公式须明确选仓" width="100%" />
+          </a-form-item>
+          <a-form-item label="期望配送时间" name="expectDeliveryTime" class="order-head__time">
+            <a-date-picker v-model:value="form.expectDeliveryTime" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" />
+          </a-form-item>
+          <a-form-item label="收货人" name="receiverName" required class="order-head__receiver">
+            <a-input v-model:value="form.address.receiverName" :disabled="!!form.orderId" :maxlength="100" />
+          </a-form-item>
+          <a-form-item label="联系电话" name="receiverPhone" required class="order-head__phone app-drawer-field--compact">
+            <a-input v-model:value="form.address.receiverPhone" :disabled="!!form.orderId" :maxlength="32" />
+          </a-form-item>
+          <a-form-item label="收货地址" name="address" required class="order-head__address app-drawer-field--wide">
+            <a-input v-model:value="form.address.address" :disabled="!!form.orderId" :maxlength="500" />
+          </a-form-item>
+          <a-form-item label="备注" name="remark" class="order-head__remark">
+            <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count />
+          </a-form-item>
+        </div>
         <ItemTable
           ref="itemTableRef"
           :items="form.items"
@@ -122,6 +106,7 @@ import {computed, reactive, ref, watch} from 'vue';
 import {onBeforeRouteLeave} from 'vue-router';
 import {message, type FormInstance} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {orderApi} from '/@/api/business/scm/order-api';
@@ -466,5 +451,61 @@ defineExpose({open, openFromHistory, openForExchange});
 
 .pending-edit-note {
   margin-bottom: 12px;
+}
+
+/* 表头字段按自身内容定宽；只有商品明细表需要铺满抽屉 */
+.order-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 20px;
+}
+
+.order-head :deep(.ant-form-item) {
+  max-width: 100%;
+  margin-bottom: 16px;
+}
+
+.order-head__customer {
+  flex: 0 0 300px;
+}
+
+.order-head__source {
+  flex: 0 0 150px;
+}
+
+.order-head__original {
+  flex: 0 0 220px;
+}
+
+.order-head__reason {
+  flex: 0 0 300px;
+}
+
+.order-head__warehouse {
+  flex: 0 0 230px;
+}
+
+.order-head__time {
+  flex: 0 0 200px;
+}
+
+.order-head__receiver {
+  flex: 0 0 160px;
+}
+
+.order-head__phone {
+  flex: 0 0 180px;
+}
+
+.order-head__address,
+.order-head__remark {
+  flex: 0 0 480px;
+}
+
+@media (max-width: 900px) {
+  .order-head :deep(.ant-form-item) {
+    flex: 1 1 240px;
+  }
 }
 </style>
