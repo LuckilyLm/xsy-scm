@@ -108,9 +108,6 @@
   </a-modal>
   <a-modal v-model:open="overrideOpen" title="人工改价" ok-text="确定" cancel-text="取消" :width="420" @ok="confirmOverride">
     <a-form layout="vertical" class="price-modal">
-      <a-form-item label="解析单价">
-        <span class="price-modal__parsed">{{ overrideRow ? amount(overrideRow.draftUnitPrice, true) : '—' }}</span>
-      </a-form-item>
       <a-form-item label="改价后单价" required>
         <a-input-number
           string-mode
@@ -501,11 +498,6 @@ defineExpose({
 
 .row-actions :deep(.ant-btn) {
   padding-inline: 2px;
-}
-
-.price-modal__parsed {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 .recent-list {

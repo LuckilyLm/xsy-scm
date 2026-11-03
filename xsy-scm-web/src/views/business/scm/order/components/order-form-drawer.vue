@@ -85,9 +85,6 @@
           @price="preview"
           @modal-open="itemModalOpen = $event"
         />
-        <div class="item-actions">
-          <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
-        </div>
       </a-form>
     </a-spin>
     <template #footer>
@@ -436,19 +433,6 @@ defineExpose({open, openFromHistory, openForExchange});
 </script>
 
 <style scoped>
-/* 让明细区的「添加商品」和「重新解析价格」排在同一行、间距一致 */
-.item-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 12px;
-  vertical-align: top;
-}
-
-.app-drawer-form :deep(.add-line) {
-  margin: 12px 12px 0 0;
-}
-
 .pending-edit-note {
   margin-bottom: 12px;
 }
