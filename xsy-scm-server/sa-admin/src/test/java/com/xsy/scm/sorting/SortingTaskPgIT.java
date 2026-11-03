@@ -25,6 +25,8 @@ import com.xsy.scm.sorting.domain.form.SortingAssignForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryItemForm;
 import com.xsy.scm.sorting.domain.form.SortingPartForm;
+import com.xsy.scm.sorting.domain.form.SortingScaleBasketForm;
+import com.xsy.scm.sorting.domain.form.SortingScaleCompleteForm;
 import com.xsy.scm.sorting.domain.form.SortingSummaryQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskCreateForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskQueryForm;
@@ -32,6 +34,7 @@ import com.xsy.scm.sorting.domain.vo.SortingTaskItemVO;
 import com.xsy.scm.sorting.service.SortingQueryService;
 import com.xsy.scm.sorting.service.SortingTaskService;
 import com.xsy.scm.sorting.service.SortingStandardService;
+import com.xsy.scm.sorting.service.SortingScaleEventService;
 import com.xsy.scm.trace.service.TraceUnitService;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -86,6 +89,12 @@ class SortingTaskPgIT extends ScmW6PgITBase {
 
     @Autowired
     private SortingStandardService standardSorting;
+
+    @Autowired
+    private SortingScaleEventService scaleEvents;
+
+    @Autowired
+    private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @Autowired
     private TraceUnitService traceUnitService;
@@ -260,6 +269,8 @@ class SortingTaskPgIT extends ScmW6PgITBase {
 
         completeLine(taskId, detail.getItems().getFirst(), "5.0000", "NORMAL", null);
         assertThat(taskStatus(taskId)).as("首次录入把任务推到 SORTING").isEqualTo("SORTING");
+        assertThat(currentVersion(taskId)).as("首次开始不能作废其余商品的设备作业版本")
+                .isEqualTo(detail.getTask().getVersion());
         assertThat(startedAt(taskId)).isNotNull();
         expectCode(() -> doAs(sorterA, SORTER,
                 () -> sorting.complete(taskId, action(currentVersion(taskId), null))), 41125);
@@ -271,6 +282,70 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         });
         assertThat(taskStatus(taskId)).isEqualTo("COMPLETED");
         assertThat(completedAt(taskId)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("多商品筐记录可按同一作业版本顺序完成，重开仍拒绝旧版本新命令")
+    void basketCompletionKeepsOtherItemsJobVersionValid() throws Exception {
+        var firstOrder = order("basket-a", "5.0000");
+        var secondOrder = order("basket-b", "7.0000");
+        var task = as(lead, QUEUE_MANAGER, () -> sorting.create(
+                createForm("basket-job", List.of(firstOrder.item(), secondOrder.item()), sorterA), key("basket-job")));
+        Long taskId = task.getTask().getId();
+        Integer jobVersion = task.getTask().getVersion();
+        var completions = new ArrayList<SortingScaleCompleteForm>();
+
+        // 两个商品都先落筐，模拟同一份离线作业快照；首次完成不能让另一商品的记录失效。
+        for (var line : task.getItems()) {
+            String eventKey = key("basket-event-" + line.getId());
+            var basket = new SortingScaleBasketForm();
+            basket.setEventKey(eventKey);
+            basket.setOperationId(key("basket-capture-" + line.getId()));
+            basket.setTaskId(taskId);
+            basket.setTaskItemId(line.getId());
+            basket.setDeviceCode("VERSION-REGRESSION");
+            basket.setDeviceSessionId(1L);
+            basket.setBasketNo(1);
+            basket.setRawReading(line.getPlannedQuantitySnapshot());
+            basket.setRawUnit(line.getSaleUnitSnapshot());
+            basket.setNetWeight(line.getPlannedQuantitySnapshot());
+            basket.setBusinessUnit(line.getSaleUnitSnapshot());
+            basket.setWeightKind("NET");
+            basket.setStableFlag(true);
+            basket.setJobVersion(String.valueOf(jobVersion));
+            basket.setTaskItemVersion(line.getVersion());
+            basket.setCapturedAt(OffsetDateTime.now());
+            as(sorterA, SORTER, () -> scaleEvents.reportBasket(basket));
+
+            var complete = new SortingScaleCompleteForm();
+            complete.setOperationId(key("basket-complete-" + line.getId()));
+            complete.setTaskId(taskId);
+            complete.setTaskItemId(line.getId());
+            complete.setJobVersion(String.valueOf(jobVersion));
+            complete.setTaskItemVersion(line.getVersion());
+            complete.setManifestHash(java.util.HexFormat.of().withUpperCase().formatHex(
+                    java.security.MessageDigest.getInstance("SHA-256")
+                            .digest(objectMapper.writeValueAsBytes(List.of(eventKey)))));
+            complete.setResult("NORMAL");
+            complete.setDeviceId(1L);
+            complete.setDeviceSessionId(1L);
+            complete.setEmployeeId(sorterA);
+            completions.add(complete);
+        }
+
+        for (int index = 0; index < completions.size(); index++) {
+            var complete = completions.get(index);
+            var result = as(sorterA, SORTER, () -> scaleEvents.completeBaskets(complete));
+            assertThat(result.getSortedQuantity())
+                    .isEqualByComparingTo(task.getItems().get(index).getPlannedQuantitySnapshot());
+            assertThat(currentVersion(taskId)).isEqualTo(jobVersion);
+            assertThat(as(sorterA, SORTER, () -> scaleEvents.completeBaskets(complete)).getDuplicated()).isTrue();
+        }
+        doAs(sorterA, SORTER, () -> sorting.complete(taskId, action(currentVersion(taskId), null)));
+        doAs(lead, QUEUE_MANAGER, () -> sorting.reopen(taskId, action(currentVersion(taskId), "复核实重")));
+        var stale = completions.getFirst();
+        stale.setOperationId(key("basket-stale-after-reopen"));
+        expectCode(() -> as(sorterA, SORTER, () -> scaleEvents.completeBaskets(stale)), 41876);
     }
 
     @Test
@@ -529,6 +604,8 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         var first = as(sorterA, SORTER, () -> sorting.appendPart(taskId, part, key("pt1")));
         var replay = as(sorterA, SORTER, () -> sorting.appendPart(taskId, part, key("pt1")));
         assertThat(replay.getId()).isEqualTo(first.getId());
+        assertThat(currentVersion(taskId)).as("分次首次开始同样不能作废其余商品的设备作业版本")
+                .isEqualTo(detail.getTask().getVersion());
         assertThat(first.getTotalQuantity()).isEqualByComparingTo("1.5000");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM xsy_sorting_part_record WHERE task_item_id=?", Integer.class, line.getId()))

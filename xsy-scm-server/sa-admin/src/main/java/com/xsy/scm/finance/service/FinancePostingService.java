@@ -122,14 +122,16 @@ public class FinancePostingService {
         String remark = StringUtils.trimToNull(form.getRemark());
 
         FinancePostingEntity posting = requireLockedPosting(form.getPostingId());
-        requireVersion(posting, form.getVersion());
-        if (financePostingDao.selectVoidByPostingId(posting.getId()) != null) {
-            throw new ScmBusinessException(FinanceErrorCode.POSTING_ALREADY_VOIDED);
-        }
         var claim = idempotencyService.claim(FinanceConstant.POSTING_UPDATE_SCOPE + ":" + posting.getId(),
             idempotencyKey, form);
         if (claim.replay()) {
             return idempotencyService.replay(claim, FinancePostingVO.class);
+        }
+
+        // 已成功的同键请求先回放；响应丢失后的重试仍携带首次提交的旧版本。
+        requireVersion(posting, form.getVersion());
+        if (financePostingDao.selectVoidByPostingId(posting.getId()) != null) {
+            throw new ScmBusinessException(FinanceErrorCode.POSTING_ALREADY_VOIDED);
         }
 
         Map<String, Object> before = snapshot(posting);
@@ -163,14 +165,16 @@ public class FinancePostingService {
         }
 
         FinancePostingEntity posting = requireLockedPosting(form.getPostingId());
-        requireVersion(posting, form.getVersion());
-        if (financePostingDao.selectVoidByPostingId(posting.getId()) != null) {
-            throw new ScmBusinessException(FinanceErrorCode.POSTING_ALREADY_VOIDED);
-        }
         var claim = idempotencyService.claim(FinanceConstant.POSTING_VOID_SCOPE + ":" + posting.getId(), idempotencyKey,
             form);
         if (claim.replay()) {
             return idempotencyService.replay(claim, FinancePostingVO.class);
+        }
+
+        // 同键重试返回原作废事实，新命令仍拒绝重复作废。
+        requireVersion(posting, form.getVersion());
+        if (financePostingDao.selectVoidByPostingId(posting.getId()) != null) {
+            throw new ScmBusinessException(FinanceErrorCode.POSTING_ALREADY_VOIDED);
         }
 
         OffsetDateTime now = OffsetDateTime.now();

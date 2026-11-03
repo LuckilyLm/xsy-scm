@@ -162,6 +162,45 @@ class FinancePostingIT extends ScmW5PgITBase {
     }
 
     @Test
+    @DisplayName("修改响应丢失后同键重试返回原结果，后续作废也不破坏成功回放")
+    void updateReplaysBeforeVersionAndVoidChecks() {
+        var created = postingService.add(addForm(newCustomer(), "100.0000"), key("retry-create"));
+        var form = updateForm(created);
+        form.setAmount("150.0000");
+        String updateKey = key("retry-update");
+        var updated = postingService.update(form, updateKey);
+
+        var replay = postingService.update(form, updateKey);
+        assertThat(replay.getVersion()).isEqualTo(updated.getVersion());
+        assertThat(replay.getAmount()).isEqualByComparingTo("150.0000");
+        postingService.voidPosting(voidForm(updated, "重新登记"), key("retry-later-void"));
+        assertThat(postingService.update(form, updateKey).getVersion()).isEqualTo(updated.getVersion());
+        assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type='POSTING' "
+                + "AND business_id=? AND operation_type='POSTING_UPDATE'", created.getPostingId())).isEqualTo(1);
+        assertThat(statusOf(created.getPostingId())).isEqualTo("VOIDED");
+    }
+
+    @Test
+    @DisplayName("作废同键重试返回原事实，新键重复作废仍拒绝")
+    void voidReplaysWithoutDuplicatingFactsOrLogs() {
+        var created = postingService.add(addForm(newCustomer(), "80.0000"), key("void-retry-create"));
+        var form = voidForm(created, "金额错误");
+        String voidKey = key("void-retry");
+        var voided = postingService.voidPosting(form, voidKey);
+
+        var replay = postingService.voidPosting(form, voidKey);
+        assertThat(replay.getStatus()).isEqualTo("VOIDED");
+        // 对外时间按秒序列化，比较同一业务时刻，不把展示精度当作重复写入。
+        assertThat(replay.getVoidedAt().toInstant()).isEqualTo(
+                voided.getVoidedAt().toInstant().truncatedTo(java.time.temporal.ChronoUnit.SECONDS));
+        assertThat(count("SELECT count(*) FROM xsy_finance_posting_void WHERE posting_id=?",
+                created.getPostingId())).isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type='POSTING' "
+                + "AND business_id=? AND operation_type='POSTING_VOID'", created.getPostingId())).isEqualTo(1);
+        expectCode(() -> postingService.voidPosting(form, key("void-new-command")), 41185);
+    }
+
+    @Test
     @DisplayName("#6 数据范围：看不到客户归属的过账，也不能给它登记")
     void scopeHidesOtherSellersPostings() {
         Long customerId = newCustomer();

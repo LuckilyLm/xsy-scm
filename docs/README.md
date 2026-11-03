@@ -1,20 +1,29 @@
-# 项目文档
+# 项目文档入口
 
-仓库只保留一份当前规则、一份状态和一份持续待办：
+更新：2026-11-03，Codex。先看当前状态，再按问题查规则或操作说明。
 
-- [有效决策](decisions.md)：当前业务、架构与权限不变量，以及尚未裁决事项。
-- [项目状态](status.md)：代码现状、验证证据、风险与待完成工作。
-- [下一阶段开发计划](next-development-plan.md)：按现场一天的主链组织能力差距、P0 批次和验收证据；不再按 13 模块逐条铺开，蔬东坡只参考常规业务操作。
-- [需求基线](requirements/产品功能需求基线.md)及[负责人确认口径](requirements/2026-09-09-负责人确认口径.md)：产品需求和原始业务确认；[2026-10-28 客户现场确认](requirements/2026-10-28-客户现场确认.md)记录当日作业时间线、纸面单据样式和未决事项。
-- [业务身份与追溯架构](architecture/business-identity-and-traceability.md)：L1 批次、L2 包装码的身份边界、已实施内容与后续目标模型；实施状态以状态文档为准。
-- [贡献与评审约定](../CONTRIBUTING.md)及[代理协作规则](../AGENTS.md)：工程实践、用户界面与 Git 约束。
-- [工程技能配置](agents/)：`mattpocock/skills` 使用的 issue tracker 与领域文档约定；`.scratch/` 是本地工作区，不入库。
-- [地图部署说明](map-deployment.md)：高德配置、坐标系、降级行为和现场核对项。
-- [商城主题与标品分拣操作说明](user-guide/mall-theme-and-standard-sorting.md)：主题发布入口、所选标品确认和失败处理。
+## 阅读导航
 
-## 文档维护
+| 目的 | 文档 |
+| --- | --- |
+| 了解工程、启动开发服务 | [根目录 README](../README.md) |
+| 看已有能力、未完成工作与验证边界 | [项目状态](status.md) |
+| 查当前业务、架构与权限规则 | [有效决策](decisions.md) |
+| 查产品范围与原始确认 | [需求基线](requirements/产品功能需求基线.md)、[负责人原始答复](requirements/2026-09-09-负责人确认口径.md)、[客户现场事实](requirements/2026-10-28-客户现场确认.md) |
+| 查后台视觉与交互规范 | [DESIGN.md](../DESIGN.md)、[产品上下文](../PRODUCT.md) |
+| 查工程协作、代码评审与授权验证 | [AGENTS.md](../AGENTS.md)、[CONTRIBUTING.md](../CONTRIBUTING.md)、[工具入口](../tools/README.md) |
+| 部署、升级或配置对象存储 | [部署说明](../deploy/README.md) |
+| 配置地图 | [地图部署说明](map-deployment.md) |
+| 理解单据号、批次和包装码 | [业务身份与追溯架构](architecture/business-identity-and-traceability.md) |
+| 操作商城主题、标品分拣 | [操作说明](user-guide/mall-theme-and-standard-sorting.md) |
+| 接入客户小程序或 Windows 秤端 | [小程序](../xsy-scm-miniprogram/README.md)、[秤端](../xsy-scale-agent/README.md)、[秤端交接清单](../xsy-scale-agent/FIRST-GENERATION-HANDOFF.md) |
+| 使用工程技能的本地工单与领域文档 | [工单约定](agents/issue-tracker.md)、[领域文档约定](agents/domain.md) |
 
-- 新规则合并进 `decisions.md`，不再另建 ADR、设计副本或“最新版”文档。
-- 进度和验证证据只维护在 `status.md`；完成的计划、一次性审计和过程日志从工作区删除，由 Git 历史追溯。
-- `requirements/` 只保留当前仍用于裁定需求的基线。文档与代码不一致时，以本轮明确裁定、`AGENTS.md` 和 `decisions.md` 为准，并同步修正文档。
-- 验证入口为 `tools/verify.ps1`、`tools/verify.sh` 和 `tools/verify.py`。记录结果时区分已通过、未执行、未覆盖和现场验收，不以本地代码或 mock 推断生产状态。
+## 维护规则
+
+- 当前规则只写 `decisions.md`，当前交付状态与持续待办只写 `status.md`；不另建 ADR、“最新版”或平行计划。
+- 根 README 负责工程入口；部署细节放 `deploy/README.md`，模块细节放各模块 README。后台视觉规则只维护根 `DESIGN.md`；秤端有独立触屏设计规范。
+- `requirements/` 保留原始需求和有日期的确认事实。后来裁定写入决策，保留原答复的日期与语境，不把历史未决问题直接当成当前缺口。
+- 已完成计划、一次性审计和过程日志退出活动文档；仍有效的结论并入决策或状态，历史由 Git 追溯。
+- 秤端本地 API 与 SQLite 增量说明、质量工具直接依赖的说明、第三方许可和上游组件文档按原路径保留，不能按日期批量清理。
+- 测试结果保留在对应测试/验证记录中；项目文档不记录个人路径、本机运行状态、临时产物位置或逐次测试过程。源码能力与部署/验收状态分开表述。

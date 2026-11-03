@@ -197,12 +197,9 @@ public class SortingTaskService {
         stamp(row, false);
         if (sortingTaskItemDao.updateById(row) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
-        if (ScmSortingTaskStatusEnum.PENDING.name().equals(task.getStatus())) {
-            task.setStatus(ScmSortingTaskStatusEnum.SORTING.name());
-            if (task.getStartedAt() == null)
-                task.setStartedAt(OffsetDateTime.now());
-            save(task);
-        }
+        if (ScmSortingTaskStatusEnum.PENDING.name().equals(task.getStatus())
+            && sortingQueryDao.markStarted(task.getId(), task.getVersion(), ScmOperator.current()) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
         idempotencyService.complete(claim, "SORTING_PART", event.getId(), event);
         return event;
     }
@@ -267,12 +264,9 @@ public class SortingTaskService {
             // 实称量回写订单：只对已确认、未发车、需称重的行生效，其余情况静默跳过。
             actualQuantitySync.sync(row.getSalesOrderItemId(), entry.getSortedQuantity());
         }
-        if (ScmSortingTaskStatusEnum.PENDING.name().equals(task.getStatus())) {
-            task.setStatus(ScmSortingTaskStatusEnum.SORTING.name());
-            if (task.getStartedAt() == null)
-                task.setStartedAt(OffsetDateTime.now());
-            save(task);
-        }
+        if (ScmSortingTaskStatusEnum.PENDING.name().equals(task.getStatus())
+            && sortingQueryDao.markStarted(task.getId(), task.getVersion(), ScmOperator.current()) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
     }
 
     /** 完成：任务内每条活动明细都必须已有结果。一张订单要分多次完成，就为剩余行另建任务。 */

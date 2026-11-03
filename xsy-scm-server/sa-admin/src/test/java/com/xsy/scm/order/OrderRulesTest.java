@@ -83,6 +83,32 @@ class OrderRulesTest {
     }
 
     @Test
+    void changingSkuCreatesANewIdentityAndRetiresTheOriginalLine() {
+        var old = new SalesOrderItemEntity();
+        old.setId(7L);
+        old.setSkuId(11L);
+        old.setVersion(2);
+        var replacement = new SalesOrderItemEntity();
+        replacement.setId(7L);
+        replacement.setSkuId(12L);
+        replacement.setVersion(2);
+
+        var diff = SalesOrderItemChangeSet.between(List.of(old), List.of(replacement));
+
+        assertThat(diff.removed()).containsExactly(old);
+        assertThat(diff.updated()).isEmpty();
+        assertThat(diff.inserted()).containsExactly(replacement);
+        assertThat(replacement.getId()).isNull();
+        assertThat(replacement.getVersion()).isZero();
+        assertThat(old.getId()).isEqualTo(7L);
+
+        replacement.setId(7L);
+        replacement.setVersion(1);
+        assertThatThrownBy(() -> SalesOrderItemChangeSet.between(List.of(old), List.of(replacement)))
+                .isInstanceOf(ScmBusinessException.class);
+    }
+
+    @Test
     void canonicalHashHandlesNestedKeysAndDecimals() {
         var h = new ScmIdempotencyRequestHasher(new ObjectMapper());
         assertThat(h.hash(Map.of("b", List.of(Map.of("amount", "1.5000")), "a", 2)))

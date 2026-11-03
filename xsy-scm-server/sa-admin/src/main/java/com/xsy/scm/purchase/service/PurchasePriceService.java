@@ -86,13 +86,17 @@ public class PurchasePriceService {
      */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseOrderVO fill(Long itemId, PurchasePriceForm form, String idempotencyKey) {
+        PurchaseOrderItemEntity item = requireItem(itemId);
+        PurchaseOrderEntity order = lockOrder(item.getPurchaseOrderId());
         var claim = purchaseIdempotencyService.claim("PURCHASE_PRICE_FILL:" + itemId, idempotencyKey, form);
         if (claim.replay()) {
             return purchaseIdempotencyService.replay(claim, PurchaseOrderVO.class);
         }
 
-        PurchaseOrderItemEntity item = requireItem(itemId);
-        PurchaseOrderEntity order = lockOrder(item.getPurchaseOrderId());
+        if (purchaseAccountDao.accountId(order.getId()) != null) {
+            throw new ScmBusinessException(
+                com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID);
+        }
         PurchaseOrderItemEntity locked = lockItem(itemId, order.getId());
 
         if (!Boolean.TRUE.equals(locked.getPricePending())) {
@@ -126,13 +130,17 @@ public class PurchasePriceService {
      */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseOrderVO adjust(Long itemId, PurchasePriceForm form, String idempotencyKey) {
+        PurchaseOrderItemEntity item = requireItem(itemId);
+        PurchaseOrderEntity order = lockOrder(item.getPurchaseOrderId());
         var claim = purchaseIdempotencyService.claim("PURCHASE_PRICE_ADJUST:" + itemId, idempotencyKey, form);
         if (claim.replay()) {
             return purchaseIdempotencyService.replay(claim, PurchaseOrderVO.class);
         }
 
-        PurchaseOrderItemEntity item = requireItem(itemId);
-        PurchaseOrderEntity order = lockOrder(item.getPurchaseOrderId());
+        if (purchaseAccountDao.accountId(order.getId()) != null) {
+            throw new ScmBusinessException(
+                com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID);
+        }
         PurchaseOrderItemEntity locked = lockItem(itemId, order.getId());
 
         if (locked.getReceivedQuantity() != null && locked.getReceivedQuantity().signum() > 0) {
@@ -285,10 +293,7 @@ public class PurchasePriceService {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
         purchaseOwnerResolver.requireVisible(order.getPurchaserId());
-        if (purchaseAccountDao.accountId(order.getId()) != null) {
-            throw new ScmBusinessException(
-                com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID);
-        }
+        // 回放也要校验当前归属；已记账等可变状态留到回放之后判断。
         return order;
     }
 

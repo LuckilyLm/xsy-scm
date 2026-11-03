@@ -21,6 +21,7 @@ public record SalesOrderItemChangeSet(List<SalesOrderItemEntity> inserted, List<
         existing.forEach(existingItem -> unmatched.put(existingItem.getId(), existingItem));
         var inserted = new ArrayList<SalesOrderItemEntity>();
         var updated = new ArrayList<SalesOrderItemEntity>();
+        var removed = new ArrayList<SalesOrderItemEntity>();
         for (var requestedItem : requested) {
             if (requestedItem.getId() == null) {
                 inserted.add(requestedItem);
@@ -33,10 +34,19 @@ public record SalesOrderItemChangeSet(List<SalesOrderItemEntity> inserted, List<
                 throw new ScmBusinessException(ORDER_ITEM_VERSION_REQUIRED);
             if (!Objects.equals(requestedItem.getVersion(), existingItem.getVersion()))
                 throw new ScmBusinessException(ORDER_ITEM_VERSION_CONFLICT);
+            // 规格变化就是另一条业务明细，不能继承旧报价、实重或已关联的分拣/出库事实。
+            if (!Objects.equals(requestedItem.getSkuId(), existingItem.getSkuId())) {
+                removed.add(existingItem);
+                requestedItem.setId(null);
+                requestedItem.setVersion(0);
+                inserted.add(requestedItem);
+                continue;
+            }
             requestedItem.setCreatedAt(existingItem.getCreatedAt());
             requestedItem.setCreatedBy(existingItem.getCreatedBy());
             updated.add(requestedItem);
         }
-        return new SalesOrderItemChangeSet(inserted, updated, new ArrayList<>(unmatched.values()));
+        removed.addAll(unmatched.values());
+        return new SalesOrderItemChangeSet(inserted, updated, removed);
     }
 }

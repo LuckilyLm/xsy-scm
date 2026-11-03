@@ -47,6 +47,8 @@ npm run dev:mp-weixin:api
 
 ## 验证
 
+默认不运行测试或构建；用户授权后按需使用下列入口，结果保留在对应验证记录中。
+
 ```bash
 npm run lint
 npm test

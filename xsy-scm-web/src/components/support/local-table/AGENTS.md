@@ -5,4 +5,4 @@
 - `dataSource` 始终是完整源数组，图表、导出和批量操作继续引用调用方原始数据；组件透传表格属性、事件及插槽。
 - SCM 页面显式传入 `pagination-const.ts` 的条数选项；系统和支撑工具默认复用 `PAGE_SIZE_OPTIONS`。
 - 页码边界由 `use-local-pagination.ts` 管理；替换数据回首页，原数组缩减时校正当前页，切换条数回首页。
-- 修改分页逻辑后运行 `test/local-table.test.mjs`，并检查实际表格排序与跨页选择。
+- 授权验证时运行 `test/local-table.test.mjs`，并检查实际表格排序与跨页选择。

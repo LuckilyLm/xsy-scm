@@ -6,6 +6,7 @@ import com.xsy.scm.customer.domain.form.CustomerAddForm;
 import com.xsy.scm.customer.domain.form.CustomerStatusForm;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.order.dao.SalesOrderDao;
+import com.xsy.scm.order.constant.OrderErrorCode;
 import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
 import com.xsy.scm.order.domain.form.OrderAddressForm;
 import com.xsy.scm.order.domain.form.OrderLockForm;
@@ -17,6 +18,8 @@ import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.order.service.OrderLockService;
 import com.xsy.scm.order.service.SalesOrderService;
+import com.xsy.scm.sorting.domain.form.SortingTaskCreateForm;
+import com.xsy.scm.sorting.service.SortingTaskService;
 import org.apache.ibatis.session.SqlSession;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,6 +55,8 @@ class OrderLockPgIT extends ScmW3PgITBase {
     SalesOrderDao salesOrderDao;
     @Autowired
     SqlSession session;
+    @Autowired
+    SortingTaskService sorting;
 
     private Long customer() {
         var f = new CustomerAddForm();
@@ -132,6 +137,73 @@ class OrderLockPgIT extends ScmW3PgITBase {
             stp.when(() -> StpUtil.hasPermission(permission)).thenReturn(true);
             return body.get();
         }
+    }
+
+    @Test
+    @DisplayName("待确认换商品生成新明细并采用新商品价格，不继承旧行报价")
+    void pendingSkuReplacementUsesNewIdentityAndPrice() {
+        var c = customer();
+        var originalSku = newOnShelfSku("REPLACE_OLD");
+        var replacementSku = newOnShelfSku("REPLACE_NEW");
+        jdbc.update("UPDATE xsy_product_sku SET market_price=7.0000 WHERE id=?", replacementSku);
+        session.clearCache();
+        var original = orders.create(form(c, originalSku), prefix + "replace-create");
+        var originalItemId = original.getItems().getFirst().getItemId();
+
+        var replaced = orders.update(updateOf(form(c, replacementSku), original, "3.0000"));
+
+        assertThat(replaced.getItems()).singleElement().satisfies(item -> {
+            assertThat(item.getItemId()).isNotEqualTo(originalItemId);
+            assertThat(item.getSkuId()).isEqualTo(replacementSku);
+            assertThat(item.getLockedUnitPrice()).isEqualByComparingTo("7.0000");
+            assertThat(item.getActualQuantity()).isNull();
+        });
+        assertThat(replaced.getOrderedTotalAmount()).isEqualByComparingTo("21.0000");
+        assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_sales_order_item WHERE id=?",
+                Boolean.class, originalItemId)).isTrue();
+    }
+
+    @Test
+    @DisplayName("已有分拣事实时不能用旧明细 ID 替换商品")
+    void sortedSkuCannotBeReplacedThroughAnExistingItemId() {
+        var c = customer();
+        var originalSku = newOnShelfSku("SORTED_OLD");
+        var replacementSku = newOnShelfSku("SORTED_NEW");
+        var original = confirmed(c, originalSku);
+        var create = new SortingTaskCreateForm();
+        create.setWarehouseId(jdbc.queryForObject(
+                "SELECT id FROM xsy_warehouse WHERE NOT deleted AND status='ENABLED' ORDER BY id LIMIT 1", Long.class));
+        create.setAssigneeEmployeeId(anyEmployeeId());
+        create.setSalesOrderItemIds(List.of(original.getItems().getFirst().getItemId()));
+        sorting.create(create, prefix + "replace-sort");
+
+        expectCode(() -> orders.update(updateOf(form(c, replacementSku), original, "3.0000")),
+                OrderErrorCode.ORDER_SORTED_ITEM_CHANGE_BLOCKED.getCode());
+
+        assertThat(jdbc.queryForObject("SELECT sku_id FROM xsy_sales_order_item WHERE id=?", Long.class,
+                original.getItems().getFirst().getItemId())).isEqualTo(originalSku);
+    }
+
+    @Test
+    @DisplayName("非标未称重确认后编辑仍保留暂计金额，不补造实重")
+    void editingUnweighedConfirmedOrderKeepsEstimatedSettlement() {
+        var c = customer();
+        var sku = newOnShelfSku("UNWEIGHED_EDIT");
+        var pending = orders.create(form(c, sku), prefix + "unweighed-create");
+        var original = orders.confirm(version(pending), prefix + "unweighed-confirm");
+        assertThat(original.getItems().getFirst().getActualQuantity()).isNull();
+        assertThat(original.getSettlementTotalAmount()).isEqualByComparingTo("2.4000");
+
+        var update = updateOf(form(c, sku), original, "3.0000");
+        update.getItems().getFirst().setRemark("去皮");
+        var edited = orders.update(update);
+
+        assertThat(edited.getItems()).singleElement().satisfies(item -> {
+            assertThat(item.getActualQuantity()).isNull();
+            assertThat(item.getSettlementLineAmount()).isEqualByComparingTo("3.6000");
+            assertThat(item.getRemark()).isEqualTo("去皮");
+        });
+        assertThat(edited.getSettlementTotalAmount()).isEqualByComparingTo("3.6000");
     }
 
     @Test

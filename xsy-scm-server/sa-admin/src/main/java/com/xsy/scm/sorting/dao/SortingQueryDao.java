@@ -58,6 +58,16 @@ public interface SortingQueryDao {
 
     int markPrinted(@Param("id") Long id, @Param("operator") String operator);
 
+    /**
+     * 首次录入只推进作业状态，不使同一任务其余商品已冻结的设备版本失效。
+     *
+     * @param id 已持有聚合锁的任务 ID，不可空
+     * @param version 锁内读取的当前版本，不可空；不匹配时返回 0
+     * @param operator 当前操作人，不可空
+     * @return 从待分拣开始时返回 1，其余状态或任务不存在时返回 0
+     */
+    int markStarted(@Param("id") Long id, @Param("version") Integer version, @Param("operator") String operator);
+
     /** 取消任务时释放该任务全部活动明细的占用位；与任务状态迁移同事务，否则索引会与状态漂移。 */
     int releaseItems(@Param("taskId") Long taskId, @Param("operator") String operator);
 }

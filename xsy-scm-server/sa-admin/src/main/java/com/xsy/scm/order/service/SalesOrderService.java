@@ -942,9 +942,9 @@ public class SalesOrderService {
             // 人工实数量必须带原因（ck_sales_order_item_actual_reason），改单表单不带它，从改前的行取回。
             row.setActualQuantityReason(previous.getActualQuantityReason());
         }
-        if (row.getActualQuantity() != null)
-            row.setSettlementLineAmount(
-                OrderAmountCalculator.lineAmount(row.getActualQuantity(), row.getLockedUnitPrice()));
+        // 未称重的非标行继续按订购量暂计，与确认口径一致，编辑不能把既有结算额清空。
+        row.setSettlementLineAmount(OrderAmountCalculator.lineAmount(
+            PlannedQuantity.of(row.getActualQuantity(), row.getOrderedQuantity()), row.getLockedUnitPrice()));
     }
 
     /** 已确认订单的结算合计：按实际数量 × 锁定单价逐行求和，与确认时的口径一致。 */

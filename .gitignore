@@ -80,3 +80,6 @@ __pycache__/
 
 # 质量工具单测的临时工作目录（必须在仓库根下，见 test_package_migration_manifest.py）
 .tmp-quality-*/
+
+# 已退役文件仅本机留存，版本历史由 Git 追溯。
+**/delete/

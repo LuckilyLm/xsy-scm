@@ -711,8 +711,19 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
       manualPriceOverride: false,
       unitPrice: null,
       overrideReason: null,
+      remark: null,
       sortOrder: 0,
     });
+  });
+  test('payload preserves per-item processing instructions and explicit clearing', () => {
+    const f = form();
+    f.items[0].remark = '去皮、切段后分袋';
+    f.remark = '整单要求次日送达';
+    const body = payload(f);
+    assert.equal(body.items[0].remark, '去皮、切段后分袋');
+    assert.equal(body.remark, '整单要求次日送达');
+    f.items[0].remark = '';
+    assert.equal(payload(f).items[0].remark, '');
   });
   test('stale data and availability errors are actionable', () => {
     assert.match(orderError({code: 40921}), /刷新/);

@@ -1,6 +1,6 @@
 # Issue tracker：本地 Markdown
 
-本仓库的 issue 与 spec 以 markdown 文件形式存放在 `.scratch/`。选择本地文件而不是 GitHub Issues 的原因：本机没有 `gh` CLI，且仓库既有的工作记录方式就是 `docs/status.md` 与 `docs/decisions.md`。
+本仓库的 issue 与 spec 以 markdown 文件形式存放在 `.scratch/`。该约定不依赖本机是否安装远程工单工具；当前状态和稳定结论仍分别写入 `docs/status.md` 与 `docs/decisions.md`。
 
 ## 目录约定
 
@@ -22,7 +22,7 @@
 
 - `.scratch/` 只放**本次工作的分解与草稿**，不入版本库（见 `.gitignore`）。
 - 需要长期留存的结论写进 `docs/decisions.md`；交付状态变化写进 `docs/status.md`。
-- 已完成的一次性计划按仓库规则删除，从 Git 历史追溯；不要沉淀成第二份事实源。
+- 已完成的一次性计划按仓库规则移出活动文档，从 Git 历史追溯；不要沉淀成第二份事实源。
 
 ## Wayfinding 操作
 

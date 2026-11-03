@@ -139,6 +139,7 @@ export function payload(f: Order): Order {
       manualPriceOverride: i.manualPriceOverride,
       unitPrice: i.manualPriceOverride && i.unitPrice != null ? moneyPayload(i.unitPrice) : null,
       overrideReason: i.manualPriceOverride ? i.overrideReason : null,
+      remark: i.remark ?? null,
       sortOrder: index,
     })),
   };

@@ -288,6 +288,14 @@
             AND deleted = FALSE
     </update>
 
+    <!-- 明细有自己的版本；首次开始不是改派或重开，不推进设备共享的任务版本。 -->
+    <update id="markStarted">
+        UPDATE xsy_sorting_task
+        SET status = 'SORTING', started_at = COALESCE(started_at, CURRENT_TIMESTAMP),
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'PENDING' AND version = #{version}
+    </update>
+
     <update id="releaseItems">
         UPDATE xsy_sorting_task_item
         SET occupation_status = 'RELEASED', version = version + 1, updated_at = now(), updated_by = #{operator}
