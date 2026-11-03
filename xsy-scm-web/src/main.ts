@@ -14,6 +14,7 @@ import {smartSentry} from '/@/lib/smart-sentry';
 import {loginApi} from '/@/api/system/login-api';
 import constantsInfo from '/@/constants/index';
 import {privilegeDirective} from '/@/directives/privilege';
+import {ariaLabelDirective} from '/@/directives/aria-label';
 import i18n from '/@/i18n/index';
 import privilegePlugin from '/@/plugins/privilege-plugin';
 import dictPlugin from '/@/plugins/dict-plugin';
@@ -84,6 +85,8 @@ async function initVue() {
       privilegeDirective(el, binding);
     },
   });
+  // 把无障碍名称写到组件内部真正的表单控件上
+  app.directive('aria-label', ariaLabelDirective);
   // 注册图标组件
   Object.keys(antIcons).forEach((key) => {
     app.component(key, antIcons[key]);

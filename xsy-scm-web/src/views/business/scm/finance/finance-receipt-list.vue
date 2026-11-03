@@ -7,9 +7,9 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="收款日期">
-        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" aria-label="业务开始日期" />
+        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'收款开始日期'" />
         <span class="date-separator">至</span>
-        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" aria-label="业务结束日期" />
+        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'收款结束日期'" />
       </a-form-item>
       <a-form-item label="客户">
         <a-select
@@ -20,16 +20,31 @@
           :options="customerOptions"
           placeholder="全部客户"
           style="width: 190px"
+          v-aria-label="'客户'"
         />
       </a-form-item>
       <a-form-item label="方式">
-        <a-select v-model:value="query.method" allow-clear :options="methodOptions" placeholder="全部" style="width: 140px" />
+        <a-select
+          v-model:value="query.method"
+          allow-clear
+          :options="methodOptions"
+          placeholder="全部"
+          style="width: 140px"
+          v-aria-label="'收款方式'"
+        />
       </a-form-item>
       <a-form-item label="方向">
-        <a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px" />
+        <a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px" v-aria-label="'方向'" />
       </a-form-item>
       <a-form-item label="待核销">
-        <a-select v-model:value="query.pendingOnly" allow-clear :options="pendingOptions" placeholder="全部" style="width: 120px" />
+        <a-select
+          v-model:value="query.pendingOnly"
+          allow-clear
+          :options="pendingOptions"
+          placeholder="全部"
+          style="width: 120px"
+          v-aria-label="'待核销状态'"
+        />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>

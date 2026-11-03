@@ -2,9 +2,9 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="过账日期">
-        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" aria-label="业务开始日期" />
+        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'过账开始日期'" />
         <span class="date-separator">至</span>
-        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" aria-label="业务结束日期" />
+        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'过账结束日期'" />
       </a-form-item>
       <a-form-item label="客户">
         <a-select
@@ -15,16 +15,38 @@
           :options="customerOptions"
           placeholder="全部客户"
           style="width: 190px"
+          v-aria-label="'客户'"
         />
       </a-form-item>
       <a-form-item label="单号 / 客户">
-        <a-input v-model:value="query.keyword" allow-clear placeholder="过账单号或客户名称" style="width: 200px" @press-enter="onSearch" />
+        <a-input
+          v-model:value="query.keyword"
+          allow-clear
+          placeholder="过账单号或客户名称"
+          style="width: 200px"
+          v-aria-label="'过账单号或客户名称'"
+          @press-enter="onSearch"
+        />
       </a-form-item>
       <a-form-item label="返款状态">
-        <a-select v-model:value="query.refundStatus" allow-clear :options="refundStatusOptions" placeholder="全部" style="width: 130px" />
+        <a-select
+          v-model:value="query.refundStatus"
+          allow-clear
+          :options="refundStatusOptions"
+          placeholder="全部"
+          style="width: 130px"
+          v-aria-label="'返款状态'"
+        />
       </a-form-item>
       <a-form-item label="状态">
-        <a-select v-model:value="query.status" allow-clear :options="statusOptions" placeholder="全部" style="width: 120px" />
+        <a-select
+          v-model:value="query.status"
+          allow-clear
+          :options="statusOptions"
+          placeholder="全部"
+          style="width: 120px"
+          v-aria-label="'过账状态'"
+        />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>

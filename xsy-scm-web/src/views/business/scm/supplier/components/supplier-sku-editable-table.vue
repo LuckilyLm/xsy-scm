@@ -36,12 +36,12 @@
             :disabled="readonly"
             :selected-options="selectedSkuOptions(record)"
             :disabled-values="otherSkuIds(record.skuId)"
-            :aria-label="`第 ${index + 1} 行商品规格`"
+            v-aria-label="`第 ${index + 1} 行商品规格`"
             @update:value="(value) => (record.skuId = Array.isArray(value) ? value[0] : value)"
           />
         </template>
         <template v-else-if="column.dataIndex === 'supplierItemCode'">
-          <a-input v-model:value="record.supplierItemCode" :maxlength="100" :disabled="readonly" :aria-label="`第 ${index + 1} 行供应商货号`" />
+          <a-input v-model:value="record.supplierItemCode" :maxlength="100" :disabled="readonly" v-aria-label="`第 ${index + 1} 行供应商货号`" />
         </template>
         <template v-else-if="column.dataIndex === 'purchaseUnit'">
           <a-select
@@ -51,7 +51,7 @@
             option-filter-prop="label"
             placeholder="选择单位"
             :disabled="readonly"
-            :aria-label="`第 ${index + 1} 行采购单位`"
+            v-aria-label="`第 ${index + 1} 行采购单位`"
             @update:value="(value: string) => (record.purchaseUnit = value)"
           />
         </template>
@@ -65,7 +65,7 @@
             addon-after="元"
             :disabled="readonly"
             placeholder="例如 3.5000"
-            :aria-label="`第 ${index + 1} 行参考价`"
+            v-aria-label="`第 ${index + 1} 行参考价`"
             style="width: 100%"
           />
         </template>
@@ -87,7 +87,7 @@
             width="100%"
             placeholder="请选择"
             :disabled="readonly"
-            :aria-label="`第 ${index + 1} 行采购员`"
+            v-aria-label="`第 ${index + 1} 行采购员`"
             @update:value="(value: number | undefined) => (record.purchaserId = value ?? null)"
           />
         </template>

@@ -3,10 +3,10 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="仓库名称" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.name" placeholder="仓库名称" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.name" placeholder="仓库名称" allow-clear v-aria-label="'仓库名称'" @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_WAREHOUSE_STATUS_ENUM" v-model:value="queryForm.status" width="140px" />
+        <SmartEnumSelect enum-name="SCM_WAREHOUSE_STATUS_ENUM" v-model:value="queryForm.status" width="140px" v-aria-label="'仓库状态'" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -55,6 +55,7 @@
             :disabled="record.status === 'ENABLED' ? !canDisable : !canEnable"
             checked-children="启用"
             un-checked-children="停用"
+            :aria-label="`${record.name}：${record.status === 'ENABLED' ? '已启用' : '已停用'}，切换状态`"
             @change="(checked: unknown) => onStatusSwitch(record, Boolean(checked))"
           />
         </template>
@@ -102,27 +103,35 @@
     <a-alert v-if="formError" :message="formError" type="error" show-icon />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="仓库名称" name="name">
-        <a-input v-model:value="form.name" :maxlength="150" />
+        <a-input v-model:value="form.name" :maxlength="150" v-aria-label="'仓库名称'" />
       </a-form-item>
       <a-form-item label="所在地区">
-        <AreaCascader type="province_city_district" v-model:value="area" style="width: 100%" placeholder="省 / 市 / 区" @change="onAreaChange" />
+        <AreaCascader
+          type="province_city_district"
+          v-model:value="area"
+          style="width: 100%"
+          placeholder="省 / 市 / 区"
+          v-aria-label="'所在地区'"
+          @change="onAreaChange"
+        />
       </a-form-item>
       <a-form-item label="地址" name="address">
-        <a-input v-model:value="form.address" :maxlength="255" @change="onAddressChange" />
+        <a-input v-model:value="form.address" :maxlength="255" v-aria-label="'地址'" @change="onAddressChange" />
       </a-form-item>
       <a-form-item label="地图定位">
         <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)" />
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-input v-model:value="form.remark" :maxlength="500" />
+        <a-input v-model:value="form.remark" :maxlength="500" v-aria-label="'备注'" />
       </a-form-item>
       <!-- 批次追踪只在新建空仓时决定：开启后不可关闭，因此编辑态只读回显 -->
       <a-form-item label="批次追踪">
-        <a-switch v-model:checked="form.lotTrackingEnabled" :disabled="form.id !== undefined" />
+        <a-switch v-model:checked="form.lotTrackingEnabled" :disabled="form.id !== undefined" aria-label="批次追踪" />
+        <div class="warehouse-form-hint">新建仓库时确定；开启后不能关闭。</div>
       </a-form-item>
       <!-- 负库存只放行销售出库（先卖后补常发生在收货前），报损、盘点、调拨仍必须账实相符 -->
       <a-form-item label="允许负库存出库">
-        <a-switch v-model:checked="form.allowNegativeStock" />
+        <a-switch v-model:checked="form.allowNegativeStock" aria-label="允许负库存出库" />
         <div class="warehouse-form-hint">开启后销售出库可以扣成负数，月末用「报表 → 库存分析 → 负库存损耗」导出缺口；仓库仍有负余额时不能关闭。</div>
       </a-form-item>
     </a-form>

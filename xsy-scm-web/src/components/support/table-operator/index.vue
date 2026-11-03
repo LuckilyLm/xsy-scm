@@ -7,22 +7,22 @@
 <template>
   <span>
     <a-tooltip title="全屏" v-if="!fullScreenFlag">
-      <a-button type="text" @click="onFullScreen" size="small">
+      <a-button type="text" aria-label="全屏" @click="onFullScreen" size="small">
         <template #icon><fullscreen-outlined /></template>
       </a-button>
     </a-tooltip>
     <a-tooltip title="取消全屏" v-if="fullScreenFlag">
-      <a-button type="text" @click="onFullScreen" size="small">
+      <a-button type="text" aria-label="取消全屏" @click="onFullScreen" size="small">
         <template #icon><fullscreen-exit-outlined /></template>
       </a-button>
     </a-tooltip>
     <a-tooltip title="刷新">
-      <a-button type="text" @click="props.refresh" size="small">
+      <a-button type="text" aria-label="刷新表格" @click="props.refresh" size="small">
         <template #icon><redo-outlined /></template>
       </a-button>
     </a-tooltip>
     <a-tooltip title="列设置">
-      <a-button type="text" @click="showModal" size="small">
+      <a-button type="text" aria-label="列设置" @click="showModal" size="small">
         <template #icon><setting-outlined /></template>
       </a-button>
     </a-tooltip>

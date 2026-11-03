@@ -3,7 +3,13 @@
     <p class="scm-note">客户未绑定配送仓时，按收货地址区县匹配。</p>
     <a-form layout="vertical" class="district-form">
       <a-form-item label="配送区县" required>
-        <AreaCascader type="province_city_district" v-model:value="area" placeholder="选择省 / 市 / 区县" @change="onAreaChange" />
+        <AreaCascader
+          type="province_city_district"
+          v-model:value="area"
+          placeholder="选择省 / 市 / 区县"
+          v-aria-label="'配送区县'"
+          @change="onAreaChange"
+        />
       </a-form-item>
     </a-form>
     <a-alert v-if="warehousesError" type="error" show-icon :message="warehousesError" class="district-alert">
@@ -31,13 +37,13 @@
             option-filter-prop="label"
             style="width: 100%"
             placeholder="选择可用配送仓"
-            aria-label="选择可用配送仓"
+            v-aria-label="'选择可用配送仓'"
             :options="warehouseOptions"
             :disabled="!warehouseOptions.length"
           />
         </a-col>
         <a-col :span="6">
-          <a-input-number v-model:value="priority" :min="0" :precision="0" style="width: 100%" placeholder="优先级" aria-label="配送优先级" />
+          <a-input-number v-model:value="priority" :min="0" :precision="0" style="width: 100%" placeholder="优先级" v-aria-label="'配送优先级'" />
         </a-col>
         <a-col :span="5">
           <a-button

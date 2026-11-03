@@ -3,19 +3,35 @@
     <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
       <a-row class="smart-query-form-row">
         <a-form-item label="业务日期">
-          <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" aria-label="业务开始日期" />
+          <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'业务开始日期'" />
           <span class="date-separator">至</span>
-          <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" aria-label="业务结束日期" />
+          <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'业务结束日期'" />
         </a-form-item>
         <a-form-item label="供应商"
-          ><a-input v-model:value="query.supplierName" allow-clear placeholder="按供应商名称搜索" @press-enter="onSearch"
+          ><a-input v-model:value="query.supplierName" allow-clear placeholder="按供应商名称搜索" v-aria-label="'供应商'" @press-enter="onSearch"
         /></a-form-item>
-        <a-form-item label="采购单号"><a-input v-model:value="query.purchaseOrderNo" allow-clear @press-enter="onSearch" /></a-form-item>
+        <a-form-item label="采购单号"
+          ><a-input v-model:value="query.purchaseOrderNo" allow-clear v-aria-label="'采购单号'" @press-enter="onSearch"
+        /></a-form-item>
         <a-form-item label="方向">
-          <a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px" />
+          <a-select
+            v-model:value="query.entryType"
+            allow-clear
+            :options="entryOptions"
+            placeholder="全部"
+            style="width: 120px"
+            v-aria-label="'方向'"
+          />
         </a-form-item>
         <a-form-item label="结清状态">
-          <a-select v-model:value="query.settleState" allow-clear :options="settleOptions" placeholder="全部" style="width: 140px" />
+          <a-select
+            v-model:value="query.settleState"
+            allow-clear
+            :options="settleOptions"
+            placeholder="全部"
+            style="width: 140px"
+            v-aria-label="'结清状态'"
+          />
         </a-form-item>
         <a-form-item class="smart-query-form-item">
           <a-space>

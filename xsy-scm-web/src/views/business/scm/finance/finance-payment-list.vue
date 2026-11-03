@@ -2,27 +2,52 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="付款日期">
-        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" aria-label="业务开始日期" />
+        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'付款开始日期'" />
         <span class="date-separator">至</span>
-        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" aria-label="业务结束日期" />
+        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'付款结束日期'" />
       </a-form-item>
       <a-form-item label="往来方类型">
-        <a-select v-model:value="query.counterpartyType" allow-clear :options="partyTypeOptions" placeholder="全部" style="width: 140px" />
+        <a-select
+          v-model:value="query.counterpartyType"
+          allow-clear
+          :options="partyTypeOptions"
+          placeholder="全部"
+          style="width: 140px"
+          v-aria-label="'往来方类型'"
+        />
       </a-form-item>
       <a-form-item label="往来方"
-        ><a-input v-model:value="query.counterpartyName" allow-clear placeholder="按名称搜索" @press-enter="onSearch"
+        ><a-input v-model:value="query.counterpartyName" allow-clear placeholder="按名称搜索" v-aria-label="'往来方'" @press-enter="onSearch"
       /></a-form-item>
       <a-form-item label="方式"
-        ><a-select v-model:value="query.method" allow-clear :options="methodOptions" placeholder="全部" style="width: 140px"
+        ><a-select
+          v-model:value="query.method"
+          allow-clear
+          :options="methodOptions"
+          placeholder="全部"
+          style="width: 140px"
+          v-aria-label="'付款方式'"
       /></a-form-item>
       <a-form-item label="来源"
-        ><a-select v-model:value="query.sourceType" allow-clear :options="sourceOptions" placeholder="全部" style="width: 150px"
+        ><a-select
+          v-model:value="query.sourceType"
+          allow-clear
+          :options="sourceOptions"
+          placeholder="全部"
+          style="width: 150px"
+          v-aria-label="'资金来源'"
       /></a-form-item>
       <a-form-item label="方向"
-        ><a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px"
+        ><a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px" v-aria-label="'方向'"
       /></a-form-item>
       <a-form-item label="待核销"
-        ><a-select v-model:value="query.pendingOnly" allow-clear :options="pendingOptions" placeholder="全部" style="width: 120px"
+        ><a-select
+          v-model:value="query.pendingOnly"
+          allow-clear
+          :options="pendingOptions"
+          placeholder="全部"
+          style="width: 120px"
+          v-aria-label="'待核销状态'"
       /></a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>

@@ -2,9 +2,9 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="核销日期">
-        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" aria-label="核销开始日期" />
+        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'核销开始日期'" />
         <span class="date-separator">至</span>
-        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" aria-label="核销结束日期" />
+        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'核销结束日期'" />
       </a-form-item>
       <a-form-item label="资金类型"
         ><a-select
@@ -12,6 +12,7 @@
           allow-clear
           placeholder="全部"
           style="width: 140px"
+          v-aria-label="'资金类型'"
           :options="[
             {label: '收款', value: 'RECEIPT'},
             {label: '付款', value: 'PAYMENT'},
@@ -19,10 +20,14 @@
             {label: '抹零', value: 'WAIVER'},
           ]"
       /></a-form-item>
-      <a-form-item label="资金单号"><a-input v-model:value="query.sourceNo" allow-clear @press-enter="onSearch" /></a-form-item>
-      <a-form-item label="目标单号"><a-input v-model:value="query.targetNo" allow-clear @press-enter="onSearch" /></a-form-item>
+      <a-form-item label="资金单号"
+        ><a-input v-model:value="query.sourceNo" allow-clear v-aria-label="'资金单号'" @press-enter="onSearch"
+      /></a-form-item>
+      <a-form-item label="目标单号"
+        ><a-input v-model:value="query.targetNo" allow-clear v-aria-label="'目标单号'" @press-enter="onSearch"
+      /></a-form-item>
       <a-form-item label="方向"
-        ><a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px"
+        ><a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px" v-aria-label="'方向'"
       /></a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -45,6 +50,40 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_WRITE_OFF" :refresh="queryData" />
       </div>
     </a-row>
+    <div class="finance-mobile-writeoff-list">
+      <div v-for="record in page.tableData.value" :key="record.writeOffId" class="writeoff-mobile-row">
+        <div class="writeoff-mobile-heading">
+          <strong>{{ record.writeOffNo }}</strong>
+          <a-button
+            v-if="record.entryType === 'NORMAL' && !record.reversed && record.sourceType !== 'WAIVER'"
+            type="link"
+            size="small"
+            danger
+            v-privilege="PERM.WRITE_OFF_REVERSE"
+            @click="openReverse(record)"
+            >撤销核销</a-button
+          >
+          <a-button
+            v-else-if="record.entryType === 'NORMAL' && !record.reversed && record.sourceType === 'WAIVER'"
+            type="link"
+            size="small"
+            danger
+            v-privilege="PERM.WAIVER_REVERSE"
+            @click="openWaiverReverse(record)"
+            >反向抹零</a-button
+          >
+        </div>
+        <div class="writeoff-mobile-party">{{ record.sourceName || '—' }} · {{ sourceTypeText(record.sourceType) }}</div>
+        <div class="writeoff-mobile-party">{{ record.targetName || '—' }} · {{ targetTypeText(record.targetType) }}</div>
+        <div class="writeoff-mobile-values">
+          <span
+            >核销金额 <strong>{{ moneyText(record.amount) }}</strong></span
+          >
+          <span>{{ dateTimeText(record.writtenOffAt) }}</span>
+        </div>
+      </div>
+      <a-empty v-if="!page.loading.value && !page.tableData.value.length" description="暂无核销记录" />
+    </div>
     <a-table
       id="scm-finance-write-off-table"
       class="finance-table"
@@ -594,7 +633,50 @@ async function submitWaiverReverse() {
 .form-error {
   margin-bottom: 12px;
 }
+.finance-mobile-writeoff-list {
+  display: none;
+}
+.writeoff-mobile-row {
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.writeoff-mobile-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.writeoff-mobile-heading strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.writeoff-mobile-party {
+  margin: 0 0 4px;
+  color: #667085;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.writeoff-mobile-values {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 14px;
+  color: #667085;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.writeoff-mobile-values strong {
+  color: #1d2939;
+  font-weight: 600;
+}
 @media (max-width: 768px) {
+  .finance-mobile-writeoff-list {
+    display: block;
+  }
+  .finance-table {
+    display: none;
+  }
   .finance-table :deep(.ant-table-cell-fix-right) {
     position: static !important;
     right: auto !important;
