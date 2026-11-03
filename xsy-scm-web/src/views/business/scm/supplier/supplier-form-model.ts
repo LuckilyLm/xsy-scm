@@ -88,7 +88,10 @@ export function validateSkuDrafts(drafts: SkuDraft[]): string | undefined {
   const seen = new Set<string>();
   const supplierCodes = new Set<string>();
   for (const [index, draft] of drafts.entries()) {
-    const label = `第 ${index + 1} 行：`;
+    // 报错带上商品名，用户不必在横向表格里数到第几行。
+    const spec = Object.values(draft.specValuesSnapshot ?? {}).join('/');
+    const name = draft.skuNameSnapshot ? `${draft.skuNameSnapshot}${spec ? ` / ${spec}` : ''}` : '';
+    const label = name ? `第 ${index + 1} 行（${name}）：` : `第 ${index + 1} 行：`;
     if (draft.skuId == null) {
       return label + '请选择商品规格';
     }

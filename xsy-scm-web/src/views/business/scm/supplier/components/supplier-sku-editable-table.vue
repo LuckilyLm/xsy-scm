@@ -17,8 +17,20 @@
       :row-key="(record: SkuDraft, index?: number) => record.id ?? `new-${index}`"
       :scroll="{x: 960}"
     >
+      <template #headerCell="{column}">
+        <span v-if="column.dataIndex === 'referencePrice'"
+          >参考价<ScmFieldHelp label="参考价" text="按该供应商的采购单位计价；采购单位不同时不能直接比较价格。" />
+        </span>
+        <span v-else-if="column.dataIndex === 'defaultFlag'"
+          >优先采购<ScmFieldHelp label="优先采购" text="只影响列表展示和同规格比价排序，不会自动把采购单分给该供应商。" />
+        </span>
+        <template v-else>{{ column.title }}</template>
+      </template>
       <template #bodyCell="{column, record, index}">
-        <template v-if="column.dataIndex === 'skuId'">
+        <template v-if="column.dataIndex === 'rowNo'">
+          <span class="row-no">{{ index + 1 }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'skuId'">
           <SkuSelect
             :value="record.skuId"
             :disabled="readonly"
@@ -91,7 +103,17 @@
           />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-popconfirm v-if="!readonly" title="确认移除该关联？" @confirm="emit('update:modelValue', removeSkuDraft(modelValue, index))">
+          <!-- 尚未保存的新行移除可撤销，不弹确认；已有关联删除后才需要二次确认。 -->
+          <a-button
+            v-if="!readonly && record.id == null"
+            type="link"
+            danger
+            size="small"
+            :aria-label="`移除第 ${index + 1} 行`"
+            @click="emit('update:modelValue', removeSkuDraft(modelValue, index))"
+            >移除</a-button
+          >
+          <a-popconfirm v-else-if="!readonly" title="确认移除该关联？" @confirm="emit('update:modelValue', removeSkuDraft(modelValue, index))">
             <a-button type="link" danger size="small" :aria-label="`移除第 ${index + 1} 行`">移除</a-button>
           </a-popconfirm>
         </template>
@@ -109,6 +131,7 @@ import {computed, onMounted, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {productUomApi} from '/@/api/business/scm/product-assistant-api';
 import {employeeApi} from '/@/api/system/employee-api';
 import type {ProductUom} from '/@/types/business/scm/product';
@@ -120,15 +143,17 @@ const props = defineProps<{modelValue: SkuDraft[]; readonly?: boolean; emptyText
 const emit = defineEmits<{'update:modelValue': [rows: SkuDraft[]]}>();
 
 type EmployeeOption = {employeeId: number; actualName: string; departmentName?: string};
+type SelectedSkuOption = {skuId: ScmId; productName: string; specName: string};
 
 const columns: TableColumnsType<SkuDraft> = [
-  {title: '商品规格 *', dataIndex: 'skuId', width: 220},
-  {title: '供应商货号', dataIndex: 'supplierItemCode', width: 110},
-  {title: '采购单位 *', dataIndex: 'purchaseUnit', width: 110},
-  {title: '参考价', dataIndex: 'referencePrice', width: 140},
+  {title: '行号', dataIndex: 'rowNo', width: 48},
+  {title: '商品规格 *', dataIndex: 'skuId', width: 200},
+  {title: '供应商货号', dataIndex: 'supplierItemCode', width: 100},
+  {title: '采购单位 *', dataIndex: 'purchaseUnit', width: 100},
+  {title: '参考价', dataIndex: 'referencePrice', width: 150},
   {title: '优先采购', dataIndex: 'defaultFlag', width: 90, align: 'center'},
-  {title: '采购员', dataIndex: 'purchaserId', width: 120},
-  {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
+  {title: '采购员', dataIndex: 'purchaserId', width: 110},
+  {title: '状态', dataIndex: 'status', width: 90, align: 'center'},
   {title: '操作', dataIndex: 'action', width: 70, align: 'center', fixed: 'right'},
 ];
 
@@ -140,7 +165,7 @@ onMounted(async () => {
   await Promise.allSettled([loadUnits(), loadEmployees()]);
 });
 
-async function loadUnits() {
+async function loadUnits(): Promise<void> {
   try {
     const response = await productUomApi.options({suppressGlobalErrorMessage: true});
     units.value = response.data ?? [];
@@ -149,7 +174,7 @@ async function loadUnits() {
   }
 }
 
-async function loadEmployees() {
+async function loadEmployees(): Promise<void> {
   try {
     const response = await employeeApi.queryAll();
     employees.value = response.data ?? [];
@@ -176,7 +201,7 @@ const unitOptions = computed(() => {
 const emptyText = computed(() => props.emptyText ?? '尚未关联任何商品；点击“添加商品”开始');
 
 /** 已有关联行用列表快照回显，避免首屏 50 条之外只剩数字 ID。 */
-function selectedSkuOptions(record: SkuDraft) {
+function selectedSkuOptions(record: SkuDraft): SelectedSkuOption[] {
   if (record.skuId == null || !record.skuNameSnapshot) return [];
   const spec = Object.values(record.specValuesSnapshot ?? {}).join('/') || '默认规格';
   return [{skuId: record.skuId, productName: record.skuNameSnapshot, specName: spec}];
@@ -189,7 +214,7 @@ function otherSkuIds(current?: ScmId): ScmId[] {
 }
 
 /** 聚焦表格容器后，左右方向键横向滚动；在输入框内不拦截方向键。 */
-function onTableKeydown(event: KeyboardEvent) {
+function onTableKeydown(event: KeyboardEvent): void {
   if (event.target !== event.currentTarget) return;
   if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
   event.preventDefault();
@@ -211,6 +236,11 @@ function onTableKeydown(event: KeyboardEvent) {
 
 .ant-select {
   width: 100%;
+}
+
+.row-no {
+  color: var(--scm-text-secondary, #8c8c8c);
+  font-variant-numeric: tabular-nums;
 }
 
 .empty {

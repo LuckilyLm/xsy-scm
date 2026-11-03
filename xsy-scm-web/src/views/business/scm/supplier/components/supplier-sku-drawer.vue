@@ -15,7 +15,7 @@
     </a-alert>
     <a-alert v-else-if="error" type="error" show-icon :message="error" class="smart-margin-bottom10" />
     <a-spin :spinning="loading">
-      <SupplierSkuEditableTable v-model="drafts" :readonly="!editable" :empty-text="emptyText" />
+      <SupplierSkuEditableTable v-model="drafts" :readonly="!editable || saving" :empty-text="emptyText" />
     </a-spin>
     <template #footer>
       <a-space>
@@ -110,7 +110,7 @@ const emptyText = computed(() => {
 });
 
 /** 打开抽屉并加载已有关联。 */
-async function open(row: SupplierRow) {
+async function open(row: SupplierRow): Promise<void> {
   visible.value = true;
   error.value = '';
   drafts.value = [];
@@ -124,7 +124,7 @@ async function open(row: SupplierRow) {
 }
 
 /** 只接受最新一次请求，快速切换供应商时旧响应不会覆盖新数据。 */
-async function load() {
+async function load(): Promise<void> {
   if (supplierId.value == null) return;
   const seq = ++requestSeq;
   loading.value = true;
@@ -146,7 +146,7 @@ async function load() {
   }
 }
 
-function reset() {
+function reset(): void {
   requestSeq++;
   visible.value = false;
   error.value = '';
@@ -168,7 +168,7 @@ function confirmDialog(options: ModalFuncProps): Promise<boolean> {
 }
 
 /** 有未保存修改时先确认，避免点遮罩或 X 静默丢弃。 */
-function requestClose() {
+function requestClose(): void {
   if (saving.value) return;
   if (!dirty.value) {
     reset();
@@ -185,7 +185,7 @@ function requestClose() {
   });
 }
 
-async function submit() {
+async function submit(): Promise<void> {
   if (!editable.value || supplierId.value == null) return;
   const problem = validateSkuDrafts(drafts.value);
   if (problem) {
