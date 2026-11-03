@@ -94,11 +94,8 @@
         </a-row>
         <ItemTable ref="itemTableRef" :items="form.items" :customer-id="form.customerId" :order-id="form.orderId" @price="preview" />
         <div class="item-actions">
-          <a-button :disabled="!form.customerId" @click="pasteOpen = true">整单粘贴</a-button>
           <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
         </div>
-        <p class="item-actions__hint">粘贴失败的行不会追加；也可继续用 Excel 导入整张客户订单。</p>
-        <OrderPasteModal v-model:open="pasteOpen" :customer-id="form.customerId" :existing-sku-ids="existingSkuIds" @append="appendPasted" />
       </a-form>
     </a-spin>
     <template #footer>
@@ -122,9 +119,8 @@ import {customerApi} from '/@/api/business/scm/customer-api';
 import {orderApi} from '/@/api/business/scm/order-api';
 import {newOrder, nextOrderForCustomer, payload, validateOrder, fixed, fromHistory} from '../order-form-model';
 import {orderError} from '../order-errors';
-import type {Order, Id, Item} from '../order-types';
+import type {Order, Id} from '../order-types';
 import ItemTable from './order-item-editable-table.vue';
-import OrderPasteModal from './order-paste-modal.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 import {createUnsavedGuard} from '../../common/scm-unsaved-guard';
@@ -140,9 +136,7 @@ const form = ref<Order>(newOrder()),
 const exchangeReturnId = ref<Id>();
 /** 关闭前拦截未保存修改；加载失败时基线为空，不拦截。 */
 const unsaved = createUnsavedGuard(() => ({form: form.value, exchangeReturnId: exchangeReturnId.value, originals: originals.value}));
-const pasteOpen = ref(false);
 const formRef = ref<FormInstance>();
-const existingSkuIds = computed(() => form.value.items.map((item) => item.skuId).filter((skuId): skuId is Id => skuId != null && skuId !== ''));
 /**
  * 收货信息在 `form.address.*` 里，展平一份给表单校验用（顶层 `address` 就是详细地址）。
  *
@@ -361,13 +355,6 @@ async function loadOriginals(keyword: string) {
   }
 }
 
-/** 整单粘贴只追加已匹配行；数量、改价原因等仍按正常订单校验。 */
-function appendPasted(items: Item[]) {
-  form.value.items.push(...items);
-  message.success(`已追加 ${items.length} 行，正在按当前价格重新解析`);
-  void preview();
-}
-
 /** 继续录下一单：只保留客户和仓库，地址重新获取，商品和价格重新录入。 */
 async function continueWithNextOrder(previous: Order): Promise<void> {
   const token = ++requestId;
@@ -461,12 +448,6 @@ defineExpose({open, openFromHistory, openForExchange});
   gap: 12px;
   margin-top: 12px;
   vertical-align: top;
-}
-
-.item-actions__hint {
-  margin: 8px 0 0;
-  color: var(--scm-text-secondary, #667085);
-  font-size: 12px;
 }
 
 .app-drawer-form :deep(.add-line) {

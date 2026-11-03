@@ -80,7 +80,8 @@ export function sumOrderedQuantity(items: {orderedQuantity?: string | number | n
       // 录入中的非法数量不参与合计
     }
   }
-  return total.toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
+  // 销售数量按一位小数录入和展示；提交时仍统一归一到四位定点字符串。
+  return total.toDecimalPlaces(1, Decimal.ROUND_HALF_UP).toFixed(1);
 }
 
 /** 复制历史订单只用于新建，不带单号、状态、原价格和库存预留。 */
@@ -120,7 +121,8 @@ export function validateOrder(f: Order): string | undefined {
     if (!i.skuId) return '请选择商品规格';
     if (seen.has(String(i.skuId))) return '同一商品规格不能重复';
     seen.add(String(i.skuId));
-    if (!/^\d{1,14}\.\d{4}$/.test(i.orderedQuantity) || new Decimal(i.orderedQuantity).lte(0)) return '数量必须为正的四位定点数';
+    // 界面按一位小数录入，历史/粘贴数据可能是四位；统一在 payload 里补齐四位。
+    if (!/^\d{1,14}(\.\d{1,4})?$/.test(i.orderedQuantity) || new Decimal(i.orderedQuantity).lte(0)) return '数量必须大于 0，最多四位小数';
     if (i.manualPriceOverride && (!i.overrideReason?.trim() || !isSalesMoney(i.unitPrice))) {
       return '人工改价需要非负价格和原因';
     }

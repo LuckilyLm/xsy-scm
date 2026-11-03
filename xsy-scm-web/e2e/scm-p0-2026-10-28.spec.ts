@@ -110,41 +110,6 @@ test.describe('scm-p0-batch', () => {
     expect(resolved.items[0].priceSource).toBe('CUSTOMER_GROUP');
     expect(resolved.items[0].unitPrice).toBe('2.0000');
   });
-
-  test('整单粘贴：匹配行可追加，未匹配行留在预览里报错', async ({page}) => {
-    await authenticate(page, token);
-    await page.goto('/#/order/order-list');
-    await page.getByRole('button', {name: accessibleName('新建订单')}).click();
-
-    const drawer = page.locator('.ant-drawer-open').filter({hasText: '新建销售订单'}).first();
-    await expect(drawer).toBeVisible();
-    // 客户下拉只回前面若干条，刚建的客户要靠输入过滤
-    await drawer.locator('.ant-form-item').filter({hasText: '客户'}).first().locator('.ant-select-selector').click();
-    await page.keyboard.type(`${runTag}客户A`);
-    await page.locator('.ant-select-dropdown:visible').last().getByText(`${runTag}客户A`, {exact: true}).click();
-
-    await drawer.getByRole('button', {name: accessibleName('整单粘贴')}).click();
-    const modal = page.locator('.ant-modal:visible').filter({hasText: '整单粘贴'}).last();
-    await expect(modal).toBeVisible();
-    // 用表头别名固定列序；无表头时第三列会被当成规格，商品与规格匹配不上
-    await modal
-      .locator('textarea')
-      .fill(['商品名称\t规格\t单位\t数量\t销售单价', `${runTag}商品A\t散装A\tkg\t3`, `${runTag}不存在商品\t散装\tkg\t1`].join('\n'));
-    await modal.getByRole('button', {name: accessibleName('解析预览')}).click();
-
-    await expect(modal).toContainText('可追加 1 行');
-    await expect(modal).toContainText('1 行需修正');
-    await expect(modal.locator('.paste-error')).toHaveCount(1);
-
-    await modal.getByRole('button', {name: accessibleName('追加到订单')}).click();
-    await expect(modal).toHaveCount(0);
-    // 表体里还有一行用于列宽测量的测量行（.ant-table-measure-row），只数真正的数据行
-    const itemRows = drawer.locator('.ant-table-tbody tr.ant-table-row');
-    await expect(itemRows).toHaveCount(1);
-    await expect(itemRows.first()).toContainText('散装A');
-    // 客户已选中时不能再挂「请选择客户」：校验读的是最新表单值，不是上一轮渲染的副本
-    await expect(drawer.locator('.ant-form-item-explain-error')).toHaveCount(0);
-  });
 });
 
 /** 下拉/表单内的选项：先点开选择器，再在浮层里按文本点，选项按名称排序时也能命中所建数据。 */

@@ -75,7 +75,6 @@
       <a-pagination
         show-quick-jumper
         show-less-items
-        :show-size-changer="false"
         :show-total="(total: number) => `共${total}条`"
         :current="pageNum"
         :page-size="10"

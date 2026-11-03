@@ -35,7 +35,16 @@
         {{ record.saleUnitSnapshot || '—' }}
       </template>
       <template v-else-if="column.dataIndex === 'orderedQuantity'">
-        <a-input-number string-mode :precision="4" :min="'0.0001'" v-model:value="record.orderedQuantity" :aria-label="'下单数量 ' + (index + 1)" />
+        <a-input-number
+          string-mode
+          :precision="1"
+          :min="'0.1'"
+          :step="'0.1'"
+          placeholder="0.0"
+          style="width: 100%"
+          v-model:value="record.orderedQuantity"
+          :aria-label="'下单数量 ' + (index + 1)"
+        />
       </template>
       <template v-else-if="column.dataIndex === 'actualQuantity'">
         <span class="actual-quantity">{{ record.actualQuantity || '' }}</span>
@@ -43,90 +52,113 @@
       <template v-else-if="column.dataIndex === 'draftUnitPrice'">
         <div class="price-cell">
           <div class="price-main">
-            <span>{{ amount(record.draftUnitPrice, true) }}</span>
-            <span v-if="recentRows(record).length" class="purchase-line" :title="recentMetaText(record)">
-              上次售价 {{ recentPriceText(record) }}
-              <span v-if="recentRows(record)[0].saleUnit !== record.saleUnitSnapshot" class="purchase-mismatch">单位不同</span>
-            </span>
-            <span v-else-if="recentReady(record)" class="purchase-line purchase-line--empty">该客户暂无历史售价</span>
-            <!-- 采购价与客户售价分别展示，参考值不回写本次价格。 -->
-            <span v-if="purchaseOf(record)" class="purchase-line" :title="purchaseMetaText(record)">
-              采购参考 {{ purchasePriceText(record) }}
-              <span v-if="purchaseUnitMismatch(record)" class="purchase-mismatch">单位不同</span>
-            </span>
-            <span v-else-if="purchaseReady(record)" class="purchase-line purchase-line--empty">暂无采购价</span>
-            <span v-if="belowPurchasePrice(record)" class="purchase-warn" :title="purchaseWarning(record)">低于采购价</span>
+            <span class="price-value">{{ amount(record.draftUnitPrice, true) }}</span>
+            <span v-if="belowPurchasePrice(record)" class="price-flag" :title="purchaseWarning(record)">低于采购价</span>
           </div>
-          <a-popover
-            v-if="customerId && record.skuId"
-            trigger="click"
-            placement="left"
-            :open="recentOpenIndex === index"
-            @update:open="(v: boolean) => (recentOpenIndex = v ? index : null)"
-            :get-popup-container="recentPopupContainer"
-            :title="'最近已确认订单价 · ' + (record.skuCodeSnapshot || '商品规格')"
-          >
-            <a-button type="link" size="small" class="recent-btn" aria-label="最近已确认订单价" @click="loadRecent(record)">历史售价</a-button>
-            <template #content>
-              <a-spin :spinning="recentLoadingOf(record)">
-                <div class="recent-wrap">
-                  <a-empty v-if="recentEmpty(record)" description="该客户该商品暂无已确认历史价" />
-                  <div v-else-if="recentReady(record)" class="recent-list">
-                    <div v-for="p in recentRows(record)" :key="p.itemId" class="recent-row">
+          <div class="price-meta">
+            <a-popover
+              v-if="customerId && record.skuId"
+              trigger="click"
+              placement="left"
+              :open="recentOpenIndex === index"
+              @update:open="(v: boolean) => (recentOpenIndex = v ? index : null)"
+              :get-popup-container="recentPopupContainer"
+              :title="'最近已确认订单价 · ' + (record.skuCodeSnapshot || '商品规格')"
+            >
+              <button
+                type="button"
+                class="price-meta__item"
+                :class="{'is-empty': !recentRows(record).length}"
+                :title="recentMetaText(record) || '该客户该商品暂无已确认历史价'"
+                aria-label="最近已确认订单价"
+                @click="loadRecent(record)"
+              >
+                <span class="price-meta__label">历史售价</span>
+                <span class="price-meta__value">{{ recentSummary(record) }}</span>
+                <span v-if="recentUnitMismatch(record)" class="price-meta__warn">单位不同</span>
+              </button>
+              <template #content>
+                <a-spin :spinning="recentLoadingOf(record)">
+                  <div class="recent-wrap">
+                    <a-empty v-if="recentEmpty(record)" description="该客户该商品暂无已确认历史价" />
+                    <div v-else-if="recentReady(record)" class="recent-list">
+                      <div v-for="p in recentRows(record)" :key="p.itemId" class="recent-row">
+                        <div class="recent-head">
+                          <span class="recent-price"
+                            >{{ amount(p.unitPrice) }}<span v-if="p.saleUnit" class="recent-unit">/{{ p.saleUnit }}</span></span
+                          >
+                          <a-tag v-if="p.priceSource">{{ priceSourceDesc(p.priceSource) }}</a-tag>
+                        </div>
+                        <div v-if="p.saleUnit && record.saleUnitSnapshot && p.saleUnit !== record.saleUnitSnapshot" class="recent-warn">
+                          单位「{{ p.saleUnit }}」与当前「{{ record.saleUnitSnapshot }}」不同，不可直接比较
+                        </div>
+                        <div class="recent-meta">{{ p.orderNo }} · {{ p.orderedQuantity }} · {{ dayjs(p.confirmedAt).format('YYYY-MM-DD') }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </a-spin>
+              </template>
+            </a-popover>
+            <span v-if="customerId && record.skuId" class="price-meta__sep" aria-hidden="true">·</span>
+            <a-popover
+              v-if="record.skuId"
+              trigger="click"
+              placement="left"
+              :open="purchaseOpenIndex === index"
+              @update:open="(v: boolean) => (purchaseOpenIndex = v ? index : null)"
+              :get-popup-container="recentPopupContainer"
+              :title="'最近采购价 · ' + (record.skuCodeSnapshot || '商品规格')"
+            >
+              <button
+                type="button"
+                class="price-meta__item"
+                :class="{'is-empty': !purchaseOf(record)}"
+                :title="purchaseMetaText(record) || '该商品暂无已提交采购价'"
+                aria-label="最近采购价"
+                @click="loadPurchase(record)"
+              >
+                <span class="price-meta__label">采购参考</span>
+                <span class="price-meta__value">{{ purchaseSummary(record) }}</span>
+                <span v-if="purchaseUnitMismatch(record)" class="price-meta__warn">单位不同</span>
+              </button>
+              <template #content>
+                <a-spin :spinning="purchaseLoadingOf(record)">
+                  <div class="recent-wrap">
+                    <a-empty v-if="purchaseEmpty(record)" description="该商品暂无已提交采购价" />
+                    <div v-else-if="purchaseReady(record)" class="recent-row">
                       <div class="recent-head">
-                        <span class="recent-price"
-                          >{{ amount(p.unitPrice) }}<span v-if="p.saleUnit" class="recent-unit">/{{ p.saleUnit }}</span></span
-                        >
-                        <a-tag v-if="p.priceSource">{{ priceSourceDesc(p.priceSource) }}</a-tag>
+                        <span class="recent-price">{{ purchasePriceText(record) }}</span>
                       </div>
-                      <div v-if="p.saleUnit && record.saleUnitSnapshot && p.saleUnit !== record.saleUnitSnapshot" class="recent-warn">
-                        单位「{{ p.saleUnit }}」与当前「{{ record.saleUnitSnapshot }}」不同，不可直接比较
+                      <div v-if="purchaseUnitMismatch(record)" class="recent-warn">
+                        采购单位「{{ purchaseUnitText(record) }}」与当前销售单位「{{ record.saleUnitSnapshot }}」不同，不可直接比较
                       </div>
-                      <div class="recent-meta">{{ p.orderNo }} · {{ p.orderedQuantity }} · {{ dayjs(p.confirmedAt).format('YYYY-MM-DD') }}</div>
+                      <div class="recent-meta">{{ purchaseMetaText(record) }}</div>
+                      <div class="recent-meta">{{ purchaseSupplierText(record) }}</div>
                     </div>
                   </div>
-                </div>
-              </a-spin>
-            </template>
-          </a-popover>
-          <a-popover
-            v-if="record.skuId"
-            trigger="click"
-            placement="left"
-            :open="purchaseOpenIndex === index"
-            @update:open="(v: boolean) => (purchaseOpenIndex = v ? index : null)"
-            :get-popup-container="recentPopupContainer"
-            :title="'最近采购价 · ' + (record.skuCodeSnapshot || '商品规格')"
-          >
-            <a-button type="link" size="small" class="recent-btn" aria-label="最近采购价" @click="loadPurchase(record)">采购参考</a-button>
-            <template #content>
-              <a-spin :spinning="purchaseLoadingOf(record)">
-                <div class="recent-wrap">
-                  <a-empty v-if="purchaseEmpty(record)" description="该商品暂无已提交采购价" />
-                  <div v-else-if="purchaseReady(record)" class="recent-row">
-                    <div class="recent-head">
-                      <span class="recent-price">{{ purchasePriceText(record) }}</span>
-                    </div>
-                    <div v-if="purchaseUnitMismatch(record)" class="recent-warn">
-                      采购单位「{{ purchaseUnitText(record) }}」与当前销售单位「{{ record.saleUnitSnapshot }}」不同，不可直接比较
-                    </div>
-                    <div class="recent-meta">{{ purchaseMetaText(record) }}</div>
-                    <div class="recent-meta">{{ purchaseSupplierText(record) }}</div>
-                  </div>
-                </div>
-              </a-spin>
-            </template>
-          </a-popover>
+                </a-spin>
+              </template>
+            </a-popover>
+          </div>
         </div>
       </template>
       <template v-else-if="column.dataIndex === 'override'">
-        <a-space direction="vertical">
-          <a-checkbox v-privilege="'scm:order:price-override'" v-model:checked="record.manualPriceOverride">人工改价 </a-checkbox>
+        <div class="override-cell">
+          <a-checkbox v-privilege="'scm:order:price-override'" v-model:checked="record.manualPriceOverride">人工改价</a-checkbox>
           <template v-if="record.manualPriceOverride">
-            <a-input-number string-mode :precision="2" :min="'0'" :step="'0.01'" v-model:value="record.unitPrice" aria-label="人工单价" />
+            <a-input-number
+              string-mode
+              :precision="2"
+              :min="'0'"
+              :step="'0.01'"
+              placeholder="改价后单价"
+              style="width: 100%"
+              v-model:value="record.unitPrice"
+              aria-label="人工单价"
+            />
             <a-input v-model:value="record.overrideReason" placeholder="改价原因（必填）" aria-label="改价原因" :maxlength="500" />
           </template>
-        </a-space>
+        </div>
       </template>
       <template v-else-if="column.dataIndex === 'remark'">
         <!-- 行备注随商品打印到分拣单/送货单：切段、去皮、分袋这类要求不能写进整单备注 -->
@@ -142,7 +174,7 @@
       >合计数量 <strong>{{ sumOrderedQuantity(items) }}</strong></span
     >
   </div>
-  <a-button class="add-line" @click="items.push({orderedQuantity: '1.0000', manualPriceOverride: false})">添加商品 </a-button>
+  <a-button class="add-line" @click="items.push({orderedQuantity: '1.0', manualPriceOverride: false})">添加商品 </a-button>
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
@@ -186,9 +218,9 @@ const columns: TableColumnsType<Item> = [
   {
     title: '解析单价',
     dataIndex: 'draftUnitPrice',
-    width: 185,
+    width: 230,
   },
-  {title: '价格修订', dataIndex: 'override', width: 175},
+  {title: '价格修订', dataIndex: 'override', width: 190},
   {title: '备注', dataIndex: 'remark', width: 160},
   {
     title: '操作',
@@ -280,6 +312,24 @@ function recentRows(record: Item): RecentPrice[] {
 
 function recentLoadingOf(record: Item): boolean {
   return isLoadingRecentPrice(recentCache, props.customerId, record.skuId);
+}
+
+/** 价格下方的参考值只占一行，加载中和无数据都要有明确文案。 */
+function recentSummary(record: Item): string {
+  if (recentLoadingOf(record)) return '查询中…';
+  if (!recentReady(record)) return '查询';
+  return recentRows(record).length ? recentPriceText(record) : '暂无';
+}
+
+function recentUnitMismatch(record: Item): boolean {
+  const previous = recentRows(record)[0];
+  return !!previous?.saleUnit && !!record.saleUnitSnapshot && previous.saleUnit !== record.saleUnitSnapshot;
+}
+
+function purchaseSummary(record: Item): string {
+  if (purchaseLoadingOf(record)) return '查询中…';
+  if (!purchaseReady(record)) return '查询';
+  return purchaseOf(record) ? purchasePriceText(record) : '暂无';
 }
 
 function priceSourceDesc(source: string): string {
@@ -428,43 +478,97 @@ defineExpose({
 
 .price-cell {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
 }
 
 .price-main {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
 }
 
-.purchase-warn {
-  color: #d46b08;
-  font-size: 12px;
+.price-value {
+  font-weight: 600;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-flag {
+  padding: 0 6px;
+  color: #ad4e00;
+  background: #fff7e6;
+  border-radius: 3px;
+  font-size: 11px;
+  line-height: 18px;
   cursor: help;
 }
 
-.purchase-line {
+.price-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
-  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+}
+
+.price-meta__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: rgba(0, 0, 0, 0.45);
   white-space: nowrap;
+  cursor: pointer;
 }
 
-.purchase-line--empty {
+.price-meta__item:hover .price-meta__label,
+.price-meta__item:focus-visible .price-meta__label {
+  color: var(--scm-primary, #1677ff);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.price-meta__item:focus-visible {
+  outline: 2px solid var(--scm-primary, #1677ff);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.price-meta__value {
+  color: rgba(0, 0, 0, 0.75);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-meta__item.is-empty .price-meta__value {
   color: rgba(0, 0, 0, 0.35);
+  font-weight: 400;
 }
 
-.purchase-mismatch {
-  margin-left: 2px;
+.price-meta__warn {
   color: #d46b08;
+  font-size: 11px;
 }
 
-.recent-btn {
-  padding: 0 4px;
-  height: auto;
+.price-meta__sep {
+  color: rgba(0, 0, 0, 0.18);
+}
+
+.override-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.override-cell > * {
+  max-width: 100%;
 }
 
 .recent-wrap {

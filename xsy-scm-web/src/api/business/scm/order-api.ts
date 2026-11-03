@@ -51,34 +51,6 @@ async function importOrders(file: File): Promise<ScmResponse<ImportResult>> {
   return result;
 }
 
-export interface PastePreviewRow {
-  rowNumber: number;
-  productName?: string;
-  specName?: string;
-  unit?: string;
-  quantity?: string;
-  rawUnitPrice?: string;
-  remark?: string;
-  skuId?: Id;
-  skuCode?: string;
-  matchedProductName?: string;
-  matchedSpecName?: string;
-  saleUnit?: string;
-  productType?: string;
-  resolvedUnitPrice?: string | null;
-  priceSource?: string | null;
-  manualPrice: boolean;
-  matched: boolean;
-  errors: Array<{rowNumber: number; column: string; code: string; message: string}>;
-}
-
-export interface PastePreview {
-  totalRows: number;
-  matchedRows: number;
-  errorRows: number;
-  rows: PastePreviewRow[];
-}
-
 export interface CreditCheck {
   allowed: boolean;
   overLimit: boolean;
@@ -133,21 +105,6 @@ export const orderApi = {
   createAndProgress: (data: Order) => orderCommand<Order>('/scm/order/create-and-progress', data),
   downloadImportTemplate: () => getDownload('/scm/order/import/template', {}),
   importOrders,
-  /** 整单粘贴预览：只匹配商品和解析价，不建单。 */
-  pastePreview: (
-    data: {
-      customerId: Id;
-      rows: Array<{
-        productName?: string;
-        specName?: string;
-        unit?: string;
-        quantity?: string;
-        unitPrice?: string;
-        remark?: string;
-      }>;
-    },
-    options?: RequestOptions
-  ) => postRequest<PastePreview>('/scm/order/import/paste-preview', data, options),
   update: (data: Order) => postRequest<Order>('/scm/order/update', data),
   reprice: (data: {orderId: Id; version: number; reason: string}) => postRequest<Order>('/scm/order/reprice', data),
   confirm: (data: unknown) => orderCommand<Order>('/scm/order/confirm', data),
