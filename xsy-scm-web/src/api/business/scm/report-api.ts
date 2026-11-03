@@ -172,8 +172,7 @@ export const reportInventoryApi = {
   movementExport: (data: Partial<InventoryReportQuery>) => postDownload(`${BASE}/inventory/movement/export`, data),
   lossExport: (data: Partial<InventoryReportQuery>) => postDownload(`${BASE}/inventory/loss/export`, data),
   valueExport: (data: Partial<InventoryReportQuery>) => postDownload(`${BASE}/inventory/value/export`, data),
-  negativeStockExport: (data: Partial<InventoryNegativeStockQuery>) =>
-    postDownload(`${BASE}/inventory/negative-stock/export`, data),
+  negativeStockExport: (data: Partial<InventoryNegativeStockQuery>) => postDownload(`${BASE}/inventory/negative-stock/export`, data),
 };
 
 export default {

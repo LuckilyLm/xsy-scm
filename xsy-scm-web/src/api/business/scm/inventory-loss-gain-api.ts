@@ -23,4 +23,3 @@ export const inventoryLossGainApi = {
   /** 删除待审核单据（逻辑删）。 */
   delete: (id: Id) => postRequest<string>(`/scm/inventory/loss-gain/delete/${id}`, {}),
 };
-export default inventoryLossGainApi;

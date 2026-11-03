@@ -7,4 +7,3 @@ export const inventoryBalanceApi = {
     postRequest<ScmPage<InventoryBalance>>('/scm/inventory/balance/query', data, options),
   detail: (id: Id) => getRequest<InventoryBalance>(`/scm/inventory/balance/detail/${id}`, {}),
 };
-export default inventoryBalanceApi;

@@ -60,4 +60,3 @@ export const scmDashboardApi = {
   /** 库存健康度五档；另需库存预警权限。 */
   inventoryHealth: () => getRequest<ScmDashboardInventoryHealth>('/scm/dashboard/inventory-health', {}, REGION_REQUEST_OPTIONS),
 };
-export default scmDashboardApi;

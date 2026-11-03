@@ -56,5 +56,3 @@ export function financeError(error: unknown): string {
   const message = value?.code == null ? undefined : MESSAGES[value.code];
   return message ?? value?.msg ?? value?.message ?? '财务操作失败，请重试。';
 }
-
-export default financeError;

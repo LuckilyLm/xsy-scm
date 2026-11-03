@@ -17,4 +17,3 @@ export const inventoryOutboundApi = {
   /** 删除待出库单（逻辑删）。 */
   delete: (id: Id) => postRequest<string>(`/scm/inventory/outbound/delete/${id}`, {}),
 };
-export default inventoryOutboundApi;

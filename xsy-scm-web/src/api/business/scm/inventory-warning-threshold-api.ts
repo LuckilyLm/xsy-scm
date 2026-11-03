@@ -18,4 +18,3 @@ export const inventoryWarningThresholdApi = {
   /** 删除（逻辑删）；删除后该 (仓库, SKU) 不再产生预警。 */
   delete: (id: Id) => postRequest<string>(`/scm/inventory/threshold/delete/${id}`, {}),
 };
-export default inventoryWarningThresholdApi;

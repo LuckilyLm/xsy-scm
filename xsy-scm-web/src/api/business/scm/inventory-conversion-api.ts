@@ -23,4 +23,3 @@ export const inventoryConversionApi = {
   /** 删除待审核单据（逻辑删）。 */
   delete: (id: Id) => postRequest<string>(`/scm/inventory/conversion/delete/${id}`, {}),
 };
-export default inventoryConversionApi;

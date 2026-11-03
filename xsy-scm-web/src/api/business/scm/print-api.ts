@@ -85,8 +85,7 @@ export const printApi = {
     }),
 
   /** 20:00 批量预览：按配送日期取当天全部已确认订单，不写打印记录。 */
-  batchPreview: (data: PrintBatchRequest, options?: RequestOptions) =>
-    postRequest<PrintBatchResult>('/scm/print/batch/preview', data, options),
+  batchPreview: (data: PrintBatchRequest, options?: RequestOptions) => postRequest<PrintBatchResult>('/scm/print/batch/preview', data, options),
 
   /** 20:00 批量打印：每单独立记录；失败项在结果中返回，可重试。 */
   batchPrint: (data: PrintBatchRequest) => printCommand<PrintBatchResult>('/scm/print/batch/print', data),
@@ -96,5 +95,3 @@ export const printApi = {
 
   recordQuery: (data: PrintRecordQuery, options?: RequestOptions) => postRequest<ScmPage<PrintRecord>>('/scm/print/record/query', data, options),
 };
-
-export default printApi;

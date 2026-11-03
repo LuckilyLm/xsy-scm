@@ -9,4 +9,3 @@ export const inventoryWarningApi = {
   /** 立即检查阈值并投递通知，只扫描有授权的仓库。 */
   scan: () => postRequest<InventoryWarningScanResult>('/scm/inventory/warning/scan', {}),
 };
-export default inventoryWarningApi;

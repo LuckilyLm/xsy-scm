@@ -6,4 +6,3 @@ export const inventoryMovementApi = {
   query: (data: InventoryMovementQuery, options?: RequestOptions) =>
     postRequest<ScmPage<InventoryMovement>>('/scm/inventory/movement/query', data, options),
 };
-export default inventoryMovementApi;

@@ -79,5 +79,3 @@ export const promotionApi = {
 
   /** 优惠冻结属于服务端订单确认事务，前端只选择优惠券，不单独提交活动或调用冻结接口。 */
 };
-
-export default promotionApi;

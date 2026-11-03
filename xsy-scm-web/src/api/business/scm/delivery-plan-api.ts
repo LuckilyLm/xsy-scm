@@ -11,4 +11,3 @@ export const deliveryPlanApi = {
   /** 放弃建议；不改线路。 */
   discard: (proposalId: Id, version: number) => postRequest<string>(`/scm/delivery/plan/proposal/${proposalId}/discard`, {version}),
 };
-export default deliveryPlanApi;

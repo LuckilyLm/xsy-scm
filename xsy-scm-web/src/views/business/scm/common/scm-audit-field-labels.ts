@@ -177,5 +177,3 @@ export const SCM_AUDIT_FIELD_LABELS: Record<string, string> = {
 export function auditFieldLabel(key: string): string {
   return SCM_AUDIT_FIELD_LABELS[key] ?? key;
 }
-
-export default SCM_AUDIT_FIELD_LABELS;

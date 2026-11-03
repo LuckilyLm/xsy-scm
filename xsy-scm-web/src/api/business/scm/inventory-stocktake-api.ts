@@ -51,5 +51,3 @@ export const inventoryStocktakeApi = {
   /** 导入 Excel，凭证校验通过后新建待确认盘点单（不写库存）。 */
   importStocktake,
 };
-
-export default inventoryStocktakeApi;

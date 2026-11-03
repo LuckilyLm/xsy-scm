@@ -92,5 +92,3 @@ export const purchaseOrderApi = {
   delete: (data: OrderVersionPayload) => postRequest<string>('/scm/purchase/delete', data),
   batchDelete: (orders: OrderVersionPayload[]) => postRequest<string>('/scm/purchase/batch-delete', {orders}),
 };
-
-export default purchaseOrderApi;

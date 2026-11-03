@@ -19,5 +19,3 @@ export function reportError(error: unknown): string {
   }
   return e?.msg ?? e?.message ?? '查询失败，请重试';
 }
-
-export default reportError;

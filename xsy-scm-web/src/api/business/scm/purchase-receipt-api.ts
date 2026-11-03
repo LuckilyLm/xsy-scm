@@ -35,4 +35,3 @@ export const purchaseReceiptApi = {
   /** 批量删除待确认收货单：`PurchaseReceiptBatchDeleteForm` 的元素要求 `id` + `version`。 */
   batchDelete: (receipts: ReceiptVersionPayload[]) => postRequest<string>('/scm/purchase/receipt/batch-delete', {receipts}),
 };
-export default purchaseReceiptApi;

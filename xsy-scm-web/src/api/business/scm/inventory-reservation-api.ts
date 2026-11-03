@@ -8,4 +8,3 @@ export const inventoryReservationApi = {
   /** 释放预留：占用归还可用量。 */
   release: (id: Id) => postRequest<string>(`/scm/inventory/reservation/release/${id}`, {}),
 };
-export default inventoryReservationApi;

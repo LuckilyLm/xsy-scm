@@ -29,4 +29,3 @@ export const purchaseDemandApi = {
   /** 把一条需求分配到某个采购行（`version` 是需求的版本）。 */
   allocate: (data: DemandAllocate) => purchaseCommand<Demand>('/scm/purchase/demand/allocate', data),
 };
-export default purchaseDemandApi;

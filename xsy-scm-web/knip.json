@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "vite": {
+    "config": ["vite.knip.config.ts"]
+  },
+  "paths": {
+    "/@/*": ["src/*"]
+  },
+  "entry": [
+    "src/main.ts",
+    "src/router/**/*.ts",
+    "src/views/**/route.ts",
+    "e2e/**/*.ts",
+    "e2e-chains/**/*.ts",
+    "test/**/*.mjs",
+    "playwright*.config.ts",
+    "vite.config.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx,vue}"],
+  "ignore": ["src/types/**/*.d.ts", "src/components/business/scm/report-note/index.vue", "src/views/business/scm/finance/use-finance-permission.ts"],
+  "ignoreDependencies": ["default-passive-events", "highlight.js", "lunar-javascript", "v-viewer", "less-loader", "rimraf"]
+}

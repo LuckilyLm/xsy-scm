@@ -32,4 +32,3 @@ export const warehouseApi = {
   /** 整体替换某员工的活动授权（scm:warehouse:scope:update）；空清单即全部回收。 */
   scopeUpdate: (data: WarehouseScopeUpdatePayload) => postRequest<string>('/scm/warehouse/scope/update', data),
 };
-export default warehouseApi;

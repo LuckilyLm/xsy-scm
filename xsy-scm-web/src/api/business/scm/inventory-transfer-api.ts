@@ -27,4 +27,3 @@ export const inventoryTransferApi = {
   /** 在途库存报表：把已发出的调拨单展开成明细；不引入虚拟在途仓，因此在途量不出现在库存余额页。 */
   inTransit: () => getRequest<InventoryInTransit[]>('/scm/inventory/transfer/in-transit', {}),
 };
-export default inventoryTransferApi;

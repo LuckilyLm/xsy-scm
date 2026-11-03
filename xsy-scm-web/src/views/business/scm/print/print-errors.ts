@@ -23,5 +23,3 @@ export function printError(error: unknown): string {
   }
   return e?.msg ?? e?.message ?? '操作失败，请重试';
 }
-
-export default printError;
