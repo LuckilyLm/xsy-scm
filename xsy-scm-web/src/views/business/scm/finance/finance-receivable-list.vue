@@ -41,7 +41,9 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">应收明细</div>
       <div class="smart-table-setting-block">
-        <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
+        <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData"
+          ><template #icon><DownloadOutlined /></template>导出</a-button
+        >
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_RECEIVABLE" :refresh="queryData" />
       </div>
     </a-row>

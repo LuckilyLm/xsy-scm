@@ -13,4 +13,12 @@ public class ScmBusinessException extends BusinessException {
         super(errorCode);
         this.errorCode = errorCode;
     }
+
+    /**
+     * 同一个错误码需要按上下文补充细节时使用；前端仍按 {@code errorCode} 判断处理方式。
+     */
+    public ScmBusinessException(ScmErrorCode errorCode, String message) {
+        super(message);
+        this.errorCode = errorCode;
+    }
 }

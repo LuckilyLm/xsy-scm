@@ -15,7 +15,8 @@ public class ScmExceptionHandler {
 
     @ExceptionHandler(ScmBusinessException.class)
     public ResponseDTO<Void> handle(ScmBusinessException exception) {
-        return ResponseDTO.error(exception.getErrorCode());
+        // 未补充细节时 message 就是错误码自带文案，结果与 ResponseDTO.error(errorCode) 一致。
+        return ResponseDTO.error(exception.getErrorCode(), exception.getMessage());
     }
 
     /**

@@ -149,7 +149,20 @@ class CustomerControllerTest {
 
         mvc.perform(get("/scm/customer/detail/9"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(40930));
+                .andExpect(jsonPath("$.code").value(40930))
+                .andExpect(jsonPath("$.msg").value("客户状态不可交易"));
+    }
+
+    @Test
+    @DisplayName("同码补充文案原样返回，前端可展示具体客户状态")
+    void passesThroughDetailMessage() throws Exception {
+        when(queryService.detail(9L))
+                .thenThrow(new ScmBusinessException(CUSTOMER_NOT_TRADABLE, "客户当前状态为黑名单，不可交易"));
+
+        mvc.perform(get("/scm/customer/detail/9"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(40930))
+                .andExpect(jsonPath("$.msg").value("客户当前状态为黑名单，不可交易"));
     }
 
     @Test

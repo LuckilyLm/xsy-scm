@@ -70,7 +70,9 @@
     <a-tab-pane key="overview" tab="采购概览">
       <a-row class="smart-table-btn-block">
         <div class="smart-table-operate-block">
-          <a-button v-privilege="PERM.EXPORT" :loading="overviewExport.exporting" @click="exportOverview">导出</a-button>
+          <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="overviewExport.exporting" @click="exportOverview"
+            ><template #icon><DownloadOutlined /></template>导出</a-button
+          >
         </div>
       </a-row>
       <a-row :gutter="[12, 12]">

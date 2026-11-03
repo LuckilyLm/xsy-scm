@@ -66,7 +66,9 @@
   <a-card size="small" :bordered="false" class="smart-margin-top10">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button v-privilege="PERM.EXPORT" :loading="dailyExport.exporting" @click="exportDaily">导出</a-button>
+        <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="dailyExport.exporting" @click="exportDaily"
+          ><template #icon><DownloadOutlined /></template>导出</a-button
+        >
       </div>
       <div class="smart-table-setting-block">
         <TableOperator

@@ -6,6 +6,7 @@ import com.xsy.scm.businesscategory.domain.entity.BusinessCategoryEntity;
 import com.xsy.scm.businesscategory.domain.form.BusinessCategoryUpdateForm;
 import com.xsy.scm.businesscategory.service.BusinessCategoryService;
 import com.xsy.scm.common.ScmW2PgITBase;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.domain.form.CustomerAddForm;
 import com.xsy.scm.customer.domain.form.CustomerDeleteForm;
 import com.xsy.scm.customer.domain.form.CustomerSkuVisibilityItemForm;
@@ -25,6 +26,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
 
@@ -204,7 +206,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
 
     @ParameterizedTest
     @ValueSource(strings = {"SUSPENDED", "BLACKLIST"})
-    @DisplayName("非 COOPERATING 状态不可交易（40930）")
+    @DisplayName("非 COOPERATING 状态不可交易（40930），错误文案带具体状态")
     void requireTradableRejectsEveryOtherStatus(String target) {
         Long id = service.add(form("T2"));
 
@@ -214,7 +216,12 @@ class CustomerServiceIT extends ScmW2PgITBase {
         status.setStatus(target);
         service.updateStatus(status);
 
-        expectCode(() -> service.requireTradable(id), 40930);
+        String statusLabel = "SUSPENDED".equals(target) ? "暂停合作" : "黑名单";
+        assertThatThrownBy(() -> service.requireTradable(id))
+                .isInstanceOfSatisfying(ScmBusinessException.class, e -> {
+                    assertThat(e.getErrorCode().getCode()).isEqualTo(40930);
+                    assertThat(e).hasMessage("客户当前状态为" + statusLabel + "，不可交易");
+                });
     }
 
     @Test

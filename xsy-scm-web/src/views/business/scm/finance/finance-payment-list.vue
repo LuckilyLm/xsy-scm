@@ -42,7 +42,9 @@
       <div class="smart-table-operate-block">付款明细</div>
       <div class="smart-table-setting-block">
         <a-button v-privilege="PERM.PAYMENT_ADD" type="primary" @click="openAdd">登记付款</a-button>
-        <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
+        <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData"
+          ><template #icon><DownloadOutlined /></template>导出</a-button
+        >
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_PAYMENT" :refresh="queryData" />
       </div>
     </a-row>

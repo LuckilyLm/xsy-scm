@@ -32,7 +32,6 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-alert v-if="error" :message="error" type="error" show-icon />
     <p v-if="result" class="resolve-meta">查询时间：{{ result.at }}</p>
     <a-table
       :columns="columns"
@@ -109,8 +108,7 @@ const customerId = ref<ScmId>(),
   at = ref<string>(),
   result = ref<ResolveResult>(),
   warehouseId = ref<ScmId>(),
-  loading = ref(false),
-  error = ref('');
+  loading = ref(false);
 let requestId = 0;
 type TrialRow = {skuId: ScmId; unitPrice: string | null; unpricedReason: string | null; calculationBasis: Record<string, unknown> | null};
 const trialOpen = ref(false),
@@ -230,10 +228,9 @@ async function resolve() {
   }
   const id = ++requestId;
   loading.value = true;
-  error.value = '';
   result.value = undefined;
   try {
-    // 试算失败由页内 Alert 提示，不然会被当成「没有价格」
+    // 失败原因用 toast 提示，避免页内 Alert 被误读成「没有价格」
     const r = await pricingApi.resolve(
       {
         customerId: customerId.value,
@@ -245,7 +242,7 @@ async function resolve() {
     );
     if (id === requestId) result.value = r.data;
   } catch (e) {
-    if (id === requestId) error.value = pricingError(e);
+    if (id === requestId) void message.error(pricingError(e));
   } finally {
     if (id === requestId) loading.value = false;
   }

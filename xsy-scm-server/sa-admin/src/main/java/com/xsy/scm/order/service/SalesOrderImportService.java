@@ -356,8 +356,10 @@ public class SalesOrderImportService {
             return null;
         }
         var customer = matches.getFirst();
-        if (!ScmCustomerStatusEnum.valueOf(customer.getStatus()).tradable()) {
-            addError(result, Math.max(note.customerRow(), 3), key, "收货单位", "CUSTOMER_NOT_TRADABLE", "客户状态不可交易");
+        var customerStatus = ScmCustomerStatusEnum.valueOf(customer.getStatus());
+        if (!customerStatus.tradable()) {
+            addError(result, Math.max(note.customerRow(), 3), key, "收货单位", "CUSTOMER_NOT_TRADABLE",
+                "客户当前状态为" + customerStatus.getDesc() + "，不可交易");
             return null;
         }
         return customer;

@@ -64,3 +64,13 @@
     margin-left: 4px;
   }
 }
+
+/* 导出按钮与右侧表格原生工具之间留 8–12px；只调按钮自身外边距 */
+.scm-module .smart-table-setting-block > .ant-btn.ant-btn-default.scm-export-btn {
+  margin-right: 10px;
+}
+
+/* 工具条本身用 flex gap:8px 时，按钮再留 4px，合计约 12px */
+.scm-module .scm-table-toolbar .smart-table-setting-block > .ant-btn.ant-btn-default.scm-export-btn {
+  margin-right: 4px;
+}

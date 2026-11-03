@@ -46,7 +46,9 @@
         <span class="posting-hint">虚拟单据：不生成应收应付，不参与核销</span>
       </div>
       <div class="smart-table-setting-block">
-        <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
+        <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData"
+          ><template #icon><DownloadOutlined /></template>导出</a-button
+        >
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_POSTING" :refresh="queryData" />
       </div>
     </a-row>

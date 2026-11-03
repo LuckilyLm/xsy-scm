@@ -34,7 +34,9 @@
           批量少收关单
         </a-button>
         <a-button :disabled="!selected.length" @click="batchPrint">批量打印</a-button>
-        <a-button v-privilege="'scm:purchase:query'" :loading="listExport.exporting" @click="onExport">导出</a-button>
+        <a-button class="scm-export-btn" v-privilege="'scm:purchase:query'" :loading="listExport.exporting" @click="onExport"
+          ><template #icon><DownloadOutlined /></template>导出</a-button
+        >
         <a-button v-privilege="'scm:purchase:query'" @click="exportSettingsOpen = true">导出设置</a-button>
       </div>
       <div class="smart-table-setting-block">

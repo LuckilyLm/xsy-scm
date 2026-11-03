@@ -49,7 +49,9 @@
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" :loading="movementExport.exporting" @click="exportMovement">导出</a-button>
+            <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="movementExport.exporting" @click="exportMovement"
+              ><template #icon><DownloadOutlined /></template>导出</a-button
+            >
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -152,7 +154,9 @@
       <a-card size="small" :bordered="false" :class="hasValueSummary ? 'smart-margin-top10' : ''">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" :loading="valueExport.exporting" @click="exportValue">导出</a-button>
+            <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="valueExport.exporting" @click="exportValue"
+              ><template #icon><DownloadOutlined /></template>导出</a-button
+            >
           </div>
           <div class="smart-table-setting-block">
             <TableOperator v-model="valueColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_VALUE" :refresh="loadValue" />

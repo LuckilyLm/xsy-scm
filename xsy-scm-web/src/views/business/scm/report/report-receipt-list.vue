@@ -59,7 +59,9 @@
         </div>
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" :loading="receiptExport.exporting" @click="exportReceipt">导出</a-button>
+            <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="receiptExport.exporting" @click="exportReceipt"
+              ><template #icon><DownloadOutlined /></template>导出</a-button
+            >
           </div>
           <div class="smart-table-setting-block">
             <TableOperator v-model="receiptColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_RECEIPT" :refresh="loadReceiptTab" />
@@ -162,7 +164,9 @@
         </div>
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" :loading="inboundExport.exporting" @click="exportInbound">导出</a-button>
+            <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="inboundExport.exporting" @click="exportInbound"
+              ><template #icon><DownloadOutlined /></template>导出</a-button
+            >
           </div>
           <div class="smart-table-setting-block">
             <TableOperator

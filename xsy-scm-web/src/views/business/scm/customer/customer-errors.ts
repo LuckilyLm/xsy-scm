@@ -14,8 +14,6 @@ export function customerError(error: unknown): string {
   if (code === 40939) {
     return '客户已被业务数据引用，不能删除';
   }
-  if (code === 40930) {
-    return '客户当前状态不可交易';
-  }
+  // 40930 的文案由后端按客户实际状态生成（黑名单 / 暂停合作），这里不要覆盖。
   return response?.data?.msg || response?.message || '操作失败，请重试';
 }

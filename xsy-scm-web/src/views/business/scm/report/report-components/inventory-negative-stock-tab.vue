@@ -15,7 +15,9 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-if="canViewCost" @click="historyModal?.open()">月度留存</a-button>
-        <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')">导出</a-button>
+        <a-button class="scm-export-btn" v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')"
+          ><template #icon><DownloadOutlined /></template>导出</a-button
+        >
       </div>
       <div class="smart-table-setting-block">
         <TableOperator

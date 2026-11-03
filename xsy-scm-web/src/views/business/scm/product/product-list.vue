@@ -54,7 +54,9 @@
         <a-space>
           <a-button v-privilege="'scm:product:add'" type="primary" @click="drawer?.open()">新增商品</a-button>
           <a-button v-privilege="'scm:product:import'" @click="importModal?.show()">导入</a-button>
-          <a-button v-privilege="'scm:product:export'" @click="openExport">导出</a-button>
+          <a-button class="scm-export-btn" v-privilege="'scm:product:export'" @click="openExport"
+            ><template #icon><DownloadOutlined /></template>导出</a-button
+          >
           <!-- 批量操作只在选中记录后出现，避免常驻工具栏过挤 -->
           <template v-if="selectedRows.length">
             <a-button v-privilege="'scm:product:batch'" @click="batch?.open('STATUS', selectedItems)">批量改状态</a-button>
@@ -200,13 +202,7 @@ import type {
   ProductTagRef,
   ShelfStatus,
 } from '/@/types/business/scm/product';
-import {
-  priceRange,
-  PRODUCT_TYPE_ENUM,
-  SHELF_STATUS_ENUM,
-  STORAGE_METHOD_ENUM,
-  YES_NO_ENUM,
-} from '/@/constants/business/scm/product-const';
+import {priceRange, PRODUCT_TYPE_ENUM, SHELF_STATUS_ENUM, STORAGE_METHOD_ENUM, YES_NO_ENUM} from '/@/constants/business/scm/product-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_COLUMN_WIDTH} from '/@/views/business/scm/common/scm-column';
 import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';

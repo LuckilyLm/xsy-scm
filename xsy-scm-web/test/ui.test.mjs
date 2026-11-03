@@ -758,6 +758,43 @@ import ts from 'typescript';
       assert.match(page, /class="smart-table-btn-block scm-table-toolbar"/);
     }
   });
+
+  test('表格导出按钮统一使用 scm-export-btn 与下载图标', () => {
+    const ACTION_STYLE = source('../src/theme/scm/action.less');
+    const root = fileURLToPath(new URL('../src/views/business/scm', import.meta.url));
+    const files = [];
+    const walk = (dir) => {
+      for (const entry of readdirSync(dir, {withFileTypes: true})) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (entry.name.endsWith('.vue') && entry.name !== 'product-export-modal.vue') files.push(readFileSync(full, 'utf8'));
+      }
+    };
+    walk(root);
+
+    let exportButtons = 0;
+    for (const page of files) {
+      // 只看工具栏普通按钮；行内 link 按钮和弹窗主按钮不套用工具栏样式。
+      for (const match of page.matchAll(/<a-button\b(?![^>]*\btype=)[^>]*>(?:<template #icon>[\s\S]*?<\/template>)?\s*导出\s*<\/a-button\s*>/g)) {
+        exportButtons++;
+        assert.match(match[0], /class="scm-export-btn"/, '导出按钮缺统一样式类');
+        assert.match(match[0], /DownloadOutlined/, '导出按钮缺下载图标');
+      }
+    }
+    assert.ok(exportButtons >= 25, `表格导出按钮数量异常：${exportButtons}`);
+
+    assert.match(ACTION_STYLE, /\.scm-module \.admin-layout \.ant-btn\.ant-btn-default\.scm-export-btn\s*\{/);
+    assert.match(ACTION_STYLE, /height:\s*32px/);
+    assert.match(ACTION_STYLE, /padding:\s*0 12px/);
+    assert.match(ACTION_STYLE, /border:\s*1px solid #b7d9c5/);
+    assert.match(ACTION_STYLE, /border-radius:\s*6px/);
+    assert.match(ACTION_STYLE, /font-size:\s*13px/);
+    assert.match(ACTION_STYLE, /font-weight:\s*500/);
+    assert.match(ACTION_STYLE, /color:\s*#167c45/);
+    assert.match(ACTION_STYLE, /background:\s*#f0f8f3/);
+    assert.match(ACTION_STYLE, /background-color 0\.15s/);
+    assert.match(FILTER_STYLE, /\.smart-table-setting-block > \.ant-btn\.ant-btn-default\.scm-export-btn[\s\S]{0,80}margin-right:\s*10px/);
+  });
 }
 
 // ---------------------------------------------------------------- 来源：scm-list-layout-contract.test.mjs

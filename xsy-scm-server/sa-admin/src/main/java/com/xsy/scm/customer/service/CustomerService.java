@@ -142,8 +142,10 @@ public class CustomerService {
 
     public CustomerEntity requireTradable(Long customerId) {
         CustomerEntity entity = require(customerId);
-        if (!ScmCustomerStatusEnum.valueOf(entity.getStatus()).tradable()) {
-            throw new ScmBusinessException(CUSTOMER_NOT_TRADABLE);
+        ScmCustomerStatusEnum status = ScmCustomerStatusEnum.valueOf(entity.getStatus());
+        if (!status.tradable()) {
+            // 状态名直接进错误文案：前端不必再猜是黑名单还是暂停合作。
+            throw new ScmBusinessException(CUSTOMER_NOT_TRADABLE, "客户当前状态为" + status.getDesc() + "，不可交易");
         }
         return entity;
     }

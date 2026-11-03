@@ -62,10 +62,11 @@ public class SalesOrderPasteService {
             result.setErrorRows(1);
             return result;
         }
-        if (!ScmCustomerStatusEnum.valueOf(customer.getStatus()).tradable()) {
+        var customerStatus = ScmCustomerStatusEnum.valueOf(customer.getStatus());
+        if (!customerStatus.tradable()) {
             var row = new SalesOrderPastePreviewRowVO();
-            row.getErrors()
-                .add(new SalesOrderImportErrorVO(0, customer.getName(), "客户", "CUSTOMER_NOT_TRADABLE", "客户状态不可交易"));
+            row.getErrors().add(new SalesOrderImportErrorVO(0, customer.getName(), "客户", "CUSTOMER_NOT_TRADABLE",
+                "客户当前状态为" + customerStatus.getDesc() + "，不可交易"));
             result.getRows().add(row);
             result.setErrorRows(1);
             return result;

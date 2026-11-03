@@ -95,6 +95,16 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     assert.match(pricingError({code: 40949}), /不可售/);
   });
 
+  test('pricing error reads the envelope from AxiosResponse, not only the raw object', async () => {
+    const {pricingError} = await import('../src/views/business/scm/pricing/pricing-errors.ts');
+    // 拦截器 reject 的是整个 AxiosResponse：只读 error.code/msg 会落成「请求失败，请重试」
+    // 40930 的文案由后端带上具体状态，前端不得用固定文案覆盖
+    assert.equal(pricingError({data: {code: 40930, msg: '客户当前状态为黑名单，不可交易'}, status: 200}), '客户当前状态为黑名单，不可交易');
+    assert.equal(pricingError({data: {code: 0, msg: '自定义失败原因'}, status: 200}), '自定义失败原因');
+    assert.equal(pricingError({response: {data: {code: 40933, msg: 'overlap'}}}), '该客户与商品规格的协议价有效期发生重叠');
+    assert.equal(pricingError(new Error('Network Error')), 'Network Error');
+  });
+
   // ------------------------------------------------------------------ 价格中心展示
 
   test('协议价抽屉：单价用 InputNumber + ¥，宽度走 foundation 分级', () => {
@@ -160,5 +170,8 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     // 规格编码不展示，只保留规格名称
     assert.doesNotMatch(page, /title: '商品规格编码'/);
     assert.doesNotMatch(page, /record\.skuCode/);
+    // 失败原因走 toast；页内一行 Alert 会被误读成「没有价格」
+    assert.doesNotMatch(page, /<a-alert/);
+    assert.match(page, /message\.error\(pricingError\(e\)\)/);
   });
 }
