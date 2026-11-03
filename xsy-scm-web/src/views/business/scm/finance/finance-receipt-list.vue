@@ -45,7 +45,7 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+    <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">收款明细</div>
       <div class="smart-table-setting-block">
         <a-button v-privilege="PERM.RECEIPT_ADD" type="primary" @click="openAdd">登记收款</a-button>

@@ -26,7 +26,7 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+    <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:purchase:add'" @click="drawer?.open()">新建采购单</a-button>
         <a-button danger v-privilege="'scm:purchase:delete'" :disabled="!submittedSelected.length" @click="batchDelete"> 批量删除 </a-button>

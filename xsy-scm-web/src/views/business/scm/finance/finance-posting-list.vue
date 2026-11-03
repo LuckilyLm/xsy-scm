@@ -40,7 +40,7 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+    <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="PERM.POSTING_ADD" @click="openCreate">新建过账</a-button>
         <span class="posting-hint">虚拟单据：不生成应收应付，不参与核销</span>

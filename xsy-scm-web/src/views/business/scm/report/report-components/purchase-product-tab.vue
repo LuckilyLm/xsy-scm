@@ -1,6 +1,6 @@
 <template>
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+    <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
         <a-button class="scm-export-btn" v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')"
           ><template #icon><DownloadOutlined /></template>导出</a-button

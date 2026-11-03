@@ -64,7 +64,7 @@
   <ReportLineChart class="smart-margin-top10" title="每日金额趋势" :x-axis="trendAxis" :series="trendSeries" />
 
   <a-card size="small" :bordered="false" class="smart-margin-top10">
-    <a-row class="smart-table-btn-block">
+    <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
         <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="dailyExport.exporting" @click="exportDaily"
           ><template #icon><DownloadOutlined /></template>导出</a-button

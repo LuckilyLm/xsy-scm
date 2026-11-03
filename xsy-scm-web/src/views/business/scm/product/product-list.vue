@@ -50,7 +50,7 @@
       </a-row>
     </a-form>
     <a-card size="small" :bordered="false">
-      <a-row class="smart-table-btn-block" justify="space-between" align="middle">
+      <a-row class="smart-table-btn-block scm-table-toolbar" justify="space-between" align="middle">
         <a-space>
           <a-button v-privilege="'scm:product:add'" type="primary" @click="drawer?.open()">新增商品</a-button>
           <a-button v-privilege="'scm:product:import'" @click="importModal?.show()">导入</a-button>

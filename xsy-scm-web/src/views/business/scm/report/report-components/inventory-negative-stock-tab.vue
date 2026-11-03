@@ -12,7 +12,7 @@
     </a-col>
   </a-row>
   <a-card size="small" :bordered="false" class="smart-margin-top10">
-    <a-row class="smart-table-btn-block">
+    <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
         <a-button v-if="canViewCost" @click="historyModal?.open()">月度留存</a-button>
         <a-button class="scm-export-btn" v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')"

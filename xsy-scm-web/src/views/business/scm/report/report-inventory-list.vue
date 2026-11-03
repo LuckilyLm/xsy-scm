@@ -47,7 +47,7 @@
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
     <a-tab-pane key="movement" tab="库存流水">
       <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
+        <a-row class="smart-table-btn-block scm-table-toolbar">
           <div class="smart-table-operate-block">
             <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="movementExport.exporting" @click="exportMovement"
               ><template #icon><DownloadOutlined /></template>导出</a-button
@@ -152,7 +152,7 @@
         </a-col>
       </a-row>
       <a-card size="small" :bordered="false" :class="hasValueSummary ? 'smart-margin-top10' : ''">
-        <a-row class="smart-table-btn-block">
+        <a-row class="smart-table-btn-block scm-table-toolbar">
           <div class="smart-table-operate-block">
             <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="valueExport.exporting" @click="exportValue"
               ><template #icon><DownloadOutlined /></template>导出</a-button
@@ -233,7 +233,7 @@
 
     <a-tab-pane key="flow" tab="收发存（数量版）">
       <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
+        <a-row class="smart-table-btn-block scm-table-toolbar">
           <div class="smart-table-operate-block"></div>
           <div class="smart-table-setting-block">
             <TableOperator v-model="flowColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_FLOW_SUMMARY" :refresh="loadFlow" />

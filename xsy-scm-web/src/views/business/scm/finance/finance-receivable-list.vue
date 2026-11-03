@@ -38,7 +38,7 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+    <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">应收明细</div>
       <div class="smart-table-setting-block">
         <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData"

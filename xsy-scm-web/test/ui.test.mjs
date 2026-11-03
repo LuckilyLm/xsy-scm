@@ -780,20 +780,25 @@ import ts from 'typescript';
         assert.match(match[0], /class="scm-export-btn"/, '导出按钮缺统一样式类');
         assert.match(match[0], /DownloadOutlined/, '导出按钮缺下载图标');
       }
+      // 导出按钮所在的工具栏必须走 flex gap，间距不再靠按钮自身外边距硬凑。
+      if (page.includes('scm-export-btn')) {
+        assert.match(page, /class="smart-table-btn-block scm-table-toolbar"/, '含导出按钮的工具栏未使用 scm-table-toolbar');
+      }
     }
     assert.ok(exportButtons >= 25, `表格导出按钮数量异常：${exportButtons}`);
 
     assert.match(ACTION_STYLE, /\.scm-module \.admin-layout \.ant-btn\.ant-btn-default\.scm-export-btn\s*\{/);
     assert.match(ACTION_STYLE, /height:\s*32px/);
     assert.match(ACTION_STYLE, /padding:\s*0 12px/);
-    assert.match(ACTION_STYLE, /border:\s*1px solid #b7d9c5/);
+    assert.match(ACTION_STYLE, /border:\s*1px solid var\(--scm-primary-border/);
     assert.match(ACTION_STYLE, /border-radius:\s*6px/);
     assert.match(ACTION_STYLE, /font-size:\s*13px/);
     assert.match(ACTION_STYLE, /font-weight:\s*500/);
-    assert.match(ACTION_STYLE, /color:\s*#167c45/);
-    assert.match(ACTION_STYLE, /background:\s*#f0f8f3/);
+    assert.match(ACTION_STYLE, /color:\s*var\(--scm-primary/);
+    assert.match(ACTION_STYLE, /background:\s*var\(--scm-primary-bg/);
     assert.match(ACTION_STYLE, /background-color 0\.15s/);
-    assert.match(FILTER_STYLE, /\.smart-table-setting-block > \.ant-btn\.ant-btn-default\.scm-export-btn[\s\S]{0,80}margin-right:\s*10px/);
+    assert.match(FILTER_STYLE, /\.smart-table-setting-block\s*\{[\s\S]*?> \.ant-btn\s*\{[\s\S]*?margin-left:\s*0/);
+    assert.doesNotMatch(FILTER_STYLE, /scm-export-btn[\s\S]{0,80}margin-right:\s*10px/, '导出按钮不应再单独设置右外边距');
   });
 }
 

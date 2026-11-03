@@ -57,7 +57,7 @@
             >
           </template>
         </div>
-        <a-row class="smart-table-btn-block">
+        <a-row class="smart-table-btn-block scm-table-toolbar">
           <div class="smart-table-operate-block">
             <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="receiptExport.exporting" @click="exportReceipt"
               ><template #icon><DownloadOutlined /></template>导出</a-button
@@ -162,7 +162,7 @@
             </template>
           </template>
         </div>
-        <a-row class="smart-table-btn-block">
+        <a-row class="smart-table-btn-block scm-table-toolbar">
           <div class="smart-table-operate-block">
             <a-button class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="inboundExport.exporting" @click="exportInbound"
               ><template #icon><DownloadOutlined /></template>导出</a-button
@@ -247,7 +247,7 @@
             <span>当前状态不受业务日期筛选影响</span>
           </template>
         </div>
-        <a-row class="smart-table-btn-block">
+        <a-row class="smart-table-btn-block scm-table-toolbar">
           <div class="smart-table-operate-block"></div>
           <div class="smart-table-setting-block">
             <TableOperator v-model="pendingColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PENDING_PUTAWAY" :refresh="loadPendingTab" />
