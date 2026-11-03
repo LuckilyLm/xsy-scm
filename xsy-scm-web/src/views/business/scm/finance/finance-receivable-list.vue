@@ -3,9 +3,9 @@
     <a-form class="smart-query-form" layout="inline" @submit.prevent>
       <a-row class="smart-query-form-row">
         <a-form-item label="业务日期">
-          <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" />
+          <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" aria-label="业务开始日期" />
           <span class="date-separator">至</span>
-          <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" />
+          <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" aria-label="业务结束日期" />
         </a-form-item>
         <a-form-item label="客户">
           <a-select
@@ -60,6 +60,7 @@
         </div>
         <a-tag v-if="record.overAppliedAmount && record.overAppliedAmount !== '0.0000'" color="orange">超额核销待处理</a-tag>
       </div>
+      <a-empty v-if="!page.loading.value && !page.tableData.value.length" description="暂无应收记录" />
     </div>
     <a-table
       id="scm-finance-receivable-table"

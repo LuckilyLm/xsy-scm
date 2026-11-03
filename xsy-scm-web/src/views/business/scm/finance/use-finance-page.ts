@@ -1,4 +1,4 @@
-import {reactive, ref, shallowRef} from 'vue';
+import {reactive, ref, shallowRef, type Ref, type ShallowRef} from 'vue';
 import type {RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {FinancePageQuery} from './finance-types';
@@ -6,10 +6,20 @@ import {financeError} from './finance-errors';
 
 export type FinancePageExport<Q> = (query: Omit<Q, 'pageNum' | 'pageSize'>) => Promise<unknown>;
 
+export interface FinancePageState<T, Q> {
+  tableData: ShallowRef<T[]>;
+  total: Ref<number>;
+  loading: Ref<boolean>;
+  exporting: Ref<boolean>;
+  error: Ref<string>;
+  queryData: (query: Q) => Promise<void>;
+  exportData: (query: Q) => Promise<void>;
+}
+
 export function useFinancePage<T, Q extends FinancePageQuery>(
   queryApi: (query: Q, options?: RequestOptions) => Promise<ScmResponse<ScmPage<T>>>,
   exportApi: FinancePageExport<Q>
-) {
+): FinancePageState<T, Q> {
   const tableData = shallowRef<T[]>([]);
   const total = ref(0);
   const loading = ref(false);
@@ -17,7 +27,7 @@ export function useFinancePage<T, Q extends FinancePageQuery>(
   const error = ref('');
   const queryState = reactive({requestId: 0});
 
-  async function queryData(query: Q) {
+  async function queryData(query: Q): Promise<void> {
     const requestId = ++queryState.requestId;
     loading.value = true;
     error.value = '';
@@ -35,7 +45,7 @@ export function useFinancePage<T, Q extends FinancePageQuery>(
     }
   }
 
-  async function exportData(query: Q) {
+  async function exportData(query: Q): Promise<void> {
     exporting.value = true;
     error.value = '';
     const {pageNum: _pageNum, pageSize: _pageSize, ...filters} = query;

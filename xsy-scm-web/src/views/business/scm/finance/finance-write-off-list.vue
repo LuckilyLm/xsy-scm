@@ -2,9 +2,9 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="核销日期">
-        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" />
+        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" aria-label="核销开始日期" />
         <span class="date-separator">至</span>
-        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" />
+        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" aria-label="核销结束日期" />
       </a-form-item>
       <a-form-item label="资金类型"
         ><a-select
@@ -63,11 +63,13 @@
         <template v-else-if="column.dataIndex === 'sourceNo'">
           <span v-if="record.sourceNo" class="scm-mono">{{ record.sourceNo }}</span>
           <span v-else>—</span>
-          <a
+          <a-button
             v-if="record.sourceType === 'BALANCE_MOVEMENT'"
+            type="link"
+            size="small"
             v-privilege="'scm:balance:movement:query'"
             @click="movementDetail?.open({movementId: record.sourceId})"
-            >来源流水</a
+            >来源流水</a-button
           >
         </template>
         <template v-else-if="column.dataIndex === 'targetName'">{{ record.targetName || '—' }}</template>
