@@ -23,8 +23,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 商城配送仓管理端配置。
+ *
+ * 路径必须落在 {@code /scm/mall-admin/**}：{@code /scm/mall/**} 归 MallCustomerInterceptor 管，
+ * 员工令牌会被判成非客户身份（30007），页面会提示「您没有登录」。
+ */
 @RestController
-@RequestMapping("/scm/mall/warehouse/admin")
+@RequestMapping("/scm/mall-admin/warehouse")
 @RequiredArgsConstructor
 public class MallWarehouseAdminController {
     private final MallWarehouseAdminService adminService;

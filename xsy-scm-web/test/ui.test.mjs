@@ -98,6 +98,7 @@ import ts from 'typescript';
 {
   const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   const api = read('../src/api/business/scm/mall-home-api.ts');
+  const warehouseApi = read('../src/api/business/scm/mall-warehouse-api.ts');
   const page = read('../src/views/business/scm/mall/mall-home-layout.vue');
 
   test('首页草稿、发布和回滚提交各自的乐观锁版本与原因', () => {
@@ -124,6 +125,12 @@ import ts from 'typescript';
     // 员工令牌打 /scm/mall/** 会被 MallCustomerInterceptor 判成非客户身份（30007）
     assert.doesNotMatch(api, /['"`]\/scm\/mall\//);
     assert.match(api, /\/scm\/mall-admin\/home\/draft/);
+  });
+
+  test('商城区县配送仓管理端同样走后台前缀', () => {
+    // 仓库管理 →「商城配送区县」也要调管理端接口，落在 /scm/mall/ 下会被客户拦截器提示未登录
+    assert.doesNotMatch(warehouseApi, /['"`]\/scm\/mall\//);
+    assert.match(warehouseApi, /\/scm\/mall-admin\/warehouse\//);
   });
 }
 

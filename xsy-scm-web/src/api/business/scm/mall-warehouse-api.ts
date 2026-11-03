@@ -6,10 +6,10 @@ export interface MallWarehouseRule {
   priority: number;
 }
 export const mallWarehouseAdminApi = {
-  options: () => getRequest<MallWarehouseRule[]>('/scm/mall/warehouse/admin/options', {}),
-  districtRules: (districtCode: number) => getRequest<MallWarehouseRule[]>('/scm/mall/warehouse/admin/district-rules', {districtCode}),
+  options: () => getRequest<MallWarehouseRule[]>('/scm/mall-admin/warehouse/options', {}),
+  districtRules: (districtCode: number) => getRequest<MallWarehouseRule[]>('/scm/mall-admin/warehouse/district-rules', {districtCode}),
   saveDistrictRule: (form: {districtCode: number; warehouseId: string | number; priority: number}) =>
-    request({url: '/scm/mall/warehouse/admin/district-rules', method: 'put', data: form}),
+    request({url: '/scm/mall-admin/warehouse/district-rules', method: 'put', data: form}),
   removeDistrictRule: (districtCode: number, warehouseId: string | number) =>
-    request({url: `/scm/mall/warehouse/admin/district-rules/${districtCode}/${warehouseId}`, method: 'delete'}),
+    request({url: `/scm/mall-admin/warehouse/district-rules/${districtCode}/${warehouseId}`, method: 'delete'}),
 };
