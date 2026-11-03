@@ -1548,7 +1548,8 @@ import ts from 'typescript';
       'pricing/time-price-list.vue': 'form.unitPrice',
       'pricing/components/agreement-price-form-drawer.vue': 'form.unitPriceInput',
       'product/components/product-sku-editable-table.vue': 'sku.marketPrice',
-      'order/components/order-item-editable-table.vue': 'record.unitPrice',
+      // 人工改价改为操作列弹窗录入，绑定的是弹窗内的草稿价，精度口径不变
+      'order/components/order-item-editable-table.vue': 'overridePrice',
       'promotion/promotion-activity-list.vue': 'rule.specialPrice',
       'promotion/promotion-coupon-list.vue': 'form.discountValueInput',
     };

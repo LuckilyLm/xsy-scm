@@ -4,6 +4,7 @@
     :open="visible"
     :width="scmDrawerWidth('xl')"
     :mask-closable="!saving"
+    :keyboard="!saving && !itemModalOpen"
     @close="closeDrawer"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon />
@@ -92,7 +93,14 @@
             </a-form-item>
           </a-col>
         </a-row>
-        <ItemTable ref="itemTableRef" :items="form.items" :customer-id="form.customerId" :order-id="form.orderId" @price="preview" />
+        <ItemTable
+          ref="itemTableRef"
+          :items="form.items"
+          :customer-id="form.customerId"
+          :order-id="form.orderId"
+          @price="preview"
+          @modal-open="itemModalOpen = $event"
+        />
         <div class="item-actions">
           <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
         </div>
@@ -132,6 +140,8 @@ const form = ref<Order>(newOrder()),
   saving = ref(false),
   pricing = ref(false),
   error = ref(''),
+  /** 明细弹窗打开时接管 Esc，避免直接触发抽屉关闭确认。 */
+  itemModalOpen = ref(false),
   originals = ref<{value: Id; label: string}[]>([]);
 const exchangeReturnId = ref<Id>();
 /** 关闭前拦截未保存修改；加载失败时基线为空，不拦截。 */
