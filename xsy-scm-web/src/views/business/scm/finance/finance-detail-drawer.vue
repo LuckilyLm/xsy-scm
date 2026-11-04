@@ -9,8 +9,8 @@
           <h3>单据概要</h3>
           <a-descriptions bordered size="small" :column="{xs: 1, sm: 2}">
             <a-descriptions-item label="单号">{{ headerNo }}</a-descriptions-item>
-            <a-descriptions-item label="方向">{{ entryTypeText(header.entryType) }}</a-descriptions-item>
-            <a-descriptions-item label="业务时点">{{ dateTimeText(header.eventAt ?? header.receivedAt ?? header.paidAt) }}</a-descriptions-item>
+            <a-descriptions-item label="记录类型">{{ entryTypeText(header.entryType) }}</a-descriptions-item>
+            <a-descriptions-item label="业务时间">{{ dateTimeText(header.eventAt ?? header.receivedAt ?? header.paidAt) }}</a-descriptions-item>
             <a-descriptions-item label="原因">{{ header.reason || '—' }}</a-descriptions-item>
             <a-descriptions-item v-if="header.reverseOfNo" label="原单号">{{ header.reverseOfNo }}</a-descriptions-item>
           </a-descriptions>
@@ -19,7 +19,7 @@
         <section class="detail-section">
           <h3>对象信息</h3>
           <a-descriptions bordered size="small" :column="{xs: 1, sm: 2}">
-            <a-descriptions-item label="往来方">{{ partyName }}</a-descriptions-item>
+            <a-descriptions-item label="客户或供应商">{{ partyName }}</a-descriptions-item>
             <a-descriptions-item v-if="header.settlementCustomerName" label="单据结算方">{{ header.settlementCustomerName }}</a-descriptions-item>
             <a-descriptions-item label="关联单号">{{ linkedNo }}</a-descriptions-item>
             <a-descriptions-item v-if="isAccount" label="到期日">{{ header.dueDate || '未设置（不推算历史账期）' }}</a-descriptions-item>
@@ -28,7 +28,7 @@
           <h3 class="detail-section--nested">金额组成</h3>
           <div class="amount-grid scm-summary">
             <div class="amount-cell scm-summary__item">
-              <span class="amount-cell__label scm-summary__label">{{ isAccount ? '净应收 / 净应付' : '有效金额' }}</span>
+              <span class="amount-cell__label scm-summary__label">{{ isAccount ? (isReceivable ? '扣减后应收' : '扣减后应付') : '有效金额' }}</span>
               <span class="amount-cell__value scm-summary__value scm-money">{{
                 moneyText(isAccount ? header.netAmount : header.effectiveAmount)
               }}</span>
@@ -38,13 +38,13 @@
               <span class="amount-cell__value scm-summary__value scm-money">{{ moneyText(header.amount) }}</span>
             </div>
             <div class="amount-cell scm-summary__item">
-              <span class="amount-cell__label scm-summary__label">已核销</span>
+              <span class="amount-cell__label scm-summary__label">已抵扣</span>
               <span class="amount-cell__value scm-summary__value scm-money">{{
                 moneyText(isAccount ? header.writtenOffAmount : header.usedAmount)
               }}</span>
             </div>
             <div class="amount-cell scm-summary__item">
-              <span class="amount-cell__label scm-summary__label">{{ isAccount ? '未核销' : '待核销' }}</span>
+              <span class="amount-cell__label scm-summary__label">{{ isAccount ? (isReceivable ? '剩余待收' : '剩余待付') : '待抵扣金额' }}</span>
               <span class="amount-cell__value scm-summary__value scm-money">{{
                 moneyText(isAccount ? header.openAmount : header.pendingWriteOffAmount)
               }}</span>
@@ -58,12 +58,12 @@
               class="over-applied"
               type="warning"
               show-icon
-              :message="`超额核销 ${moneyText(header.overAppliedAmount)}，不代表已退款或钱包余额。`"
+              :message="`抵扣超额 ${moneyText(header.overAppliedAmount)}，不代表已退款或钱包余额。`"
             />
-            <a-tag v-if="isReceivable" color="orange">超额核销待处理</a-tag>
+            <a-tag v-if="isReceivable" color="orange">抵扣超额待处理</a-tag>
           </div>
           <div v-if="header.netAmount?.startsWith('-')" class="over-applied-row">
-            <a-alert class="over-applied" type="error" show-icon message="净应收为负数，请结合红字和核销记录核对。" />
+            <a-alert class="over-applied" type="error" show-icon message="扣减后应收为负数，请结合扣减记录和账款抵扣记录核对。" />
           </div>
         </section>
 
@@ -104,14 +104,14 @@
         </section>
 
         <section class="detail-section">
-          <h3>核销 / 红字关系</h3>
+          <h3>抵扣与扣减记录</h3>
           <a-empty
             v-if="!relationText && !writeOffs.length && !redEntries.length"
-            description="暂无核销或红字关系"
+            description="暂无抵扣或扣减记录"
             :image="Empty.PRESENTED_IMAGE_SIMPLE"
           />
           <a-alert v-if="relationText" class="relation-alert" type="info" show-icon :message="relationText" />
-          <h4 v-if="writeOffs.length" class="detail-subtitle">核销记录</h4>
+          <h4 v-if="writeOffs.length" class="detail-subtitle">账款抵扣记录</h4>
           <LocalTable
             :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
             bordered
@@ -127,7 +127,7 @@
               <span v-else-if="column.dataIndex === 'entryType'">{{ entryTypeText(record.entryType) }}</span>
             </template>
           </LocalTable>
-          <h4 v-if="redEntries.length" class="detail-subtitle">红字关联</h4>
+          <h4 v-if="redEntries.length" class="detail-subtitle">扣减记录</h4>
           <LocalTable
             :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
             bordered
@@ -257,7 +257,7 @@ const relationText = computed(() => {
   }
   if ('reversal' in detail.value && detail.value.reversal) {
     const row = detail.value.reversal;
-    return `反向记录：${('receiptNo' in row ? row.receiptNo : row.paymentNo) ?? '—'}`;
+    return `撤销记录：${('receiptNo' in row ? row.receiptNo : row.paymentNo) ?? '—'}`;
   }
   return '';
 });
@@ -269,9 +269,9 @@ const receivableColumns: TableColumnsType<FinanceReceivableItem> = [
   {title: '数量', dataIndex: 'quantity', width: 112},
   {title: '单价', dataIndex: 'unitPrice', width: 136},
   // 毛额 − 优惠 = 净额
-  {title: '毛额', dataIndex: 'grossAmount', width: 148},
+  {title: '优惠前金额', dataIndex: 'grossAmount', width: 148},
   {title: '订单优惠', dataIndex: 'discountAmount', width: 148},
-  {title: '净额', dataIndex: 'amount', width: 148},
+  {title: '优惠后金额', dataIndex: 'amount', width: 148},
 ];
 const payableColumns: TableColumnsType<FinancePayableItem> = [
   {title: '来源', dataIndex: 'sourceType', width: 140, align: 'center'},
@@ -282,24 +282,24 @@ const payableColumns: TableColumnsType<FinancePayableItem> = [
 ];
 const redColumns: TableColumnsType<FinanceReceivable | FinancePayable> = [
   {
-    title: '红字单号',
+    title: '扣减单号',
     dataIndex: 'receivableNo',
     width: 190,
     customRender: ({record}) => ('receivableNo' in record ? record.receivableNo : record.payableNo),
   },
   {title: '金额', dataIndex: 'amount', width: 148},
   {title: '原因', dataIndex: 'reason', width: 240, ellipsis: true},
-  {title: '业务时点', dataIndex: 'eventAt', width: 170},
+  {title: '业务时间', dataIndex: 'eventAt', width: 170},
 ];
 
 function redEntryKey(row: FinanceReceivable | FinancePayable) {
   return 'receivableId' in row ? row.receivableId : row.payableId;
 }
 const writeOffColumns: TableColumnsType<FinanceWriteOff> = [
-  {title: '核销单号', dataIndex: 'writeOffNo', width: 190},
-  {title: '资金单', dataIndex: 'sourceNo', width: 180},
-  {title: '目标单', dataIndex: 'targetNo', width: 180},
-  {title: '方向', dataIndex: 'entryType', width: 90, align: 'center'},
+  {title: '抵扣单号', dataIndex: 'writeOffNo', width: 190},
+  {title: '收付款单', dataIndex: 'sourceNo', width: 180},
+  {title: '待结算账单', dataIndex: 'targetNo', width: 180},
+  {title: '记录类型', dataIndex: 'entryType', width: 90, align: 'center'},
   {title: '金额', dataIndex: 'amount', width: 148},
   {title: '原因', dataIndex: 'reason', width: 240},
 ];

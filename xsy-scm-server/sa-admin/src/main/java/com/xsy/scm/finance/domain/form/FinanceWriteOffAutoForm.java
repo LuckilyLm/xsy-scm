@@ -14,10 +14,10 @@ import lombok.Data;
 @Data
 public class FinanceWriteOffAutoForm {
 
-    @NotBlank(message = "核销资金类型不能为空")
+    @NotBlank(message = "用于抵扣的收付款类型不能为空")
     private String sourceType;
 
-    @NotNull(message = "核销资金单不能为空")
-    @Positive(message = "核销资金单编号必须大于0")
+    @NotNull(message = "用于抵扣的收付款单不能为空")
+    @Positive(message = "用于抵扣的收付款单编号必须大于0")
     private Long sourceId;
 }

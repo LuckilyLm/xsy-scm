@@ -471,7 +471,7 @@ public class OrderReturnService {
             BigDecimal redAmount = financeReceivableService
                 .generateRedOnIndependentReturnApproved(orderReturnEntity.getId());
             recordLog(orderReturnEntity,
-                "独立退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，生成客户级红字 " + redAmount.toPlainString(),
+                "独立退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，生成客户退货扣减 " + redAmount.toPlainString(),
                 Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
                 Map.of("status", result.getStatus(), "approvedAmount", String.valueOf(total)));
         } else {
@@ -511,7 +511,7 @@ public class OrderReturnService {
             // 优惠抵满订单金额时退款净额为 0：退货仍然成立，只是没有可退的钱。
             // 不建退款单（refund_amount 恒 > 0），也不记 0 元记录，这是「允许退货、无需退款」，不是失败。
             orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
-                "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，退款净额为 0，无需退款",
+                "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，退款调整后金额为 0，无需退款",
                 Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()), Map.of("status", result.getStatus(),
                     "approvedAmount", String.valueOf(total), "refundAmount", refundAmount.toPlainString()));
         }

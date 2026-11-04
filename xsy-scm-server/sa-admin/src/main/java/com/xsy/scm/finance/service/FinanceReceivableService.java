@@ -82,7 +82,7 @@ public class FinanceReceivableService {
     public BigDecimal generateRedOnReturnApproved(Long orderReturnId) {
         FinanceReturnSourceDto returned = financeReceivableSourceDao.selectApprovedReturn(orderReturnId);
         if (returned == null) {
-            throw new IllegalStateException("退货单未处于 APPROVED 状态，不能生成红字应收: " + orderReturnId);
+            throw new IllegalStateException("退货单未处于 APPROVED 状态，不能生成应收扣减: " + orderReturnId);
         }
         FinanceReceivableEntity normal = financeReceivableDao.selectNormalByOrder(returned.getOrderId());
         // 同一个红字算法既计算退款净额，也在正常应收已存在时生成红字；
@@ -105,7 +105,7 @@ public class FinanceReceivableService {
         FinanceIndependentReturnSourceDto returned = financeReceivableSourceDao
             .selectApprovedIndependentReturn(orderReturnId);
         if (returned == null) {
-            throw new IllegalStateException("独立退货单未处于 APPROVED 状态，不能生成客户级红字: " + orderReturnId);
+            throw new IllegalStateException("独立退货单未处于 APPROVED 状态，不能生成客户退货扣减: " + orderReturnId);
         }
         // 独立退货没有订单优惠可反向，优惠分摊固定为 0；这里必须用允许 null 键的映射，行的 orderItemId 为空。
         List<FinanceReceivableItemEntity> items = toRedItems(returned.getApprovedBy(),
@@ -122,7 +122,7 @@ public class FinanceReceivableService {
         for (FinanceReceivableItemEntity item : items) {
             item.setReceivableId(red.getId());
             if (financeReceivableItemDao.insertOnConflictDoNothing(item) != 1) {
-                throw new IllegalStateException("退货行已挂在别的应收单上，本次红字生成整体回滚: " + item.getSourceId());
+                throw new IllegalStateException("退货行已挂在别的应收单上，本次登记扣减整体回滚: " + item.getSourceId());
             }
         }
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIVABLE, red.getId(),
@@ -184,7 +184,7 @@ public class FinanceReceivableService {
             FinanceReturnSourceDto returned = financeReceivableSourceDao.selectApprovedReturn(returnId);
             if (returned == null) {
                 // 同一事务内刚按 APPROVED 查出这一张，现在读不到说明数据被其他途径改过：宁可失败不可漏账。
-                throw new IllegalStateException("已批准退货读不到记录，不能补生成红字应收: " + returnId);
+                throw new IllegalStateException("已批准退货读不到记录，不能补生成应收扣减: " + returnId);
             }
             generateRed(returned, normal);
         }
@@ -216,7 +216,7 @@ public class FinanceReceivableService {
         for (FinanceReceivableItemEntity item : items) {
             item.setReceivableId(red.getId());
             if (financeReceivableItemDao.insertOnConflictDoNothing(item) != 1) {
-                throw new IllegalStateException("退货行已挂在别的应收单上，本次红字生成整体回滚: " + item.getSourceId());
+                throw new IllegalStateException("退货行已挂在别的应收单上，本次登记扣减整体回滚: " + item.getSourceId());
             }
         }
 

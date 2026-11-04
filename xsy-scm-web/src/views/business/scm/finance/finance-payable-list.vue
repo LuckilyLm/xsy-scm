@@ -13,17 +13,20 @@
         <a-form-item label="采购单号"
           ><a-input v-model:value="query.purchaseOrderNo" allow-clear v-aria-label="'采购单号'" @press-enter="onSearch"
         /></a-form-item>
-        <a-form-item label="方向">
+        <a-form-item label="记录类型">
           <a-select
             v-model:value="query.entryType"
             allow-clear
             :options="entryOptions"
             placeholder="全部"
             style="width: 120px"
-            v-aria-label="'方向'"
+            v-aria-label="'记录类型'"
           />
         </a-form-item>
-        <a-form-item label="结清状态">
+        <a-form-item>
+          <template #label
+            ><ScmFieldHelp label="结清状态" text="应付是我们应付给供应商的货款。登记扣减只减少应付款，实际付款需在“付款管理”登记。"
+          /></template>
           <a-select
             v-model:value="query.settleState"
             allow-clear
@@ -63,10 +66,10 @@
         <div class="mobile-balance-party">{{ record.supplierName }} · {{ record.purchaseOrderNo }}</div>
         <div class="mobile-balance-values">
           <span
-            >未核销 <strong>{{ moneyText(record.openAmount) }}</strong></span
+            >剩余待付 <strong>{{ moneyText(record.openAmount) }}</strong></span
           ><span>金额 {{ moneyText(record.amount) }}</span>
         </div>
-        <a-tag v-if="record.overAppliedAmount && record.overAppliedAmount !== '0.0000'" color="orange">超额核销待处理</a-tag>
+        <a-tag v-if="record.overAppliedAmount && record.overAppliedAmount !== '0.0000'" color="orange">抵扣超额待处理</a-tag>
       </div>
       <a-empty v-if="!page.loading.value && !page.tableData.value.length" description="暂无应付记录" />
     </div>
@@ -100,7 +103,7 @@
           <a-space :size="0" class="scm-table-actions">
             <a-button type="link" @click="showDetail(record)">明细</a-button>
             <a-button v-if="record.entryType === 'NORMAL'" type="link" danger v-privilege="PERM.PAYABLE_RED" @click="openRed(record)"
-              >登记红字</a-button
+              >登记扣减</a-button
             >
           </a-space>
         </template>
@@ -140,8 +143,8 @@
     @close="requestCloseRed"
   >
     <template #title>
-      登记红字应付
-      <ScmFieldHelp label="红字应付" text="红字金额等于数量乘单价，累计不能超过原单金额" />
+      登记扣减应付
+      <ScmFieldHelp label="应付扣减" text="用于减少原应付金额，不会产生付款。扣减金额按数量乘单价计算，累计不能超过原单金额" />
     </template>
     <a-spin :spinning="redLoading">
       <a-alert v-if="redError" class="form-error" type="error" show-icon :message="redError">
@@ -155,7 +158,7 @@
         <a-descriptions-item label="原应付金额">{{ moneyText(redSource.amount) }}</a-descriptions-item>
       </a-descriptions>
       <a-form layout="vertical" class="app-drawer-form">
-        <a-form-item label="红字原因" required
+        <a-form-item label="扣减原因" required
           ><a-textarea v-model:value="redReason" :disabled="redSaving || redLoading" :maxlength="500" :rows="2" show-count
         /></a-form-item>
       </a-form>
@@ -195,7 +198,7 @@
             />
           </template>
           <template v-else-if="column.dataIndex === 'redAmount'">
-            <!-- 红字金额由数量 × 单价算出，不给手输，避免和后端金额不一致 -->
+            <!-- 扣减金额由数量 × 单价算出，不给手输，避免和后端金额不一致 -->
             <span class="red-amount-value">{{ redLineAmount(record) }}</span>
           </template>
         </template>
@@ -204,7 +207,7 @@
     <template #footer>
       <a-space>
         <a-button :disabled="redSaving" @click="requestCloseRed">取消</a-button>
-        <a-button type="primary" :loading="redSaving" :disabled="redLoading || !redDrafts.length" @click="submitRed">提交红字</a-button>
+        <a-button type="primary" :loading="redSaving" :disabled="redLoading || !redDrafts.length" @click="submitRed">确认扣减</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -294,24 +297,24 @@ const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 76
 
 const columns = ref<TableColumnsType<FinancePayable>>([
   {title: '应付单号', dataIndex: 'payableNo', width: 200, ellipsis: true},
-  {title: '未核销', dataIndex: 'openAmount', width: 148},
+  {title: '剩余待付', dataIndex: 'openAmount', width: 148},
   {title: '供应商', dataIndex: 'supplierName', width: 190},
   {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 200},
-  {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
+  {title: '记录类型', dataIndex: 'entryType', align: 'center', width: 80},
   {title: '金额', dataIndex: 'amount', width: 136},
-  {title: '已核销', dataIndex: 'writtenOffAmount', width: 148},
-  {title: '超额核销', dataIndex: 'overAppliedAmount', width: 148},
+  {title: '已抵扣', dataIndex: 'writtenOffAmount', width: 148},
+  {title: '抵扣超额', dataIndex: 'overAppliedAmount', width: 148},
   {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110},
-  {title: '事件时点', dataIndex: 'eventAt', width: 180},
+  {title: '业务时间', dataIndex: 'eventAt', width: 180},
   {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 150},
 ]);
 const redDraftColumns: TableColumnsType<RedDraft> = [
   {title: '商品', dataIndex: 'skuName', width: 190},
   {title: '单位', dataIndex: 'unit', width: 76},
   {title: '原数量', dataIndex: 'quantity', width: 130},
-  {title: '红字数量', dataIndex: 'redQuantity', width: 120},
-  {title: '红字单价', dataIndex: 'redUnitPrice', width: 136},
-  {title: '红字金额', dataIndex: 'redAmount', width: 148},
+  {title: '扣减数量', dataIndex: 'redQuantity', width: 120},
+  {title: '扣减单价', dataIndex: 'redUnitPrice', width: 136},
+  {title: '扣减金额', dataIndex: 'redAmount', width: 148},
 ];
 useFinanceMobileActionColumn(
   (compact) => {
@@ -399,7 +402,7 @@ async function submitRed() {
     }))
     .filter((item) => item.amount);
   if (!redSource.value || !redReason.value.trim() || !lines.length) {
-    message.warning('请填写原因，并至少录入一条红字明细');
+    message.warning('请填写原因，并至少录入一条扣减明细');
     return;
   }
   redSaving.value = true;
@@ -407,7 +410,7 @@ async function submitRed() {
   try {
     await financeApi.payableRed({originalPayableId: redSource.value.payableId, reason: redReason.value.trim(), items: lines});
     if (generation !== redRequestId) return;
-    message.success('红字应付已登记');
+    message.success('应付扣减已登记');
     redOpen.value = false;
     await queryData();
   } catch {

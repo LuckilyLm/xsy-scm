@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class FinancePostingQueryForm extends FinanceDatePageForm {
 
-    @Positive(message = "过账记录编号必须大于0")
+    @Positive(message = "外部账单记录编号必须大于0")
     private Long postingId;
 
     @Positive(message = "客户编号必须大于0")

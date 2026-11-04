@@ -87,8 +87,8 @@
         <template v-else-if="column.dataIndex === 'approvedAt'">{{ datetime(record.approvedAt) }}</template>
         <template v-else-if="column.dataIndex === 'redReceivable'">
           <template v-if="!order.receivableFactsVisible">无应收查看权限</template>
-          <template v-else-if="record.redReceivableRecorded">已记红字应收 {{ amount(record.redReceivableAmount) }}</template>
-          <template v-else>{{ record.status === 'APPROVED' ? '未形成红字应收' : '待审批或未批准' }}</template>
+          <template v-else-if="record.redReceivableRecorded">已记应收扣减 {{ amount(record.redReceivableAmount) }}</template>
+          <template v-else>{{ record.status === 'APPROVED' ? '未形成应收扣减' : '待审批或未批准' }}</template>
         </template>
       </template>
     </LocalTable>

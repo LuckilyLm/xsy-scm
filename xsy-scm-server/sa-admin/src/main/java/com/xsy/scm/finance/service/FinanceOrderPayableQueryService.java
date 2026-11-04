@@ -50,7 +50,7 @@ public class FinanceOrderPayableQueryService {
         if (receivable != null) {
             FinanceReceivableVO summary = financeReceivableDao.selectSummaryById(receivable.getId());
             if (summary == null || summary.getNetAmount() == null) {
-                throw new IllegalStateException("已生成的订单应收缺少净额: " + salesOrderId);
+                throw new IllegalStateException("已生成的订单应收缺少调整后金额: " + salesOrderId);
             }
             return summary.getNetAmount().max(BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE));
         }

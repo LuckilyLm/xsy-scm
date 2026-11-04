@@ -6,18 +6,18 @@
         <span class="date-separator">至</span>
         <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'付款结束日期'" />
       </a-form-item>
-      <a-form-item label="往来方类型">
+      <a-form-item label="客户或供应商类型">
         <a-select
           v-model:value="query.counterpartyType"
           allow-clear
           :options="partyTypeOptions"
           placeholder="全部"
           style="width: 140px"
-          v-aria-label="'往来方类型'"
+          v-aria-label="'客户或供应商类型'"
         />
       </a-form-item>
-      <a-form-item label="往来方"
-        ><a-input v-model:value="query.counterpartyName" allow-clear placeholder="按名称搜索" v-aria-label="'往来方'" @press-enter="onSearch"
+      <a-form-item label="客户或供应商"
+        ><a-input v-model:value="query.counterpartyName" allow-clear placeholder="按名称搜索" v-aria-label="'客户或供应商'" @press-enter="onSearch"
       /></a-form-item>
       <a-form-item label="方式"
         ><a-select
@@ -37,17 +37,23 @@
           style="width: 150px"
           v-aria-label="'资金来源'"
       /></a-form-item>
-      <a-form-item label="方向"
-        ><a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px" v-aria-label="'方向'"
+      <a-form-item label="记录类型"
+        ><a-select
+          v-model:value="query.entryType"
+          allow-clear
+          :options="entryOptions"
+          placeholder="全部"
+          style="width: 120px"
+          v-aria-label="'记录类型'"
       /></a-form-item>
-      <a-form-item label="待核销"
+      <a-form-item label="待抵扣"
         ><a-select
           v-model:value="query.pendingOnly"
           allow-clear
           :options="pendingOptions"
           placeholder="全部"
           style="width: 120px"
-          v-aria-label="'待核销状态'"
+          v-aria-label="'待抵扣状态'"
       /></a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -81,7 +87,7 @@
         </div>
         <div class="mobile-balance-values">
           <span
-            >待核销 <strong>{{ moneyText(record.pendingWriteOffAmount) }}</strong></span
+            >待抵扣 <strong>{{ moneyText(record.pendingWriteOffAmount) }}</strong></span
           ><span>有效 {{ moneyText(record.effectiveAmount) }}</span>
         </div>
       </div>
@@ -162,8 +168,8 @@
     <a-form ref="addFormRef" :model="addForm" :rules="addRules" layout="vertical">
       <a-form-item name="counterpartyType">
         <template #label>
-          往来方类型
-          <ScmFieldHelp label="往来方类型" text="客户付款仅可关联已完成的退款" />
+          客户或供应商类型
+          <ScmFieldHelp label="客户或供应商类型" text="客户付款仅可关联已完成的退款" />
         </template>
         <a-select v-model:value="addForm.counterpartyType" :options="partyTypeOptions" @change="onPartyTypeChange" />
       </a-form-item>
@@ -206,17 +212,17 @@
       <a-form-item label="付款时间" name="paidAt"
         ><a-date-picker v-model:value="addForm.paidAt" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%"
       /></a-form-item>
-      <a-form-item label="资金凭据号"><a-input v-model:value="addForm.externalReference" :maxlength="128" /></a-form-item>
+      <a-form-item label="收付款凭证号"><a-input v-model:value="addForm.externalReference" :maxlength="128" /></a-form-item>
       <a-form-item label="备注"><a-textarea v-model:value="addForm.remark" :maxlength="500" :rows="2" show-count /></a-form-item>
     </a-form>
   </a-modal>
 
-  <a-modal v-model:open="reverseOpen" title="撤销付款" :confirm-loading="reverseSaving" @ok="submitReverse">
+  <a-modal v-model:open="reverseOpen" title="撤销付款记录" :confirm-loading="reverseSaving" @ok="submitReverse">
     <a-alert
       v-if="reverseRow"
       type="warning"
       show-icon
-      :message="`将登记一笔等额冲回记录，金额 ${moneyText(reverseRow.amount)}。原付款记录会保留。`"
+      :message="`仅撤销这笔付款记录，不会自动追回已付款项。原记录保留，金额为 ${moneyText(reverseRow.amount)}。`"
     />
     <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError" />
     <a-form layout="vertical"
@@ -308,7 +314,7 @@ const addForm = reactive<
 const addFormRef = ref<FormInstance>();
 /** 必填项逐项校验，错误显示在输入框下方。 */
 const addRules = {
-  counterpartyType: [{required: true, message: '请选择往来方类型', trigger: 'change'}],
+  counterpartyType: [{required: true, message: '请选择客户或供应商类型', trigger: 'change'}],
   supplierId: [{required: true, message: '请选择供应商', trigger: 'change'}],
   selectedRefund: [
     {
@@ -345,7 +351,7 @@ const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({
 const partyTypeOptions = Object.values(SCM_FINANCE_COUNTERPARTY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const sourceOptions = [{label: '退款', value: 'ORDER_REFUND'}];
 const pendingOptions = [
-  {label: '仅待核销', value: true},
+  {label: '仅待抵扣', value: true},
   {label: '全部', value: false},
 ];
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
@@ -357,16 +363,16 @@ function counterpartyTypeText(value?: string | null): string {
 
 const columns = ref<TableColumnsType<FinancePayment>>([
   {title: '付款单号', dataIndex: 'paymentNo', width: 200, ellipsis: true},
-  {title: '待核销', dataIndex: 'pendingWriteOffAmount', width: 148},
-  {title: '往来方', dataIndex: 'counterpartyName', width: 190},
-  {title: '往来方类型', dataIndex: 'counterpartyType', align: 'center', width: 112},
-  {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
+  {title: '待抵扣', dataIndex: 'pendingWriteOffAmount', width: 148},
+  {title: '客户或供应商', dataIndex: 'counterpartyName', width: 190},
+  {title: '客户或供应商类型', dataIndex: 'counterpartyType', align: 'center', width: 112},
+  {title: '记录类型', dataIndex: 'entryType', align: 'center', width: 80},
   {title: '金额', dataIndex: 'amount', width: 136},
   {title: '有效金额', dataIndex: 'effectiveAmount', width: 148},
-  {title: '已核销', dataIndex: 'usedAmount', width: 148},
+  {title: '已抵扣', dataIndex: 'usedAmount', width: 148},
   {title: '方式', dataIndex: 'method', width: 105, align: 'center'},
   {title: '来源', dataIndex: 'sourceType', align: 'center', width: 95},
-  {title: '付款时点', dataIndex: 'paidAt', width: 180},
+  {title: '付款时间', dataIndex: 'paidAt', width: 180},
   {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 140},
 ]);
 useFinanceMobileActionColumn(
@@ -484,14 +490,14 @@ function openReverse(row: FinancePayment) {
 }
 async function submitReverse() {
   if (!reverseRow.value || !reverseReason.value.trim()) {
-    reverseError.value = '请填写反向原因。';
+    reverseError.value = '请填写撤销原因。';
     return;
   }
   reverseSaving.value = true;
   reverseError.value = '';
   try {
     await financeApi.paymentReverse({paymentId: reverseRow.value.paymentId, reason: reverseReason.value.trim()});
-    message.success('反向付款已追加');
+    message.success('撤销付款记录已追加');
     reverseOpen.value = false;
     await queryData();
   } catch {

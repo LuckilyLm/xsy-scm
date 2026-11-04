@@ -18,7 +18,7 @@ public enum FinanceErrorCode implements ScmErrorCode {
     PAYABLE_NOT_FOUND(41131, "应付单不存在"),
     RECEIPT_NOT_FOUND(41132, "收款单不存在"),
     PAYMENT_NOT_FOUND(41133, "付款单不存在"),
-    WRITE_OFF_NOT_FOUND(41134, "核销记录不存在"),
+    WRITE_OFF_NOT_FOUND(41134, "账款抵扣记录不存在"),
 
     /**
      * 核销额超过目标 {@code openAmount}，或超过 source 的待核销余额。
@@ -26,12 +26,12 @@ public enum FinanceErrorCode implements ScmErrorCode {
      * <p>
      * 净应收为负时 {@code openAmount = 0}，该应收不可再被核销，仍使用本码。
      */
-    WRITE_OFF_AMOUNT_EXCEEDED(41135, "核销金额超过可核销余额"),
+    WRITE_OFF_AMOUNT_EXCEEDED(41135, "抵扣金额超过可抵扣余额"),
 
     /**
      * 跨客户 / 跨供应商核销（明令禁止）。
      */
-    COUNTERPARTY_MISMATCH(41136, "收付款与应收应付的结算对方不一致，不能核销"),
+    COUNTERPARTY_MISMATCH(41136, "收付款单与待结算账单不属于同一客户或供应商，不能抵扣"),
 
     /**
      * 只用于手工红字应付超额冲减。
@@ -39,7 +39,7 @@ public enum FinanceErrorCode implements ScmErrorCode {
      * <p>
      * 自动红字应收不使用本码：红字在 {@code OrderReturn approve} 的同一事务内生成，抛错会让整笔退货批准回滚，等于财务规则反过来控制订单状态。 手工红字应付可以直接报错，因为拒绝它不会回滚任何业务状态。
      */
-    RED_AMOUNT_EXCEEDED(41137, "红字金额超过原单可冲减金额"),
+    RED_AMOUNT_EXCEEDED(41137, "扣减金额超过原单可扣减金额"),
 
     /**
      * 反向核销 / 手工红字 / 收付款反向缺原因。数据库 CHECK 已拒绝空原因，本码只为给出可读的业务错误，而不是把 23514 抛给用户。
@@ -53,7 +53,7 @@ public enum FinanceErrorCode implements ScmErrorCode {
 
     METHOD_INVALID(41140, "收付款方式不在允许范围内"),
 
-    RECEIVED_AT_INVALID(41141, "收付款时点不合法"),
+    RECEIVED_AT_INVALID(41141, "收付款时间不合法"),
 
     /**
      * 收款或付款仍有有效核销额时不得反向，必须先逐笔反向核销并把已用额降至 0。
@@ -61,12 +61,12 @@ public enum FinanceErrorCode implements ScmErrorCode {
      * <p>
      * 没有这条前置就会出现「已用 &gt; 有效额」的负待核销余额，与红字造成的负净应收叠加后无法向用户解释；负值只允许出现在「应收侧记录已成立退货」这一处。
      */
-    REVERSE_BLOCKED_BY_WRITE_OFF(41142, "该单仍有有效核销，请先撤销相关核销"),
+    REVERSE_BLOCKED_BY_WRITE_OFF(41142, "该单仍有有效抵扣，请先撤销相关账款抵扣"),
 
     /**
      * 该事实已被反向过。{@code uk_finance_*_single_reverse} 是最终防线，本码让服务层在撞库级唯一索引之前给出可读错误。
      */
-    ALREADY_REVERSED(41143, "该单据已被反向，不能重复反向"),
+    ALREADY_REVERSED(41143, "该单据已撤销，不能重复撤销"),
 
     /**
      * 系统来源的收款不允许走人工冲正。
@@ -75,13 +75,13 @@ public enum FinanceErrorCode implements ScmErrorCode {
      * 人工 {@code reverse()} 的语义是「整笔登记错了，撤销这笔登记」，且要求原收款已核销金额为 0；支付退款则是业务退款，可能部分、 可能多次（100 退 30 再退 20），现有 REVERSE
      * 模型表达不了，应走独立的系统资金反向记录。
      */
-    SYSTEM_RECEIPT_REVERSE_FORBIDDEN(41144, "系统来源的收款不能人工冲正，请走支付退款流程"),
+    SYSTEM_RECEIPT_REVERSE_FORBIDDEN(41144, "系统来源的收款不能人工撤销原记录，请走支付退款流程"),
 
     /**
      * 支付交易缺少可信的渠道实收金额：不能凭空登记一笔金额不明的收款。
      */
     PAYMENT_RECEIPT_AMOUNT_MISSING(41145, "支付交易缺少渠道实收金额，无法登记收款"),
-    ORDER_FUNDING_INVALID(41146, "订单资金来源不完整或身份金额不一致，请核对支付与资金流水"),
+    ORDER_FUNDING_INVALID(41146, "订单的支付记录不完整或金额不一致，请核对支付明细"),
     RECHARGE_RECEIPT_RESERVED(41147, "充值收款已形成钱包权益，请通过余额支付结算订单"),
     REFUND_ALLOCATION_REQUIRED(41148, "该退款需要按原支付方式分别退回，不能从单笔交易或人工付款直接退款"),
     BALANCE_REFUND_REQUIRES_WALLET(41149, "纯余额订单请通过售后退款单返还钱包余额"),
@@ -100,28 +100,28 @@ public enum FinanceErrorCode implements ScmErrorCode {
      * 同一货到付款收款命令已有来源事实。
      */
     COD_COLLECTION_ALREADY_REGISTERED(41154, "该笔货到付款收款已登记，不能重复登记"),
-    COD_COLLECTION_PAYMENT_CONFLICT(41155, "该订单已有未结束或成功的支付意图，不能再登记货到付款收款"),
+    COD_COLLECTION_PAYMENT_CONFLICT(41155, "该订单已有未结束或成功的支付请求，不能再登记货到付款收款"),
 
     // ---- 抹零 ----
     WAIVER_NOT_FOUND(41156, "抹零记录不存在"),
     WAIVER_AMOUNT_EXCEEDED(41157, "抹零金额超过应收未结金额"),
-    WAIVER_RECEIVABLE_INVALID(41158, "只能对正常应收抹零，且金额必须大于 0"),
-    WAIVER_ALREADY_REVERSED(41159, "该抹零记录已反向，不能重复反向"),
+    WAIVER_RECEIVABLE_INVALID(41158, "只能对原应收抹零，且金额必须大于 0"),
+    WAIVER_ALREADY_REVERSED(41159, "该抹零记录已撤销，不能重复撤销"),
 
     // ---- 自动核销 ----
-    AUTO_WRITE_OFF_NO_OPEN_TARGET(41164, "该收付款对方没有可按顺序核销的未结单据"),
+    AUTO_WRITE_OFF_NO_OPEN_TARGET(41164, "该收付款对方没有可按顺序抵扣的未结单据"),
 
     /**
      * 抹零的核销行不能走通用「反向核销」：它还必须把抹零事实置为 REVERSED，否则状态与余额会不一致。
      */
-    WAIVER_REVERSE_VIA_WAIVER(41165, "抹零核销请通过抹零反向接口撤销"),
+    WAIVER_REVERSE_VIA_WAIVER(41165, "抹零记录请使用“撤销抹零”操作"),
 
     // ---- 过账特殊单据 ----
-    POSTING_NOT_FOUND(41184, "过账记录不存在"),
-    POSTING_ALREADY_VOIDED(41185, "该过账记录已作废，不能重复作废或修改"),
-    POSTING_CUSTOMER_NOT_FOUND(41186, "过账客户不存在或已删除"),
-    POSTING_VOID_REASON_REQUIRED(41187, "作废过账必须填写作废原因"),
-    POSTING_AMOUNT_INVALID(41189, "过账金额必须大于 0"),
+    POSTING_NOT_FOUND(41184, "外部账单记录不存在"),
+    POSTING_ALREADY_VOIDED(41185, "该外部账单记录已作废，不能重复作废或修改"),
+    POSTING_CUSTOMER_NOT_FOUND(41186, "外部账单客户不存在或已删除"),
+    POSTING_VOID_REASON_REQUIRED(41187, "作废外部账单必须填写作废原因"),
+    POSTING_AMOUNT_INVALID(41189, "外部账单金额必须大于 0"),
     POSTING_TAX_RATE_INVALID(41190, "税点必须在 0 到 100 之间"),
     POSTING_REFUND_STATUS_INVALID(41191, "返款状态只能是未返款、部分返款或已返款"),
 

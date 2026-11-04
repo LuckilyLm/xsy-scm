@@ -39,11 +39,11 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/scm/finance/posting")
-@Tag(name = "SCM 财务过账特殊单据")
+@Tag(name = "SCM 财务外部账单记录")
 @RequiredArgsConstructor
 public class FinancePostingController {
 
-    private static final List<String> EXPORT_TITLES = List.of("过账单号", "客户名称", "结算客户", "过账日期", "过账金额", "税点", "返款状态",
+    private static final List<String> EXPORT_TITLES = List.of("外部账单号", "客户名称", "结算客户", "外部账单日期", "外部账单金额", "税点", "返款状态",
         "状态", "备注", "作废原因", "登记人", "登记时间");
 
     private final FinancePostingService financePostingService;
@@ -74,7 +74,7 @@ public class FinancePostingController {
                 FinanceExportLabels.postingStatus(row.getStatus()), row.getRemark(), row.getVoidReason(),
                 row.getCreatedBy(), row.getCreatedAt()))
             .toList();
-        ScmExcel.write(response, "过账明细.xlsx", "过账明细", EXPORT_TITLES, data);
+        ScmExcel.write(response, "外部账单明细.xlsx", "外部账单明细", EXPORT_TITLES, data);
     }
 
     @PostMapping("/add")

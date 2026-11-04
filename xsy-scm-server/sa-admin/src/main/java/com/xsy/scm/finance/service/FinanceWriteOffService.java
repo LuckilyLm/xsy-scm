@@ -218,7 +218,7 @@ public class FinanceWriteOffService {
             writeOff.setCreatedBy(operator);
             writeOff.setUpdatedBy(operator);
             if (financeWriteOffDao.insert(writeOff) != 1) {
-                throw new IllegalStateException("核销记录未保存: " + writeOff.getWriteOffNo());
+                throw new IllegalStateException("账款抵扣记录未保存: " + writeOff.getWriteOffNo());
             }
 
             TargetBalance after = before.apply(allocation.amount());

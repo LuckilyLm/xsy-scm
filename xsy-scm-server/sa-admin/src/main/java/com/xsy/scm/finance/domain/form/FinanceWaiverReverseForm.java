@@ -15,6 +15,6 @@ public class FinanceWaiverReverseForm {
     @Positive(message = "抹零记录编号必须大于0")
     private Long waiverId;
 
-    @Size(max = 500, message = "反向原因长度不能超过500")
+    @Size(max = 500, message = "撤销原因长度不能超过500")
     private String reason;
 }

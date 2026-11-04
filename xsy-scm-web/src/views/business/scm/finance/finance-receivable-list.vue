@@ -22,17 +22,20 @@
         <a-form-item label="订单号"
           ><a-input v-model:value="query.orderNo" allow-clear v-aria-label="'订单号'" @press-enter="onSearch"
         /></a-form-item>
-        <a-form-item label="方向">
+        <a-form-item label="记录类型">
           <a-select
             v-model:value="query.entryType"
             allow-clear
             :options="entryOptions"
             placeholder="全部"
             style="width: 120px"
-            v-aria-label="'方向'"
+            v-aria-label="'记录类型'"
           />
         </a-form-item>
-        <a-form-item label="结清状态">
+        <a-form-item>
+          <template #label
+            ><ScmFieldHelp label="结清状态" text="应收是客户应付给我们的货款；剩余待收按退货扣减、收款抵扣和抹零后的结果显示。"
+          /></template>
           <a-select
             v-model:value="query.settleState"
             allow-clear
@@ -72,10 +75,10 @@
         <div class="mobile-balance-party">{{ record.customerName }} · {{ record.orderNo }}</div>
         <div class="mobile-balance-values">
           <span
-            >未核销 <strong>{{ moneyText(record.openAmount) }}</strong></span
+            >剩余待收 <strong>{{ moneyText(record.openAmount) }}</strong></span
           ><span>金额 {{ moneyText(record.amount) }}</span>
         </div>
-        <a-tag v-if="record.overAppliedAmount && record.overAppliedAmount !== '0.0000'" color="orange">超额核销待处理</a-tag>
+        <a-tag v-if="record.overAppliedAmount && record.overAppliedAmount !== '0.0000'" color="orange">抵扣超额待处理</a-tag>
       </div>
       <a-empty v-if="!page.loading.value && !page.tableData.value.length" description="暂无应收记录" />
     </div>
@@ -163,11 +166,12 @@
         <a-textarea v-model:value="waiverReason" :maxlength="500" :rows="3" show-count placeholder="例如：对账抹零" />
       </a-form-item>
     </a-form>
-    <p class="scm-note">确认后，该应收的未结金额将相应减少；如需撤销，请在「核销管理」中执行反向抹零。</p>
+    <p class="scm-note">确认后，该应收的未结金额将相应减少；如需撤销，请在「账款抵扣」中执行撤销抹零。</p>
   </a-modal>
 </template>
 
 <script setup lang="ts">
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
@@ -213,15 +217,15 @@ const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 76
 
 const columns = ref<TableColumnsType<FinanceReceivable>>([
   {title: '应收单号', dataIndex: 'receivableNo', width: 200, ellipsis: true},
-  {title: '未核销', dataIndex: 'openAmount', width: 148},
+  {title: '剩余待收', dataIndex: 'openAmount', width: 148},
   {title: '客户', dataIndex: 'customerName', width: 190},
   {title: '订单号', dataIndex: 'orderNo', width: 200},
-  {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
+  {title: '记录类型', dataIndex: 'entryType', align: 'center', width: 80},
   {title: '金额', dataIndex: 'amount', width: 136},
-  {title: '已核销', dataIndex: 'writtenOffAmount', width: 148},
-  {title: '超额核销', dataIndex: 'overAppliedAmount', width: 148},
+  {title: '已抵扣', dataIndex: 'writtenOffAmount', width: 148},
+  {title: '抵扣超额', dataIndex: 'overAppliedAmount', width: 148},
   {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110},
-  {title: '事件时点', dataIndex: 'eventAt', width: 180},
+  {title: '业务时间', dataIndex: 'eventAt', width: 180},
   {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);
 useFinanceMobileActionColumn(

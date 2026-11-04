@@ -21,15 +21,15 @@ import lombok.Data;
 @Data
 public class FinancePostingAddForm {
 
-    @NotNull(message = "过账客户不能为空")
-    @Positive(message = "过账客户编号必须大于0")
+    @NotNull(message = "外部账单客户不能为空")
+    @Positive(message = "外部账单客户编号必须大于0")
     private Long customerId;
 
-    @NotNull(message = "过账日期不能为空")
+    @NotNull(message = "外部账单日期不能为空")
     private LocalDate documentDate;
 
-    @NotNull(message = "过账金额不能为空")
-    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "过账金额格式无效")
+    @NotNull(message = "外部账单金额不能为空")
+    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "外部账单金额格式无效")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String amount;
 

@@ -1,9 +1,9 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
-    <a-form-item label="往来类型">
+    <a-form-item label="账款类型">
       <a-radio-group v-model:value="query.accountType" @change="changeAccount">
-        <a-radio-button value="RECEIVABLE">应收账龄</a-radio-button>
-        <a-radio-button value="PAYABLE">应付账龄</a-radio-button>
+        <a-radio-button value="RECEIVABLE">客户账款到期情况</a-radio-button>
+        <a-radio-button value="PAYABLE">供应商账款到期情况</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item label="截止日" required>
@@ -19,11 +19,11 @@
       <SupplierSelect v-model:value="query.supplierId" width="190px" />
     </a-form-item>
     <a-form-item label="仓库"><WarehouseSelect v-model:value="query.warehouseId" width="190px" /></a-form-item>
-    <a-form-item label="账龄分组">
+    <a-form-item label="到期分组">
       <a-select v-model:value="query.agingBucket" :options="bucketOptions" allow-clear placeholder="全部分组" class="bucket-select" />
     </a-form-item>
     <a-form-item label="关键字"
-      ><a-input v-model:value="query.keyword" :maxlength="120" placeholder="单号或往来方" allow-clear @pressEnter="search"
+      ><a-input v-model:value="query.keyword" :maxlength="120" placeholder="单号或客户或供应商" allow-clear @pressEnter="search"
     /></a-form-item>
     <a-form-item>
       <a-space
@@ -38,7 +38,7 @@
   <a-card :bordered="false" size="small">
     <div class="aging-toolbar">
       <a-typography-text v-if="applied"
-        >截至 {{ applied.asOfDate }} · {{ applied.accountType === 'RECEIVABLE' ? '应收' : '应付' }}未核销余额</a-typography-text
+        >截至 {{ applied.asOfDate }} · {{ applied.accountType === 'RECEIVABLE' ? '应收' : '应付' }}剩余未结金额</a-typography-text
       >
       <a-typography-text v-else type="secondary">请选择截止日后查询</a-typography-text>
       <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows"
@@ -66,7 +66,7 @@
       :pagination="false"
       :loading="loading"
       :scroll="{x: scmColumnsWidth(columns)}"
-      :locale="{emptyText: '当前范围没有未核销余额'}"
+      :locale="{emptyText: '当前范围没有剩余未结金额'}"
     >
       <template #bodyCell="{record, column, text}">
         <template v-if="column.dataIndex === 'agingBucket'">{{ bucketLabel(record.agingBucket) }}</template>
@@ -167,20 +167,20 @@ const summaryRows = computed(() =>
     )
 );
 const summaryColumns = [
-  {title: '账龄分组', dataIndex: 'label', width: 150},
+  {title: '到期分组', dataIndex: 'label', width: 150},
   {title: '单据数', dataIndex: 'documentCount', width: 96},
-  {title: '未核销余额', dataIndex: 'openAmount', width: 148, customRender: ({text}: {text: string}) => moneyText(text)},
+  {title: '剩余未结金额', dataIndex: 'openAmount', width: 148, customRender: ({text}: {text: string}) => moneyText(text)},
 ];
 const columns: TableColumnsType<AgingRow> = [
   {title: '财务单号', dataIndex: 'documentNo', width: 190},
   {title: '来源单号', dataIndex: 'sourceNo', width: 190},
-  {title: '往来方', dataIndex: 'counterpartyName', width: 160},
+  {title: '客户或供应商', dataIndex: 'counterpartyName', width: 160},
   {title: '结算方', dataIndex: 'settlementCustomerName', width: 160},
   {title: '到期日', dataIndex: 'dueDate', width: 120},
   {title: '逾期天数', dataIndex: 'overdueDays', width: 100},
-  {title: '账龄分组', dataIndex: 'agingBucket', width: 140},
+  {title: '到期分组', dataIndex: 'agingBucket', width: 140},
   ...(['amount', 'redAmount', 'netAmount', 'writtenOffAmount', 'openAmount'] as const).map((key, index) => ({
-    title: ['原金额', '红字金额', '净额', '已核销', '未核销余额'][index],
+    title: ['原金额', '扣减金额', '调整后金额', '已抵扣', '剩余未结金额'][index],
     dataIndex: key,
     width: 130,
     customRender: ({text}: {text: string}) => moneyText(text),

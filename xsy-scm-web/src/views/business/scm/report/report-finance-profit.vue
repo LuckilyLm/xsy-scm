@@ -59,7 +59,7 @@
         >
         <a-col :xs="24" :sm="12" :lg="8"
           ><a-card size="small"
-            ><div class="kpi-label">商品销售成本（净额）</div>
+            ><div class="kpi-label">商品销售成本（调整后金额）</div>
             <div class="kpi-value">{{ moneyText(summary?.salesCostAmount) }}</div></a-card
           ></a-col
         >
@@ -172,7 +172,7 @@ const columns: TableColumnsType<FinanceProfitRow> = [
   {title: '日期', dataIndex: 'bizDate', width: 120},
   {title: '分析对象', dataIndex: 'dimensionName', width: 210},
   {title: '销售收入', dataIndex: 'revenueAmount', width: 150},
-  {title: '商品销售成本（净额）', dataIndex: 'salesCostAmount', width: 148},
+  {title: '商品销售成本（调整后金额）', dataIndex: 'salesCostAmount', width: 148},
   {title: '促销赠品成本', dataIndex: 'giftCostAmount', width: 150},
   {title: '销售毛利', dataIndex: 'grossProfit', width: 150},
   {title: '毛利率', dataIndex: 'grossMarginRate', width: 108},

@@ -103,7 +103,7 @@ public class FinanceWaiverService {
 
         FinanceWriteOffEntity writeOff = newWriteOff(waiver, amount, reason, now, operator);
         if (financeWriteOffDao.insert(writeOff) != 1) {
-            throw new IllegalStateException("抹零核销记录未保存: " + writeOff.getWriteOffNo());
+            throw new IllegalStateException("抹零账款抵扣记录未保存: " + writeOff.getWriteOffNo());
         }
 
         operationLogs.record(ScmFinanceBusinessTypeEnum.WAIVER, waiver.getId(), ScmFinanceOperationTypeEnum.WAIVER_ADD,
@@ -151,7 +151,7 @@ public class FinanceWaiverService {
         FinanceWriteOffEntity original = financeWriteOffDao
             .selectNormalAllocation(ScmFinanceWriteOffSourceTypeEnum.WAIVER.name(), waiver.getId(), null);
         if (original == null) {
-            throw new IllegalStateException("抹零核销记录缺失: " + waiver.getWaiverNo());
+            throw new IllegalStateException("抹零账款抵扣记录缺失: " + waiver.getWaiverNo());
         }
         if (financeWriteOffDao.hasReversal(original.getId())) {
             throw new ScmBusinessException(FinanceErrorCode.WAIVER_ALREADY_REVERSED);

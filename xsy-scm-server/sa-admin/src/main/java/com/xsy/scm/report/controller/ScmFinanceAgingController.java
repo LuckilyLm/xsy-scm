@@ -27,8 +27,8 @@ import java.util.List;
 @RequestMapping("/scm/report/finance/aging")
 @RequiredArgsConstructor
 public class ScmFinanceAgingController {
-    private static final List<String> TITLES = List.of("截止日", "往来类型", "财务单号", "来源单号", "往来方", "结算方", "业务时间", "到期日",
-        "逾期天数", "账龄分组", "原金额", "红字金额", "净额", "已核销", "未核销余额");
+    private static final List<String> TITLES = List.of("截止日", "账款类型", "财务单号", "来源单号", "客户或供应商", "结算方", "业务时间", "到期日",
+        "逾期天数", "到期分组", "原金额", "扣减金额", "调整后金额", "已抵扣", "剩余未结金额");
     private final ScmFinanceAgingService financeAgingService;
 
     @PostMapping("/query")
@@ -55,6 +55,6 @@ public class ScmFinanceAgingController {
                 ScmFinanceAgingBucketEnum.valueOf(row.getAgingBucket()).getDescription(), row.getAmount(),
                 row.getRedAmount(), row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount()))
             .toList();
-        ScmExcel.write(response, "往来账龄.xlsx", "账龄明细", TITLES, rows);
+        ScmExcel.write(response, "账款到期情况.xlsx", "到期情况明细", TITLES, rows);
     }
 }

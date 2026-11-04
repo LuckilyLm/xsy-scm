@@ -17,10 +17,10 @@ public class FinancePaymentQueryForm extends FinanceDatePageForm {
 
     private String counterpartyType;
 
-    @Positive(message = "往来方编号必须大于0")
+    @Positive(message = "客户或供应商编号必须大于0")
     private Long counterpartyId;
 
-    @Size(max = 120, message = "往来方名称长度不能超过120")
+    @Size(max = 120, message = "客户或供应商名称长度不能超过120")
     private String counterpartyName;
 
     private String method;

@@ -34,7 +34,7 @@
           placeholder="输入本次金额"
         />
       </a-form-item>
-      <p v-if="method === 'BALANCE'">从订单结算主体的钱包扣款。签收形成应收后自动核销，超额单独显示，不自动退款。</p>
+      <p v-if="method === 'BALANCE'">从订单结算客户的钱包扣款。签收形成应收后自动抵扣，超额单独显示，不自动退款。</p>
       <p v-else>当前仅接入开发模拟渠道，不会发起真实微信收款。</p>
       <a-button type="primary" html-type="button" :loading="saving" @click="submit">{{
         method === 'BALANCE' ? '确认余额支付' : '发起模拟支付'

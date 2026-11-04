@@ -1,10 +1,10 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
-      <a-form-item label="过账日期">
-        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'过账开始日期'" />
+      <a-form-item label="外部账单日期">
+        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'外部账单开始日期'" />
         <span class="date-separator">至</span>
-        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'过账结束日期'" />
+        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'外部账单结束日期'" />
       </a-form-item>
       <a-form-item label="客户">
         <a-select
@@ -22,9 +22,9 @@
         <a-input
           v-model:value="query.keyword"
           allow-clear
-          placeholder="过账单号或客户名称"
+          placeholder="外部账单号或客户名称"
           style="width: 200px"
-          v-aria-label="'过账单号或客户名称'"
+          v-aria-label="'外部账单号或客户名称'"
           @press-enter="onSearch"
         />
       </a-form-item>
@@ -45,7 +45,7 @@
           :options="statusOptions"
           placeholder="全部"
           style="width: 120px"
-          v-aria-label="'过账状态'"
+          v-aria-label="'外部账单状态'"
         />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
@@ -64,8 +64,8 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
-        <a-button type="primary" v-privilege="PERM.POSTING_ADD" @click="openCreate">新建过账</a-button>
-        <span class="posting-hint">虚拟单据：不生成应收应付，不参与核销</span>
+        <a-button type="primary" v-privilege="PERM.POSTING_ADD" @click="openCreate">新建外部账单</a-button>
+        <span class="posting-hint">仅作记录，不计入应收应付，不参与账款抵扣</span>
       </div>
       <div class="smart-table-setting-block">
         <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
@@ -89,7 +89,7 @@
           <ScmStatusTag v-if="record.status === 'VOIDED'" tone="neutral" label="已作废" />
         </div>
       </div>
-      <a-empty v-if="!page.loading.value && !page.tableData.value.length" description="暂无过账记录" />
+      <a-empty v-if="!page.loading.value && !page.tableData.value.length" description="暂无外部账单记录" />
     </div>
 
     <a-table
@@ -141,8 +141,8 @@
     </div>
   </a-card>
 
-  <a-modal v-model:open="formOpen" :title="editing ? '修改过账' : '新建过账'" :confirm-loading="formSaving" :width="620" @ok="submitForm">
-    <p class="scm-note">过账仅用于留存对外账目记录，不生成应收应付，也不影响客户余额与账龄。</p>
+  <a-modal v-model:open="formOpen" :title="editing ? '修改外部账单' : '新建外部账单'" :confirm-loading="formSaving" :width="620" @ok="submitForm">
+    <p class="scm-note">这里只记录对外账目，不增加客户欠款，不登记实际收付款，也不参与账款抵扣。</p>
     <a-form layout="vertical" class="posting-form">
       <a-form-item label="客户" required>
         <a-select
@@ -153,13 +153,13 @@
           :options="customerOptions"
           placeholder="选择客户"
         />
-        <!-- 换客户等于换一张单：已登记的过账不允许改客户，只能作废后重新登记 -->
+        <!-- 换客户等于换一张单：已登记的外部账单不允许改客户，只能作废后重新登记 -->
         <a-input v-else :value="editingCustomerName" disabled />
       </a-form-item>
-      <a-form-item label="过账日期" required>
+      <a-form-item label="外部账单日期" required>
         <a-date-picker v-model:value="form.documentDate" value-format="YYYY-MM-DD" style="width: 100%" />
       </a-form-item>
-      <a-form-item label="过账金额" required>
+      <a-form-item label="外部账单金额" required>
         <a-input-number
           v-model:value="form.amount"
           string-mode
@@ -190,12 +190,12 @@
     </a-form>
   </a-modal>
 
-  <a-modal v-model:open="voidOpen" title="作废过账" :confirm-loading="voidSaving" @ok="submitVoid">
+  <a-modal v-model:open="voidOpen" title="作废外部账单" :confirm-loading="voidSaving" @ok="submitVoid">
     <a-alert
       v-if="voidRow"
       type="warning"
       show-icon
-      :message="`作废后 ${voidRow.postingNo} 不再代表有效过账；原记录保留，作废原因会写入操作日志。`"
+      :message="`作废后 ${voidRow.postingNo} 不再代表有效外部账单；原记录保留，作废原因会写入操作日志。`"
     />
     <a-form layout="vertical" class="posting-form">
       <a-form-item label="作废原因" required>
@@ -204,7 +204,7 @@
     </a-form>
   </a-modal>
 
-  <a-drawer v-model:open="detailOpen" title="过账详情" :width="scmDrawerWidth('xl')" :destroy-on-close="true" @close="detailOpen = false">
+  <a-drawer v-model:open="detailOpen" title="外部账单详情" :width="scmDrawerWidth('xl')" :destroy-on-close="true" @close="detailOpen = false">
     <a-alert v-if="detailError" type="error" show-icon :message="detailError">
       <template #action><a-button :loading="detailLoading" @click="loadDetail">重试</a-button></template>
     </a-alert>
@@ -213,12 +213,12 @@
         <section class="detail-section">
           <h3>单据信息</h3>
           <a-descriptions bordered size="small" :column="{xs: 1, sm: 2}">
-            <a-descriptions-item label="过账单号">{{ detail.postingNo }}</a-descriptions-item>
+            <a-descriptions-item label="外部账单号">{{ detail.postingNo }}</a-descriptions-item>
             <a-descriptions-item label="状态">{{ statusText(detail.status) }}</a-descriptions-item>
             <a-descriptions-item label="客户">{{ detail.customerName }}</a-descriptions-item>
             <a-descriptions-item label="结算客户">{{ detail.settlementCustomerName || '—' }}</a-descriptions-item>
-            <a-descriptions-item label="过账日期">{{ detail.documentDate }}</a-descriptions-item>
-            <a-descriptions-item label="过账金额">{{ moneyText(detail.amount) }}</a-descriptions-item>
+            <a-descriptions-item label="外部账单日期">{{ detail.documentDate }}</a-descriptions-item>
+            <a-descriptions-item label="外部账单金额">{{ moneyText(detail.amount) }}</a-descriptions-item>
             <a-descriptions-item label="税点">{{ percentText(detail.taxRate) }}</a-descriptions-item>
             <a-descriptions-item label="返款状态">{{ refundStatusText(detail.refundStatus) }}</a-descriptions-item>
             <a-descriptions-item label="备注" :span="2">{{ detail.remark || '—' }}</a-descriptions-item>
@@ -255,7 +255,7 @@
           </a-table>
         </section>
       </template>
-      <a-empty v-else-if="!detailLoading && !detailError" description="暂无过账详情" />
+      <a-empty v-else-if="!detailLoading && !detailError" description="暂无外部账单详情" />
     </a-spin>
   </a-drawer>
 
@@ -298,10 +298,10 @@ const statusOptions = Object.values(SCM_FINANCE_POSTING_STATUS_ENUM).map((item) 
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
 const columns = ref<TableColumnsType<FinancePosting>>([
-  {title: '过账单号', dataIndex: 'postingNo', width: 200, ellipsis: true},
+  {title: '外部账单号', dataIndex: 'postingNo', width: 200, ellipsis: true},
   {title: '客户', dataIndex: 'customerName', width: 190, ellipsis: true},
-  {title: '过账日期', dataIndex: 'documentDate', width: 120},
-  {title: '过账金额', dataIndex: 'amount', width: 140},
+  {title: '外部账单日期', dataIndex: 'documentDate', width: 120},
+  {title: '外部账单金额', dataIndex: 'amount', width: 140},
   {title: '税点', dataIndex: 'taxRate', width: 90},
   {title: '返款状态', dataIndex: 'refundStatus', align: 'center', width: 110},
   {title: '状态', dataIndex: 'status', align: 'center', width: 90},
@@ -413,15 +413,15 @@ function openEdit(row: FinancePosting) {
 
 async function submitForm() {
   if (!editing.value && !form.customerId) {
-    message.warning('请选择过账客户');
+    message.warning('请选择外部账单客户');
     return;
   }
   if (!form.documentDate) {
-    message.warning('请选择过账日期');
+    message.warning('请选择外部账单日期');
     return;
   }
   if (!isValidPositiveAmount(form.amount)) {
-    message.warning('请填写大于 0、最多 4 位小数的过账金额');
+    message.warning('请填写大于 0、最多 4 位小数的外部账单金额');
     return;
   }
   formSaving.value = true;
@@ -437,10 +437,10 @@ async function submitForm() {
         refundStatus: form.refundStatus,
         remark: form.remark ?? null,
       });
-      message.success('过账已修改');
+      message.success('外部账单已修改');
     } else {
       await financeApi.postingAdd({...form});
-      message.success('过账已登记');
+      message.success('外部账单已登记');
     }
     formOpen.value = false;
     await queryData();
@@ -474,7 +474,7 @@ async function submitVoid() {
   voidSaving.value = true;
   try {
     await financeApi.postingVoid({postingId: row.postingId, version: row.version, reason});
-    message.success('过账已作废');
+    message.success('外部账单已作废');
     voidOpen.value = false;
     await queryData();
   } catch {
@@ -512,7 +512,7 @@ async function loadDetail() {
     const logResponse = await financeApi.operationLogs('POSTING', postingId, {suppressGlobalErrorMessage: true});
     logs.value = logResponse.data ?? [];
   } catch {
-    detailError.value = '过账详情加载失败，请重试。';
+    detailError.value = '外部账单详情加载失败，请重试。';
   } finally {
     detailLoading.value = false;
   }

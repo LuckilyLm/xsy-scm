@@ -249,14 +249,14 @@ import {
   });
 
   test('finance report overview exposes only the six fixed measures and read-only page actions', () => {
-    for (const label of ['应收发生额', '应收已核销', '期末待收', '应付发生额', '应付已核销', '期末待付']) {
+    for (const label of ['本期应收金额', '应收已抵扣', '期末待收', '本期应付金额', '应付已抵扣', '期末待付']) {
       assert.ok(FINANCE_PAGE.includes(label), `往来概览缺固定指标「${label}」`);
     }
     // 这两条语义压进指标名，而不是另写一条口径说明：报表模块不常驻解释（见 CONTRIBUTING.md SCM 界面规范）。
     assert.match(FINANCE_PAGE, /期末待收（含期初未结）/, '期末余额口径要说明不受起始日截断');
     assert.match(FINANCE_PAGE, /期末待付（含期初未结）/, '期末余额口径要说明不受起始日截断');
-    assert.match(FINANCE_PAGE, /应收已核销（非实收）/, '已核销不得让人读成现金收付');
-    assert.match(FINANCE_PAGE, /应付已核销（非实付）/, '已核销不得让人读成现金收付');
+    assert.match(FINANCE_PAGE, /应收已抵扣（非实收）/, '已抵扣不得让人读成现金收付');
+    assert.match(FINANCE_PAGE, /应付已抵扣（非实付）/, '已抵扣不得让人读成现金收付');
     assert.match(FINANCE_PAGE, /v-privilege="PERM\.FINANCE_QUERY"/, '页面查询必须受报表查询权限控制');
     assert.match(FINANCE_PAGE, /v-privilege="PERM\.EXPORT"/, '三个导出按钮必须受导出权限控制');
     assert.match(FINANCE_PAGE, /SCM_REPORT_TABLE_ID\.FINANCE_RECEIVABLE/);
@@ -895,10 +895,7 @@ import {
 
 // ---------------------------------------------------------------- 客户月利润对账口径
 {
-  const page = readFileSync(
-    new URL('../src/views/business/scm/report/report-customer-monthly-profit.vue', import.meta.url),
-    'utf8'
-  );
+  const page = readFileSync(new URL('../src/views/business/scm/report/report-customer-monthly-profit.vue', import.meta.url), 'utf8');
   const api = readFileSync(new URL('../src/api/business/scm/finance-profit-api.ts', import.meta.url), 'utf8');
 
   test('客户月利润展示对账派生列，公式只由服务端计算', () => {

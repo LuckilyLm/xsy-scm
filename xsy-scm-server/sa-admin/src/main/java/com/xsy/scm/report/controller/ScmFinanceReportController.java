@@ -34,13 +34,13 @@ import java.util.List;
 public class ScmFinanceReportController {
 
     private static final List<
-        String> OVERVIEW_TITLES = List.of("统计起始日", "统计结束日", "应收发生额", "应收已核销", "期末待收", "应付发生额", "应付已核销", "期末待付");
+        String> OVERVIEW_TITLES = List.of("统计起始日", "统计结束日", "本期应收金额", "应收已抵扣", "期末待收", "本期应付金额", "应付已抵扣", "期末待付");
 
-    private static final List<String> RECEIVABLE_TITLES = List.of("应收单号", "订单号", "客户", "原应收金额", "红字金额", "净应收", "已核销金额",
-        "期末待收", "超额核销待处理", "业务时点");
+    private static final List<String> RECEIVABLE_TITLES = List.of("应收单号", "订单号", "客户", "原应收金额", "扣减金额", "扣减后应收",
+        "已抵扣金额", "期末待收", "抵扣超额待处理", "业务时间");
 
-    private static final List<String> PAYABLE_TITLES = List.of("应付单号", "采购单号", "供应商", "原应付金额", "红字金额", "净应付", "已核销金额",
-        "期末待付", "超额核销待处理", "业务时点");
+    private static final List<String> PAYABLE_TITLES = List.of("应付单号", "采购单号", "供应商", "原应付金额", "扣减金额", "扣减后应付", "已抵扣金额",
+        "期末待付", "抵扣超额待处理", "业务时间");
 
     private final ScmFinanceReportService financeReportService;
 

@@ -19,14 +19,14 @@ public class FinancePaymentAddForm {
     /**
      * {@code ScmFinanceCounterpartyTypeEnum} 两值之一。
      */
-    @NotNull(message = "往来方类型不能为空")
+    @NotNull(message = "客户或供应商类型不能为空")
     private String counterpartyType;
 
     /**
      * 对方主键：{@code SUPPLIER} 时为 {@code xsy_supplier.id}；{@code CUSTOMER} 时以 {@code xsy_order_refund.customer_id}
      * 为准，本字段只做一致性校验。
      */
-    @NotNull(message = "往来方编号不能为空")
+    @NotNull(message = "客户或供应商编号不能为空")
     private Long counterpartyId;
 
     /**
@@ -55,7 +55,7 @@ public class FinancePaymentAddForm {
      * <p>
      * 不会从 {@code xsy_order_refund.external_reference} 自动带入：那一列属于订单域的退款记录，本列属于财务的实际资金动作，两者职责不同，必须由登记人单独提供。
      */
-    @Size(max = 128, message = "资金凭据号长度不能超过128")
+    @Size(max = 128, message = "收付款凭证号长度不能超过128")
     private String externalReference;
 
     /**

@@ -1,7 +1,7 @@
 /*
  * 2026-10-28 现场确认后的 P0 第一批：浏览器侧验收。
  *
- * 只覆盖「后台页面上能看见、点得到」的行为；取价、负库存、核销的账务结论已由 Pg IT 覆盖，
+ * 只覆盖「后台页面上能看见、点得到」的行为；取价、负库存、账款抵扣的账务结论已由 Pg IT 覆盖，
  * 这里不重复断言后端规则，避免同一口径写两遍。
  */
 import {test, expect} from './scm-test-base';
@@ -81,11 +81,7 @@ test.describe('scm-p0-batch', () => {
     // 规格下拉是远程搜索：不输入时只给前 50 条，刚建的 SKU 不会出现在里面
     await drawer.locator('.ant-form-item').filter({hasText: '商品规格'}).locator('.ant-select-selector').click();
     await page.keyboard.type(`${runTag}商品A`);
-    await page
-      .locator('.ant-select-dropdown:visible')
-      .last()
-      .getByText(`${runTag}商品A / 散装A`, {exact: true})
-      .click();
+    await page.locator('.ant-select-dropdown:visible').last().getByText(`${runTag}商品A / 散装A`, {exact: true}).click();
 
     await drawer.locator('.ant-form-item').filter({hasText: '分组价'}).locator('input').first().fill('2.0000');
     // 生效时间是必填；结束留空表示长期有效。带 show-time 的区间必须从面板选，直接键入日期不提交。
@@ -118,7 +114,7 @@ async function selectOption(page: Page, root: ReturnType<Page['locator']>, itemL
   await page.locator('.ant-select-dropdown:visible').last().getByText(optionText, {exact: true}).click();
 }
 
-/** 财务的资金单/应收选择弹窗：按单号找到行，点行内「选择」。 */
+/** 财务的收付款单/应收选择弹窗：按单号找到行，点行内「选择」。 */
 async function pickRecord(page: Page, title: string, documentNo: string) {
   const picker = page.locator('.ant-modal:visible').filter({hasText: title}).last();
   await expect(picker).toBeVisible();
@@ -255,9 +251,7 @@ test.describe('scm-p0-negative-stock', () => {
       pageNum: 1,
       pageSize: 20,
     });
-    const row = (report.list as Row[]).find(
-      (item) => item.productName === skuName && Number(item.warehouseId) === warehouseId
-    );
+    const row = (report.list as Row[]).find((item) => item.productName === skuName && Number(item.warehouseId) === warehouseId);
     expect(row?.quantity, '负库存仓的余额应为负数').toBe('-3.0000');
     expect(row?.unit).toBe('kg');
 
@@ -299,17 +293,17 @@ test.describe('scm-p0-finance-fifo-waiver', () => {
     await authenticate(page, harness.financeToken);
     await page.goto('/#/finance/write-offs');
     await expect(page.locator('#scm-finance-write-off-table')).toBeVisible();
-    await page.getByRole('button', {name: accessibleName('登记核销')}).click();
+    await page.getByRole('button', {name: accessibleName('登记抵扣')}).click();
 
-    const drawer = page.locator('.ant-drawer-open').filter({hasText: '登记核销'}).first();
+    const drawer = page.locator('.ant-drawer-open').filter({hasText: '登记抵扣'}).first();
     await expect(drawer).toBeVisible();
-    await selectOption(page, drawer, '资金类型', '收款');
+    await selectOption(page, drawer, '收付款类型', '收款');
     await drawer
       .locator('.ant-form-item')
-      .filter({hasText: '资金单'})
+      .filter({hasText: '收付款单'})
       .getByRole('button', {name: accessibleName('选择')})
       .click();
-    await pickRecord(page, '选择待核销收款', receipt.receiptNo);
+    await pickRecord(page, '选择待抵扣收款', receipt.receiptNo);
 
     // 分配方式默认就是自动 FIFO：先预览再确认，避免直接按库里的顺序扣钱
     await drawer.getByRole('button', {name: accessibleName('预览分配')}).click();
@@ -321,7 +315,7 @@ test.describe('scm-p0-finance-fifo-waiver', () => {
     await expect(planRows.nth(1)).toContainText(second.receivable.receivableNo);
     await expect(planRows.nth(1)).toContainText('5.0000');
 
-    await drawer.getByRole('button', {name: accessibleName('确认自动核销')}).click();
+    await drawer.getByRole('button', {name: accessibleName('确认自动抵扣')}).click();
     await expect(page.locator('.ant-drawer-open')).toHaveCount(0);
 
     const applied = await call<Row>(harness.finance, 'post', '/scm/finance/write-off/query', {
@@ -334,20 +328,19 @@ test.describe('scm-p0-finance-fifo-waiver', () => {
     expect(byTarget.get(first.receivable.receivableNo)).toBe('35.0000');
     expect(byTarget.get(second.receivable.receivableNo)).toBe('5.0000');
 
-    // 剩余 5.0000 留在收款单待核销额，没有被摊到第二张应收上
+    // 剩余 5.0000 留在收款单待抵扣额，没有被摊到第二张应收上
     const remaining = await call<Row>(harness.finance, 'post', '/scm/finance/receivable/query', {
       ...financeDateRange(),
       pageNum: 1,
       pageSize: 100,
       customerId: first.customerId,
     });
-    const openOf = (receivableNo: string) =>
-      (remaining.list as Row[]).find((item) => String(item.receivableNo) === receivableNo)?.openAmount;
+    const openOf = (receivableNo: string) => (remaining.list as Row[]).find((item) => String(item.receivableNo) === receivableNo)?.openAmount;
     expect(openOf(first.receivable.receivableNo)).toBe('0.0000');
     expect(openOf(second.receivable.receivableNo)).toBe('30.0000');
   });
 
-  test('抹零：登记后冲减应收未结，反向抹零把金额退回', async ({page}) => {
+  test('抹零：登记后扣减应收未结，撤销抹零把金额退回', async ({page}) => {
     const openBefore = '30.0000';
     await authenticate(page, harness.financeToken);
     await page.goto('/#/finance/receivables');
@@ -370,9 +363,7 @@ test.describe('scm-p0-finance-fifo-waiver', () => {
       pageSize: 100,
       customerId: second.customerId,
     });
-    expect((afterWaive.list as Row[]).find((item) => String(item.receivableNo) === second.receivable.receivableNo)?.openAmount).toBe(
-      '29.5000'
-    );
+    expect((afterWaive.list as Row[]).find((item) => String(item.receivableNo) === second.receivable.receivableNo)?.openAmount).toBe('29.5000');
 
     const writeOffs = await call<Row>(harness.finance, 'post', '/scm/finance/write-off/query', {
       ...financeDateRange(),
@@ -383,7 +374,7 @@ test.describe('scm-p0-finance-fifo-waiver', () => {
     const waiverLine = (writeOffs.list as Row[]).find((item) => item.sourceType === 'WAIVER');
     expect(waiverLine?.amount).toBe('0.5000');
 
-    // 撤销抹零只能追加反向记录：金额回到 30.0000，原抹零行保留
+    // 撤销抹零只能追加撤销记录：金额回到 30.0000，原抹零行保留
     await call(harness.finance, 'post', '/scm/finance/waiver/reverse', {
       waiverId: Number(waiverLine?.sourceId),
       reason: `${harness.runTag} 抹零登记有误`,
@@ -394,9 +385,7 @@ test.describe('scm-p0-finance-fifo-waiver', () => {
       pageSize: 100,
       customerId: second.customerId,
     });
-    expect(
-      (afterReverse.list as Row[]).find((item) => String(item.receivableNo) === second.receivable.receivableNo)?.openAmount
-    ).toBe('30.0000');
+    expect((afterReverse.list as Row[]).find((item) => String(item.receivableNo) === second.receivable.receivableNo)?.openAmount).toBe('30.0000');
     const reversed = await call<Row>(harness.finance, 'post', '/scm/finance/write-off/query', {
       ...financeDateRange(),
       pageNum: 1,

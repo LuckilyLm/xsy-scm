@@ -29,9 +29,9 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 @RequestMapping("/scm/report/supplier/statement")
 @RequiredArgsConstructor
 public class ScmSupplierStatementController {
-    private static final List<
-        String> TITLES = List.of("对账版本", "供应商", "范围口径", "生成时间", "起始日", "截止日", "期初净应付", "新增应付", "红字应付", "核销净额", "期末净应付",
-            "期初未分配付款", "本期全供应商付款净额", "期末未分配付款", "事件时间", "类型", "单号", "关联单号", "应付变动", "付款变动", "核销变动", "滚动净应付");
+    private static final List<String> TITLES = List.of("对账版本", "供应商", "范围口径", "生成时间", "起始日", "截止日", "期初待付金额", "新增应付",
+        "应付扣减", "有效抵扣金额", "期末待付金额", "期初未分配付款", "本期有效付款（全部供应商）", "期末未分配付款", "事件时间", "类型", "单号", "关联单号", "应付变动", "付款变动",
+        "账款抵扣变动", "剩余待付金额");
     private final ScmSupplierStatementService statementService;
 
     @PostMapping("/freeze")

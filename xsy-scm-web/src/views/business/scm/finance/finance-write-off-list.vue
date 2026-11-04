@@ -1,18 +1,18 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
-      <a-form-item label="核销日期">
-        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'核销开始日期'" />
+      <a-form-item label="账款抵扣日期">
+        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'账款抵扣开始日期'" />
         <span class="date-separator">至</span>
-        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'核销结束日期'" />
+        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'账款抵扣结束日期'" />
       </a-form-item>
-      <a-form-item label="资金类型"
+      <a-form-item label="收付款类型"
         ><a-select
           v-model:value="query.sourceType"
           allow-clear
           placeholder="全部"
           style="width: 140px"
-          v-aria-label="'资金类型'"
+          v-aria-label="'收付款类型'"
           :options="[
             {label: '收款', value: 'RECEIPT'},
             {label: '付款', value: 'PAYMENT'},
@@ -20,14 +20,20 @@
             {label: '抹零', value: 'WAIVER'},
           ]"
       /></a-form-item>
-      <a-form-item label="资金单号"
-        ><a-input v-model:value="query.sourceNo" allow-clear v-aria-label="'资金单号'" @press-enter="onSearch"
+      <a-form-item label="收付款单号"
+        ><a-input v-model:value="query.sourceNo" allow-clear v-aria-label="'收付款单号'" @press-enter="onSearch"
       /></a-form-item>
-      <a-form-item label="目标单号"
-        ><a-input v-model:value="query.targetNo" allow-clear v-aria-label="'目标单号'" @press-enter="onSearch"
+      <a-form-item label="待结算单号"
+        ><a-input v-model:value="query.targetNo" allow-clear v-aria-label="'待结算单号'" @press-enter="onSearch"
       /></a-form-item>
-      <a-form-item label="方向"
-        ><a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px" v-aria-label="'方向'"
+      <a-form-item label="记录类型"
+        ><a-select
+          v-model:value="query.entryType"
+          allow-clear
+          :options="entryOptions"
+          placeholder="全部"
+          style="width: 120px"
+          v-aria-label="'记录类型'"
       /></a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -45,7 +51,7 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-setting-block">
-        <a-button v-privilege="PERM.WRITE_OFF_ADD" type="primary" @click="openAdd">登记核销</a-button>
+        <a-button v-privilege="PERM.WRITE_OFF_ADD" type="primary" @click="openAdd">登记抵扣</a-button>
         <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_WRITE_OFF" :refresh="queryData" />
       </div>
@@ -61,7 +67,7 @@
             danger
             v-privilege="PERM.WRITE_OFF_REVERSE"
             @click="openReverse(record)"
-            >撤销核销</a-button
+            >撤销抵扣</a-button
           >
           <a-button
             v-else-if="record.entryType === 'NORMAL' && !record.reversed && record.sourceType === 'WAIVER'"
@@ -70,19 +76,19 @@
             danger
             v-privilege="PERM.WAIVER_REVERSE"
             @click="openWaiverReverse(record)"
-            >反向抹零</a-button
+            >撤销抹零</a-button
           >
         </div>
         <div class="writeoff-mobile-party">{{ record.sourceName || '—' }} · {{ sourceTypeText(record.sourceType) }}</div>
         <div class="writeoff-mobile-party">{{ record.targetName || '—' }} · {{ targetTypeText(record.targetType) }}</div>
         <div class="writeoff-mobile-values">
           <span
-            >核销金额 <strong>{{ moneyText(record.amount) }}</strong></span
+            >抵扣金额 <strong>{{ moneyText(record.amount) }}</strong></span
           >
           <span>{{ dateTimeText(record.writtenOffAt) }}</span>
         </div>
       </div>
-      <a-empty v-if="!page.loading.value && !page.tableData.value.length" description="暂无核销记录" />
+      <a-empty v-if="!page.loading.value && !page.tableData.value.length" description="暂无账款抵扣记录" />
     </div>
     <a-table
       id="scm-finance-write-off-table"
@@ -126,7 +132,7 @@
         <template v-else-if="column.dataIndex === 'writtenOffAt'">{{ dateTimeText(text) }}</template>
         <template v-else-if="column.dataIndex === 'operator'">{{ record.operator || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 撤销核销是追加反向记录，不是编辑，所以用危险样式并单独确认 -->
+          <!-- 撤销抵扣是追加撤销记录，不是编辑，所以用危险样式并单独确认 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button
               v-if="record.entryType === 'NORMAL' && !record.reversed && record.sourceType !== 'WAIVER'"
@@ -135,9 +141,9 @@
               danger
               v-privilege="PERM.WRITE_OFF_REVERSE"
               @click="openReverse(record)"
-              >撤销核销</a-button
+              >撤销抵扣</a-button
             >
-            <!-- 抹零必须走抹零接口反向：它还要把抹零事实置为已反向，和普通核销反向不能共用一个动作 -->
+            <!-- 抹零必须走抹零接口撤销：它还要把抹零事实置为已撤销，和普通撤销抵扣不能共用一个动作 -->
             <a-button
               v-else-if="record.entryType === 'NORMAL' && !record.reversed && record.sourceType === 'WAIVER'"
               type="link"
@@ -145,7 +151,7 @@
               danger
               v-privilege="PERM.WAIVER_REVERSE"
               @click="openWaiverReverse(record)"
-              >反向抹零</a-button
+              >撤销抹零</a-button
             >
             <span v-else class="scm-cell-hint">—</span>
           </a-space>
@@ -169,7 +175,7 @@
 
   <a-drawer
     :open="addOpen"
-    title="登记核销"
+    title="登记抵扣"
     :width="scmDrawerWidth('l')"
     :destroy-on-close="true"
     :mask-closable="!addSaving"
@@ -179,25 +185,25 @@
     <a-form ref="addFormRef" :model="addModel" :rules="addRules" layout="vertical" class="app-drawer-form">
       <a-form-item name="sourceType">
         <template #label>
-          资金类型
-          <ScmFieldHelp label="资金类型" text="收款核销应收，付款核销应付" />
+          收付款类型
+          <ScmFieldHelp label="收付款类型" text="把已收款用于抵扣客户应收，把已付款用于抵扣供应商应付；不会再次收付款" />
         </template>
-        <a-select v-model:value="sourceType" :options="sourceOptions" placeholder="选择资金类型" @change="resetAllocation" />
+        <a-select v-model:value="sourceType" :options="sourceOptions" placeholder="选择收付款类型" @change="resetAllocation" />
       </a-form-item>
-      <a-form-item label="资金单" name="source">
-        <a-input :value="source?.documentNo || ''" readonly placeholder="选择可核销资金单">
+      <a-form-item label="收付款单" name="source">
+        <a-input :value="source?.documentNo || ''" readonly placeholder="选择可抵扣收付款单">
           <template #addonAfter><a-button type="link" :disabled="!sourceType" @click="openSourcePicker">选择</a-button></template>
         </a-input>
       </a-form-item>
     </a-form>
     <a-descriptions v-if="source" class="source-summary" bordered size="small" :column="3">
-      <a-descriptions-item label="资金方">{{ source.partyName }}</a-descriptions-item>
-      <a-descriptions-item label="方向">{{ entryTypeText(source.entryType) }}</a-descriptions-item>
-      <a-descriptions-item label="可核销金额">{{ moneyText(source.availableAmount) }}</a-descriptions-item>
+      <a-descriptions-item label="收付款对象">{{ source.partyName }}</a-descriptions-item>
+      <a-descriptions-item label="记录类型">{{ entryTypeText(source.entryType) }}</a-descriptions-item>
+      <a-descriptions-item label="可抵扣金额">{{ moneyText(source.availableAmount) }}</a-descriptions-item>
     </a-descriptions>
     <a-radio-group v-if="source" v-model:value="allocMode" button-style="solid" class="alloc-mode" @change="resetPlan">
-      <a-radio-button value="AUTO">自动 FIFO</a-radio-button>
-      <a-radio-button value="MANUAL">手工选择</a-radio-button>
+      <a-radio-button value="AUTO">按日期自动分配</a-radio-button>
+      <a-radio-button value="MANUAL">手动选择账单</a-radio-button>
     </a-radio-group>
 
     <template v-if="allocMode === 'AUTO'">
@@ -205,8 +211,8 @@
         <h3>自动分配预览</h3>
         <a-button :disabled="!source" :loading="planLoading" @click="previewAuto">预览分配</a-button>
       </div>
-      <p class="scm-note">按账单日期由早到晚自动分配，单张单据不会超额核销；单次最多处理 100 张，未分配完的金额保留在收款单的待核销额中。</p>
-      <a-empty v-if="!plan.length" description="点击「预览分配」查看将要核销的单据" />
+      <p class="scm-note">按账单日期从早到晚抵扣，单次最多处理 100 张。未用完的金额留在对应收付款单中，可用于后续结账。</p>
+      <a-empty v-if="!plan.length" description="点击「预览分配」查看将要抵扣的单据" />
       <a-table
         bordered
         v-else
@@ -228,10 +234,10 @@
     </template>
     <template v-else>
       <div class="target-toolbar">
-        <h3>分配目标</h3>
-        <a-button :disabled="!source" @click="openTargetPicker">添加目标单</a-button>
+        <h3>选择要结算的账单</h3>
+        <a-button :disabled="!source" @click="openTargetPicker">添加待结算账单</a-button>
       </div>
-      <a-empty v-if="!targets.length" description="先选择一笔资金单，再添加一个或多个目标单" />
+      <a-empty v-if="!targets.length" description="先选择一笔收付款单，再添加一个或多个待结算账单" />
       <a-table
         bordered
         v-else
@@ -261,14 +267,14 @@
           :loading="addSaving"
           :disabled="!source || (allocMode === 'AUTO' ? !plan.length : !targets.length)"
           @click="submitAdd"
-          >{{ allocMode === 'AUTO' ? '确认自动核销' : '提交核销' }}</a-button
+          >{{ allocMode === 'AUTO' ? '确认自动抵扣' : '确认抵扣' }}</a-button
         >
       </a-space>
     </template>
   </a-drawer>
 
-  <a-modal v-model:open="reverseOpen" title="撤销核销" :confirm-loading="reverseSaving" @ok="submitReverse">
-    <p v-if="reverseRow" class="scm-note">确认后该核销记录将作废，{{ moneyText(reverseRow.amount) }} 将退回对应单据的未结金额。</p>
+  <a-modal v-model:open="reverseOpen" title="撤销抵扣" :confirm-loading="reverseSaving" @ok="submitReverse">
+    <p v-if="reverseRow" class="scm-note">确认后该账款抵扣记录将作废，{{ moneyText(reverseRow.amount) }} 将退回对应单据的未结金额。</p>
     <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError" />
     <a-form ref="reverseFormRef" :model="reverseModel" :rules="reverseRules" layout="vertical"
       ><a-form-item label="撤销原因" name="reverseReason"
@@ -276,10 +282,10 @@
     ></a-form>
   </a-modal>
 
-  <a-modal v-model:open="waiverReverseOpen" title="反向抹零" :confirm-loading="waiverReverseSaving" @ok="submitWaiverReverse">
+  <a-modal v-model:open="waiverReverseOpen" title="撤销抹零" :confirm-loading="waiverReverseSaving" @ok="submitWaiverReverse">
     <p v-if="waiverReverseRow" class="scm-note">确认后本次抹零将作废，应收未结金额恢复 {{ moneyText(waiverReverseRow.amount) }}。</p>
     <a-form ref="waiverReverseFormRef" :model="waiverReverseModel" :rules="waiverReverseRules" layout="vertical">
-      <a-form-item label="反向原因" name="waiverReverseReason">
+      <a-form-item label="撤销原因" name="waiverReverseReason">
         <a-textarea v-model:value="waiverReverseReason" :maxlength="500" :rows="3" show-count />
       </a-form-item>
     </a-form>
@@ -357,16 +363,16 @@ const reverseFormRef = ref<FormInstance>();
 const waiverReverseFormRef = ref<FormInstance>();
 /** 必填项逐项校验，错误显示在输入框下方。 */
 const addRules = {
-  sourceType: [{required: true, message: '请选择资金类型', trigger: 'change'}],
+  sourceType: [{required: true, message: '请选择收付款类型', trigger: 'change'}],
   source: [
     {
-      validator: () => (source.value ? Promise.resolve() : Promise.reject(new Error('请选择资金单'))),
+      validator: () => (source.value ? Promise.resolve() : Promise.reject(new Error('请选择收付款单'))),
       trigger: 'change',
     },
   ],
 };
 const reverseRules = {reverseReason: [{required: true, message: '请填写撤销原因', trigger: 'blur'}]};
-const waiverReverseRules = {waiverReverseReason: [{required: true, message: '请填写反向原因', trigger: 'blur'}]};
+const waiverReverseRules = {waiverReverseReason: [{required: true, message: '请填写撤销原因', trigger: 'blur'}]};
 /** 校验模型必须是稳定对象；reactive 会解包内部 ref，值仍是响应式的。 */
 const addModel = reactive({sourceType, source});
 const reverseModel = reactive({reverseReason});
@@ -393,32 +399,32 @@ function targetTypeText(value?: string | null): string {
 }
 
 const columns = ref<TableColumnsType<FinanceWriteOff>>([
-  {title: '核销单号', dataIndex: 'writeOffNo', width: 200},
-  {title: '资金方', dataIndex: 'sourceName', width: 190},
-  {title: '资金类型', dataIndex: 'sourceType', align: 'center', width: 90},
-  {title: '资金单号', dataIndex: 'sourceNo', width: 200},
-  {title: '核销目标', dataIndex: 'targetName', width: 190},
-  {title: '目标类型', dataIndex: 'targetType', align: 'center', width: 90},
-  {title: '目标单号', dataIndex: 'targetNo', width: 200},
-  {title: '核销金额', dataIndex: 'amount', width: 136},
-  {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
+  {title: '抵扣单号', dataIndex: 'writeOffNo', width: 200},
+  {title: '收付款对象', dataIndex: 'sourceName', width: 190},
+  {title: '收付款类型', dataIndex: 'sourceType', align: 'center', width: 110},
+  {title: '收付款单号', dataIndex: 'sourceNo', width: 200},
+  {title: '结算对象', dataIndex: 'targetName', width: 190},
+  {title: '账单类型', dataIndex: 'targetType', align: 'center', width: 100},
+  {title: '待结算单号', dataIndex: 'targetNo', width: 200},
+  {title: '抵扣金额', dataIndex: 'amount', width: 136},
+  {title: '记录类型', dataIndex: 'entryType', align: 'center', width: 80},
   {title: '原因', dataIndex: 'reason', width: 180},
-  {title: '核销时点', dataIndex: 'writtenOffAt', width: 180},
+  {title: '抵扣时间', dataIndex: 'writtenOffAt', width: 180},
   {title: '操作人', dataIndex: 'operator', width: 110},
   {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);
 const planColumns: TableColumnsType<FinanceWriteOffAutoPlan> = [
-  {title: '目标单号', dataIndex: 'targetNo', width: 200},
-  {title: '往来方', dataIndex: 'targetName', width: 180},
+  {title: '待结算单号', dataIndex: 'targetNo', width: 200},
+  {title: '客户或供应商', dataIndex: 'targetName', width: 180},
   {title: '账单日期', dataIndex: 'eventAt', width: 180},
   {title: '未结金额', dataIndex: 'openAmount', width: 140},
-  {title: '本次核销', dataIndex: 'allocatedAmount', width: 140},
+  {title: '本次抵扣', dataIndex: 'allocatedAmount', width: 140},
 ];
 const targetColumns: TableColumnsType<AllocationDraft> = [
-  {title: '目标单号', dataIndex: 'documentNo', width: 210},
-  {title: '往来方', dataIndex: 'partyName', width: 170},
+  {title: '待结算单号', dataIndex: 'documentNo', width: 210},
+  {title: '客户或供应商', dataIndex: 'partyName', width: 170},
   {title: '关联单号', dataIndex: 'linkedDocumentNo', width: 200},
-  {title: '可核销金额', dataIndex: 'availableAmount', width: 150},
+  {title: '可抵扣金额', dataIndex: 'availableAmount', width: 150},
   {title: '本次金额', dataIndex: 'amount', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ];
@@ -489,7 +495,7 @@ async function previewAuto() {
     const response = await financeApi.writeOffAutoPreview({sourceType: sourceType.value, sourceId: source.value.id});
     plan.value = response.data;
     if (!response.data.length) {
-      message.warning('该资金单的对方没有可按顺序核销的未结单据');
+      message.warning('该收付款单的对方没有可按顺序抵扣的未结单据');
     }
   } catch {
     plan.value = [];
@@ -517,7 +523,7 @@ function onCandidateSelected(candidate: FinanceCandidate) {
     return;
   }
   if (targets.value.some((item) => String(item.id) === String(candidate.id))) {
-    addError.value = '同一目标单不能重复添加。';
+    addError.value = '同一待结算账单不能重复添加。';
     return;
   }
   addError.value = '';
@@ -536,11 +542,11 @@ async function submitAdd() {
     return;
   }
   if (!source.value || !sourceType.value) {
-    addError.value = '请选择核销来源';
+    addError.value = '请选择用于抵扣的收付款单';
     return;
   }
   if (allocMode.value === 'AUTO' && !plan.value.length) {
-    message.warning('请先预览自动分配结果，再确认核销');
+    message.warning('请先预览自动分配结果，再确认抵扣');
     return;
   }
   const items = targets.value.filter((item) => isValidPositiveAmount(item.amount)).map((item) => ({targetId: item.id, amount: item.amount}));
@@ -556,7 +562,7 @@ async function submitAdd() {
     } else {
       await financeApi.writeOffAdd({sourceType: sourceType.value, sourceId: source.value.id, items});
     }
-    message.success(allocMode.value === 'AUTO' ? '已按账单日期自动核销' : '核销已登记');
+    message.success(allocMode.value === 'AUTO' ? '已按账单日期自动抵扣' : '抵扣已登记');
     addOpen.value = false;
     await queryData();
   } catch {
@@ -584,7 +590,7 @@ async function submitReverse() {
   reverseError.value = '';
   try {
     await financeApi.writeOffReverse({writeOffId: reverseRow.value.writeOffId, reason: reverseReason.value.trim()});
-    message.success('反向核销已追加');
+    message.success('抵扣已撤销');
     reverseOpen.value = false;
     await queryData();
   } catch {
@@ -613,7 +619,7 @@ async function submitWaiverReverse() {
   waiverReverseSaving.value = true;
   try {
     await financeApi.waiverReverse({waiverId: waiverReverseRow.value.sourceId, reason: waiverReverseReason.value.trim()});
-    message.success('抹零已反向');
+    message.success('抹零已撤销');
     waiverReverseOpen.value = false;
     await queryData();
   } catch {

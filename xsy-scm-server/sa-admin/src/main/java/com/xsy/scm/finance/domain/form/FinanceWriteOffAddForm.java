@@ -15,15 +15,15 @@ import java.util.List;
 @Data
 public class FinanceWriteOffAddForm {
 
-    @NotNull(message = "核销资金类型不能为空")
+    @NotNull(message = "用于抵扣的收付款类型不能为空")
     private String sourceType;
 
-    @NotNull(message = "核销资金单不能为空")
-    @Positive(message = "核销资金单编号必须大于0")
+    @NotNull(message = "用于抵扣的收付款单不能为空")
+    @Positive(message = "用于抵扣的收付款单编号必须大于0")
     private Long sourceId;
 
-    @NotEmpty(message = "至少填写一条核销目标")
-    @Size(max = 100, message = "单次最多核销100条目标")
+    @NotEmpty(message = "至少选择一张待结算账单")
+    @Size(max = 100, message = "单次最多抵扣100张账单")
     @Valid
     private List<FinanceWriteOffAddItemForm> items;
 }

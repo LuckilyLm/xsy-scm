@@ -35,12 +35,12 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/scm/finance/write-off")
-@Tag(name = "SCM 财务核销")
+@Tag(name = "SCM 财务账款抵扣")
 @RequiredArgsConstructor
 public class FinanceWriteOffController {
 
-    private static final List<String> EXPORT_TITLES = List.of("核销单号", "资金类型", "资金单号", "资金方", "目标类型", "目标单号", "目标方",
-        "金额", "方向", "原因", "核销时点", "操作人");
+    private static final List<String> EXPORT_TITLES = List.of("抵扣单号", "收付款类型", "收付款单号", "收付款对象", "账单类型", "待结算单号",
+        "结算对象", "金额", "记录类型", "原因", "抵扣时间", "操作人");
 
     private final FinanceWriteOffService financeWriteOffService;
     private final FinanceWriteOffQueryService financeWriteOffQueryService;
@@ -98,6 +98,6 @@ public class FinanceWriteOffController {
                 row.getAmount(), FinanceExportLabels.entryType(row.getEntryType()), row.getReason(),
                 row.getWrittenOffAt(), row.getOperator()))
             .toList();
-        ScmExcel.write(response, "核销明细.xlsx", "核销明细", EXPORT_TITLES, data);
+        ScmExcel.write(response, "账款抵扣明细.xlsx", "账款抵扣明细", EXPORT_TITLES, data);
     }
 }

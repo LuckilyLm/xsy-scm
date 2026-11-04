@@ -12,8 +12,8 @@ import lombok.Data;
 @Data
 public class FinancePostingVoidForm {
 
-    @NotNull(message = "过账记录不能为空")
-    @Positive(message = "过账记录编号必须大于0")
+    @NotNull(message = "外部账单记录不能为空")
+    @Positive(message = "外部账单记录编号必须大于0")
     private Long postingId;
 
     @NotNull(message = "版本号不能为空")

@@ -39,13 +39,13 @@
         message="本对账单仅包含部分仓库或采购员的应付，付款金额按整个供应商计算，请勿据此判断完整应付及未分配付款。"
       />
       <a-descriptions bordered size="small" :column="{xs: 1, sm: 2, lg: 4}">
-        <a-descriptions-item label="期初净应付">{{ moneyText(selected.openingPayable) }}</a-descriptions-item>
+        <a-descriptions-item label="期初待付金额">{{ moneyText(selected.openingPayable) }}</a-descriptions-item>
         <a-descriptions-item label="本期新增应付">{{ moneyText(selected.payableIncrease) }}</a-descriptions-item>
-        <a-descriptions-item label="本期红字">{{ moneyText(selected.payableRed) }}</a-descriptions-item>
-        <a-descriptions-item label="本期核销净额">{{ moneyText(selected.writeOffNet) }}</a-descriptions-item>
-        <a-descriptions-item label="期末净应付">{{ moneyText(selected.closingPayable) }}</a-descriptions-item>
+        <a-descriptions-item label="本期扣减">{{ moneyText(selected.payableRed) }}</a-descriptions-item>
+        <a-descriptions-item label="本期有效抵扣金额">{{ moneyText(selected.writeOffNet) }}</a-descriptions-item>
+        <a-descriptions-item label="期末待付金额">{{ moneyText(selected.closingPayable) }}</a-descriptions-item>
         <a-descriptions-item label="期初未分配付款">{{ moneyText(selected.openingUnallocated) }}</a-descriptions-item>
-        <a-descriptions-item label="全供应商付款净额">{{ moneyText(selected.paymentNet) }}</a-descriptions-item>
+        <a-descriptions-item label="全供应商有效付款金额">{{ moneyText(selected.paymentNet) }}</a-descriptions-item>
         <a-descriptions-item label="期末未分配付款">{{ moneyText(selected.closingUnallocated) }}</a-descriptions-item>
       </a-descriptions>
       <a-table
@@ -98,11 +98,11 @@ watch(supplierId, () => {
 });
 const factLabels: Record<string, string> = {
   PAYABLE: '确认收货应付',
-  RED: '手工红字',
+  RED: '手工扣减',
   PAYMENT: '实际付款',
-  PAYMENT_REVERSE: '反向付款',
-  WRITE_OFF: '付款核销',
-  WRITE_OFF_REVERSE: '反向核销',
+  PAYMENT_REVERSE: '撤销付款记录',
+  WRITE_OFF: '付款抵扣',
+  WRITE_OFF_REVERSE: '撤销抵扣',
 };
 const moneyColumns = ['payableDelta', 'paymentDelta', 'writeOffDelta', 'payableBalance'];
 const historyColumns: TableColumnsType<SupplierStatement> = [
@@ -118,7 +118,7 @@ const lineColumns: TableColumnsType<SupplierStatementLine> = [
   {title: '类型', dataIndex: 'factType', width: 120, align: 'center'},
   {title: '单号', dataIndex: 'documentNo', width: 200},
   {title: '关联单号', dataIndex: 'relatedNo', width: 200},
-  ...moneyColumns.map((key, index) => ({title: ['应付变动', '付款变动', '核销变动', '滚动净应付'][index], dataIndex: key, width: 135})),
+  ...moneyColumns.map((key, index) => ({title: ['应付变动', '付款变动', '账款抵扣变动', '剩余待付金额'][index], dataIndex: key, width: 135})),
 ];
 async function loadHistory() {
   const id = supplierId.value;
@@ -205,7 +205,7 @@ function printVersion() {
   doc.body.appendChild(printArea.value.cloneNode(true));
   doc.body.querySelector('.statement-lines')?.remove();
   const table = doc.createElement('table');
-  const headings = ['业务时间', '类型', '单号', '关联单号', '应付变动', '付款变动', '核销变动', '滚动净应付'];
+  const headings = ['业务时间', '类型', '单号', '关联单号', '应付变动', '付款变动', '账款抵扣变动', '剩余待付金额'];
   const header = table.insertRow();
   headings.forEach((label) => {
     const th = doc.createElement('th');

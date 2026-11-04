@@ -37,7 +37,7 @@ public enum ScmFinanceBusinessTypeEnum {
     /**
      * 核销行（{@code xsy_finance_write_off}）。
      */
-    WRITE_OFF("核销"),
+    WRITE_OFF("账款抵扣"),
 
     /**
      * 抹零事实（{@code xsy_finance_waiver}）。
@@ -47,7 +47,7 @@ public enum ScmFinanceBusinessTypeEnum {
     /**
      * 过账特殊单据（{@code xsy_finance_posting}）；虚拟单据，不参与收付与核销。
      */
-    POSTING("过账");
+    POSTING("外部账单");
 
     private final String desc;
 }

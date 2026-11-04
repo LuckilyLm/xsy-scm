@@ -3,9 +3,9 @@
     <a-form-item label="结算方" required><CustomerSelect v-model:value="settlementCustomerId" width="200px" /></a-form-item>
     <a-form-item label="原客户"><CustomerSelect v-model:value="customerId" width="200px" /></a-form-item>
     <a-form-item label="对账期间" required><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>
-    <!-- 过账是隐藏式单据：没有过账查询权限的人连选项都不该看到 -->
-    <a-form-item v-privilege="FINANCE_PERM.POSTING_QUERY" label="过账记录">
-      <a-checkbox v-model:checked="includePosting">包含过账记录</a-checkbox>
+    <!-- 外部账单是隐藏式单据：没有外部账单查询权限的人连选项都不该看到 -->
+    <a-form-item v-privilege="FINANCE_PERM.POSTING_QUERY" label="外部账单记录">
+      <a-checkbox v-model:checked="includePosting">包含外部账单记录</a-checkbox>
     </a-form-item>
     <a-form-item>
       <a-space>
@@ -37,7 +37,7 @@
       <h2>{{ selected.settlementCustomerName }} · 客户对账单</h2>
       <p>
         期间 {{ selected.startDate }} 至 {{ selected.endDate }}　生成时间 {{ datetime(selected.generatedAt) }}
-        <a-tag v-if="selected.includePosting" color="blue">含过账记录</a-tag>
+        <a-tag v-if="selected.includePosting" color="blue">含外部账单记录</a-tag>
       </p>
       <a-alert
         v-if="selected.partialScope"
@@ -47,15 +47,15 @@
         class="statement-note"
       />
       <a-descriptions bordered size="small" :column="{xs: 1, sm: 2, lg: 4}">
-        <a-descriptions-item label="期初净应收">{{ moneyText(selected.openingReceivable) }}</a-descriptions-item>
+        <a-descriptions-item label="期初待收金额">{{ moneyText(selected.openingReceivable) }}</a-descriptions-item>
         <a-descriptions-item label="本期新增应收">{{ moneyText(selected.receivableIncrease) }}</a-descriptions-item>
-        <a-descriptions-item label="本期红字">{{ moneyText(selected.receivableRed) }}</a-descriptions-item>
-        <a-descriptions-item label="本期核销净额">{{ moneyText(selected.writeOffNet) }}</a-descriptions-item>
-        <a-descriptions-item label="本期抹零净额">{{ moneyText(selected.waiverNet) }}</a-descriptions-item>
-        <a-descriptions-item label="期末净应收">{{ moneyText(selected.closingReceivable) }}</a-descriptions-item>
-        <a-descriptions-item label="本期实收净额">{{ moneyText(selected.receiptNet) }}</a-descriptions-item>
+        <a-descriptions-item label="本期扣减">{{ moneyText(selected.receivableRed) }}</a-descriptions-item>
+        <a-descriptions-item label="本期有效抵扣金额">{{ moneyText(selected.writeOffNet) }}</a-descriptions-item>
+        <a-descriptions-item label="本期有效抹零金额">{{ moneyText(selected.waiverNet) }}</a-descriptions-item>
+        <a-descriptions-item label="期末待收金额">{{ moneyText(selected.closingReceivable) }}</a-descriptions-item>
+        <a-descriptions-item label="本期有效收款">{{ moneyText(selected.receiptNet) }}</a-descriptions-item>
         <a-descriptions-item label="期末未分配资金">{{ moneyText(selected.closingUnallocated) }}</a-descriptions-item>
-        <a-descriptions-item label="本期实退净额">{{ moneyText(selected.refundNet) }}</a-descriptions-item>
+        <a-descriptions-item label="本期有效退款">{{ moneyText(selected.refundNet) }}</a-descriptions-item>
       </a-descriptions>
       <a-table
         class="statement-lines"
@@ -114,16 +114,16 @@ const printArea = ref<HTMLElement>(),
   error = ref('');
 const factLabels: Record<string, string> = {
   RECEIVABLE: '销售应收',
-  RED: '退货红字',
-  POSTING: '过账',
+  RED: '退货扣减',
+  POSTING: '外部账单',
   RECEIPT: '实际收款',
-  RECEIPT_REVERSE: '反向收款',
-  WRITE_OFF: '核销分配',
-  WRITE_OFF_REVERSE: '反向核销',
+  RECEIPT_REVERSE: '撤销收款记录',
+  WRITE_OFF: '账款抵扣',
+  WRITE_OFF_REVERSE: '撤销抵扣',
   WAIVER: '抹零',
-  WAIVER_REVERSE: '反向抹零',
+  WAIVER_REVERSE: '撤销抹零',
   REFUND: '实际退款',
-  REFUND_REVERSE: '反向退款',
+  REFUND_REVERSE: '撤销退款记录',
 };
 const moneyColumns = ['receivableDelta', 'receiptDelta', 'writeOffDelta', 'refundDelta', 'postingAmount', 'receivableBalance'];
 const historyColumns: TableColumnsType<CustomerStatement> = [
@@ -141,7 +141,7 @@ const lineColumns: TableColumnsType<CustomerStatementLine> = [
   {title: '关联单号', dataIndex: 'relatedNo', width: 200},
   {title: '原客户', dataIndex: 'customerName', width: 150},
   ...moneyColumns.map((key, index) => ({
-    title: ['应收变动', '收款变动', '核销变动', '退款变动', '过账金额', '滚动净应收'][index],
+    title: ['应收变动', '收款变动', '账款抵扣变动', '退款变动', '外部账单金额', '剩余待收金额'][index],
     dataIndex: key,
     width: 135,
   })),
@@ -222,7 +222,19 @@ function printVersion() {
   doc.body.appendChild(printArea.value.cloneNode(true));
   doc.body.querySelector('.statement-lines')?.remove();
   const table = doc.createElement('table');
-  const headings = ['业务时间', '类型', '单号', '关联单号', '原客户', '应收变动', '收款变动', '核销变动', '退款变动', '过账金额', '滚动净应收'];
+  const headings = [
+    '业务时间',
+    '类型',
+    '单号',
+    '关联单号',
+    '原客户',
+    '应收变动',
+    '收款变动',
+    '账款抵扣变动',
+    '退款变动',
+    '外部账单金额',
+    '剩余待收金额',
+  ];
   const header = table.insertRow();
   headings.forEach((label) => {
     const th = doc.createElement('th');

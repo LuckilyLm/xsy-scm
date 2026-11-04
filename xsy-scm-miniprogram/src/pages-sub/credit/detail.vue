@@ -7,7 +7,7 @@
     </view>
     <template v-else>
       <view class="bill__hero">
-        <text class="bill__hero-label">未结金额</text>
+        <text class="bill__hero-label">待付款金额</text>
         <text class="bill__hero-amount">¥{{ displayMoney(record.openAmount) }}</text>
         <text class="bill__hero-state">{{ receivableStateText(record.settleState) }}<text v-if="record.overdue"> · 已逾期</text></text>
       </view>
@@ -16,19 +16,19 @@
           ><text>账单编号</text><text>{{ record.receivableNo }}</text></view
         >
         <view class="bill__row"
-          ><text>原始应收</text><text>¥{{ displayMoney(record.amount) }}</text></view
+          ><text>原账单金额</text><text>¥{{ displayMoney(record.amount) }}</text></view
         >
         <view class="bill__row"
-          ><text>退货红字冲减</text><text>¥{{ displayMoney(record.redAmount) }}</text></view
+          ><text>退货扣减</text><text>¥{{ displayMoney(record.redAmount) }}</text></view
         >
         <view class="bill__row"
-          ><text>有效核销</text><text>¥{{ displayMoney(record.writtenOffAmount) }}</text></view
+          ><text>已抵扣金额</text><text>¥{{ displayMoney(record.writtenOffAmount) }}</text></view
         >
         <view class="bill__row"
           ><text>到期日</text><text>{{ formatDate(record.dueDate) || '未设置' }}</text></view
         >
         <view class="bill__row"
-          ><text>应收发生时间</text><text>{{ formatDateTime(record.eventAt) }}</text></view
+          ><text>账单时间</text><text>{{ formatDateTime(record.eventAt) }}</text></view
         >
       </view>
       <view v-if="record.orderId" class="bill__order" @click="goOrder">
@@ -38,7 +38,7 @@
           <uni-icons type="right" :size="14" :color="COLOR_PRIMARY" />
         </view>
       </view>
-      <text class="bill__note">账单金额依据正式应收、红字和核销记录计算。钱包余额不会自动抵扣应收。</text>
+      <text class="bill__note">账单会扣除已确认的退货和已抵扣金额。钱包余额不会自动支付本账单。</text>
     </template>
   </view>
 </template>

@@ -18,18 +18,18 @@ public class FinancePayableRedItemForm {
     @Positive(message = "采购订单行编号必须大于0")
     private Long purchaseOrderItemId;
 
-    @NotNull(message = "红字数量不能为空")
-    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "红字数量格式无效")
+    @NotNull(message = "扣减数量不能为空")
+    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "扣减数量格式无效")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String quantity;
 
-    @NotNull(message = "红字单价不能为空")
-    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "红字单价格式无效")
+    @NotNull(message = "扣减单价不能为空")
+    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "扣减单价格式无效")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String unitPrice;
 
-    @NotNull(message = "红字金额不能为空")
-    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "红字金额格式无效")
+    @NotNull(message = "扣减金额不能为空")
+    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "扣减金额格式无效")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String amount;
 }

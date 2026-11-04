@@ -18,7 +18,7 @@ public enum ScmFinanceOperationTypeEnum {
     /**
      * 生成红字应收 / 登记红字应付。红字应收是自动派生（退货批准触发），红字应付是人工命令（{@code scm:finance:payable:red}）。
      */
-    RED_GENERATE("红字生成"),
+    RED_GENERATE("登记扣减"),
 
     /**
      * 登记收款（{@code scm:finance:receipt:add}）。
@@ -33,22 +33,22 @@ public enum ScmFinanceOperationTypeEnum {
     /**
      * 核销（{@code scm:finance:write-off:add}）。
      */
-    WRITE_OFF("核销"),
+    WRITE_OFF("账款抵扣"),
 
     /**
      * 反向核销（{@code scm:finance:write-off:reverse}）。
      */
-    WRITE_OFF_REVERSE("核销撤销"),
+    WRITE_OFF_REVERSE("撤销抵扣"),
 
     /**
      * 反向收款（{@code scm:finance:receipt:reverse}，独立的破坏性权限）。
      */
-    RECEIPT_REVERSE("收款反向"),
+    RECEIPT_REVERSE("撤销收款记录"),
 
     /**
      * 反向付款（{@code scm:finance:payment:reverse}，独立的破坏性权限）。
      */
-    PAYMENT_REVERSE("付款反向"),
+    PAYMENT_REVERSE("撤销付款记录"),
 
     /**
      * 登记抹零（{@code scm:finance:waiver:add}）：冲减应收的减免事实，不是收款。
@@ -58,22 +58,22 @@ public enum ScmFinanceOperationTypeEnum {
     /**
      * 反向抹零（{@code scm:finance:waiver:reverse}）：追加反向核销行，抹零事实置为已反向。
      */
-    WAIVER_REVERSE("抹零反向"),
+    WAIVER_REVERSE("撤销抹零"),
 
     /**
      * 登记过账（{@code scm:finance:posting:add}）：只留痕，不生成应收应付、不影响余额。
      */
-    POSTING_ADD("过账登记"),
+    POSTING_ADD("外部账单登记"),
 
     /**
      * 修改过账（{@code scm:finance:posting:update}）：改前改后的内容都进日志。
      */
-    POSTING_UPDATE("过账修改"),
+    POSTING_UPDATE("外部账单修改"),
 
     /**
      * 作废过账（{@code scm:finance:posting:void}）：追加作废事实，原记录保留。
      */
-    POSTING_VOID("过账作废");
+    POSTING_VOID("外部账单作废");
 
     private final String desc;
 }

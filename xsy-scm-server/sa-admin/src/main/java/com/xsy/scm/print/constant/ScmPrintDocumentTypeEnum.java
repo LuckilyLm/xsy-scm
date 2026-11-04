@@ -116,8 +116,8 @@ public enum ScmPrintDocumentTypeEnum {
     STATEMENT("对账单", ScmReportPermission.FINANCE_QUERY,
         List.of(new ScmPrintField("settlementCustomerName", "结算方", false, false),
             new ScmPrintField("period", "对账期间", false, false),
-            new ScmPrintField("openingReceivable", "期初净应收", true, true),
-            new ScmPrintField("closingReceivable", "期末净应收", true, true),
+            new ScmPrintField("openingReceivable", "期初待收金额", true, true),
+            new ScmPrintField("closingReceivable", "期末待收金额", true, true),
             new ScmPrintField("generatedAt", "生成时间", false, false),
             new ScmPrintField("statementVersion", "对账单版本", false, false),
             new ScmPrintField("partialScope", "范围口径", false, false)),
@@ -125,18 +125,19 @@ public enum ScmPrintDocumentTypeEnum {
             new ScmPrintField("documentNo", "单号", false, false), new ScmPrintField("relatedNo", "关联单号", false, false),
             new ScmPrintField("receivableDelta", "应收变动", true, true),
             new ScmPrintField("receiptDelta", "收款变动", true, true),
-            new ScmPrintField("writeOffDelta", "核销变动", true, true),
+            new ScmPrintField("writeOffDelta", "账款抵扣变动", true, true),
             new ScmPrintField("refundDelta", "退款变动", true, true),
             // 过账行只有这一列有值：它不进应收、不参与核销，因此不是余额的一部分
-            new ScmPrintField("postingAmount", "过账金额", true, true),
-            new ScmPrintField("receivableBalance", "滚动净应收", true, true)),
-        List.of(new ScmPrintField("closingReceivable", "期末净应收", true, true),
+            new ScmPrintField("postingAmount", "外部账单金额", true, true),
+            new ScmPrintField("receivableBalance", "剩余待收金额", true, true)),
+        List.of(new ScmPrintField("closingReceivable", "期末待收金额", true, true),
             new ScmPrintField("receivableIncrease", "本期新增应收", true, true),
-            new ScmPrintField("receivableRed", "本期红字", true, true),
-            new ScmPrintField("writeOffNet", "本期核销净额", true, true),
+            new ScmPrintField("receivableRed", "本期扣减", true, true),
+            new ScmPrintField("writeOffNet", "本期有效抵扣金额", true, true),
             // 抹零没有资金流入，与核销净额分列，否则「未分配资金」会对不上
-            new ScmPrintField("waiverNet", "本期抹零净额", true, true), new ScmPrintField("receiptNet", "本期实收净额", true, true),
-            new ScmPrintField("refundNet", "本期实退净额", true, true)));
+            new ScmPrintField("waiverNet", "本期有效抹零金额", true, true),
+            new ScmPrintField("receiptNet", "本期有效收款", true, true),
+            new ScmPrintField("refundNet", "本期有效退款", true, true)));
 
     /** 展示名（模板列表与错误信息用）。 */
     private final String label;

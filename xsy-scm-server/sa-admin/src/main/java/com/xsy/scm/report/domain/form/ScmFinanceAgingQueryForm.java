@@ -14,9 +14,9 @@ import java.time.LocalDate;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ScmFinanceAgingQueryForm extends PageParam {
-    @NotNull(message = "往来类型不能为空")
+    @NotNull(message = "账款类型不能为空")
     private ScmFinanceAgingAccountTypeEnum accountType;
-    @NotNull(message = "账龄截止日不能为空")
+    @NotNull(message = "查询截止日不能为空")
     private LocalDate asOfDate;
     private ScmFinanceAgingBucketEnum agingBucket;
     @Positive(message = "客户编号必须大于0")

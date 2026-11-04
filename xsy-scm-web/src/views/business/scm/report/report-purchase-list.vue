@@ -361,7 +361,7 @@ const productColumns = ref<TableColumnsType<PurchaseProductRow>>([
   {title: '实采确认数量', dataIndex: 'confirmedQuantity', width: 140},
   {title: '采购订单金额', dataIndex: 'orderAmount', width: 148},
   {title: '实采确认金额', dataIndex: 'confirmedAmount', width: 148},
-  {title: '采购价差净额', dataIndex: 'adjustmentAmount', width: 140},
+  {title: '采购价差合计', dataIndex: 'adjustmentAmount', width: 140},
   {title: '采购成交均价', dataIndex: 'avgPurchasePrice', width: 140},
   {title: '采购入库数量', dataIndex: 'inboundQuantityText', width: 180},
   {title: '采购入库成本金额', dataIndex: 'inboundCostAmount', width: 148},

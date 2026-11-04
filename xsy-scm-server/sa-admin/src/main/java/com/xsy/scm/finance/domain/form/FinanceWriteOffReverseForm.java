@@ -11,10 +11,10 @@ import lombok.Data;
 @Data
 public class FinanceWriteOffReverseForm {
 
-    @NotNull(message = "核销记录不能为空")
-    @Positive(message = "核销记录编号必须大于0")
+    @NotNull(message = "账款抵扣记录不能为空")
+    @Positive(message = "账款抵扣记录编号必须大于0")
     private Long writeOffId;
 
-    @Size(max = 500, message = "反向原因长度不能超过500")
+    @Size(max = 500, message = "撤销原因长度不能超过500")
     private String reason;
 }

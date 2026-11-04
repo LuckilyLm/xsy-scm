@@ -33,17 +33,24 @@
           v-aria-label="'收款方式'"
         />
       </a-form-item>
-      <a-form-item label="方向">
-        <a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px" v-aria-label="'方向'" />
+      <a-form-item label="记录类型">
+        <a-select
+          v-model:value="query.entryType"
+          allow-clear
+          :options="entryOptions"
+          placeholder="全部"
+          style="width: 120px"
+          v-aria-label="'记录类型'"
+        />
       </a-form-item>
-      <a-form-item label="待核销">
+      <a-form-item label="待抵扣">
         <a-select
           v-model:value="query.pendingOnly"
           allow-clear
           :options="pendingOptions"
           placeholder="全部"
           style="width: 120px"
-          v-aria-label="'待核销状态'"
+          v-aria-label="'待抵扣状态'"
         />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
@@ -80,7 +87,7 @@
         </div>
         <div class="mobile-balance-values">
           <span
-            >{{ record.walletFunding ? '已转钱包权益' : '待核销' }} <strong>{{ moneyText(record.pendingWriteOffAmount) }}</strong></span
+            >{{ record.walletFunding ? '已转钱包权益' : '待抵扣' }} <strong>{{ moneyText(record.pendingWriteOffAmount) }}</strong></span
           ><span>有效 {{ moneyText(record.effectiveAmount) }}</span>
         </div>
       </div>
@@ -168,7 +175,7 @@
       <a-form-item label="收款时间" name="receivedAt"
         ><a-date-picker v-model:value="addForm.receivedAt" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%"
       /></a-form-item>
-      <a-form-item label="资金凭据号"><a-input v-model:value="addForm.externalReference" :maxlength="128" /></a-form-item>
+      <a-form-item label="收付款凭证号"><a-input v-model:value="addForm.externalReference" :maxlength="128" /></a-form-item>
       <a-form-item label="备注"><a-textarea v-model:value="addForm.remark" :maxlength="500" :rows="2" show-count /></a-form-item>
     </a-form>
   </a-modal>
@@ -198,8 +205,8 @@
       <a-descriptions v-if="codPreview" size="small" :column="2" class="cod-preview">
         <a-descriptions-item label="订单">{{ codPreview.orderNo }} · {{ codPreview.customerName }}</a-descriptions-item>
         <a-descriptions-item label="应收单">{{ codPreview.receivableNo }}</a-descriptions-item>
-        <a-descriptions-item label="结算主体">{{ codPreview.settlementCustomerName }}</a-descriptions-item>
-        <a-descriptions-item label="净应收">{{ moneyText(codPreview.netAmount) }}</a-descriptions-item>
+        <a-descriptions-item label="结算客户">{{ codPreview.settlementCustomerName }}</a-descriptions-item>
+        <a-descriptions-item label="扣减后应收">{{ moneyText(codPreview.netAmount) }}</a-descriptions-item>
         <a-descriptions-item label="当前待收">{{ moneyText(codPreview.openAmount) }}</a-descriptions-item>
       </a-descriptions>
       <p v-if="codPreview" class="scm-note">可分批登记，提交时将再次核对剩余应收金额。</p>
@@ -220,19 +227,19 @@
       <a-form-item label="收款时间" required
         ><a-date-picker v-model:value="codForm.receivedAt" show-time value-format="YYYY-MM-DD HH:mm:ss" :disabled="codSaving" style="width: 100%"
       /></a-form-item>
-      <a-form-item label="资金凭据号"><a-input v-model:value="codForm.externalReference" :maxlength="128" :disabled="codSaving" /></a-form-item>
+      <a-form-item label="收付款凭证号"><a-input v-model:value="codForm.externalReference" :maxlength="128" :disabled="codSaving" /></a-form-item>
       <a-form-item label="备注"
         ><a-textarea v-model:value="codForm.remark" :maxlength="500" :rows="2" :disabled="codSaving" show-count
       /></a-form-item>
     </a-form>
   </a-modal>
 
-  <a-modal v-model:open="reverseOpen" title="撤销收款" :confirm-loading="reverseSaving" @ok="submitReverse">
+  <a-modal v-model:open="reverseOpen" title="撤销收款记录" :confirm-loading="reverseSaving" @ok="submitReverse">
     <a-alert
       v-if="reverseRow"
       type="warning"
       show-icon
-      :message="`将登记一笔等额冲回记录，金额 ${moneyText(reverseRow.amount)}。原收款记录会保留。`"
+      :message="`仅撤销这笔收款记录，不会自动退款。原记录保留，金额为 ${moneyText(reverseRow.amount)}。`"
     />
     <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError" />
     <a-form layout="vertical"
@@ -344,23 +351,23 @@ const addRules = {
 const methodOptions = Object.values(SCM_FINANCE_RECEIPT_METHOD_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const pendingOptions = [
-  {label: '仅待核销', value: true},
+  {label: '仅待抵扣', value: true},
   {label: '全部', value: false},
 ];
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
 const columns = ref<TableColumnsType<FinanceReceipt>>([
   {title: '收款单号', dataIndex: 'receiptNo', width: 200, ellipsis: true},
-  {title: '待核销', dataIndex: 'pendingWriteOffAmount', width: 148},
+  {title: '待抵扣', dataIndex: 'pendingWriteOffAmount', width: 148},
   {title: '客户', dataIndex: 'customerName', width: 190},
-  {title: '方向', dataIndex: 'entryType', width: 80, align: 'center'},
+  {title: '记录类型', dataIndex: 'entryType', width: 80, align: 'center'},
   {title: '来源订单', dataIndex: 'codOrderNo', width: 170, ellipsis: true},
   {title: '金额', dataIndex: 'amount', width: 136},
   {title: '有效金额', dataIndex: 'effectiveAmount', width: 148},
-  {title: '已核销', dataIndex: 'usedAmount', width: 148},
+  {title: '已抵扣', dataIndex: 'usedAmount', width: 148},
   {title: '方式', dataIndex: 'method', width: 110, align: 'center'},
   {title: '凭据号', dataIndex: 'externalReference', width: 160},
-  {title: '收款时点', dataIndex: 'receivedAt', width: 180},
+  {title: '收款时间', dataIndex: 'receivedAt', width: 180},
   {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 140},
 ]);
 useFinanceMobileActionColumn(
@@ -502,7 +509,7 @@ async function submitCod() {
       externalReference: trimOptional(codForm.externalReference),
       remark: trimOptional(codForm.remark),
     });
-    message.success('货到付款收款已登记并核销');
+    message.success('货到付款收款已登记并账款抵扣');
     codOpen.value = false;
     await queryData();
   } catch (error) {
@@ -556,14 +563,14 @@ function openReverse(row: FinanceReceipt) {
 
 async function submitReverse() {
   if (!reverseRow.value || !reverseReason.value.trim()) {
-    reverseError.value = '请填写反向原因。';
+    reverseError.value = '请填写撤销原因。';
     return;
   }
   reverseSaving.value = true;
   reverseError.value = '';
   try {
     await financeApi.receiptReverse({receiptId: reverseRow.value.receiptId, reason: reverseReason.value.trim()});
-    message.success('反向收款已追加');
+    message.success('撤销收款记录已追加');
     reverseOpen.value = false;
     await queryData();
   } catch {

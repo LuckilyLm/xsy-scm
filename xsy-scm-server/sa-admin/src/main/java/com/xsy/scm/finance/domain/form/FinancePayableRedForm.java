@@ -19,11 +19,11 @@ public class FinancePayableRedForm {
     @Positive(message = "原应付单编号必须大于0")
     private Long originalPayableId;
 
-    @Size(max = 500, message = "红字原因长度不能超过500")
+    @Size(max = 500, message = "扣减原因长度不能超过500")
     private String reason;
 
-    @NotEmpty(message = "至少填写一条红字明细")
-    @Size(max = 100, message = "单次最多填写100条红字明细")
+    @NotEmpty(message = "至少填写一条扣减明细")
+    @Size(max = 100, message = "单次最多填写100条扣减明细")
     @Valid
     private List<FinancePayableRedItemForm> items;
 }

@@ -14,12 +14,12 @@ import com.xsy.scm.common.util.ScmDecimalStrings;
 @Data
 public class FinanceWriteOffAddItemForm {
 
-    @NotNull(message = "核销目标不能为空")
-    @Positive(message = "核销目标编号必须大于0")
+    @NotNull(message = "结算对象不能为空")
+    @Positive(message = "结算对象编号必须大于0")
     private Long targetId;
 
-    @NotNull(message = "核销金额不能为空")
-    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "核销金额格式无效")
+    @NotNull(message = "抵扣金额不能为空")
+    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "抵扣金额格式无效")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String amount;
 }

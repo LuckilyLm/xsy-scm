@@ -21,7 +21,7 @@ public enum ScmFinanceWaiverStatusEnum {
     /**
      * 已反向，原事实保留但不再冲减余额。
      */
-    REVERSED("已反向");
+    REVERSED("已撤销");
 
     private final String desc;
 }

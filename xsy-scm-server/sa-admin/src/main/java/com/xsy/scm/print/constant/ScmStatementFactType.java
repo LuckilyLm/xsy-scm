@@ -17,31 +17,31 @@ public enum ScmStatementFactType {
     RECEIVABLE("销售应收"),
 
     /** 退货红字。 */
-    RED("退货红字"),
+    RED("退货扣减"),
 
     /** 实际收款。 */
     RECEIPT("实际收款"),
 
     /** 反向收款。 */
-    RECEIPT_REVERSE("反向收款"),
+    RECEIPT_REVERSE("撤销收款记录"),
 
     /** 核销分配。 */
-    WRITE_OFF("核销分配"),
+    WRITE_OFF("账款抵扣"),
 
     /** 反向核销。 */
-    WRITE_OFF_REVERSE("反向核销"),
+    WRITE_OFF_REVERSE("撤销抵扣"),
 
     /** 抹零：对账时主动免掉的零头，冲减应收但没有资金流入。 */
     WAIVER("抹零"),
 
     /** 反向抹零：把已免掉的零头放回未结应收。 */
-    WAIVER_REVERSE("反向抹零"),
+    WAIVER_REVERSE("撤销抹零"),
 
     /** 实际退款。 */
     REFUND("实际退款"),
 
     /** 反向退款。 */
-    REFUND_REVERSE("反向退款");
+    REFUND_REVERSE("撤销退款记录");
 
     private final String desc;
 

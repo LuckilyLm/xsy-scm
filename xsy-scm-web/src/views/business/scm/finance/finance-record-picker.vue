@@ -80,8 +80,8 @@ const error = ref('');
 const title = computed(
   () =>
     ({
-      RECEIPT: '选择待核销收款',
-      PAYMENT: '选择待核销付款',
+      RECEIPT: '选择待抵扣收款',
+      PAYMENT: '选择待抵扣付款',
       RECEIVABLE: '选择未结清应收',
       PAYABLE: '选择未结清应付',
     })[props.kind]
@@ -91,9 +91,9 @@ const settleOptions = Object.values(SCM_FINANCE_SETTLE_STATE_ENUM)
   .map((item) => ({label: item.desc, value: item.value}));
 const columns = computed<TableColumnsType<FinanceCandidate>>(() => [
   {title: '单据编号', dataIndex: 'documentNo', width: 220},
-  {title: props.kind === 'RECEIPT' || props.kind === 'RECEIVABLE' ? '客户' : '往来方', dataIndex: 'partyName', width: 180},
-  {title: props.kind === 'RECEIVABLE' || props.kind === 'PAYABLE' ? '关联单号' : '方向', dataIndex: 'linkedDocumentNo', width: 180},
-  {title: '可核销金额', dataIndex: 'availableAmount', width: 160},
+  {title: props.kind === 'RECEIPT' || props.kind === 'RECEIVABLE' ? '客户' : '客户或供应商', dataIndex: 'partyName', width: 180},
+  {title: props.kind === 'RECEIVABLE' || props.kind === 'PAYABLE' ? '关联单号' : '记录类型', dataIndex: 'linkedDocumentNo', width: 180},
+  {title: '可抵扣金额', dataIndex: 'availableAmount', width: 160},
   {title: '选择', dataIndex: 'select', width: 90},
 ]);
 

@@ -54,7 +54,7 @@ import {readFileSync, existsSync} from 'node:fs';
     }
   });
 
-  test('列表、详情、写入、反向和六类导出 API 与后端路径一致', () => {
+  test('列表、详情、写入、撤销和六类导出 API 与后端路径一致', () => {
     const paths = [
       '/receivable/query',
       '/receivable/${id}',
@@ -138,7 +138,7 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.equal(new Set(financeIds).size, 5);
   });
 
-  test('表格只固定操作列，单号与未核销余额随表横向滚动', () => {
+  test('表格只固定操作列，单号与剩余未结金额随表横向滚动', () => {
     for (const [name, source] of Object.entries(pageCode)) {
       assert.doesNotMatch(source, /fixed: 'left'/, `${name} 仍有左侧固定列，只有操作列可以固定在右侧`);
       assert.match(source, /title: '操作', dataIndex: 'action', fixed: actionColumnFixed/, `${name} 的操作列没有固定`);
@@ -153,9 +153,9 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.match(pageCode.writeOff, /source\.partyName[\s\S]*source\.availableAmount/);
   });
 
-  test('供应商与往来方筛选提供名称搜索，退款付款从已完成退款选择器取事实', () => {
+  test('供应商与客户或供应商筛选提供名称搜索，退款付款从已完成退款选择器取事实', () => {
     assert.match(pageCode.payable, /label="供应商"[\s\S]*query\.supplierName/);
-    assert.match(pageCode.payment, /label="往来方"[\s\S]*query\.counterpartyName/);
+    assert.match(pageCode.payment, /label="客户或供应商"[\s\S]*query\.counterpartyName/);
     assert.match(pageCode.payment, /FinanceRefundPicker/);
     assert.match(code(API_PATH), /refundOptions:[\s\S]*\/payment\/refund-options/);
     assert.match(pageCode.payment, /addForm\.selectedRefund\?\.customerId/);
@@ -189,8 +189,8 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.match(migration, /SELECT 1, m\.menu_id/);
   });
 
-  test('超额核销、负净应收和反向单据都用事实字段展示', () => {
-    assert.ok(allPages.includes('超额核销待处理'));
+  test('抵扣超额、负扣减后应收和撤销单据都用事实字段展示', () => {
+    assert.ok(allPages.includes('抵扣超额待处理'));
     assert.ok(code(`${VIEW_DIR}finance-detail-drawer.vue`).includes('header.netAmount'));
     assert.match(pageCode.receipt, /record\.entryType\s*===\s*'NORMAL'/);
     assert.match(pageCode.payment, /record\.entryType\s*===\s*'NORMAL'/);
@@ -205,34 +205,34 @@ import {readFileSync, existsSync} from 'node:fs';
     }
   });
 
-  test('核销页把「资金」与「目标」的类型、单号各自成列', () => {
-    // 只看主列表的列定义：抽屉里的分配子表另有自己的「目标单号」，
-    // 那是登记核销时逐条录入的对象，不属于列表展示口径。
+  test('账款抵扣页把「资金」与「目标」的类型、单号各自成列', () => {
+    // 只看主列表的列定义：抽屉里的分配子表另有自己的「待结算单号」，
+    // 那是登记抵扣时逐条录入的对象，不属于列表展示口径。
     const mainColumns = pageCode.writeOff.match(/const columns = ref<TableColumnsType<FinanceWriteOff>>\(\[[\s\S]*?\n\]\);/)?.[0];
-    assert.ok(mainColumns, '未取到核销页主列表的列定义');
-    for (const want of ['资金方', '资金类型', '资金单号', '核销目标', '目标类型', '目标单号']) {
-      assert.ok(mainColumns.includes(`title: '${want}'`), `核销页缺少独立列：${want}`);
+    assert.ok(mainColumns, '未取到账款抵扣页主列表的列定义');
+    for (const want of ['收付款对象', '收付款类型', '收付款单号', '结算对象', '账单类型', '待结算单号']) {
+      assert.ok(mainColumns.includes(`title: '${want}'`), `账款抵扣页缺少独立列：${want}`);
     }
     // 两组「类型」仍要落成中文
     assert.match(pageCode.writeOff, /column\.dataIndex\s*===\s*'sourceType'[\s\S]{0,200}sourceTypeText\(record\.sourceType\)/);
     assert.match(pageCode.writeOff, /column\.dataIndex\s*===\s*'targetType'[\s\S]{0,200}targetTypeText\(record\.targetType\)/);
     // 余额消费来自流水表，不在 SCM_FINANCE_SOURCE_TYPE_ENUM 里，必须单独补
     assert.match(pageCode.writeOff, /BALANCE_MOVEMENT: '余额消费'/);
-    // 撤销核销是追加反向事实：danger 视觉 + 独立二次确认弹窗（不能与普通编辑同权重）
-    assert.match(pageCode.writeOff, /title="撤销核销"/);
-    // 弹窗里要写清楚「这笔核销会作废、金额退回哪张单」，不能只放一个确认按钮
-    assert.match(pageCode.writeOff, /核销记录将作废/);
+    // 撤销抵扣是追加撤销事实：danger 视觉 + 独立二次确认弹窗（不能与普通编辑同权重）
+    assert.match(pageCode.writeOff, /title="撤销抵扣"/);
+    // 弹窗里要写清楚「这笔账款抵扣会作废、金额退回哪张单」，不能只放一个确认按钮
+    assert.match(pageCode.writeOff, /账款抵扣记录将作废/);
     assert.match(pageCode.writeOff, /退回对应单据的未结金额/);
   });
 
-  test('付款页不再展示裸的技术主键，往来方与往来方类型各自成列', () => {
+  test('付款页不再展示裸的技术主键，客户或供应商与客户或供应商类型各自成列', () => {
     const payment = pageCode.payment;
     // sourceId 是退款单的数据库主键：对使用者没有信息量
     assert.ok(!payment.includes(`title: '来源编号'`), '付款页仍在展示裸主键');
     assert.ok(!payment.includes(`dataIndex: 'sourceId'`), '付款页仍绑定了 sourceId 列');
-    // 往来方类型（客户 / 供应商）决定这笔付款的性质，与名称并列成独立列
-    assert.match(payment, /title: '往来方', dataIndex: 'counterpartyName'/);
-    assert.match(payment, /title: '往来方类型', dataIndex: 'counterpartyType'/);
+    // 客户或供应商类型（客户 / 供应商）决定这笔付款的性质，与名称并列成独立列
+    assert.match(payment, /title: '客户或供应商', dataIndex: 'counterpartyName'/);
+    assert.match(payment, /title: '客户或供应商类型', dataIndex: 'counterpartyType'/);
     assert.match(payment, /counterpartyTypeText\(record\.counterpartyType\)/);
   });
 
@@ -247,22 +247,22 @@ import {readFileSync, existsSync} from 'node:fs';
   test('余额类金额列按全站口径左对齐，金额样式只负责等宽数字与颜色', () => {
     const REQUIRED = {
       payable: [
-        ['未核销', 'openAmount'],
-        ['已核销', 'writtenOffAmount'],
-        ['超额核销', 'overAppliedAmount'],
+        ['剩余待付', 'openAmount'],
+        ['已抵扣', 'writtenOffAmount'],
+        ['抵扣超额', 'overAppliedAmount'],
       ],
       receivable: [
-        ['未核销', 'openAmount'],
-        ['已核销', 'writtenOffAmount'],
-        ['超额核销', 'overAppliedAmount'],
+        ['剩余待收', 'openAmount'],
+        ['已抵扣', 'writtenOffAmount'],
+        ['抵扣超额', 'overAppliedAmount'],
       ],
       receipt: [
-        ['待核销', 'pendingWriteOffAmount'],
-        ['已核销', 'usedAmount'],
+        ['待抵扣', 'pendingWriteOffAmount'],
+        ['已抵扣', 'usedAmount'],
       ],
       payment: [
-        ['待核销', 'pendingWriteOffAmount'],
-        ['已核销', 'usedAmount'],
+        ['待抵扣', 'pendingWriteOffAmount'],
+        ['已抵扣', 'usedAmount'],
       ],
     };
     for (const [key, columns] of Object.entries(REQUIRED)) {
@@ -289,7 +289,7 @@ import {readFileSync, existsSync} from 'node:fs';
    * 财务详情抽屉七段分区的契约测试。
    *
    * `finance-detail-drawer.vue` 统一分区为：
-   *   1 单据概要 / 2 对象信息 / 3 金额组成 / 4 核销·退款·红字关系 /
+   *   1 单据概要 / 2 对象信息 / 3 金额组成 / 4 账款抵扣·退款·扣减记录关系 /
    *   5 来源单据 / 6 流水记录 / 7 系统信息，
    * 并强调「金额摘要应比 ID、编码更突出」。
    *
@@ -312,7 +312,7 @@ import {readFileSync, existsSync} from 'node:fs';
   const drawer = code('../src/views/business/scm/finance/finance-detail-drawer.vue');
 
   test('抽屉按固定顺序分区', () => {
-    const expected = ['单据概要', '对象信息', '金额组成', '来源单据', '核销 / 红字关系', '流水记录', '系统信息'];
+    const expected = ['单据概要', '对象信息', '金额组成', '来源单据', '抵扣与扣减记录', '流水记录', '系统信息'];
     const positions = expected.map((title) => {
       // h3 可能带 class（金额组成就是 detail-section--nested），不能写死 `<h3>`
       const index = drawer.search(new RegExp(`<h3[^>]*>${title}</h3>`));
@@ -328,8 +328,8 @@ import {readFileSync, existsSync} from 'node:fs';
     // 金额摘要走独立的 amount-grid 结构，而不是普通 descriptions 行
     assert.match(drawer, /class="amount-grid scm-summary"/);
     assert.match(drawer, /amount-cell__value scm-summary__value scm-money/);
-    // 净额 / 有效金额放在摘要的第一格
-    assert.match(drawer, /净应收 \/ 净应付/);
+    // 调整后金额 / 有效金额放在摘要的第一格
+    assert.match(drawer, /扣减后应收 \/ 扣减后应付/);
     assert.match(drawer, /有效金额/);
     // 单据概要段里不得再出现金额（金额已迁到金额组成段）
     const header = drawer.slice(drawer.indexOf('<h3>单据概要</h3>'), drawer.indexOf('<h3>对象信息</h3>'));
@@ -365,17 +365,17 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.match(drawer, /'receivableId' in row \? row.receivableId : row.payableId/);
   });
 
-  test('核销与红字合为同一段，仍各自带小标题', () => {
-    const relation = drawer.slice(drawer.indexOf('<h3>核销 / 红字关系</h3>'));
-    assert.match(relation, /核销记录/);
-    assert.match(relation, /红字关联/);
+  test('账款抵扣与扣减记录合为同一段，仍各自带小标题', () => {
+    const relation = drawer.slice(drawer.indexOf('<h3>抵扣与扣减记录</h3>'));
+    assert.match(relation, /账款抵扣记录/);
+    assert.match(relation, /扣减记录/);
     // 原来的两个独立 section 标题不得再作为顶级分区存在
-    assert.ok(!/<h3>红字关联<\/h3>/.test(drawer), '红字关联仍是独立顶级分区');
-    assert.ok(!/<h3>核销记录<\/h3>/.test(drawer), '核销记录仍是独立顶级分区');
+    assert.ok(!/<h3>扣减记录<\/h3>/.test(drawer), '扣减记录仍是独立顶级分区');
+    assert.ok(!/<h3>账款抵扣记录<\/h3>/.test(drawer), '账款抵扣记录仍是独立顶级分区');
   });
 }
 
-// ---------------------------------------------------------------- 过账特殊单据（D-1028-16）
+// ---------------------------------------------------------------- 外部账单记录（D-1028-16）
 {
   const VIEW_DIR = '../src/views/business/scm/finance/';
   const API_PATH = '../src/api/business/scm/finance-api.ts';
@@ -392,24 +392,12 @@ import {readFileSync, existsSync} from 'node:fs';
   const api = code(API_PATH);
   const constants = code(CONST_PATH);
 
-  test('过账页、API 与权限串都已落地', () => {
-    assert.ok(existsSync(new URL(`${VIEW_DIR}finance-posting-list.vue`, import.meta.url)), '缺少过账页面');
-    for (const path of [
-      '/posting/query',
-      '/posting/${id}',
-      '/posting/add',
-      '/posting/update',
-      '/posting/void',
-      '/posting/export',
-    ]) {
+  test('外部账单页、API 与权限串都已落地', () => {
+    assert.ok(existsSync(new URL(`${VIEW_DIR}finance-posting-list.vue`, import.meta.url)), '缺少外部账单页面');
+    for (const path of ['/posting/query', '/posting/${id}', '/posting/add', '/posting/update', '/posting/void', '/posting/export']) {
       assert.ok(api.includes(path), `API 缺少 ${path}`);
     }
-    for (const permission of [
-      'scm:finance:posting:query',
-      'scm:finance:posting:add',
-      'scm:finance:posting:update',
-      'scm:finance:posting:void',
-    ]) {
+    for (const permission of ['scm:finance:posting:query', 'scm:finance:posting:add', 'scm:finance:posting:update', 'scm:finance:posting:void']) {
       assert.ok(constants.includes(`'${permission}'`), `缺少 ${permission}`);
     }
     for (const key of ['POSTING_QUERY', 'POSTING_ADD', 'POSTING_UPDATE', 'POSTING_VOID']) {
@@ -417,24 +405,24 @@ import {readFileSync, existsSync} from 'node:fs';
     }
   });
 
-  test('过账页把虚拟单据口径写在界面上，并明确不进应收应付', () => {
+  test('外部账单页把虚拟单据口径写在界面上，并明确不进应收应付', () => {
     assert.match(page, /不生成应收应付/);
-    assert.match(page, /不参与核销/);
+    assert.match(page, /不参与账款抵扣/);
     // 税点只展示原值，不在前端算税额
     assert.match(page, /percentText\(text\)/);
     assert.doesNotMatch(page, /taxAmount|tax_amount/);
   });
 
-  test('过账页的操作列居中固定，窄屏回落到卡片', () => {
+  test('外部账单页的操作列居中固定，窄屏回落到卡片', () => {
     assert.match(page, /dataIndex: 'action', fixed: actionColumnFixed, align: 'center'/);
     assert.doesNotMatch(page, /fixed: 'left'/);
     assert.match(page, /@media \(max-width: 768px\)[\s\S]*?\.finance-table\s*\{\s*display:\s*none/);
-    assert.ok(page.includes("id=\"scm-finance-posting-table\""), '缺少稳定的表格定位符');
+    assert.ok(page.includes('id="scm-finance-posting-table"'), '缺少稳定的表格定位符');
     const tableIds = code('../src/constants/support/table-id-const.ts');
     assert.match(tableIds, /SCM_FINANCE_POSTING:\s*50062/);
   });
 
-  test('过账菜单与权限迁移只授超管与正式财务岗位', () => {
+  test('外部账单菜单与权限迁移只授超管与正式财务岗位', () => {
     const migration = readFileSync(
       new URL('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V208__scm_finance_posting_permission.sql', import.meta.url),
       'utf8'

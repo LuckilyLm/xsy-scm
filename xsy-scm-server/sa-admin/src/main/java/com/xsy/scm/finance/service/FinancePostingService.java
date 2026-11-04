@@ -97,7 +97,7 @@ public class FinancePostingService {
         posting.setCreatedBy(operator);
         posting.setUpdatedBy(operator);
         if (financePostingDao.insert(posting) != 1) {
-            throw new IllegalStateException("过账记录未保存: " + posting.getPostingNo());
+            throw new IllegalStateException("外部账单记录未保存: " + posting.getPostingNo());
         }
 
         operationLogs.record(ScmFinanceBusinessTypeEnum.POSTING, posting.getId(),

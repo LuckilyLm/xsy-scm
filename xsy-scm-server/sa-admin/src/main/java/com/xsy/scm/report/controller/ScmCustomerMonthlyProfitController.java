@@ -33,8 +33,8 @@ public class ScmCustomerMonthlyProfitController {
         new Column("taxAmount", "税费"), new Column("serviceAmount", "服务费"), new Column("freightAmount", "运费"),
         new Column("commissionAmount", "扣点金额"), new Column("expenseAmount", "费用合计"), new Column("netProfit", "扣费后利润"),
         new Column("statementAmount", "对账金额"), new Column("paidAmount", "实付金额"), new Column("unpaidAmount", "未付金额"),
-        new Column("invoiceAmount", "开票金额"), new Column("postingAmount", "过账金额"),
-        new Column("postingTaxAmount", "过账税金"), new Column("actualGoodsAmount", "实际货款"),
+        new Column("invoiceAmount", "开票金额"), new Column("postingAmount", "外部账单金额"),
+        new Column("postingTaxAmount", "外部账单税金"), new Column("actualGoodsAmount", "实际货款"),
         new Column("invoiceTaxAmount", "1%专票税费"), new Column("serviceFeeAmount", "6%服务费"),
         new Column("statementProfit", "利润"), new Column("costMissingCount", "待确认成本数"));
     private final ScmCustomerMonthlyProfitService profitService;

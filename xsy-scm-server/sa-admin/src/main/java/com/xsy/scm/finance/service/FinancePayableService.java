@@ -108,13 +108,13 @@ public class FinancePayableService {
         red.setCreatedBy(operator);
         red.setUpdatedBy(operator);
         if (financePayableDao.insert(red) != 1) {
-            throw new IllegalStateException("手工红字应付未保存: " + red.getPayableNo());
+            throw new IllegalStateException("手工扣减应付未保存: " + red.getPayableNo());
         }
 
         for (FinancePayableItemEntity item : items) {
             item.setPayableId(red.getId());
             if (financePayableItemDao.insert(item) != 1) {
-                throw new IllegalStateException("手工红字应付明细未保存: " + item.getPurchaseOrderItemId());
+                throw new IllegalStateException("手工扣减应付明细未保存: " + item.getPurchaseOrderItemId());
             }
         }
 

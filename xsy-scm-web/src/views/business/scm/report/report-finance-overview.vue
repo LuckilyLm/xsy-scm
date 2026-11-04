@@ -66,7 +66,7 @@
             <template #bodyCell="{column, text}">
               <template v-if="['amount', 'redAmount', 'netAmount', 'writtenOffAmount', 'openAmount', 'overAppliedAmount'].includes(column.dataIndex)">
                 <span class="scm-money">{{ moneyText(text) }}</span>
-                <a-tag v-if="column.dataIndex === 'overAppliedAmount' && text && text !== '0.0000'" color="orange"> 超额核销待处理 </a-tag>
+                <a-tag v-if="column.dataIndex === 'overAppliedAmount' && text && text !== '0.0000'" color="orange"> 抵扣超额待处理 </a-tag>
               </template>
               <template v-else-if="column.dataIndex === 'eventAt'">{{ datetime(text) }}</template>
             </template>
@@ -97,23 +97,23 @@
                   <dd>{{ moneyText(row.amount) }}</dd>
                 </div>
                 <div>
-                  <dt>红字金额</dt>
+                  <dt>扣减金额</dt>
                   <dd>{{ moneyText(row.redAmount) }}</dd>
                 </div>
                 <div>
-                  <dt>净应收</dt>
+                  <dt>扣减后应收</dt>
                   <dd>{{ moneyText(row.netAmount) }}</dd>
                 </div>
                 <div>
-                  <dt>已核销金额</dt>
+                  <dt>已抵扣金额</dt>
                   <dd>{{ moneyText(row.writtenOffAmount) }}</dd>
                 </div>
                 <div v-if="row.overAppliedAmount !== '0.0000'" class="finance-detail-mobile-over-applied">
-                  <dt>超额核销待处理</dt>
+                  <dt>抵扣超额待处理</dt>
                   <dd>{{ moneyText(row.overAppliedAmount) }}</dd>
                 </div>
                 <div>
-                  <dt>事件时点</dt>
+                  <dt>业务时间</dt>
                   <dd>{{ datetime(row.eventAt) }}</dd>
                 </div>
               </dl>
@@ -166,7 +166,7 @@
             <template #bodyCell="{column, text}">
               <template v-if="['amount', 'redAmount', 'netAmount', 'writtenOffAmount', 'openAmount', 'overAppliedAmount'].includes(column.dataIndex)">
                 <span class="scm-money">{{ moneyText(text) }}</span>
-                <a-tag v-if="column.dataIndex === 'overAppliedAmount' && text && text !== '0.0000'" color="orange"> 超额核销待处理 </a-tag>
+                <a-tag v-if="column.dataIndex === 'overAppliedAmount' && text && text !== '0.0000'" color="orange"> 抵扣超额待处理 </a-tag>
               </template>
               <template v-else-if="column.dataIndex === 'eventAt'">{{ datetime(text) }}</template>
             </template>
@@ -197,23 +197,23 @@
                   <dd>{{ moneyText(row.amount) }}</dd>
                 </div>
                 <div>
-                  <dt>红字金额</dt>
+                  <dt>扣减金额</dt>
                   <dd>{{ moneyText(row.redAmount) }}</dd>
                 </div>
                 <div>
-                  <dt>净应付</dt>
+                  <dt>扣减后应付</dt>
                   <dd>{{ moneyText(row.netAmount) }}</dd>
                 </div>
                 <div>
-                  <dt>已核销金额</dt>
+                  <dt>已抵扣金额</dt>
                   <dd>{{ moneyText(row.writtenOffAmount) }}</dd>
                 </div>
                 <div v-if="row.overAppliedAmount !== '0.0000'" class="finance-detail-mobile-over-applied">
-                  <dt>超额核销待处理</dt>
+                  <dt>抵扣超额待处理</dt>
                   <dd>{{ moneyText(row.overAppliedAmount) }}</dd>
                 </div>
                 <div>
-                  <dt>事件时点</dt>
+                  <dt>业务时间</dt>
                   <dd>{{ datetime(row.eventAt) }}</dd>
                 </div>
               </dl>
@@ -306,11 +306,11 @@ const overviewLoader = createGuardedLoader<FinanceReportOverview>(
 const overviewExportQuery = () => ({startDate: dateRange.value[0], endDate: dateRange.value[1]});
 const detailExportQuery = () => ({...overviewExportQuery(), keyword: keyword.value.trim() || undefined});
 const kpiCards = computed(() => [
-  {label: '应收发生额', value: moneyText(overview.value?.receivableOccurredAmount)},
-  {label: '应收已核销（非实收）', value: moneyText(overview.value?.receivableWrittenOffAmount)},
+  {label: '本期应收金额', value: moneyText(overview.value?.receivableOccurredAmount)},
+  {label: '应收已抵扣（非实收）', value: moneyText(overview.value?.receivableWrittenOffAmount)},
   {label: '期末待收（含期初未结）', value: moneyText(overview.value?.endingReceivableAmount)},
-  {label: '应付发生额', value: moneyText(overview.value?.payableOccurredAmount)},
-  {label: '应付已核销（非实付）', value: moneyText(overview.value?.payableWrittenOffAmount)},
+  {label: '本期应付金额', value: moneyText(overview.value?.payableOccurredAmount)},
+  {label: '应付已抵扣（非实付）', value: moneyText(overview.value?.payableWrittenOffAmount)},
   {label: '期末待付（含期初未结）', value: moneyText(overview.value?.endingPayableAmount)},
 ]);
 
@@ -319,24 +319,24 @@ const receivableColumns = ref<TableColumnsType<FinanceReceivableDetailRow>>([
   {title: '订单号', dataIndex: 'orderNo', width: 200},
   {title: '客户', dataIndex: 'customerName', width: 180},
   {title: '原应收金额', dataIndex: 'amount', width: 125},
-  {title: '红字金额', dataIndex: 'redAmount', width: 115},
-  {title: '净应收', dataIndex: 'netAmount', width: 115},
-  {title: '已核销金额', dataIndex: 'writtenOffAmount', width: 125},
+  {title: '扣减金额', dataIndex: 'redAmount', width: 115},
+  {title: '扣减后应收', dataIndex: 'netAmount', width: 115},
+  {title: '已抵扣金额', dataIndex: 'writtenOffAmount', width: 125},
   {title: '期末待收', dataIndex: 'openAmount', width: 125},
-  {title: '超额核销待处理', dataIndex: 'overAppliedAmount', width: 148},
-  {title: '事件时点', dataIndex: 'eventAt', width: 170},
+  {title: '抵扣超额待处理', dataIndex: 'overAppliedAmount', width: 148},
+  {title: '业务时间', dataIndex: 'eventAt', width: 170},
 ]);
 const payableColumns = ref<TableColumnsType<FinancePayableDetailRow>>([
   {title: '应付单号', dataIndex: 'payableNo', width: 190, ellipsis: true},
   {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 200},
   {title: '供应商', dataIndex: 'supplierName', width: 180},
   {title: '原应付金额', dataIndex: 'amount', width: 125},
-  {title: '红字金额', dataIndex: 'redAmount', width: 115},
-  {title: '净应付', dataIndex: 'netAmount', width: 115},
-  {title: '已核销金额', dataIndex: 'writtenOffAmount', width: 125},
+  {title: '扣减金额', dataIndex: 'redAmount', width: 115},
+  {title: '扣减后应付', dataIndex: 'netAmount', width: 115},
+  {title: '已抵扣金额', dataIndex: 'writtenOffAmount', width: 125},
   {title: '期末待付', dataIndex: 'openAmount', width: 125},
-  {title: '超额核销待处理', dataIndex: 'overAppliedAmount', width: 148},
-  {title: '事件时点', dataIndex: 'eventAt', width: 170},
+  {title: '抵扣超额待处理', dataIndex: 'overAppliedAmount', width: 148},
+  {title: '业务时间', dataIndex: 'eventAt', width: 170},
 ]);
 
 function validateRange() {

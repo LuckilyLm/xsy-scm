@@ -29,9 +29,9 @@ export const SCM_FINANCE_PERMISSION = {
 } as const;
 
 export const SCM_FINANCE_ENTRY_TYPE_ENUM: SmartEnum<string> = {
-  NORMAL: {value: 'NORMAL', desc: '正常'},
-  RED: {value: 'RED', desc: '红字'},
-  REVERSE: {value: 'REVERSE', desc: '反向'},
+  NORMAL: {value: 'NORMAL', desc: '原始记录'},
+  RED: {value: 'RED', desc: '扣减记录'},
+  REVERSE: {value: 'REVERSE', desc: '撤销记录'},
 };
 
 export const SCM_FINANCE_SETTLE_STATE_ENUM: SmartEnum<string> = {
@@ -48,18 +48,18 @@ export const SCM_FINANCE_SETTLE_STATE_ENUM: SmartEnum<string> = {
  */
 export const SCM_FINANCE_OPERATION_TYPE_ENUM: SmartEnum<string> = {
   GENERATE: {value: 'GENERATE', desc: '生成'},
-  RED_GENERATE: {value: 'RED_GENERATE', desc: '红字生成'},
+  RED_GENERATE: {value: 'RED_GENERATE', desc: '登记扣减'},
   RECEIVE: {value: 'RECEIVE', desc: '收款登记'},
   PAY: {value: 'PAY', desc: '付款登记'},
-  WRITE_OFF: {value: 'WRITE_OFF', desc: '核销'},
-  WRITE_OFF_REVERSE: {value: 'WRITE_OFF_REVERSE', desc: '核销撤销'},
-  RECEIPT_REVERSE: {value: 'RECEIPT_REVERSE', desc: '收款反向'},
-  PAYMENT_REVERSE: {value: 'PAYMENT_REVERSE', desc: '付款反向'},
+  WRITE_OFF: {value: 'WRITE_OFF', desc: '账款抵扣'},
+  WRITE_OFF_REVERSE: {value: 'WRITE_OFF_REVERSE', desc: '撤销抵扣'},
+  RECEIPT_REVERSE: {value: 'RECEIPT_REVERSE', desc: '撤销收款记录'},
+  PAYMENT_REVERSE: {value: 'PAYMENT_REVERSE', desc: '撤销付款记录'},
   WAIVER_ADD: {value: 'WAIVER_ADD', desc: '抹零登记'},
-  WAIVER_REVERSE: {value: 'WAIVER_REVERSE', desc: '抹零反向'},
-  POSTING_ADD: {value: 'POSTING_ADD', desc: '过账登记'},
-  POSTING_UPDATE: {value: 'POSTING_UPDATE', desc: '过账修改'},
-  POSTING_VOID: {value: 'POSTING_VOID', desc: '过账作废'},
+  WAIVER_REVERSE: {value: 'WAIVER_REVERSE', desc: '撤销抹零'},
+  POSTING_ADD: {value: 'POSTING_ADD', desc: '外部账单登记'},
+  POSTING_UPDATE: {value: 'POSTING_UPDATE', desc: '外部账单修改'},
+  POSTING_VOID: {value: 'POSTING_VOID', desc: '外部账单作废'},
 };
 
 /** 付款方式（与后端 `ScmFinancePaymentMethodEnum` 逐字对应）。 */
@@ -122,9 +122,9 @@ export const SCM_FINANCE_BUSINESS_TYPE_ENUM: SmartEnum<string> = {
   PAYABLE: {value: 'PAYABLE', desc: '应付'},
   RECEIPT: {value: 'RECEIPT', desc: '收款'},
   PAYMENT: {value: 'PAYMENT', desc: '付款'},
-  WRITE_OFF: {value: 'WRITE_OFF', desc: '核销'},
+  WRITE_OFF: {value: 'WRITE_OFF', desc: '账款抵扣'},
   WAIVER: {value: 'WAIVER', desc: '抹零'},
-  POSTING: {value: 'POSTING', desc: '过账'},
+  POSTING: {value: 'POSTING', desc: '外部账单'},
 };
 
 /** 过账单据的有效状态（由作废事实推导，前端只读）。 */

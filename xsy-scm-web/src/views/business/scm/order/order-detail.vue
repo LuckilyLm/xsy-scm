@@ -192,7 +192,7 @@
           :message="creditCheck.allowed ? '当前授信检查通过，提交时将再次校验' : '额度不足或存在逾期，订单暂不能确认'"
         />
         <a-descriptions :column="1" size="small" bordered>
-          <a-descriptions-item label="未核销应收">{{ amount(creditCheck.openReceivableAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="未抵扣应收">{{ amount(creditCheck.openReceivableAmount) }}</a-descriptions-item>
           <a-descriptions-item label="已确认未形成应收">{{ amount(creditCheck.confirmedOrderAmount) }}</a-descriptions-item>
           <a-descriptions-item label="本次实重结算金额">{{ amount(creditCheck.requestedOrderAmount) }}</a-descriptions-item>
           <a-descriptions-item label="确认后授信占用">{{ amount(creditCheck.projectedExposure) }}</a-descriptions-item>

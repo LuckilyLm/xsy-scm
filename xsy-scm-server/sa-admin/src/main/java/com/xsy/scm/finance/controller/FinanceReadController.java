@@ -51,17 +51,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FinanceReadController {
 
-    private static final List<String> RECEIVABLE_EXPORT_TITLES = List.of("应收单号", "订单号", "客户名称", "方向", "金额", "净应收",
-        "已核销", "未核销", "超额核销", "结清状态", "事件时点", "原因");
+    private static final List<String> RECEIVABLE_EXPORT_TITLES = List.of("应收单号", "订单号", "客户名称", "记录类型", "金额", "扣减后应收",
+        "已抵扣", "剩余待收", "抵扣超额", "结清状态", "业务时间", "原因");
 
-    private static final List<String> PAYABLE_EXPORT_TITLES = List.of("应付单号", "采购单号", "供应商名称", "方向", "金额", "净应付", "已核销",
-        "未核销", "超额核销", "结清状态", "事件时点", "原因");
+    private static final List<String> PAYABLE_EXPORT_TITLES = List.of("应付单号", "采购单号", "供应商名称", "记录类型", "金额", "扣减后应付",
+        "已抵扣", "剩余待付", "抵扣超额", "结清状态", "业务时间", "原因");
 
-    private static final List<String> RECEIPT_EXPORT_TITLES = List.of("收款单号", "客户名称", "方向", "金额", "有效金额", "已核销", "待核销",
-        "方式", "收款时点", "资金凭据号", "反向原因");
+    private static final List<String> RECEIPT_EXPORT_TITLES = List.of("收款单号", "客户名称", "记录类型", "金额", "有效金额", "已抵扣",
+        "待抵扣", "方式", "收款时间", "收付款凭证号", "撤销原因");
 
-    private static final List<String> PAYMENT_EXPORT_TITLES = List.of("付款单号", "往来方类型", "往来方名称", "方向", "金额", "有效金额",
-        "已核销", "待核销", "方式", "付款时点", "来源类型", "来源编号");
+    private static final List<String> PAYMENT_EXPORT_TITLES = List.of("付款单号", "客户或供应商类型", "客户或供应商名称", "记录类型", "金额",
+        "有效金额", "已抵扣", "待抵扣", "方式", "付款时间", "来源类型", "来源编号");
 
     private final FinanceReceivableQueryService financeReceivableQueryService;
     private final FinancePayableQueryService financePayableQueryService;
