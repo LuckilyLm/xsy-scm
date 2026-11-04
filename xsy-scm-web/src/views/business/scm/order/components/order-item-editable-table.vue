@@ -177,7 +177,7 @@ const columns: TableColumnsType<Item> = [
   {title: '下单数量', dataIndex: 'orderedQuantity', width: 100},
   {title: '实数量', dataIndex: 'actualQuantity', width: 80},
   {
-    title: '解析单价',
+    title: '报价单价',
     dataIndex: 'draftUnitPrice',
     width: 130,
   },

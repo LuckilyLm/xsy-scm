@@ -108,7 +108,7 @@ export function validateCustomer(form: CustomerFormModel): string | undefined {
     return '联系电话格式不正确';
   }
   if (form.creditLimit?.trim() && !isSalesMoney(form.creditLimit)) {
-    return '授信额度须为非负数，最多两位小数';
+    return '赊欠额度须为非负数，最多两位小数';
   }
   if (form.creditPeriodType === 'BY_AMOUNT') {
     if (!form.creditAmountThreshold?.trim()) {

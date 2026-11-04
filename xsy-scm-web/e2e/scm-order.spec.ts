@@ -780,7 +780,7 @@ test.describe('scm-order', () => {
     await expect(page.locator('.ant-modal:visible')).toHaveCount(0);
     await page.getByRole('button', {name: '确认订单', exact: true}).click();
     const confirmModal = page.locator('.ant-modal-content:visible').last();
-    await expect(confirmModal).toContainText('当前授信检查通过');
+    await expect(confirmModal).toContainText('当前赊欠额度检查通过');
     await expect(confirmModal).toContainText('本次实重结算金额');
     await confirmModal.getByRole('button', {name: /^确\s*定$/}).click();
     // 订单详情已是独立页面：状态在「核心摘要」的字段里，不在抽屉正文里

@@ -14,10 +14,10 @@ import lombok.RequiredArgsConstructor;
 public enum ScmSortingOccupationStatusEnum {
 
     /** 占用中：该订单行已归属一个分拣任务。 */
-    ACTIVE("占用中"),
+    ACTIVE("已分配"),
 
     /** 已释放：任务取消或完成后释放，可重新进入新任务。 */
-    RELEASED("已释放");
+    RELEASED("已取消分配");
 
     private final String desc;
 }

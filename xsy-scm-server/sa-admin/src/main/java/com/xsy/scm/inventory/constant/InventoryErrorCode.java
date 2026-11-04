@@ -126,7 +126,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 已预留的货不能被盘点吃掉：预留代表对下游（销售订单）的承诺，盘亏到低于预留量意味着承诺无法兑现， 必须直接失败，不能静默绕过 {@code ck_inventory_balance_available}。
      */
-    INVENTORY_STOCKTAKE_BELOW_RESERVED(41025, "盘点调整后库存低于已预留量，请先释放预留或核对实盘量"),
+    INVENTORY_STOCKTAKE_BELOW_RESERVED(41025, "盘点调整后库存低于已预留量，请先取消预留或核对实盘量"),
 
     /**
      * 41026：源身份重复盘点（同一条盘点明细行已写过流水）。
@@ -183,7 +183,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 已预留的货代表对下游（销售订单）的承诺，报损不能把它吃掉，否则承诺无法兑现， 且 {@code ck_inventory_balance_available} 会在数据库层拒绝。
      */
-    INVENTORY_LOSS_GAIN_BELOW_RESERVED(41034, "报损后库存低于已预留量，请先释放预留或减少报损数量"),
+    INVENTORY_LOSS_GAIN_BELOW_RESERVED(41034, "报损后库存低于已预留量，请先取消预留或减少报损数量"),
 
     /**
      * 41035：源身份重复报损报溢（同一条单据行已写过流水）。
@@ -243,7 +243,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 可用量 = {@code quantity − reserved_quantity}。调拨转出与销售出库同一规则：不得让源仓变负， 也不得吃掉源仓已预留的货（预留代表对下游的承诺）。
      */
-    INVENTORY_TRANSFER_INSUFFICIENT_AVAILABLE(41043, "源仓库可用库存不足（可用量 = 现有量 − 预留量），请减少调拨数量或先释放预留"),
+    INVENTORY_TRANSFER_INSUFFICIENT_AVAILABLE(41043, "源仓库可用库存不足（可用量 = 现有量 − 预留量），请减少调拨数量或先取消预留"),
 
     /**
      * 41044：目标仓的记账单位与调拨单位不一致。
@@ -368,7 +368,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 可用量 = {@code quantity − reserved_quantity}。转换不得让源 SKU 变负，也不得吃掉源 SKU 已预留的货（预留代表对下游的承诺）。
      */
-    INVENTORY_CONVERSION_INSUFFICIENT_AVAILABLE(41061, "源商品规格可用库存不足（可用量 = 现有量 − 预留量），请减少转出数量或先释放预留"),
+    INVENTORY_CONVERSION_INSUFFICIENT_AVAILABLE(41061, "源商品规格可用库存不足（可用量 = 现有量 − 预留量），请减少转出数量或先取消预留"),
 
     /**
      * 41062：源身份重复转换（同一条明细行已写过该方向的流水）。
@@ -420,7 +420,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
     /**
      * 41073：批次数量必须为正。
      */
-    INVENTORY_LOT_QUANTITY_INVALID(41073, "批次数量必须为大于零的四位定点数");
+    INVENTORY_LOT_QUANTITY_INVALID(41073, "批次数量必须大于0，最多保留4位小数");
 
     private final int code;
     private final String msg;

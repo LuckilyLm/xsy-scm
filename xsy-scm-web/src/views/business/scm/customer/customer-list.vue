@@ -161,7 +161,7 @@ const columns = ref<CustomerListColumn[]>([
   {title: '联系人', dataIndex: 'contactName', width: 120},
   {title: '联系电话', dataIndex: 'contactPhone', width: 140},
   {title: '结算方式', dataIndex: 'settleMode', width: 112, align: 'center'},
-  {title: '授信额度', dataIndex: 'creditLimit', width: 130},
+  {title: '赊欠额度', dataIndex: 'creditLimit', width: 130},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
   {title: '操作', dataIndex: 'action', width: 150, align: 'center', fixed: 'right'},
 ]);

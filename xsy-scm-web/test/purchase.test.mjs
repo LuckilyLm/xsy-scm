@@ -260,7 +260,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.match(src, /stockAvailableForSelectedOrders/);
     assert.doesNotMatch(src, /shortageAgainstAvailable/);
     // 差额不是采购建议：文案必须显性说明
-    assert.match(src, /不是最终净采购建议/);
+    assert.match(src, /不是最终采购建议/);
   });
 
   test('undecided in-transit deduction stays out of the frontend contract', () => {
@@ -732,7 +732,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     lines[1].actualWeight = '2.0000';
     lines[1].weightSource = 'MANUAL';
     lines[0].actualWeight = '5.00';
-    assert.match(validateConfirm(r, lines), /实重必须为四位定点数/);
+    assert.match(validateConfirm(r, lines), /实际重量最多保留4位小数/);
     lines[0].actualWeight = '5.0000';
     assert.equal(validateConfirm(r, lines), undefined);
     lines[0].actualWeight = null;

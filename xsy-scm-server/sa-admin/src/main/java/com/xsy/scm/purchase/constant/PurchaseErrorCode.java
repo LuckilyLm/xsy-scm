@@ -12,8 +12,8 @@ import com.xsy.scm.common.error.ScmErrorCode;
 public enum PurchaseErrorCode implements ScmErrorCode {
 
     // ---- 40080–40094 BAD_REQUEST ----
-    PURCHASE_QUANTITY_INVALID(40080, "采购数量必须为大于零的四位定点数"),
-    PURCHASE_PRICE_INVALID(40081, "采购单价必须为非负四位定点数"),
+    PURCHASE_QUANTITY_INVALID(40080, "采购数量必须大于0，最多保留4位小数"),
+    PURCHASE_PRICE_INVALID(40081, "采购单价不能小于0，最多保留4位小数"),
     PURCHASE_DEMAND_ALLOCATION_EXCEEDED(40082, "分配数量超过需求量"),
     PURCHASE_RECEIPT_QUANTITY_INVALID(40083, "收货数量或实重不正确"),
     PURCHASE_IDEMPOTENCY_KEY_REQUIRED(40084, "Idempotency-Key 不能为空"),
@@ -24,7 +24,7 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_ORDER_ITEM_EMPTY(40089, "采购单至少需要一行有效明细"),
     PURCHASE_DEMAND_ALLOCATION_DUPLICATE(40090, "同一采购行重复关联同一采购需求"),
     PURCHASE_DEMAND_VERSION_REQUIRED(40091, "采购需求分配必须携带需求版本"),
-    PURCHASE_DEMAND_BATCH_TOO_LARGE(40092, "净需求计算来源超过单批上限，请缩短时间段或增加筛选条件"),
+    PURCHASE_DEMAND_BATCH_TOO_LARGE(40092, "本次采购需求汇总内容过多，请缩短时间段或增加筛选条件"),
     PURCHASE_INQUIRY_QUOTE_INVALID(40094, "询价内容、报价或有效期不符合要求"),
     PURCHASE_RECEIPT_LOT_REQUIRED(40095, "该仓库启用了批次追踪，收货必须逐行登记批次"),
     PURCHASE_RECEIPT_LOT_QUANTITY_MISMATCH(40096, "批次数量之和必须等于本次收货量"),
@@ -38,7 +38,7 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_ORDER_ITEM_NOT_FOUND(40482, "采购明细不存在"),
     PURCHASE_RECEIPT_NOT_FOUND(40483, "收货单不存在"),
     PURCHASE_RECEIPT_ITEM_NOT_FOUND(40484, "收货明细不存在"),
-    PURCHASE_DEMAND_BATCH_NOT_FOUND(40487, "净需求计算批次不存在"),
+    PURCHASE_DEMAND_BATCH_NOT_FOUND(40487, "采购需求汇总不存在"),
     PURCHASE_INQUIRY_NOT_FOUND(40488, "采购询价单不存在"),
 
     // ---- 40971–40999 CONFLICT ----
@@ -87,9 +87,9 @@ public enum PurchaseErrorCode implements ScmErrorCode {
 
     PURCHASE_SHARE_STATE_INVALID(41093, "采购单当前状态不允许分享"),
 
-    PURCHASE_SHARE_FEEDBACK_INVALID(41094, "回填的单价与重量至少填一项，且不能为负"),
+    PURCHASE_SHARE_FEEDBACK_INVALID(41094, "单价和实际重量至少填写一项，且不能小于0"),
 
-    PURCHASE_SHARE_ITEM_NOT_OWNED(41095, "回填明细不属于该采购单");
+    PURCHASE_SHARE_ITEM_NOT_OWNED(41095, "录入的明细不属于该采购单");
 
     private final int code;
     private final String msg;

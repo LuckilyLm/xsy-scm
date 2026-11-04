@@ -2,8 +2,8 @@
   <div class="scm-inquiry">
     <a-card title="采购询价" :bordered="false" size="small">
       <a-form layout="inline" class="scm-inquiry__toolbar" @submit.prevent="loadBatch(1)">
-        <a-form-item label="净需求批次">
-          <a-input v-model:value="batchInput" placeholder="输入需求计算批次号" style="width: 220px" />
+        <a-form-item label="采购需求汇总">
+          <a-input v-model:value="batchInput" placeholder="输入采购需求汇总编号" style="width: 220px" />
         </a-form-item>
         <a-button type="primary" :loading="loading" v-privilege="'scm:purchase:inquiry:query'" @click="loadBatch(1)">查询</a-button>
       </a-form>
@@ -60,7 +60,7 @@
           </template>
         </template>
       </a-table>
-      <a-empty v-if="!loadedBatch && !loading" description="输入净需求批次编号，查看该批次的采购询价" />
+      <a-empty v-if="!loadedBatch && !loading" description="输入采购需求汇总编号，查看该批次的采购询价" />
     </a-card>
 
     <a-drawer :open="detailOpen" :width="scmDrawerWidth('xl')" title="询价与报价对比" @close="detailOpen = false">
@@ -232,7 +232,7 @@ const candidateIdentifier = (c: InquiryCandidate) => c.skuId + '|' + c.demandUni
 async function loadBatch(page = 1): Promise<void> {
   const id = batchInput.value.trim();
   if (!/^[1-9]\d*$/.test(id)) {
-    void message.warning('请输入正确的净需求批次编号');
+    void message.warning('请输入正确的采购需求汇总编号');
     return;
   }
   loading.value = true;

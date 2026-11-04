@@ -119,7 +119,7 @@ const emit = defineEmits<{
 const columns = computed<TableColumnsType<RouteOrder>>(() => [
   {title: '订单号', dataIndex: 'orderNoSnapshot', width: 200},
   {title: '客户', dataIndex: 'customer', width: 200},
-  {title: '履约状态', dataIndex: 'fulfillmentStatus', width: 110, align: 'center'},
+  {title: '配送状态', dataIndex: 'fulfillmentStatus', width: 110, align: 'center'},
   {title: '签收时间', dataIndex: 'signedAt', width: 170},
   {title: '签收人', dataIndex: 'signedBy', width: 140},
   {title: '原因', dataIndex: 'signReason', width: 240, ellipsis: true},

@@ -98,8 +98,8 @@ const canUpdate = computed(() => hasPermission('scm:order:update') && hasPermiss
 const columns: TableColumnsType<PriceCheckLine> = [
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '下单量', dataIndex: 'quantity', width: 100},
-  {title: '原解析价', dataIndex: 'oldPrice', width: 120},
-  {title: '当前解析价', dataIndex: 'currentPrice', width: 120},
+  {title: '原报价', dataIndex: 'oldPrice', width: 120},
+  {title: '最新报价', dataIndex: 'currentPrice', width: 120},
   {title: '比较结果', dataIndex: 'state', align: 'center', width: 120},
   {title: '说明', dataIndex: 'reason', width: 180},
 ];

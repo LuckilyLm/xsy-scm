@@ -18,8 +18,8 @@ public final class PurchaseInquiryForm {
 
     @Data
     public static class Create {
-        @NotNull(message = "净需求批次不能为空")
-        @Positive(message = "净需求批次编号必须大于零")
+        @NotNull(message = "采购需求汇总不能为空")
+        @Positive(message = "采购需求汇总编号必须大于零")
         private Long batchId;
         @NotNull(message = "商品规格不能为空")
         @Positive(message = "商品规格编号必须大于零")
@@ -66,8 +66,8 @@ public final class PurchaseInquiryForm {
 
     @Data
     public static class Batch {
-        @NotNull(message = "净需求批次不能为空")
-        @Positive(message = "净需求批次编号必须大于零")
+        @NotNull(message = "采购需求汇总不能为空")
+        @Positive(message = "采购需求汇总编号必须大于零")
         private Long batchId;
         @Min(value = 1, message = "页码不能小于1")
         private Integer page;

@@ -97,8 +97,8 @@ watch(supplierId, () => {
   history.value = [];
 });
 const factLabels: Record<string, string> = {
-  PAYABLE: '确认收货应付',
-  RED: '手工扣减',
+  PAYABLE: '采购应付',
+  RED: '应付扣减',
   PAYMENT: '实际付款',
   PAYMENT_REVERSE: '撤销付款记录',
   WRITE_OFF: '付款抵扣',

@@ -72,7 +72,7 @@ public class MallSettlementService {
         if (creditLimit == null || creditLimit.signum() <= 0) {
             option.setAvailableAmount(BigDecimal.ZERO.setScale(SCALE));
             option.setEnabled(Boolean.FALSE);
-            option.setDisabledReason("当前客户未配置授信额度");
+            option.setDisabledReason("当前客户未配置赊欠额度");
             return option;
         }
         BigDecimal used = nonzero(check.getOpenReceivableAmount()).add(nonzero(check.getConfirmedOrderAmount()));
@@ -85,7 +85,7 @@ public class MallSettlementService {
         }
         if (Boolean.TRUE.equals(check.getOverLimit())) {
             option.setEnabled(Boolean.FALSE);
-            option.setDisabledReason("本单将超出剩余授信额度");
+            option.setDisabledReason("本单将超出剩余赊欠额度");
             return option;
         }
         option.setEnabled(Boolean.TRUE);

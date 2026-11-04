@@ -19,7 +19,7 @@ public enum ScmBalanceSourceTypeEnum {
     ORDER_REFUND("售后退款单"),
 
     /** 来源是退款资金分摊行：{@code source_id = xsy_refund_funding_allocation.id}。 */
-    REFUND_FUNDING_ALLOCATION("退款资金分摊");
+    REFUND_FUNDING_ALLOCATION("按原支付方式退款");
 
     private final String desc;
 

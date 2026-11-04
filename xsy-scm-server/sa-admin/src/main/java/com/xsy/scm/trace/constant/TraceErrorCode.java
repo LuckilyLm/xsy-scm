@@ -18,7 +18,7 @@ public enum TraceErrorCode implements ScmErrorCode {
 
     TRACE_LOT_SOURCE_CODE_INVALID(41501, "来源生产批号长度不能超过 64 个字符"),
 
-    TRACE_LOT_QUANTITY_INVALID(41502, "批次数量必须为大于零的四位定点数"),
+    TRACE_LOT_QUANTITY_INVALID(41502, "批次数量必须大于0，最多保留4位小数"),
 
     TRACE_LOT_REQUIRED(41503, "批次仓的收货必须逐行登记批次"),
 
@@ -27,7 +27,7 @@ public enum TraceErrorCode implements ScmErrorCode {
 
     TRACE_UNIT_NOT_FOUND(41505, "包装码不存在"),
 
-    TRACE_UNIT_QUANTITY_INVALID(41506, "每包数量必须为大于零的四位定点数"),
+    TRACE_UNIT_QUANTITY_INVALID(41506, "每包数量必须大于0，最多保留4位小数"),
 
     /** 一码一物，绑定后不能改绑。 */
     TRACE_UNIT_ALREADY_BOUND(41507, "该包装码已经绑定过分拣任务行，不能重复绑定"),
@@ -90,7 +90,7 @@ public enum TraceErrorCode implements ScmErrorCode {
     TRACE_UNIT_WEIGHT_REQUIRED(41531, "该包装码没有净重，不能按称重结果绑定"),
 
     /** 净重与每包数量是两列，校验规则相同但提示必须分开，否则补录时看不懂在说什么。 */
-    TRACE_UNIT_WEIGHT_INVALID(41532, "净重必须为大于零的四位定点数"),
+    TRACE_UNIT_WEIGHT_INVALID(41532, "净重必须大于0，最多保留4位小数"),
 
     /** 公开页不区分「码不存在」与「码已删除」，避免被用来枚举探测。 */
     TRACE_PUBLIC_TOKEN_NOT_FOUND(41533, "未找到该溯源码，请确认标签完整"),

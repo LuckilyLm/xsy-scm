@@ -93,7 +93,7 @@ export const SCM_AUDIT_FIELD_LABELS: Record<string, string> = {
   draftUnitPrice: '录单单价',
   draftPriceSource: '录单价格来源',
   draftPriceSourceId: '录单价格来源 ID',
-  lockedUnitPrice: '锁定单价',
+  lockedUnitPrice: '订单单价',
   lockedPriceSource: '锁价来源',
   lockedPriceSourceId: '锁价来源 ID',
   manualPriceOverride: '人工改价',

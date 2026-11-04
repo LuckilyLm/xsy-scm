@@ -17,7 +17,7 @@ public enum ScmPurchasePriceSourceEnum {
     MANUAL("人工补价/改价"),
 
     /** 提交满价格窗口仍无价，按最近一次已提交采购价回填。 */
-    AUTO_LAST_PRICE("超期自动回填");
+    AUTO_LAST_PRICE("按上次采购价自动补价");
 
     private final String desc;
 }

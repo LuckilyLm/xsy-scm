@@ -96,7 +96,7 @@
               <a-typography-text type="secondary">
                 {{ record.specNameSnapshot || '—' }} · {{ productTypeDesc(record.productTypeSnapshot) }}
                 <template v-if="isGiftRow(record)"> · 满赠赠品，无需录入实分量</template>
-                <template v-else-if="record.occupationStatus === 'RELEASED'"> · 占用已释放</template>
+                <template v-else-if="record.occupationStatus === 'RELEASED'"> · 已取消分配</template>
               </a-typography-text>
             </template>
             <template v-else-if="column.dataIndex === 'plannedQuantitySnapshot'">
@@ -278,7 +278,7 @@ const itemColumns = ref<TableColumnsType<SortingTaskItem>>([
   {title: '录入人', dataIndex: 'sortedBy', width: 120},
   {title: '录入时间', dataIndex: 'sortedAt', width: 170},
   {title: '分次记录', dataIndex: 'partRecords', width: 150},
-  {title: '占用', dataIndex: 'occupationStatus', align: 'center', width: 100},
+  {title: '分配状态', dataIndex: 'occupationStatus', align: 'center', width: 100},
 ]);
 
 const standardOpen = ref(false);

@@ -42,7 +42,7 @@
                     <span class="scm-summary__value">{{ settleModeText(customer.settleMode) }}</span>
                   </div>
                   <div class="scm-summary__item">
-                    <span class="scm-summary__label">授信额度</span>
+                    <span class="scm-summary__label">赊欠额度</span>
                     <span class="scm-summary__value scm-money">{{ creditLimitText }}</span>
                   </div>
                   <div class="scm-summary__item">
@@ -101,10 +101,10 @@
 
                 <!-- 授信与账期 -->
                 <section class="scm-detail-card scm-detail-card--full">
-                  <h3 class="scm-detail-card__title">授信与账期</h3>
+                  <h3 class="scm-detail-card__title">赊欠额度与付款期限</h3>
                   <dl class="scm-field-list scm-field-list--3">
                     <div class="scm-field">
-                      <dt class="scm-field__label">授信额度</dt>
+                      <dt class="scm-field__label">赊欠额度</dt>
                       <dd class="scm-field__value scm-money">{{ creditLimitText }}</dd>
                     </div>
                     <div class="scm-field">

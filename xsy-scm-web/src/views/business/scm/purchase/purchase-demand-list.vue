@@ -70,7 +70,7 @@
                 v-privilege="'scm:purchase:demand:batch:query'"
                 @click="openBatch(record.calculationBatchId)"
               >
-                净需求批次
+                采购需求汇总
               </a-button>
               <span v-else>手工毛需求</span>
             </template>
@@ -370,7 +370,7 @@ async function submitAllocate() {
   // 输入框在未失焦时可能还是「1」这种中间态，先按四位定点归一化再校验
   const quantityValue = fixed(alloc.quantity);
   if (!/^\d{1,14}\.\d{4}$/.test(quantityValue) || Number(quantityValue) <= 0) {
-    alloc.error = '分配数量必须为大于零的四位定点数';
+    alloc.error = '分配数量必须大于0，最多保留4位小数';
     return;
   }
   alloc.error = '';

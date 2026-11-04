@@ -13,7 +13,7 @@ import lombok.Data;
 @Data
 public class PurchaseDemandBatchQueryForm {
 
-    @NotNull(message = "净需求计算批次不能为空")
-    @Positive(message = "净需求计算批次编号必须大于零")
+    @NotNull(message = "采购需求汇总不能为空")
+    @Positive(message = "采购需求汇总编号必须大于零")
     private Long batchId;
 }

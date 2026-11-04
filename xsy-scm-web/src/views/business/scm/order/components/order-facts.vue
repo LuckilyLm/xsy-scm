@@ -54,7 +54,7 @@
       <a-descriptions-item label="线路状态">
         {{ routeStatuses[order.deliveryProgress.routeStatus as RouteStatus]?.label ?? order.deliveryProgress.routeStatus }}
       </a-descriptions-item>
-      <a-descriptions-item label="本单履约">
+      <a-descriptions-item label="本单配送进度">
         {{ fulfillmentStatuses[order.deliveryProgress.fulfillmentStatus as FulfillmentStatus]?.label ?? order.deliveryProgress.fulfillmentStatus }}
       </a-descriptions-item>
       <a-descriptions-item label="发车时间">{{ datetime(order.deliveryProgress.dispatchedAt) }}</a-descriptions-item>

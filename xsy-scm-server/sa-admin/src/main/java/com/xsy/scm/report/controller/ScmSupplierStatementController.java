@@ -15,6 +15,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
 import com.xsy.scm.finance.permission.FinancePermission;
 import com.xsy.scm.report.constant.ScmReportPermission;
+import com.xsy.scm.print.constant.ScmStatementFactType;
 import com.xsy.scm.report.domain.form.ScmSupplierStatementForm;
 import com.xsy.scm.report.domain.vo.ScmSupplierStatementVO;
 import com.xsy.scm.report.service.ScmSupplierStatementService;
@@ -29,7 +30,7 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 @RequestMapping("/scm/report/supplier/statement")
 @RequiredArgsConstructor
 public class ScmSupplierStatementController {
-    private static final List<String> TITLES = List.of("对账版本", "供应商", "范围口径", "生成时间", "起始日", "截止日", "期初待付金额", "新增应付",
+    private static final List<String> TITLES = List.of("对账版本", "供应商", "统计范围", "生成时间", "起始日", "截止日", "期初待付金额", "新增应付",
         "应付扣减", "有效抵扣金额", "期末待付金额", "期初未分配付款", "本期有效付款（全部供应商）", "期末未分配付款", "事件时间", "类型", "单号", "关联单号", "应付变动", "付款变动",
         "账款抵扣变动", "剩余待付金额");
     private final ScmSupplierStatementService statementService;
@@ -64,15 +65,15 @@ public class ScmSupplierStatementController {
     @OperateLog
     public void export(@PathVariable Long id, HttpServletResponse response) throws IOException {
         ScmSupplierStatementVO version = statementService.detail(id);
-        String coverage = version.getPartialScope() ? "部分应付范围；付款为全供应商，金额不可勾稽" : "完整供应商范围";
+        String coverage = version.getPartialScope() ? "应付款仅包含本次筛选范围，付款金额包含该供应商的全部付款，不能直接核对两项金额" : "完整供应商范围";
         List<List<Object>> rows = version.getItems().stream()
             .map(item -> ScmExcel.row(TITLES, version.getId(), version.getSupplierName(), coverage,
                 version.getGeneratedAt(), version.getStartDate(), version.getEndDate(), version.getOpeningPayable(),
                 version.getPayableIncrease(), version.getPayableRed(), version.getWriteOffNet(),
                 version.getClosingPayable(), version.getOpeningUnallocated(), version.getPaymentNet(),
-                version.getClosingUnallocated(), item.getEventAt(), item.getFactType(), item.getDocumentNo(),
-                item.getRelatedNo(), item.getPayableDelta(), item.getPaymentDelta(), item.getWriteOffDelta(),
-                item.getPayableBalance()))
+                version.getClosingUnallocated(), item.getEventAt(),
+                ScmStatementFactType.supplierLabelOf(item.getFactType()), item.getDocumentNo(), item.getRelatedNo(),
+                item.getPayableDelta(), item.getPaymentDelta(), item.getWriteOffDelta(), item.getPayableBalance()))
             .toList();
         if (rows.isEmpty()) {
             rows = List.of(ScmExcel.row(TITLES, version.getId(), version.getSupplierName(), coverage,

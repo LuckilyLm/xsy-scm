@@ -88,7 +88,7 @@
       >
       <text v-for="name in promotion.appliedActivityNames || []" :key="name" class="co-promotion__detail">{{ name }}</text>
       <text v-for="gift in promotion.giftDescriptions || []" :key="gift" class="co-promotion__detail">赠品：{{ gift }}</text>
-      <text class="co-promotion__note">优惠仅为预览，后台受理订单时将重新校验并冻结；按实重商品以最终结算为准。</text>
+      <text class="co-promotion__note">优惠金额仅供参考，确认订单时会重新核对并确定；称重商品以最终结算金额为准。</text>
     </view>
 
     <view class="co-tip">订单提交后由后台确认，付款及结算请联系业务员处理。</view>

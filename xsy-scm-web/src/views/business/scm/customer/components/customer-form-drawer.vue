@@ -141,15 +141,15 @@
 
         <section class="scm-form-section">
           <div class="scm-form-section__head">
-            <h3 class="scm-form-section__title">授信与账期</h3>
+            <h3 class="scm-form-section__title">赊欠额度与付款期限</h3>
           </div>
           <a-row :gutter="20">
             <!-- 销售侧金额按元展示两位；字符串模型避免浮点误差 -->
             <a-col :xs="24" :sm="12">
               <a-form-item name="creditLimit">
                 <template #label>
-                  授信额度
-                  <ScmFieldHelp label="授信额度" text="0 表示不设置额度上限；逾期仍可能阻断订单" />
+                  赊欠额度
+                  <ScmFieldHelp label="赊欠额度" text="0 表示不设置额度上限；逾期仍可能阻断订单" />
                 </template>
                 <a-input-number
                   v-model:value="form.creditLimit"

@@ -116,10 +116,12 @@ test.describe('scm-delivery', () => {
     const dropdown = page.locator('.ant-select-dropdown:visible');
     const direct = dropdown.locator('.ant-select-item-option').filter({hasText: optionText}).first();
     // isVisible 不等待渲染，下拉还在展开动画里时必然返回 false，必须显式等一次
-    if (await direct.waitFor({state: 'visible', timeout: 2000}).then(
-      () => true,
-      () => false
-    )) {
+    if (
+      await direct.waitFor({state: 'visible', timeout: 2000}).then(
+        () => true,
+        () => false
+      )
+    ) {
       await direct.click();
     } else {
       for (let step = 0; step < 500; step++) {
@@ -1766,7 +1768,7 @@ test.describe('scm-sorting', () => {
       expect(line, `订单 ${item.orderNoSnapshot} 应能回读到分拣行对应的明细`).toBeTruthy();
       expect(String(line.actualQuantity), `订单 ${item.orderNoSnapshot} 实发量应为分拣实称量`).toBe(String(item.sortedQuantity));
       const expected = (Number(item.sortedQuantity) * Number(line.lockedUnitPrice)).toFixed(4);
-      expect(String(line.settlementLineAmount), '结算额按实称量 × 锁定单价重算').toBe(expected);
+      expect(String(line.settlementLineAmount), '结算额按实称量 × 订单单价重算').toBe(expected);
     }
 
     expect(await candidateOf(taskOne.orderNo), '分拣完成后应成为候选').toHaveLength(1);

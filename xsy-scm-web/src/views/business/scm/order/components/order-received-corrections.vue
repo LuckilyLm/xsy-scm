@@ -2,10 +2,10 @@
   <section>
     <div class="order-section-head">
       <div class="order-section-head__main">
-        <h3 class="order-section-title">客户实收更正</h3>
-        <span class="order-section-desc">只作记录；补偿需走正式流程</span>
+        <h3 class="order-section-title">客户收货数量更正</h3>
+        <span class="order-section-desc">这里只更正收货数量记录；退货、退款或补送需另外办理</span>
       </div>
-      <a-button v-if="canCorrect" v-privilege="'scm:order:update'" :disabled="loading" @click="open">记录实收更正</a-button>
+      <a-button v-if="canCorrect" v-privilege="'scm:order:update'" :disabled="loading" @click="open">记录收货数量更正</a-button>
     </div>
     <a-alert v-if="error" type="error" show-icon :message="error">
       <template #action><a-button size="small" @click="load">重试</a-button></template>
@@ -28,7 +28,7 @@
     </LocalTable>
     <a-modal
       :open="visible"
-      title="记录客户实收更正"
+      title="记录客户收货数量更正"
       :confirm-loading="saving"
       :ok-button-props="{disabled: !candidate || !reason.trim()}"
       @ok="save"
@@ -42,10 +42,10 @@
         <a-spin :spinning="candidateLoading">
           <template v-if="candidate">
             <p>
-              已出库：{{ candidate.shippedQuantity }} {{ candidate.saleUnit }}；当前客户实收记录：{{ candidate.currentReceivedQuantity }}
+              已出库：{{ candidate.shippedQuantity }} {{ candidate.saleUnit }}；当前客户收货数量：{{ candidate.currentReceivedQuantity }}
               {{ candidate.saleUnit }}
             </p>
-            <a-form-item label="更正后的客户实收数量" required>
+            <a-form-item label="更正后的客户收货数量" required>
               <a-input-number
                 v-model:value="receivedQuantity"
                 string-mode
@@ -166,7 +166,7 @@ async function save(): Promise<void> {
       reason: reason.value.trim(),
     });
     visible.value = false;
-    message.success('客户实收更正已记录');
+    message.success('客户收货数量更正已记录');
     await load();
   } catch {
     // 命令失败由统一请求层提示；保留表单供修正或重试。

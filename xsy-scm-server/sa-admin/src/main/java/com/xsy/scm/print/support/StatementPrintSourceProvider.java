@@ -63,7 +63,7 @@ public class StatementPrintSourceProvider implements ScmPrintSourceProvider {
         for (ScmCustomerStatementItemVO item : items) {
             Map<String, String> row = ScmPrintSource.row();
             row.put("eventAt", ScmPrintText.dateTime(item.getEventAt()));
-            row.put("factType", factTypeLabel(item.getFactType()));
+            row.put("factType", ScmStatementFactType.labelOf(item.getFactType()));
             row.put("documentNo", ScmPrintText.text(item.getDocumentNo()));
             row.put("relatedNo", ScmPrintText.text(item.getRelatedNo()));
             row.put("receivableDelta", ScmPrintText.fixed(item.getReceivableDelta()));
@@ -95,12 +95,4 @@ public class StatementPrintSourceProvider implements ScmPrintSourceProvider {
         return start + " 至 " + end;
     }
 
-    /** 财务事实类型没有统一枚举，打印件按页面同一套叫法逐项给中文；未知类型原样输出。 */
-    private static String factTypeLabel(String factType) {
-        if (factType == null) {
-            return "";
-        }
-        String label = ScmStatementFactType.labelOf(factType);
-        return label == null ? factType : label;
-    }
 }

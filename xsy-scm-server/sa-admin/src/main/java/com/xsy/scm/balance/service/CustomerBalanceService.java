@@ -168,7 +168,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         }
         CustomerBalanceMovementEntity movement = creditAt(ScmBalanceMovementTypeEnum.REFUND, customerId,
             settlementCustomerId, account.getSettlementCustomerNameSnapshot(), amount,
-            ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION, allocationId, "售后资金分摊返还", occurredAt);
+            ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION, allocationId, "售后退款退回钱包", occurredAt);
         return movement.getId();
     }
 

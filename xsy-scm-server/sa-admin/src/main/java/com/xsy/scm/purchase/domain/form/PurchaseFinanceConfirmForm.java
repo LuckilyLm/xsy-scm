@@ -39,7 +39,7 @@ public class PurchaseFinanceConfirmForm {
         private String quantity;
         @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "采购单价格式无效")
         private String expectedPrice;
-        @Positive(message = "回填记录无效")
+        @Positive(message = "现场录入记录无效")
         private Long feedbackId;
         @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "确认采购单价格式无效")
         private String confirmedPrice;

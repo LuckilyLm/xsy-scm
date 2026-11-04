@@ -108,7 +108,7 @@ public class SalesOrderImportService {
                 ? business.getErrorCode().getMsg()
                 : "订单数据冲突或金额超出范围，请检查后重试";
             for (var indexed : group)
-                addError(assembled.result(), indexed.rowNumber(), orderKey(note), "订单", code, message + "；整批已回滚");
+                addError(assembled.result(), indexed.rowNumber(), orderKey(note), "订单", code, message + "；本批数据未保存");
             return assembled.result();
         }
     }

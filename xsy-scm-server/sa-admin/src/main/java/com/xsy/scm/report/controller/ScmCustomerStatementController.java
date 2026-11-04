@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
 import com.xsy.scm.report.constant.ScmReportPermission;
+import com.xsy.scm.print.constant.ScmStatementFactType;
 import com.xsy.scm.report.domain.form.ScmCustomerStatementForm;
 import com.xsy.scm.report.domain.vo.ScmCustomerStatementVO;
 import com.xsy.scm.report.service.ScmCustomerStatementService;
@@ -28,7 +29,7 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 @RequestMapping("/scm/report/customer/statement")
 @RequiredArgsConstructor
 public class ScmCustomerStatementController {
-    private static final List<String> TITLES = List.of("对账版本", "结算方", "范围口径", "生成时间", "期初日", "截止日", "期初待收金额", "新增应收",
+    private static final List<String> TITLES = List.of("对账版本", "结算方", "统计范围", "生成时间", "期初日", "截止日", "期初待收金额", "新增应收",
         "应收扣减", "有效抵扣金额", "有效抹零金额", "期末待收金额", "本期有效收款", "期末未分配资金", "本期有效退款", "事件时间", "类型", "单号", "关联单号", "原客户", "应收变动",
         "收款变动", "账款抵扣变动", "退款变动", "外部账单金额", "剩余待收金额");
     private final ScmCustomerStatementService statementService;
@@ -66,10 +67,10 @@ public class ScmCustomerStatementController {
                 version.getStartDate(), version.getEndDate(), version.getOpeningReceivable(),
                 version.getReceivableIncrease(), version.getReceivableRed(), version.getWriteOffNet(),
                 version.getWaiverNet(), version.getClosingReceivable(), version.getReceiptNet(),
-                version.getClosingUnallocated(), version.getRefundNet(), item.getEventAt(), item.getFactType(),
-                item.getDocumentNo(), item.getRelatedNo(), item.getCustomerName(), item.getReceivableDelta(),
-                item.getReceiptDelta(), item.getWriteOffDelta(), item.getRefundDelta(), item.getPostingAmount(),
-                item.getReceivableBalance()))
+                version.getClosingUnallocated(), version.getRefundNet(), item.getEventAt(),
+                ScmStatementFactType.labelOf(item.getFactType()), item.getDocumentNo(), item.getRelatedNo(),
+                item.getCustomerName(), item.getReceivableDelta(), item.getReceiptDelta(), item.getWriteOffDelta(),
+                item.getRefundDelta(), item.getPostingAmount(), item.getReceivableBalance()))
             .toList();
         if (rows.isEmpty()) {
             rows = List.of(ScmExcel.row(TITLES, version.getId(), version.getSettlementCustomerName(),

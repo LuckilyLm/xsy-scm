@@ -209,7 +209,7 @@ public class PurchasePriceService {
             applyPrice(row, reference.getPurchasePrice(), now, ScmPurchasePriceSourceEnum.AUTO_LAST_PRICE.name(),
                 AUTO_FILL_OPERATOR);
             recordAudit(order, row, null, row.getPurchasePrice(), ScmPurchasePriceSourceEnum.AUTO_LAST_PRICE.name(),
-                "提交满 " + PurchaseOrderLockService.PRICE_WINDOW_DAYS + " 天，按最近已提交采购价回填", AUTO_FILL_OPERATOR, null);
+                "提交满 " + PurchaseOrderLockService.PRICE_WINDOW_DAYS + " 天，按最近已提交采购价自动补齐单价", AUTO_FILL_OPERATOR, null);
             filled = true;
         }
         if (!filled) {
@@ -222,7 +222,7 @@ public class PurchasePriceService {
         operationLog.setOperationType(ScmPurchaseOperationTypeEnum.PRICE_AUTO_FILL.name());
         operationLog.setPurchaseOrderId(order.getId());
         operationLog.setOperator(AUTO_FILL_OPERATOR);
-        operationLog.setReason("提交满 " + PurchaseOrderLockService.PRICE_WINDOW_DAYS + " 天，按最近已提交采购价回填");
+        operationLog.setReason("提交满 " + PurchaseOrderLockService.PRICE_WINDOW_DAYS + " 天，按最近已提交采购价自动补齐单价");
         operationLog.setAfterData(PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(result));
         operationLog.setCreatedBy(AUTO_FILL_OPERATOR);
         purchaseOperationLogDao.append(operationLog);

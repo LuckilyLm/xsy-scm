@@ -116,7 +116,7 @@
               @record-print="recordPrint"
             />
           </a-tab-pane>
-          <a-tab-pane key="fulfillment" tab="履约">
+          <a-tab-pane key="fulfillment" tab="发货与签收">
             <RouteFulfillmentPanel
               :orders="activeOrders"
               :stops="detail.stops"
@@ -419,7 +419,7 @@ const activeOrders = computed<RouteOrder[]>(() => (detail.value?.orders ?? []).f
 
 // 区分「线路没订单」和「线路已取消」，两种情况下一步不一样
 const fulfillmentEmptyText = computed(() =>
-  detail.value?.route.status === 'CANCELLED' ? '线路已取消，不再有履约动作' : '线路还没有订单，请先在「线路订单」页加入订单'
+  detail.value?.route.status === 'CANCELLED' ? '线路已取消，不能再发车或签收' : '线路还没有订单，请先在「线路订单」页加入订单'
 );
 
 async function loadPrint() {

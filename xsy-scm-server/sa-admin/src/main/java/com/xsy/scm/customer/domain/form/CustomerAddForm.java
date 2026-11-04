@@ -80,7 +80,7 @@ public class CustomerAddForm extends ScmPartyForm {
     private Boolean clearMallDeliveryWarehouse;
 
     /** 授信额度，4 位定点字符串；缺省视作 0。 */
-    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "授信额度格式不正确")
+    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "赊欠额度格式不正确")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String creditLimit;
 
@@ -88,7 +88,7 @@ public class CustomerAddForm extends ScmPartyForm {
     private String creditPeriodType;
 
     /** 仅 {@code BY_AMOUNT} 时有效。 */
-    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "授信金额阈值格式不正确")
+    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "赊欠额度金额格式不正确")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String creditAmountThreshold;
 

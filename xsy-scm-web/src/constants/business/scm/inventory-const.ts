@@ -75,9 +75,9 @@ export const SCM_INVENTORY_OUTBOUND_STATUS_ENUM: SmartEnum<string> = {
 
 /** 预留状态（与后端 `ScmInventoryReservationStatusEnum` 逐字对应）。 */
 export const SCM_INVENTORY_RESERVATION_STATUS_ENUM: SmartEnum<string> = {
-  ACTIVE: {value: 'ACTIVE', desc: '生效中'},
-  RELEASED: {value: 'RELEASED', desc: '已释放'},
-  CONSUMED: {value: 'CONSUMED', desc: '已消耗'},
+  ACTIVE: {value: 'ACTIVE', desc: '预留中'},
+  RELEASED: {value: 'RELEASED', desc: '已取消预留'},
+  CONSUMED: {value: 'CONSUMED', desc: '已用于出库'},
 };
 
 /**

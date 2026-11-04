@@ -11,19 +11,19 @@
         <uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY" />
       </view>
       <view class="credit__hero">
-        <text class="credit__hero-label">本客户应收未结</text>
+        <text class="credit__hero-label">本客户待付款金额</text>
         <text class="credit__hero-amount">¥{{ displayMoney(summary.openReceivableAmount) }}</text>
-        <text class="credit__hero-hint">来自已生成的应收账单，不含尚未转应收的订单</text>
+        <text class="credit__hero-hint">仅统计已生成的账单，不含尚未出账的订单</text>
       </view>
       <view v-if="summary.earliestOverdueDate" class="credit__alert">
         最早逾期账单到期日 {{ formatDate(summary.earliestOverdueDate) }}，请查看未结清账单
       </view>
       <view class="credit__card">
         <view class="credit__row"
-          ><text>已确认订单占用</text><text>¥{{ displayMoney(summary.confirmedOrderAmount) }}</text></view
+          ><text>已确认但尚未出账金额</text><text>¥{{ displayMoney(summary.confirmedOrderAmount) }}</text></view
         >
         <view class="credit__row">
-          <text>授信额度</text>
+          <text>赊欠额度</text>
           <text>{{
             summary.sharedSettlement ? '共享额度暂不展示' : summary.creditLimitVisible ? `¥${displayMoney(summary.creditLimit)}` : '未设置明确额度'
           }}</text>
@@ -31,7 +31,7 @@
         <view v-if="!summary.sharedSettlement && summary.creditPeriodType" class="credit__row">
           <text>账期规则</text><text>{{ periodText(summary) }}</text>
         </view>
-        <text v-if="summary.sharedSettlement" class="credit__note">这里只展示本客户账单，集团整体授信需另行授权。</text>
+        <text v-if="summary.sharedSettlement" class="credit__note">这里只展示本客户账单，集团总赊欠额度需另行授权。</text>
       </view>
       <view class="credit__card">
         <view class="credit__head" @click="goReceivables"

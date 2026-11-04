@@ -202,7 +202,7 @@
       places.value = [];
     } catch (error) {
       smartSentry.captureError(error);
-      uni.showToast({ title: error?.message || '位置解析失败', icon: 'none' });
+      uni.showToast({ title: error?.message || '无法确定位置，请重新选择地图位置', icon: 'none' });
     }
   }
 

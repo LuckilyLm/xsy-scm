@@ -18,7 +18,7 @@
     <p v-else-if="isConfirmedOrderStatus(form.status)" class="scm-note pending-edit-note">
       {{
         form.dispatchedAt ? '该订单已发车出库，改单需具备「发车后改单」权限。' : ''
-      }}改单按原锁定单价重算金额，不会自动改价；需称重的新增商品请新建加单。
+      }}改单按原订单单价重算金额，不会自动改价；需称重的新增商品请新建加单。
     </p>
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical" class="app-drawer-form">

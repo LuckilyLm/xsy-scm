@@ -35,8 +35,8 @@ export const SCM_SORTING_PRODUCT_TYPE_ENUM: SmartEnum<string> = {
  * 取消释放后同一订单行可以进入新任务，历史行仍随详情返回以便追溯。
  */
 export const SCM_SORTING_OCCUPATION_ENUM: SmartEnum<string> = {
-  ACTIVE: {value: 'ACTIVE', desc: '占用中'},
-  RELEASED: {value: 'RELEASED', desc: '已释放'},
+  ACTIVE: {value: 'ACTIVE', desc: '已分配'},
+  RELEASED: {value: 'RELEASED', desc: '已取消分配'},
 };
 
 /** 状态对应的 `a-tag` 颜色：进行中的蓝、可继续作业的黄、终态绿、失效灰。 */

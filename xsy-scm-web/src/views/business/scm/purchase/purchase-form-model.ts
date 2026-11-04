@@ -182,7 +182,7 @@ export function validateOrder(form: Order): string | undefined {
     seen.add(String(item.skuId));
     const plannedQuantity = typedFixed(item.plannedQuantity);
     if (!FIXED.test(plannedQuantity) || new Decimal(plannedQuantity).lte(0)) {
-      return '采购数量必须为大于零的四位定点数';
+      return '采购数量必须大于0，最多保留4位小数';
     }
     // 待定价与单价互斥：待定价必须留空，非待定价必须有价（服务端同一口径）
     if (item.pricePending) {
@@ -190,7 +190,7 @@ export function validateOrder(form: Order): string | undefined {
         return '标记为待定价的行不能填写采购单价';
       }
     } else if (!priceFilled(item.purchasePrice)) {
-      return '采购单价必须为非负四位定点数；价格未定时请勾选「待定价」';
+      return '采购单价不能小于0，最多保留4位小数；价格未定时请勾选「待定价」';
     }
     for (const row of item.allocations ?? []) {
       if (!row.demandId) {
@@ -198,7 +198,7 @@ export function validateOrder(form: Order): string | undefined {
       }
       const quantity = typedFixed(row.quantity);
       if (!FIXED.test(quantity) || new Decimal(quantity).lte(0)) {
-        return '分配数量必须为大于零的四位定点数';
+        return '分配数量必须大于0，最多保留4位小数';
       }
       if (row.demandVersion === undefined || row.demandVersion === null) {
         return '分配缺少需求版本，请移除该分配后重新选择需求';
@@ -280,18 +280,18 @@ export function validateConfirm(receipt: Receipt, lines: ReceiptConfirmItemPaylo
       return '收货明细与收货单不匹配，请刷新后重试';
     }
     if (!FIXED.test(line.receivedQuantity) || new Decimal(line.receivedQuantity).lt(0)) {
-      return '声明数量必须为非负四位定点数';
+      return '本次收货数量不能小于0，最多保留4位小数';
     }
     if (isNonStandard(item)) {
       if (!line.actualWeight || !FIXED.test(line.actualWeight) || new Decimal(line.actualWeight).lt(0)) {
-        return '非标品必须录入实重（四位定点数）';
+        return '需称重商品必须填写实际重量，最多保留4位小数';
       }
       if (line.weightSource !== 'MANUAL') {
         return '实重来源必须标记为人工录入';
       }
     } else if (line.actualWeight != null && line.actualWeight !== '') {
       if (!FIXED.test(line.actualWeight)) {
-        return '实重必须为四位定点数';
+        return '实际重量最多保留4位小数';
       }
     }
     if (receipt.warehouseLotTrackingEnabled) {
@@ -302,7 +302,7 @@ export function validateConfirm(receipt: Receipt, lines: ReceiptConfirmItemPaylo
       let sum = new Decimal(0);
       for (const lot of lots) {
         if (!FIXED.test(lot.quantity) || new Decimal(lot.quantity).lte(0)) {
-          return '批次数量必须为大于零的四位定点数';
+          return '批次数量必须大于0，最多保留4位小数';
         }
         sum = sum.plus(new Decimal(lot.quantity));
       }

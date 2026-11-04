@@ -11,7 +11,7 @@ const STATUS_LABELS = {
   AVAILABLE: '可使用',
   RESERVED: '订单处理中',
   USED: '已使用',
-  RELEASED: '已释放',
+  RELEASED: '已取消使用',
   EXPIRED: '已过期',
   UNAVAILABLE: '暂不可用',
 };

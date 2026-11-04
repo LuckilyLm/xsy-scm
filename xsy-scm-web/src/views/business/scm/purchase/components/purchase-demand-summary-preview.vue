@@ -133,7 +133,7 @@ const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
   {title: '已有采购覆盖', dataIndex: 'purchaseCoverageQuantity', width: 130},
   {
     // 表头问号说明：这里只是预览，不代表最终采购建议
-    title: () => h('span', [h('span', '净采购缺口'), h(ScmFieldHelp, {label: '净采购缺口', text: '预览不是最终净采购建议，也不生成采购单。'})]),
+    title: () => h('span', [h('span', '还需采购数量'), h(ScmFieldHelp, {label: '还需采购数量', text: '预览不是最终采购建议，也不生成采购单。'})]),
     dataIndex: 'netPurchaseGap',
     width: 125,
   },
@@ -248,7 +248,7 @@ async function printSummary() {
       '.note{margin-top:10px;color:#86909C;font-size:12px}</style></head><body>' +
       `<h2>采购汇总</h2><div class="meta">统计时间段：${escapeHtml(rangeValue[0])} 至 ${escapeHtml(rangeValue[1])}` +
       `　仓库编号：${escapeHtml(warehouse)}　打印时间：${escapeHtml(new Date().toLocaleString())}</div>` +
-      '<table><thead><tr><th>序号</th><th>商品</th><th>商品规格</th><th>需求单位</th><th>订单需求量</th><th>现有量</th><th>净采购缺口</th></tr></thead>' +
+      '<table><thead><tr><th>序号</th><th>商品</th><th>商品规格</th><th>需求单位</th><th>订单需求量</th><th>现有量</th><th>还需采购数量</th></tr></thead>' +
       `<tbody>${body}</tbody></table>` +
       '<p class="note">本单为查询时点汇总，只用于采购参考；实际采购量可按现场需要多买，不自动生成采购单。</p>' +
       '</body></html>';

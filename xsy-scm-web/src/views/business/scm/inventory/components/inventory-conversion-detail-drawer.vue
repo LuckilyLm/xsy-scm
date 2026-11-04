@@ -33,7 +33,7 @@
       </template>
     </LocalTable>
     <a-typography-text v-if="detail.status === 'COMPLETED'" type="secondary" style="display: block; margin-top: 8px">
-      审批已生成两条流水：源商品规格「转换出」、目标商品规格「转换入」。若要冲销，请新建一张反向转换单 —— 流水不可修改、不可删除。
+      审批后已记录原商品规格的转出和新商品规格的转入。如需还原，请另建规格转换单，将两种规格的转出、转入方向对调；原记录保留。
     </a-typography-text>
   </a-drawer>
 </template>

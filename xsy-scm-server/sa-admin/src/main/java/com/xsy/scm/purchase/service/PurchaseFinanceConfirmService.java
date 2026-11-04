@@ -137,7 +137,7 @@ public class PurchaseFinanceConfirmService {
             var priceForm = new PurchasePriceForm();
             // 补价/改价只接受四位定点字符串；按服务端解析后的规范形态写入，避免客户端少写小数位被拒。
             priceForm.setPrice(ScmDecimalStrings.parseScale4Required(input.getConfirmedPrice()).toPlainString());
-            priceForm.setReason(input.getFeedbackId() == null ? "确认采购时核对单价" : "确认采购时核对现场回填报价");
+            priceForm.setReason(input.getFeedbackId() == null ? "确认采购时核对单价" : "确认采购时核对现场录入报价");
             if (ScmDataScopeService.hasPermission(PurchasePermission.PRICE_ADJUST)) {
                 priceService.adjust(line.getId(), priceForm, key);
             } else if (Boolean.TRUE.equals(line.getPricePending())

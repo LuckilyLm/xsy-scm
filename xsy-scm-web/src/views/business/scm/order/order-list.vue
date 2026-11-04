@@ -372,7 +372,7 @@ function resetQuery() {
 function remove(r: Order) {
   Modal.confirm({
     title: '删除这张订单？',
-    content: '仅未确认且没有资金、库存和履约记录的订单可以删除。',
+    content: '只能删除待确认且没有支付、库存或分拣配送记录的订单。',
     okType: 'danger',
     onOk: async () => {
       await orderApi.delete({orderId: r.orderId, version: r.version});
@@ -424,7 +424,7 @@ function unlockOrder(r: Order) {
 function batchDelete() {
   Modal.confirm({
     title: '删除所选订单？',
-    content: '仅未确认且没有资金、库存和履约记录的订单可以删除。',
+    content: '只能删除待确认且没有支付、库存或分拣配送记录的订单。',
     okType: 'danger',
     onOk: async () => {
       await orderApi.batchDelete(

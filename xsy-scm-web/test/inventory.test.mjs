@@ -634,7 +634,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     }
     // 两条最容易被误读的码：提示里必须给出「怎么做」
     assert.match(inventoryError({code: 41023}), /先办理入库/);
-    assert.match(inventoryError({code: 41025}), /释放/);
+    assert.match(inventoryError({code: 41025}), /取消相关预留/);
   });
 
   // ------------------------------------------------------------------

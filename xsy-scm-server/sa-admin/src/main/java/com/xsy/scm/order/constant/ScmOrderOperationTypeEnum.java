@@ -61,7 +61,7 @@ public enum ScmOrderOperationTypeEnum {
     /**
      * 超授信放行。
      */
-    CREDIT_OVERRIDE("超授信放行"),
+    CREDIT_OVERRIDE("特殊情况确认接单"),
 
     /**
      * 指派处理人。

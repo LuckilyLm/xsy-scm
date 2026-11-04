@@ -189,14 +189,14 @@
         <a-alert
           :type="creditCheck.allowed ? 'success' : 'warning'"
           show-icon
-          :message="creditCheck.allowed ? '当前授信检查通过，提交时将再次校验' : '额度不足或存在逾期，订单暂不能确认'"
+          :message="creditCheck.allowed ? '当前赊欠额度检查通过，确认订单时会再次核对' : '额度不足或存在逾期，订单暂不能确认'"
         />
         <a-descriptions :column="1" size="small" bordered>
-          <a-descriptions-item label="未抵扣应收">{{ amount(creditCheck.openReceivableAmount) }}</a-descriptions-item>
-          <a-descriptions-item label="已确认未形成应收">{{ amount(creditCheck.confirmedOrderAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="未结清账单金额">{{ amount(creditCheck.openReceivableAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="已确认但尚未出账金额">{{ amount(creditCheck.confirmedOrderAmount) }}</a-descriptions-item>
           <a-descriptions-item label="本次实重结算金额">{{ amount(creditCheck.requestedOrderAmount) }}</a-descriptions-item>
-          <a-descriptions-item label="确认后授信占用">{{ amount(creditCheck.projectedExposure) }}</a-descriptions-item>
-          <a-descriptions-item label="授信额度">{{
+          <a-descriptions-item label="确认后已使用的赊欠额度">{{ amount(creditCheck.projectedExposure) }}</a-descriptions-item>
+          <a-descriptions-item label="赊欠额度">{{
             creditCheck.creditLimit === '0.0000' ? '未设置金额上限' : amount(creditCheck.creditLimit)
           }}</a-descriptions-item>
           <a-descriptions-item v-if="creditCheck.overdue" label="最早逾期到期日">{{ creditCheck.earliestOverdueDate }}</a-descriptions-item>
@@ -210,7 +210,7 @@
             v-model:value="couponInstanceId"
             :loading="couponLoading"
             :options="couponOptions"
-            placeholder="不使用优惠券（试算不占用）"
+            placeholder="不使用优惠券（预览不会使用优惠券）"
             allow-clear
             style="width: 100%"
           />
@@ -223,10 +223,10 @@
           <a-descriptions-item label="活动优惠">{{ amount(discountPreview.activityDiscount) }}</a-descriptions-item>
           <a-descriptions-item label="券优惠">{{ amount(discountPreview.couponDiscount) }}</a-descriptions-item>
           <a-descriptions-item label="合计优惠">{{ amount(discountPreview.discountAmount) }}</a-descriptions-item>
-          <a-descriptions-item label="客户实付">{{ amount(discountPreview.finalAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="优惠后应付">{{ amount(discountPreview.finalAmount) }}</a-descriptions-item>
         </a-descriptions>
         <div v-if="!usesMallSettlement && creditCheck && !creditCheck.allowed" v-privilege="'scm:order:credit:override'">
-          <a-checkbox v-model:checked="creditOverride">申请授信例外放行（将记录操作日志）</a-checkbox>
+          <a-checkbox v-model:checked="creditOverride">额度不足或逾期时仍确认订单（需记录原因）</a-checkbox>
           <a-form-item v-if="creditOverride" label="例外原因" required>
             <a-textarea v-model:value="creditOverrideReason" :maxlength="500" :auto-size="{minRows: 2, maxRows: 5}" />
           </a-form-item>
@@ -239,7 +239,7 @@
       </a-form-item>
     </a-modal>
     <a-modal :open="repriceOpen" title="手动重算订单价格" :confirm-loading="saving" @ok="reprice" @cancel="repriceOpen = false">
-      <p class="scm-note">仅待确认订单可重算；已有资金或履约记录时会被拒绝。</p>
+      <p class="scm-note">仅待确认订单可重算；已有支付、分拣或配送等记录时不能重算。</p>
       <a-form-item label="重算原因" required style="margin-top: 16px">
         <a-textarea v-model:value="repriceReason" :maxlength="500" :rows="3" />
       </a-form-item>
@@ -354,11 +354,11 @@ const columns: TableColumnsType<Item> = [
   },
   {title: '实数量', dataIndex: 'actualQuantity', width: 100},
   {
-    title: '解析单价',
+    title: '报价单价',
     dataIndex: 'draftUnitPrice',
     width: 110,
   },
-  {title: '锁定单价', dataIndex: 'lockedUnitPrice', width: 110},
+  {title: '订单单价', dataIndex: 'lockedUnitPrice', width: 110},
   {
     title: '下单金额',
     dataIndex: 'orderedLineAmount',
@@ -549,7 +549,7 @@ async function confirmWithCredit() {
     return;
   }
   if (!usesMallSettlement.value && !creditCheck.value?.allowed && (!creditOverride.value || !creditOverrideReason.value.trim())) {
-    message.error('授信未通过；例外放行必须填写原因');
+    message.error('客户额度不足或存在逾期，如仍要确认订单，请填写原因');
     return;
   }
   saving.value = true;

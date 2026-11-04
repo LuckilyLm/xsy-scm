@@ -16,7 +16,7 @@ import {join} from 'node:path';
 // ---------------------------------------------------------------- 来源：e2e/scm-customer.spec.ts
 test.describe('scm-customer', () => {
   const test = pwTest;
-  /* 客户域 E2E：账期三形态、授信额度字符串、状态变更、省市区六列、类型被引用后不可删、只读角色。 */
+  /* 客户域 E2E：账期三形态、赊欠额度字符串、状态变更、省市区六列、类型被引用后不可删、只读角色。 */
 
   const apiUrl = 'http://127.0.0.1:18080';
   const name = 'w2_e2e_' + Date.now().toString(36) + '_c';
@@ -104,7 +104,7 @@ test.describe('scm-customer', () => {
     await cascaderMenus.nth(1).getByText('杭州市', {exact: true}).click();
     await cascaderMenus.nth(2).getByText('西湖区', {exact: true}).click();
     await drawer.getByLabel('地址', {exact: true}).fill('文三路 100 号');
-    await drawer.getByLabel('授信额度', {exact: true}).fill('1234.5000');
+    await drawer.getByLabel('赊欠额度', {exact: true}).fill('1234.5000');
 
     // 账期：按时间 / 1 / 月 / 15 —— 只有单位是「月」时才出现固定结算日。
     await openSelect(drawer, 'creditPeriodType');
@@ -156,7 +156,7 @@ test.describe('scm-customer', () => {
     await expect(drawer.getByLabel('客户编码', {exact: true})).toHaveCount(0);
     // 回填走 `areaNodesOf`：三级必须显示成一条连续路径，缺一级时级联选择器会渲染异常。
     await expect(drawer.locator('.ant-cascader .ant-select-selection-item')).toHaveText(/浙江省\s*\/\s*杭州市\s*\/\s*西湖区/);
-    await drawer.getByLabel('授信额度', {exact: true}).fill('9999.0000');
+    await drawer.getByLabel('赊欠额度', {exact: true}).fill('9999.0000');
     const updated = page.waitForResponse((r) => r.url().endsWith('/scm/customer/update'));
     await button(drawer, '保存').click();
     expect((await (await updated).json()).code).toBe(0);
@@ -847,9 +847,7 @@ test.describe('scm-product', () => {
     const result = await (await client.post('/scm/product/delete', {data: {spuId: 1, version: 0}})).json();
     expect(result.code).toBe(30005);
     // 批量命令的权限码里没有 add/update/delete 之类关键词，只读授权必须单独排除它
-    const batch = await (
-      await client.post('/scm/product/batch/updateStatus', {data: {items: [{spuId: 1, version: 0}], status: 'OFF_SHELF'}})
-    ).json();
+    const batch = await (await client.post('/scm/product/batch/updateStatus', {data: {items: [{spuId: 1, version: 0}], status: 'OFF_SHELF'}})).json();
     expect(batch.code).toBe(30005);
     await authenticate(page, readToken);
     await page.goto('/#/product/product-list');

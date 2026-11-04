@@ -162,7 +162,7 @@
             :data-source="active.items"
             :columns="[
               {title: '申请数量', dataIndex: 'requestedQuantity'},
-              {title: '锁定单价', dataIndex: 'lockedUnitPrice'},
+              {title: '订单单价', dataIndex: 'lockedUnitPrice'},
               {title: '批准数量', dataIndex: 'approvedQuantity'},
             ]"
             row-key="returnItemId"

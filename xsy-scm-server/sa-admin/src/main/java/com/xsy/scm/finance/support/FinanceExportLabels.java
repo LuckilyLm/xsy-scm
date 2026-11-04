@@ -8,6 +8,7 @@ import com.xsy.scm.finance.constant.ScmFinancePaymentSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinancePostingRefundStatusEnum;
 import com.xsy.scm.finance.constant.ScmFinancePostingStatusEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReceiptMethodEnum;
+import com.xsy.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceSettleStateEnum;
 
 /**
@@ -27,6 +28,9 @@ public final class FinanceExportLabels {
     public static String entryType(String value) {
         if (value == null || value.isBlank()) {
             return "";
+        }
+        if (ScmFinanceReverseEntryTypeEnum.REVERSE.name().equals(value)) {
+            return ScmFinanceReverseEntryTypeEnum.REVERSE.getDesc();
         }
         try {
             return ScmFinanceEntryTypeEnum.valueOf(value).getDesc();

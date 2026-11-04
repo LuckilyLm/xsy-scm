@@ -420,7 +420,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
    *
    * 钉死这一波最容易被日后改动悄悄破坏、且破坏后不报错的前端边界（后端读路径 / 权限由 Java 测试覆盖）：
    * 1. 最近已确认订单价是只读查询：走 getRequest，绝不复用带 Idempotency-Key 的 orderCommand；
-   * 2. 最近已确认订单价仅旁证：不写回解析单价、不前端重算，preview / 定价路径保持不变；
+   * 2. 最近已确认订单价仅旁证：不写回报价单价、不前端重算，preview / 定价路径保持不变；
    * 3. 历史复用接在既有 Drawer，无新增路由 / 菜单；
    * 4. 历史复用只读 GET detail，不引入后端「复制订单」命令；
    * 5. 「复用为新单」沿用 scm:order:add，明细「历史价」按客户 + SKU 现查。
@@ -459,7 +459,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     assert.doesNotMatch(api, /\bcopy\b|\bduplicate\b|\bclone\b/i);
   });
 
-  test('明细表按客户 + SKU 现查最近已确认订单价，且不回写解析单价、不重算', () => {
+  test('明细表按客户 + SKU 现查最近已确认订单价，且不回写报价单价、不重算', () => {
     const table = code('../src/views/business/scm/order/components/order-item-editable-table.vue');
     // 缓存化后调用点带 `as Id` 收窄（模板已保证客户与本行 SKU 都存在）；容许类型断言，
     // 但两个键的来源必须仍是「当前客户 + 本行 SKU」，跨行/跨客户取值会在这里变红。
@@ -611,7 +611,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
    * 「最近采购价」只读参考价：
    * 1. 走只读 getRequest，绝不复用带幂等键的写命令；
    * 2. 缓存键只用商品规格，换行/换客户不会串价；
-   * 3. 不写回解析单价，也不进入订单载荷。
+   * 3. 不写回报价单价，也不进入订单载荷。
    */
 
   function code(relative) {
@@ -676,7 +676,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     assert.equal(await loadLastPurchasePrice(cache, undefined, async () => null), false);
   });
 
-  test('采购价只用于比价提示，不回写解析单价或进入订单载荷', () => {
+  test('采购价只用于比价提示，不回写报价单价或进入订单载荷', () => {
     const table = code('../src/views/business/scm/order/components/order-item-editable-table.vue');
     const model = code('../src/views/business/scm/order/order-form-model.ts');
     assert.match(table, /orderApi\.lastPurchasePrices\(\[skuId\]/);

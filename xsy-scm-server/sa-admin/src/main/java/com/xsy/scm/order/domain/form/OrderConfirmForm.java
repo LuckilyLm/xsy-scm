@@ -12,7 +12,7 @@ public class OrderConfirmForm extends OrderVersionForm {
     @ScmEnumValue(enumClass = ScmSettlementMethodEnum.class, message = "请选择有效的结算方式")
     private String settlementMethod;
     private Boolean creditOverride;
-    @Size(max = 500, message = "授信例外原因不能超过500个字符")
+    @Size(max = 500, message = "特殊情况确认原因不能超过500个字符")
     private String creditOverrideReason;
 
     /**

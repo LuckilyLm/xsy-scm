@@ -26,7 +26,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
    * 这类改动最容易在后续迭代里被悄悄改回去（视觉回归不报错、单测也不报错），因此钉住：
    *
    * 1. 客户列表把名称、编码、联系人和电话分列，客户编码可由 TableOperator 打开；
-   *    不把「上级集团 / 更新时间」摊回列表，授信额度走 `formatAmountOrDash` + `.scm-money`。
+   *    不把「上级集团 / 更新时间」摊回列表，赊欠额度走 `formatAmountOrDash` + `.scm-money`。
    * 2. 详情页客户名必须在 Tabs 之上（切 Tab 后始终可见），页头只保留返回入口。
    * 3. 详情页不得回退到大面积 `a-descriptions bordered`：基础资料走 label/value 字段结构。
    * 4. 基础五个 Tab 与客户 SKU 别名 Tab 共六个，仍由各 Tab lazy 取数。
@@ -55,7 +55,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     // 2026-10-28 客户分组价：分组决定组内协议价，列表要能直接看出客户归属哪个分组。
     assert.deepEqual(
       titles,
-      ['客户名称', '客户分类', '客户分组', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
+      ['客户名称', '客户分类', '客户分组', '业务员', '联系人', '联系电话', '结算方式', '赊欠额度', '状态', '操作'],
       '客户列表列结构被改动'
     );
     assert.doesNotMatch(LIST, /dataIndex: 'customerCode'/);
@@ -64,7 +64,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
   });
 
   test('列表金额走统一 formatter，客户编码不再展示', () => {
-    // 授信额度：千分位 + ¥ + 当前业务精度（formatAmountOrDash 内部调 formatAmount）
+    // 赊欠额度：千分位 + ¥ + 当前业务精度（formatAmountOrDash 内部调 formatAmount）
     assert.match(LIST, /dataIndex === 'creditLimit'[^>]*class="scm-money">\{\{\s*formatAmountOrDash\(record\.creditLimit\)\s*\}\}/);
     // 客户编码只用于后端传值和搜索，不在列表出现。
     assert.doesNotMatch(LIST, /record\.customerCode/);
@@ -247,7 +247,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
    * 账期三形态互斥、金额格式、可空字段的 `null` 语义。
    */
 
-  test('新建客户默认独立结算，授信额度是字符串零而不是数字零', () => {
+  test('新建客户默认独立结算，赊欠额度是字符串零而不是数字零', () => {
     const form = emptyCustomer();
     assert.equal(form.settleMode, 'INDEPENDENT');
     assert.equal(form.status, 'COOPERATING');
@@ -450,7 +450,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
   }
 
   test('客户详情按「经营概览 / 联系 / 归属 / 授信 / 系统信息」分区', () => {
-    const sections = ['客户经营概览', '联系与地址', '客户关系', '授信与账期', '系统信息'];
+    const sections = ['客户经营概览', '联系与地址', '客户关系', '赊欠额度与付款期限', '系统信息'];
     const positions = sections.map((title) => posOf(customer, title));
     // 顺序固定，系统信息在最后
     assert.deepEqual(

@@ -65,7 +65,7 @@
               @click="onRelease(record)"
               v-privilege="'scm:inventory:reservation:release'"
             >
-              释放
+              取消预留
             </a-button>
             <span v-else class="scm-cell-hint">—</span>
           </a-space>
@@ -192,15 +192,15 @@ function resetQuery() {
 
 function onRelease(record: InventoryReservation) {
   Modal.confirm({
-    title: '释放预留',
-    content: `确认释放该预留？释放后 ${quantityText(record.quantity)} ${record.unitSnapshot ?? ''} 将归还到可用量。`,
-    okText: '释放',
+    title: '取消预留',
+    content: `确认取消该预留？取消后 ${quantityText(record.quantity)} ${record.unitSnapshot ?? ''} 将归还到可用量。`,
+    okText: '取消预留',
     okType: 'danger',
     cancelText: '返回',
     onOk: async () => {
       try {
         await inventoryReservationApi.release(record.id);
-        message.success('已释放，可用量已恢复');
+        message.success('预留已取消，可用量已恢复');
         queryData();
       } catch (e) {
         message.error(inventoryError(e));

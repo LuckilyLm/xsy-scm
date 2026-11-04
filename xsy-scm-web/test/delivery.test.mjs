@@ -30,7 +30,7 @@ import {
    * 4. 打印仍是打印：预览 GET + 两个计次 POST，面板里绝不出现发车 / 签收 / 完成入口。
    * 5. 权限码只有一个来源：配送视图里的 `v-privilege` 必须落在 `use-delivery-permission.ts`
    *    声明的集合内，该集合又必须是后端 `@SaCheckPermission` / V64 的子集。
-   * 6. 履约状态与分配状态是两件事：行只按 `assignmentStatus === 'ACTIVE'` 筛，
+   * 6. 配送状态与分配状态是两件事：行只按 `assignmentStatus === 'ACTIVE'` 筛，
    *    状态标签只按 `fulfillmentStatuses` 渲染，取值与 V63 的 CHECK 同集合。
    * 7. 数量与金额不做前端算术，null 一律渲染 `—`（`0` 会被读成「实发 0」这个真实事实）。
    *
@@ -248,7 +248,7 @@ import {
 
   // ------------------------------------------------------------------ 状态机与字典
 
-  test('履约状态取自共享字典，取值与 V63 CHECK 同集合', () => {
+  test('配送状态取自共享字典，取值与 V63 CHECK 同集合', () => {
     assert.deepEqual(Object.keys(fulfillmentStatuses), ['PENDING', 'IN_TRANSIT', 'SIGNED', 'EXCEPTION']);
     assert.deepEqual(Object.keys(signResults), ['SIGNED', 'EXCEPTION']);
     assert.deepEqual([...SIGNABLE_FULFILLMENT], ['IN_TRANSIT']);
@@ -318,7 +318,7 @@ import {
     assert.match(fulfillmentPane, /record\.signReason \|\| '—'/);
     assert.ok(!/\|\| 0\b/.test(view), '空值不得回落成 0');
     // 对齐口径（状态居中、操作居中；操作列固定右侧时表头与按钮同一中心线）。
-    assert.match(fulfillmentPane, /title: '履约状态', dataIndex: 'fulfillmentStatus', width: 110, align: 'center'/);
+    assert.match(fulfillmentPane, /title: '配送状态', dataIndex: 'fulfillmentStatus', width: 110, align: 'center'/);
     assert.match(fulfillmentPane, /title: '操作', dataIndex: 'action', width: 160, align: 'center' as const/);
   });
 

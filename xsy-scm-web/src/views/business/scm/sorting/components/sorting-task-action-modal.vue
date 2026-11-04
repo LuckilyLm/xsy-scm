@@ -56,7 +56,7 @@ const title = computed(
 );
 
 // 只有「取消」会不可逆地释放占用位，需要常驻告知；改派与重开是正常操作，不再解释。
-const tip = computed(() => (props.mode === 'cancel' ? '取消会释放本任务全部明细的占用位，被释放的订单行才能重新进入新任务。此操作不可撤销。' : ''));
+const tip = computed(() => (props.mode === 'cancel' ? '取消后，这些订单商品可重新安排分拣任务。此操作不可撤销。' : ''));
 
 const reasonHint = computed(() => (props.mode === 'cancel' ? '例如：订单行下错、客户临时取消' : '例如：完成后发现一行称重有误'));
 </script>

@@ -151,9 +151,9 @@ public class ProductImportService {
             : "WRITE_CONFLICT";
         var message = cause instanceof ScmBusinessException business
             ? business.getErrorCode().getMsg()
-            : "商品数据冲突或超出范围，整批已回滚";
+            : "商品数据冲突或超出范围，本批数据未保存";
         for (var row : group)
-            addError(result, row.getRowNumber(), trim(row.getSpuCode()), "商品", code, message + "；整批已回滚");
+            addError(result, row.getRowNumber(), trim(row.getSpuCode()), "商品", code, message + "；本批数据未保存");
     }
 
     public byte[] buildTemplate(ImportMode mode) throws IOException {

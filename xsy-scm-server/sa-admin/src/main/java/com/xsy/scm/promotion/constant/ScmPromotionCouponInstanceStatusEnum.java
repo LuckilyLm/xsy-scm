@@ -18,7 +18,7 @@ public enum ScmPromotionCouponInstanceStatusEnum {
     /**
      * 已占用：被待支付订单锁定。
      */
-    RESERVED("已占用"),
+    RESERVED("订单使用中"),
 
     /**
      * 已使用：随订单支付生效。
@@ -28,7 +28,7 @@ public enum ScmPromotionCouponInstanceStatusEnum {
     /**
      * 已释放：订单取消后归还。
      */
-    RELEASED("已释放");
+    RELEASED("已取消使用");
 
     private final String desc;
 }

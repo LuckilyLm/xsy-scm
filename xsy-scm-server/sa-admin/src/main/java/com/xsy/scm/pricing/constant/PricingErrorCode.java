@@ -7,7 +7,7 @@ import com.xsy.scm.common.error.ScmErrorCode;
 @Getter
 @RequiredArgsConstructor
 public enum PricingErrorCode implements ScmErrorCode {
-    PRICE_INVALID(40030, "价格必须为非负四位定点数"),
+    PRICE_INVALID(40030, "价格不能小于0，最多保留4位小数"),
     PERIOD_INVALID(40031, "结束时间必须晚于开始时间"),
     AGREEMENT_PRICE_NOT_FOUND(40432, "协议价不存在"),
     GROUP_PRICE_NOT_FOUND(40436, "客户分组价不存在"),

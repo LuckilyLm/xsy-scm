@@ -29,7 +29,7 @@ public class MallOrderSubmitForm {
     /**
      * 结算预览返回的价格指纹。提交时服务端按当前价格重算，不一致即拒绝，避免按旧价静默下单。
      */
-    @NotBlank(message = "缺少价格指纹，请重新结算")
+    @NotBlank(message = "结算信息不完整，请重新结算")
     private String priceFingerprint;
     @Size(max = 500, message = "订单备注不能超过500个字符")
     private String remark;

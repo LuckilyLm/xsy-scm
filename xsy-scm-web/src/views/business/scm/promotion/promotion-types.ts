@@ -254,9 +254,9 @@ export const promotionStatuses: Record<PromotionStatus, {label: string; color: s
 
 export const couponInstanceStatuses: Record<PromotionCouponInstanceStatus, {label: string; color: string}> = {
   AVAILABLE: {label: '可用', color: 'green'},
-  RESERVED: {label: '已占用', color: 'blue'},
+  RESERVED: {label: '订单使用中', color: 'blue'},
   USED: {label: '已使用', color: 'default'},
-  RELEASED: {label: '已释放', color: 'orange'},
+  RELEASED: {label: '已取消使用', color: 'orange'},
 };
 
 export function promotionError(error: unknown): string {

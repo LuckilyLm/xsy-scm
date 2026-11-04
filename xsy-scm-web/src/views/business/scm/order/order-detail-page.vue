@@ -212,8 +212,8 @@ const itemColumns: TableColumnsType<Item> = [
   {title: '单位', dataIndex: 'saleUnitSnapshot', width: 80},
   {title: '下单量', dataIndex: 'orderedQuantity', width: 110},
   {title: '实数量', dataIndex: 'actualQuantity', width: 110},
-  {title: '解析单价', dataIndex: 'draftUnitPrice', width: 120},
-  {title: '锁定单价', dataIndex: 'lockedUnitPrice', width: 120},
+  {title: '报价单价', dataIndex: 'draftUnitPrice', width: 120},
+  {title: '订单单价', dataIndex: 'lockedUnitPrice', width: 120},
   {title: '下单金额', dataIndex: 'orderedLineAmount', width: 130},
   {title: '结算金额', dataIndex: 'settlementLineAmount', width: 130},
 ];
