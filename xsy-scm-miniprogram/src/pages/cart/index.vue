@@ -1,30 +1,12 @@
 <template>
   <view class="cart" :style="themeStyle">
-    <!-- 价格与库存提示：与效果图 04 顶部提示条一致 -->
-    <uni-notice-bar
-      text="提交订单时重新核对价格，非标品按实际称重结算；付款由后台处理"
-      :scrollable="false"
-      :show-icon="true"
-      :show-close="false"
-      background-color="#fff8e6"
-      :color="COLOR_WARNING"
-      :font-size="12"
-    >
-      <template #noticebarIcon>
-        <uni-icons type="info-filled" :size="14" :color="COLOR_WARNING" />
-      </template>
-    </uni-notice-bar>
-
     <!-- 首屏骨架：只有一屏都没有数据时才用，改数量后的局部刷新仍保留原列表 -->
     <view v-if="loading && !items.length" class="cart__skeleton">
       <XsySkeleton variant="list" :rows="3" />
     </view>
 
     <view v-else-if="!items.length" class="cart__empty">
-      <uni-icons type="cart" :size="64" :color="COLOR_TEXT_PLACEHOLDER" />
-      <text class="cart__empty-title">购物车暂无商品</text>
-      <text class="cart__empty-desc">去首页或分类页挑选商品吧</text>
-      <view class="cart__empty-action" hover-class="xsy-press-button--active" :hover-stay-time="80" @click="goHome">去逛逛</view>
+      <XsyEmpty kind="cart" title="购物车暂无商品" desc="去首页或分类页挑选商品吧" action-text="去逛逛" @action="goHome" />
     </view>
 
     <template v-else>
@@ -106,13 +88,14 @@
 </template>
 
 <script setup>
+import XsyEmpty from '@/components/common/xsy-empty.vue';
 import {computed, reactive, ref} from 'vue';
 import {onShow} from '@dcloudio/uni-app';
 import XsySkeleton from '@/components/common/xsy-skeleton.vue';
 import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
 import {mallCartApi} from '@/api/mall/cart-api';
 import {smartSentry} from '@/lib/smart-sentry';
-import {COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_SECONDARY, COLOR_WARNING} from '@/constants/theme-color-const';
+import {COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_SECONDARY} from '@/constants/theme-color-const';
 import {useMallTheme} from '@/composables/use-mall-theme';
 import {displayMoney} from '@/utils/money-display';
 
@@ -300,27 +283,7 @@ onShow(() => {
 .cart__empty {
   @include flex-center;
   flex-direction: column;
-  padding-top: 160rpx;
-}
-.cart__empty-title {
-  margin-top: $space-3;
-  font-size: $font-size-lg;
-  color: $color-text-secondary;
-}
-.cart__empty-desc {
-  margin-top: $space-1;
-  font-size: $font-size-sm;
-  color: $color-text-tertiary;
-}
-.cart__empty-action {
-  margin-top: $space-5;
-  padding: 0 $space-6;
-  height: 72rpx;
-  @include flex-center;
-  border-radius: $radius-pill;
-  background-color: var(--mall-primary, #16a34a);
-  color: white;
-  font-size: $font-size-base;
+  padding-top: $space-4;
 }
 
 .cart__list {
@@ -481,12 +444,12 @@ onShow(() => {
   height: 72rpx;
   @include flex-center;
   border-radius: $radius-pill;
-  background-color: var(--mall-primary, #16a34a);
+  background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
   color: white;
   font-size: $font-size-base;
 }
 .cart__submit--disabled {
-  background-color: var(--mall-primary-disabled, #a7d8b9);
+  background: var(--mall-primary-disabled, #96d6ae);
 }
 
 /*

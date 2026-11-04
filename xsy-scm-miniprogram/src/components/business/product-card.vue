@@ -61,341 +61,341 @@
 </template>
 
 <script setup>
-  import { computed, ref, watch } from 'vue';
-  import { displayMoney } from '@/utils/money-display';
-  import {
-    hasPrice,
-    isNonStandard,
-    actionText,
-    isOrderable,
-    priceSourceLabel,
-    priceSourceLevel,
-    showAvailableQty,
-    specCategoryText,
-    stockLevel,
-    stockText,
-    thumbText,
-  } from '@/utils/product-display';
+import {computed, ref, watch} from 'vue';
+import {displayMoney} from '@/utils/money-display';
+import {
+  hasPrice,
+  isNonStandard,
+  actionText,
+  isOrderable,
+  priceSourceLabel,
+  priceSourceLevel,
+  showAvailableQty,
+  specCategoryText,
+  stockLevel,
+  stockText,
+  thumbText,
+} from '@/utils/product-display';
 
-  const props = defineProps({
-    product: {
-      type: Object,
-      required: true,
-    },
-  });
+const props = defineProps({
+  product: {
+    type: Object,
+    required: true,
+  },
+});
 
-  const emit = defineEmits(['click', 'add', 'inquiry']);
+const emit = defineEmits(['click', 'add', 'inquiry']);
 
-  /*
-   * 库存文案 / 价格口径 / 按钮可用性统一来自 @/utils/product-display，
-   * 与详情页共用同一套规则，避免两处判断漂移。
-   */
-  const text = computed(() => stockText(props.product));
-  const level = computed(() => stockLevel(props.product));
-  const showQty = computed(() => showAvailableQty(props.product));
+/*
+ * 库存文案 / 价格口径 / 按钮可用性统一来自 @/utils/product-display，
+ * 与详情页共用同一套规则，避免两处判断漂移。
+ */
+const text = computed(() => stockText(props.product));
+const level = computed(() => stockLevel(props.product));
+const showQty = computed(() => showAvailableQty(props.product));
 
-  const priced = computed(() => hasPrice(props.product));
-  const orderable = computed(() => isOrderable(props.product));
-  const actionLabel = computed(() => actionText(props.product));
-  const thumb = computed(() => thumbText(props.product));
-  const sourceLabel = computed(() => priceSourceLabel(props.product));
-  const sourceLevel = computed(() => priceSourceLevel(props.product));
-  const specText = computed(() => specCategoryText(props.product));
-  const nonStandard = computed(() => isNonStandard(props.product));
+const priced = computed(() => hasPrice(props.product));
+const orderable = computed(() => isOrderable(props.product));
+const actionLabel = computed(() => actionText(props.product));
+const thumb = computed(() => thumbText(props.product));
+const sourceLabel = computed(() => priceSourceLabel(props.product));
+const sourceLevel = computed(() => priceSourceLevel(props.product));
+const specText = computed(() => specCategoryText(props.product));
+const nonStandard = computed(() => isNonStandard(props.product));
 
-  /** 卡片状态修饰类：ok / warn / off / unpriced */
-  const state = computed(() => (priced.value ? level.value : 'unpriced'));
+/** 卡片状态修饰类：ok / warn / off / unpriced */
+const state = computed(() => (priced.value ? level.value : 'unpriced'));
 
-  const actionKind = computed(() => {
-    if (!priced.value) return 'inquiry';
-    if (!orderable.value) return 'disabled';
-    // 缺货商品走「预订」样式：仍可下单，但视觉上区别于现货
-    return props.product.stockStatus === 'OUT_OF_STOCK' ? 'preorder' : 'add';
-  });
+const actionKind = computed(() => {
+  if (!priced.value) return 'inquiry';
+  if (!orderable.value) return 'disabled';
+  // 缺货商品走「预订」样式：仍可下单，但视觉上区别于现货
+  return props.product.stockStatus === 'OUT_OF_STOCK' ? 'preorder' : 'add';
+});
 
-  function onAction() {
-    if (actionKind.value === 'inquiry') {
-      emit('inquiry', props.product);
-    } else if (actionKind.value === 'add' || actionKind.value === 'preorder') {
-      emit('add', props.product);
-    }
+function onAction() {
+  if (actionKind.value === 'inquiry') {
+    emit('inquiry', props.product);
+  } else if (actionKind.value === 'add' || actionKind.value === 'preorder') {
+    emit('add', props.product);
   }
+}
 
-  /*
-   * 图片加载失败的兜底。
-   *
-   * 商品图是本地 static 素材（见 mock/fixtures.js 的说明），仓库里只保留每品类少量样本，
-   * 完整素材留在开发机本地。所以干净检出时部分 imageUrl 指向的文件并不存在——
-   * 这里必须退回首字占位，而不是让用户看到一张裂图。
-   * 生产环境同理：后端 fileKey 失效时也不该出现裂图。
-   */
-  const imageFailed = ref(false);
+/*
+ * 图片加载失败的兜底。
+ *
+ * 商品图是本地 static 素材（见 mock/fixtures.js 的说明），仓库里只保留每品类少量样本，
+ * 完整素材留在开发机本地。所以干净检出时部分 imageUrl 指向的文件并不存在——
+ * 这里必须退回首字占位，而不是让用户看到一张裂图。
+ * 生产环境同理：后端 fileKey 失效时也不该出现裂图。
+ */
+const imageFailed = ref(false);
 
-  function onImageError() {
-    imageFailed.value = true;
+function onImageError() {
+  imageFailed.value = true;
+}
+
+// 列表复用组件实例时，换了商品要重新给图片一次机会
+watch(
+  () => props.product && props.product.imageUrl,
+  () => {
+    imageFailed.value = false;
   }
-
-  // 列表复用组件实例时，换了商品要重新给图片一次机会
-  watch(
-    () => props.product && props.product.imageUrl,
-    () => {
-      imageFailed.value = false;
-    }
-  );
+);
 </script>
 
 <style lang="scss" scoped>
-  .product-card {
+.product-card {
+  @include flex-start;
+  align-items: stretch;
+  padding: $space-3 $space-4;
+  background-color: $color-bg-card;
+  @include hairline-bottom;
+
+  &__thumb {
+    width: 152rpx;
+    height: 152rpx;
+    border-radius: $radius-md;
+    background-color: var(--mall-primary-light, #e8f5ec);
+    @include flex-center;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  &__image {
+    width: 100%;
+    height: 100%;
+  }
+
+  &__thumb-fallback {
+    width: 100%;
+    height: 100%;
+    background-color: var(--mall-primary-light, #e8f5ec);
+    @include flex-center;
+  }
+
+  &__thumb-text {
+    font-size: 48rpx;
+    line-height: 1;
+    font-weight: $font-weight-medium;
+    color: var(--mall-primary-ink, #12833c);
+  }
+
+  /* 缺货时图片降透明度，避免与在售商品混淆 */
+  &--off &__image {
+    opacity: 0.45;
+  }
+
+  &__main {
+    flex: 1;
+    min-width: 0;
+    margin-left: $space-3;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__name {
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+    line-height: 1.35;
+    /* 商品名最多两行 */
+    @include ellipsis(2);
+  }
+
+  &__meta-row {
     @include flex-start;
-    align-items: stretch;
-    padding: $space-3 $space-4;
-    background-color: $color-bg-card;
-    @include hairline-bottom;
+    margin-top: $space-1;
+    min-width: 0;
+  }
 
-    &__thumb {
-      width: 152rpx;
-      height: 152rpx;
-      border-radius: $radius-md;
+  &__spec {
+    /* 不占满整行，让「按实重」标签紧跟规格文字，而不是被推到卡片最右侧 */
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: $font-size-sm;
+    color: $color-text-tertiary;
+    @include ellipsis;
+  }
+
+  &__badge {
+    flex-shrink: 0;
+    margin-left: $space-2;
+    padding: 0 $space-1;
+    height: 32rpx;
+    line-height: 32rpx;
+    border-radius: $radius-sm;
+    background-color: $color-warning-light;
+    color: $color-warning;
+    font-size: $font-size-xs;
+    white-space: nowrap;
+  }
+
+  /* 价格类型标签：独立一行，不与价格争抢横向空间 */
+  &__tag-row {
+    @include flex-start;
+    margin-top: $space-1;
+  }
+
+  &__source {
+    flex-shrink: 0;
+    padding: 0 $space-1;
+    height: 30rpx;
+    line-height: 30rpx;
+    border-radius: $radius-sm;
+    font-size: $font-size-xs;
+    white-space: nowrap;
+
+    &--agreement {
       background-color: var(--mall-primary-light, #e8f5ec);
-      @include flex-center;
-      flex-shrink: 0;
-      overflow: hidden;
-    }
-
-    &__image {
-      width: 100%;
-      height: 100%;
-    }
-
-    &__thumb-fallback {
-      width: 100%;
-      height: 100%;
-      background-color: var(--mall-primary-light, #e8f5ec);
-      @include flex-center;
-    }
-
-    &__thumb-text {
-      font-size: 48rpx;
-      line-height: 1;
-      font-weight: $font-weight-medium;
       color: var(--mall-primary-ink, #12833c);
     }
 
-    /* 缺货时图片降透明度，避免与在售商品混淆 */
-    &--off &__image {
-      opacity: 0.45;
+    &--type {
+      background-color: $color-info-light;
+      color: $color-info;
     }
 
-    &__main {
-      flex: 1;
-      min-width: 0;
-      margin-left: $space-3;
-      display: flex;
-      flex-direction: column;
-    }
-
-    &__name {
-      font-size: $font-size-base;
-      font-weight: $font-weight-medium;
-      color: $color-text-primary;
-      line-height: 1.35;
-      /* 商品名最多两行 */
-      @include ellipsis(2);
-    }
-
-    &__meta-row {
-      @include flex-start;
-      margin-top: $space-1;
-      min-width: 0;
-    }
-
-    &__spec {
-      /* 不占满整行，让「按实重」标签紧跟规格文字，而不是被推到卡片最右侧 */
-      flex: 0 1 auto;
-      min-width: 0;
-      font-size: $font-size-sm;
-      color: $color-text-tertiary;
-      @include ellipsis;
-    }
-
-    &__badge {
-      flex-shrink: 0;
-      margin-left: $space-2;
-      padding: 0 $space-1;
-      height: 32rpx;
-      line-height: 32rpx;
-      border-radius: $radius-sm;
+    &--time {
       background-color: $color-warning-light;
       color: $color-warning;
-      font-size: $font-size-xs;
-      white-space: nowrap;
     }
 
-    /* 价格类型标签：独立一行，不与价格争抢横向空间 */
-    &__tag-row {
-      @include flex-start;
-      margin-top: $space-1;
-    }
-
-    &__source {
-      flex-shrink: 0;
-      padding: 0 $space-1;
-      height: 30rpx;
-      line-height: 30rpx;
-      border-radius: $radius-sm;
-      font-size: $font-size-xs;
-      white-space: nowrap;
-
-      &--agreement {
-        background-color: var(--mall-primary-light, #e8f5ec);
-        color: var(--mall-primary-ink, #12833c);
-      }
-
-      &--type {
-        background-color: $color-info-light;
-        color: $color-info;
-      }
-
-      &--time {
-        background-color: $color-warning-light;
-        color: $color-warning;
-      }
-
-      &--standard {
-        background-color: $color-bg-page;
-        color: $color-text-tertiary;
-      }
-
-      &--unpriced {
-        background-color: $color-warning-light;
-        color: $color-warning;
-      }
-    }
-
-    &__price-row {
-      @include flex-start;
-      margin-top: $space-1;
-      /* 价格与单位整体不换行，避免单位被挤到第二行 */
-      flex-wrap: nowrap;
-      min-width: 0;
-    }
-
-    &__price-symbol {
-      flex-shrink: 0;
-      font-size: $font-size-sm;
-      color: $color-danger;
-      white-space: nowrap;
-    }
-
-    &__price {
-      flex-shrink: 0;
-      font-size: $font-size-lg;
-      font-weight: $font-weight-bold;
-      color: $color-danger;
-      white-space: nowrap;
-    }
-
-    &__unit {
-      flex-shrink: 0;
-      font-size: $font-size-sm;
+    &--standard {
+      background-color: $color-bg-page;
       color: $color-text-tertiary;
-      white-space: nowrap;
     }
 
-    &__price--unpriced {
-      font-size: $font-size-base;
-      font-weight: $font-weight-medium;
-      color: $color-text-secondary;
-      white-space: nowrap;
+    &--unpriced {
+      background-color: $color-warning-light;
+      color: $color-warning;
+    }
+  }
+
+  &__price-row {
+    @include flex-start;
+    margin-top: $space-1;
+    /* 价格与单位整体不换行，避免单位被挤到第二行 */
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  &__price-symbol {
+    flex-shrink: 0;
+    font-size: $font-size-sm;
+    color: $color-danger;
+    white-space: nowrap;
+  }
+
+  &__price {
+    flex-shrink: 0;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-danger;
+    white-space: nowrap;
+  }
+
+  &__unit {
+    flex-shrink: 0;
+    font-size: $font-size-sm;
+    color: $color-text-tertiary;
+    white-space: nowrap;
+  }
+
+  &__price--unpriced {
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    white-space: nowrap;
+  }
+
+  &__stock-row {
+    @include flex-start;
+    margin-top: $space-2;
+    min-width: 0;
+  }
+
+  &__stock {
+    flex-shrink: 0;
+    font-size: $font-size-xs;
+    white-space: nowrap;
+
+    &--ok {
+      color: $color-success;
     }
 
-    &__stock-row {
-      @include flex-start;
-      margin-top: $space-2;
-      min-width: 0;
+    &--warn {
+      color: $color-warning;
     }
 
-    &__stock {
-      flex-shrink: 0;
-      font-size: $font-size-xs;
-      white-space: nowrap;
-
-      &--ok {
-        color: $color-success;
-      }
-
-      &--warn {
-        color: $color-warning;
-      }
-
-      &--off {
-        color: $color-text-tertiary;
-      }
-    }
-
-    &__qty {
-      margin-left: $space-2;
-      font-size: $font-size-xs;
-      color: $color-text-tertiary;
-      @include ellipsis;
-    }
-
-    &__action {
-      align-self: flex-end;
-      flex-shrink: 0;
-      margin-left: $space-3;
-      padding: 0 $space-4;
-      /* 88rpx = 44px 触控下限；文字仍是小字号，只是可点区域变大 */
-      height: 88rpx;
-      border-radius: $radius-pill;
-      @include flex-center;
-
-      /* 主操作：实心品牌绿，白字，与询价（描边）区分 */
-      &--add {
-        background-color: var(--mall-primary, #16a34a);
-      }
-
-      /* 缺货预订：描边样式，可点击但视觉弱于现货 */
-      &--preorder {
-        background-color: $color-bg-card;
-        border: 1px solid var(--mall-primary, #16a34a);
-      }
-
-      &--unavailable {
-        background-color: $color-bg-hover;
-        border: 1px solid $color-border;
-      }
-
-      &--inquiry {
-        background-color: $color-bg-card;
-        border: 1px solid var(--mall-primary, #16a34a);
-      }
-
-      &--disabled {
-        background-color: $color-bg-hover;
-      }
-    }
-
-    &__action-text {
-      font-size: $font-size-sm;
-      white-space: nowrap;
-      color: $color-text-inverse;
-    }
-
-    &__action--inquiry &__action-text {
-      color: var(--mall-primary-ink, #12833c);
-    }
-
-    &__action--preorder &__action-text {
-      color: var(--mall-primary-ink, #12833c);
-    }
-
-    &__action--unavailable &__action-text {
-      color: $color-text-secondary;
-    }
-
-    &__action--disabled &__action-text {
+    &--off {
       color: $color-text-tertiary;
     }
   }
+
+  &__qty {
+    margin-left: $space-2;
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+    @include ellipsis;
+  }
+
+  &__action {
+    align-self: flex-end;
+    flex-shrink: 0;
+    margin-left: $space-3;
+    padding: 0 $space-4;
+    /* 88rpx = 44px 触控下限；文字仍是小字号，只是可点区域变大 */
+    height: 88rpx;
+    border-radius: $radius-pill;
+    @include flex-center;
+
+    /* 主操作：实心品牌绿，白字，与询价（描边）区分 */
+    &--add {
+      background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
+    }
+
+    /* 缺货预订：描边样式，可点击但视觉弱于现货 */
+    &--preorder {
+      background-color: $color-bg-card;
+      border: 1px solid var(--mall-primary, #16a34a);
+    }
+
+    &--unavailable {
+      background-color: $color-bg-hover;
+      border: 1px solid $color-border;
+    }
+
+    &--inquiry {
+      background-color: $color-bg-card;
+      border: 1px solid var(--mall-primary, #16a34a);
+    }
+
+    &--disabled {
+      background: $color-bg-hover;
+    }
+  }
+
+  &__action-text {
+    font-size: $font-size-sm;
+    white-space: nowrap;
+    color: $color-text-inverse;
+  }
+
+  &__action--inquiry &__action-text {
+    color: var(--mall-primary-ink, #12833c);
+  }
+
+  &__action--preorder &__action-text {
+    color: var(--mall-primary-ink, #12833c);
+  }
+
+  &__action--unavailable &__action-text {
+    color: $color-text-secondary;
+  }
+
+  &__action--disabled &__action-text {
+    color: $color-text-tertiary;
+  }
+}
 </style>

@@ -97,9 +97,7 @@ public class MallHomeLayoutService {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         List<MallHomeBlockForm> blocks = parse(draft.getContent());
-        if (blocks.isEmpty()) {
-            throw new ScmBusinessException(INVALID_LAYOUT);
-        }
+        // 空组件表示只发布主题，客户端继续展示默认首页；发布仍保留完整版本与权限校验。
         layoutValidator.validate(blocks);
         MallHomeReleaseVO release = new MallHomeReleaseVO();
         release.setContent(stringify(blocks));

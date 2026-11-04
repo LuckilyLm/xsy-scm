@@ -63,7 +63,7 @@ test('after-sale center exposes apply, list and detail pages', () => {
 test('after-sale apply submits items and reason with an idempotency key', () => {
   const page = read('../src/pages-sub/after-sale/apply.vue');
   // 幂等键与「订单 + 明细 + 原因」绑定，重复提交不重复建单
-  assert.match(page, /const payload = \{ orderId: orderId\.value, reason: reason\.value, items \};/);
+  assert.match(page, /const payload = \{\s*orderId: orderId\.value,\s*reason: reason\.value,\s*items\s*\};/);
   assert.match(page, /mallAfterSaleApi\.apply\(payload, key\)/);
   assert.match(page, /aftersale-\$\{orderId\.value\}/);
   // 预估金额只是展示，核定以服务端审核为准
@@ -405,7 +405,10 @@ test('published mall home uses the customer endpoint and checks web links agains
   assert.match(home, /mallHomeApi\.published\(\)/);
   assert.match(home, /homeLayout\.value\?\.releaseId != null/);
   assert.match(home, /request !== homeRequest \|\| !userStore\.isLogin \|\| userStore\.customerId !== customerId/);
-  assert.match(home, /v-if="!hasPublishedLayout"/);
+  // 营销素材发布不再替代真实常购/新品区域；装修为空时仍走原有默认数据。
+  assert.match(home, /<view id="home-frequent" class="home__section">/);
+  assert.match(home, /<view id="home-new" class="home__section">/);
+  assert.doesNotMatch(home, /v-if="!hasPublishedLayout(?: && newProducts.length)?"/);
   // 后台可配置的公告与快捷入口必须在首页真正渲染，不能只存在草稿里
   assert.match(home, /section\.type === 'ANNOUNCEMENT'/);
   assert.match(home, /section\.type === 'SHORTCUT_GROUP'/);

@@ -30,13 +30,26 @@
 
 ## 开发
 
+运行前在工作区创建被 Git 忽略的 `.env.local`，显式配置 API 地址。例如使用仓库默认 Docker Compose 部署时，可复用后台的 Nginx 入口：
+
+```dotenv
+VITE_APP_API_URL=http://127.0.0.1:7515/api
+VITE_APP_USE_MOCK=false
+```
+
+端口以实际 Docker 映射为准，见 [部署说明](../deploy/README.md)。微信开发者工具需要完整地址，不能直接使用后台网页的相对路径 `/api`；本机 HTTP 联调需在工具本地设置中关闭合法域名校验。这里的回环地址仅用于同机开发者工具，真机应使用手机可访问且符合微信要求的服务地址。
+
 ```bash
 npm ci
 npm run dev:h5
 npm run dev:mp-weixin
 ```
 
-直连本机后端：
+微信工具导入开发产物 `dist/dev/mp-weixin`；执行 `npm run build:mp-weixin` 后则导入 `dist/build/mp-weixin`。若导入工作区根目录，本机 `project.config.json` 的 `miniprogramRoot` 必须指向对应产物目录，不能直接运行 `src/` 中的 Vue 源码。
+
+API 地址在编译时写入产物，修改环境变量后需要重新编译；若磁盘产物已更新而运行时仍使用旧地址，清理微信工具的编译缓存后重新编译，不必清除登录和本地存储。
+
+直连本机后端时，将 API 地址改为实际后端端口；以下命令选择 `localhost` 模式，需要自行提供对应模式的环境配置：
 
 ```bash
 npm run dev:h5:api
@@ -44,6 +57,14 @@ npm run dev:mp-weixin:api
 ```
 
 开发环境默认可通过 `VITE_APP_USE_MOCK=true` 使用 `mock/` 中与正式契约一致的认证和目录数据；test/pre/prod/docker 环境均关闭。生产别名只引用 `mock/noop.js`，构建产物不得包含 fixtures。
+
+## 商城配置同步
+
+后台“营销中心 → 商城装修”可配置主题、首页组件、弹窗、四类说明页和店铺资料。说明页与首页主题发布后生效；店铺资料及弹窗保存后生效。小程序返回对应页面或恢复前台时读取当前配置，无需重新编译；已停留的页面不做实时推送。
+
+首页组件为空时仍可发布主题，默认商品与活动区域继续显示。顶部品牌区、主要动作和领券入口使用统一派生的渐变。店铺名称用于首页、我的和登录页；有效 HTTPS 链接在“我的”中提供复制入口。
+
+分类、快捷与六类空状态使用用户交付的轻3D PNG，映射集中于 `src/utils/category-icon.js` 和 `src/constants/mall-visual-const.js`，来源与原图哈希见 `src/static/mall-visual/sources.json`。主图与专题通过后台上传发布；图片完整展示自带文案。发布营销内容后仍保留真实常购、新品和商品目录。
 
 ## 验证
 

@@ -40,20 +40,17 @@
     </sql>
 
     <select id="categories" resultType="com.xsy.scm.mall.catalog.domain.vo.MallCategoryVO">
-        WITH RECURSIVE visible_category AS(SELECT DISTINCT c.id, c.parent_id, c.name, c.level,
+        <!-- 分类是导航目录，空分类也要显示；从启用根向下遍历，停用/删除父级的子树不提升为新根。 -->
+        WITH RECURSIVE enabled_category AS(SELECT c.id, c.parent_id, c.name, c.level,
             c.sort_order FROM xsy_product_category c WHERE c.deleted = FALSE AND c.status = 'ENABLED' AND
-            EXISTS (SELECT 1 FROM xsy_product_spu p JOIN xsy_product_sku s ON s.spu_id = p.id WHERE p.category_id = c.id
-            AND
-        <include refid="visibleSku"/>
-        )
-        UNION
-        SELECT parent.id, parent.parent_id, parent.name, parent.level, parent.sort_order
-        FROM xsy_product_category parent
-        JOIN visible_category child ON child.parent_id = parent.id
-        WHERE parent.deleted = FALSE
-            AND parent.status = 'ENABLED')
+            c.parent_id IS NULL
+        UNION ALL
+        SELECT child.id, child.parent_id, child.name, child.level, child.sort_order
+        FROM xsy_product_category child
+        JOIN enabled_category parent ON child.parent_id = parent.id
+        WHERE child.deleted = FALSE AND child.status = 'ENABLED')
         SELECT id AS category_id, parent_id, name, level, sort_order
-        FROM visible_category
+        FROM enabled_category
         ORDER BY level, sort_order, id
     </select>
 

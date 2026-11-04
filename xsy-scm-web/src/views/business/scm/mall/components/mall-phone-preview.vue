@@ -2,17 +2,20 @@
   <div class="phone-preview">
     <!-- 手机内是效果示意，读屏只读卡片标题，不逐个朗读占位商品与底部导航 -->
     <div class="phone-preview__screen" aria-hidden="true">
-      <div class="phone-preview__statusbar" :style="{background: palette.primary}">
-        <span>9:41</span>
-        <span class="phone-preview__status-icons">●●●</span>
-      </div>
-      <!-- 与小程序保持一致：主题色顶部只放定位，搜索框单独一条白色区域 -->
-      <div class="phone-preview__header" :style="{background: `linear-gradient(180deg, ${palette.primary}, ${palette.dark})`}">
-        <span class="phone-preview__location">
-          <EnvironmentOutlined aria-hidden="true" />
-          <span>选择收货地址</span>
-          <DownOutlined class="phone-preview__location-arrow" aria-hidden="true" />
-        </span>
+      <div class="phone-preview__brand" :style="{background: gradients.brand}">
+        <div class="phone-preview__statusbar">
+          <span>9:41</span>
+          <span class="phone-preview__status-icons"><WifiOutlined aria-hidden="true" /></span>
+        </div>
+        <!-- 与小程序保持一致：主题色顶部只放定位，搜索框单独一条白色区域 -->
+        <div class="phone-preview__header">
+          <span class="phone-preview__location">
+            <EnvironmentOutlined aria-hidden="true" />
+            <span>选择收货地址</span>
+            <DownOutlined class="phone-preview__location-arrow" aria-hidden="true" />
+          </span>
+          <strong class="phone-preview__store-name">{{ storeName || '店铺名称' }}</strong>
+        </div>
       </div>
       <div class="phone-preview__search-wrap">
         <div class="phone-preview__search" :style="{borderColor: palette.primary}">
@@ -23,7 +26,11 @@
 
       <div class="phone-preview__body">
         <template v-for="section in sections" :key="section.key">
-          <div v-if="section.type === 'BANNER_GROUP'" class="phone-preview__banner">
+          <div
+            v-if="section.type === 'BANNER_GROUP'"
+            class="phone-preview__banner"
+            :class="{'phone-preview__banner--topic': section.key !== leadBannerKey}"
+          >
             <img v-if="sectionImage(section)" :src="sectionImage(section)" :alt="sectionTitle(section, '轮播图')" />
             <div v-else class="phone-preview__banner-fallback" :style="{background: `linear-gradient(135deg, ${palette.primary}, ${palette.dark})`}">
               <strong>{{ sectionTitle(section, '轮播图') }}</strong>
@@ -37,8 +44,20 @@
           <!-- 分类横滑是固定区块，不属于后台组件；位置与小程序一致，跟在轮播之后 -->
           <div v-else-if="section.type === 'RAIL'" class="phone-preview__rail">
             <div v-for="item in RAIL_ITEMS" :key="item.key" class="phone-preview__rail-item">
-              <span class="phone-preview__rail-icon" :style="{background: palette.light}">{{ item.icon }}</span>
+              <img class="phone-preview__rail-icon" :src="item.image" alt="" />
               <span class="phone-preview__rail-text">{{ item.label }}</span>
+            </div>
+          </div>
+
+          <div v-else-if="section.type === 'SERVICES'">
+            <div class="phone-preview__coupon" :style="{background: gradients.surface, color: palette.ink}">
+              <img :src="couponImage" alt="" />
+              <strong>领券中心</strong><span>查看可领优惠券</span><RightOutlined aria-hidden="true" />
+            </div>
+            <div class="phone-preview__services">
+              <div v-for="shortcut in serviceShortcuts" :key="shortcut.label" class="phone-preview__service">
+                <img :src="shortcut.image" alt="" /><span>{{ shortcut.label }}</span>
+              </div>
             </div>
           </div>
 
@@ -59,7 +78,7 @@
 
           <div v-else-if="section.type === 'ACTIVITY_TOPIC'" class="phone-preview__topic">
             <img v-if="sectionImage(section)" :src="sectionImage(section)" :alt="sectionTitle(section, '活动专题')" />
-            <div class="phone-preview__topic-copy">
+            <div v-if="!sectionImage(section)" class="phone-preview__topic-copy">
               <strong>{{ sectionTitle(section, '活动专题') }}</strong>
               <span v-if="section.items[0]?.subtitle">{{ section.items[0]?.subtitle }}</span>
             </div>
@@ -78,11 +97,11 @@
                 <span class="phone-preview__product-price">市场价 <em>¥ 0.00</em><b>/件</b></span>
                 <span class="phone-preview__product-stock">库存未知</span>
               </div>
-              <span class="phone-preview__product-action" :style="{background: palette.primary}">加购</span>
+              <span class="phone-preview__product-action" :style="{background: gradients.action}">加购</span>
             </div>
           </div>
         </template>
-        <div v-if="!sections.length" class="phone-preview__empty">还没有启用的首页组件</div>
+        <div v-if="!visibleBlocks.length" class="phone-preview__empty">当前使用默认首页，仅更新店铺配色</div>
       </div>
 
       <div class="phone-preview__tabbar">
@@ -108,17 +127,30 @@ import {
   AppstoreOutlined,
   DownOutlined,
   EnvironmentOutlined,
+  RightOutlined,
   HomeOutlined,
   ProfileOutlined,
   SearchOutlined,
   ShoppingCartOutlined,
   UserOutlined,
+  WifiOutlined,
 } from '@ant-design/icons-vue';
 import {fileApi} from '/@/api/support/file-api';
 import {mallHomeApi, type HomeBlock, type HomePopup} from '/@/api/business/scm/mall-home-api';
-import {mallThemeBaseColor, mallThemePalette} from '/@/utils/mall-theme';
+import {mallThemeBaseColor, mallThemePalette, mallThemeGradients} from '/@/utils/mall-theme';
+import vegetableImage from '/@/assets/mall-visual/category/vegetables.png';
+import fruitImage from '/@/assets/mall-visual/category/fruit.png';
+import meatImage from '/@/assets/mall-visual/category/meat-eggs.png';
+import seafoodImage from '/@/assets/mall-visual/category/seafood.png';
+import grainOilImage from '/@/assets/mall-visual/category/grain-oil.png';
+import seasoningImage from '/@/assets/mall-visual/category/seasoning.png';
+import couponImage from '/@/assets/mall-visual/shortcut/coupons.png';
+import newImage from '/@/assets/mall-visual/shortcut/new.png';
+import frequentImage from '/@/assets/mall-visual/shortcut/frequent.png';
+import activityImage from '/@/assets/mall-visual/shortcut/activities.png';
+import deliveryImage from '/@/assets/mall-visual/shortcut/delivery.png';
 
-type PreviewSectionType = HomeBlock['type'] | 'BANNER_GROUP' | 'SHORTCUT_GROUP' | 'RAIL';
+type PreviewSectionType = HomeBlock['type'] | 'BANNER_GROUP' | 'SHORTCUT_GROUP' | 'RAIL' | 'SERVICES';
 
 interface PreviewSection {
   type: PreviewSectionType;
@@ -128,10 +160,18 @@ interface PreviewSection {
 
 /** 分类横滑是小程序固定区块，后台没有分类数据；用真实分类名做占位，展示结构而不是内容。 */
 const RAIL_ITEMS = [
-  {key: 'vegetable', label: '蔬菜', icon: '🥬'},
-  {key: 'fruit', label: '水果', icon: '🍎'},
-  {key: 'meat', label: '肉禽', icon: '🥩'},
-  {key: 'coupon', label: '领券中心', icon: '🎁'},
+  {key: 'vegetable', label: '生鲜蔬菜', image: vegetableImage},
+  {key: 'fruit', label: '生鲜水果', image: fruitImage},
+  {key: 'meat', label: '肉禽蛋品', image: meatImage},
+  {key: 'seafood', label: '水产', image: seafoodImage},
+  {key: 'grain-oil', label: '粮油', image: grainOilImage},
+  {key: 'seasoning', label: '调味', image: seasoningImage},
+];
+const serviceShortcuts = [
+  {label: '新品上架', image: newImage},
+  {label: '常购清单', image: frequentImage},
+  {label: '活动专区', image: activityImage},
+  {label: '配送查询', image: deliveryImage},
 ];
 
 const TABS = [
@@ -146,12 +186,14 @@ const props = defineProps<{
   themeCode?: string | null;
   themeColor?: string | null;
   blocks: HomeBlock[];
+  storeName?: string;
 }>();
 
 const popup = ref<HomePopup>();
 const popupDismissed = ref(false);
 const imageUrls = ref<Record<string, string>>({});
 const palette = computed(() => mallThemePalette(mallThemeBaseColor(props.themeCode, props.themeColor)));
+const gradients = computed(() => mallThemeGradients(palette.value));
 const visibleBlocks = computed(() => [...props.blocks].filter((block) => block.enabled).sort((left, right) => left.sortOrder - right.sortOrder));
 
 /** 与小程序一致：相邻轮播合并成一组、相邻快捷入口合并成一个栅格，分类横滑固定跟在首个轮播后。 */
@@ -170,10 +212,12 @@ const sections = computed<PreviewSection[]>(() => {
   }
   const bannerIndex = result.findIndex((section) => section.type === 'BANNER_GROUP');
   const rail: PreviewSection = {type: 'RAIL', key: 'rail', items: []};
-  if (bannerIndex < 0) result.unshift(rail);
-  else result.splice(bannerIndex + 1, 0, rail);
+  const services: PreviewSection = {type: 'SERVICES', key: 'services', items: []};
+  if (bannerIndex < 0) result.unshift(rail, services);
+  else result.splice(bannerIndex + 1, 0, rail, services);
   return result;
 });
+const leadBannerKey = computed(() => sections.value.find((section) => section.type === 'BANNER_GROUP')?.key);
 
 const showPopup = computed(() => Boolean(popup.value?.enabled && popup.value.items.length && !popupDismissed.value));
 
@@ -259,14 +303,42 @@ defineExpose({refreshPopup});
 }
 
 .phone-preview__status-icons {
-  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
 }
 
 .phone-preview__header {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 62px;
+  padding: 6px 12px 12px;
+}
+.phone-preview__store-name {
+  max-width: 100%;
+  overflow: hidden;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.phone-preview__coupon {
+  display: flex;
   align-items: center;
-  min-height: 32px;
-  padding: 0 12px;
+  gap: 6px;
+  min-height: 42px;
+  margin: 10px 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+.phone-preview__coupon strong {
+  flex: 1;
+}
+.phone-preview__coupon span {
+  font-size: 9px;
 }
 
 .phone-preview__location {
@@ -297,7 +369,7 @@ defineExpose({refreshPopup});
   border: 1px solid;
   border-radius: 999px;
   background: #fff;
-  color: #8a919f;
+  color: #667085;
   font-size: 10px;
 }
 
@@ -307,6 +379,30 @@ defineExpose({refreshPopup});
   background: #f5f6f8;
 }
 
+.phone-preview__services {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 10px;
+  padding: 10px 6px;
+  background: #fff;
+}
+.phone-preview__service {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+}
+.phone-preview__service img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+.phone-preview__coupon img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
 .phone-preview__banner {
   position: relative;
   margin: 10px 12px 0;
@@ -317,9 +413,12 @@ defineExpose({refreshPopup});
 .phone-preview__banner img {
   display: block;
   width: 100%;
-  /* 280rpx @375 宽 = 140px，按 300px 机身等比缩到 112px */
-  height: 112px;
-  object-fit: cover;
+  aspect-ratio: 2.5;
+  height: auto;
+  object-fit: contain;
+}
+.phone-preview__banner--topic img {
+  aspect-ratio: 3;
 }
 
 .phone-preview__banner-fallback {
@@ -358,7 +457,7 @@ defineExpose({refreshPopup});
   gap: 10px;
   margin-top: 10px;
   padding: 10px 12px;
-  overflow: hidden;
+  overflow-x: auto;
   background: #fff;
 }
 
@@ -368,21 +467,21 @@ defineExpose({refreshPopup});
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  width: 48px;
+  width: 72px;
 }
 
 .phone-preview__rail-icon {
   display: grid;
   place-items: center;
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
   font-size: 16px;
   line-height: 1;
 }
 
 .phone-preview__rail-text {
-  max-width: 48px;
+  max-width: 72px;
   overflow: hidden;
   color: #4e5969;
   font-size: 9px;
@@ -457,15 +556,17 @@ defineExpose({refreshPopup});
 }
 
 .phone-preview__topic {
-  margin-top: 10px;
-  background: #fff;
+  margin: 10px 12px 0;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .phone-preview__topic img {
   display: block;
   width: 100%;
-  height: 100px;
-  object-fit: cover;
+  height: auto;
+  aspect-ratio: 3;
+  object-fit: contain;
 }
 
 .phone-preview__topic-copy {

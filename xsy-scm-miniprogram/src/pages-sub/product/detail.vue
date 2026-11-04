@@ -196,17 +196,9 @@ const stepQty = computed(() => (Number(product.value?.stepQty) > 0 ? Number(prod
 const scaled = (value) => Math.round(Number(value) * 10000);
 const unscaled = (value) => Number((value / 10000).toFixed(4));
 
-/** 数量上限只按当前配送仓的服务端可售量收窄交互，提交仍由后端重验。 */
-const maxQty = computed(() => {
-  const available = scaled(product.value?.availableQty);
-  const minimum = scaled(minQty.value);
-  const step = scaled(stepQty.value);
-  if (!Number.isFinite(available) || available < minimum || step <= 0) return 0;
-  return unscaled(minimum + Math.floor((available - minimum) / step) * step);
-});
-
 const canDecrease = computed(() => orderable.value && scaled(quantity.value) > scaled(minQty.value));
-const canIncrease = computed(() => orderable.value && scaled(quantity.value) + scaled(stepQty.value) <= scaled(maxQty.value));
+// 先接单后采购：库存只用于展示，不能限制服务端已判定可售商品的预订数量。
+const canIncrease = computed(() => orderable.value);
 
 const quantityHint = computed(() => {
   const unit = product.value?.unit || '';
@@ -226,7 +218,7 @@ const quantityHint = computed(() => {
 /**
  * 底部主操作的形态（纯展示/交互分流，不是新的业务规则）：
  *   inquiry   无客户价 → 可点击的「询价」，与缺货的 disabled 语义完全不同
- *   disabled  已缺货   → 灰态不可点
+ *   disabled  服务端不可售 → 灰态不可点
  *   add       其余     → 加入购物车
  * 价格是否存在仍只由 hasPrice()（priced）决定，可下单性仍只由 isOrderable() 决定。
  */
@@ -258,7 +250,7 @@ function decrease() {
 
 function increase() {
   if (canIncrease.value) {
-    quantity.value = unscaled(Math.min(scaled(maxQty.value), scaled(quantity.value) + scaled(stepQty.value)));
+    quantity.value = unscaled(scaled(quantity.value) + scaled(stepQty.value));
   }
 }
 
@@ -285,7 +277,7 @@ function onFooterAction() {
   if (submitKind.value === 'inquiry') {
     onInquiry();
   }
-  // disabled：缺货不允许发起任何动作
+  // disabled：服务端已判定不可售，不允许发起加购。
 }
 
 async function loadProduct() {
@@ -604,7 +596,7 @@ onLoad((options) => {
     /* Figma：主按钮 358×44 */
     height: 85rpx;
     border-radius: $radius-md;
-    background-color: var(--mall-primary, #16a34a);
+    background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
     @include flex-center;
 
     /* 询价：白底 + primary 描边 + primary 字。可点击，不是 disabled */
@@ -619,7 +611,7 @@ onLoad((options) => {
 
     /* 缺货：灰态，点击无动作 */
     &--disabled {
-      background-color: $color-bg-hover;
+      background: $color-bg-hover;
 
       .detail__footer-text {
         color: $color-text-tertiary;

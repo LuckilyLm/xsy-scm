@@ -10,11 +10,17 @@
  * 请求代次（requestSeq）用于丢弃乱序返回的旧响应；
  * inFlight 合并同时发生的刷新（冷启动、恢复前台、页面显示可能并发触发）。
  */
-import { defineStore } from 'pinia';
-import { MALL_THEME_DEFAULT_CODE, MALL_THEMES, normalizeMallThemeCode, normalizeMallThemePalette } from '@/constants/theme-color-const';
-import { mallHomeApi } from '@/api/mall/home-api';
-import { smartSentry } from '@/lib/smart-sentry';
-import { applyNativeTheme } from '@/utils/theme-native';
+import {defineStore} from 'pinia';
+import {
+  MALL_THEME_DEFAULT_CODE,
+  MALL_THEMES,
+  normalizeMallThemeCode,
+  normalizeMallThemePalette,
+  mallThemeGradients,
+} from '@/constants/theme-color-const';
+import {mallHomeApi} from '@/api/mall/home-api';
+import {smartSentry} from '@/lib/smart-sentry';
+import {applyNativeTheme} from '@/utils/theme-native';
 
 let inFlight = null;
 
@@ -36,17 +42,21 @@ export const useMallThemeStore = defineStore('mall-theme', {
     /** 页面根节点绑定的 CSS 变量；未知编码自动落到默认主题 */
     themeStyle: (state) => {
       const theme = state.releaseId != null && state.palette ? state.palette : themeOf(state.themeCode);
+      const gradients = mallThemeGradients(theme);
       return {
         '--mall-primary': theme.primary,
         '--mall-primary-dark': theme.dark,
         '--mall-primary-ink': theme.ink,
         '--mall-primary-light': theme.light,
         '--mall-primary-disabled': theme.disabled,
+        '--mall-brand-gradient': gradients.brand,
+        '--mall-action-gradient': gradients.action,
+        '--mall-surface-gradient': gradients.surface,
       };
     },
   },
   actions: {
-    applyTheme({ releaseId, themeCode, palette }) {
+    applyTheme({releaseId, themeCode, palette}) {
       this.releaseId = releaseId ?? null;
       this.themeCode = releaseId == null ? MALL_THEME_DEFAULT_CODE : normalizeMallThemeCode(themeCode);
       this.palette = releaseId == null ? null : normalizeMallThemePalette(palette);
@@ -65,13 +75,13 @@ export const useMallThemeStore = defineStore('mall-theme', {
             return;
           }
           const data = response.data || {};
-          this.applyTheme({ releaseId: data.releaseId, themeCode: data.themeCode, palette: data.palette });
+          this.applyTheme({releaseId: data.releaseId, themeCode: data.themeCode, palette: data.palette});
         } catch (error) {
           if (request !== this.requestSeq) {
             return;
           }
           smartSentry.captureError(error);
-          this.applyTheme({ releaseId: null, themeCode: MALL_THEME_DEFAULT_CODE, palette: null });
+          this.applyTheme({releaseId: null, themeCode: MALL_THEME_DEFAULT_CODE, palette: null});
         }
       })();
       inFlight = task.finally(() => {

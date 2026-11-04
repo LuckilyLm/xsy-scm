@@ -1,4 +1,58 @@
-# 管理后台设计规范
+---
+name: 鲜蔬源界面设计规范
+description: 后台作业界面与微信商城的分区设计约束；mall 前缀 token 仅适用于客户商城。
+colors:
+  mall-primary: "#16a34a"
+  mall-success: "#16a34a"
+  mall-warning: "#b45309"
+  mall-danger: "#d92d20"
+  mall-text: "#1f2329"
+  mall-text-secondary: "#646a73"
+  mall-text-placeholder: "#667085"
+  mall-page: "#f5f6f8"
+  mall-surface: "#ffffff"
+  mall-border: "#e5e6eb"
+typography:
+  mall-headline:
+    fontSize: "24px"
+    fontWeight: 600
+  mall-title:
+    fontSize: "16px"
+    fontWeight: 600
+  mall-body:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif"
+    fontSize: "14px"
+    fontWeight: 400
+  mall-label:
+    fontSize: "12px"
+rounded:
+  mall-sm: "4px"
+  mall-md: "8px"
+  mall-lg: "12px"
+  mall-pill: "999px"
+spacing:
+  mall-1: "4px"
+  mall-2: "8px"
+  mall-3: "12px"
+  mall-4: "16px"
+  mall-5: "20px"
+  mall-6: "24px"
+  mall-8: "32px"
+components:
+  mall-button-primary:
+    textColor: "{colors.mall-surface}"
+    rounded: "{rounded.mall-md}"
+    height: "88rpx"
+  mall-coupon-entry:
+    rounded: "{rounded.mall-md}"
+    padding: "{spacing.mall-3}"
+  mall-card:
+    backgroundColor: "{colors.mall-surface}"
+    rounded: "{rounded.mall-lg}"
+    padding: "{spacing.mall-4}"
+---
+
+# 鲜蔬源界面设计规范
 
 日期：2026-11-03。整理：Codex。适用范围：`xsy-scm-web` 管理后台。
 
@@ -91,3 +145,105 @@
 - 本地验证翻页、切换每页条数、筛选后回首页、空结果和数据减少等场景。
 - 使用 Chrome DevTools 在桌面与窄屏截图检查文件管理、SCM、系统管理和支撑工具的代表页面。
 - 本地测试、构建及服务启动遵循仓库授权规则；未执行项目必须明确记录，不能表述为通过。
+
+## Overview
+
+以下八节仅适用于 `xsy-scm-miniprogram` 及后台商城手机预览。前述后台业务页面规范保持独立，商城的渐变、字体和移动尺寸不覆盖后台主题。
+
+商城沿用鲜蔬源现有绿色品牌，以同色系渐变增加品牌区与主要动作的层次，并以用户交付的彩色轻3D素材丰富食材分类、快捷入口和空状态。商品、表单和说明正文保留白色阅读面，手机上的浏览、下单和查阅优先于装饰。
+
+**Key Characteristics:**
+
+- 品牌区、主要动作和轻营销入口分别使用集中派生的渐变。
+- 食材分类采用用户交付的彩色轻3D PNG，营销入口独立于分类；搜索、返回等操作图标沿用现有标准组件。
+- 紧凑字号、清楚分区和原生安全区共同服务手机操作。
+
+## Colors
+
+### Primary
+
+前置 token 的商城主色是默认 FRESH 主题；WARM、OCEAN 与自定义色均通过后台已发布主题提供。`src/constants/theme-color-const.js` 与后台 `src/utils/mall-theme.ts` 使用同一色阶关系：主色分别混入黑色 18% 得到 dark、32% 得到 ink，混入白色 90% 得到 light、55% 得到 disabled。
+
+**The Published Palette Rule.** 商城的运行时品牌色使用主题变量，不能让业务页固定绿色而预览显示另一套配色。成功、警告、危险、金额等业务语义维持既有含义。
+
+三类背景由 `mallThemeGradients` 派生：品牌区为 118° 的 ink → dark（48%）→ primary；主要动作为 118° 的 ink 再混黑 14% → ink；轻营销入口为 110° 的 light → 白色。分别通过 `--mall-brand-gradient`、`--mall-action-gradient`、`--mall-surface-gradient` 使用。禁用动作使用 disabled 色阶。
+
+### Neutral
+
+商城页面底色承接白色商品、表单与阅读面。主要文字、辅助文字、占位提示和细分隔线使用前置的独立商城 token，不随店铺主色改变。
+
+## Typography
+
+商城使用既有手机系统字体栈，继承中文与拉丁字符的原生可读性；没有独立展示字体。前置 token 的商城字号层级来自 `src/styles/tokens.scss`：首页店铺名使用 headline，常规标题使用 title，商品名与正文使用 body，定位与规格使用 label。辅助标记沿用更小的既有字号，不提升为品牌展示语言。
+
+店铺名使用单行省略，商品名最多两行；金额采用等宽数字，避免数量变化时横向跳动。说明正文保持独立标题与富文本阅读区。
+
+## Layout
+
+商城采用手机纵向布局。固定底部操作与导航让出系统安全区；自绘导航的总高度包含安全区，不能再由内边距重复撑高。
+
+间距使用前置商城 scale。默认页面横向间距使用 mall-4；小于 360px 时收为 mall-3，达到 414px 时使用 mall-5。`rpx` 尺寸按手机宽度缩放；断点只处理等比缩放后仍拥挤的文字、按钮或比例。
+
+分类区只承载商品分类，跟随首组营销轮播；领券中心是独立营销行，不依赖分类数据，其后为新品、常购、活动与配送快捷区。后续专题仍按正式装修顺序呈现，保留真实常购、新品和商品目录；配色单独发布且没有有效装修内容时，继续展示默认首页。
+
+## Elevation & Depth
+
+商城以页面底色、白色内容面、浅品牌色与细分隔线表达层次。品牌渐变属于主题表面，主按钮渐变表达可执行动作；商品与表单不额外叠加装饰阴影。
+
+触控反馈沿用公共按压态：普通入口降低透明度，主按钮轻微缩放并降低透明度。H5 保留既有焦点描边与减少动态偏好；微信小程序通过 `hover-class` 应用按压态。
+
+## Shapes
+
+商城使用前置圆角 scale：小标记采用 mall-sm，商品缩略图与领券入口采用 mall-md，公共卡片采用 mall-lg，搜索框使用 mall-pill。分类PNG保留原透明轮廓，分类页选中面使用 mall-md；不再为首页分类插画添加统一圆形色底。不同形状继续服务已有组件角色，不将所有内容改成相同胶囊。
+
+## Components
+
+### Brand header
+
+首页与“我的”使用品牌渐变，白色店铺名与定位保持清楚层级，两页原生状态栏文字使用白色；其他白底页面继承黑色状态栏文字。定位行避开微信右上角胶囊；店铺名独立截断。已保存的店铺名称来自共用状态，不能在两个页面分别硬编码。
+
+### Primary action
+
+主要动作使用 action 渐变与白字。既有控件高度、圆角、加载和禁用反馈按组件保留；不可点击时使用禁用色，不能让渐变暗示仍可操作。
+
+### Search and product rows
+
+搜索保持白底、主题描边与胶囊外形；商品行保持白底、图片、名称、规格、价格和数量操作的原有结构。重复基础尺寸继续复用现有 token，主题只改变品牌通道。
+
+### Category and coupon entry
+
+分类使用用户交付的轻3D PNG，首页与分类页共用名称映射，保持素材原色，不做主题着色；未知名称使用标准功能图标兜底。一级入口只显示真实可见分类，不按素材包自动创建分类。领券入口使用 surface 渐变与独立礼券PNG；新品、常购、活动、配送使用独立快捷区。后台手机预览保持同样的素材与顺序。
+
+营销主图以2.5:1、专题图以3:1完整呈现，使用图片自带文案，不另叠字幕蒙层；图片名称仍供读屏使用。发布营销组件不会替代常购、新品与正式商品目录。空状态复用 XsyEmpty，按 cart/orders/coupons/search/products/network 选择PNG，保留说明、动作和错误语义。分类与快捷图片128像素、空态240像素副本集中于 `src/static/mall-visual`，来源和原图哈希见 `sources.json`；营销大图从正式文件服务读取。图片保持原色，不用新绘SVG、统一滤镜或主题着色模拟交付素材。
+
+### Customer login
+
+客户登录采用用户确认的仓库蔬菜参考图作为 `mall-login` 页面模式：上方完整交付主视觉，白色圆角表单覆盖其下缘，依次展示交付品牌Logo、动态店铺名、辅助文案、手机号和密码、主要登录动作及账号帮助，底部用交付绿色波浪收尾。登录素材集中在 `src/static/mall-login`，使用独立来源清单和压缩副本，不把整张设计稿作为可点击背景。
+
+登录面板使用28px场景圆角，输入框使用既有mall-lg圆角与浅绿底，登录动作采用当前已发布主题的primary到dark渐变，呈现较浅的品牌色与清晰白字；这组场景样式不覆盖其他页面的基础表单规范。输入框仅保留交付图标和placeholder提示，不重复显示手机号/密码标签；两个图标使用同尺寸容器居中对齐，输入保留可访问名称。密码显隐具有可读操作名，加载时禁用重复提交。页面允许纵向滚动，320px窄屏及输入法抬升时仍可编辑和提交，底部装饰不得遮挡控件。品牌Logo保留交付原色，页面店铺标题继续取后台公开配置。
+
+### Cart and order lists
+
+购物车直接展示商品列表或空状态，订单列表直接从状态标签开始；不在页面顶部常驻通用结算说明条或单独的“商品汇总”入口行。按实重结算等影响提交决定的说明跟随确认订单的商品明细展示，失效商品、金额加载失败等即时问题继续在对应商品或操作附近反馈。
+
+确认订单的商品行采用112rpx固定缩略图、可收缩的名称/规格区域与右侧独立金额；图片填满缩略图容器，不使用原生image的默认尺寸。单价、数量和按实重说明保持独立层级，确保提交前可以连续核对多项商品。
+
+### Store and reading pages
+
+店铺链接为空时隐藏操作；配置链接通过复制方式提供。规则、公告、条款与关于我们在页面显示时读取当前发布内容，未发布、加载失败与重试有明确状态。草稿保存不等于发布。
+
+## Do's and Don'ts
+
+### Do:
+
+- **Do** 在统一主题入口派生三类渐变，后台预览与小程序保持相同公式。
+- **Do** 为商品、表单与说明正文保留清楚的白色阅读面。
+- **Do** 将店铺信息、主题与正文显示绑定到各自正式配置和发布契约。
+- **Do** 使用交付包食材PNG与既有 uni-icons 功能图标，保持分类插画、商品实拍和操作图标各自用途一致。
+
+### Don't:
+
+- **Don't** 把领券中心混入商品分类。
+- **Don't** 用 emoji 或文字字符替代分类图标。
+- **Don't** 让店铺主色覆盖危险、警告或金额的既有业务含义。
+- **Don't** 因为只发布配色而清空默认首页商品和活动入口。

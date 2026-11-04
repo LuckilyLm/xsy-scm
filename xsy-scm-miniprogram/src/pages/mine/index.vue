@@ -9,6 +9,7 @@
       <text v-if="!userStore.isLogin" class="mine__login" @click="goLogin">登录</text>
     </view>
     <view class="mine__card">
+      <text class="mine__store-name">{{ storeName }}</text>
       <text class="mine__group-title">常用功能</text>
       <view class="mine__grid">
         <view
@@ -51,10 +52,12 @@
 import {computed} from 'vue';
 import {useSystemLayout} from '@/composables/use-system-layout';
 import {useMallTheme} from '@/composables/use-mall-theme';
+import {useMallStorefront} from '@/composables/use-mall-storefront';
 import {useUserStore} from '@/store/modules/system/user';
 import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
 
 const {theme, themeStyle} = useMallTheme();
+const {storeName, storeLink} = useMallStorefront();
 
 const {statusBarHeight, menuButtonRect} = useSystemLayout();
 /** 未登录时右侧有「登录」按钮，必须让开右上角胶囊 */
@@ -137,14 +140,17 @@ const primaryEntries = [
   {key: 'coupons', label: '领券中心', icon: 'gift', onClick: goCoupons},
 ];
 
-const serviceEntries = [
+const serviceEntries = computed(() => [
   {key: 'trace', label: '扫码溯源', icon: 'scan', onClick: scanTrace},
   {key: 'announcement', label: '商城公告', icon: 'sound', onClick: () => goPage('ANNOUNCEMENT')},
   {key: 'about', label: '关于我们', icon: 'info', onClick: () => goPage('ABOUT')},
   {key: 'terms', label: '服务条款', icon: 'compose', onClick: () => goPage('TERMS')},
   {key: 'after-sale-rule', label: '售后规则', icon: 'help', onClick: () => goPage('AFTER_SALE')},
   {key: 'password', label: '修改登录密码', icon: 'locked', onClick: changePassword},
-];
+  ...(storeLink.value
+    ? [{key: 'store-link', label: '复制店铺链接', icon: 'link', onClick: () => uni.setClipboardData({data: storeLink.value})}]
+    : []),
+]);
 
 function logout() {
   uni.showModal({
@@ -168,7 +174,7 @@ function logout() {
 .mine__header {
   @include flex-start;
   padding: $space-6 var(--xsy-page-x) $space-8;
-  background: linear-gradient(180deg, var(--mall-primary, #16a34a), var(--mall-primary-dark, #12833c));
+  background: var(--mall-brand-gradient, var(--mall-primary, #16a34a));
 }
 .mine__avatar {
   width: 112rpx;
@@ -213,6 +219,14 @@ function logout() {
   padding: $space-4 var(--xsy-page-x) $space-1;
   color: $color-text-tertiary;
   font-size: $font-size-sm;
+}
+.mine__store-name {
+  display: block;
+  padding: $space-4 var(--xsy-page-x) 0;
+  color: $color-text-primary;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  @include ellipsis;
 }
 /* 第二组标题上一道细分隔线，分组清楚但不抢眼 */
 .mine__group-title--divided {

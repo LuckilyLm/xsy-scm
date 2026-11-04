@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface MallCatalogDao {
-    List<MallCategoryVO> categories(@Param("customerId") Long customerId);
+    List<MallCategoryVO> categories();
 
     List<MallProductVO> products(Page<?> page, @Param("customerId") Long customerId,
         @Param("query") MallProductQueryForm query);

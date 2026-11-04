@@ -17,7 +17,8 @@
           v-for="item in categories"
           :key="item.categoryId"
           class="category__rail-item"
-          :class="{ 'category__rail-item--active': item.categoryId === activePrimaryId }"
+          :data-category-id="item.categoryId"
+          :class="{'category__rail-item--active': item.categoryId === activePrimaryId}"
           hover-class="xsy-press--active"
           :hover-stay-time="80"
           @click="selectPrimary(item)"
@@ -35,24 +36,35 @@
         <view v-if="subCategories.length" class="category__grid">
           <view
             class="category__grid-item"
-            :class="{ 'category__grid-item--active': activeSubId === null }"
+            :class="{'category__grid-item--active': activeSubId === null}"
             hover-class="xsy-press--active"
             :hover-stay-time="80"
             @click="selectAllSubs"
           >
-            <view class="category__grid-icon">🛍️</view>
+            <view class="category__grid-icon">
+              <uni-icons type="list" :size="24" :color="activeSubId === null ? theme.primary : COLOR_TEXT_TERTIARY" />
+            </view>
             <text class="category__grid-text">全部</text>
           </view>
           <view
             v-for="sub in subCategories"
             :key="sub.categoryId"
             class="category__grid-item"
-            :class="{ 'category__grid-item--active': sub.categoryId === activeSubId }"
+            :class="{'category__grid-item--active': sub.categoryId === activeSubId}"
             hover-class="xsy-press--active"
             :hover-stay-time="80"
             @click="selectSub(sub)"
           >
-            <view class="category__grid-icon" aria-hidden="true">{{ gridIcon(sub) }}</view>
+            <view class="category__grid-icon">
+              <image
+                v-if="categoryIcon(sub.categoryName || sub.name)"
+                class="category__grid-glyph"
+                :src="categoryIcon(sub.categoryName || sub.name)"
+                mode="aspectFit"
+                aria-hidden="true"
+              />
+              <uni-icons v-else type="shop" :size="24" :color="theme.primary" />
+            </view>
             <text class="category__grid-text">{{ sub.categoryName }}</text>
           </view>
         </view>
@@ -63,7 +75,8 @@
           <uni-load-more :status="loadMoreStatus" :content-text="LOAD_MORE_TEXT" />
         </view>
 
-        <XsyEmpty v-else-if="!loading" icon="shop" title="该分类暂无可见商品" desc="换个分类看看" compact />
+        <XsyEmpty v-else-if="!loading && productError" tone="error" :title="productError" action-text="重试" compact @action="loadProducts(true)" />
+        <XsyEmpty v-else-if="!loading" kind="products" title="暂无商品" desc="该分类暂未上架商品，换个分类看看" compact />
 
         <view v-if="loading && !products.length">
           <XsySkeleton variant="list" :rows="3" />
@@ -75,256 +88,270 @@
 </template>
 
 <script setup>
-  import { computed, ref } from 'vue';
-  import { onShow } from '@dcloudio/uni-app';
-  import XsyNavBar from '@/components/common/xsy-nav-bar.vue';
-  import ProductCard from '@/components/business/product-card.vue';
-  import XsySkeleton from '@/components/common/xsy-skeleton.vue';
-  import XsyEmpty from '@/components/common/xsy-empty.vue';
-  import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
-  import { LOAD_MORE_TEXT } from '@/constants/load-more-const';
-  import { mallCatalogApi } from '@/api/mall';
-  import { smartSentry } from '@/lib/smart-sentry';
-  import { useMallNavigationStore } from '@/store/modules/mall/navigation';
-  import { useMallCart } from '@/composables/use-mall-cart';
-  import { categoryEmoji } from '@/utils/category-icon';
-  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
-  import { useMallTheme } from '@/composables/use-mall-theme';
+import {computed, ref} from 'vue';
+import {onShow} from '@dcloudio/uni-app';
+import XsyNavBar from '@/components/common/xsy-nav-bar.vue';
+import ProductCard from '@/components/business/product-card.vue';
+import XsySkeleton from '@/components/common/xsy-skeleton.vue';
+import XsyEmpty from '@/components/common/xsy-empty.vue';
+import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
+import {LOAD_MORE_TEXT} from '@/constants/load-more-const';
+import {mallCatalogApi} from '@/api/mall';
+import {smartSentry} from '@/lib/smart-sentry';
+import {useMallNavigationStore} from '@/store/modules/mall/navigation';
+import {useMallCart} from '@/composables/use-mall-cart';
+import {categoryIcon} from '@/utils/category-icon';
+import {COLOR_TEXT_TERTIARY} from '@/constants/theme-color-const';
+import {useMallTheme} from '@/composables/use-mall-theme';
 
-  const { theme, themeStyle } = useMallTheme();
+const {theme, themeStyle} = useMallTheme();
 
-  const PAGE_SIZE = 10;
+const PAGE_SIZE = 10;
 
-  const navigationStore = useMallNavigationStore();
+const navigationStore = useMallNavigationStore();
 
-  const categories = ref([]);
-  const activePrimaryId = ref(null);
-  const activeSubId = ref(null);
+const categories = ref([]);
+const activePrimaryId = ref(null);
+const activeSubId = ref(null);
 
-  const products = ref([]);
-  const pageNum = ref(0);
-  const total = ref(0);
-  const loading = ref(false);
-  const contentScrollTop = ref(0);
-  /** 分类清单是否已加载完成：用于收口「从 Home 跳入时分类还没到」的竞态 */
-  const categoriesLoaded = ref(false);
+const products = ref([]);
+const pageNum = ref(0);
+const total = ref(0);
+const loading = ref(false);
+const contentScrollTop = ref(0);
+/** 分类清单是否已加载完成：用于收口「从 Home 跳入时分类还没到」的竞态 */
+const categoriesLoaded = ref(false);
 
-  const subCategories = computed(() => {
-    const hit = categories.value.find((c) => c.categoryId === activePrimaryId.value);
-    return hit ? hit.children || [] : [];
-  });
+const subCategories = computed(() => {
+  const hit = categories.value.find((c) => c.categoryId === activePrimaryId.value);
+  return hit ? hit.children || [] : [];
+});
 
-  /** 分类图标与首页横滑共用同一份映射，避免两处图标对不上 */
-  function gridIcon(node) {
-    return categoryEmoji((node && (node.categoryName || node.name)) || '');
+const hasMore = computed(() => products.value.length < total.value);
+
+/** uni-load-more 的状态只有三种：more / loading / noMore */
+const loadMoreStatus = computed(() => {
+  if (loading.value) {
+    return 'loading';
   }
+  return hasMore.value ? 'more' : 'noMore';
+});
 
-  const hasMore = computed(() => products.value.length < total.value);
+/** 当前生效的分类 id：优先二级，其次一级 */
+const effectiveCategoryId = computed(() => activeSubId.value || activePrimaryId.value);
+const productError = ref('');
+let productRequest = 0;
+let categoryRequest = 0;
 
-  /** uni-load-more 的状态只有三种：more / loading / noMore */
-  const loadMoreStatus = computed(() => {
-    if (loading.value) {
-      return 'loading';
+async function loadCategories() {
+  const request = ++categoryRequest;
+  try {
+    const res = await mallCatalogApi.getCategories();
+    if (request !== categoryRequest) return;
+    categories.value = res.data || [];
+    // 首次进入：优先兑现 Home 带过来的目标分类，没有才落到首个
+    const pendingHit = takePendingCategory();
+    const initial = pendingHit?.primary || categories.value.find((item) => item.categoryId === activePrimaryId.value) || categories.value[0];
+    if (initial) {
+      if (pendingHit && !pendingHit.sub && activePrimaryId.value === initial.categoryId) selectAllSubs();
+      selectPrimary(initial);
+      if (pendingHit?.sub) selectSub(pendingHit.sub);
     }
-    return hasMore.value ? 'more' : 'noMore';
-  });
-
-  /** 当前生效的分类 id：优先二级，其次一级 */
-  const effectiveCategoryId = computed(() => activeSubId.value || activePrimaryId.value);
-
-  async function loadCategories() {
-    try {
-      const res = await mallCatalogApi.getCategories();
-      categories.value = res.data || [];
-      // 首次进入：优先兑现 Home 带过来的目标分类，没有才落到首个
-      const pendingHit = takePendingCategory();
-      const initial = pendingHit?.primary || categories.value[0];
-      if (initial) {
-        selectPrimary(initial);
-        if (pendingHit?.sub) selectSub(pendingHit.sub);
-      }
-    } catch (e) {
-      smartSentry.captureError(e);
-    } finally {
+  } catch (e) {
+    if (request !== categoryRequest) return;
+    smartSentry.captureError(e);
+  } finally {
+    if (request === categoryRequest) {
       categoriesLoaded.value = true;
       // 分类清单到位后再兜一次：覆盖「分类页已存在、被 switchTab 复用」的情况
       applyPendingCategory();
     }
   }
+}
 
-  async function loadProducts(reset = false) {
-    if (loading.value) {
-      return;
-    }
-    if (reset) {
-      pageNum.value = 0;
-      products.value = [];
-      total.value = 0;
-    }
-    if (!effectiveCategoryId.value) {
-      return;
-    }
-
-    loading.value = true;
-    try {
-      const res = await mallCatalogApi.getProducts({
-        pageNum: pageNum.value + 1,
-        pageSize: PAGE_SIZE,
-        categoryId: effectiveCategoryId.value,
-      });
-      const page = res.data || {};
-      products.value = pageNum.value === 0 ? page.list || [] : products.value.concat(page.list || []);
-      total.value = page.total || 0;
-      pageNum.value += 1;
-    } catch (e) {
-      smartSentry.captureError(e);
-    } finally {
-      loading.value = false;
-    }
+async function loadProducts(reset = false) {
+  if (!reset && loading.value) {
+    return;
+  }
+  const request = ++productRequest;
+  const categoryId = effectiveCategoryId.value;
+  if (reset) {
+    pageNum.value = 0;
+    products.value = [];
+    total.value = 0;
+  }
+  if (!categoryId) {
+    loading.value = false;
+    return;
   }
 
-  /**
-   * 触底加载下一页（本页是 scroll-view 内滚动，故用 @scrolltolower）。
-   * 两道拦截：loading 期间不重复请求；已取满 total 时不再请求。
-   * 这里只避免「无意义请求」，真正的分页边界仍以服务端返回的 total 为准。
-   */
-  function loadMore() {
-    if (loading.value || !hasMore.value) {
-      return;
+  loading.value = true;
+  productError.value = '';
+  try {
+    const res = await mallCatalogApi.getProducts({
+      pageNum: pageNum.value + 1,
+      pageSize: PAGE_SIZE,
+      categoryId,
+    });
+    // 切到空分类后，旧分类的慢响应不能把旧商品填回来。
+    if (request !== productRequest || categoryId !== effectiveCategoryId.value) return;
+    const page = res.data || {};
+    products.value = pageNum.value === 0 ? page.list || [] : products.value.concat(page.list || []);
+    total.value = page.total || 0;
+    pageNum.value += 1;
+  } catch (e) {
+    if (request !== productRequest || categoryId !== effectiveCategoryId.value) return;
+    productError.value = e?.message || '商品加载失败，请重试';
+    smartSentry.captureError(e);
+  } finally {
+    if (request === productRequest) loading.value = false;
+  }
+}
+
+/**
+ * 触底加载下一页（本页是 scroll-view 内滚动，故用 @scrolltolower）。
+ * 两道拦截：loading 期间不重复请求；已取满 total 时不再请求。
+ * 这里只避免「无意义请求」，真正的分页边界仍以服务端返回的 total 为准。
+ */
+function loadMore() {
+  if (loading.value || !hasMore.value) {
+    return;
+  }
+  loadProducts(false);
+}
+
+function selectPrimary(item) {
+  if (activePrimaryId.value === item.categoryId) {
+    return;
+  }
+  activePrimaryId.value = item.categoryId;
+  // 切换一级分类时回到「全部子类」，避免沿用上一个分类的二级选中项
+  activeSubId.value = null;
+  contentScrollTop.value = contentScrollTop.value === 0 ? 1 : 0;
+  loadProducts(true);
+}
+
+function selectSub(sub) {
+  if (activeSubId.value === sub.categoryId) {
+    return;
+  }
+  activeSubId.value = sub.categoryId;
+  loadProducts(true);
+}
+
+/** 选中当前一级分类的“全部商品”，清除子分类筛选后重新加载。 */
+function selectAllSubs() {
+  if (activeSubId.value === null) {
+    return;
+  }
+  activeSubId.value = null;
+  loadProducts(true);
+}
+
+/* ===================== Home → Category 定向跳转 ===================== */
+
+/**
+ * 取出待选中的一级或二级分类实体。
+ *
+ * 只按 id 匹配**服务端返回的真实分类对象**；无论命中与否都清掉意图
+ * （一次性消费，避免陈旧意图影响下一次进入）。
+ */
+function takePendingCategory() {
+  const pendingId = navigationStore.pendingCategoryId;
+  if (pendingId === null || pendingId === undefined) {
+    return null;
+  }
+  let hit = null;
+  for (const primary of categories.value) {
+    if (primary.categoryId === Number(pendingId)) {
+      hit = {primary};
+      break;
     }
-    loadProducts(false);
-  }
-
-  function selectPrimary(item) {
-    if (activePrimaryId.value === item.categoryId) {
-      return;
+    const sub = (primary.children || []).find((child) => child.categoryId === Number(pendingId));
+    if (sub) {
+      hit = {primary, sub};
+      break;
     }
-    activePrimaryId.value = item.categoryId;
-    // 切换一级分类时回到「全部子类」，避免沿用上一个分类的二级选中项
-    activeSubId.value = null;
-    contentScrollTop.value = contentScrollTop.value === 0 ? 1 : 0;
-    loadProducts(true);
   }
+  navigationStore.clearPendingCategoryId();
+  return hit;
+}
 
-  function selectSub(sub) {
-    if (activeSubId.value === sub.categoryId) {
-      return;
-    }
-    activeSubId.value = sub.categoryId;
-    loadProducts(true);
+/** 从首页跳转分类页时先保存目标分类。若分类尚未加载，等数据加载完成后再定位，避免首次进入时跳转失效。 */
+function applyPendingCategory() {
+  if (!categoriesLoaded.value || !categories.value.length) {
+    return;
   }
-
-  /** 选中当前一级分类的“全部商品”，清除子分类筛选后重新加载。 */
-  function selectAllSubs() {
-    if (activeSubId.value === null) {
-      return;
-    }
-    activeSubId.value = null;
-    loadProducts(true);
+  if (navigationStore.pendingCategoryId === null || navigationStore.pendingCategoryId === undefined) {
+    return;
   }
+  const hit = takePendingCategory();
+  const fallback = categories.value.find((c) => c.categoryId === activePrimaryId.value) || categories.value[0];
+  selectPrimary(hit?.primary || fallback);
+  if (hit?.sub) selectSub(hit.sub);
+}
 
-  /* ===================== Home → Category 定向跳转 ===================== */
+/*
+ * tabBar 页会被复用：再次从 Home 跳进来时不会重新执行 setup，
+ * 所以定向跳转要在 onShow 兑现（此时分类清单通常已就绪）。
+ */
+onShow(() => {
+  // tab页会被复用，重新读取分类才能看到后台刚新增的空分类。
+  if (categoriesLoaded.value) loadCategories();
+  else applyPendingCategory();
+});
 
-  /**
-   * 取出待选中的一级或二级分类实体。
-   *
-   * 只按 id 匹配**服务端返回的真实分类对象**；无论命中与否都清掉意图
-   * （一次性消费，避免陈旧意图影响下一次进入）。
-   */
-  function takePendingCategory() {
-    const pendingId = navigationStore.pendingCategoryId;
-    if (pendingId === null || pendingId === undefined) {
-      return null;
-    }
-    let hit = null;
-    for (const primary of categories.value) {
-      if (primary.categoryId === Number(pendingId)) {
-        hit = { primary };
-        break;
-      }
-      const sub = (primary.children || []).find((child) => child.categoryId === Number(pendingId));
-      if (sub) {
-        hit = { primary, sub };
-        break;
-      }
-    }
-    navigationStore.clearPendingCategoryId();
-    return hit;
-  }
+function goSearch() {
+  uni.navigateTo({url: '/pages-sub/product/search'});
+}
 
-  /** 从首页跳转分类页时先保存目标分类。若分类尚未加载，等数据加载完成后再定位，避免首次进入时跳转失效。 */
-  function applyPendingCategory() {
-    if (!categoriesLoaded.value || !categories.value.length) {
-      return;
-    }
-    if (navigationStore.pendingCategoryId === null || navigationStore.pendingCategoryId === undefined) {
-      return;
-    }
-    const hit = takePendingCategory();
-    const fallback = categories.value.find((c) => c.categoryId === activePrimaryId.value) || categories.value[0];
-    selectPrimary(hit?.primary || fallback);
-    if (hit?.sub) selectSub(hit.sub);
-  }
+function goDetail(product) {
+  uni.navigateTo({url: `/pages-sub/product/detail?skuId=${product.skuId}`});
+}
 
-  /*
-   * tabBar 页会被复用：再次从 Home 跳进来时不会重新执行 setup，
-   * 所以定向跳转要在 onShow 兑现（此时分类清单通常已就绪）。
-   */
-  onShow(() => {
-    applyPendingCategory();
-  });
+const {addToCart} = useMallCart();
 
-  function goSearch() {
-    uni.navigateTo({ url: '/pages-sub/product/search' });
-  }
+/** 无客户价商品不进入加购，改为引导询价（与 Home 保持同一交互，不新增接口/页面） */
+function onInquiry(product) {
+  uni.showToast({title: `${product.productName} 暂无客户价，请联系业务员询价`, icon: 'none'});
+}
 
-  function goDetail(product) {
-    uni.navigateTo({ url: `/pages-sub/product/detail?skuId=${product.skuId}` });
-  }
-
-  const { addToCart } = useMallCart();
-
-  /** 无客户价商品不进入加购，改为引导询价（与 Home 保持同一交互，不新增接口/页面） */
-  function onInquiry(product) {
-    uni.showToast({ title: `${product.productName} 暂无客户价，请联系业务员询价`, icon: 'none' });
-  }
-
-  loadCategories();
+loadCategories();
 </script>
 
 <style lang="scss" scoped>
-  .category {
-    @include viewport-height;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    /* 让开自绘底部导航 */
-    padding-bottom: var(--xsy-tabbar-h, 100rpx);
+.category {
+  @include viewport-height;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  /* 让开自绘底部导航 */
+  padding-bottom: var(--xsy-tabbar-h, 100rpx);
+  background-color: $color-bg-card;
+
+  &__search {
+    @include flex-start;
+    margin: $space-2 var(--xsy-page-x) $space-3;
+    height: 76rpx;
+    padding: 0 $space-3;
+    border: 1px solid var(--mall-primary, #16a34a);
+    border-radius: $radius-pill;
     background-color: $color-bg-card;
+  }
 
-    &__search {
-      @include flex-start;
-      margin: $space-2 var(--xsy-page-x) $space-3;
-      height: 76rpx;
-      padding: 0 $space-3;
-      border: 1px solid var(--mall-primary, #16a34a);
-      border-radius: $radius-pill;
-      background-color: $color-bg-card;
-    }
+  &__search-ph {
+    margin-left: $space-2;
+    font-size: $font-size-sm;
+    color: $color-text-placeholder;
+  }
 
-    &__search-ph {
-      margin-left: $space-2;
-      font-size: $font-size-sm;
-      color: $color-text-placeholder;
-    }
+  &__body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
 
-    &__body {
-      flex: 1;
-      display: flex;
-      min-height: 0;
-    }
-
-    /*
+  /*
      * 一级分类 rail。
      *
      * 390 主稿：rail 76px（含右侧 1px 分割线）+ 内容区 314px = 390。
@@ -332,122 +359,124 @@
      * 375 / 414 下实测 73 / 80.6px（Figma 目标 72 / 82，差 ≤1.4px）——
      * 单值 rpx 无法同时命中三档，按「不为 1px 写复杂布局」取 390 主稿基准。
      */
-    &__rail {
-      box-sizing: border-box;
-      width: 146rpx;
-      flex-shrink: 0;
-      background-color: $color-bg-page;
-      border-right: 1px solid $color-divider;
-    }
+  &__rail {
+    box-sizing: border-box;
+    width: 146rpx;
+    flex-shrink: 0;
+    background-color: $color-bg-page;
+    border-right: 1px solid $color-divider;
+  }
 
-    &__rail-item {
-      @include flex-center;
-      position: relative;
-      /* 390 主稿 48px → 92rpx ≈ 47.8px */
-      height: 92rpx;
-      padding: 0 $space-1;
+  &__rail-item {
+    @include flex-center;
+    position: relative;
+    /* 390 主稿 48px → 92rpx ≈ 47.8px */
+    height: 92rpx;
+    padding: 0 $space-1;
 
-      &--active {
-        background-color: var(--mall-primary-light, #e8f5ec);
-        border-radius: $radius-sm;
+    &--active {
+      background-color: var(--mall-primary-light, #e8f5ec);
+      border-radius: $radius-sm;
 
-        &::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 50%;
-          transform: translateY(-50%);
-          /* 390 主稿 3×20px、圆角 2px */
-          width: 6rpx;
-          height: 40rpx;
-          border-radius: 2px;
-          background-color: var(--mall-primary, #16a34a);
-        }
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        /* 390 主稿 3×20px、圆角 2px */
+        width: 6rpx;
+        height: 40rpx;
+        border-radius: 2px;
+        background-color: var(--mall-primary, #16a34a);
       }
     }
-
-    &__rail-text {
-      font-size: $font-size-sm;
-      color: $color-text-secondary;
-      text-align: center;
-      /* flex 子项默认 min-width:auto 不会收缩，必须显式放开，长分类名才会截断 */
-      min-width: 0;
-      max-width: 100%;
-      @include ellipsis;
-    }
-
-    /* 选中态：字号放大到 14px 并转主色，Active 比未选中明显 */
-    &__rail-item--active &__rail-text {
-      font-size: $font-size-base;
-      color: var(--mall-primary-ink, #12833c);
-      font-weight: $font-weight-medium;
-    }
-
-    &__content {
-      flex: 1;
-      min-width: 0;
-      height: 100%;
-    }
-
-    /* 二级分类网格：一行 5 个，图标 + 名称 */
-    &__grid {
-      display: flex;
-      flex-wrap: wrap;
-      padding: $space-3 $space-2 $space-2;
-      background-color: $color-bg-card;
-    }
-
-    &__grid-item {
-      width: 25%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: $space-1;
-      padding: $space-1 0 $space-2;
-    }
-
-    &__grid-icon {
-      width: 84rpx;
-      height: 84rpx;
-      border-radius: $radius-pill;
-      background-color: $color-bg-page;
-      font-size: 40rpx;
-      line-height: 1;
-      @include flex-center;
-    }
-
-    &__grid-text {
-      max-width: 100%;
-      padding: 0 $space-1;
-      color: $color-text-secondary;
-      font-size: $font-size-xs;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    &__grid-item--active &__grid-icon {
-      background-color: var(--mall-primary-light, #e8f5ec);
-      color: var(--mall-primary-ink, #12833c);
-    }
-
-    &__grid-item--active &__grid-text {
-      color: var(--mall-primary-ink, #12833c);
-      font-weight: $font-weight-medium;
-    }
-
-    &__list {
-      background-color: $color-bg-card;
-    }
-
-    &__empty {
-      padding: $space-8 $space-4;
-      text-align: center;
-    }
-
-    &__empty-text {
-      font-size: $font-size-sm;
-      color: $color-text-tertiary;
-    }
   }
+
+  &__rail-text {
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+    text-align: center;
+    /* flex 子项默认 min-width:auto 不会收缩，必须显式放开，长分类名才会截断 */
+    min-width: 0;
+    max-width: 100%;
+    @include ellipsis;
+  }
+
+  /* 选中态：字号放大到 14px 并转主色，Active 比未选中明显 */
+  &__rail-item--active &__rail-text {
+    font-size: $font-size-base;
+    color: var(--mall-primary-ink, #12833c);
+    font-weight: $font-weight-medium;
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+  }
+
+  /* 二级分类网格：一行 5 个，图标 + 名称 */
+  &__grid {
+    display: flex;
+    flex-wrap: wrap;
+    padding: $space-3 $space-2 $space-2;
+    background-color: $color-bg-card;
+  }
+
+  &__grid-item {
+    width: 25%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-1;
+    padding: $space-1 0 $space-2;
+  }
+
+  &__grid-icon {
+    width: 108rpx;
+    height: 108rpx;
+    border-radius: $radius-md;
+    @include flex-center;
+  }
+
+  &__grid-glyph {
+    width: 100rpx;
+    height: 100rpx;
+  }
+
+  &__grid-text {
+    max-width: 100%;
+    padding: 0 $space-1;
+    color: $color-text-secondary;
+    font-size: $font-size-xs;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__grid-item--active &__grid-icon {
+    background-color: var(--mall-primary-light, #e8f5ec);
+    color: var(--mall-primary-ink, #12833c);
+  }
+
+  &__grid-item--active &__grid-text {
+    color: var(--mall-primary-ink, #12833c);
+    font-weight: $font-weight-medium;
+  }
+
+  &__list {
+    background-color: $color-bg-card;
+  }
+
+  &__empty {
+    padding: $space-8 $space-4;
+    text-align: center;
+  }
+
+  &__empty-text {
+    font-size: $font-size-sm;
+    color: $color-text-tertiary;
+  }
+}
 </style>

@@ -22,9 +22,7 @@
             </div>
             <a-space>
               <a-button v-privilege="'scm:mall:home:edit'" :loading="saving" :disabled="!dirty" @click="saveDraft()">保存</a-button>
-              <a-button v-privilege="'scm:mall:home:publish'" type="primary" :loading="publishing" :disabled="!blocks.length" @click="publish"
-                >发布</a-button
-              >
+              <a-button v-privilege="'scm:mall:home:publish'" type="primary" :loading="publishing" @click="publish">发布</a-button>
             </a-space>
           </div>
 
@@ -111,7 +109,7 @@
                 <div v-else class="console-empty">
                   <InboxOutlined aria-hidden="true" />
                   <strong>还没有首页组件</strong>
-                  <span>选择组件类型后点「添加组件」</span>
+                  <span>可直接发布店铺配色，或添加组件装修首页</span>
                 </div>
               </a-spin>
             </section>
@@ -122,7 +120,7 @@
                 <a-button type="link" size="small" @click="openPreview">预览</a-button>
               </div>
               <div class="console-preview-stage">
-                <MallPhonePreview ref="phonePreviewRef" :theme-code="themeCode" :theme-color="themeColor" :blocks="blocks" />
+                <MallPhonePreview ref="phonePreviewRef" :theme-code="themeCode" :theme-color="themeColor" :blocks="blocks" :store-name="storeName" />
               </div>
             </aside>
           </div>
@@ -223,7 +221,7 @@
     <a-tab-pane key="terms" tab="服务条款"><MallPageSettings page-code="TERMS" /></a-tab-pane>
     <a-tab-pane key="about" tab="关于我们"><MallPageSettings page-code="ABOUT" /></a-tab-pane>
     <a-tab-pane key="after-sale" tab="售后规则"><MallPageSettings page-code="AFTER_SALE" /></a-tab-pane>
-    <a-tab-pane key="store" tab="店铺"><MallStoreSettings /></a-tab-pane>
+    <a-tab-pane key="store" tab="店铺"><MallStoreSettings @saved="storeName = $event.storeName" /></a-tab-pane>
     <a-tab-pane key="history" tab="发布记录">
       <a-card :bordered="false" size="small" class="console-history-page">
         <div class="console-head">
@@ -284,6 +282,7 @@ import {promotionApi} from '/@/api/business/scm/promotion-api';
 import type {ProductCategory} from '/@/types/business/scm/product';
 import type {ScmId} from '/@/types/business/scm/customer';
 import {mallHomeApi, type HomeBlock, type HomeBlockType, type HomeLinkType, type HomePage, type HomeRelease} from '/@/api/business/scm/mall-home-api';
+import {mallDecorationApi} from '/@/api/business/scm/mall-decoration-api';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
@@ -342,6 +341,7 @@ const themeOptions = [
   {value: 'OCEAN', label: '海蓝'},
 ];
 const themeCode = ref('FRESH');
+const storeName = ref('');
 /** 自定义主色；为空表示跟随主题预设。 */
 const themeColor = ref<string | null>(null);
 const themeColorText = ref(MALL_THEME_PRESETS.FRESH);
@@ -463,8 +463,13 @@ async function load(): Promise<void> {
   loading.value = true;
   error.value = '';
   try {
-    const [draft, history] = await Promise.all([mallHomeApi.draft(), mallHomeApi.history()]);
+    const [draft, history, store] = await Promise.all([
+      mallHomeApi.draft(),
+      mallHomeApi.history(),
+      hasPermission('scm:mall:store:query') ? mallDecorationApi.store().catch(() => null) : Promise.resolve(null),
+    ]);
     if (request !== requestId) return;
+    if (store) storeName.value = store.data.storeName;
     draftVersion.value = draft.data.version;
     pointerVersion.value = draft.data.pointerVersion;
     currentReleaseId.value = draft.data.currentReleaseId;

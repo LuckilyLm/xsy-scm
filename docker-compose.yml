@@ -63,6 +63,8 @@ services:
       SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET: ${SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET:?Set SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET in .env}
       # 标签二维码里的公开溯源页地址；留空时标签只印码不印二维码（见 TracePublicLinkBuilder）
       SCM_TRACE_PUBLIC_BASE_URL: ${SCM_TRACE_PUBLIC_BASE_URL:-}
+      # 小程序地址搜索和逆地理编码使用服务端Web服务Key，不能复用前端JSAPI Key。
+      XSY_AMAP_WEB_SERVICE_KEY: ${XSY_AMAP_WEB_SERVICE_KEY:-}
       XSY_FILE_STORAGE_MODE: cloud
       XSY_FILE_REGION: us-east-1
       # S3 client 和 Presigner 共用地址，必须同时对浏览器和容器可达。

@@ -69,3 +69,12 @@ export function mallThemePalette(color: string): MallThemePalette {
     disabled: mix(color, 255, 255, 255, 0.55),
   };
 }
+
+/** 与小程序共用色阶关系：白字动作仅使用深色端点，避免亮色主题降低可读性。 */
+export function mallThemeGradients(palette: MallThemePalette): {brand: string; action: string; surface: string} {
+  return {
+    brand: `linear-gradient(118deg, ${palette.ink} 0%, ${palette.dark} 48%, ${palette.primary} 100%)`,
+    action: `linear-gradient(118deg, ${mix(palette.ink, 0, 0, 0, 0.14)} 0%, ${palette.ink} 100%)`,
+    surface: `linear-gradient(110deg, ${palette.light} 0%, #ffffff 100%)`,
+  };
+}

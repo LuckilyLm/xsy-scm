@@ -10,8 +10,6 @@
  * 迟早出现「卡片显示有货、详情显示缺货」这类不一致。
  */
 
-import { categoryEmoji } from './category-icon';
-
 /** 库存状态枚举（服务端给出，与后端一致） */
 export const STOCK_STATUS = {
   AVAILABLE: 'AVAILABLE',
@@ -27,13 +25,13 @@ export const STOCK_STATUS = {
  * 这样组件不共享类名，样式仍各自独立。
  */
 const STOCK_MAP = {
-  [STOCK_STATUS.AVAILABLE]: { text: '有货', level: 'ok' },
-  [STOCK_STATUS.INSUFFICIENT]: { text: '库存不足', level: 'warn' },
-  [STOCK_STATUS.OUT_OF_STOCK]: { text: '暂时缺货', level: 'off' },
-  [STOCK_STATUS.UNKNOWN]: { text: '库存未知', level: 'off' },
+  [STOCK_STATUS.AVAILABLE]: {text: '有货', level: 'ok'},
+  [STOCK_STATUS.INSUFFICIENT]: {text: '库存不足', level: 'warn'},
+  [STOCK_STATUS.OUT_OF_STOCK]: {text: '暂时缺货', level: 'off'},
+  [STOCK_STATUS.UNKNOWN]: {text: '库存未知', level: 'off'},
 };
 
-const UNKNOWN_STOCK = { text: '库存未知', level: 'off' };
+const UNKNOWN_STOCK = {text: '库存未知', level: 'off'};
 
 function stockEntry(product) {
   return (product && STOCK_MAP[product.stockStatus]) || UNKNOWN_STOCK;
@@ -88,10 +86,6 @@ export function actionText(product) {
 
 /** 无图时的占位首字（业主提供 fileKey 前的兜底展示） */
 export function thumbText(product) {
-  // 无图占位优先用分类 emoji：单字「一」「南」放大后辨识度低，emoji 更像商品图
-  if (product && product.categoryName) {
-    return categoryEmoji(product.categoryName);
-  }
   return ((product && product.productName) || '商').slice(0, 1);
 }
 

@@ -1,0 +1,298 @@
+[
+  {
+    "name": "蔬菜",
+    "source": "03_一级分类/蔬菜.png",
+    "sourceSha256": "cc793e5b98a8297c1637e3670f6f9faf44b3d099bb59bc4b0bb03261ffaa1c18",
+    "file": "category/vegetables.png",
+    "size": 7734
+  },
+  {
+    "name": "水果",
+    "source": "03_一级分类/水果.png",
+    "sourceSha256": "c1f1237a036aea1ebaf57690c8f14f10dadf47d10ec77f208cc32ddf8386404d",
+    "file": "category/fruit.png",
+    "size": 7580
+  },
+  {
+    "name": "肉禽蛋",
+    "source": "03_一级分类/肉禽蛋.png",
+    "sourceSha256": "b47ae7cdd4f66d383c65576647bc01e4f443e53260808da0f4f4932759efc03c",
+    "file": "category/meat-eggs.png",
+    "size": 6630
+  },
+  {
+    "name": "水产",
+    "source": "03_一级分类/水产.png",
+    "sourceSha256": "5c8ab82e6ec50de9818343bfe1994113c317fad0cf39dc6cbfd3c51d726ee2ac",
+    "file": "category/seafood.png",
+    "size": 7847
+  },
+  {
+    "name": "粮油",
+    "source": "03_一级分类/粮油.png",
+    "sourceSha256": "326c2c6026f47027fc9cb62932830673f65a55b08cd22e0e9788fa0b9a798c7a",
+    "file": "category/grain-oil.png",
+    "size": 6788
+  },
+  {
+    "name": "调味",
+    "source": "03_一级分类/调味.png",
+    "sourceSha256": "11cb0aa56d4d1f630a5ebd9854e4e2db3bb7da210ffe237c56d05f9c1a6ea494",
+    "file": "category/seasoning.png",
+    "size": 6429
+  },
+  {
+    "name": "叶菜类",
+    "source": "04_二级分类/叶菜类.png",
+    "sourceSha256": "faf72cecd2775d2f4e1469c694cf475a9e5e68844ce0aed2dfffc215e57cfe81",
+    "file": "category/leafy.png",
+    "size": 6676
+  },
+  {
+    "name": "根茎类",
+    "source": "04_二级分类/根茎类.png",
+    "sourceSha256": "605f223b22dd3f0864032d1830dd32ce73a685eba127e5dc608d4f4d7a67268b",
+    "file": "category/roots.png",
+    "size": 5668
+  },
+  {
+    "name": "瓜果类",
+    "source": "04_二级分类/瓜果类.png",
+    "sourceSha256": "2dde0ca3c0947b1b7c26db61a790e302eebe8e25864f3e9c098fcae883812f4c",
+    "file": "category/gourds.png",
+    "size": 6615
+  },
+  {
+    "name": "菌菇类",
+    "source": "04_二级分类/菌菇类.png",
+    "sourceSha256": "fb763ec07a9d6babf0062b2a713f233774fb6f79c6a79d7c9e0a3eb13a1dc19b",
+    "file": "category/mushrooms.png",
+    "size": 6810
+  },
+  {
+    "name": "国产水果",
+    "source": "04_二级分类/国产水果.png",
+    "sourceSha256": "337d747b24a8e4925755ddc19595b67fbe35ff744a10d855b2a7e6fb958f1e28",
+    "file": "category/domestic-fruit.png",
+    "size": 6133
+  },
+  {
+    "name": "进口水果",
+    "source": "04_二级分类/进口水果.png",
+    "sourceSha256": "5768b11d2521caecbb9e8a39b78ce53dab2ea83566d38db16566873a3d740309",
+    "file": "category/imported-fruit.png",
+    "size": 7452
+  },
+  {
+    "name": "时令鲜果",
+    "source": "04_二级分类/时令鲜果.png",
+    "sourceSha256": "2d982c4570ef7ffab3ce59207711b7a4c15105a069d9dd3710239c6e4e871edf",
+    "file": "category/seasonal-fruit.png",
+    "size": 7259
+  },
+  {
+    "name": "牛羊肉",
+    "source": "04_二级分类/牛羊肉.png",
+    "sourceSha256": "0a50b619d64a7e39acd52393e3bde4ff708139b0067f6434d4b59c9ba7b88ca8",
+    "file": "category/beef-lamb.png",
+    "size": 7088
+  },
+  {
+    "name": "禽类",
+    "source": "04_二级分类/禽类.png",
+    "sourceSha256": "3a13622993397fe8eb6535b18f63c763d3581020de50964f4e70748f3bd69e5a",
+    "file": "category/poultry.png",
+    "size": 6504
+  },
+  {
+    "name": "猪肉",
+    "source": "二级分类/猪肉.png",
+    "sourceSha256": "1c521774f7ff4c7fc88dea3f1366d77d534b8a7c3e2f8404ed2f5ff3c3200b77",
+    "file": "category/pork.png",
+    "size": 6012,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "蛋品",
+    "source": "二级分类/蛋品.png",
+    "sourceSha256": "48d227db52a05bd2d898ca48f444388560417b74b7493bf12f93a417822ba00d",
+    "file": "category/eggs.png",
+    "size": 5742,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "冰鲜",
+    "source": "二级分类/冰鲜.png",
+    "sourceSha256": "c395bdf0ee15e3c8edf03462f82be762a91838a70028b72e4fbb61e75cc669da",
+    "file": "category/chilled.png",
+    "size": 6432,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "冻品",
+    "source": "二级分类/冻品.png",
+    "sourceSha256": "258622eb1a1841609441c3a00499f8dbc24b401faf7773cee31784a41fc335d1",
+    "file": "category/frozen.png",
+    "size": 6405,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "米面",
+    "source": "二级分类/米面.png",
+    "sourceSha256": "4e909f559c649316e82a79c9ec2f29bf53044ce6591419b6ec0117f1b4057a9e",
+    "file": "category/rice-flour.png",
+    "size": 6880,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "食用油",
+    "source": "二级分类/食用油.png",
+    "sourceSha256": "58ea72b9c1d2edf2647e40e180bf7b05b5317d5e5f5a135f85f0f0095c848d21",
+    "file": "category/cooking-oil.png",
+    "size": 5908,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "杂粮",
+    "source": "二级分类/杂粮.png",
+    "sourceSha256": "629776777c0ca35b552d04b011720ee785d010312d57c6d2511c2e5177871f87",
+    "file": "category/grains.png",
+    "size": 8641,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "基础调味",
+    "source": "二级分类/基础调味.png",
+    "sourceSha256": "899f159422472861c3f64b3f3f2f154b92ac5c512aa21ed134726cfe6d48209d",
+    "file": "category/basic-seasoning.png",
+    "size": 5355,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "复合调味",
+    "source": "二级分类/复合调味.png",
+    "sourceSha256": "44b5d83673b07094bd87dc64bf8e043a70b03c34f8c21ebf4902c6b025675304",
+    "file": "category/mixed-seasoning.png",
+    "size": 6782,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "香辛料",
+    "source": "二级分类/香辛料.png",
+    "sourceSha256": "fe75edcea62782024e6a6f652771c0d27d5cabb9772c10f916b57f57d4326453",
+    "file": "category/spices.png",
+    "size": 7267,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "鱼类",
+    "source": "二级分类/鱼类.png",
+    "sourceSha256": "d90c105cf13067dc9608f0894198425b7b1d24c053d39b98dc8654d82aa6341b",
+    "file": "category/fish.png",
+    "size": 6634,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "虾蟹",
+    "source": "二级分类/虾蟹.png",
+    "sourceSha256": "04c1bfce7ea4ff4e6882b55ee9995ccdec180c811a65513a7ca3211f3e814458",
+    "file": "category/shrimp-crab.png",
+    "size": 8308,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "新品上架",
+    "source": "05_首页快捷入口/新品上架.png",
+    "sourceSha256": "34e4de68730827acba3735e915b2d2aa8001118ebae8decd1640a9411981d0f6",
+    "file": "shortcut/new.png",
+    "size": 7070
+  },
+  {
+    "name": "特价专区",
+    "source": "05_首页快捷入口/特价专区.png",
+    "sourceSha256": "19f0af13b748cc2c8c55d38b83775c33ad1b35ebc4f3374e86efeae1aedbd648",
+    "file": "shortcut/sale.png",
+    "size": 5941
+  },
+  {
+    "name": "常购清单",
+    "source": "05_首页快捷入口/常购清单.png",
+    "sourceSha256": "4f3692a9ae1939fb8340639e1f65a8190ddc7925cf20326b21ba4a0ba7fdf15a",
+    "file": "shortcut/frequent.png",
+    "size": 5205
+  },
+  {
+    "name": "领券中心",
+    "source": "05_首页快捷入口/领券中心.png",
+    "sourceSha256": "962def33aea11ff553e491452e7fc7cb568ceb0340e0810fdcc6694830cfa870",
+    "file": "shortcut/coupons.png",
+    "size": 5522
+  },
+  {
+    "name": "配送查询",
+    "source": "05_首页快捷入口/配送查询.png",
+    "sourceSha256": "1e4554a9bfb1f7fc5559896b2f7b877b584cac4d63baeeaf978fd39278421431",
+    "file": "shortcut/delivery.png",
+    "size": 5598
+  },
+  {
+    "name": "活动专区",
+    "source": "活动专区.png",
+    "sourceSha256": "e71e15bb71292b0872ec56207d61a687d7e4dc198cface0c2cf76ad24c7ac164",
+    "file": "shortcut/activities.png",
+    "size": 6472,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "空购物车",
+    "source": "06_通用空状态/空购物车.png",
+    "sourceSha256": "3115e09f2242905ff1b0730953607a83e923e3fa66c36ea0f74b86b8275f36f0",
+    "file": "empty/cart.png",
+    "size": 11290
+  },
+  {
+    "name": "暂无订单",
+    "source": "06_通用空状态/暂无订单.png",
+    "sourceSha256": "f9b8d3bec825458b4b4f7e6e12cbde3d7037ec71653fbc53d704519e74b5b8f9",
+    "file": "empty/orders.png",
+    "size": 10164
+  },
+  {
+    "name": "暂无优惠券",
+    "source": "06_通用空状态/暂无优惠券.png",
+    "sourceSha256": "bda58f117b61e7aa579417d188aeff0b5b1abc2d66232194de4e5b8aa05a09f5",
+    "file": "empty/coupons.png",
+    "size": 10926
+  },
+  {
+    "name": "搜索无结果",
+    "source": "06_通用空状态/搜索无结果.png",
+    "sourceSha256": "54ca497f5839c1223999b25bcd19189a93f7f013b482b445c925f170c21b9609",
+    "file": "empty/search.png",
+    "size": 9713
+  },
+  {
+    "name": "暂无商品",
+    "source": "暂无商品.png",
+    "sourceSha256": "467099ca5db1b86910b4fd1422e2a31625507599be094339f0230ab8cd700164",
+    "file": "empty/products.png",
+    "size": 12074,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "name": "网络异常",
+    "source": "网络异常.png",
+    "sourceSha256": "2fe71ed696341b6459d809237ee5f66a9cfe784a25d67274eab88b24346c55d4",
+    "file": "empty/network.png",
+    "size": 12494,
+    "sourcePackage": "优化素材"
+  },
+  {
+    "file": "category/fish-shrimp.png",
+    "name": "鱼虾",
+    "source": "二级分类/鱼虾.png",
+    "sourcePackage": "优化素材",
+    "sourceSha256": "4d329fd17bb07740120f7e2ab9fee00ee275e14ee46fd7d56ba071d0935cec15",
+    "size": 8049
+  }
+]

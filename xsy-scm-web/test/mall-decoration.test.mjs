@@ -6,11 +6,25 @@ import {
   isValidMallThemeColor,
   mallThemeBaseColor,
   mallThemePalette,
+  mallThemeGradients,
   normalizeMallThemeColor,
   whiteContrast,
 } from '../src/utils/mall-theme.ts';
 
 const source = (relative) => readFileSync(new URL(relative, import.meta.url), 'utf8');
+
+test('admin preview and mini program use identical gradients and readable action endpoints', async () => {
+  const colors = await import(
+    `data:text/javascript;base64,${Buffer.from(source('../../xsy-scm-miniprogram/src/constants/theme-color-const.js')).toString('base64')}`
+  );
+  for (const color of [...Object.values(MALL_THEME_PRESETS), '#126B85', '#873D64']) {
+    const palette = mallThemePalette(color);
+    const preview = mallThemeGradients(palette);
+    const client = colors.mallThemeGradients(palette);
+    for (const key of ['brand', 'action', 'surface']) assert.equal(preview[key].toLowerCase(), client[key].toLowerCase());
+    for (const endpoint of preview.action.match(/#[0-9a-f]{6}/gi)) assert.ok(whiteContrast(endpoint) >= 4.5, endpoint);
+  }
+});
 
 test('theme color validation accepts only #RRGGBB and normalizes casing', () => {
   assert.equal(isValidMallThemeColor('#16A34A'), true);

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import {readFileSync, existsSync} from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
-import { createPinia, defineStore, setActivePinia } from 'pinia';
+import {createPinia, defineStore, setActivePinia} from 'pinia';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const colors = await import(`data:text/javascript;base64,${Buffer.from(read('../src/constants/theme-color-const.js')).toString('base64')}`);
@@ -11,35 +11,35 @@ function createStore(fetchTheme) {
   setActivePinia(createPinia());
   const native = [];
   const source = read('../src/store/modules/mall/theme.js')
-    .replace(/^import .*;\r?\n/gm, '')
+    .replace(/^import[\s\S]*?;\r?\n/gm, '')
     .replace('export const useMallThemeStore', 'globalThis.useMallThemeStore');
   const context = vm.createContext({
     defineStore,
     ...colors,
-    mallHomeApi: { theme: fetchTheme },
-    smartSentry: { captureError() {} },
+    mallHomeApi: {theme: fetchTheme},
+    smartSentry: {captureError() {}},
     applyNativeTheme: (code) => native.push(code),
   });
   vm.runInContext(source, context);
-  return { store: context.useMallThemeStore(), native };
+  return {store: context.useMallThemeStore(), native};
 }
 
 test('theme follows published releases including rollback and fails closed to FRESH', async () => {
-  let data = { releaseId: 1, themeCode: 'WARM' };
-  const { store } = createStore(async () => ({ data }));
+  let data = {releaseId: 1, themeCode: 'WARM'};
+  const {store} = createStore(async () => ({data}));
   assert.equal(store.themeCode, 'FRESH');
   for (const [releaseId, themeCode] of [
     [1, 'WARM'],
     [2, 'OCEAN'],
     [3, 'WARM'],
   ]) {
-    data = { releaseId, themeCode };
+    data = {releaseId, themeCode};
     await store.refresh();
     assert.equal(store.themeCode, themeCode);
     assert.equal(store.releaseId, releaseId);
     assert.equal(store.themeStyle['--mall-primary'], colors.MALL_THEMES[themeCode].primary);
   }
-  for (const value of [{ releaseId: 4, themeCode: 'UNKNOWN' }, { releaseId: 5, themeCode: null }, { releaseId: null, themeCode: 'WARM' }, {}]) {
+  for (const value of [{releaseId: 4, themeCode: 'UNKNOWN'}, {releaseId: 5, themeCode: null}, {releaseId: null, themeCode: 'WARM'}, {}]) {
     data = value;
     await store.refresh();
     assert.equal(store.themeCode, 'FRESH');
@@ -50,14 +50,14 @@ test('server-derived custom palette overrides preset; malformed palette falls ba
   const data = {
     releaseId: 9,
     themeCode: 'WARM',
-    palette: { primary: '#123456', dark: '#0d2b40', ink: '#0b1f2e', light: '#eef4f7', disabled: '#8a9aa6' },
+    palette: {primary: '#123456', dark: '#0d2b40', ink: '#0b1f2e', light: '#eef4f7', disabled: '#8a9aa6'},
   };
-  const { store } = createStore(async () => ({ data }));
+  const {store} = createStore(async () => ({data}));
   await store.refresh();
   assert.equal(store.theme.primary, '#123456');
   assert.equal(store.themeStyle['--mall-primary-light'], '#eef4f7');
 
-  data.palette = { ...data.palette, dark: 'red' };
+  data.palette = {...data.palette, dark: 'red'};
   await store.refresh();
   assert.equal(store.theme.primary, colors.MALL_THEMES.WARM.primary);
 
@@ -69,16 +69,16 @@ test('server-derived custom palette overrides preset; malformed palette falls ba
 test('parallel page refreshes share one request; failed refresh clears a prior theme', async () => {
   let finish;
   let calls = 0;
-  const { store } = createStore(() => {
+  const {store} = createStore(() => {
     calls++;
     return new Promise((resolve, reject) => {
-      finish = { resolve, reject };
+      finish = {resolve, reject};
     });
   });
   const first = store.refresh();
   const second = store.refresh();
   assert.equal(calls, 1);
-  finish.resolve({ data: { releaseId: 1, themeCode: 'OCEAN' } });
+  finish.resolve({data: {releaseId: 1, themeCode: 'OCEAN'}});
   await Promise.all([first, second]);
   const failed = store.refresh();
   finish.reject(new Error('offline'));
@@ -89,7 +89,7 @@ test('parallel page refreshes share one request; failed refresh clears a prior t
 
 test('obsolete response cannot overwrite newer state', async () => {
   let finish;
-  const { store } = createStore(
+  const {store} = createStore(
     () =>
       new Promise((resolve) => {
         finish = resolve;
@@ -97,8 +97,8 @@ test('obsolete response cannot overwrite newer state', async () => {
   );
   const request = store.refresh();
   store.requestSeq++;
-  store.applyTheme({ releaseId: 2, themeCode: 'OCEAN' });
-  finish({ data: { releaseId: 1, themeCode: 'WARM' } });
+  store.applyTheme({releaseId: 2, themeCode: 'OCEAN'});
+  finish({data: {releaseId: 1, themeCode: 'WARM'}});
   await request;
   assert.equal(store.themeCode, 'OCEAN');
 });
@@ -124,12 +124,12 @@ test('底部导航改用 uni-icons 自绘，不再引用静态图片', () => {
   // 原生 TabBar 只保留颜色同步：自绘导航挂载后原生栏会被隐藏
   const calls = [];
   const source = read('../src/utils/theme-native.js')
-    .replace(/^import .*;\r?\n/gm, '')
+    .replace(/^import[\s\S]*?;\r?\n/gm, '')
     .replace('export function applyNativeTheme', 'function applyNativeTheme');
-  const context = vm.createContext({ ...colors, uni: { setTabBarStyle: (options) => calls.push(options) } });
+  const context = vm.createContext({...colors, uni: {setTabBarStyle: (options) => calls.push(options)}});
   vm.runInContext(source, context);
   context.applyNativeTheme(colors.MALL_THEMES.WARM);
-  context.applyNativeTheme({ primary: '#123456' });
+  context.applyNativeTheme({primary: '#123456'});
   assert.equal(calls.length, 2);
   assert.equal(calls[0].selectedColor, colors.MALL_THEMES.WARM.primary);
   assert.equal(calls[1].selectedColor, '#123456');
@@ -155,14 +155,14 @@ test('anonymous theme failure is silent and cannot clear the customer session', 
   const effects = [];
   let headers;
   const source = read('../src/lib/smart-request.js')
-    .replace(/^import .*;\r?\n/gm, '')
+    .replace(/^import[\s\S]*?;\r?\n/gm, '')
     .replace('import.meta.env.VITE_APP_API_URL', "'http://example.invalid'")
     .replace(/export (const|function|class) /g, '$1 ');
   const context = vm.createContext({
     USER_TOKEN: 'token',
     SUCCESS_CODE: 0,
     SESSION_EXPIRED_CODES: [30007],
-    PLATFORM_ERROR_CODE: { LOGIN_STATE_INVALID: 30007 },
+    PLATFORM_ERROR_CODE: {LOGIN_STATE_INVALID: 30007},
     USE_MOCK: false,
     setTimeout: (fn) => fn(),
     uni: {
@@ -172,12 +172,12 @@ test('anonymous theme failure is silent and cannot clear the customer session', 
       reLaunch: () => effects.push('redirect'),
       request: (options) => {
         headers = options.header;
-        options.success({ statusCode: 401, data: { code: 30007, msg: 'unavailable' } });
+        options.success({statusCode: 401, data: {code: 30007, msg: 'unavailable'}});
       },
     },
   });
   vm.runInContext(`${source}\nglobalThis.get = getRequest;`, context);
-  await assert.rejects(context.get('/scm/mall/home/theme', {}, { anonymous: true, silent: true }));
+  await assert.rejects(context.get('/scm/mall/home/theme', {}, {anonymous: true, silent: true}));
   assert.equal(headers.Authorization, undefined);
   assert.deepEqual(effects, []);
   await assert.rejects(context.get('/scm/mall/orders'));

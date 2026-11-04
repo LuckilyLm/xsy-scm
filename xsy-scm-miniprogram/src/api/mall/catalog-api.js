@@ -2,16 +2,16 @@
  * 商城商品可见性、客户价格和库存由服务端按登录客户决定。
  * 页面只使用 product-adapter 转换后的字段；无价格时显示“询价”。
  */
-import { getRequest } from '@/lib/smart-request';
-import { adaptPage, adaptProduct, adaptProducts } from './product-adapter';
+import {getRequest} from '@/lib/smart-request';
+import {adaptPage, adaptProduct, adaptProducts} from './product-adapter';
 
 /** 映射 ResponseDTO.data，其余字段原样保留 */
 async function withData(promise, map) {
   const response = await promise;
-  return { ...response, data: map(response.data) };
+  return {...response, data: map(response.data)};
 }
 
-/** 分类树（只返回有可见 SKU 的分类） */
+/** 已启用分类树，空分类也保留；商品列表另按客户可见范围过滤。 */
 /**
  * 服务端分类节点用 name，页面统一读 categoryName（与商品卡片字段一致）。
  * 已经带 categoryName 的数据（mock 契约层、历史响应）保留原值，
@@ -26,7 +26,7 @@ function adaptCategory(node) {
 }
 
 export const mallCatalogApi = {
-  /** 分类树（只返回有可见 SKU 的分类） */
+  /** 已启用分类树，包含暂时没有商品的分类。 */
   getCategories: () => withData(getRequest('/scm/mall/catalog/categories'), (list) => (list || []).map(adaptCategory)),
 
   /**

@@ -22,9 +22,12 @@ page {
   --mall-primary: #{$color-primary};
   --mall-primary-dark: #{$color-primary-dark};
   /* 文字专用主题色：主色当正文只有 3.3:1，这里用深一档保证 4.5:1 */
-  --mall-primary-ink: #{$color-primary-dark};
+  --mall-primary-ink: #0f6f32;
   --mall-primary-light: #{$color-primary-light};
   --mall-primary-disabled: #{$color-primary-disabled};
+  --mall-brand-gradient: linear-gradient(118deg, #0f6f32 0%, #12863d 48%, #16a34a 100%);
+  --mall-action-gradient: linear-gradient(118deg, #0d5f2b 0%, #0f6f32 100%);
+  --mall-surface-gradient: linear-gradient(110deg, #e8f6ed 0%, #ffffff 100%);
 
   /*
    * 页面横向节奏：卡片左右内边距、栅格间距随屏宽微调。

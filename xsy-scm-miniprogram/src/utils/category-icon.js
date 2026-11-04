@@ -1,54 +1,45 @@
-/*
- * 分类图标：服务端分类只有名称，没有图片字段，用 emoji 做视觉标识，
- * 比首字更像「分类入口」，也不需要额外的素材上传与存储。
- * 首页横滑与分类页网格共用，保证两处图标一致。
- *
- * 键是分类名，按名称匹配；服务端新增分类时回退到购物篮，
- * 不会因为缺一条映射就出现空图标位。
- */
-const CATEGORY_EMOJI = {
-  // 一级分类
-  生鲜: '🥬',
-  果蔬: '🍎',
-  肉禽: '🥩',
-  肉禽蛋: '🥚',
-  水产: '🐟',
-  粮油: '🌾',
-  粮油干货: '🌾',
-  调味: '🧂',
-  水果: '🍎',
-  蔬菜: '🥬',
-  // 二级分类
-  叶菜类: '🥬',
-  根茎类: '🥕',
-  瓜果类: '🥒',
-  菌菇类: '🍄',
-  国产水果: '🍎',
-  进口水果: '🍇',
-  时令鲜果: '🍑',
-  猪肉: '🥩',
-  牛羊肉: '🥩',
-  牛肉: '🥩',
-  羊肉: '🍖',
-  禽类: '🍗',
-  蛋品: '🥚',
-  蛋类: '🥚',
-  活鲜: '🦐',
-  冰鲜: '🐟',
-  冻品: '🧊',
-  鱼类: '🐟',
-  虾蟹: '🦐',
-  奶制品: '🥛',
-  米面: '🍚',
-  食用油: '🫒',
-  杂粮: '🌾',
-  干货: '🌰',
-  基础调味: '🧂',
-  复合调味: '🍶',
-  香辛料: '🌶️',
-};
+/* 分类导航使用用户交付的轻3D PNG，名称不同但语义相同的分类共用素材。 */
+const ROOT = '/static/mall-visual/category/';
+const CATEGORY_IMAGES = [
+  [/肉禽蛋品|肉禽蛋/, 'meat-eggs'],
+  [/生鲜蔬菜|^蔬菜$|^果蔬$/, 'vegetables'],
+  [/生鲜水果|^水果$/, 'fruit'],
+  [/国产水果|苹果|柑|橘|橙|葡萄/, 'domestic-fruit'],
+  [/进口水果|车厘子|樱桃|榴莲|香蕉/, 'imported-fruit'],
+  [/时令|鲜果/, 'seasonal-fruit'],
+  [/菌|菇/, 'mushrooms'],
+  [/叶菜|青菜|白菜|花菜|西兰花/, 'leafy'],
+  [/根茎|萝卜|土豆|薯|葱|蒜|姜/, 'roots'],
+  [/瓜|茄/, 'gourds'],
+  [/牛|羊/, 'beef-lamb'],
+  [/猪/, 'pork'],
+  [/^蛋类$|蛋品/, 'eggs'],
+  [/禽|鸡|鸭/, 'poultry'],
+  [/活鲜/, 'seafood'],
+  [/冰鲜/, 'chilled'],
+  [/冻品/, 'frozen'],
+  [/鱼虾/, 'fish-shrimp'],
+  [/虾|蟹/, 'shrimp-crab'],
+  [/鱼/, 'fish'],
+  [/水产/, 'seafood'],
+  [/食用油/, 'cooking-oil'],
+  [/米|面/, 'rice-flour'],
+  [/杂粮|豆|干货/, 'grains'],
+  [/粮|油/, 'grain-oil'],
+  [/基础调味/, 'basic-seasoning'],
+  [/复合调味/, 'mixed-seasoning'],
+  [/香辛/, 'spices'],
+  [/调味/, 'seasoning'],
+];
 
-/** 按分类名取图标，未知分类回退到购物篮 */
-export function categoryEmoji(name) {
-  return CATEGORY_EMOJI[name] || '🛒';
+/**
+ * 返回现有分类对应的PNG；未知名称可按父级回退，不推断或创建业务分类。
+ * @param {string|null} name 分类名称；为空时尝试父级名称。
+ * @param {string|null} parentName 父级名称；缺省或仍无法匹配时返回空串，由界面展示通用图标。
+ * @returns {string} 小程序本地图片路径，或空串。
+ */
+export function categoryIcon(name, parentName) {
+  const image =
+    CATEGORY_IMAGES.find(([pattern]) => pattern.test(name || ''))?.[1] || CATEGORY_IMAGES.find(([pattern]) => pattern.test(parentName || ''))?.[1];
+  return image ? ROOT + image + '.png' : '';
 }

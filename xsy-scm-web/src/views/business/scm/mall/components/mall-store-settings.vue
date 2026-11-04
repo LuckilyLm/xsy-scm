@@ -47,6 +47,7 @@ import QRCode from 'qrcode';
 import {mallDecorationApi, type MallStore} from '/@/api/business/scm/mall-decoration-api';
 
 const store = ref<MallStore>({version: 0, storeName: ''});
+const emit = defineEmits<{saved: [store: MallStore]}>();
 const storeName = ref('');
 const storeLink = ref('');
 const saving = ref(false),
@@ -77,6 +78,7 @@ function apply(data: MallStore): void {
   storeLink.value = data.storeLink || '';
   dirty.value = false;
   void renderQr(data.storeLink);
+  emit('saved', data);
 }
 
 async function load(): Promise<void> {

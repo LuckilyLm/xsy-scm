@@ -35,6 +35,8 @@ Web 端（`xsy-scm-web`）从 Vite 环境变量读取配置，模板见 `xsy-scm
 
 `VITE_AMAP_SERVICE_HOST` 与 `VITE_AMAP_SECURITY_CODE` 同时存在时优先使用前者。
 
+小程序的地点搜索、选点逆地理编码和地址保存由后端读取 `XSY_AMAP_WEB_SERVICE_KEY`，必须使用高德 **Web服务** 类型Key，与上表的浏览器JSAPI Key分开。Docker Compose从根目录`.env`传入后端容器；更改后运行`docker compose up -d --no-deps backend`使环境变量生效。Key为空或服务不可用时，小程序地址接口返回业务码50380；地址保存不会跳过坐标与行政区校验。验证已有地址的下单不能代替新增地址验收。
+
 ## 4. 高德控制台侧需要做的事
 
 1. 创建 **Web 端（JSAPI）** 类型的 Key，不是 Web 服务或 iOS/Android 的 Key —— 三者不通用。

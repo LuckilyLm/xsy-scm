@@ -137,7 +137,7 @@ function goHome() {
   color: $color-text-secondary;
 }
 .done__btn--primary {
-  background-color: var(--mall-primary, #16a34a);
+  background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
   color: white;
 }
 </style>

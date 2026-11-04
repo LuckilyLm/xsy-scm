@@ -39,9 +39,10 @@ public class MallCatalogService {
     private final MallWarehouseService mallWarehouseService;
     private final MallStockAvailabilityService stockAvailabilityService;
 
+    /** 导航按启用分类树返回；商品可见范围只在商品读取时裁定，空分类不能被隐藏。 */
     @Transactional(readOnly = true)
-    public List<MallCategoryVO> categories(RequestMallCustomer customer) {
-        List<MallCategoryVO> rows = catalogDao.categories(customer.getCustomerId());
+    public List<MallCategoryVO> categories() {
+        List<MallCategoryVO> rows = catalogDao.categories();
         Map<Long, MallCategoryVO> byId = rows.stream().collect(
             Collectors.toMap(MallCategoryVO::getCategoryId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
         rows.forEach(row -> {

@@ -37,80 +37,80 @@
 </template>
 
 <script setup>
-  import { computed, reactive, ref } from 'vue';
-  import { mallAuthApi } from '@/api/mall';
-  import { useUserStore } from '@/store/modules/system/user';
-  import { useMallTheme } from '@/composables/use-mall-theme';
-  import { smartSentry } from '@/lib/smart-sentry';
+import {computed, reactive, ref} from 'vue';
+import {mallAuthApi} from '@/api/mall';
+import {useUserStore} from '@/store/modules/system/user';
+import {useMallTheme} from '@/composables/use-mall-theme';
+import {smartSentry} from '@/lib/smart-sentry';
 
-  const { themeStyle } = useMallTheme();
+const {themeStyle} = useMallTheme();
 
-  const userStore = useUserStore();
-  const required = computed(() => userStore.passwordChangeRequired);
-  const saving = ref(false);
-  const form = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' });
+const userStore = useUserStore();
+const required = computed(() => userStore.passwordChangeRequired);
+const saving = ref(false);
+const form = reactive({oldPassword: '', newPassword: '', confirmPassword: ''});
 
-  async function save() {
-    if (saving.value) return;
-    if (!form.oldPassword || !form.newPassword) {
-      uni.showToast({ title: '请填写当前密码和新密码', icon: 'none' });
-      return;
-    }
-    if (form.newPassword.length < 8) {
-      uni.showToast({ title: '新密码至少 8 位', icon: 'none' });
-      return;
-    }
-    if (form.newPassword !== form.confirmPassword) {
-      uni.showToast({ title: '两次输入的新密码不一致', icon: 'none' });
-      return;
-    }
-    saving.value = true;
-    try {
-      await mallAuthApi.changePassword({ oldPassword: form.oldPassword, newPassword: form.newPassword });
-      userStore.clearUserLoginInfo();
-      uni.showToast({ title: '密码已修改，请重新登录', icon: 'none' });
-      setTimeout(() => uni.reLaunch({ url: '/pages/login/login' }), 700);
-    } catch (error) {
-      smartSentry.captureError(error);
-    } finally {
-      saving.value = false;
-    }
+async function save() {
+  if (saving.value) return;
+  if (!form.oldPassword || !form.newPassword) {
+    uni.showToast({title: '请填写当前密码和新密码', icon: 'none'});
+    return;
   }
+  if (form.newPassword.length < 8) {
+    uni.showToast({title: '新密码至少 8 位', icon: 'none'});
+    return;
+  }
+  if (form.newPassword !== form.confirmPassword) {
+    uni.showToast({title: '两次输入的新密码不一致', icon: 'none'});
+    return;
+  }
+  saving.value = true;
+  try {
+    await mallAuthApi.changePassword({oldPassword: form.oldPassword, newPassword: form.newPassword});
+    userStore.clearUserLoginInfo();
+    uni.showToast({title: '密码已修改，请重新登录', icon: 'none'});
+    setTimeout(() => uni.reLaunch({url: '/pages/login/login'}), 700);
+  } catch (error) {
+    smartSentry.captureError(error);
+  } finally {
+    saving.value = false;
+  }
+}
 </script>
 
 <style lang="scss" scoped>
-  .password-page {
-    @include viewport-min-height;
-    padding: $space-4;
-    background: $color-bg-page;
-  }
-  .password-card {
-    @include card($space-4);
-  }
-  .password-title {
-    display: block;
-    font-size: $font-size-lg;
-    font-weight: $font-weight-bold;
-    color: $color-text-primary;
-  }
-  .password-hint {
-    display: block;
-    margin-top: $space-2;
-    font-size: $font-size-sm;
-    color: $color-text-tertiary;
-  }
-  .password-input {
-    height: 96rpx;
-    margin-top: $space-3;
-    padding: 0 $space-3;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    background: white;
-  }
-  .password-submit {
-    margin-top: $space-6;
-    background: var(--mall-primary, #16a34a);
-    color: white;
-    font-size: $font-size-base;
-  }
+.password-page {
+  @include viewport-min-height;
+  padding: $space-4;
+  background: $color-bg-page;
+}
+.password-card {
+  @include card($space-4);
+}
+.password-title {
+  display: block;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+}
+.password-hint {
+  display: block;
+  margin-top: $space-2;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+.password-input {
+  height: 96rpx;
+  margin-top: $space-3;
+  padding: 0 $space-3;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: white;
+}
+.password-submit {
+  margin-top: $space-6;
+  background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
+  color: white;
+  font-size: $font-size-base;
+}
 </style>

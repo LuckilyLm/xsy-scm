@@ -11,9 +11,9 @@
 
 /** 品牌色 */
 export const COLOR_PRIMARY = '#16a34a';
-export const COLOR_PRIMARY_DARK = '#12833c';
-export const COLOR_PRIMARY_LIGHT = '#e8f5ec';
-export const COLOR_PRIMARY_DISABLED = '#a7d8b9';
+export const COLOR_PRIMARY_DARK = '#12863d';
+export const COLOR_PRIMARY_LIGHT = '#e8f6ed';
+export const COLOR_PRIMARY_DISABLED = '#96d6ae';
 
 /** 语义色 */
 export const COLOR_SUCCESS = '#16a34a';
@@ -25,7 +25,7 @@ export const COLOR_INFO = '#3b82f6';
 export const COLOR_TEXT_PRIMARY = '#1f2329';
 export const COLOR_TEXT_SECONDARY = '#646a73';
 export const COLOR_TEXT_TERTIARY = '#667085';
-export const COLOR_TEXT_PLACEHOLDER = '#bbbfc4';
+export const COLOR_TEXT_PLACEHOLDER = '#667085';
 export const COLOR_TEXT_INVERSE = '#ffffff';
 
 /** 背景色 */
@@ -53,10 +53,34 @@ export const COLOR_TABBAR_SELECTED = '#16a34a';
 export const MALL_THEME_DEFAULT_CODE = 'FRESH';
 
 /** 已发布可选主题：key 与后台装修的主题编码一一对应 */
+function mixColor(color, target, ratio) {
+  return (
+    '#' +
+    [1, 3, 5]
+      .map((offset) =>
+        Math.round(parseInt(color.slice(offset, offset + 2), 16) * (1 - ratio) + target * ratio)
+          .toString(16)
+          .padStart(2, '0')
+      )
+      .join('')
+  );
+}
+
+// 与服务端 MallThemeColors 使用同一派生比例，默认主题也要和后台预览一致。
+function presetTheme(primary) {
+  return {
+    primary,
+    dark: mixColor(primary, 0, 0.18),
+    ink: mixColor(primary, 0, 0.32),
+    light: mixColor(primary, 255, 0.9),
+    disabled: mixColor(primary, 255, 0.55),
+  };
+}
+
 export const MALL_THEMES = {
-  FRESH: { primary: '#16a34a', dark: '#12833c', ink: '#12833c', light: '#e8f5ec', disabled: '#a7d8b9' },
-  WARM: { primary: '#f97316', dark: '#ea580c', ink: '#c2410c', light: '#fff1e6', disabled: '#fdba74' },
-  OCEAN: { primary: '#0284c7', dark: '#0369a1', ink: '#0369a1', light: '#e6f4fb', disabled: '#8ec7ec' },
+  FRESH: presetTheme('#16a34a'),
+  WARM: presetTheme('#f97316'),
+  OCEAN: presetTheme('#0284c7'),
 };
 
 /** 未知 / 空值一律回退默认主题，页面不得直接信任服务端返回的 themeCode */
@@ -81,4 +105,20 @@ export function normalizeMallThemePalette(palette) {
     normalized[key] = value.toLowerCase();
   }
   return normalized;
+}
+
+/**
+ * 用当前主题色阶生成统一品牌表面，避免业务页和后台预览各自拼出不同渐变。
+ * @param {object|null} palette 完整十六进制色阶；为空或非法时使用默认绿色。
+ * @returns {{brand: string, action: string, surface: string}} 品牌区、白字主按钮与浅色入口的 CSS 背景。
+ */
+export function mallThemeGradients(palette) {
+  const colors = normalizeMallThemePalette(palette) || MALL_THEMES.FRESH;
+  // 主按钮使用深色文字阶，进一步加深起点；浅主色也能承载清晰白字。
+  const deep = mixColor(colors.ink, 0, 0.14);
+  return {
+    brand: `linear-gradient(118deg, ${colors.ink} 0%, ${colors.dark} 48%, ${colors.primary} 100%)`,
+    action: `linear-gradient(118deg, ${deep} 0%, ${colors.ink} 100%)`,
+    surface: `linear-gradient(110deg, ${colors.light} 0%, #ffffff 100%)`,
+  };
 }

@@ -11,6 +11,7 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.mall.decoration.dao.MallDecorationDao;
 import com.xsy.scm.mall.decoration.domain.form.MallPagePublishForm;
 import com.xsy.scm.mall.decoration.domain.vo.MallPageVO;
+import com.xsy.scm.mall.decoration.domain.vo.MallStoreVO;
 import com.xsy.scm.mall.decoration.service.MallDecorationService;
 import com.xsy.scm.mall.home.service.MallHomeLayoutService;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
@@ -24,6 +25,30 @@ class MallDecorationServiceTest {
     private final MallDecorationDao decorationDao = mock(MallDecorationDao.class);
     private final MallHomeLayoutService layoutService = mock(MallHomeLayoutService.class);
     private final MallDecorationService service = new MallDecorationService(decorationDao, layoutService);
+
+    @Test
+    void storefrontIsPublicAndDoesNotExposeAdministrationFields() {
+        MallStoreVO store = new MallStoreVO();
+        store.setStoreName("鲜蔬源");
+        store.setStoreLink("https://example.com/mall");
+        store.setVersion(7);
+        store.setUpdatedBy("internal-operator");
+        when(decorationDao.store()).thenReturn(store);
+
+        var result = service.storefront();
+
+        assertThat(result.storeName()).isEqualTo("鲜蔬源");
+        assertThat(result.storeLink()).isEqualTo("https://example.com/mall");
+        assertThat(result.getClass().getRecordComponents()).extracting(component -> component.getName())
+            .containsExactly("storeName", "storeLink");
+        verify(layoutService, never()).requireGlobalCustomerScope();
+    }
+
+    @Test
+    void unconfiguredStorefrontUsesPublicDefaults() {
+        assertThat(service.storefront().storeName()).isEqualTo("商城");
+        assertThat(service.storefront().storeLink()).isNull();
+    }
 
     @BeforeEach
     void setUpOperator() {

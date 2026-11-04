@@ -30,6 +30,27 @@ class MallHomeLayoutPgIT extends ScmW5PgITBase {
     private MallHomeProjectionService projection;
 
     @Test
+    void themeCanBePublishedWithoutHomeBlocks() {
+        var initial = layouts.draft();
+        var form = new MallHomeDraftSaveForm();
+        form.setVersion(initial.version());
+        form.setThemeCode("OCEAN");
+        form.setThemeColor("#126B85");
+        form.setBlocks(List.of());
+
+        var saved = layouts.save(form);
+        Long releaseId = layouts.publish(publish(saved.version(), saved.pointerVersion()));
+
+        assertThat(projection.publishedTheme().getReleaseId()).isEqualTo(releaseId);
+        assertThat(projection.publishedTheme().getThemeColor()).isEqualTo("#126B85");
+        assertThat(layouts.draft().blocks()).isEmpty();
+        assertThat(jdbc.queryForObject("SELECT content::text FROM xsy_mall_home_release WHERE id=?",
+            String.class, releaseId)).isEqualTo("[]");
+        assertThatThrownBy(() -> layouts.publish(publish(saved.version(), saved.pointerVersion())))
+            .isInstanceOf(ScmBusinessException.class);
+    }
+
+    @Test
     void draftPublishRollbackAndCustomerProjectionUseImmutableReleaseFacts() {
         Long visibleCustomer = customerWithWarehouse();
         Long hiddenCustomer = customerWithWarehouse();

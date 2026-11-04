@@ -137,7 +137,7 @@ public class MallHomeProjectionService {
                 : Set.of();
         Set<Long> categoryIds = new HashSet<>();
         if (active.stream().anyMatch(block -> MallHomeLinkType.CATEGORY.name().equals(block.getLinkType()))) {
-            for (MallCategoryVO category : catalogService.categories(customer)) {
+            for (MallCategoryVO category : catalogService.categories()) {
                 addCategoryIds(category, categoryIds);
             }
         }

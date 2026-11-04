@@ -27,7 +27,7 @@ public class MallCatalogController {
     @GetMapping("/categories")
     public ResponseDTO<List<MallCategoryVO>> categories() {
         MallRequestSupport.requirePasswordChanged();
-        return ResponseDTO.ok(catalogService.categories(MallRequestSupport.current()));
+        return ResponseDTO.ok(catalogService.categories());
     }
 
     @GetMapping("/products")

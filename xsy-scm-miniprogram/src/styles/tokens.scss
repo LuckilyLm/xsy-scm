@@ -22,9 +22,9 @@
  * 一律消费 var(--mall-primary*)（运行时主题通道），不要再直接引用 SCSS 变量。
  */
 $color-primary: #16a34a;
-$color-primary-dark: #12833c;
-$color-primary-light: #e8f5ec;
-$color-primary-disabled: #a7d8b9;
+$color-primary-dark: #12863d;
+$color-primary-light: #e8f6ed;
+$color-primary-disabled: #96d6ae;
 
 /* ============================ 语义色 ============================ */
 $color-success: #16a34a;
@@ -40,7 +40,7 @@ $color-info-light: #eaf2fe;
 $color-text-primary: #1f2329;
 $color-text-secondary: #646a73;
 $color-text-tertiary: #667085;
-$color-text-placeholder: #bbbfc4;
+$color-text-placeholder: #667085;
 $color-text-inverse: #ffffff;
 $color-text-link: $color-primary;
 
@@ -49,6 +49,12 @@ $color-bg-page: #f5f6f8;
 $color-bg-card: #ffffff;
 $color-bg-hover: #f2f3f5;
 $color-bg-mask: rgba(0, 0, 0, 0.45);
+
+/* 登录参考图的固定插画底色，动作仍使用运行时商城主题。 */
+$color-login-sky: #eff9f6;
+$color-login-ground: #f1f8ed;
+$color-login-field: #f3f7f4;
+$radius-login-panel: 28px;
 
 /* ============================ 边框与分割线 ============================ */
 $color-border: #e5e6eb;

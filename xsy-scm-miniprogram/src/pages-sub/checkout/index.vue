@@ -488,6 +488,95 @@ async function submit() {
   color: $color-text-primary;
 }
 
+.co-item {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-3 0;
+  @include hairline-bottom;
+}
+.co-item__thumb {
+  flex-shrink: 0;
+  width: 112rpx;
+  height: 112rpx;
+  overflow: hidden;
+  border-radius: $radius-md;
+  background-color: $color-bg-hover;
+}
+.co-item__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.co-item__thumb-fallback {
+  width: 100%;
+  height: 100%;
+  @include flex-center;
+  color: $color-text-tertiary;
+  font-size: $font-size-xl;
+}
+.co-item__main {
+  flex: 1;
+  min-width: 0;
+}
+.co-item__name {
+  display: block;
+  font-size: $font-size-base;
+  color: $color-text-primary;
+  @include ellipsis(2);
+}
+.co-item__spec {
+  display: block;
+  margin-top: $space-1;
+  font-size: $font-size-xs;
+  line-height: 1.5;
+  color: $color-text-tertiary;
+}
+.co-item__price-row {
+  display: flex;
+  align-items: baseline;
+  gap: $space-1;
+  margin-top: $space-1;
+}
+.co-item__price {
+  color: $color-danger;
+  font-size: $font-size-base;
+}
+.co-item__unit,
+.co-item__qty {
+  color: $color-text-secondary;
+  font-size: $font-size-xs;
+}
+.co-item__amount {
+  flex-shrink: 0;
+  font-size: $font-size-base;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+}
+.co-tip {
+  margin-top: $space-3;
+  font-size: $font-size-sm;
+  line-height: 1.6;
+  color: $color-text-secondary;
+}
+.co-alert {
+  margin-top: $space-3;
+  padding: $space-3 $space-4;
+  background-color: $color-warning-light;
+  color: $color-warning;
+  font-size: $font-size-sm;
+  line-height: 1.6;
+}
+.co-alert__text {
+  display: block;
+}
+.co-alert__action {
+  display: inline-block;
+  margin-top: $space-1;
+  color: var(--mall-primary-ink, #12833c);
+  font-weight: $font-weight-medium;
+}
+
 .co-address {
   position: relative;
   padding-right: $space-8;
@@ -619,11 +708,11 @@ async function submit() {
   height: 72rpx;
   @include flex-center;
   border-radius: $radius-pill;
-  background-color: var(--mall-primary, #16a34a);
+  background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
   color: white;
   font-size: $font-size-base;
 }
 .co-bar__submit--disabled {
-  background-color: var(--mall-primary-disabled, #a7d8b9);
+  background: var(--mall-primary-disabled, #96d6ae);
 }
 </style>

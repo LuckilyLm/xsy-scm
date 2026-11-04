@@ -638,7 +638,7 @@ async function reorder() {
   height: 14rpx;
   margin-top: 8rpx;
   border-radius: 50%;
-  background: var(--mall-primary, #16a34a);
+  background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
 }
 .od-log__line {
   flex: 1;
@@ -684,7 +684,7 @@ async function reorder() {
 }
 .od-bar__btn--primary {
   border-color: var(--mall-primary, #16a34a);
-  background: var(--mall-primary, #16a34a);
+  background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
   color: $color-text-inverse;
 }
 </style>

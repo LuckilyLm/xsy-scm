@@ -10,6 +10,7 @@ import com.xsy.scm.mall.decoration.domain.form.MallStoreSaveForm;
 import com.xsy.scm.mall.decoration.domain.vo.MallPageVO;
 import com.xsy.scm.mall.decoration.domain.vo.MallPublishedPageVO;
 import com.xsy.scm.mall.decoration.domain.vo.MallStoreVO;
+import com.xsy.scm.mall.decoration.domain.vo.MallStorefrontVO;
 import com.xsy.scm.mall.home.service.MallHomeLayoutService;
 
 import java.util.Objects;
@@ -97,6 +98,16 @@ public class MallDecorationService {
         layoutService.requireGlobalCustomerScope();
         MallStoreVO store = decorationDao.store();
         return store == null ? emptyStore() : store;
+    }
+
+    /**
+     * 匿名读取店铺展示资料，保存后即可生效，不要求客户身份或后台数据范围。
+     *
+     * @return 仅含名称和链接的公开投影；未配置时使用默认名称，链接为空
+     */
+    @Transactional(readOnly = true)
+    public MallStorefrontVO storefront() {
+        return MallStorefrontVO.from(decorationDao.store());
     }
 
     @Transactional(rollbackFor = Exception.class)

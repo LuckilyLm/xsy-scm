@@ -1,6 +1,7 @@
 package com.xsy.scm.mall.decoration.controller;
 
 import com.xsy.scm.mall.decoration.domain.vo.MallPublishedPageVO;
+import com.xsy.scm.mall.decoration.domain.vo.MallStorefrontVO;
 import com.xsy.scm.mall.decoration.service.MallDecorationService;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.annoation.NoNeedLogin;
@@ -15,6 +16,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/scm/mall/decoration")
 public class MallDecorationController {
     private final MallDecorationService decorationService;
+
+    /** @return 已保存的公开店铺资料，不要求登录，不包含后台维护字段 */
+    @GetMapping("/store")
+    @NoNeedLogin
+    public ResponseDTO<MallStorefrontVO> store() {
+        return ResponseDTO.ok(decorationService.storefront());
+    }
 
     /**
      * 商城单页：只返回已发布内容，草稿不出后台。

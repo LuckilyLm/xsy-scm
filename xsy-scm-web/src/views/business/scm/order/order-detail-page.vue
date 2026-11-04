@@ -76,6 +76,10 @@
                   <dt class="scm-field__label">确认时间</dt>
                   <dd class="scm-field__value">{{ datetime(order.confirmedAt) }}</dd>
                 </div>
+                <div v-if="order.remark" class="scm-field scm-field--wide">
+                  <dt class="scm-field__label">订单备注</dt>
+                  <dd class="scm-field__value">{{ order.remark }}</dd>
+                </div>
               </dl>
             </section>
 
