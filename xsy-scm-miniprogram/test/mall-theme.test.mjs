@@ -6,6 +6,7 @@ import {createPinia, defineStore, setActivePinia} from 'pinia';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const colors = await import(`data:text/javascript;base64,${Buffer.from(read('../src/constants/theme-color-const.js')).toString('base64')}`);
+const visuals = await import(`data:text/javascript;base64,${Buffer.from(read('../src/constants/mall-visual-const.js')).toString('base64')}`);
 
 function createStore(fetchTheme) {
   setActivePinia(createPinia());
@@ -120,7 +121,7 @@ test('every registered page participates in theme lifecycle, including direct su
   assert.doesNotMatch(read('../src/pages/home/index.vue'), /themeCode\.value\s*=/);
 });
 
-test('底部导航改用 uni-icons 自绘，不再引用静态图片', () => {
+test('底部导航使用交付的成对PNG，路由与原生栏隐藏仍由公共组件维护', () => {
   // 原生 TabBar 只保留颜色同步：自绘导航挂载后原生栏会被隐藏
   const calls = [];
   const source = read('../src/utils/theme-native.js')
@@ -134,12 +135,41 @@ test('底部导航改用 uni-icons 自绘，不再引用静态图片', () => {
   assert.equal(calls[0].selectedColor, colors.MALL_THEMES.WARM.primary);
   assert.equal(calls[1].selectedColor, '#123456');
 
-  // 五个 tab 的图标必须来自 uni-icons，页面与主题工具都不得再引用图片资源
   const bar = read('../src/components/common/xsy-tab-bar.vue');
-  for (const icon of ['home', 'cart', 'person', 'shop', 'list']) {
-    assert.match(bar, new RegExp(`icon: '${icon}'`), `自绘导航缺 ${icon} 图标`);
+  for (const key of ['home', 'category', 'cart', 'orders', 'mine']) {
+    const pair = visuals.MALL_NAVIGATION_IMAGES[key];
+    assert.notEqual(pair.normal, pair.active);
+    for (const path of [pair.normal, pair.active]) {
+      assert.ok(existsSync(new URL(`../src${path}`, import.meta.url)), `导航素材缺失 ${path}`);
+    }
   }
-  assert.match(bar, /<uni-icons/);
+  assert.match(bar, /index === active \? item\.activeImage : item\.image/);
+  assert.match(bar, /<image[^>]*mode="aspectFit"/);
+  const props = {active: 0};
+  const switched = [];
+  let mounted;
+  const barContext = vm.createContext({
+    ...visuals,
+    defineProps: () => props,
+    useMallTheme: () => ({themeStyle: {}}),
+    onMounted: (handler) => {
+      mounted = handler;
+    },
+    uni: {switchTab: ({url}) => switched.push(url), hideTabBar: () => switched.push('native-hidden')},
+  });
+  const script = bar
+    .match(/<script setup>([\s\S]*?)<\/script>/)[1]
+    .trimStart()
+    .replace(/^import[\s\S]*?;\r?\n/gm, '');
+  vm.runInContext(script + '\nglobalThis.entries = items;', barContext);
+  mounted();
+  const routes = ['/pages/home/index', '/pages/category/index', '/pages/cart/index', '/pages/order/index', '/pages/mine/index'];
+  assert.deepEqual(
+    Array.from(barContext.entries, (item) => item.path),
+    routes
+  );
+  barContext.entries.forEach((item, index) => barContext.go(index, item.path));
+  assert.deepEqual(switched, ['native-hidden', ...routes.slice(1)]);
   assert.doesNotMatch(read('../src/pages.json'), /static\/images/);
   assert.doesNotMatch(read('../src/utils/theme-native.js'), /static\/images/);
   assert.equal(existsSync(new URL('../src/static/images/tabbar', import.meta.url)), false);

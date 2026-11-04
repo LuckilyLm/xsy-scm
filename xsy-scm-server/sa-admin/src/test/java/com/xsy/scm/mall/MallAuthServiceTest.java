@@ -20,6 +20,9 @@ import com.xsy.scm.mall.account.domain.form.MallLoginForm;
 import com.xsy.scm.mall.account.domain.form.MallPasswordChangeForm;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.account.service.MallAuthService;
+import com.xsy.scm.mall.account.service.MallWechatService;
+import com.xsy.scm.mall.account.constant.MallLoginMethodEnum;
+import com.xsy.scm.mall.account.domain.form.MallWechatPhoneLoginForm;
 import jakarta.servlet.http.HttpServletRequest;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
@@ -33,7 +36,105 @@ class MallAuthServiceTest {
     private final MallCustomerAccountDao accounts = mock(MallCustomerAccountDao.class);
     private final CustomerService customers = mock(CustomerService.class);
     private final SecurityLoginService securityLogin = mock(SecurityLoginService.class);
-    private final MallAuthService service = new MallAuthService(accounts, customers, securityLogin);
+    private final MallWechatService wechat = mock(MallWechatService.class);
+    private final MallAuthService service = new MallAuthService(accounts, customers, securityLogin, wechat);
+
+    @Test
+    void wechatLoginUsesOfficialPhoneAndDoesNotClearInitialPasswordFlag() {
+        MallCustomerAccountEntity account = account(2);
+        account.setFirstPasswordChange(true);
+        when(wechat.phone("phone-code")).thenReturn("13800000000");
+        when(accounts.selectByPhone("13800000000")).thenReturn(account);
+        when(accounts.selectByIdForUpdate(7L)).thenReturn(account);
+        when(securityLogin.checkLogin(7L, UserTypeEnum.MALL_CUSTOMER)).thenReturn(ResponseDTO.ok());
+        CustomerEntity customer = new CustomerEntity();
+        customer.setId(9L);
+        customer.setName("测试客户");
+        when(customers.requireTradable(9L)).thenReturn(customer);
+
+        try (MockedStatic<StpUtil> session = mockStatic(StpUtil.class)) {
+            var result = service.wechatPhoneLogin(wechatForm(), "127.0.0.1");
+            assertThat(result.getProfile().getFirstPasswordChange()).isFalse();
+            session.verify(() -> StpUtil.login(MallAuthService.loginId(7L, 2) + ":WECHAT_PHONE", "MALL"));
+            session.verify(() -> StpUtil.login(MallAuthService.loginId(7L, 2), "MALL"), never());
+        }
+        assertThat(account.getFirstPasswordChange()).isTrue();
+        verify(accounts, never()).changePassword(any(), any());
+        verify(accounts).recordLogin(7L, "127.0.0.1");
+    }
+
+    @Test
+    void authenticationSourcesStaySeparateWhenRestoringProfile() {
+        MallCustomerAccountEntity account = account(2);
+        account.setFirstPasswordChange(true);
+        when(accounts.selectById(7L)).thenReturn(account);
+        CustomerEntity customer = new CustomerEntity();
+        customer.setId(9L);
+        when(customers.requireTradable(9L)).thenReturn(customer);
+        var password = service.requestCustomer(MallAuthService.loginId(7L, 2), request());
+        var phone = service.requestCustomer(MallAuthService.loginId(7L, 2) + ":WECHAT_PHONE", request());
+        assertThat(password.getLoginMethod()).isEqualTo(MallLoginMethodEnum.PASSWORD);
+        assertThat(password.getFirstPasswordChange()).isTrue();
+        assertThat(phone.getFirstPasswordChange()).isFalse();
+        assertThat(service.profile(password).getFirstPasswordChange()).isTrue();
+        assertThat(service.profile(phone).getFirstPasswordChange()).isFalse();
+        assertThat(account.getFirstPasswordChange()).isTrue();
+    }
+
+    @Test
+    void invalidSourcesAndStaleWechatCredentialsCannotRestoreSession() {
+        when(accounts.selectById(7L)).thenReturn(account(2));
+        assertThat(service.requestCustomer(MallAuthService.loginId(7L, 1) + ":WECHAT_PHONE", request())).isNull();
+        assertThat(service.requestCustomer(MallAuthService.loginId(7L, 2) + ":OTHER", request())).isNull();
+        assertThat(service.requestCustomer(MallAuthService.loginId(7L, 2) + ":WECHAT_PHONE:extra", request())).isNull();
+        verify(customers, never()).requireTradable(any());
+    }
+
+    @Test
+    void disabledAccountCannotUseWechatToBypassAccountStatus() {
+        var account = account(2);
+        account.setStatus("DISABLED");
+        when(wechat.phone("phone-code")).thenReturn("13800000000");
+        when(accounts.selectByPhone("13800000000")).thenReturn(account);
+        when(accounts.selectByIdForUpdate(7L)).thenReturn(account);
+        assertThatThrownBy(() -> service.wechatPhoneLogin(wechatForm(), "127.0.0.1"))
+            .isInstanceOfSatisfying(ScmBusinessException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(MallErrorCode.ACCOUNT_DISABLED));
+        verify(accounts, never()).recordLogin(any(), any());
+    }
+
+    @Test
+    void unopenedPhoneIsRejectedWithoutCreatingAnAccount() {
+        when(wechat.phone("phone-code")).thenReturn("13800000000");
+        assertThatThrownBy(() -> service.wechatPhoneLogin(wechatForm(), "127.0.0.1"))
+            .isInstanceOfSatisfying(ScmBusinessException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(MallErrorCode.WECHAT_ACCOUNT_NOT_OPENED));
+        verify(accounts, never()).recordLogin(any(), any());
+    }
+
+    @Test
+    void lockedAccountAndNonTradableCustomerCannotSignWechatSession() {
+        var account = account(2);
+        when(wechat.phone("phone-code")).thenReturn("13800000000");
+        when(accounts.selectByPhone("13800000000")).thenReturn(account);
+        when(accounts.selectByIdForUpdate(7L)).thenReturn(account);
+        when(securityLogin.checkLogin(7L, UserTypeEnum.MALL_CUSTOMER))
+            .thenReturn(new ResponseDTO<>(ResponseDTO.OK_CODE, null, false, "locked"));
+        assertThatThrownBy(() -> service.wechatPhoneLogin(wechatForm(), "127.0.0.1"))
+            .isInstanceOfSatisfying(ScmBusinessException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(MallErrorCode.LOGIN_LOCKED));
+        when(securityLogin.checkLogin(7L, UserTypeEnum.MALL_CUSTOMER)).thenReturn(ResponseDTO.ok());
+        when(customers.requireTradable(9L)).thenThrow(new ScmBusinessException(MallErrorCode.ACCOUNT_DISABLED));
+        assertThatThrownBy(() -> service.wechatPhoneLogin(wechatForm(), "127.0.0.1"))
+            .isInstanceOf(ScmBusinessException.class);
+        verify(accounts, never()).recordLogin(any(), any());
+    }
+
+    private static MallWechatPhoneLoginForm wechatForm() {
+        var form = new MallWechatPhoneLoginForm();
+        form.setCode("phone-code");
+        return form;
+    }
 
     @Test
     void staleCredentialVersionCannotBuildRequestIdentity() {

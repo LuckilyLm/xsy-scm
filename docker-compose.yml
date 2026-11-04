@@ -65,6 +65,9 @@ services:
       SCM_TRACE_PUBLIC_BASE_URL: ${SCM_TRACE_PUBLIC_BASE_URL:-}
       # 小程序地址搜索和逆地理编码使用服务端Web服务Key，不能复用前端JSAPI Key。
       XSY_AMAP_WEB_SERVICE_KEY: ${XSY_AMAP_WEB_SERVICE_KEY:-}
+      # 微信手机号授权凭据仅在服务端换取手机号，不进入小程序构建产物。
+      XSY_WECHAT_APP_ID: ${XSY_WECHAT_APP_ID:-}
+      XSY_WECHAT_APP_SECRET: ${XSY_WECHAT_APP_SECRET:-}
       XSY_FILE_STORAGE_MODE: cloud
       XSY_FILE_REGION: us-east-1
       # S3 client 和 Presigner 共用地址，必须同时对浏览器和容器可达。

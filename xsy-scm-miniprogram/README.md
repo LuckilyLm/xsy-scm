@@ -6,8 +6,8 @@
 
 本阶段仅提供：
 
-- 后台开通后的手机号、密码登录；
-- 临时密码首次登录强制修改；
+- 后台开通后的手机号密码登录、微信手机号授权快捷登录；
+- 密码方式首次登录强制修改临时密码，微信已验证手机号的会话免改密；
 - 登录资料与会话恢复；
 - 首页商品流、分类、搜索、商品详情和常购商品；
 - 服务端购物车：加购、改数量、移除、勾选与预估金额（失效/无价商品保留并标记原因）；
@@ -15,7 +15,7 @@
 - 订货预览、幂等下单、订单列表与详情、订单取消、再来一单、配送进度及售后中心；
 - 客户可见性、价格、库存状态均使用 `/scm/mall/**` 服务端结果。
 
-订单取消、再来一单、配送进度和售后中心已有源码，仍需完整联调验收；短信登录和微信登录尚未开放。收货地址位置由高德地点搜索和逆地理编码返回 GCJ-02 坐标，保存前服务端重新解析省市区。
+订单取消、再来一单、配送进度和售后中心已有源码，仍需完整联调验收。微信手机号授权入口已接入，真实取号仍需正确凭据及平台权限；短信和基于微信绑定身份的静默登录尚未开放。收货地址位置由高德地点搜索和逆地理编码返回 GCJ-02 坐标，保存前服务端重新解析省市区。
 
 小程序仅下单，不选择付款方式、不扣余额、不接微信支付。新订单统一等待后台确认，后台读取同一张正式销售订单并补齐结算约定；历史订单及资金记录保留，钱包/账单主入口隐藏。旧支付路由由服务器明确拒绝，不能仅依赖新版客户端隐藏按钮。当前实现需要服务端 V181 迁移，源码交付不代表迁移或真机验收完成。
 
@@ -57,6 +57,23 @@ npm run dev:mp-weixin:api
 ```
 
 开发环境默认可通过 `VITE_APP_USE_MOCK=true` 使用 `mock/` 中与正式契约一致的认证和目录数据；test/pre/prod/docker 环境均关闭。生产别名只引用 `mock/noop.js`，构建产物不得包含 fixtures。
+
+## 微信手机号授权配置
+
+密码表单保持常驻。其下的微信图标使用原生 `open-type="getPhoneNumber"`，用户同意后只把 `event.detail.code` 发往 `/scm/mall/auth/wechat/phone-login`。这不是 `wx.login` 的 code，也不需要客户端提交手机号；账号与会话规则见根目录 `docs/decisions.md`。
+
+在部署后端的环境中配置以下变量（模板见根目录 `.env.example`），不能写入 `VITE_*` 或客户端：
+
+```dotenv
+XSY_WECHAT_APP_ID=YOUR_MINIPROGRAM_APP_ID
+XSY_WECHAT_APP_SECRET=YOUR_MINIPROGRAM_APP_SECRET
+```
+
+AppID 必须与实际小程序一致；更换小程序时同步核对 `src/manifest.json` 的 `mp-weixin.appid`、开发者工具的 `project.config.json` 与后端配置，重新编译后通过 `wx.getAccountInfoSync()` 核对实际运行的 AppID。微信后台需具备手机号获取权限和可用额度，完成隐私声明、服务端调用IP白名单及小程序请求域名等实际要求。配置后重新部署后端使变量生效；仅轮换后端密钥无需重新编译小程序。
+
+未配置时后端返回业务码50381，授权code失效为40094，手机号未开通采购账号为40381；停用和登录锁定仍使用原业务码。拒绝授权或缺少code不发起登录请求。真实微信取号单独验证，不能以模拟事件、模拟HTTP响应或密码登录成功替代。
+
+官方文档：[手机号授权](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/getPhoneNumber.html)、[服务端取号](https://developers.weixin.qq.com/miniprogram/dev/server/API/user-info/phone-number/api_getphonenumber.html)、[stable_token](https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-access-token/api_getstableaccesstoken.html)。
 
 ## 商城配置同步
 

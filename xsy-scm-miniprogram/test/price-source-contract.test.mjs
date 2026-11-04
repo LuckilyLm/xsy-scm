@@ -4,8 +4,8 @@ import test from 'node:test';
 import {URL} from 'node:url';
 
 /*
- * 价格来源是后端枚举直出的字段：商城只要漏一个映射，商品卡就会把英文常量
- * 端给客户。这条契约从后端 ScmPriceSourceEnum 反查商城两处映射，
+ * 价格来源是后端枚举直出的字段：商城只要漏一个映射，商品详情就会把英文常量
+ * 端给客户。列表不展示来源标签，这条契约仍反查商城两处映射，
  * 新增来源时漏改会当场失败（与主前端 scm-price-source-contract 同一思路）。
  */
 
@@ -43,15 +43,19 @@ test('映射里不出现后端不存在的来源键', () => {
   }
 });
 
-test('时价单独成档：档位函数与两处配色都认识 time 档', () => {
+test('价格来源只在详情展示，时价仍有独立文案与配色', () => {
   assert.match(display, /source === 'TIME_PRICE'\) \{\s*\n\s*return 'time';/);
-  assert.match(card, /&--time \{/);
+  assert.doesNotMatch(card, /product-card__source|product-card__tag-row|priceSourceLabel|priceSourceLevel/);
+  assert.match(detail, /v-if="priced && sourceLabel" class="detail__source"/);
+  assert.match(detail, /\{\{\s*sourceLabel\s*\}\}/);
   assert.match(detail, /&--time \{/);
 });
 
-test('商品卡主色读主题变量：首页切主题时卡内加购与价格同步变色', () => {
+test('商品卡主色读主题变量：首页切主题时加购与描边操作同步变色', () => {
   // 主题变量由各页面根节点统一提供；未加载主题时回落默认绿
   assert.doesNotMatch(card, /\$color-primary/);
-  const varCount = (card.match(/var\(--mall-primary/g) || []).length;
-  assert.ok(varCount >= 10, `商品卡应全部改读主题变量，当前 ${varCount} 处`);
+  assert.match(card, /&--add[^{}]*\{\s*background:\s*var\(--mall-action-gradient,\s*var\(--mall-primary,/);
+  for (const kind of ['preorder', 'inquiry']) {
+    assert.match(card, new RegExp(`&--${kind}[^{}]*\\{[^{}]*border:\\s*1px solid var\\(--mall-primary,`));
+  }
 });

@@ -1,6 +1,7 @@
 package com.xsy.scm.mall.account.controller;
 
 import com.xsy.scm.mall.account.domain.form.MallLoginForm;
+import com.xsy.scm.mall.account.domain.form.MallWechatPhoneLoginForm;
 import com.xsy.scm.mall.account.domain.form.MallPasswordChangeForm;
 import com.xsy.scm.mall.account.domain.vo.MallLoginVO;
 import com.xsy.scm.mall.account.domain.vo.MallProfileVO;
@@ -34,6 +35,20 @@ public class MallAuthController {
     public ResponseDTO<String> logout() {
         authService.logout();
         return ResponseDTO.ok();
+    }
+
+    /**
+     * @param form
+     *            微信手机号授权code，不接受客户端自报手机号
+     * @param request
+     *            用于记录登录来源IP
+     * @return 已开通且可交易账号的会话；未开通或微信授权失败时返回业务错误
+     */
+    @PostMapping("/wechat/phone-login")
+    @NoNeedLogin
+    public ResponseDTO<MallLoginVO> wechatPhoneLogin(@Valid @RequestBody MallWechatPhoneLoginForm form,
+        HttpServletRequest request) {
+        return ResponseDTO.ok(authService.wechatPhoneLogin(form, request.getRemoteAddr()));
     }
 
     @GetMapping("/profile")

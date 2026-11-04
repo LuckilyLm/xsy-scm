@@ -10,7 +10,7 @@
       :hover-stay-time="80"
       @click="go(index, item.path)"
     >
-      <uni-icons :type="index === active ? item.activeIcon : item.icon" :size="22" :color="index === active ? theme.primary : COLOR_TEXT_TERTIARY" />
+      <image class="tabbar__image" :src="index === active ? item.activeImage : item.image" mode="aspectFit" aria-hidden="true" />
       <text class="tabbar__text">{{ item.text }}</text>
     </view>
   </view>
@@ -19,14 +19,14 @@
 <script setup>
 import {onMounted} from 'vue';
 import {useMallTheme} from '@/composables/use-mall-theme';
-import {COLOR_TEXT_TERTIARY} from '@/constants/theme-color-const';
+import {MALL_NAVIGATION_IMAGES} from '@/constants/mall-visual-const';
 
 /*
  * 自绘底部导航。
  *
  * 微信原生 tabBar 只接受图片路径（iconPath），字体图标只有 App/H5 支持，
- * 所以这里用 uni-icons 自绘，并把原生栏隐藏掉：
- * 图标、选中色都跟着主题 CSS 变量走，不再需要 20 张 PNG 与按主题换图的逻辑。
+ * 使用交付PNG自绘并隐藏原生栏；普通与选中图片成对切换，文字选中色继续读取主题。
+ * 保留固定高度和安全区计算，图片换肤不会改变页面预留的底部空间。
  *
  * 页面只需放 <XsyTabBar :active="n" />，隐藏原生栏在组件挂载时统一处理。
  */
@@ -38,14 +38,14 @@ const props = defineProps({
   },
 });
 
-const {theme, themeStyle} = useMallTheme();
+const {themeStyle} = useMallTheme();
 
 const items = [
-  {icon: 'home', activeIcon: 'home-filled', text: '首页', path: '/pages/home/index'},
-  {icon: 'shop', activeIcon: 'shop-filled', text: '分类', path: '/pages/category/index'},
-  {icon: 'cart', activeIcon: 'cart-filled', text: '购物车', path: '/pages/cart/index'},
-  {icon: 'list', activeIcon: 'list', text: '订单', path: '/pages/order/index'},
-  {icon: 'person', activeIcon: 'person-filled', text: '我的', path: '/pages/mine/index'},
+  {image: MALL_NAVIGATION_IMAGES.home.normal, activeImage: MALL_NAVIGATION_IMAGES.home.active, text: '首页', path: '/pages/home/index'},
+  {image: MALL_NAVIGATION_IMAGES.category.normal, activeImage: MALL_NAVIGATION_IMAGES.category.active, text: '分类', path: '/pages/category/index'},
+  {image: MALL_NAVIGATION_IMAGES.cart.normal, activeImage: MALL_NAVIGATION_IMAGES.cart.active, text: '购物车', path: '/pages/cart/index'},
+  {image: MALL_NAVIGATION_IMAGES.orders.normal, activeImage: MALL_NAVIGATION_IMAGES.orders.active, text: '订单', path: '/pages/order/index'},
+  {image: MALL_NAVIGATION_IMAGES.mine.normal, activeImage: MALL_NAVIGATION_IMAGES.mine.active, text: '我的', path: '/pages/mine/index'},
 ];
 
 function go(index, path) {
@@ -99,6 +99,12 @@ onMounted(() => {
   font-size: $font-size-xs;
   line-height: 1.2;
   color: $color-text-tertiary;
+}
+
+.tabbar__image {
+  width: 56rpx;
+  height: 56rpx;
+  flex-shrink: 0;
 }
 
 .tabbar__item--active .tabbar__text {

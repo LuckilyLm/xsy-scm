@@ -6,10 +6,12 @@ import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.mall.account.constant.MallAccountStatusEnum;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
+import com.xsy.scm.mall.account.constant.MallLoginMethodEnum;
 import com.xsy.scm.mall.account.dao.MallCustomerAccountDao;
 import com.xsy.scm.mall.account.domain.entity.MallCustomerAccountEntity;
 import com.xsy.scm.mall.account.domain.form.MallLoginForm;
 import com.xsy.scm.mall.account.domain.form.MallPasswordChangeForm;
+import com.xsy.scm.mall.account.domain.form.MallWechatPhoneLoginForm;
 import com.xsy.scm.mall.account.domain.vo.MallLoginVO;
 import com.xsy.scm.mall.account.domain.vo.MallProfileVO;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
@@ -32,6 +34,7 @@ public class MallAuthService {
     private final MallCustomerAccountDao accountDao;
     private final CustomerService customerService;
     private final SecurityLoginService securityLoginService;
+    private final MallWechatService wechatService;
 
     @Transactional(rollbackFor = Exception.class, noRollbackFor = MallLoginRejectedException.class)
     public MallLoginVO login(MallLoginForm form, String ip) {
@@ -63,6 +66,41 @@ public class MallAuthService {
         return new MallLoginVO(StpUtil.getTokenValue(), profile(account, customer));
     }
 
+    /**
+     * @param form
+     *            一次性微信手机号授权code，不得为空；手机号仅从微信获取
+     * @param ip
+     *            当前请求来源地址，可为空，由现有登录记录保存
+     * @return 已开通账号的独立微信会话，免临时密码修改
+     * @throws ScmBusinessException
+     *             授权无效、账号未开通/不可用或客户不可交易时拒绝
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public MallLoginVO wechatPhoneLogin(MallWechatPhoneLoginForm form, String ip) {
+        String phone = wechatService.phone(form.getCode());
+        MallCustomerAccountEntity account = accountDao.selectByPhone(phone);
+        if (account != null) {
+            account = accountDao.selectByIdForUpdate(account.getId());
+        }
+        if (account == null || !phone.equals(account.getLoginPhone())) {
+            throw new ScmBusinessException(MallErrorCode.WECHAT_ACCOUNT_NOT_OPENED);
+        }
+        if (!MallAccountStatusEnum.ENABLED.name().equals(account.getStatus())) {
+            throw new ScmBusinessException(MallErrorCode.ACCOUNT_DISABLED);
+        }
+        if (!Boolean.TRUE
+            .equals(securityLoginService.checkLogin(account.getId(), UserTypeEnum.MALL_CUSTOMER).getOk())) {
+            throw new ScmBusinessException(MallErrorCode.LOGIN_LOCKED);
+        }
+        CustomerEntity customer = customerService.requireTradable(account.getCustomerId());
+        securityLoginService.removeLoginFail(account.getId(), UserTypeEnum.MALL_CUSTOMER);
+        accountDao.recordLogin(account.getId(), ip);
+        // 认证来源是登录身份的一部分，Sa-Token不会将已有密码令牌升级为微信豁免会话。
+        StpUtil.login(loginId(account.getId(), account.getVersion()) + ":" + MallLoginMethodEnum.WECHAT_PHONE.name(),
+            ScmOrderSourceEnum.MALL.name());
+        return new MallLoginVO(StpUtil.getTokenValue(), profile(account, customer, MallLoginMethodEnum.WECHAT_PHONE));
+    }
+
     public void logout() {
         StpUtil.logout();
     }
@@ -71,7 +109,7 @@ public class MallAuthService {
     public MallProfileVO profile(RequestMallCustomer requestCustomer) {
         MallCustomerAccountEntity account = requireEnabled(requestCustomer.getAccountId());
         CustomerEntity customer = customerService.requireTradable(account.getCustomerId());
-        return profile(account, customer);
+        return profile(account, customer, requestCustomer.getLoginMethod());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -86,7 +124,8 @@ public class MallAuthService {
         accountDao.changePassword(account.getId(), SecurityPasswordService.getEncryptPwd(form.getNewPassword()));
         securityLoginService.removeLoginFail(account.getId(), UserTypeEnum.MALL_CUSTOMER);
         account.setFirstPasswordChange(false);
-        return profile(account, customerService.requireTradable(account.getCustomerId()));
+        return profile(account, customerService.requireTradable(account.getCustomerId()),
+            requestCustomer.getLoginMethod());
     }
 
     @Transactional(readOnly = true)
@@ -106,7 +145,9 @@ public class MallAuthService {
         result.setCustomerId(customer.getId());
         result.setCustomerName(customer.getName());
         result.setLoginPhone(account.getLoginPhone());
-        result.setFirstPasswordChange(account.getFirstPasswordChange());
+        result.setLoginMethod(identity.loginMethod());
+        result.setFirstPasswordChange(
+            identity.loginMethod() == MallLoginMethodEnum.WECHAT_PHONE ? false : account.getFirstPasswordChange());
         result.setIp(request.getRemoteAddr());
         result.setUserAgent(request.getHeader("User-Agent"));
         return result;
@@ -121,8 +162,13 @@ public class MallAuthService {
     }
 
     private static MallProfileVO profile(MallCustomerAccountEntity account, CustomerEntity customer) {
+        return profile(account, customer, MallLoginMethodEnum.PASSWORD);
+    }
+
+    private static MallProfileVO profile(MallCustomerAccountEntity account, CustomerEntity customer,
+        MallLoginMethodEnum loginMethod) {
         return new MallProfileVO(account.getId(), customer.getId(), customer.getName(), account.getLoginPhone(),
-            account.getFirstPasswordChange());
+            loginMethod == MallLoginMethodEnum.WECHAT_PHONE ? false : account.getFirstPasswordChange());
     }
 
     public static String loginId(Long accountId, Integer version) {
@@ -137,15 +183,21 @@ public class MallAuthService {
         }
         try {
             String[] parts = loginId.split(":", -1);
-            if (parts.length != 3) {
+            if (parts.length != 3 && (parts.length != 4 || !MallLoginMethodEnum.WECHAT_PHONE.name().equals(parts[3]))) {
                 return null;
             }
-            return new SessionIdentity(Long.valueOf(parts[1]), Integer.valueOf(parts[2]));
+            Long accountId = Long.valueOf(parts[1]);
+            Integer version = Integer.valueOf(parts[2]);
+            if (accountId <= 0 || version < 0) {
+                return null;
+            }
+            return new SessionIdentity(accountId, version,
+                parts.length == 4 ? MallLoginMethodEnum.WECHAT_PHONE : MallLoginMethodEnum.PASSWORD);
         } catch (NumberFormatException exception) {
             return null;
         }
     }
 
-    private record SessionIdentity(Long accountId, Integer version) {
+    private record SessionIdentity(Long accountId, Integer version, MallLoginMethodEnum loginMethod) {
     }
 }

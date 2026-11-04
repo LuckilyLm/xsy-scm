@@ -5,10 +5,10 @@
       <image class="login__logo" :src="LOGIN_IMAGES.logo" mode="aspectFit" alt="鲜蔬源SCM" />
       <view class="login__heading">
         <view class="login__heading-line" />
-        <text class="login__title">{{ storeName }}</text>
+        <text class="login__title">{{ loginTitle }}</text>
         <view class="login__heading-line login__heading-line--end" />
       </view>
-      <text class="login__subtitle">客户专属商品与价格</text>
+      <text class="login__subtitle">新鲜食材，省心采购</text>
       <view class="field">
         <image class="field__icon" :src="LOGIN_IMAGES.phone" mode="aspectFit" aria-hidden="true" />
         <input
@@ -57,16 +57,30 @@
         class="login__submit"
         :class="{'login__submit--disabled': submitting}"
         :disabled="submitting"
-        :loading="submitting"
+        :loading="submitting && !wechatSubmitting"
         hover-class="xsy-press-button--active"
         :hover-stay-time="80"
         @click="submit"
       >
-        <text>{{ submitting ? '登录中…' : '登录' }}</text>
+        <text>{{ submitting && !wechatSubmitting ? '登录中…' : '登录' }}</text>
       </button>
+      <!-- #ifdef MP-WEIXIN -->
+      <button
+        class="login__wechat"
+        aria-label="微信手机号快捷登录"
+        open-type="getPhoneNumber"
+        :disabled="submitting"
+        :loading="wechatSubmitting"
+        hover-class="xsy-press--active"
+        :hover-stay-time="80"
+        @getphonenumber="wechatLogin"
+      >
+        <image v-if="!wechatSubmitting" class="login__wechat-icon" :src="LOGIN_IMAGES.wechat" mode="aspectFit" aria-hidden="true" />
+      </button>
+      <!-- #endif -->
       <view class="login__help">
         <image class="login__help-icon" :src="LOGIN_IMAGES.info" mode="aspectFit" aria-hidden="true" />
-        <text>账号由鲜蔬源后台管理员开通。如无法登录，请联系业务员。</text>
+        <text>账号由商家开通，有问题请联系业务员</text>
       </view>
     </view>
     <image class="login__waves" :src="LOGIN_IMAGES.waves" mode="widthFix" aria-hidden="true" />
@@ -74,7 +88,7 @@
 </template>
 
 <script setup>
-import {reactive, ref} from 'vue';
+import {computed, reactive, ref} from 'vue';
 import {mallAuthApi} from '@/api/mall';
 import {useUserStore} from '@/store/modules/system/user';
 import {useMallTheme} from '@/composables/use-mall-theme';
@@ -83,6 +97,10 @@ import {smartSentry} from '@/lib/smart-sentry';
 
 const {themeStyle, theme} = useMallTheme();
 const {storeName} = useMallStorefront();
+const loginTitle = computed(() => {
+  const name = storeName.value?.trim();
+  return !name || name === '商城' || name === '鲜蔬源' ? '鲜蔬源商城' : name;
+});
 
 // 登录拆分图来自交付参考包，表单和登录交互仍使用原生控件。
 const LOGIN_IMAGES = {
@@ -93,9 +111,11 @@ const LOGIN_IMAGES = {
   lock: '/static/mall-login/lock.png',
   info: '/static/mall-login/info.png',
   eyeClosed: '/static/mall-login/eye-closed.png',
+  wechat: '/static/mall-login/wechat.png',
 };
 
 const submitting = ref(false);
+const wechatSubmitting = ref(false);
 const form = reactive({phone: '', password: ''});
 /** 手机号键盘点「下一项」时把焦点交给密码框，省一次点击 */
 const passwordFocused = ref(false);
@@ -118,18 +138,53 @@ async function submit() {
   uni.showLoading({title: '登录中'});
   try {
     const response = await mallAuthApi.login({phone: form.phone, password: form.password});
-    const userStore = useUserStore();
-    userStore.setUserLoginInfo(response.data);
-    if (userStore.passwordChangeRequired) {
-      uni.redirectTo({url: '/pages/account/password'});
-    } else {
-      uni.switchTab({url: '/pages/home/index'});
-    }
+    finishLogin(response.data);
   } catch (error) {
     smartSentry.captureError(error);
   } finally {
     submitting.value = false;
     uni.hideLoading();
+  }
+}
+
+/**
+ * @param {object} event 微信getPhoneNumber事件；取消授权或缺少一次性code时不发起登录请求。
+ * @returns {Promise<void>} 授权成功后登录；错误提示沿用正式请求层，不记录授权凭证。
+ */
+async function wechatLogin(event) {
+  if (submitting.value) return;
+  const detail = event?.detail;
+  if (detail?.errMsg !== 'getPhoneNumber:ok' || !detail.code) {
+    const canceled = /deny|cancel/i.test(detail?.errMsg || '');
+    uni.showToast({title: canceled ? '已取消授权，可使用账号密码登录' : '未取得手机号授权，请重试', icon: 'none'});
+    return;
+  }
+  submitting.value = true;
+  wechatSubmitting.value = true;
+  uni.showLoading({title: '登录中'});
+  try {
+    const response = await mallAuthApi.wechatPhoneLogin({code: detail.code});
+    finishLogin(response.data);
+  } catch (error) {
+    smartSentry.captureError(error);
+  } finally {
+    submitting.value = false;
+    wechatSubmitting.value = false;
+    uni.hideLoading();
+  }
+}
+
+/**
+ * @param {object} data 后端签发的token和profile；改密要求以当前认证会话的服务端投影为准。
+ * @returns {void} 保存统一会话并进入商城或密码修改页。
+ */
+function finishLogin(data) {
+  const userStore = useUserStore();
+  userStore.setUserLoginInfo(data);
+  if (userStore.passwordChangeRequired) {
+    uni.redirectTo({url: '/pages/account/password'});
+  } else {
+    uni.switchTab({url: '/pages/home/index'});
   }
 }
 </script>
@@ -274,9 +329,30 @@ async function submit() {
   background: var(--mall-primary-disabled, #a7d8b9);
   color: $color-text-inverse;
 }
+.login__wechat-icon {
+  flex-shrink: 0;
+  width: $space-8;
+  height: $space-8;
+}
+.login__wechat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: $tap-min;
+  height: $tap-min;
+  margin-top: $space-3;
+  padding: 0;
+  border-radius: $radius-pill;
+  background: transparent;
+  line-height: 1;
+}
+.login__wechat::after {
+  border: 0;
+}
 .login__help {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: $space-1;
   margin-top: 36rpx;
   font-size: $font-size-xs;
@@ -287,7 +363,6 @@ async function submit() {
   flex-shrink: 0;
   width: 28rpx;
   height: 28rpx;
-  margin-top: 2rpx;
 }
 .login__waves {
   position: absolute;

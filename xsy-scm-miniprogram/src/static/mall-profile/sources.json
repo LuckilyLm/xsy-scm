@@ -1,0 +1,92 @@
+[
+  {
+    "file": "orders.png",
+    "source": "我的/ChatGPT 图像 2026年11月4日 17_29_41-1.png",
+    "sourceSha256": "0babf5f6a78012f7fb6ebd244140f0e7e62f2d31ee0472ef0716386563fb4663",
+    "width": 160,
+    "height": 160,
+    "size": 4111
+  },
+  {
+    "file": "cart.png",
+    "source": "我的/ChatGPT 图像 2026年11月4日 17_29_44-2.png",
+    "sourceSha256": "bffff09b69e05703bc23a10fff11aecff6bed5da2f714a9decf9b00161811911",
+    "width": 160,
+    "height": 160,
+    "size": 5267
+  },
+  {
+    "file": "address.png",
+    "source": "我的/ChatGPT 图像 2026年11月4日 17_29_46-3.png",
+    "sourceSha256": "3a8f46e6b21adbcc3a12b67ecebbab94ab76a115b2b995e506fd23d686caa290",
+    "width": 160,
+    "height": 160,
+    "size": 3580
+  },
+  {
+    "file": "after-sale.png",
+    "source": "我的/ChatGPT 图像 2026年11月4日 17_29_48-4.png",
+    "sourceSha256": "ba04f186c375e547621bf7f2e82fb4c80dfee3c1ecf71e7a53d82c37be538159",
+    "width": 160,
+    "height": 160,
+    "size": 4368
+  },
+  {
+    "file": "trace.png",
+    "source": "我的/ChatGPT 图像 2026年11月4日 17_29_50-5.png",
+    "sourceSha256": "349303db55730823a332e34342e1af8ae2a433b31de352b47f82af81c7a842fe",
+    "width": 160,
+    "height": 160,
+    "size": 3707
+  },
+  {
+    "file": "announcement.png",
+    "source": "我的/ChatGPT 图像 2026年11月4日 17_29_52-6.png",
+    "sourceSha256": "c9f22ed0829fe020d93f41b0abd192e8a1d7eae0ead38c820da7f9d3e95415d1",
+    "width": 160,
+    "height": 160,
+    "size": 4130
+  },
+  {
+    "file": "about.png",
+    "source": "我的/ChatGPT 图像 2026年11月4日 17_29_54-7.png",
+    "sourceSha256": "321ea01e35f6dd143bcf983c57e0e5c71fbee9e96c708be4ca0e0e9b7107de7a",
+    "width": 160,
+    "height": 160,
+    "size": 3947
+  },
+  {
+    "file": "terms.png",
+    "source": "我的/ChatGPT 图像 2026年11月4日 17_29_56-8.png",
+    "sourceSha256": "70cc9dfe43b60c632c5ae4d612a0da9c11e9d63d81838cca9cffef42137e7ad3",
+    "width": 160,
+    "height": 160,
+    "size": 3348
+  },
+  {
+    "file": "after-sale-rule.png",
+    "source": "我的/ChatGPT 图像 2026年11月4日 17_29_57-9.png",
+    "sourceSha256": "3ab9b9d6c6a3206af59a86ca455b37be54d78952d94da31b66f9125d1b98b2df",
+    "width": 160,
+    "height": 160,
+    "size": 3675
+  },
+  {
+    "file": "password.png",
+    "source": "我的/ChatGPT 图像 2026年11月4日 17_30_00-10.png",
+    "sourceSha256": "c594415089ee7b00460b77d62b985fbe9d920dc77d3e3e5706fd404915ca63a2",
+    "width": 160,
+    "height": 160,
+    "size": 3715
+  },
+  {
+    "file": "my-coupons.png",
+    "source": "我的优惠券图标.png",
+    "sourcePackage": "独立交付素材",
+    "sourceSha256": "a88780c522085bc326dc30e381cf580276b04f4c404723141e91c1ec36219933",
+    "sourceCrop": [105, 105, 1124, 1124],
+    "width": 128,
+    "height": 128,
+    "size": 6696
+  }
+]

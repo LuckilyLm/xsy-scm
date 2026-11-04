@@ -26,18 +26,6 @@
         <text v-if="nonStandard" class="product-card__badge">按实重</text>
       </view>
 
-      <!--
-        价格类型标签独立成行。
-        旧版把「价格 + 单位 + 价格类型 + 库存」塞进同一横排，窄屏下必然互相挤压
-        （实测 123.6px 行宽撑不下，单位被压成两行）。这里拆行后各段互不争抢。
-        无客户价时不展示：价格位已经写了「询价」，再挂「暂无报价」属于重复信息。
-      -->
-      <view v-if="sourceLabel && priced" class="product-card__tag-row">
-        <text class="product-card__source" :class="`product-card__source--${sourceLevel}`">
-          {{ sourceLabel }}
-        </text>
-      </view>
-
       <view class="product-card__price-row">
         <!-- 无报价时展示「询价」，绝不显示 ¥0.00（规划 §11.3） -->
         <template v-if="priced">
@@ -54,8 +42,16 @@
       </view>
     </view>
 
-    <view class="product-card__action" :class="`product-card__action--${actionKind}`" @click.stop="onAction">
-      <text class="product-card__action-text">{{ actionLabel }}</text>
+    <view
+      class="product-card__action"
+      :class="`product-card__action--${actionKind}`"
+      :hover-class="actionKind === 'disabled' ? 'none' : 'xsy-press--active'"
+      :hover-stay-time="80"
+      @click.stop="onAction"
+    >
+      <view class="product-card__action-face">
+        <text class="product-card__action-text">{{ actionLabel }}</text>
+      </view>
     </view>
   </view>
 </template>
@@ -68,8 +64,6 @@ import {
   isNonStandard,
   actionText,
   isOrderable,
-  priceSourceLabel,
-  priceSourceLevel,
   showAvailableQty,
   specCategoryText,
   stockLevel,
@@ -98,8 +92,6 @@ const priced = computed(() => hasPrice(props.product));
 const orderable = computed(() => isOrderable(props.product));
 const actionLabel = computed(() => actionText(props.product));
 const thumb = computed(() => thumbText(props.product));
-const sourceLabel = computed(() => priceSourceLabel(props.product));
-const sourceLevel = computed(() => priceSourceLevel(props.product));
 const specText = computed(() => specCategoryText(props.product));
 const nonStandard = computed(() => isNonStandard(props.product));
 
@@ -231,47 +223,6 @@ watch(
     white-space: nowrap;
   }
 
-  /* 价格类型标签：独立一行，不与价格争抢横向空间 */
-  &__tag-row {
-    @include flex-start;
-    margin-top: $space-1;
-  }
-
-  &__source {
-    flex-shrink: 0;
-    padding: 0 $space-1;
-    height: 30rpx;
-    line-height: 30rpx;
-    border-radius: $radius-sm;
-    font-size: $font-size-xs;
-    white-space: nowrap;
-
-    &--agreement {
-      background-color: var(--mall-primary-light, #e8f5ec);
-      color: var(--mall-primary-ink, #12833c);
-    }
-
-    &--type {
-      background-color: $color-info-light;
-      color: $color-info;
-    }
-
-    &--time {
-      background-color: $color-warning-light;
-      color: $color-warning;
-    }
-
-    &--standard {
-      background-color: $color-bg-page;
-      color: $color-text-tertiary;
-    }
-
-    &--unpriced {
-      background-color: $color-warning-light;
-      color: $color-warning;
-    }
-  }
-
   &__price-row {
     @include flex-start;
     margin-top: $space-1;
@@ -344,36 +295,44 @@ watch(
     align-self: flex-end;
     flex-shrink: 0;
     margin-left: $space-3;
-    padding: 0 $space-4;
-    /* 88rpx = 44px 触控下限；文字仍是小字号，只是可点区域变大 */
-    height: 88rpx;
-    border-radius: $radius-pill;
+    /* 点击区与按钮外观分离，缩小描边不会降低小屏手机的触控尺寸。 */
+    min-width: $tap-min;
+    min-height: $tap-min;
     @include flex-center;
 
     /* 主操作：实心品牌绿，白字，与询价（描边）区分 */
-    &--add {
+    &--add .product-card__action-face {
       background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
     }
 
     /* 缺货预订：描边样式，可点击但视觉弱于现货 */
-    &--preorder {
+    &--preorder .product-card__action-face {
       background-color: $color-bg-card;
       border: 1px solid var(--mall-primary, #16a34a);
     }
 
-    &--unavailable {
+    &--unavailable .product-card__action-face {
       background-color: $color-bg-hover;
       border: 1px solid $color-border;
     }
 
-    &--inquiry {
+    &--inquiry .product-card__action-face {
       background-color: $color-bg-card;
       border: 1px solid var(--mall-primary, #16a34a);
     }
 
-    &--disabled {
+    &--disabled .product-card__action-face {
       background: $color-bg-hover;
     }
+  }
+
+  &__action-face {
+    box-sizing: border-box;
+    min-height: $space-6 + $space-1;
+    padding: 0 $space-3;
+    border: 1px solid transparent;
+    border-radius: $radius-pill;
+    @include flex-center;
   }
 
   &__action-text {

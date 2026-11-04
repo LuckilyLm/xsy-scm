@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 public enum MallErrorCode implements ScmErrorCode {
     ACCOUNT_NOT_FOUND(40480, "商城账号不存在"),
     LOGIN_FAILED(40080, "手机号或密码错误"),
+    WECHAT_ACCOUNT_NOT_OPENED(40381, "该手机号尚未开通，请联系业务员"),
+    WECHAT_CODE_INVALID(40094, "微信授权已失效，请重新授权手机号"),
+    WECHAT_UNAVAILABLE(50381, "微信快捷登录暂不可用，请使用密码登录或稍后重试"),
     LOGIN_LOCKED(42980, "登录失败次数过多，账号已暂时锁定，请稍后重试"),
     ACCOUNT_DISABLED(40980, "商城账号已禁用"),
     PHONE_DUPLICATE(40981, "登录手机号已被使用"),

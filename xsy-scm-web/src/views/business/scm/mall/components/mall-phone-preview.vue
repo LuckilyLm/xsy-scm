@@ -50,10 +50,6 @@
           </div>
 
           <div v-else-if="section.type === 'SERVICES'">
-            <div class="phone-preview__coupon" :style="{background: gradients.surface, color: palette.ink}">
-              <img :src="couponImage" alt="" />
-              <strong>领券中心</strong><span>查看可领优惠券</span><RightOutlined aria-hidden="true" />
-            </div>
             <div class="phone-preview__services">
               <div v-for="shortcut in serviceShortcuts" :key="shortcut.label" class="phone-preview__service">
                 <img :src="shortcut.image" alt="" /><span>{{ shortcut.label }}</span>
@@ -127,7 +123,6 @@ import {
   AppstoreOutlined,
   DownOutlined,
   EnvironmentOutlined,
-  RightOutlined,
   HomeOutlined,
   ProfileOutlined,
   SearchOutlined,
@@ -144,7 +139,6 @@ import meatImage from '/@/assets/mall-visual/category/meat-eggs.png';
 import seafoodImage from '/@/assets/mall-visual/category/seafood.png';
 import grainOilImage from '/@/assets/mall-visual/category/grain-oil.png';
 import seasoningImage from '/@/assets/mall-visual/category/seasoning.png';
-import couponImage from '/@/assets/mall-visual/shortcut/coupons.png';
 import newImage from '/@/assets/mall-visual/shortcut/new.png';
 import frequentImage from '/@/assets/mall-visual/shortcut/frequent.png';
 import activityImage from '/@/assets/mall-visual/shortcut/activities.png';
@@ -324,22 +318,6 @@ defineExpose({refreshPopup});
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.phone-preview__coupon {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 42px;
-  margin: 10px 12px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 11px;
-}
-.phone-preview__coupon strong {
-  flex: 1;
-}
-.phone-preview__coupon span {
-  font-size: 9px;
-}
 
 .phone-preview__location {
   display: inline-flex;
@@ -396,11 +374,6 @@ defineExpose({refreshPopup});
 .phone-preview__service img {
   width: 44px;
   height: 44px;
-  object-fit: contain;
-}
-.phone-preview__coupon img {
-  width: 40px;
-  height: 40px;
   object-fit: contain;
 }
 .phone-preview__banner {

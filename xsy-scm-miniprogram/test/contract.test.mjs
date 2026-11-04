@@ -17,7 +17,8 @@ test('release exposes customer-scoped commerce APIs without employee account end
   const api = read('../src/api/mall/index.js');
   assert.match(auth, /auth\/login/);
   assert.match(auth, /password\/change/);
-  assert.doesNotMatch(auth, /sms|wechat/i);
+  assert.match(auth, /auth\/wechat\/phone-login/);
+  assert.doesNotMatch(auth, /sms/i);
   assert.match(api, /Cart/);
   assert.match(api, /Address/);
   assert.match(api, /Order/);
@@ -139,7 +140,7 @@ test('checkout submits a price fingerprint and an idempotency key', () => {
   assert.match(api, /idempotencyKey/);
   const request = read('../src/lib/smart-request.js');
   const mock = read('../mock/routes/order.js');
-  assert.match(request, /dispatchMock\(url, method, data, \{ header \}\)/);
+  assert.match(request, /dispatchMock\(url, method, data, \{\s*header\s*\}\)/);
   assert.match(mock, /Idempotency-Key/);
   // 提交必须回传服务端下发的指纹，并在提交前按备注等最新内容同步幂等键
   assert.match(page, /priceFingerprint/);

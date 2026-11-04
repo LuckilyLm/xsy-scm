@@ -10,18 +10,43 @@
     </view>
     <view class="mine__card">
       <text class="mine__store-name">{{ storeName }}</text>
+      <view class="mine__benefits">
+        <view
+          class="mine__benefit-link"
+          data-entry="coupons"
+          aria-label="前往领券中心"
+          hover-class="xsy-press--active"
+          :hover-stay-time="80"
+          @click="goCoupons"
+        >
+          <image class="mine__coupon-image" :src="MALL_SHORTCUT_IMAGES.coupons" mode="aspectFit" aria-hidden="true" />
+          <text>领券中心</text>
+        </view>
+        <view
+          class="mine__benefit-link"
+          data-entry="my-coupons"
+          aria-label="查看我的优惠券"
+          hover-class="xsy-press--active"
+          :hover-stay-time="80"
+          @click="goMyCoupons"
+        >
+          <image class="mine__coupon-image" :src="MALL_PROFILE_IMAGES.myCoupons" mode="aspectFit" aria-hidden="true" />
+          <text>我的优惠券</text>
+        </view>
+      </view>
       <text class="mine__group-title">常用功能</text>
       <view class="mine__grid">
         <view
           v-for="entry in primaryEntries"
           :key="entry.key"
           class="mine__entry"
+          :data-entry="entry.key"
           hover-class="xsy-press--active"
           :hover-stay-time="80"
           @click="entry.onClick"
         >
           <view class="mine__entry-icon">
-            <uni-icons :type="entry.icon" :size="20" :color="theme.primary" />
+            <image class="mine__entry-image" :src="entry.image" mode="aspectFit" aria-hidden="true" />
           </view>
           <text class="mine__entry-text">{{ entry.label }}</text>
         </view>
@@ -32,12 +57,14 @@
           v-for="entry in serviceEntries"
           :key="entry.key"
           class="mine__entry"
+          :data-entry="entry.key"
           hover-class="xsy-press--active"
           :hover-stay-time="80"
           @click="entry.onClick"
         >
           <view class="mine__entry-icon">
-            <uni-icons :type="entry.icon" :size="20" :color="theme.primary" />
+            <image v-if="entry.image" class="mine__entry-image" :src="entry.image" mode="aspectFit" aria-hidden="true" />
+            <view v-else class="mine__entry-fallback"><uni-icons :type="entry.icon" :size="20" :color="theme.primary" /></view>
           </view>
           <text class="mine__entry-text">{{ entry.label }}</text>
         </view>
@@ -55,6 +82,7 @@ import {useMallTheme} from '@/composables/use-mall-theme';
 import {useMallStorefront} from '@/composables/use-mall-storefront';
 import {useUserStore} from '@/store/modules/system/user';
 import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
+import {MALL_SHORTCUT_IMAGES, MALL_PROFILE_IMAGES} from '@/constants/mall-visual-const';
 
 const {theme, themeStyle} = useMallTheme();
 const {storeName, storeLink} = useMallStorefront();
@@ -127,26 +155,21 @@ function scanTrace() {
   });
 }
 
-/*
- * 「我的」入口按快捷入口的栅格排布：图标 + 文字、四列。原先的列表每行只放一个
- * 入口，十四个入口要滑很久；栅格一屏能放下，和首页快捷入口的视觉语言也一致。
- */
+/* 常用功能和服务共用四列栅格，交付图片自带浅绿底面，文字保持独立可读。 */
 const primaryEntries = [
-  {key: 'orders', label: '我的订单', icon: 'list', onClick: goOrders},
-  {key: 'cart', label: '购物车', icon: 'cart', onClick: goCart},
-  {key: 'address', label: '收货地址', icon: 'location', onClick: goAddress},
-  {key: 'after-sale', label: '售后服务', icon: 'refresh', onClick: goAfterSales},
-  {key: 'my-coupons', label: '我的优惠券', icon: 'vip', onClick: goMyCoupons},
-  {key: 'coupons', label: '领券中心', icon: 'gift', onClick: goCoupons},
+  {key: 'orders', label: '我的订单', image: MALL_PROFILE_IMAGES.orders, onClick: goOrders},
+  {key: 'cart', label: '购物车', image: MALL_PROFILE_IMAGES.cart, onClick: goCart},
+  {key: 'address', label: '收货地址', image: MALL_PROFILE_IMAGES.address, onClick: goAddress},
+  {key: 'after-sale', label: '售后服务', image: MALL_PROFILE_IMAGES.afterSale, onClick: goAfterSales},
 ];
 
 const serviceEntries = computed(() => [
-  {key: 'trace', label: '扫码溯源', icon: 'scan', onClick: scanTrace},
-  {key: 'announcement', label: '商城公告', icon: 'sound', onClick: () => goPage('ANNOUNCEMENT')},
-  {key: 'about', label: '关于我们', icon: 'info', onClick: () => goPage('ABOUT')},
-  {key: 'terms', label: '服务条款', icon: 'compose', onClick: () => goPage('TERMS')},
-  {key: 'after-sale-rule', label: '售后规则', icon: 'help', onClick: () => goPage('AFTER_SALE')},
-  {key: 'password', label: '修改登录密码', icon: 'locked', onClick: changePassword},
+  {key: 'trace', label: '扫码溯源', image: MALL_PROFILE_IMAGES.trace, onClick: scanTrace},
+  {key: 'announcement', label: '商城公告', image: MALL_PROFILE_IMAGES.announcement, onClick: () => goPage('ANNOUNCEMENT')},
+  {key: 'about', label: '关于我们', image: MALL_PROFILE_IMAGES.about, onClick: () => goPage('ABOUT')},
+  {key: 'terms', label: '服务条款', image: MALL_PROFILE_IMAGES.terms, onClick: () => goPage('TERMS')},
+  {key: 'after-sale-rule', label: '售后规则', image: MALL_PROFILE_IMAGES.afterSaleRule, onClick: () => goPage('AFTER_SALE')},
+  {key: 'password', label: '修改密码', image: MALL_PROFILE_IMAGES.password, onClick: changePassword},
   ...(storeLink.value
     ? [{key: 'store-link', label: '复制店铺链接', icon: 'link', onClick: () => uni.setClipboardData({data: storeLink.value})}]
     : []),
@@ -169,7 +192,7 @@ function logout() {
 .mine {
   @include viewport-min-height;
   padding-bottom: calc(var(--xsy-tabbar-h, 100rpx) + #{$space-8});
-  background: $color-bg-page;
+  background: var(--mall-surface-gradient, $color-bg-page);
 }
 .mine__header {
   @include flex-start;
@@ -228,6 +251,31 @@ function logout() {
   font-weight: $font-weight-bold;
   @include ellipsis;
 }
+.mine__benefits {
+  display: flex;
+  margin: $space-3 var(--xsy-page-x) 0;
+  border-radius: $radius-md;
+  background: var(--mall-surface-gradient, var(--mall-primary-light, #e8f5ec));
+  color: var(--mall-primary-ink, #12833c);
+}
+.mine__benefit-link {
+  @include pressable;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: $tap-min;
+  align-items: center;
+  justify-content: center;
+  gap: $space-1;
+  padding: $space-2;
+  font-size: $font-size-sm;
+  white-space: nowrap;
+}
+.mine__coupon-image {
+  flex-shrink: 0;
+  width: 80rpx;
+  height: 80rpx;
+}
 /* 第二组标题上一道细分隔线，分组清楚但不抢眼 */
 .mine__group-title--divided {
   margin-top: $space-2;
@@ -249,6 +297,15 @@ function logout() {
   padding: $space-2 0;
 }
 .mine__entry-icon {
+  width: 100%;
+  height: 144rpx;
+  @include flex-center;
+}
+.mine__entry-image {
+  width: 100%;
+  height: 100%;
+}
+.mine__entry-fallback {
   width: 80rpx;
   height: 80rpx;
   border-radius: 50%;
@@ -258,8 +315,8 @@ function logout() {
 .mine__entry-text {
   max-width: 100%;
   color: $color-text-primary;
-  /* 11px 中文在四列栅格里会糊成一团，12px 仍能放下最长的「修改登录密码」 */
-  font-size: $font-size-sm;
+  /* 常用入口保留完整短标签，较长的配置标签统一省略。 */
+  font-size: $font-size-base;
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;

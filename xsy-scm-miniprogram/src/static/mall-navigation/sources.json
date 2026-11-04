@@ -1,0 +1,142 @@
+[
+  {
+    "file": "home-normal.png",
+    "source": "导航栏/ChatGPT 图像 2026年11月4日 17_27_12-1.png",
+    "sourceSha256": "0c3509e536418b13512e932a563a7aa3070cff1cd102a566fc3e64951ee83bc3",
+    "width": 96,
+    "height": 96,
+    "size": 2468,
+    "sourceCrop": [
+      166,
+      174,
+      1079,
+      1087
+    ]
+  },
+  {
+    "file": "home-selected.png",
+    "source": "导航栏/ChatGPT 图像 2026年11月4日 17_27_14-2.png",
+    "sourceSha256": "20596cef8a11d7ce921fb5265f583e72bb7acdc1e68dbdf2d9fa7742b5f90ff8",
+    "width": 96,
+    "height": 96,
+    "size": 4683,
+    "sourceCrop": [
+      166,
+      174,
+      1079,
+      1087
+    ]
+  },
+  {
+    "file": "category-normal.png",
+    "source": "导航栏/ChatGPT 图像 2026年11月4日 17_27_15-3.png",
+    "sourceSha256": "2c5f314b8e9af9be159ed40ded2cf645c8ce477a7e8dc1689281a1657e6cd350",
+    "width": 96,
+    "height": 96,
+    "size": 2673,
+    "sourceCrop": [
+      160,
+      203,
+      1093,
+      1136
+    ]
+  },
+  {
+    "file": "category-selected.png",
+    "source": "导航栏/ChatGPT 图像 2026年11月4日 17_27_17-4.png",
+    "sourceSha256": "8bcf077e950980901562c09a028d9232e37e1df4be60fd5d9049f64087c80569",
+    "width": 96,
+    "height": 96,
+    "size": 4194,
+    "sourceCrop": [
+      160,
+      203,
+      1093,
+      1136
+    ]
+  },
+  {
+    "file": "cart-normal.png",
+    "source": "导航栏/ChatGPT 图像 2026年11月4日 17_27_19-5.png",
+    "sourceSha256": "64608a2e357f25ef1320dad6232d38e893422caf0f48d5aa43349772303bb958",
+    "width": 96,
+    "height": 96,
+    "size": 2883,
+    "sourceCrop": [
+      108,
+      175,
+      1111,
+      1178
+    ]
+  },
+  {
+    "file": "cart-selected.png",
+    "source": "导航栏/ChatGPT 图像 2026年11月4日 17_27_21-6.png",
+    "sourceSha256": "3d331262023a2420dd03f9273b31cf4211772bb627d220f5e97527348237bf58",
+    "width": 96,
+    "height": 96,
+    "size": 3556,
+    "sourceCrop": [
+      108,
+      175,
+      1111,
+      1178
+    ]
+  },
+  {
+    "file": "orders-normal.png",
+    "source": "导航栏/ChatGPT 图像 2026年11月4日 17_27_22-7.png",
+    "sourceSha256": "dbdb1cff5629651aa795dc6c70b39f18e2c66c3cc2fd2e3a4f18b070eb27180c",
+    "width": 96,
+    "height": 96,
+    "size": 2570,
+    "sourceCrop": [
+      154,
+      167,
+      1097,
+      1110
+    ]
+  },
+  {
+    "file": "orders-selected.png",
+    "source": "导航栏/ChatGPT 图像 2026年11月4日 17_27_24-8.png",
+    "sourceSha256": "c38db687586bfe8d7dbe820d6a7a7d049cedf97dc743ff9b017a2c78f2cc4628",
+    "width": 96,
+    "height": 96,
+    "size": 3751,
+    "sourceCrop": [
+      154,
+      167,
+      1097,
+      1110
+    ]
+  },
+  {
+    "file": "mine-normal.png",
+    "source": "导航栏/ChatGPT 图像 2026年11月4日 17_27_26-9.png",
+    "sourceSha256": "c4e9c9d70ec2ec47fc6577cbad9aa8dca360ead6458c6e64c8f0c68b2e4f6fee",
+    "width": 96,
+    "height": 96,
+    "size": 2474,
+    "sourceCrop": [
+      153,
+      198,
+      1078,
+      1123
+    ]
+  },
+  {
+    "file": "mine-selected.png",
+    "source": "导航栏/ChatGPT 图像 2026年11月4日 17_27_27-10.png",
+    "sourceSha256": "be21b8030fb005f32ae63c45546c2fb6e1d1fe96b9ade81467c24b0cabdda99d",
+    "width": 96,
+    "height": 96,
+    "size": 3872,
+    "sourceCrop": [
+      153,
+      198,
+      1078,
+      1123
+    ]
+  }
+]

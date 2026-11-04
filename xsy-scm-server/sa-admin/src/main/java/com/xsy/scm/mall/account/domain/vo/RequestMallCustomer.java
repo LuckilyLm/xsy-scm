@@ -1,6 +1,7 @@
 package com.xsy.scm.mall.account.domain.vo;
 
 import java.io.Serializable;
+import com.xsy.scm.mall.account.constant.MallLoginMethodEnum;
 
 import lombok.Data;
 import net.lab1024.sa.base.common.domain.RequestUser;
@@ -14,6 +15,7 @@ public class RequestMallCustomer implements RequestUser, Serializable {
     private String customerName;
     private String loginPhone;
     private Boolean firstPasswordChange;
+    private MallLoginMethodEnum loginMethod = MallLoginMethodEnum.PASSWORD;
     private String ip;
     private String userAgent;
 

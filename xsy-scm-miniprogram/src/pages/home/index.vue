@@ -64,12 +64,6 @@
         </scroll-view>
       </view>
       <view v-else-if="section.type === 'SERVICES'">
-        <view v-if="userStore.isLogin" class="home__coupon-entry" aria-label="前往领券中心" hover-class="xsy-press--active" @click="goCoupons">
-          <image class="home__coupon-image" :src="MALL_SHORTCUT_IMAGES.coupons" mode="aspectFit" aria-hidden="true" />
-          <text class="home__coupon-title">领券中心</text>
-          <text class="home__coupon-hint">查看可领优惠券</text>
-          <uni-icons type="right" :size="14" :color="theme.ink" />
-        </view>
         <view class="home__services">
           <view
             v-for="shortcut in serviceShortcuts"
@@ -643,9 +637,9 @@ loadLocation();
   color: $color-text-placeholder;
   font-size: $font-size-sm;
 }
-/* 分类横滑：圆形首字图标 + 名称，横向滚动 */
+/* 分类横滑与下方四列快捷入口对齐，其余分类保留在滚动区域内。 */
 .home__rail {
-  padding: $space-3 0;
+  padding: $space-3 var(--xsy-page-x);
   background: white;
 }
 .home__rail-scroll {
@@ -653,10 +647,8 @@ loadLocation();
 }
 .home__rail-inner {
   display: flex;
+  width: 100%;
   align-items: flex-start;
-  justify-content: space-around;
-  gap: $space-3;
-  padding: 0 var(--xsy-page-x);
 }
 .home__rail-item {
   @include pressable;
@@ -664,8 +656,8 @@ loadLocation();
   flex-direction: column;
   align-items: center;
   gap: $space-1;
-  flex-shrink: 0;
-  min-width: 132rpx;
+  flex: 0 0 25%;
+  min-width: 0;
 }
 .home__rail-icon {
   width: 132rpx;
@@ -677,7 +669,7 @@ loadLocation();
   height: 128rpx;
 }
 .home__rail-text {
-  max-width: 144rpx;
+  max-width: 100%;
   color: $color-text-secondary;
   font-size: $font-size-xs;
   overflow: hidden;
@@ -687,30 +679,6 @@ loadLocation();
 .home__section {
   margin-top: $space-3;
   background: white;
-}
-/* 优惠入口独立于商品分类，在活动区前展示，不依赖分类是否有数据。 */
-.home__coupon-entry {
-  @include pressable;
-  display: flex;
-  box-sizing: border-box;
-  align-items: center;
-  gap: $space-2;
-  min-height: 112rpx;
-  margin: $space-3 var(--xsy-page-x) 0;
-  padding: $space-3;
-  border-radius: $radius-md;
-  background: var(--mall-surface-gradient, var(--mall-primary-light, #e8f5ec));
-  color: var(--mall-primary-ink, #12833c);
-}
-.home__coupon-title {
-  flex: 1;
-  font-size: $font-size-base;
-  font-weight: $font-weight-medium;
-}
-.home__coupon-image {
-  width: 96rpx;
-  height: 96rpx;
-  flex-shrink: 0;
 }
 .home__services {
   display: flex;
@@ -729,10 +697,6 @@ loadLocation();
 .home__service-image {
   width: 112rpx;
   height: 112rpx;
-}
-.home__coupon-hint {
-  flex-shrink: 0;
-  font-size: $font-size-xs;
 }
 .home__banner-wrap {
   padding: $space-3 var(--xsy-page-x) 0;
