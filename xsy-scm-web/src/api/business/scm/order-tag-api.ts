@@ -7,11 +7,11 @@ export interface OrderTag {
   color: OrderTagColor;
   orderId?: Id;
 }
-export type OrderTagAction = 'ADD' | 'REMOVE';
+export type OrderTagAction = 'SET' | 'CLEAR';
 export const orderTagApi = {
   list: (options?: RequestOptions) => getRequest<OrderTag[]>('/scm/order/tags', {}, options),
   create: (name: string, color: OrderTagColor, options?: RequestOptions) => postRequest<Id>('/scm/order/tags/create', {name, color}, options),
-  apply: (tagId: Id, orderIds: Id[], action: OrderTagAction, options?: RequestOptions) =>
+  apply: (tagId: Id | null, orderIds: Id[], action: OrderTagAction, options?: RequestOptions) =>
     postRequest<string>('/scm/order/tags/apply', {tagId, orderIds, action}, options),
 };
 export const tagColor = (color: OrderTagColor): string =>

@@ -26,7 +26,7 @@
         JOIN xsy_sales_order o ON o.id = i.order_id
             AND o.deleted = FALSE
         WHERE i.deleted = FALSE
-            AND o.status IN ('PENDING', 'CONFIRMED')
+            AND o.status IN ('PENDING', 'CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
             AND i.actual_quantity IS NOT NULL
             AND i.actual_quantity != i.ordered_quantity
             AND i.updated_at &gt;= #{startAt}

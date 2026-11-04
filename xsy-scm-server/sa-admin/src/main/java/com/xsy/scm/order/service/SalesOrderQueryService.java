@@ -93,9 +93,15 @@ public class SalesOrderQueryService {
             Map<Long,
                 List<OrderTagVO>> tags = orderTagDao.tagsByOrders(rows.stream().map(SalesOrderVO::getOrderId).toList())
                     .stream().collect(Collectors.groupingBy(OrderTagVO::getOrderId));
-            rows.forEach(row -> row.setTags(tags.getOrDefault(row.getOrderId(), List.of())));
+            rows.forEach(row -> setTag(row, tags.getOrDefault(row.getOrderId(), List.of())));
         }
         return SmartPageUtil.convert2PageResult(page, rows);
+    }
+
+    private void setTag(SalesOrderVO row, List<OrderTagVO> tags) {
+        OrderTagVO tag = tags.isEmpty() ? null : tags.getFirst();
+        row.setTag(tag);
+        row.setTags(tag == null ? List.of() : List.of(tag));
     }
 
     public SalesOrderVO order(SalesOrderEntity salesOrder) {
@@ -167,6 +173,7 @@ public class SalesOrderQueryService {
             }).orElse(null));
         salesOrderDetailVO.setDiscount(promotionDiscountService.getByOrder(salesOrder.getId()));
         salesOrderDetailVO.setGifts(promotionDiscountService.listGifts(salesOrder.getId()));
+        setTag(salesOrderDetailVO, orderTagDao.tagsByOrders(List.of(salesOrder.getId())));
         return salesOrderDetailVO;
     }
 

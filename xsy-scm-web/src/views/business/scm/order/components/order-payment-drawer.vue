@@ -11,7 +11,7 @@
     <a-alert v-if="created" type="success" show-icon :message="`${created.intentNo}：${statusText(created.status)}`" class="payment-message" />
     <a-form
       ref="formRef"
-      v-if="order?.status === 'CONFIRMED' && (!order.settlementMethod || order.settlementMethod === 'WALLET')"
+      v-if="order && isConfirmedOrderStatus(order.status) && (!order.settlementMethod || order.settlementMethod === 'WALLET')"
       v-privilege="'scm:payment:intent:create'"
       :model="formModel"
       :rules="formRules"
@@ -93,6 +93,8 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
+import {isConfirmedOrderStatus} from '/@/constants/business/scm/order-const';
+
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {reactive, ref} from 'vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';

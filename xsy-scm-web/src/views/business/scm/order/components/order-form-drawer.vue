@@ -12,10 +12,10 @@
     <p v-if="form.status === 'PENDING'" class="scm-note pending-edit-note">
       该订单已提交，等待确认。保存后仍为待确认；未修改的商品沿用提交时报价，如需按最新价格重算请使用「批量核价」。
     </p>
-    <p v-if="form.status === 'CONFIRMED' && form.lockedFlag" class="scm-note pending-edit-note">
+    <p v-if="isConfirmedOrderStatus(form.status) && form.lockedFlag" class="scm-note pending-edit-note">
       该订单已锁单，修改需具备「锁单后改单」权限；无权限时请新建加单。
     </p>
-    <p v-else-if="form.status === 'CONFIRMED'" class="scm-note pending-edit-note">
+    <p v-else-if="isConfirmedOrderStatus(form.status)" class="scm-note pending-edit-note">
       {{
         form.dispatchedAt ? '该订单已发车出库，改单需具备「发车后改单」权限。' : ''
       }}改单按原锁定单价重算金额，不会自动改价；需称重的新增商品请新建加单。
@@ -99,6 +99,8 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
+import {isConfirmedOrderStatus} from '/@/constants/business/scm/order-const';
+
 import {computed, reactive, ref, watch} from 'vue';
 import {onBeforeRouteLeave} from 'vue-router';
 import {message, type FormInstance} from 'ant-design-vue';

@@ -232,7 +232,7 @@
               SCM_ORDER_SOURCE_ENUM[record.orderSource]?.desc || record.orderSource
             }}</template>
             <template v-else-if="column.dataIndex === 'status'">
-              <ScmStatusTag :tone="orderStatusTone(record.status)" :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc || record.status" />
+              <ScmStatusTag :tone="orderStatusTone(record.status)" :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc || '—'" />
             </template>
             <template v-else-if="column.dataIndex === 'orderedTotalAmount'"
               ><span class="scm-money">{{ formatAmountOrDash(record.orderedTotalAmount) }}</span></template

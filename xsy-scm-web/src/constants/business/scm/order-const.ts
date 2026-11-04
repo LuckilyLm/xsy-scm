@@ -3,8 +3,14 @@ import type {SmartEnum} from '/@/types/smart-enum';
 export const SCM_ORDER_STATUS_ENUM: SmartEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待确认'},
   CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
+  DISPATCHED: {value: 'DISPATCHED', desc: '已发车'},
+  SIGNED: {value: 'SIGNED', desc: '已签收'},
+  EXCEPTION: {value: 'EXCEPTION', desc: '签收异常'},
   CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };
+export function isConfirmedOrderStatus(status?: string): boolean {
+  return status != null && ['CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION'].includes(status);
+}
 export const SCM_ORDER_SOURCE_ENUM: SmartEnum<string> = {
   ADMIN: {value: 'ADMIN', desc: '后台录单'},
   MALL: {value: 'MALL', desc: '商城'},

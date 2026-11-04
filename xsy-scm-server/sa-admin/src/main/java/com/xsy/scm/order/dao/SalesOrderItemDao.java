@@ -23,8 +23,8 @@ public interface SalesOrderItemDao extends BaseMapper<SalesOrderItemEntity> {
     List<SalesOrderItemEntity> listByOrderIds(@Param("orderIds") List<Long> orderIds);
 
     /**
-     * 某客户某 SKU 的最近已确认订单价（只读）：只取 CONFIRMED 订单行的锁定单价，按 {@code confirmed_at DESC, order_id DESC} 倒序， {@code limit} 限制的是最近
-     * N 张订单而非行数。
+     * 某客户某 SKU 的最近已确认订单价（只读）：只取已确认及后续配送、签收阶段订单行的锁定单价，按 {@code confirmed_at DESC, order_id DESC} 倒序， {@code limit}
+     * 限制的是最近 N 张订单而非行数。
      */
     List<OrderRecentPriceVO> recentPrices(@Param("customerId") Long customerId, @Param("skuId") Long skuId,
         @Param("limit") int limit, @Param("scope") com.xsy.scm.common.scope.ScmValueScope scope);

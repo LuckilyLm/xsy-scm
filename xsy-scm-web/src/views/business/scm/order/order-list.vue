@@ -81,21 +81,13 @@
         </template>
         <template v-else-if="column.dataIndex === 'customerNameSnapshot'">{{ record.customerNameSnapshot || '—' }}</template>
         <template v-else-if="column.dataIndex === 'tags'">
-          <a-space :size="4" wrap>
-            <a-tag v-for="tag in record.tags ?? []" :key="String(tag.tagId)" :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
-            <span v-if="!record.tags?.length">—</span>
-          </a-space>
+          <a-tag v-if="record.tag" :color="tagColor(record.tag.color)">{{ record.tag.name }}</a-tag>
+          <span v-else>—</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <a-space :size="4">
-            <ScmStatusTag :tone="orderStatusTone(record.status)" :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc" />
-            <a-tooltip v-if="record.lockedFlag" :title="lockTip(record)">
-              <a-tag color="orange">已锁</a-tag>
-            </a-tooltip>
-            <a-tooltip v-else-if="record.dispatchedAt" title="已发车出库，改单需要发车后改单权限">
-              <a-tag color="blue">已发车</a-tag>
-            </a-tooltip>
-          </a-space>
+          <a-tooltip :title="record.lockedFlag ? lockTip(record) : undefined">
+            <ScmStatusTag :tone="orderStatusTone(record.status)" :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc || '—'" />
+          </a-tooltip>
         </template>
         <template v-else-if="column.dataIndex === 'orderSource'">{{ SCM_ORDER_SOURCE_ENUM[record.orderSource]?.desc }} </template>
         <template v-else-if="column.dataIndex === 'orderedTotalAmount'">
@@ -111,7 +103,7 @@
               <a-button type="link" size="small" v-privilege="'scm:order:update'" @click="drawer?.open(record.orderId)">编辑 </a-button>
               <a-button type="link" size="small" @click="openDetail(record.orderId)">详情</a-button>
             </template>
-            <template v-else-if="record.status === 'CONFIRMED'">
+            <template v-else-if="record.status === 'CONFIRMED' || record.status === 'DISPATCHED'">
               <a-button type="link" size="small" @click="openDetail(record.orderId)">详情</a-button>
               <a-button
                 type="link"
@@ -123,7 +115,14 @@
               >
                 编辑
               </a-button>
-              <a-button type="link" size="small" v-privilege="'scm:order:reserve-stock'" @click="reserveStock(record)">预留库存 </a-button>
+              <a-button
+                v-if="record.status === 'CONFIRMED'"
+                type="link"
+                size="small"
+                v-privilege="'scm:order:reserve-stock'"
+                @click="reserveStock(record)"
+                >预留库存
+              </a-button>
             </template>
             <template v-else>
               <a-button type="link" size="small" @click="openDetail(record.orderId)">详情</a-button>
@@ -167,7 +166,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
-import {SCM_ORDER_STATUS_ENUM, SCM_ORDER_SOURCE_ENUM} from '/@/constants/business/scm/order-const';
+import {isConfirmedOrderStatus, SCM_ORDER_STATUS_ENUM, SCM_ORDER_SOURCE_ENUM} from '/@/constants/business/scm/order-const';
 import type {Order, Query} from './order-types';
 import {amount} from './order-form-model';
 import {orderError} from './order-errors';
@@ -247,7 +246,7 @@ const columns = ref<OrderListColumn[]>([
   {title: '客户名称', dataIndex: 'customerNameSnapshot', width: 200},
   {title: '来源', dataIndex: 'orderSource', align: 'center', width: 100},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '标签', dataIndex: 'tags', width: 180},
+  {title: '标签', dataIndex: 'tags', width: 140},
   {title: '下单金额', dataIndex: 'orderedTotalAmount', width: 130},
   {title: '结算金额', dataIndex: 'settlementTotalAmount', width: 130},
   {title: '期望配送时间', dataIndex: 'expectDeliveryTime', width: 180},
@@ -300,17 +299,13 @@ function lockTip(row: Order): string {
 /** 订单号列被列设置隐藏时，详情需要另留一个入口。 */
 const entryHidden = computed(() => !columns.value.some((column) => (column as {dataIndex?: string}).dataIndex === 'orderNo'));
 
-/**
- * 未确认（含尚未迁移的旧状态）一律可编辑；已确认、已取消走各自分支。
- * 用「非终态」判断而不是只认 PENDING，避免旧数据或状态扩展时操作列丢掉编辑入口。
- */
 function isUnconfirmed(row: Order): boolean {
-  return row.status !== 'CONFIRMED' && row.status !== 'CANCELLED';
+  return row.status === 'PENDING';
 }
 
 function rowActions(row: Order): ScmActionItem[] {
   const pending = isUnconfirmed(row);
-  const confirmed = row.status === 'CONFIRMED';
+  const confirmed = isConfirmedOrderStatus(row.status);
   // 详情默认走第一列的订单号；只有第一列被隐藏时才补回「更多」
   return [
     {key: 'detail', label: '详情', hidden: !entryHidden.value},
@@ -330,7 +325,7 @@ function onRowAction(key: string, row: Order) {
   } else if (row.orderId != null && key === 'reuse') {
     drawer?.value?.openFromHistory(row.orderId);
   } else if (row.orderId != null && key === 'tag') {
-    tagModal.value?.open([row.orderId]);
+    tagModal.value?.open([row.orderId], row.tag?.tagId ?? null);
   } else if (row.orderId != null && key === 'print' && canPrint.value) {
     openPrint([row.orderId]);
   } else if (row.orderId != null && key === 'lock') {

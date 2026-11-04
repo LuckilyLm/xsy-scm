@@ -91,6 +91,7 @@ class DeliveryDispatchPgIT extends ScmW6PgITBase {
         assertThat(jdbc.queryForObject("SELECT dispatched_by FROM xsy_delivery_route WHERE id = ?", String.class, one.routeId()))
                 .as("发车时点必须成对留下操作人").isNotBlank();
         assertThat(fulfillmentStatus(one.routeId(), one.orderId())).isEqualTo("IN_TRANSIT");
+        assertThat(salesOrderService.lock(one.orderId()).getStatus()).isEqualTo("DISPATCHED");
         assertThat(onHand(one.warehouseId(), one.skuId())).as("扣的是分拣实发量 3，不是订单行数量").isEqualByComparingTo("7.0000");
         assertThat(jdbc.queryForObject(
                 "SELECT i.sales_order_item_id FROM xsy_inventory_outbound_item i WHERE i.outbound_id = ?",
@@ -143,6 +144,7 @@ class DeliveryDispatchPgIT extends ScmW6PgITBase {
         assertThat(routeStatus(one.routeId())).as("整条线路留在 PLANNED，不出现半发车").isEqualTo("PLANNED");
         assertThat(onHand(one.warehouseId(), one.skuId())).isEqualByComparingTo("10.0000");
         assertThat(outboundCountForRoute(one.routeId())).isZero();
+        assertThat(salesOrderService.lock(one.orderId()).getStatus()).isEqualTo("CONFIRMED");
     }
 
     @Test
@@ -169,9 +171,11 @@ class DeliveryDispatchPgIT extends ScmW6PgITBase {
 
         routeService.sign(one.routeId(), one.orderId(), signForm(one.routeId(), one.orderId(), "EXCEPTION", "客户拒收"));
         assertThat(fulfillmentStatus(one.routeId(), one.orderId())).isEqualTo("EXCEPTION");
+        assertThat(salesOrderService.lock(one.orderId()).getStatus()).isEqualTo("EXCEPTION");
         expectCode(() -> routeService.complete(one.routeId(), versionForm(one.routeId())), ROUTE_NOT_ALL_SIGNED.getCode());
 
         routeService.sign(one.routeId(), one.secondOrderId(), signForm(one.routeId(), one.secondOrderId(), "SIGNED", null));
+        assertThat(salesOrderService.lock(one.secondOrderId()).getStatus()).isEqualTo("SIGNED");
         routeService.complete(one.routeId(), versionForm(one.routeId()));
 
         assertThat(routeStatus(one.routeId())).isEqualTo("COMPLETED");

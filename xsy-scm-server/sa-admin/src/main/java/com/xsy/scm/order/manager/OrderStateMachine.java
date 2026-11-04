@@ -6,13 +6,15 @@ import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_STATE_INVALID;
 
 /**
- * 只管订单生命周期，履约状态不进入这张状态图。
+ * 订单确认、发车与签收共享一个当前状态；业务动作通过此状态图推进。
  */
 public final class OrderStateMachine {
     private OrderStateMachine() {
     }
 
     public static boolean canTransition(String from, String to) {
+        if (from == null || to == null)
+            return false;
         ScmOrderStatusEnum fromStatus;
         try {
             fromStatus = ScmOrderStatusEnum.valueOf(from);
@@ -22,6 +24,9 @@ public final class OrderStateMachine {
         return switch (fromStatus) {
             case PENDING ->
                 to.equals(ScmOrderStatusEnum.CONFIRMED.name()) || to.equals(ScmOrderStatusEnum.CANCELLED.name());
+            case CONFIRMED -> to.equals(ScmOrderStatusEnum.DISPATCHED.name());
+            case DISPATCHED ->
+                to.equals(ScmOrderStatusEnum.SIGNED.name()) || to.equals(ScmOrderStatusEnum.EXCEPTION.name());
             default -> false;
         };
     }
@@ -41,7 +46,8 @@ public final class OrderStateMachine {
      * 订单创建时即锁定报价，改单后由服务层沿用行上已有的报价重新锁定单价； 是否需要按最新价格重算由“批量核价”显式完成，改单本身不静默改价。
      */
     public static void editable(String state) {
-        if (!ScmOrderStatusEnum.PENDING.name().equals(state) && !ScmOrderStatusEnum.CONFIRMED.name().equals(state))
+        if (!ScmOrderStatusEnum.PENDING.name().equals(state) && !ScmOrderStatusEnum.CONFIRMED.name().equals(state)
+            && !ScmOrderStatusEnum.DISPATCHED.name().equals(state))
             throw new ScmBusinessException(ORDER_STATE_INVALID);
     }
 

@@ -20,7 +20,7 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * 销售分析（只读）。全部维度固定使用 {@code CONFIRMED + confirmed_at + settlement_*}。
+ * 销售分析（只读）。全部维度固定使用 已确认交易（含后续配送、签收阶段）+ {@code confirmed_at + settlement_*}。
  *
  * <p>
  * 不接受客户端排序：这些查询都是 join + group by，裸列名在多张表里同名，交给框架拼 ORDER BY 会产生歧义列； 排序由 SQL 固定，因此对 {@code sortItemList} 显式报错而不是静默忽略。

@@ -25,7 +25,7 @@ import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_NOT_FOUND;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_STATE_INVALID;
 
 /**
- * 锁单不是订单状态，只是「改单需要额外授权」的开关：锁住后状态仍是已确认，配送、对账和商城展示都不受影响。
+ * 锁单不是订单状态，只是「改单需要额外授权」的开关：锁住后不改变当前订单状态，配送、对账和商城展示都不受影响。
  *
  * <p>
  * 锁单由财务/管理员手动办理，或由发车满 7 天的定时任务自动办理；解锁是独立权限，避免同一角色随手把锁解开。
@@ -56,7 +56,7 @@ public class OrderLockService {
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO lock(OrderLockForm form) {
         var order = lockForWrite(form);
-        if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus()))
+        if (!ScmOrderStatusEnum.isConfirmed(order.getStatus()))
             throw new ScmBusinessException(ORDER_STATE_INVALID);
         if (Boolean.TRUE.equals(order.getLockedFlag()))
             throw new ScmBusinessException(ORDER_LOCKED);

@@ -48,7 +48,7 @@ public class SalesOrderDetailReadService {
         boolean fundingVisible = ScmDataScopeService.hasPermission(FinancePermission.RECEIVABLE_QUERY)
             && ScmDataScopeService.hasPermission(FinancePermission.RECEIPT_QUERY);
         detail.setFundingFactsVisible(fundingVisible);
-        if (fundingVisible && ScmOrderStatusEnum.CONFIRMED.name().equals(detail.getStatus())) {
+        if (fundingVisible && ScmOrderStatusEnum.isConfirmed(detail.getStatus())) {
             BigDecimal payable = orderPayableQueryService.payableOfConfirmedOrder(orderId);
             BigDecimal received = orderPayableQueryService.receivedAmountOf(orderId);
             SalesOrderDetailVO.FundingFact funding = new SalesOrderDetailVO.FundingFact();

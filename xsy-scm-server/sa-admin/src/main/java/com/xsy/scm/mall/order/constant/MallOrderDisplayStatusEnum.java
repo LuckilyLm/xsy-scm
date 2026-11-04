@@ -1,10 +1,9 @@
 package com.xsy.scm.mall.order.constant;
 
-import com.xsy.scm.delivery.constant.ScmDeliveryFulfillmentStatusEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 
 /**
- * 商城订单阶段由订单状态和配送进度合成，只用于页面展示，不保存也不改变订单状态机；能否取消仍由订单规则决定。
+ * 商城页面分类直接映射订单当前状态，取消仍由订单状态机控制。
  */
 public enum MallOrderDisplayStatusEnum {
     /**
@@ -29,34 +28,24 @@ public enum MallOrderDisplayStatusEnum {
     CANCELLED;
 
     /**
-     * 由订单状态与履约状态派生展示分类。
+     * 由订单当前状态映射展示分类。
      *
      * @param orderStatus
      *            销售订单状态；未知值按「待处理」兜底，不抛异常以免列表整页失败
      * @param fulfillmentStatus
-     *            生效线路订单的履约状态；无线路订单时传 {@code null}
+     *            保留调用兼容，不参与当前状态判定
      */
     public static MallOrderDisplayStatusEnum derive(String orderStatus, String fulfillmentStatus) {
-        if (ScmOrderStatusEnum.CANCELLED.name().equals(orderStatus)) {
+        if (ScmOrderStatusEnum.CANCELLED.name().equals(orderStatus))
             return CANCELLED;
-        }
-        if (ScmOrderStatusEnum.PENDING.name().equals(orderStatus)) {
-            return PENDING;
-        }
-        if (!ScmOrderStatusEnum.CONFIRMED.name().equals(orderStatus)) {
-            // 未知状态不猜：宁可显示「待处理」让客户去问，也不要谎称已备货或已完成
-            return PENDING;
-        }
-        // 走到这里必然是 CONFIRMED。已确认但还没发车时归「备货中」而不是「待处理」：
-        // 后台已接单，只是尚未排车，把它说成待处理会让客户以为没人管。
-        if (ScmDeliveryFulfillmentStatusEnum.IN_TRANSIT.name().equals(fulfillmentStatus)) {
+        if (ScmOrderStatusEnum.CONFIRMED.name().equals(orderStatus))
+            return PREPARING;
+        if (ScmOrderStatusEnum.DISPATCHED.name().equals(orderStatus))
             return DELIVERING;
-        }
-        if (ScmDeliveryFulfillmentStatusEnum.SIGNED.name().equals(fulfillmentStatus)
-            || ScmDeliveryFulfillmentStatusEnum.EXCEPTION.name().equals(fulfillmentStatus)) {
+        if (ScmOrderStatusEnum.SIGNED.name().equals(orderStatus)
+            || ScmOrderStatusEnum.EXCEPTION.name().equals(orderStatus))
             return COMPLETED;
-        }
-        return PREPARING;
+        return PENDING;
     }
 
     /**

@@ -17,7 +17,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 @Data
 public class ReportOverviewVO {
 
-    /** {@code status=CONFIRMED} 且 {@code confirmed_at} 落在区间内的订单数。 */
+    /** 已确认交易（含后续配送、签收阶段），且 {@code confirmed_at} 落在区间内的订单数。 */
     private Long confirmedOrderCount;
 
     /** 同一确认范围内的去重下单客户数。 */

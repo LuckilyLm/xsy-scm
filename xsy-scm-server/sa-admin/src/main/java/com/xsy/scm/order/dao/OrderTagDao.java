@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Results;
@@ -18,9 +18,9 @@ import org.apache.ibatis.annotations.Results;
 public interface OrderTagDao {
     @Select("SELECT NULL::BIGINT AS order_id, id AS tag_id, name, color "
         + "FROM xsy_order_tag WHERE enabled = TRUE ORDER BY id")
-    @Results(id = "orderTag", value = {@Result(column = "order_id", property = "orderId"),
-        @Result(column = "tag_id", property = "tagId"), @Result(column = "name", property = "name"),
-        @Result(column = "color", property = "color")})
+    @Results(id = "orderTag",
+        value = {@Result(column = "order_id", property = "orderId"), @Result(column = "tag_id", property = "tagId"),
+            @Result(column = "name", property = "name"), @Result(column = "color", property = "color")})
     List<OrderTagVO> tags();
 
     @Select("SELECT NULL::BIGINT AS order_id, id AS tag_id, name, color "
@@ -39,9 +39,9 @@ public interface OrderTagDao {
         <script>
         SELECT l.order_id, t.id AS tag_id, t.name, t.color
         FROM xsy_order_tag_link l JOIN xsy_order_tag t ON t.id = l.tag_id
-        WHERE l.order_id IN
+        WHERE l.active = TRUE AND l.order_id IN
         <foreach collection="orderIds" item="id" open="(" separator="," close=")">#{id}</foreach>
-        ORDER BY t.id
+        ORDER BY l.created_at DESC, t.id DESC
         </script>
         """)
     @ResultMap("orderTag")
@@ -49,10 +49,15 @@ public interface OrderTagDao {
 
     @Insert("""
         INSERT INTO xsy_order_tag_link(order_id, tag_id, created_by)
-        VALUES (#{orderId}, #{tagId}, #{operator}) ON CONFLICT (order_id, tag_id) DO NOTHING
+        VALUES (#{orderId}, #{tagId}, #{operator}) ON CONFLICT (order_id, tag_id) DO UPDATE
+        SET active = TRUE, created_by = EXCLUDED.created_by, created_at = CURRENT_TIMESTAMP
+        WHERE xsy_order_tag_link.active = FALSE
         """)
     int attach(@Param("orderId") Long orderId, @Param("tagId") Long tagId, @Param("operator") String operator);
 
-    @Delete("DELETE FROM xsy_order_tag_link WHERE order_id = #{orderId} AND tag_id = #{tagId}")
+    @Update("UPDATE xsy_order_tag_link SET active = FALSE WHERE order_id = #{orderId} AND active = TRUE")
+    int clear(@Param("orderId") Long orderId);
+
+    @Update("UPDATE xsy_order_tag_link SET active = FALSE WHERE order_id = #{orderId} AND tag_id = #{tagId} AND active = TRUE")
     int detach(@Param("orderId") Long orderId, @Param("tagId") Long tagId);
 }

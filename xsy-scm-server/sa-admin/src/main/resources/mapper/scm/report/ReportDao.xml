@@ -23,7 +23,7 @@
     <!-- ============ 销售口径片段 ============ -->
     <sql id="salesConfirmed">
         o.deleted = FALSE
-            AND o.status = 'CONFIRMED'
+            AND o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
             AND o.confirmed_at &gt;= #{startAt}
             AND o.confirmed_at &lt; #{endAt}
     </sql>
@@ -133,7 +133,7 @@
             mv.purchaseInCostMissingCount, bal.inventoryBookValue, bal.stockedSkuCount, CURRENT_TIMESTAMP AS snapshotAt
         FROM (SELECT COUNT(*) AS confirmedOrderCount, COUNT(DISTINCT o.customer_id) AS customerCount,
             COALESCE(SUM(o.settlement_total_amount),
-            0) AS confirmedOrderAmount FROM xsy_sales_order o WHERE o.deleted = FALSE AND o.status = 'CONFIRMED' AND
+            0) AS confirmedOrderAmount FROM xsy_sales_order o WHERE o.deleted = FALSE AND o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION') AND
             o.confirmed_at &gt;= #{startAt} AND o.confirmed_at &lt; #{endAt}
         <if test="query.customerId != null">AND o.customer_id = #{query.customerId}</if>
         <if test="query.sellerId != null">AND o.seller_id = #{query.sellerId}</if>
@@ -195,7 +195,7 @@
         LEFT JOIN (SELECT (o.confirmed_at AT TIME ZONE 'Asia/Shanghai')::date AS day, COUNT(*) AS order_count,
             COUNT(DISTINCT o.customer_id) AS customer_count,
             SUM(o.settlement_total_amount) AS order_amount FROM xsy_sales_order o WHERE o.deleted = FALSE AND
-            o.status = 'CONFIRMED' AND o.confirmed_at &gt;= #{startAt} AND o.confirmed_at &lt; #{endAt}
+            o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION') AND o.confirmed_at &gt;= #{startAt} AND o.confirmed_at &lt; #{endAt}
         <if test="query.customerId != null">AND o.customer_id = #{query.customerId}</if>
         <if test="query.sellerId != null">AND o.seller_id = #{query.sellerId}</if>
         <if test="query.orderSource != null and query.orderSource != ''">AND o.order_source = #{query.orderSource}</if>

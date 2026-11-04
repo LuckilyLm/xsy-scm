@@ -182,7 +182,7 @@ public class MallOrderQueryService {
         result.setProgress(progressNodes(order, deliveryProgress));
         result.setDiscount(discount(orderId));
         // 资金数据只在已确认订单计算：确认前实重未齐，应付没有确定算法；支付时点也只可能在确认后。
-        if (ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus())) {
+        if (ScmOrderStatusEnum.isConfirmed(order.getStatus())) {
             BigDecimal payable = payableQueryService.payableOfConfirmedOrder(orderId);
             // 客户看到的「已付」是实收：余额 / 在线走支付记录，货到付款走收款记录。
             BigDecimal paid = payableQueryService.receivedAmountOf(orderId);

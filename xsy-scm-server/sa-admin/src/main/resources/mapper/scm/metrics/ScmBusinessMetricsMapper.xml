@@ -179,7 +179,7 @@
         SELECT COUNT(*)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-            AND so.status = 'CONFIRMED'
+            AND so.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
             AND so.confirmed_at &gt;= #{startTime}
             AND so.confirmed_at &lt; #{endTime}
         <include refid="salesFilter"/>
@@ -190,7 +190,7 @@
         SELECT COALESCE(SUM(so.settlement_total_amount), 0)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-            AND so.status = 'CONFIRMED'
+            AND so.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
             AND so.confirmed_at &gt;= #{startTime}
             AND so.confirmed_at &lt; #{endTime}
         <include refid="salesFilter"/>
@@ -202,7 +202,7 @@
         SELECT COALESCE(SUM(so.ordered_total_amount), 0)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-            AND so.status = 'CONFIRMED'
+            AND so.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
             AND so.created_at &gt;= #{startTime}
             AND so.created_at &lt; #{endTime}
         <include refid="scopeSo"/>
@@ -212,7 +212,7 @@
         SELECT COUNT(*)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-            AND so.status = 'CONFIRMED'
+            AND so.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
         <include refid="scopeSo"/>
     </select>
 
@@ -220,7 +220,7 @@
         SELECT COALESCE(SUM(so.settlement_total_amount), 0)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-            AND so.status = 'CONFIRMED'
+            AND so.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
         <include refid="scopeSo"/>
     </select>
 
@@ -228,7 +228,7 @@
         SELECT COUNT(DISTINCT so.customer_id)
         FROM xsy_sales_order so
         WHERE so.deleted = FALSE
-            AND so.status = 'CONFIRMED'
+            AND so.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
             AND so.confirmed_at &gt;= #{startTime}
             AND so.confirmed_at &lt; #{endTime}
         <include refid="salesFilter"/>
@@ -239,7 +239,7 @@
         SELECT COALESCE(c.name, '客户 #' || ranked.customer_id) AS name, ranked.amount
         FROM (SELECT so.customer_id,
             COALESCE(SUM(so.settlement_total_amount), 0) AS amount FROM xsy_sales_order so WHERE so.deleted = FALSE AND
-            so.status = 'CONFIRMED' AND so.confirmed_at &gt;= #{startTime} AND so.confirmed_at &lt; #{endTime}
+            so.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION') AND so.confirmed_at &gt;= #{startTime} AND so.confirmed_at &lt; #{endTime}
         <include refid="scopeSo"/>
         GROUP BY so.customer_id) ranked
         LEFT JOIN xsy_customer c ON c.id = ranked.customer_id
@@ -261,7 +261,7 @@
         FROM (SELECT item.spu_id,
             COALESCE(SUM(item.settlement_line_amount),
             0) AS amount FROM xsy_sales_order_item item JOIN xsy_sales_order so ON so.id = item.order_id WHERE
-            item.deleted = FALSE AND so.deleted = FALSE AND so.status = 'CONFIRMED' AND
+            item.deleted = FALSE AND so.deleted = FALSE AND so.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION') AND
             so.confirmed_at &gt;= #{startTime} AND so.confirmed_at &lt; #{endTime}
         <include refid="scopeSo"/>
         GROUP BY item.spu_id) ranked
@@ -442,7 +442,7 @@
         <if test="selection.sales">
             , sales_daily AS(SELECT (so.confirmed_at AT TIME ZONE 'Asia/Shanghai')::date AS day, COUNT(*) AS orders,
                 SUM(so.settlement_total_amount) AS sales FROM xsy_sales_order so WHERE so.deleted = FALSE AND
-                so.status = 'CONFIRMED' AND
+                so.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION') AND
                 so.confirmed_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai') AND
                 so.confirmed_at &lt; ((#{endDate}::date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai')
             <include refid="scopeSo"/>

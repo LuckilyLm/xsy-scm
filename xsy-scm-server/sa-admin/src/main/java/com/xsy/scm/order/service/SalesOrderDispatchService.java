@@ -1,6 +1,8 @@
 package com.xsy.scm.order.service;
 
 import com.xsy.scm.order.dao.SalesOrderDao;
+import com.xsy.scm.order.constant.ScmOrderStatusEnum;
+import com.xsy.scm.order.manager.OrderStateMachine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -9,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 
 /**
- * 发车出库把时间写回订单。
+ * 配送动作在同一事务内推进订单状态。
  *
  * <p>
  * 订单的「已发车」时间是 7 天自动锁单的起算点，只能由订单域写入；配送域负责线路与出库，需要回写时通过这里，不直接改订单表。
@@ -28,6 +30,20 @@ public class SalesOrderDispatchService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public boolean markDispatched(Long orderId, OffsetDateTime at, String operator) {
+        var order = salesOrderDao.lock(orderId);
+        if (order == null || !OrderStateMachine.canTransition(order.getStatus(), ScmOrderStatusEnum.DISPATCHED.name()))
+            return false;
         return salesOrderDao.markDispatched(orderId, at, operator) == 1;
     }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean markSigned(Long orderId, String result, String operator) {
+        if (!ScmOrderStatusEnum.SIGNED.name().equals(result) && !ScmOrderStatusEnum.EXCEPTION.name().equals(result))
+            return false;
+        var order = salesOrderDao.lock(orderId);
+        if (order == null || !OrderStateMachine.canTransition(order.getStatus(), result))
+            return false;
+        return salesOrderDao.markDeliveryResult(orderId, result, operator) == 1;
+    }
+
 }

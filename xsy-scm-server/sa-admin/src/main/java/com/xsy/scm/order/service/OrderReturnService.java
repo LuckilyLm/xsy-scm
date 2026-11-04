@@ -239,7 +239,7 @@ public class OrderReturnService {
         var order = salesOrderService.lock(orderReturnAddForm.getOrderId());
         if (enforceEmployeeScope && !dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId()))
             throw new ScmDataScopeException();
-        if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus()))
+        if (!ScmOrderStatusEnum.isConfirmed(order.getStatus()))
             throw new ScmBusinessException(ORDER_RETURN_ORDER_NOT_CONFIRMED);
         OrderValidator.reason(orderReturnAddForm.getReason(), ORDER_RETURN_ITEM_INVALID);
         var originals = salesOrderItemDao.list(order.getId()).stream()

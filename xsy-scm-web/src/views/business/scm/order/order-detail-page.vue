@@ -62,11 +62,11 @@
                 </div>
                 <div class="scm-field">
                   <dt class="scm-field__label">订单状态</dt>
-                  <dd class="scm-field__value">{{ SCM_ORDER_STATUS_ENUM[order.status ?? '']?.desc ?? order.status }}</dd>
+                  <dd class="scm-field__value">{{ SCM_ORDER_STATUS_ENUM[order.status || '']?.desc ?? '—' }}</dd>
                 </div>
-                <div v-if="order.tags?.length" class="scm-field">
+                <div v-if="order.tag" class="scm-field">
                   <dt class="scm-field__label">标签</dt>
-                  <dd class="scm-field__value">{{ order.tags.map((tag) => tag.name).join('、') }}</dd>
+                  <dd class="scm-field__value">{{ order.tag.name }}</dd>
                 </div>
                 <div class="scm-field">
                   <dt class="scm-field__label">订单来源</dt>
@@ -171,7 +171,7 @@ import {useRoute, useRouter} from 'vue-router';
 import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
-import {SCM_ORDER_SOURCE_ENUM, SCM_ORDER_STATUS_ENUM} from '/@/constants/business/scm/order-const';
+import {isConfirmedOrderStatus, SCM_ORDER_SOURCE_ENUM, SCM_ORDER_STATUS_ENUM} from '/@/constants/business/scm/order-const';
 import {datetime} from '../common/scm-display';
 import {hasPermission} from '../common/scm-permission';
 import {amount} from './order-form-model';
@@ -197,7 +197,7 @@ const canOperate = computed(() => {
   if (status === 'PENDING' && (hasPermission('scm:order:confirm') || hasPermission('scm:order:actual-quantity'))) return true;
   if (status === 'PENDING' && hasPermission('scm:order:cancel')) return true;
   if (
-    status === 'CONFIRMED' &&
+    isConfirmedOrderStatus(status) &&
     (hasPermission('scm:order:return:add') ||
       (order.value?.settlementMethod === 'COD' && hasPermission('scm:finance:receipt:add')) ||
       ((!order.value?.settlementMethod || order.value?.settlementMethod === 'WALLET') && hasPermission('scm:payment:intent:create')))

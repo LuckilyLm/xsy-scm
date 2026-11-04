@@ -7,7 +7,7 @@ import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_SOURCE_INVALID;
 
 /**
- * 采购需求来源约束：只有未删除且 {@code CONFIRMED} 的销售订单可以生成采购需求。
+ * 采购需求来源约束：只有未删除且已经确认的销售订单可以生成采购需求（含后续配送与签收阶段）。
  *
  * <p>
  * {@code uk_purchase_demand_source_active} 只约束「一个销售订单行只产生一条活动需求」，不约束来源订单状态；数据库层也没有外键。 这条规则独立于查询 SQL
@@ -19,13 +19,13 @@ public final class PurchaseDemandSourceGuard {
     }
 
     /**
-     * 断言来源销售订单可产生采购需求；来源缺失、已软删或状态不是 {@code CONFIRMED} 时抛 40980。
+     * 断言来源销售订单可产生采购需求；来源缺失、已软删或尚未确认或已取消 时抛 40980。
      */
     public static void requireConfirmed(SalesOrderEntity order) {
         if (order == null || Boolean.TRUE.equals(order.getDeleted())) {
             throw new ScmBusinessException(PURCHASE_DEMAND_SOURCE_INVALID);
         }
-        if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus())) {
+        if (!ScmOrderStatusEnum.isConfirmed(order.getStatus())) {
             throw new ScmBusinessException(PURCHASE_DEMAND_SOURCE_INVALID);
         }
     }
@@ -35,6 +35,6 @@ public final class PurchaseDemandSourceGuard {
      */
     public static boolean isConfirmed(SalesOrderEntity order) {
         return order != null && !Boolean.TRUE.equals(order.getDeleted())
-            && ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus());
+            && ScmOrderStatusEnum.isConfirmed(order.getStatus());
     }
 }

@@ -522,6 +522,9 @@ public class DeliveryRouteService {
             ScmOperator.current()) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
 
+        if (!salesOrderDispatchService.markSigned(orderId, form.getResult(), ScmOperator.current()))
+            throw new ScmBusinessException(STATE_INVALID);
+
         // 签收是订单级终态，也是应收的形成时点。只有 markSigned 真改到那一行才生成——返回 0 已经先抛了冲突，
         // 应收只属于那次成功的签收，不会出现两笔。EXCEPTION 不形成应收，也不反冲 SALES_OUT。
         // 签收时间和签收人由生成器回读 delivery_route_order：signed_at 用的是数据库时钟，这里另取 now() 会多出一个时间点。

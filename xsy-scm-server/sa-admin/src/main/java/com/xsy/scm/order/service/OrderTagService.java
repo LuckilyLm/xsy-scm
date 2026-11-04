@@ -11,6 +11,9 @@ import com.xsy.scm.order.domain.form.OrderTagCreateForm;
 import com.xsy.scm.order.domain.vo.OrderTagVO;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
@@ -55,7 +58,10 @@ public class OrderTagService {
 
     @Transactional
     public void apply(OrderTagAssignForm form) {
-        if (tagDao.tag(form.getTagId()) == null) {
+        boolean replace = form.getAction() == OrderTagAssignForm.Action.SET
+            || form.getAction() == OrderTagAssignForm.Action.ADD;
+        if (form.getAction() == null || (form.getAction() != OrderTagAssignForm.Action.CLEAR && form.getTagId() == null)
+            || (replace && tagDao.tag(form.getTagId()) == null)) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         List<Long> ids = form.getOrderIds().stream().distinct().sorted().toList();
@@ -72,10 +78,18 @@ public class OrderTagService {
             if (!scope.allows(order.getSellerId()))
                 throw new ScmDataScopeException();
         }
+        Map<Long, List<OrderTagVO>> current = tagDao.tagsByOrders(ids).stream()
+            .collect(Collectors.groupingBy(OrderTagVO::getOrderId));
         for (Long id : ids) {
-            if (form.getAction() == OrderTagAssignForm.Action.ADD) {
+            var previous = current.getOrDefault(id, List.of());
+            if (replace) {
+                if (previous.size() == 1 && Objects.equals(previous.getFirst().getTagId(), form.getTagId()))
+                    continue;
+                tagDao.clear(id);
                 tagDao.attach(id, form.getTagId(), operator);
-            } else {
+            } else if (form.getAction() == OrderTagAssignForm.Action.CLEAR) {
+                tagDao.clear(id);
+            } else if (previous.stream().anyMatch(tag -> Objects.equals(tag.getTagId(), form.getTagId()))) {
                 tagDao.detach(id, form.getTagId());
             }
         }

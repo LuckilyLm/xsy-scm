@@ -23,10 +23,20 @@ public enum ScmOrderStatusEnum {
      */
     CONFIRMED("已确认"),
 
+    DISPATCHED("已发车"),
+    SIGNED("已签收"),
+    EXCEPTION("签收异常"),
+
     /**
      * 已取消：不再参与分拣与配送。
      */
     CANCELLED("已取消");
 
     private final String desc;
+
+    /** 已确认的交易，包括后续配送和签收阶段；用于历史价格、退货、资金与统计读取。 */
+    public static boolean isConfirmed(String status) {
+        return CONFIRMED.name().equals(status) || DISPATCHED.name().equals(status) || SIGNED.name().equals(status)
+            || EXCEPTION.name().equals(status);
+    }
 }

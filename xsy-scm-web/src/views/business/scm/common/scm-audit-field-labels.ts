@@ -45,6 +45,7 @@ export const SCM_AUDIT_FIELD_LABELS: Record<string, string> = {
   gifts: '赠品',
   items: '商品明细',
   tags: '标签',
+  tag: '标签',
   funding: '资金',
   refunds: '退款单',
   returns: '退货单',

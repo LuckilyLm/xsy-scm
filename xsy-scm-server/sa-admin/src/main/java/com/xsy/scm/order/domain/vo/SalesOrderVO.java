@@ -23,6 +23,8 @@ public class SalesOrderVO {
     private Long originalOrderId;
     private String supplementReason;
     private String status;
+    @JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    private OrderTagVO tag;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal orderedTotalAmount;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

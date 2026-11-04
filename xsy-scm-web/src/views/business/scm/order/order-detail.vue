@@ -10,15 +10,17 @@
         <!-- 当前状态下真正要做的动作留在外面；只有一个次要动作时直接显示，多个才收进「更多」 -->
         <a-space class="actions scm-detail-actions">
           <a-button v-if="order.status === 'PENDING'" type="primary" v-privilege="'scm:order:confirm'" @click="confirm"> 确认订单 </a-button>
-          <a-button v-if="order.status === 'CONFIRMED'" v-privilege="'scm:order:return:add'" @click="returnForm?.open(order)">申请退货 </a-button>
+          <a-button v-if="isConfirmedOrderStatus(order.status)" v-privilege="'scm:order:return:add'" @click="returnForm?.open(order)"
+            >申请退货
+          </a-button>
           <a-button
-            v-if="order.status === 'CONFIRMED' && (!order.settlementMethod || order.settlementMethod === 'WALLET')"
+            v-if="isConfirmedOrderStatus(order.status) && (!order.settlementMethod || order.settlementMethod === 'WALLET')"
             v-privilege="'scm:payment:intent:create'"
             @click="paymentDrawer?.open(order)"
             >订单支付</a-button
           >
           <a-button
-            v-if="order.status === 'CONFIRMED' && order.settlementMethod === 'COD'"
+            v-if="isConfirmedOrderStatus(order.status) && order.settlementMethod === 'COD'"
             v-privilege="'scm:finance:receipt:add'"
             @click="openCodCollection"
             >货到付款收款</a-button
@@ -39,7 +41,8 @@
         <section class="detail-section">
           <h3>核心摘要</h3>
           <a-space :size="4" wrap class="smart-margin-bottom10">
-            <a-tag v-for="tag in order.tags ?? []" :key="String(tag.tagId)" :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
+            <ScmStatusTag :tone="orderStatusTone(order.status)" :label="SCM_ORDER_STATUS_ENUM[order.status || '']?.desc || '—'" />
+            <a-tag v-if="order.tag" :color="tagColor(order.tag.color)">{{ order.tag.name }}</a-tag>
           </a-space>
           <a-descriptions bordered size="small" :column="2">
             <a-descriptions-item label="订单号">{{ order.orderNo }}</a-descriptions-item>
@@ -244,6 +247,8 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import {orderStatusTone} from './order-status-tone';
 import LocalTable from '/@/components/support/local-table/index.vue';
 import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
@@ -258,7 +263,7 @@ import {tagColor} from '/@/api/business/scm/order-tag-api';
 import {orderLogApi} from '/@/api/business/scm/order-log-api';
 import {promotionApi} from '/@/api/business/scm/promotion-api';
 import type {OrderDiscountAppliedActivity, PromotionCouponInstance, PromotionDiscount} from '/@/views/business/scm/promotion/promotion-types';
-import {SCM_ORDER_OPERATION_ENUM} from '/@/constants/business/scm/order-const';
+import {isConfirmedOrderStatus, SCM_ORDER_STATUS_ENUM, SCM_ORDER_OPERATION_ENUM} from '/@/constants/business/scm/order-const';
 import type {Order, Item, Id, LogRow} from './order-types';
 import {amount, fixed} from './order-form-model';
 import {datetime} from '../common/scm-display';

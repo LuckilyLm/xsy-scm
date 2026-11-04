@@ -73,6 +73,7 @@ export interface Order {
   confirmedAt?: string | null;
   items: Item[];
   address: Address;
+  tag?: import('/@/api/business/scm/order-tag-api').OrderTag | null;
   tags?: import('/@/api/business/scm/order-tag-api').OrderTag[];
   /** 订单优惠；无优惠时为 null。金额列不含优惠，原价和优惠额分开显示。 */
   discount?: OrderDiscount | null;

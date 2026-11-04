@@ -47,7 +47,7 @@
         FROM xsy_sales_order_item oi
         JOIN xsy_sales_order o ON o.id = oi.order_id
             AND o.deleted = FALSE
-        WHERE o.status = 'CONFIRMED'
+        WHERE o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
             AND oi.deleted = FALSE
             <!-- 非标行允许还没称重：计划数量取 COALESCE(实发量, 订购量)，与 Java 侧 PlannedQuantity 同一口径 -->
             AND COALESCE(oi.actual_quantity, oi.ordered_quantity) &gt; 0
@@ -158,7 +158,7 @@
             r.warehouse_id = #{query.warehouseId} AND
             r.sku_id = oi.sku_id /* 「本批」= 与外层同源的确认窗口内的订单集合 */ AND
             r.source_document_id IN (SELECT w.id FROM xsy_sales_order w WHERE w.deleted = FALSE AND
-            w.status = 'CONFIRMED' AND w.confirmed_at &gt;= #{query.startAt} AND
+            w.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION') AND w.confirmed_at &gt;= #{query.startAt} AND
             w.confirmed_at &lt; #{query.endAt})), 0) AS selected_order_reserved_quantity,
             COALESCE((SELECT SUM(GREATEST(oi2.planned_quantity - oi2.received_quantity - COALESCE((SELECT SUM(
             a2.allocated_quantity) FROM xsy_purchase_demand_allocation a2 JOIN xsy_purchase_demand d3 ON d3.id =
@@ -186,7 +186,7 @@
             AND o.deleted = FALSE LEFT JOIN xsy_product_sku k ON k.id = oi.sku_id LEFT JOIN xsy_product_spu p ON p.id =
             k.spu_id LEFT JOIN xsy_product_category cat ON cat.id = p.category_id LEFT JOIN xsy_inventory_balance b ON
             b.sku_id = oi.sku_id AND b.warehouse_id = #{query.warehouseId} AND
-            b.deleted = FALSE WHERE o.status = 'CONFIRMED' AND oi.deleted = FALSE AND
+            b.deleted = FALSE WHERE o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION') AND oi.deleted = FALSE AND
             COALESCE(oi.actual_quantity, oi.ordered_quantity) &gt; 0 AND
             o.confirmed_at &gt;= #{query.startAt} AND o.confirmed_at &lt; #{query.endAt}
         <if test="query.categoryId != null">AND p.category_id = #{query.categoryId}</if>

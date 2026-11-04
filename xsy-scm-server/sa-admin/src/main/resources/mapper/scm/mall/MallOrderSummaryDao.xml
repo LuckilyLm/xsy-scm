@@ -13,7 +13,7 @@
             AND o.order_source = 'MALL'
             AND o.deleted = FALSE
             AND i.deleted = FALSE
-            AND o.status IN ('PENDING', 'CONFIRMED')
+            AND o.status IN ('PENDING', 'CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
         <if test="startAt != null">AND o.created_at &gt;= #{startAt}</if>
         <if test="endAt != null">AND o.created_at &lt; #{endAt}</if>
     </sql>

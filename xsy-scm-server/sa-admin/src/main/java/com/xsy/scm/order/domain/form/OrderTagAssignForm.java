@@ -11,7 +11,6 @@ import lombok.Data;
 
 @Data
 public class OrderTagAssignForm {
-    @NotNull(message = "标签不能为空")
     @Positive(message = "标签编号必须为正数")
     private Long tagId;
 
@@ -23,6 +22,8 @@ public class OrderTagAssignForm {
     private Action action;
 
     public enum Action {
+        SET,
+        CLEAR,
         ADD,
         REMOVE
     }

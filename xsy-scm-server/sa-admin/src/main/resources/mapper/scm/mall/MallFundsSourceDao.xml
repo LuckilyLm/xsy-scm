@@ -92,7 +92,7 @@
             MIN(dueDate) FILTER (WHERE openAmount &gt; 0 AND
             dueDate &lt; (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date) AS earliestOverdueDate,
             (SELECT COALESCE(SUM(o.settlement_total_amount),
-            0) FROM xsy_sales_order o WHERE o.customer_id = #{customerId} AND o.status = 'CONFIRMED' AND
+            0) FROM xsy_sales_order o WHERE o.customer_id = #{customerId} AND o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION') AND
             o.deleted = FALSE AND
             NOT EXISTS (SELECT 1 FROM xsy_finance_receivable r WHERE r.source_type = 'SALES_ORDER' AND
             r.source_id = o.id AND r.deleted = FALSE)) AS confirmedOrderAmount

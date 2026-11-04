@@ -17,7 +17,7 @@
             i.sale_unit_snapshot AS unit, i.ordered_quantity AS ordered_quantity, i.sku_code_snapshot AS sku_code,
             i.product_name_snapshot AS product_name, i.spec_name_snapshot AS spec_name,
             i.locked_unit_price AS locked_unit_price FROM xsy_sales_order o JOIN xsy_sales_order_item i ON i.order_id =
-            o.id AND i.deleted = FALSE WHERE o.deleted = FALSE AND o.status = 'CONFIRMED' AND
+            o.id AND i.deleted = FALSE WHERE o.deleted = FALSE AND o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION') AND
             o.customer_id = #{customerId} AND o.confirmed_at &gt;= #{since}),
             agg AS(SELECT sku_id, unit, COUNT(DISTINCT order_id) AS order_count,
             SUM(ordered_quantity) AS ordered_quantity, MAX(confirmed_at) AS last_confirmed_at FROM base GROUP BY sku_id,

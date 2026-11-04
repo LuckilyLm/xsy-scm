@@ -22,7 +22,9 @@ public final class OrderEditPolicy {
         var status = order.getStatus();
         if (ScmOrderStatusEnum.PENDING.name().equals(status))
             return null;
-        if (!ScmOrderStatusEnum.CONFIRMED.name().equals(status))
+        if (ScmOrderStatusEnum.SIGNED.name().equals(status) || ScmOrderStatusEnum.EXCEPTION.name().equals(status))
+            return "订单已签收，金额差异请走退货或红字更正";
+        if (!ScmOrderStatusEnum.CONFIRMED.name().equals(status) && !ScmOrderStatusEnum.DISPATCHED.name().equals(status))
             return "当前订单状态不允许改单";
         // 列表与详情在查询时补出签收标记；写接口仍会独立查一次，不能只靠这个展示字段。
         if (Boolean.TRUE.equals(order.getSignedFlag()))

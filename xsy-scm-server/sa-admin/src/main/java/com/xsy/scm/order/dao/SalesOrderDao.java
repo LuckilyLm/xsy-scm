@@ -59,6 +59,9 @@ public interface SalesOrderDao extends BaseMapper<SalesOrderEntity> {
     int markDispatched(@Param("orderId") Long orderId, @Param("at") java.time.OffsetDateTime at,
         @Param("operator") String operator);
 
+    int markDeliveryResult(@Param("orderId") Long orderId, @Param("status") String status,
+        @Param("operator") String operator);
+
     /** 待自动锁单的订单：已发车、未锁、发车满 7 天。 */
     List<Long> autoLockCandidates(@Param("limit") int limit);
 

@@ -40,7 +40,7 @@
         SELECT o.id
         FROM xsy_sales_order o
         WHERE o.settlement_customer_id = #{settlementCustomerId}
-            AND o.status = 'CONFIRMED'
+            AND o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
             AND o.deleted = FALSE
             AND (o.settlement_method = 'CREDIT' OR o.settlement_method IS NULL)
             AND NOT EXISTS (SELECT 1 FROM xsy_finance_receivable r WHERE r.source_type = 'SALES_ORDER' AND

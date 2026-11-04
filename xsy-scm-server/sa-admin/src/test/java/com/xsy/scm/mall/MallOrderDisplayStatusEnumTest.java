@@ -6,7 +6,7 @@ import com.xsy.scm.mall.order.constant.MallOrderDisplayStatusEnum;
 import org.junit.jupiter.api.Test;
 
 /**
- * 展示分类只是「订单状态 + 配送履约状态」的投影：不写库、不参与状态转换，但派生规则必须稳定。
+ * 商城分类映射唯一订单状态，不依据另一份履约状态覆盖订单状态。
  */
 class MallOrderDisplayStatusEnumTest {
 
@@ -25,17 +25,19 @@ class MallOrderDisplayStatusEnumTest {
     }
 
     @Test
-    void confirmedOrderFollowsTheFulfillmentFact() {
+    void displayCategoryFollowsCurrentOrderStatus() {
         assertThat(MallOrderDisplayStatusEnum.derive("CONFIRMED", null))
                 .isEqualTo(MallOrderDisplayStatusEnum.PREPARING);
         assertThat(MallOrderDisplayStatusEnum.derive("CONFIRMED", "PENDING"))
                 .isEqualTo(MallOrderDisplayStatusEnum.PREPARING);
-        assertThat(MallOrderDisplayStatusEnum.derive("CONFIRMED", "IN_TRANSIT"))
+        assertThat(MallOrderDisplayStatusEnum.derive("DISPATCHED", "IN_TRANSIT"))
                 .isEqualTo(MallOrderDisplayStatusEnum.DELIVERING);
-        assertThat(MallOrderDisplayStatusEnum.derive("CONFIRMED", "SIGNED"))
+        assertThat(MallOrderDisplayStatusEnum.derive("SIGNED", "SIGNED"))
                 .isEqualTo(MallOrderDisplayStatusEnum.COMPLETED);
+        assertThat(MallOrderDisplayStatusEnum.derive("CONFIRMED", "SIGNED"))
+                .isEqualTo(MallOrderDisplayStatusEnum.PREPARING);
         // 异常签收（含拒收）也是终态，原因在详情里展示
-        assertThat(MallOrderDisplayStatusEnum.derive("CONFIRMED", "EXCEPTION"))
+        assertThat(MallOrderDisplayStatusEnum.derive("EXCEPTION", "EXCEPTION"))
                 .isEqualTo(MallOrderDisplayStatusEnum.COMPLETED);
     }
 

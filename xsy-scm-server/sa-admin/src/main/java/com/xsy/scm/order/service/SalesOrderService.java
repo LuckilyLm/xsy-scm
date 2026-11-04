@@ -338,6 +338,9 @@ public class SalesOrderService {
         var salesOrder = lock(salesOrderUpdateForm.getOrderId());
         requireOrderSellerScope(salesOrder);
         version(salesOrder.getVersion(), salesOrderUpdateForm.getVersion());
+        if (ScmOrderStatusEnum.SIGNED.name().equals(salesOrder.getStatus())
+            || ScmOrderStatusEnum.EXCEPTION.name().equals(salesOrder.getStatus()))
+            throw new ScmBusinessException(ORDER_SIGNED_EDIT_BLOCKED);
         OrderStateMachine.editable(salesOrder.getStatus());
         // 已确认订单的两道授权闸门：锁单后要「锁单后改单」权限，发车出库后要「发车后改单」权限。
         var dispatched = salesOrder.getDispatchedAt() != null;
@@ -351,7 +354,7 @@ public class SalesOrderService {
         if (pending && salesOrderDao.hasPriceFreezeBlockingFact(salesOrder.getId()))
             throw new ScmBusinessException(ORDER_PENDING_EDIT_BLOCKED);
         // 已确认订单：优惠在确认时已冻结并分摊到行，直接改金额会让分摊与单据对不上，只能取消重下或加单。
-        var confirmed = ScmOrderStatusEnum.CONFIRMED.name().equals(salesOrder.getStatus());
+        var confirmed = ScmOrderStatusEnum.isConfirmed(salesOrder.getStatus());
         // 签收后应收已按出库实发量生成，再改价格或数量会让送货单、订单结算额与账面应收三份数不一致。
         // 差异只能走退货/红字更正，不能在这里悄悄覆盖；异常签收同样属于已交付事实。
         if (confirmed && salesOrderDao.hasSignedFact(salesOrder.getId()))
@@ -821,7 +824,7 @@ public class SalesOrderService {
         if (salesOrderAddForm.getOriginalOrderId() == null)
             return;
         var original = salesOrderDao.selectById(salesOrderAddForm.getOriginalOrderId());
-        if (original == null || !ScmOrderStatusEnum.CONFIRMED.name().equals(original.getStatus())
+        if (original == null || !ScmOrderStatusEnum.isConfirmed(original.getStatus())
             || !Objects.equals(original.getCustomerId(), salesOrderAddForm.getCustomerId()))
             throw new ScmBusinessException(ORDER_ORIGINAL_INVALID);
     }

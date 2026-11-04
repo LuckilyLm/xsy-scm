@@ -116,7 +116,7 @@ public class PaymentIntentService {
         if (claim.replay()) {
             return idempotencyService.replay(claim, PaymentIntentEntity.class);
         }
-        if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.status()) || order.settlementCustomerId() == null
+        if (!ScmOrderStatusEnum.isConfirmed(order.status()) || order.settlementCustomerId() == null
             || form.getAmount() == null || form.getAmount().signum() <= 0 || form.getAmount().scale() > SCALE) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID);
         }

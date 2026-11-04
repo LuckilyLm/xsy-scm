@@ -66,6 +66,8 @@
 </template>
 
 <script setup lang="ts">
+import {isConfirmedOrderStatus} from '/@/constants/business/scm/order-const';
+
 import LocalTable from '/@/components/support/local-table/index.vue';
 import {SCM_PAGE_SIZE_OPTIONS_WIDE} from '/@/constants/business/scm/pagination-const';
 import {computed, ref, watch} from 'vue';
@@ -89,7 +91,7 @@ const candidate = ref<ReceivedCorrectionCandidate>(),
   itemId = ref<Id>(),
   receivedQuantity = ref(''),
   reason = ref('');
-const canCorrect = computed(() => props.order.status === 'CONFIRMED' && hasPermission('scm:order:update'));
+const canCorrect = computed(() => isConfirmedOrderStatus(props.order.status) && hasPermission('scm:order:update'));
 const itemOptions = computed(() =>
   props.order.items
     .filter((item) => item.itemId != null)

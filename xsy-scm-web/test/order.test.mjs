@@ -269,6 +269,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 {
   const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   const sql = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V145__scm_order_tags.sql');
+  const singleTagMigration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V241__scm_order_single_tag.sql');
   const mapper = read('../../xsy-scm-server/sa-admin/src/main/resources/mapper/scm/order/SalesOrderMapper.xml');
   const service = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderTagService.java');
   const readService = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderQueryService.java');
@@ -291,11 +292,32 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     assert.match(mapper, /AND EXISTS \(SELECT 1 FROM xsy_order_tag_link/);
     assert.match(readService, /orderTagDao\.tagsByOrders\(/);
     assert.match(list, /queryForm\.tagId/);
-    assert.match(list, /record\.tags/);
+    assert.match(list, /record\.tag/);
+    assert.doesNotMatch(list, /v-for="tag in record/);
     assert.doesNotMatch(list, /getCheckboxProps/);
     assert.match(list, /selectedAllPending/);
     assert.match(list, /!selectedAllPending/);
     assert.match(list, /key: 'tag', label: '订单标签'/);
+  });
+
+  test('当前标签唯一，沿用原关系表停用旧关联，支持替换和清空', () => {
+    assert.match(singleTagMigration, /CREATE UNIQUE INDEX uk_order_single_tag ON xsy_order_tag_link\(order_id\) WHERE active = TRUE/);
+    assert.match(singleTagMigration, /UPDATE xsy_order_tag_link l SET active = FALSE/);
+    assert.doesNotMatch(singleTagMigration, /CREATE TABLE|DELETE FROM xsy_order_tag_link/);
+    assert.match(service, /tagDao\.clear\(id\)/);
+    assert.match(api, /'SET' \| 'CLEAR'/);
+    assert.doesNotMatch(modal, /<a-radio|mode="multiple"/);
+  });
+
+  test('订单筛选与展示只用原 status 字段，发车和签收推进同一个状态', () => {
+    const statusCell = list.slice(list.indexOf("column.dataIndex === 'status'"), list.indexOf("column.dataIndex === 'orderSource'"));
+    assert.equal((statusCell.match(/<ScmStatusTag\b/g) || []).length, 1);
+    assert.doesNotMatch(statusCell, /<a-tag\b/);
+    assert.match(list, /enum-name="SCM_ORDER_STATUS_ENUM" v-model:value="queryForm\.status"/);
+    assert.match(list, /queryForm\.status = undefined/);
+    assert.doesNotMatch(mapper, /orderStage|currentStage|query\.stage/);
+    assert.match(mapper, /SET status = 'DISPATCHED', dispatched_at/);
+    assert.match(mapper, /id="markDeliveryResult"[\s\S]*?status = 'DISPATCHED'/);
   });
 
   test('批量打标最多20单；只有订单更新与查询权限才可操作', () => {
@@ -732,11 +754,18 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     assert.match(orderError({data: {code: 40921}}), /刷新/);
     assert.equal(orderError({response: {data: {msg: '业务提示'}}}), '业务提示');
   });
-  test('frontend enum excludes fulfillment and unpriced source values', () => {
+  test('frontend order status enum matches the full backend lifecycle', () => {
     const source = readFileSync(new URL('../src/constants/business/scm/order-const.ts', import.meta.url), 'utf8');
-    assert.match(source, /PENDING[\s\S]*CONFIRMED[\s\S]*CANCELLED/);
-    assert.doesNotMatch(source, /DRAFT/);
-    assert.doesNotMatch(source, /UNPRICED|DELIVERING|PURCHASING|SIGNED/);
+    const block = source.match(/SCM_ORDER_STATUS_ENUM[^{]*\{([\s\S]*?)\n\};/)[1];
+    const front = [...block.matchAll(/^\s+([A-Z_]+):/gm)].map((m) => m[1]);
+    const java = readFileSync(
+      new URL('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderStatusEnum.java', import.meta.url),
+      'utf8'
+    );
+    const back = [...java.matchAll(/^\s+([A-Z_]+)\("/gm)].map((m) => m[1]);
+    assert.deepEqual(front.slice().sort(), back.slice().sort());
+    assert.deepEqual(front, ['PENDING', 'CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION', 'CANCELLED']);
+    assert.doesNotMatch(source, /DRAFT|UNPRICED|DELIVERING|PURCHASING/);
   });
   test('order operation enum matches backend ScmOrderOperationTypeEnum', () => {
     const ts = readFileSync(new URL('../src/constants/business/scm/order-const.ts', import.meta.url), 'utf8');

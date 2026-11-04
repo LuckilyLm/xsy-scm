@@ -834,7 +834,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     assert.ok(overview, 'ReportDao.xml 必须保留 overviewKpi');
     assert.ok(overview[0].includes('o.confirmed_at'), '销售额必须走确认轴，与首页 / 大屏同轴');
     assert.ok(overview[0].includes('SUM(o.settlement_total_amount)'), '销售额必须取结算金额列');
-    assert.ok(overview[0].includes("o.status = 'CONFIRMED'"), '销售额只算已确认订单');
+    assert.ok(overview[0].includes("o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')"), '销售额包括确认后的配送、签收阶段');
   });
 
   test('报表的采购状态清单也从采购枚举派生，不硬编码', () => {

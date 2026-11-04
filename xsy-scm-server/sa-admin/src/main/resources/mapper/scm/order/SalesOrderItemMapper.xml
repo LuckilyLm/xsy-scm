@@ -76,8 +76,8 @@
     </select>
 
     <!--
-      「最近已确认订单价」（只读）：按 (xsy_customer, sku) 取历史 CONFIRMED 订单行的锁定单价与单位快照。
-      只取未删除的 CONFIRMED 单（排除 PENDING / CANCELLED），不做 locked_unit_price 非空过滤，
+      「最近已确认订单价」（只读）：按 (xsy_customer, sku) 取历史已确认及后续配送、签收阶段订单行的锁定单价与单位快照。
+      只取未删除的已确认交易（排除 PENDING / CANCELLED），不做 locked_unit_price 非空过滤，
       锁定价异常缺失时以 null 展示而非用当前价兜底；limit 约束「最近 N 张包含该 SKU 的订单」而非行数，
       由分组子查询先定 N 张单，再返回这些单的匹配明细（同单同 SKU 多行各自成行，带 itemId，不任取 / 相加 / 求平均）。
       排序 confirmed_at DESC, order_id DESC 稳定。纯读快照，不回算当前价格、不参与 PriceResolver 定价。
@@ -101,11 +101,11 @@
             AND i.deleted = FALSE
             AND i.sku_id = #{skuId}
         WHERE o.deleted = FALSE
-            AND o.status = 'CONFIRMED'
+            AND o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
             AND o.customer_id = #{customerId}
             <include refid="recentOrderScope"><property name="orderAlias" value="o"/></include>
             AND o.id IN (SELECT o2.id FROM xsy_sales_order o2 JOIN xsy_sales_order_item i2 ON i2.order_id = o2.id AND
-            i2.deleted = FALSE AND i2.sku_id = #{skuId} WHERE o2.deleted = FALSE AND o2.status = 'CONFIRMED' AND
+            i2.deleted = FALSE AND i2.sku_id = #{skuId} WHERE o2.deleted = FALSE AND o2.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION') AND
             o2.customer_id = #{customerId}
             <include refid="recentOrderScope"><property name="orderAlias" value="o2"/></include>
             GROUP BY o2.id, o2.confirmed_at ORDER BY o2.confirmed_at DESC,

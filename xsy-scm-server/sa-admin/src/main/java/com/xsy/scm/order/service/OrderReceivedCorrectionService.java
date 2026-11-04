@@ -70,7 +70,7 @@ public class OrderReceivedCorrectionService {
         var order = salesOrderService.lock(form.getOrderId());
         if (!dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId()))
             throw new ScmDataScopeException();
-        if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus())
+        if (!ScmOrderStatusEnum.isConfirmed(order.getStatus())
             || correctionDao.signedAssignmentCount(order.getId()) == 0)
             throw new ScmBusinessException(ORDER_RECEIVED_CORRECTION_INVALID);
         var item = salesOrderItemDao.selectById(form.getOrderItemId());

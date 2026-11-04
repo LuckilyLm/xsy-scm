@@ -64,10 +64,17 @@
 
     <update id="markDispatched">
         UPDATE xsy_sales_order
-        SET dispatched_at = #{at}, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        SET status = 'DISPATCHED', dispatched_at = #{at}, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{orderId}
             AND deleted = FALSE
             AND status = 'CONFIRMED'
+    </update>
+
+    <update id="markDeliveryResult">
+        UPDATE xsy_sales_order
+        SET status = #{status}, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{orderId} AND deleted = FALSE AND status = 'DISPATCHED'
+            AND #{status} IN ('SIGNED', 'EXCEPTION')
     </update>
 
     <!-- 自动锁单只看发车时间：未发车的订单不自动锁，避免把还没出库的单锁死。 -->
@@ -194,7 +201,7 @@
         <if test="query.orderId != null">AND id = #{query.orderId}</if>
         <!-- 标签筛选只能进一步收窄已生效的业务员范围。 -->
         <if test="query.tagId != null">
-            AND EXISTS (SELECT 1 FROM xsy_order_tag_link ol WHERE ol.order_id = xsy_sales_order.id AND
+            AND EXISTS (SELECT 1 FROM xsy_order_tag_link ol WHERE ol.order_id = xsy_sales_order.id AND ol.active = TRUE AND
                 ol.tag_id = #{query.tagId})
         </if>
         <if test="query.keyword != null and query.keyword != ''">
@@ -210,7 +217,7 @@
         SELECT o.*
         FROM xsy_sales_order o
         WHERE o.deleted = FALSE
-            AND o.status = 'CONFIRMED'
+            AND o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
             AND o.expect_delivery_time &gt;= #{start}
             AND o.expect_delivery_time &lt; #{end}
         <if test="scope != null and scope.all == false">
@@ -233,21 +240,13 @@
     <select id="listByCustomer" resultMap="row">
         SELECT o.*
         FROM xsy_sales_order o
-        LEFT JOIN LATERAL (SELECT r.fulfillment_status FROM xsy_delivery_route_order r WHERE r.order_id = o.id AND
-            r.deleted = FALSE AND r.assignment_status = 'ACTIVE' ORDER BY r.id DESC LIMIT 1) f ON TRUE
         WHERE o.customer_id = #{customerId}
             AND o.order_source = 'MALL'
             AND o.deleted = FALSE
         <if test="displayStatus == 'PENDING'">AND o.status = 'PENDING'</if>
-        <if test="displayStatus == 'PREPARING'">
-            AND o.status = 'CONFIRMED'
-                AND COALESCE(f.fulfillment_status, 'PENDING') NOT IN ('IN_TRANSIT', 'SIGNED', 'EXCEPTION')
-        </if>
-        <if test="displayStatus == 'DELIVERING'">AND o.status = 'CONFIRMED' AND f.fulfillment_status = 'IN_TRANSIT'</if>
-        <if test="displayStatus == 'COMPLETED'">
-            AND o.status = 'CONFIRMED'
-                AND f.fulfillment_status IN ('SIGNED', 'EXCEPTION')
-        </if>
+        <if test="displayStatus == 'PREPARING'">AND o.status = 'CONFIRMED'</if>
+        <if test="displayStatus == 'DELIVERING'">AND o.status = 'DISPATCHED'</if>
+        <if test="displayStatus == 'COMPLETED'">AND o.status IN ('SIGNED', 'EXCEPTION')</if>
         <if test="displayStatus == 'CANCELLED'">AND o.status = 'CANCELLED'</if>
         ORDER BY o.created_at DESC, o.id DESC
     </select>
