@@ -166,8 +166,8 @@ import {readFileSync} from 'node:fs';
   test('对账单接入打印中心：字段目录含金额列，默认模板与两类约束同步扩展', () => {
     assert.match(types, /'STATEMENT'/);
     assert.match(documentTypeEnum, /STATEMENT\("对账单"/);
-    assert.match(documentTypeEnum, /new ScmPrintField\("receivableBalance", "滚动净应收", true, true\)/);
-    assert.match(documentTypeEnum, /new ScmPrintField\("openingReceivable", "期初净应收", true, true\)/);
+    assert.match(documentTypeEnum, /new ScmPrintField\("receivableBalance", "剩余待收金额", true, true\)/);
+    assert.match(documentTypeEnum, /new ScmPrintField\("openingReceivable", "期初待收金额", true, true\)/);
     assert.match(migration, /ck_scm_print_template_document_type/);
     assert.match(migration, /ck_scm_print_record_document_type/);
     assert.match(migration, /'STATEMENT'/);

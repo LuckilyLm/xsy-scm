@@ -51,6 +51,59 @@
         </if>
     </sql>
 
+    <!-- 退款按完成时间取数；商品条件只匹配实际批准退回的行，不把整单退款重复挂到每个商品。 -->
+    <sql id="salesRefundFacts">
+        SELECT r.customer_id, o.seller_id, o.id AS visible_order_id,
+        <choose>
+            <when test="query.categoryId != null or (query.keyword != null and query.keyword != '')">
+                refund_line.amount AS refund_amount
+            </when>
+            <otherwise>r.refund_amount</otherwise>
+        </choose>
+        FROM xsy_order_refund r
+        LEFT JOIN xsy_sales_order o ON o.id = r.order_id AND o.deleted = FALSE
+        <if test="query.categoryId != null or (query.keyword != null and query.keyword != '')">
+            JOIN LATERAL (
+                SELECT shares.order_item_id, shares.base_share + CASE WHEN shares.id = shares.last_id
+                    THEN r.refund_amount - SUM(shares.base_share) OVER () ELSE 0 END AS amount
+                FROM (SELECT net.id, net.order_item_id, MAX(net.id) OVER () AS last_id,
+                    TRUNC(r.refund_amount * net.amount / SUM(net.amount) OVER (), 4) AS base_share
+                FROM (SELECT ri.id, ri.order_item_id,
+                    ri.approved_amount - CASE WHEN original.ordered_line_amount &gt; 0
+                        THEN GREATEST(LEAST(ri.approved_amount, ROUND(ri.approved_amount * COALESCE(discount.amount, 0)
+                            / original.ordered_line_amount, 4)), 0) ELSE 0 END AS amount
+                    FROM xsy_order_return_item ri
+                    JOIN xsy_sales_order_item original ON original.id = ri.order_item_id
+                        AND original.order_id = r.order_id
+                    LEFT JOIN LATERAL (
+                        SELECT SUM((allocation -&gt;&gt; 'discountAmount')::NUMERIC) AS amount
+                        FROM xsy_order_discount od
+                        CROSS JOIN LATERAL jsonb_array_elements(od.allocations) allocation
+                        WHERE od.sales_order_id = r.order_id
+                            AND (allocation -&gt;&gt; 'orderItemId')::BIGINT = original.id
+                    ) discount ON TRUE
+                    WHERE ri.return_id = r.return_id AND ri.deleted = FALSE
+                        AND ri.approved_quantity &gt; 0 AND ri.approved_amount &gt; 0
+                ) net WHERE net.amount &gt; 0) shares
+            ) refund_line ON TRUE
+            JOIN xsy_sales_order_item i ON i.id = refund_line.order_item_id AND i.deleted = FALSE
+            <include refid="salesCategoryJoins"/>
+        </if>
+        WHERE r.deleted = FALSE AND r.status = 'COMPLETED'
+            AND r.completed_at &gt;= #{startAt} AND r.completed_at &lt; #{endAt}
+        <if test="query.customerId != null">AND r.customer_id = #{query.customerId}</if>
+        <if test="query.sellerId != null">AND o.seller_id = #{query.sellerId}</if>
+        <if test="query.orderSource != null and query.orderSource != ''">AND o.order_source = #{query.orderSource}</if>
+        <if test="query.categoryId != null">
+            AND (cat.id = #{query.categoryId} OR cat2.id = #{query.categoryId} OR cat3.id = #{query.categoryId})
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (i.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                i.sku_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                i.spu_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+    </sql>
+
     <!-- ============ 采购口径片段：只认提交后的采购事实 ============ -->
     <sql id="purchaseStatus">
         o.deleted = FALSE
@@ -315,14 +368,12 @@
     </select>
 
     <!--
-      退款按 xsy_order_refund.customer_id 独立聚合：该表自带客户列，因此既不需要经订单 JOIN，
-      也不可能被订单行数量放大。客户编码/名称取主档当前值（分组键是 id，快照只服务明细行）。
+      退款先按实际退货行和订单条件筛选，再按客户聚合，不能被原单其他商品放大。
+      客户编码/名称取主档当前值（分组键是 id，快照只服务明细行）。
     -->
     <select id="salesByCustomer" resultType="com.xsy.scm.report.domain.vo.SalesReportVO$CustomerRow">
-        WITH rf AS(SELECT r.customer_id,
-            SUM(r.refund_amount) AS refund_amount FROM xsy_order_refund r WHERE r.deleted = FALSE AND
-            r.status = 'COMPLETED' AND r.completed_at &gt;= #{startAt} AND
-            r.completed_at &lt; #{endAt} GROUP BY r.customer_id)
+        WITH rf AS(SELECT customer_id, SUM(refund_amount) AS refund_amount
+            FROM (<include refid="salesRefundFacts"/>) filtered GROUP BY customer_id)
         SELECT o.customer_id AS customerId, MAX(cu.customer_code) AS customerCode, MAX(cu.name) AS customerName,
             MAX(e.actual_name) AS sellerName, COUNT(DISTINCT o.id) AS orderCount,
             COUNT(DISTINCT i.sku_id) AS skuKindCount, SUM(i.settlement_line_amount) AS settlementAmount,
@@ -360,7 +411,7 @@
 
     <!--
       一行 = 订单的聚合（ord），因此按销售员合并退款时不会重复计退款：
-      rf 先按订单聚合，再经订单回到销售员。seller_id 为 NULL 用 IS NOT DISTINCT FROM 才能匹配上。
+      rf 先按实际退款事实聚合到销售员。seller_id 为 NULL 用 IS NOT DISTINCT FROM 才能匹配上。
     -->
     <select id="salesBySeller" resultType="com.xsy.scm.report.domain.vo.SalesReportVO$SellerRow">
         WITH ord AS(SELECT o.id, o.seller_id, o.customer_id, o.confirmed_at,
@@ -371,10 +422,8 @@
         <include refid="salesConfirmed"/>
         <include refid="salesFilters"/>
         GROUP BY o.id, o.seller_id, o.customer_id, o.confirmed_at),
-            rf AS(SELECT o2.seller_id,
-            SUM(r.refund_amount) AS refund_amount FROM xsy_order_refund r JOIN xsy_sales_order o2 ON o2.id = r.order_id
-            AND o2.deleted = FALSE WHERE r.deleted = FALSE AND r.status = 'COMPLETED' AND
-            r.completed_at &gt;= #{startAt} AND r.completed_at &lt; #{endAt} GROUP BY o2.seller_id)
+            rf AS(SELECT seller_id, SUM(refund_amount) AS refund_amount
+            FROM (<include refid="salesRefundFacts"/>) filtered WHERE visible_order_id IS NOT NULL GROUP BY seller_id)
         SELECT ord.seller_id AS sellerId, COALESCE(MAX(e.actual_name), '未分配销售员') AS sellerName, COUNT(*) AS orderCount,
             COUNT(DISTINCT ord.customer_id) AS customerCount, SUM(ord.line_amount) AS settlementAmount,
             COALESCE(MAX(rf.refund_amount), 0) AS completedRefundAmount, MAX(ord.confirmed_at) AS lastConfirmedAt

@@ -387,7 +387,7 @@ class ProductImportServiceTest {
         assertThat(result.getErrors()).singleElement().satisfies(error -> {
             assertThat(error.getRowNumber()).isEqualTo(3);
             assertThat(error.getCode()).isEqualTo("40923");
-            assertThat(error.getMessage()).contains("整批已回滚");
+            assertThat(error.getMessage()).contains("本批数据未保存");
         });
     }
 
@@ -554,7 +554,7 @@ class ProductImportServiceTest {
         assertThat(result.getErrors()).singleElement().satisfies(error -> {
             assertThat(error.getRowNumber()).isEqualTo(2);
             assertThat(error.getCode()).isEqualTo("40921");
-            assertThat(error.getMessage()).contains("整批已回滚");
+            assertThat(error.getMessage()).contains("本批数据未保存");
         });
     }
 

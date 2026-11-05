@@ -481,16 +481,74 @@ class ScmReportPgIT extends ScmW6PgITBase {
      */
     private final java.util.concurrent.atomic.AtomicLong fixtureSeq = new java.util.concurrent.atomic.AtomicLong();
 
+    @Test
+    void customerRefundsFollowActualReturnedItemsAndOrderFiltersWithoutDuplicatingMoney() {
+        Long customer = 900_900_100L + fixtureSeq.incrementAndGet();
+        Long firstOrder = insertSalesOrder("CONFIRMED", insideRange(), customer);
+        insertSalesItem(firstOrder, new BigDecimal("100"));
+        var itemIds = jdbc.queryForList("SELECT id FROM xsy_sales_order_item WHERE order_id = ? ORDER BY id", Long.class, firstOrder);
+        Long vegetable = itemIds.get(0);
+        Long meat = itemIds.get(1);
+        jdbc.update("UPDATE xsy_sales_order_item SET product_name_snapshot = ? WHERE id = ?", tag + "蔬菜", vegetable);
+        jdbc.update("UPDATE xsy_sales_order_item SET product_name_snapshot = ? WHERE id = ?", tag + "肉类", meat);
+        jdbc.update("UPDATE xsy_sales_order SET seller_id = 7 WHERE id = ?", firstOrder);
+        // 蔬菜原价100承担50优惠，批准退回2元时退款净额为1元，肉类退回5元。
+        String allocations = "[{\"orderItemId\":" + vegetable + ",\"baseAmount\":100,\"discountAmount\":50},"
+            + "{\"orderItemId\":" + meat + ",\"baseAmount\":100,\"discountAmount\":0}]";
+        jdbc.update("INSERT INTO xsy_order_discount(sales_order_id, base_amount, discount_amount, allocations, created_by) "
+            + "VALUES (?, 200, 50, ?::jsonb, 'report-test')", firstOrder, allocations);
+        itemRefund(firstOrder, customer, List.of(vegetable, meat), List.of("2", "5"), "6");
+
+        Long otherOrder = insertSalesOrder("CONFIRMED", insideRange(), customer);
+        jdbc.update("UPDATE xsy_sales_order SET seller_id = 8, order_source = 'MALL' WHERE id = ?", otherOrder);
+        Long otherMeat = jdbc.queryForObject("SELECT id FROM xsy_sales_order_item WHERE order_id = ?", Long.class, otherOrder);
+        jdbc.update("UPDATE xsy_sales_order_item SET product_name_snapshot = ? WHERE id = ?", tag + "肉类", otherMeat);
+        itemRefund(otherOrder, customer, List.of(otherMeat), List.of("3"), "3");
+        evictMybatisCache();
+
+        var form = page(new com.xsy.scm.report.domain.form.ScmSalesReportQueryForm());
+        form.setStartDate(start());
+        form.setEndDate(end());
+        form.setCustomerId(customer);
+        assertThat(salesReportService.byCustomer(form).getList().getFirst().getCompletedRefundAmount()).isEqualByComparingTo("9");
+        form.setKeyword(tag + "蔬菜");
+        assertThat(salesReportService.byCustomer(form).getList().getFirst().getCompletedRefundAmount()).isEqualByComparingTo("1");
+        form.setKeyword(tag + "肉类");
+        assertThat(salesReportService.byCustomer(form).getList().getFirst().getCompletedRefundAmount()).isEqualByComparingTo("8");
+        form.setKeyword(null);
+        form.setOrderSource("ADMIN");
+        assertThat(salesReportService.byCustomer(form).getList().getFirst().getCompletedRefundAmount()).isEqualByComparingTo("6");
+        form.setOrderSource(null);
+        form.setSellerId(8L);
+        assertThat(salesReportService.byCustomer(form).getList().getFirst().getCompletedRefundAmount()).isEqualByComparingTo("3");
+    }
+
+    private void itemRefund(Long orderId, Long customerId, List<Long> items, List<String> amounts, String refundAmount) {
+        long seq = fixtureSeq.incrementAndGet();
+        long returnId = 900_000_300L + seq;
+        jdbc.update("INSERT INTO xsy_order_refund(refund_no, return_id, order_id, customer_id, refund_amount, status, completed_at) "
+            + "VALUES (?, ?, ?, ?, ?, 'COMPLETED', ?)", tag + "-RF-items-" + seq, returnId, orderId, customerId,
+            new BigDecimal(refundAmount), insideRange());
+        for (int index = 0; index < items.size(); index++) {
+            BigDecimal amount = new BigDecimal(amounts.get(index));
+            jdbc.update("INSERT INTO xsy_order_return_item(return_id, order_item_id, sku_id, sku_name_snapshot, spec_name_snapshot, "
+                + "sale_unit_snapshot, requested_quantity, approved_quantity, locked_unit_price, approved_amount) "
+                + "SELECT ?, id, sku_id, product_name_snapshot, spec_name_snapshot, sale_unit_snapshot, 1, 1, ?, ? "
+                + "FROM xsy_sales_order_item WHERE id = ?", returnId, amount, amount, items.get(index));
+        }
+    }
+
     private Long insertSalesOrder(String status, OffsetDateTime confirmedAt, Long customerId) {
+        String orderNo = tag + "-SO-" + fixtureSeq.incrementAndGet();
         jdbc.update("""
                 INSERT INTO xsy_sales_order(order_no, customer_id, customer_code_snapshot, customer_name_snapshot,
                                         settlement_customer_id, settlement_customer_name_snapshot,
                                         order_source, status, settle_mode_snapshot, ordered_total_amount,
                                         settlement_total_amount, confirmed_at)
                 VALUES (?, ?, ?, ?, ?, ?, 'ADMIN', ?, 'INDEPENDENT', 0, 0, ?)""",
-                tag + "-SO", customerId, tag + "-CODE", tag + "-客户", customerId, tag + "-客户", status, confirmedAt);
+                orderNo, customerId, tag + "-CODE", tag + "-客户", customerId, tag + "-客户", status, confirmedAt);
         Long orderId = jdbc.queryForObject("SELECT id FROM xsy_sales_order WHERE order_no = ?", Long.class,
-                tag + "-SO");
+                orderNo);
         insertSalesItem(orderId, new BigDecimal("100.0000"));
         return orderId;
     }

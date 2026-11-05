@@ -392,13 +392,6 @@ public class FinanceWriteOffService {
             candidates = financePayableDao.selectAutoTargets(source.counterpartyId(), scope.getPurchaserScope(),
                 AUTO_TARGET_LIMIT);
         }
-        // 客户级红字按同一 FIFO 顺序（event_at, id）先抵最早未结应收；候选已按该顺序返回，这里顺序扣减即可。
-        BigDecimal creditPool = ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name().equals(targetType(sourceType))
-            ? financeReceivableDao.selectCustomerLevelRedAmount(source.counterpartyId(), source.counterpartyId())
-            : BigDecimal.ZERO;
-        if (creditPool == null) {
-            creditPool = BigDecimal.ZERO;
-        }
         List<PlannedAllocation> plan = new ArrayList<>(candidates.size());
         BigDecimal remaining = available;
         for (FinanceAutoWriteOffTargetDto candidate : candidates) {
@@ -406,11 +399,6 @@ public class FinanceWriteOffService {
                 break;
             }
             BigDecimal openAmount = candidate.getOpenAmount();
-            if (creditPool.signum() > 0 && openAmount.signum() > 0) {
-                BigDecimal applied = openAmount.min(creditPool);
-                openAmount = openAmount.subtract(applied);
-                creditPool = creditPool.subtract(applied);
-            }
             BigDecimal amount = openAmount.min(remaining).setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
             if (amount.signum() <= 0) {
                 continue;

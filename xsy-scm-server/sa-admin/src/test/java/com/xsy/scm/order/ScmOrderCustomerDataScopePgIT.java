@@ -268,11 +268,18 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
     }
 
     @Test
-    @DisplayName("编辑客户不得改派：表单里的 sellerId 对任何角色都只是回显值")
-    void updateNeverReassignsSeller() {
+    @DisplayName("编辑客户改派必须有分配权：无权拒绝，有权同步可见范围")
+    void updateReassignsSellerOnlyWithAssignmentPermission() {
         Long customerId = createCustomer("W2", sellerA);
 
-        // 连分配权持有者都不能靠 /update 顺带改派——改派只有 reassignSeller 一条路
+        assertThatThrownBy(() -> as(sellerA, Set.of(), () -> {
+            CustomerUpdateForm update = updateForm(customerId, 0);
+            update.setSellerId(sellerB);
+            customerService.update(update);
+            return null;
+        })).isInstanceOf(cn.dev33.satoken.exception.NotPermissionException.class);
+        assertThat(sellerIdOf(customerId)).isEqualTo(sellerA);
+
         as(sellerA, Set.of(ScmDataScopeService.CUSTOMER_ASSIGN_PERM), () -> {
             CustomerUpdateForm update = updateForm(customerId, 0);
             update.setSellerId(sellerB);
@@ -280,8 +287,9 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
             return null;
         });
 
-        assertThat(sellerIdOf(customerId)).isEqualTo(sellerA);
-        assertThat(as(sellerB, Set.of(), () -> customerIds(customerList()))).doesNotContain(customerId);
+        assertThat(sellerIdOf(customerId)).isEqualTo(sellerB);
+        assertThat(as(sellerB, Set.of(), () -> customerIds(customerList()))).contains(customerId);
+        assertThat(as(sellerA, Set.of(), () -> customerIds(customerList()))).doesNotContain(customerId);
     }
 
     @Test
@@ -525,6 +533,13 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
         loginAs(employeeId);
         try (MockedStatic<StpUtil> stp = mockStatic(StpUtil.class)) {
             permissions.forEach(p -> stp.when(() -> StpUtil.hasPermission(p)).thenReturn(true));
+            // 静态mock的void方法默认放行，必须显式模拟改派命令的权限拒绝。
+            stp.when(() -> StpUtil.checkPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM)).thenAnswer(invocation -> {
+                if (!permissions.contains(ScmDataScopeService.CUSTOMER_ASSIGN_PERM)) {
+                    throw new cn.dev33.satoken.exception.NotPermissionException(ScmDataScopeService.CUSTOMER_ASSIGN_PERM);
+                }
+                return null;
+            });
             return body.get();
         }
     }

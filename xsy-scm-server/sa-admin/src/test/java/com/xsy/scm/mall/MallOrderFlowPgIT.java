@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.order.service.SalesOrderDispatchService;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.customer.domain.form.CustomerAddForm;
@@ -136,6 +137,8 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
     private OrderReturnReceiptService orderReturnReceiptService;
     @Autowired
     private SalesOrderQueryService salesOrderQueryService;
+    @Autowired
+    private SalesOrderDispatchService salesOrderDispatchService;
 
     private int customerSequence;
 
@@ -659,12 +662,15 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
                 + " created_at, updated_at)"
                 + " VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, 0, FALSE, now(), now())",
                 routeId, stopId, orderId, customerId, orderNo, fulfillmentStatus);
+        // 订单当前状态是正式事实源，线路夹具须同步执行订单发车转换。
+        assertThat(salesOrderDispatchService.markDispatched(orderId, java.time.OffsetDateTime.now(), "it")).isTrue();
     }
 
     private void signRouteOrder(Long routeId, Long orderId, String result, String reason) {
         jdbc.update("UPDATE xsy_delivery_route_order SET fulfillment_status = ?, signed_at = now(),"
                 + " signed_by = 'it', sign_reason = ? WHERE route_id = ? AND order_id = ?",
                 result, reason, routeId, orderId);
+        assertThat(salesOrderDispatchService.markSigned(orderId, result, "it")).isTrue();
         evictMybatisCache();
     }
 

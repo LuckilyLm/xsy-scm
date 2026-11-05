@@ -84,27 +84,16 @@
     </select>
 
     <!--
-      自动核销候选：未结金额现算（净额 = 金额 - 红字），再减核销净额；
-      红字与核销都按 target 聚合一次，避免逐行子查询在同一结果集里重复扫表。
+      自动核销候选复用正式余额：客户级扣减先按实际客户与结算主体抵扣，再筛选可见目标及限数。
+      不能先取前N张原始未结单再抵扣，否则被扣减覆盖的旧单会一直挡住后续候选。
     -->
     <select id="selectAutoTargets" resultType="com.xsy.scm.finance.domain.dto.FinanceAutoWriteOffTargetDto">
         SELECT c.targetId, c.targetNo, c.targetName, c.eventAt, c.openAmount, c.ownerId
         FROM (
             SELECT r.id AS targetId, r.receivable_no AS targetNo, r.customer_name_snapshot AS targetName,
                 r.event_at AS eventAt, so.seller_id AS ownerId,
-                r.amount - COALESCE(red.red_amount, 0) - COALESCE(wo.written_off_amount, 0) AS openAmount
-            FROM xsy_finance_receivable r
-            LEFT JOIN xsy_sales_order so ON so.id = r.order_id
-                AND so.deleted = FALSE
-            LEFT JOIN (SELECT original_receivable_id, SUM(amount) AS red_amount
-                FROM xsy_finance_receivable
-                WHERE entry_type = 'RED' AND deleted = FALSE
-                GROUP BY original_receivable_id) red ON red.original_receivable_id = r.id
-            LEFT JOIN (SELECT target_id, SUM(CASE WHEN entry_type = 'NORMAL' THEN amount ELSE -amount END)
-                AS written_off_amount
-                FROM xsy_finance_write_off
-                WHERE target_type = 'RECEIVABLE' AND deleted = FALSE
-                GROUP BY target_id) wo ON wo.target_id = r.id
+                <include refid="effectiveOpenAmount"/> AS openAmount
+            <include refid="receivableBalanceFrom"/>
             WHERE r.deleted = FALSE
                 AND r.entry_type = 'NORMAL'
                 AND r.settlement_customer_id = #{settlementCustomerId}
@@ -182,6 +171,14 @@
             AND deleted = FALSE
     </select>
 
+    <select id="selectSellerId" resultType="long">
+        SELECT COALESCE(so.seller_id, c.seller_id)
+        FROM xsy_finance_receivable r
+        LEFT JOIN xsy_sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        LEFT JOIN xsy_customer c ON c.id = r.customer_id AND c.deleted = FALSE
+        WHERE r.id = #{receivableId} AND r.deleted = FALSE
+    </select>
+
     <!--
       未结金额：净额先扣核销，再按「客户级红字 FIFO」抵扣——同一客户同一结算主体下，
       original_receivable_id 为空的红字按 (event_at, id) 依次抵减最早未结的应收。所有出口共用这一个表达式。
@@ -212,6 +209,11 @@
             AND GREATEST(written.writtenOffAmount - (r.amount - red.redAmount),
             0) = 0 THEN 'SETTLED' WHEN written.writtenOffAmount = 0 THEN 'OPEN' ELSE 'PARTIAL' END AS settleState,
             r.event_at AS eventAt, r.due_date AS dueDate, r.reason
+        <include refid="com.xsy.scm.finance.dao.FinanceReceivableDao.receivableBalanceFrom"/>
+    </sql>
+
+    <!-- 列表、详情与自动抵扣共享同一客户级FIFO余额关联，分摊不受当前负责人筛选影响。 -->
+    <sql id="receivableBalanceFrom">
         FROM xsy_finance_receivable r
         LEFT JOIN xsy_sales_order so ON so.id = r.order_id
             AND so.deleted = FALSE

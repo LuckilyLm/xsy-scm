@@ -36,6 +36,50 @@ class ScmFinanceReportPgIT extends ScmW5PgITBase {
     private ScmFinanceReportDao financeReportDao;
 
     @Test
+    void customerCreditsAgreeAcrossOverviewFilteredDetailsAndExportAtTheCutoff() throws Exception {
+        Long customer = newCustomer();
+        Long owner = jdbc.queryForObject("SELECT COALESCE(MAX(employee_id), 0) + 100000 FROM t_employee", Long.class);
+        jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", owner, customer);
+        Long sku = newOnShelfSku("RPT-CREDIT");
+        Long firstOrder = confirmedSalesOrder(customer, sku, "1", "100");
+        Long secondOrder = confirmedSalesOrder(customer, sku, "1", "50");
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        receivable("CREDIT-FIRST", firstOrder, customer, prefix, "NORMAL", null, "100", at(today.minusDays(2)), null, null);
+        Long second = receivable("CREDIT-SECOND", secondOrder, customer, prefix, "NORMAL", null, "50", at(today.minusDays(1)), null, null);
+        receivable("CREDIT-POOL", null, customer, prefix, "RED", null, "120", at(today), "独立退货",
+            Long.MAX_VALUE & UUID.randomUUID().getMostSignificantBits());
+        receivable("CREDIT-FUTURE", null, customer, prefix, "RED", null, "30", at(today.plusDays(1)), "未来退货",
+            Long.MAX_VALUE & UUID.randomUUID().getMostSignificantBits());
+        evictMybatisCache();
+        assertThat(overview(overviewForm(today, today), owner).getEndingReceivableAmount()).isEqualByComparingTo("30");
+
+        var scopes = org.mockito.Mockito.mock(com.xsy.scm.common.scope.ScmDataScopeService.class);
+        var scope = org.mockito.Mockito.mock(com.xsy.scm.common.scope.ScmDataScopeContext.class);
+        org.mockito.Mockito.when(scopes.resolve()).thenReturn(scope);
+        org.mockito.Mockito.when(scope.getOrderSellerScope()).thenReturn(ScmValueScope.of(List.of(owner)));
+        var service = new com.xsy.scm.report.service.ScmFinanceReportService(financeReportDao, scopes);
+        var form = detailForm(today);
+        form.setKeyword(prefix + "-CREDIT-SECOND");
+        var detail = service.receivableDetails(form).getList();
+        assertThat(detail).hasSize(1);
+        assertThat(detail.getFirst().getReceivableId()).isEqualTo(second);
+        assertThat(detail.getFirst().getOpenAmount()).isEqualByComparingTo("30");
+
+        var export = new com.xsy.scm.report.domain.form.ScmFinanceReportExportQueryForm();
+        export.setStartDate(today);
+        export.setEndDate(today);
+        export.setKeyword(form.getKeyword());
+        var response = new org.springframework.mock.web.MockHttpServletResponse();
+        new com.xsy.scm.report.controller.ScmFinanceReportController(service).exportReceivables(export, response);
+        try (var workbook = org.apache.poi.ss.usermodel.WorkbookFactory.create(
+                new java.io.ByteArrayInputStream(response.getContentAsByteArray()))) {
+            assertThat(workbook.getSheetAt(0).getLastRowNum()).isEqualTo(1);
+            assertThat(new BigDecimal(workbook.getSheetAt(0).getRow(1).getCell(7).getStringCellValue()))
+                .isEqualByComparingTo("30");
+        }
+    }
+
+    @Test
     @DisplayName("本期发生额按事件日期；期末待收 / 待付包含期初并逐单截零")
     void flowsUseTheWindowButEndingBalancesIncludeOpeningDocuments() {
         Long customerId = newCustomer();

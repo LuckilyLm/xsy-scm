@@ -122,11 +122,11 @@ test.describe('scm-finance-overview', () => {
     await page.goto('/#/report/report-finance-overview');
     await expect(page.locator('.report-kpi')).toHaveCount(6);
     for (const [label, amount] of [
-      ['应收发生额', expected.receivableOccurredAmount],
-      ['应收已核销', expected.receivableWrittenOffAmount],
+      ['本期应收金额', expected.receivableOccurredAmount],
+      ['应收已抵扣', expected.receivableWrittenOffAmount],
       ['期末待收', expected.endingReceivableAmount],
-      ['应付发生额', expected.payableOccurredAmount],
-      ['应付已核销', expected.payableWrittenOffAmount],
+      ['本期应付金额', expected.payableOccurredAmount],
+      ['应付已抵扣', expected.payableWrittenOffAmount],
       ['期末待付', expected.endingPayableAmount],
     ]) {
       const card = page.locator('.report-kpi').filter({hasText: label}).first();
@@ -181,7 +181,7 @@ test.describe('scm-finance-overview', () => {
     await expect(receivableList).toBeVisible();
     await expect(receivableList.locator('.finance-detail-mobile-card').first()).toContainText('应收单号');
     await expect(receivableList.locator('.finance-detail-mobile-card').first()).toContainText('期末待收');
-    await expect(receivableList.locator('.finance-detail-mobile-card').first()).toContainText('已核销金额');
+    await expect(receivableList.locator('.finance-detail-mobile-card').first()).toContainText('已抵扣金额');
     await expect(page.locator('#scm-report-finance-receivable-table')).toBeHidden();
 
     const payableLoad = page.waitForResponse(
@@ -193,7 +193,7 @@ test.describe('scm-finance-overview', () => {
     await expect(payableList.locator('.finance-detail-mobile-card').first()).toContainText('应付单号');
     await expect(payableList.locator('.finance-detail-mobile-card').first()).toContainText('供应商');
     await expect(payableList.locator('.finance-detail-mobile-card').first()).toContainText('期末待付');
-    await expect(payableList.locator('.finance-detail-mobile-card').first()).toContainText('事件时点');
+    await expect(payableList.locator('.finance-detail-mobile-card').first()).toContainText('业务时间');
     await expect(page.locator('#scm-report-finance-payable-table')).toBeHidden();
   });
 });
@@ -237,8 +237,8 @@ test.describe('scm-finance-payable', () => {
     await expect(detail).toContainText('11.0000');
     await page.keyboard.press('Escape');
 
-    await row.getByRole('button', {name: accessibleName('登记红字')}).click();
-    const redDrawer = page.locator('.ant-drawer-open').filter({hasText: '登记红字应付'}).first();
+    await row.getByRole('button', {name: accessibleName('登记扣减')}).click();
+    const redDrawer = page.locator('.ant-drawer-open').filter({hasText: '登记扣减应付'}).first();
     await expect(redDrawer).toContainText(over.payables[0].payableNo);
     await expect(redDrawer).toContainText('68.2000');
     const rejected = await envelope(harness.finance, 'post', '/scm/finance/payable/red', {
@@ -284,7 +284,7 @@ test.describe('scm-finance-payment-refund', () => {
     await expect(page.locator('#scm-finance-payment-table')).toBeVisible();
     await page.getByRole('button', {name: accessibleName('登记付款')}).click();
     const form = page.locator('.ant-modal:visible').filter({hasText: '登记付款'}).last();
-    await form.locator('.ant-form-item').filter({hasText: '往来方类型'}).locator('.ant-select-selector').click();
+    await form.locator('.ant-form-item').filter({hasText: '客户或供应商类型'}).locator('.ant-select-selector').click();
     await page.locator('.ant-select-dropdown:visible').getByText('客户', {exact: true}).click();
     await form.getByRole('button', {name: accessibleName('选择退款')}).click();
     const picker = page.locator('.ant-modal:visible').filter({hasText: '选择已完成退款'}).last();
@@ -372,7 +372,7 @@ test.describe('scm-finance-permission', () => {
     await addForm.locator('.ant-form-item').filter({hasText: '收款金额'}).locator('.ant-input-number input').fill('9.0000');
     await addForm.locator('.ant-form-item').filter({hasText: '收款方式'}).locator('.ant-select-selector').click();
     await page.locator('.ant-select-dropdown:visible').getByText('银行转账', {exact: true}).click();
-    await addForm.locator('.ant-form-item').filter({hasText: '资金凭据号'}).locator('input').fill(`${harness.runTag}-PERMISSION-RECEIPT`);
+    await addForm.locator('.ant-form-item').filter({hasText: '收付款凭证号'}).locator('input').fill(`${harness.runTag}-PERMISSION-RECEIPT`);
     await addForm.getByRole('button', {name: /确\s*定/}).click();
     await expect(addForm).toHaveCount(0);
     await expect(page.getByText('收款已登记')).toBeVisible();
@@ -604,7 +604,7 @@ test.describe('scm-finance-receivable-red', () => {
     await expect(row).toContainText('3.5000');
     await row.getByRole('button', {name: accessibleName('明细')}).click();
     const drawer = page.locator('.ant-drawer-open').filter({hasText: '应收明细'}).first();
-    await expect(drawer).toContainText('超额核销待处理');
+    await expect(drawer).toContainText('抵扣超额待处理');
     await expect(drawer).toContainText('3.5000');
   });
 });
@@ -645,28 +645,27 @@ test.describe('scm-finance-write-off', () => {
     await authenticate(page, harness.financeToken);
     await page.goto('/#/finance/write-offs');
     await expect(page.locator('#scm-finance-write-off-table')).toBeVisible();
-    await page.getByRole('button', {name: accessibleName('登记核销')}).click();
-    // 自动 FIFO 上线后弹窗标题改成「登记核销」（多目标已不是唯一入口）
-    const drawer = page.locator('.ant-drawer-open').filter({hasText: '登记核销'}).first();
-    await selectInDrawer(page, drawer, '资金类型', '收款');
+    await page.getByRole('button', {name: accessibleName('登记抵扣')}).click();
+    const drawer = page.locator('.ant-drawer-open').filter({hasText: '登记抵扣'}).first();
+    await selectInDrawer(page, drawer, '收付款类型', '收款');
     await drawer
       .locator('.ant-form-item')
-      .filter({hasText: '资金单'})
+      .filter({hasText: '收付款单'})
       .getByRole('button', {name: accessibleName('选择')})
       .click();
-    await chooseRecord(page, '选择待核销收款', receipt.receiptNo);
+    await chooseRecord(page, '选择待抵扣收款', receipt.receiptNo);
 
     // 自动 FIFO 之后默认是自动分配；这条用例验的是手工多目标，先切回手工选择
-    await drawer.locator('.ant-radio-button-wrapper').filter({hasText: '手工选择'}).click();
-    await drawer.getByRole('button', {name: accessibleName('添加目标单')}).click();
+    await drawer.locator('.ant-radio-button-wrapper').filter({hasText: '手动选择账单'}).click();
+    await drawer.getByRole('button', {name: accessibleName('添加待结算账单')}).click();
     await chooseRecord(page, '选择未结清应收', first.receivable.receivableNo);
-    await drawer.getByRole('button', {name: accessibleName('添加目标单')}).click();
+    await drawer.getByRole('button', {name: accessibleName('添加待结算账单')}).click();
     await chooseRecord(page, '选择未结清应收', second.receivable.receivableNo);
     const firstTarget = drawer.locator('.ant-table-row').filter({hasText: first.receivable.receivableNo}).first();
     const secondTarget = drawer.locator('.ant-table-row').filter({hasText: second.receivable.receivableNo}).first();
     await firstTarget.locator('.ant-input-number input').fill('20.0000');
     await secondTarget.locator('.ant-input-number input').fill('30.0000');
-    await drawer.getByRole('button', {name: accessibleName('提交核销')}).click();
+    await drawer.getByRole('button', {name: accessibleName('确认抵扣')}).click();
     await expect(page.locator('.ant-drawer-open')).toHaveCount(0);
 
     const applied = await call<Row>(harness.finance, 'post', '/scm/finance/write-off/query', {
@@ -680,8 +679,8 @@ test.describe('scm-finance-write-off', () => {
 
     const firstEntry = (applied.list as Row[]).find((item) => item.targetNo === first.receivable.receivableNo)!;
     const row = page.locator('#scm-finance-write-off-table tr').filter({hasText: firstEntry.writeOffNo}).first();
-    await row.getByRole('button', {name: accessibleName('撤销核销')}).click();
-    const dialog = page.locator('.ant-modal:visible').filter({hasText: '撤销核销'}).last();
+    await row.getByRole('button', {name: accessibleName('撤销抵扣')}).click();
+    const dialog = page.locator('.ant-modal:visible').filter({hasText: '撤销抵扣'}).last();
     await dialog.locator('textarea').fill(`${harness.runTag} 撤销核销验收`);
     await dialog.getByRole('button', {name: /确\s*定/}).click();
     await expect(dialog).toHaveCount(0);

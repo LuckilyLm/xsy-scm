@@ -175,7 +175,9 @@ class OrderLockPgIT extends ScmW3PgITBase {
                 "SELECT id FROM xsy_warehouse WHERE NOT deleted AND status='ENABLED' ORDER BY id LIMIT 1", Long.class));
         create.setAssigneeEmployeeId(anyEmployeeId());
         create.setSalesOrderItemIds(List.of(original.getItems().getFirst().getItemId()));
-        sorting.create(create, prefix + "replace-sort");
+        // 分拣还需仓库范围授权；本用例验证商品替换保护，不绕过该独立前置条件。
+        as(com.xsy.scm.common.scope.ScmDataScopeService.WAREHOUSE_ALL_PERM,
+            () -> sorting.create(create, prefix + "replace-sort"));
 
         expectCode(() -> orders.update(updateOf(form(c, replacementSku), original, "3.0000")),
                 OrderErrorCode.ORDER_SORTED_ITEM_CHANGE_BLOCKED.getCode());

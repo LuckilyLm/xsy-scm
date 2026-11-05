@@ -263,7 +263,7 @@ class ScmFinanceReadPgIT extends ScmW5PgITBase {
 
         assertThat(writeOffQueries.query(form).getList()).singleElement()
                 .satisfies(row -> assertThat(row.getWriteOffId()).isEqualTo(writeOff.getWriteOffId()));
-        assertWorkbook("核销单号", writeOff.getWriteOffNo(), response -> writeOffController.export(form, response), 12);
+        assertWorkbook("抵扣单号", writeOff.getWriteOffNo(), response -> writeOffController.export(form, response), 12);
     }
 
     private void assertWorkbook(String firstHeader, String firstData, WorkbookCall export, int columnCount)

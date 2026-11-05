@@ -2,7 +2,7 @@
  * 本文件由按域拆分的 E2E 用例合并而成：每个 test.describe 对应一份原文件，
  * 块内状态与钩子互不共享，执行顺序按来源文件排列。
  */
-import {test, expect} from '../e2e/scm-test-base';
+import {test, expect, type Page} from '../e2e/scm-test-base';
 import {authenticate, accessibleName} from '../e2e/scm-e2e-account';
 import {
   call,
@@ -21,6 +21,12 @@ import {
 } from '../e2e/scm-finance-fixtures';
 import {createSku} from '../e2e/scm-delivery-fixtures';
 import {createHmac, randomUUID} from 'node:crypto';
+
+/** 利润页默认客户月利润，库存成本毛利通过正式页签进入。 */
+async function openGrossProfit(page: Page) {
+  await page.goto('/#/report/report-finance-profit');
+  await page.getByRole('tab', {name: '库存成本毛利'}).click();
+}
 
 // ---------------------------------------------------------------- 来源：e2e-chains/adm-golden-chain-01.spec.ts
 test.describe('adm-golden-chain-01', () => {
@@ -83,7 +89,7 @@ test.describe('adm-golden-chain-01', () => {
     const drawer = page.locator('.ant-drawer-open').filter({hasText: '应收明细'}).first();
     await expect(drawer).toBeVisible();
     await expect(drawer).toContainText(facts.receivable.receivableNo);
-    await expect(drawer).toContainText('核销');
+    await expect(drawer).toContainText('账款抵扣记录');
     await page.screenshot({path: '../.runtime/golden01-receivable-detail.png', fullPage: true});
     await page.keyboard.press('Escape');
   });
@@ -127,7 +133,7 @@ test.describe('adm-golden-chain-01', () => {
   test('6 毛利分析页面出数且整链无浏览器异常', async ({page}) => {
     page.on('pageerror', (e) => consoleErrors.push(`profit: ${e.message}`));
     await authenticate(page, harness.financeToken);
-    await page.goto('/#/report/report-finance-profit');
+    await openGrossProfit(page);
     const table = page.locator('#scm-report-finance-profit-table');
     await expect(table).toBeVisible();
     await page.screenshot({path: '../.runtime/golden01-profit.png', fullPage: true});
@@ -342,7 +348,7 @@ test.describe('adm-golden-chain-03', () => {
     await expect(row).toBeVisible();
     await row.getByRole('button', {name: /明\s*细/}).click();
     const drawer = page.locator('.ant-drawer-open').filter({hasText: '应收明细'}).first();
-    await expect(drawer).toContainText('红字');
+    await expect(drawer).toContainText('扣减记录');
     await page.screenshot({path: '../.runtime/golden03-receivable-red.png', fullPage: true});
 
     const range = financeDateRange();
@@ -377,7 +383,6 @@ test.describe('adm-golden-chain-04', () => {
   let harness: FinanceHarness;
   let purchase: {supplierId: string; skuId: string; purchaseOrder: Row; receipt: Row; payables: Row[]};
   let payable: Row;
-  let balanceBefore = 0;
   const consoleErrors: string[] = [];
 
   test.beforeAll(async () => {
@@ -501,8 +506,6 @@ test.describe('adm-golden-chain-05', () => {
     return (rows?.list ?? rows?.options ?? []) as Row[];
   };
 
-  const instanceState = async () => (await instances()).find((row) => Number(row.instanceId ?? row.id) === instanceId);
-
   test.beforeAll(async () => {
     harness = await openFinanceHarness();
   });
@@ -581,7 +584,7 @@ test.describe('adm-golden-chain-05', () => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await authenticate(page, harness.adminToken);
-    await page.goto('/#/report/report-finance-profit');
+    await openGrossProfit(page);
     await expect(page.locator('#scm-report-finance-profit-table')).toBeVisible();
     await page.screenshot({path: '../.runtime/golden05-profit.png', fullPage: true});
     expect(errors, `浏览器异常：${errors.join(' | ')}`).toEqual([]);
@@ -734,7 +737,7 @@ test.describe('adm-golden-chain-06', () => {
       if (message.type() === 'error') errors.push(`golden06-console: ${message.text()}`);
     });
     await authenticate(page, harness.adminToken);
-    await page.goto('/#/report/report-finance-profit');
+    await openGrossProfit(page);
     await expect(page.locator('#scm-report-finance-profit-table')).toBeVisible();
     await page.screenshot({path: '../.runtime/golden06-profit.png', fullPage: true});
     expect(errors, `浏览器异常：${errors.join(' | ')}`).toEqual([]);
@@ -806,9 +809,10 @@ test.describe('adm-golden-chain-07', () => {
   };
 
   const wallet = async () => {
-    const rows = await call<Row>(harness.admin, 'post', '/scm/balance/query', {pageNum: 1, pageSize: 20, customerId: Number(facts.customerId)});
-    const list = (rows.list ?? []) as Row[];
-    return list.length ? Number(list[0].availableBalance ?? 0) : 0;
+    const balance = await call<Row>(harness.admin, 'post', '/scm/balance/query', {customerId: Number(facts.customerId)});
+    expect(String(balance.customerId)).toBe(String(facts.customerId));
+    expect(balance.availableBalance).toBeDefined();
+    return Number(balance.availableBalance);
   };
 
   /** 用与报文**逐字节相同**的字符串去算签名，否则一定验签失败。 */
@@ -975,11 +979,12 @@ test.describe('adm-golden-chain-08', () => {
 
   test('1 少发订单签收：应收只按实发记，必然小于订单结算额', async () => {
     facts = await createSignedOrder(harness, 'GOLDEN08', [{quantity: '10.0000', sortedQuantity: '7.0000', sortedResult: 'SHORT'}]);
-    const settlement = Number(facts.orderDetail.settlementTotalAmount);
+    const ordered = Number(facts.orderDetail.orderedTotalAmount);
     const actual = Number(facts.receivable.amount);
-    expect(actual, '少发后应收应按实发生成').toBeLessThan(settlement);
+    expect(actual, '少发后应收应按实发生成').toBeLessThan(ordered);
+    expect(actual, '分拣实发同步结算额').toBe(Number(facts.orderDetail.settlementTotalAmount));
     expect(actual > 0).toBe(true);
-    paid = String(facts.orderDetail.settlementTotalAmount);
+    paid = String(facts.orderDetail.orderedTotalAmount);
     receiptsBefore = (await receiptRows()).length;
   });
 
@@ -1054,7 +1059,7 @@ test.describe('adm-golden-chain-08', () => {
       reason: `${harness.runTag} 试图人工冲正系统收款`,
     });
     expect(denied.code, `系统收款应被拒绝人工冲正，实际：${denied.code} ${denied.msg}`).toBe(41144);
-    expect(String(denied.msg)).toContain('不能人工冲正');
+    expect(String(denied.msg)).toContain('不能人工撤销原记录');
     const still = (await receiptRows()).find((row) => Number(row.receiptId) === Number(onlineReceipt.receiptId)) as Row;
     expect(still !== undefined, '被拒绝的冲正请求不应留下任何痕迹').toBe(true);
   });
@@ -1065,10 +1070,11 @@ test.describe('adm-golden-chain-08', () => {
     await authenticate(page, harness.financeToken);
     await page.goto('/#/finance/receivables');
     const row = page.locator('#scm-finance-receivable-table tr').filter({hasText: facts.receivable.receivableNo}).first();
-    await expect(row).toContainText('超额核销待处理');
+    const afterReturn = await receivableNow();
+    await expect(row.locator('td').nth(7)).toContainText(Number(afterReturn.overAppliedAmount).toFixed(4));
     await row.getByRole('button', {name: accessibleName('明细')}).click();
     const drawer = page.locator('.ant-drawer-open').filter({hasText: '应收明细'}).first();
-    await expect(drawer).toContainText('超额核销');
+    await expect(drawer).toContainText('抵扣超额');
     await page.screenshot({path: '../.runtime/golden08-receivable.png', fullPage: true});
     expect(errors, `浏览器异常：${errors.join(' | ')}`).toEqual([]);
   });

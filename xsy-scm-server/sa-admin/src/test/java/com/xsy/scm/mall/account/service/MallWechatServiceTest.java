@@ -67,7 +67,7 @@ class MallWechatServiceTest {
         try {
             var configured = new MallWechatService(redis, "wx-test", "test-secret");
             // 沿用正式构造器的传输配置，仅将固定官方地址替换为本地验收网关。
-            var client = ((RestClient) ReflectionTestUtils.getField(configured, "client")).mutate()
+            var client = ((RestClient) ReflectionTestUtils.getField(configured, "wechatClient")).mutate()
                 .baseUrl("http://127.0.0.1:" + upstream.getAddress().getPort()).build();
             var realTransport = new MallWechatService(redis, "wx-test", "test-secret", client);
             assertThat(realTransport.phone("one-time-code")).isEqualTo("13800000000");

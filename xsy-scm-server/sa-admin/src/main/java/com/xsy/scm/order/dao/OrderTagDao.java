@@ -58,6 +58,7 @@ public interface OrderTagDao {
     @Update("UPDATE xsy_order_tag_link SET active = FALSE WHERE order_id = #{orderId} AND active = TRUE")
     int clear(@Param("orderId") Long orderId);
 
-    @Update("UPDATE xsy_order_tag_link SET active = FALSE WHERE order_id = #{orderId} AND tag_id = #{tagId} AND active = TRUE")
+    @Update("UPDATE xsy_order_tag_link SET active = FALSE "
+        + "WHERE order_id = #{orderId} AND tag_id = #{tagId} AND active = TRUE")
     int detach(@Param("orderId") Long orderId, @Param("tagId") Long tagId);
 }

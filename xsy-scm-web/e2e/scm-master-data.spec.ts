@@ -133,7 +133,7 @@ test.describe('scm-customer', () => {
     expect(detail.creditPeriodValue).toBe(1);
     expect(detail.creditPeriodUnit).toBe('MONTH');
     expect(detail.settleDay).toBe(15);
-    expect(detail.status).toBe('POTENTIAL');
+    expect(detail.status).toBe('COOPERATING');
     expect(detail.contactPhone).toBe('13800138000');
     // 编码与名称必须来自**同一次选择**：只回编码会让导出与大屏文案各自漂移。
     expect([detail.provinceCode, detail.provinceName]).toEqual([330000, '浙江省']);
@@ -144,11 +144,14 @@ test.describe('scm-customer', () => {
     // 列表行按名称定位：编码是服务端生成的，不能用「提交什么码」当锚点。
     let row = page.getByRole('row').filter({hasText: prefix + '客户甲'});
     await expect(row).toBeVisible();
-    const statusChanged = page.waitForResponse((r) => r.url().endsWith('/scm/customer/updateStatus'));
-    await button(row, '状态').click();
-    await page.locator('.ant-dropdown:visible').getByText('合作中', {exact: true}).click();
+    await button(row, '编辑').click();
+    await openSelect(drawer, 'status');
+    await page.locator('.ant-select-dropdown:visible').getByText('暂停合作', {exact: true}).click();
+    const statusChanged = page.waitForResponse((r) => r.url().endsWith('/scm/customer/update'));
+    await button(drawer, '保存').click();
     expect((await (await statusChanged).json()).code).toBe(0);
-    await expect(row.getByText('合作中')).toBeVisible();
+    await expectDrawerClosed();
+    await expect(row.getByText('暂停合作')).toBeVisible();
 
     // ------------------------------------------------------------------ 编辑
     await button(row, '编辑').click();
@@ -157,12 +160,15 @@ test.describe('scm-customer', () => {
     // 回填走 `areaNodesOf`：三级必须显示成一条连续路径，缺一级时级联选择器会渲染异常。
     await expect(drawer.locator('.ant-cascader .ant-select-selection-item')).toHaveText(/浙江省\s*\/\s*杭州市\s*\/\s*西湖区/);
     await drawer.getByLabel('赊欠额度', {exact: true}).fill('9999.0000');
+    await openSelect(drawer, 'status');
+    await page.locator('.ant-select-dropdown:visible').getByText('合作中', {exact: true}).click();
     const updated = page.waitForResponse((r) => r.url().endsWith('/scm/customer/update'));
     await button(drawer, '保存').click();
     expect((await (await updated).json()).code).toBe(0);
     await expectDrawerClosed();
     const afterUpdate = (await (await api.get(`/scm/customer/detail/${customerId}`)).json()).data;
     expect(afterUpdate.creditLimit).toBe('9999.0000');
+    expect(afterUpdate.status).toBe('COOPERATING');
     // 编辑不重新触发级联 change：六列必须由详情回填原样带回去，不能在这次保存里被清空。
     expect([afterUpdate.provinceCode, afterUpdate.cityCode, afterUpdate.districtCode]).toEqual([330000, 330100, 330106]);
 
@@ -1512,21 +1518,25 @@ test.describe('scm-supplier', () => {
     await expect(drawer.getByText('关联商品 · ' + prefix + '供应商甲')).toBeVisible();
 
     await button(drawer, '添加商品').click();
-    let skuRow = drawer.locator('tbody tr').first();
+    let skuRow = drawer.locator('tbody tr.ant-table-row').first();
     await pickSku(page, skuRow, firstSkuCode);
     await skuRow.getByLabel('第 1 行采购单位').fill('kg');
+    await page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({hasText: /^kg$/}).click();
     await skuRow.getByLabel('第 1 行参考价').fill('3.5000');
-    await skuRow.locator('.ant-checkbox-input').check();
+    await skuRow.getByRole('switch', {name: '第 1 行优先采购'}).click();
+    await expect(skuRow.getByRole('switch', {name: '第 1 行优先采购'})).toHaveAttribute('aria-checked', 'true');
 
     await button(drawer, '添加商品').click();
-    skuRow = drawer.locator('tbody tr').nth(1);
+    skuRow = drawer.locator('tbody tr.ant-table-row').nth(1);
     await pickSku(page, skuRow, secondSkuCode);
     await skuRow.getByLabel('第 2 行采购单位').fill('箱');
+    await page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({hasText: /^箱$/}).click();
     // R12：第二行也勾「默认来源」—— 同一供应商允许多条默认，前端不得做单选限制。
-    await skuRow.locator('.ant-checkbox-input').check();
+    await skuRow.getByRole('switch', {name: '第 2 行优先采购'}).click();
+    await expect(skuRow.getByRole('switch', {name: '第 2 行优先采购'})).toHaveAttribute('aria-checked', 'true');
 
     const replaced = page.waitForResponse((r) => r.url().endsWith('/scm/supplier/sku/replace'));
-    await button(drawer, '保存').click();
+    await drawer.getByRole('button', {name: /^保\s*存/}).click();
     const replaceBody = await (await replaced).json();
     expect(replaceBody.code, JSON.stringify(replaceBody)).toBe(0);
     await expect(page.locator('.ant-drawer-open')).toHaveCount(0);
@@ -1563,7 +1573,12 @@ test.describe('scm-supplier', () => {
     drawer = currentDrawer(page);
     // 编辑态与创建态一致：编码字段不进表单，内部发号只在列表 / 详情只读展示。
     await expect(drawer.getByLabel('供应商编码', {exact: true})).toHaveCount(0);
-    await drawer.getByLabel('联系人', {exact: true}).fill('李四');
+    // 先等详情回填，避免自动填值与异步加载交错；用户在加载遮罩消失后编辑。
+    const contactName = drawer.getByLabel('联系人', {exact: true});
+    await expect(contactName).toHaveValue('张三');
+    await expect(drawer.locator('.ant-spin-spinning')).toHaveCount(0);
+    await contactName.fill('李四');
+    await expect(contactName).toHaveValue('李四');
     const updated = page.waitForResponse((r) => r.url().endsWith('/scm/supplier/update'));
     await button(drawer, '保存').click();
     expect((await (await updated).json()).code).toBe(0);
@@ -1588,7 +1603,7 @@ test.describe('scm-supplier', () => {
     // --------------------------------------------- 空数组 = 清空全部关联（R11）
     await button(row, '关联商品').click();
     drawer = currentDrawer(page);
-    await expect(drawer.locator('tbody tr')).toHaveCount(2);
+    await expect(drawer.locator('tbody tr.ant-table-row')).toHaveCount(2);
     await drawer.getByRole('button', {name: buttonName('移除第 2 行')}).click();
     await page
       .locator('.ant-popover:visible')
@@ -1599,9 +1614,13 @@ test.describe('scm-supplier', () => {
       .locator('.ant-popover:visible')
       .getByRole('button', {name: /确.*定/})
       .click();
-    await expect(drawer.locator('tbody tr').first()).toContainText('尚未关联任何商品');
+    await expect(drawer.locator('tbody tr.ant-table-row')).toHaveCount(0);
+    await expect(drawer).toContainText('已移除全部 2 个商品关联，保存后生效');
     const cleared = page.waitForResponse((r) => r.url().endsWith('/scm/supplier/sku/replace'));
-    await button(drawer, '保存').click();
+    await drawer.getByRole('button', {name: /^保\s*存/}).click();
+    const clearConfirmation = page.locator('.ant-modal-confirm:visible').filter({hasText: '确认保存关联商品'});
+    await expect(clearConfirmation).toContainText('移除的行保存后无法恢复');
+    await clearConfirmation.getByRole('button', {name: buttonName('确认保存')}).click();
     expect((await (await cleared).json()).code).toBe(0);
     expect((await (await api.get(`/scm/supplier/sku/list/${supplierId}`)).json()).data).toHaveLength(0);
 

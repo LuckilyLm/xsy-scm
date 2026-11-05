@@ -71,7 +71,7 @@ XSY_WECHAT_APP_SECRET=YOUR_MINIPROGRAM_APP_SECRET
 
 AppID 必须与实际小程序一致；更换小程序时同步核对 `src/manifest.json` 的 `mp-weixin.appid`、开发者工具的 `project.config.json` 与后端配置，重新编译后通过 `wx.getAccountInfoSync()` 核对实际运行的 AppID。微信后台需具备手机号获取权限和可用额度，完成隐私声明、服务端调用IP白名单及小程序请求域名等实际要求。配置后重新部署后端使变量生效；仅轮换后端密钥无需重新编译小程序。
 
-未配置时后端返回业务码50381，授权code失效为40094，手机号未开通采购账号为40381；停用和登录锁定仍使用原业务码。拒绝授权或缺少code不发起登录请求。真实微信取号单独验证，不能以模拟事件、模拟HTTP响应或密码登录成功替代。
+未配置时后端返回业务码50381，授权code失效为40098，手机号未开通采购账号为40381；停用和登录锁定仍使用原业务码。拒绝授权或缺少code不发起登录请求。真实微信取号单独验证，不能以模拟事件、模拟HTTP响应或密码登录成功替代。
 
 官方文档：[手机号授权](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/getPhoneNumber.html)、[服务端取号](https://developers.weixin.qq.com/miniprogram/dev/server/API/user-info/phone-number/api_getphonenumber.html)、[stable_token](https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-access-token/api_getstableaccesstoken.html)。
 

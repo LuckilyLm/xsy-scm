@@ -719,7 +719,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
   test('non-standard lines demand a manual actual weight', () => {
     const r = receipt();
     const lines = newConfirmLines(r);
-    assert.match(validateConfirm(r, lines), /非标品必须录入实重/);
+    assert.match(validateConfirm(r, lines), /称重商品必须填写实际重量/);
     lines[1].actualWeight = '2.0000';
     assert.match(validateConfirm(r, lines), /实重来源/);
     lines[1].weightSource = 'MANUAL';
@@ -745,9 +745,9 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     lines[1].actualWeight = '2.0000';
     lines[1].weightSource = 'MANUAL';
     lines[0].receivedQuantity = '1.00';
-    assert.match(validateConfirm(r, lines), /声明数量/);
+    assert.match(validateConfirm(r, lines), /本次收货数量/);
     lines[0].receivedQuantity = '-1.0000';
-    assert.match(validateConfirm(r, lines), /声明数量/);
+    assert.match(validateConfirm(r, lines), /本次收货数量/);
     lines[0].receivedQuantity = '0.0000';
     assert.equal(validateConfirm(r, lines), undefined);
     lines[0].receiptItemId = 99;

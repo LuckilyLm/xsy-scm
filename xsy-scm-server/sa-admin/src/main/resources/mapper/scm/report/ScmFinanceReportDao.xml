@@ -29,6 +29,46 @@
         </if>
     </sql>
 
+    <!-- 截至期末的余额先按完整客户/结算主体FIFO分摊，再应用可见范围及明细关键字。 -->
+    <sql id="endingReceivableFrom">
+        FROM (SELECT raw.*, GREATEST(raw.base_open - GREATEST(LEAST(raw.base_open + raw.prior_open,
+            raw.pool_amount) - raw.prior_open, 0), 0) AS open_amount
+        FROM (SELECT base.*, COALESCE(SUM(base.base_open) OVER (PARTITION BY base.customer_id,
+            base.settlement_customer_id ORDER BY base.event_at, base.id
+            ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING), 0) AS prior_open
+        FROM (SELECT normal.id, normal.receivable_no, normal.order_id, so.order_no, so.seller_id,
+            normal.customer_id, normal.settlement_customer_id, normal.customer_name_snapshot,
+            normal.event_at, normal.amount, COALESCE(red.amount, 0) AS red_amount,
+            normal.amount - COALESCE(red.amount, 0) AS net_amount,
+            COALESCE(written.amount, 0) AS written_off_amount,
+            GREATEST(normal.amount - COALESCE(red.amount, 0) - COALESCE(written.amount, 0), 0) AS base_open,
+            COALESCE(pool.amount, 0) AS pool_amount
+        FROM xsy_finance_receivable normal
+        JOIN xsy_sales_order so ON so.id = normal.order_id AND so.deleted = FALSE
+        LEFT JOIN LATERAL (SELECT SUM(red.amount) AS amount FROM xsy_finance_receivable red
+            WHERE red.original_receivable_id = normal.id AND red.entry_type = 'RED'
+                AND red.deleted = FALSE AND red.event_at &lt; #{endAt}) red ON TRUE
+        LEFT JOIN LATERAL (SELECT SUM(CASE wo.entry_type WHEN 'NORMAL' THEN wo.amount
+            WHEN 'REVERSE' THEN -wo.amount ELSE 0 END) AS amount FROM xsy_finance_write_off wo
+            WHERE wo.target_type = 'RECEIVABLE' AND wo.target_id = normal.id
+                AND wo.deleted = FALSE AND wo.written_off_at &lt; #{endAt}) written ON TRUE
+        LEFT JOIN LATERAL (SELECT SUM(x.amount) AS amount FROM xsy_finance_receivable x
+            WHERE x.entry_type = 'RED' AND x.original_receivable_id IS NULL AND x.deleted = FALSE
+                AND x.event_at &lt; #{endAt} AND x.customer_id = normal.customer_id
+                AND x.settlement_customer_id = normal.settlement_customer_id) pool ON TRUE
+        WHERE normal.entry_type = 'NORMAL' AND normal.deleted = FALSE AND normal.event_at &lt; #{endAt}
+        ) base) raw) balance
+        WHERE TRUE
+        <choose>
+            <when test="orderScope != null and orderScope.all"/>
+            <when test="orderScope != null and !orderScope.empty">
+                AND balance.seller_id IN
+                <foreach collection="orderScope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+    </sql>
+
     <select id="overview" resultType="com.xsy.scm.report.domain.vo.ScmFinanceOverviewVO">
         SELECT ar_flow.amount AS receivableOccurredAmount, ar_flow.write_off_amount AS receivableWrittenOffAmount,
             ar_stock.amount AS endingReceivableAmount, ap_flow.amount AS payableOccurredAmount,
@@ -48,32 +88,9 @@
         <include refid="orderScopeFilter"/>
         ) AS write_off_amount) ar_flow
         <!-- 期末应收：正常应收未结额扣客户级红字（按客户 + 结算主体先进先出抵减最早未结应收）。 -->
-        CROSS JOIN (SELECT COALESCE(SUM(GREATEST(credited.base_open - credited.credit_applied, 0)), 0) AS amount
-        FROM (SELECT raw.base_open,
-            GREATEST(LEAST(raw.base_open + COALESCE(SUM(raw.base_open) OVER (PARTITION BY raw.customer_id,
-            raw.settlement_customer_id ORDER BY raw.event_at, raw.id ROWS BETWEEN UNBOUNDED PRECEDING AND 1
-            PRECEDING), 0), raw.pool_amount) - COALESCE(SUM(raw.base_open) OVER (PARTITION BY raw.customer_id,
-            raw.settlement_customer_id ORDER BY raw.event_at, raw.id ROWS BETWEEN UNBOUNDED PRECEDING AND 1
-            PRECEDING), 0), 0) AS credit_applied
-        FROM (SELECT normal.id, normal.customer_id, normal.settlement_customer_id, normal.event_at,
-            GREATEST(normal.amount - COALESCE(red.red_amount, 0) - COALESCE(wo.written_off_amount, 0), 0) AS base_open,
-            COALESCE(pool.amount, 0) AS pool_amount FROM xsy_finance_receivable normal JOIN xsy_sales_order so ON
-            so.id = normal.order_id AND
-            so.deleted = FALSE LEFT JOIN LATERAL (SELECT COALESCE(SUM(red.amount),
-            0) AS red_amount FROM xsy_finance_receivable red WHERE red.original_receivable_id = normal.id AND
-            red.entry_type = 'RED' AND red.deleted = FALSE AND
-            red.event_at &lt; #{endAt}) red ON TRUE LEFT JOIN LATERAL (SELECT COALESCE(SUM(CASE wo.entry_type WHEN
-            'NORMAL' THEN wo.amount WHEN 'REVERSE' THEN -wo.amount ELSE 0 END),
-            0) AS written_off_amount FROM xsy_finance_write_off wo WHERE wo.target_type = 'RECEIVABLE' AND
-            wo.target_id = normal.id AND wo.deleted = FALSE AND
-            wo.written_off_at &lt; #{endAt}) wo ON TRUE LEFT JOIN LATERAL (SELECT SUM(x.amount) AS amount FROM
-            xsy_finance_receivable x WHERE x.entry_type = 'RED' AND x.original_receivable_id IS NULL AND
-            x.deleted = FALSE AND x.event_at &lt; #{endAt} AND x.customer_id = normal.customer_id AND
-            x.settlement_customer_id = normal.settlement_customer_id) pool ON TRUE
-            WHERE normal.entry_type = 'NORMAL' AND
-            normal.deleted = FALSE AND normal.event_at &lt; #{endAt}
-        <include refid="orderScopeFilter"/>
-        ) raw) credited) ar_stock
+        CROSS JOIN (SELECT COALESCE(SUM(balance.open_amount), 0) AS amount
+        <include refid="endingReceivableFrom"/>
+        ) ar_stock
         CROSS JOIN (SELECT (SELECT COALESCE(SUM(CASE p.entry_type WHEN 'NORMAL' THEN p.amount WHEN 'RED' THEN -p.amount
             ELSE 0 END), 0) FROM xsy_finance_payable p JOIN xsy_purchase_order po ON po.id = p.purchase_order_id AND
             po.deleted = FALSE WHERE p.deleted = FALSE AND p.event_at &gt;= #{startAt} AND p.event_at &lt; #{endAt}
@@ -105,33 +122,19 @@
     </select>
 
     <select id="receivableDetails" resultType="com.xsy.scm.report.domain.vo.ScmFinanceReceivableDetailVO">
-        SELECT normal.id AS receivableId, normal.receivable_no AS receivableNo, so.order_no AS orderNo,
-            normal.customer_name_snapshot AS customerName, normal.amount, COALESCE(red.red_amount, 0) AS redAmount,
-            normal.amount - COALESCE(red.red_amount, 0) AS netAmount,
-            COALESCE(wo.written_off_amount, 0) AS writtenOffAmount,
-            GREATEST(normal.amount - COALESCE(red.red_amount, 0) - COALESCE(wo.written_off_amount, 0), 0) AS openAmount,
-            GREATEST(COALESCE(wo.written_off_amount, 0) - (normal.amount - COALESCE(red.red_amount, 0)),
-            0) AS overAppliedAmount, normal.event_at AS eventAt
-        FROM xsy_finance_receivable normal
-        JOIN xsy_sales_order so ON so.id = normal.order_id
-            AND so.deleted = FALSE
-        LEFT JOIN LATERAL (SELECT COALESCE(SUM(red.amount),
-            0) AS red_amount FROM xsy_finance_receivable red WHERE red.original_receivable_id = normal.id AND
-            red.entry_type = 'RED' AND red.deleted = FALSE AND red.event_at &lt; #{endAt}) red ON TRUE
-        LEFT JOIN LATERAL (SELECT COALESCE(SUM(CASE wo.entry_type WHEN 'NORMAL' THEN wo.amount WHEN 'REVERSE' THEN
-            -wo.amount ELSE 0 END),
-            0) AS written_off_amount FROM xsy_finance_write_off wo WHERE wo.target_type = 'RECEIVABLE' AND
-            wo.target_id = normal.id AND wo.deleted = FALSE AND wo.written_off_at &lt; #{endAt}) wo ON TRUE
-        WHERE normal.entry_type = 'NORMAL'
-            AND normal.deleted = FALSE
-            AND normal.event_at &lt; #{endAt}
-        <include refid="orderScopeFilter"/>
+        SELECT balance.id AS receivableId, balance.receivable_no AS receivableNo, balance.order_no AS orderNo,
+            balance.customer_name_snapshot AS customerName, balance.amount, balance.red_amount AS redAmount,
+            balance.net_amount AS netAmount, balance.written_off_amount AS writtenOffAmount,
+            balance.open_amount AS openAmount,
+            GREATEST(balance.written_off_amount - balance.net_amount, 0) AS overAppliedAmount,
+            balance.event_at AS eventAt
+        <include refid="endingReceivableFrom"/>
         <if test="query.keyword != null and query.keyword != ''">
-            AND (normal.receivable_no ILIKE CONCAT('%', #{query.keyword}, '%') OR
-                so.order_no ILIKE CONCAT('%', #{query.keyword}, '%') OR
-                normal.customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (balance.receivable_no ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                balance.order_no ILIKE CONCAT('%', #{query.keyword}, '%') OR
+                balance.customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
-        ORDER BY normal.event_at DESC, normal.id DESC
+        ORDER BY balance.event_at DESC, balance.id DESC
     </select>
 
     <select id="payableDetails" resultType="com.xsy.scm.report.domain.vo.ScmFinancePayableDetailVO">

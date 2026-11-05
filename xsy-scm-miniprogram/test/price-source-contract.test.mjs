@@ -37,7 +37,7 @@ test('商城两处来源文案覆盖后端每一个价格来源', () => {
 
 test('映射里不出现后端不存在的来源键', () => {
   const sources = backendSources();
-  const adapterKeys = [...adapter.matchAll(/^  ([A-Z_]+): '/gm)].map((m) => m[1]);
+  const adapterKeys = [...adapter.matchAll(/^ {2}([A-Z_]+): '/gm)].map((m) => m[1]);
   for (const key of adapterKeys) {
     assert.ok(sources.includes(key), `product-adapter 的 ${key} 在后端枚举中不存在`);
   }

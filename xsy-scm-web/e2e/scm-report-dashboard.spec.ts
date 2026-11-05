@@ -692,7 +692,7 @@ test.describe('scm-report', () => {
     await page.getByRole('tab', {name: '价格波动'}).click();
     const result = await (await trendLoaded).json();
     expect(result.code, result.msg).toBe(0);
-    const rows = result.data as Array<{skuId: string | number; purchaseUnit: string}>;
+    const rows = result.data as Array<{bizDate: string; skuId: string | number; purchaseUnit: string}>;
     expect(
       rows.some((row) => Number(row.skuId) === Number(skuId) && row.purchaseUnit === 'kg'),
       '刚提交的采购行应进入当前业务日的价格趋势'
@@ -701,7 +701,21 @@ test.describe('scm-report', () => {
     await expect(page.getByText('采购成交价波动', {exact: true})).toBeVisible();
     const table = page.locator('#scm-report-purchase-price-trend-table');
     await expect(table).toBeVisible();
-    await expect(table.locator('tbody tr[data-row-key]')).toHaveCount(rows.length);
+    // 完整数组表格分页展示，逐页核对全部业务行，防止只验第一页掩盖截断或重复。
+    const localTable = page.locator('.smart-local-table').filter({has: table});
+    await expect(localTable.locator('.ant-pagination-total-text')).toHaveText(`共${rows.length}条`);
+    const renderedKeys: string[] = [];
+    for (let offset = 0; offset < rows.length; offset += 20) {
+      const visibleRows = table.locator('tbody tr[data-row-key]');
+      await expect(visibleRows).toHaveCount(Math.min(20, rows.length - offset));
+      renderedKeys.push(...(await visibleRows.evaluateAll((elements) => elements.map((element) => element.getAttribute('data-row-key')!))));
+      if (offset + 20 < rows.length) {
+        const firstKey = await visibleRows.first().getAttribute('data-row-key');
+        await localTable.locator('.ant-pagination-next').click();
+        await expect(visibleRows.first()).not.toHaveAttribute('data-row-key', firstKey!);
+      }
+    }
+    expect(renderedKeys.sort()).toEqual(rows.map((row) => `${row.bizDate}-${row.skuId}-${row.purchaseUnit}`).sort());
   });
 
   test('4 收货与入库分离：WAREHOUSE_CONFIRM 先只出现在收货与待入库，入库后才进入库明细', async () => {

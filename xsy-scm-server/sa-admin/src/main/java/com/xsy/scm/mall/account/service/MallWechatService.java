@@ -20,7 +20,7 @@ public class MallWechatService {
     private final RedisService redis;
     private final String appId;
     private final String appSecret;
-    private final RestClient client;
+    private final RestClient wechatClient;
 
     /**
      * @param redis
@@ -40,15 +40,15 @@ public class MallWechatService {
         factory.setConnectTimeout(Duration.ofSeconds(3));
         factory.setReadTimeout(Duration.ofSeconds(6));
         // 微信网关不接受分块请求体；先缓冲小型JSON以发送明确的Content-Length。
-        this.client = RestClient.builder().baseUrl("https://api.weixin.qq.com")
+        this.wechatClient = RestClient.builder().baseUrl("https://api.weixin.qq.com")
             .requestFactory(new BufferingClientHttpRequestFactory(factory)).build();
     }
 
-    MallWechatService(RedisService redis, String appId, String appSecret, RestClient client) {
+    MallWechatService(RedisService redis, String appId, String appSecret, RestClient wechatClient) {
         this.redis = redis;
         this.appId = appId;
         this.appSecret = appSecret;
-        this.client = client;
+        this.wechatClient = wechatClient;
     }
 
     /**
@@ -94,7 +94,7 @@ public class MallWechatService {
     }
 
     private JsonNode phoneInfo(String code, String token) {
-        JsonNode result = client.post().uri("/wxa/business/getuserphonenumber?access_token={token}", token)
+        JsonNode result = wechatClient.post().uri("/wxa/business/getuserphonenumber?access_token={token}", token)
             .body(Map.of("code", code)).retrieve().body(JsonNode.class);
         if (result == null) {
             throw new ScmBusinessException(MallErrorCode.WECHAT_UNAVAILABLE);
@@ -109,9 +109,9 @@ public class MallWechatService {
             return cached;
         }
         // stable_token在多实例正常取号时复用同一令牌，不因各实例缓存未命中互相挤掉会话。
-        JsonNode result = client.post().uri("/cgi-bin/stable_token").body(Map.of("grant_type", "client_credential",
-            "appid", appId, "secret", appSecret, "force_refresh", rejectedToken != null)).retrieve()
-            .body(JsonNode.class);
+        JsonNode result = wechatClient.post().uri("/cgi-bin/stable_token").body(Map.of("grant_type",
+            "client_credential", "appid", appId, "secret", appSecret, "force_refresh", rejectedToken != null))
+            .retrieve().body(JsonNode.class);
         if (result == null || result.path("errcode").asInt(0) != 0 || result.path("access_token").asText("").isBlank()
             || result.path("expires_in").asLong() <= 60) {
             throw new ScmBusinessException(MallErrorCode.WECHAT_UNAVAILABLE);

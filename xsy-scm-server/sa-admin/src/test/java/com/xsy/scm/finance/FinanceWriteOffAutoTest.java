@@ -34,6 +34,7 @@ import com.xsy.scm.finance.dao.FinanceWriteOffDao;
 import com.xsy.scm.finance.domain.dto.FinanceAutoWriteOffTargetDto;
 import com.xsy.scm.finance.domain.dto.FinanceCustomerFactDto;
 import com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto;
+import com.xsy.scm.finance.domain.dto.FinanceReceivableCreditContextDto;
 import com.xsy.scm.finance.domain.entity.FinancePaymentEntity;
 import com.xsy.scm.finance.domain.entity.FinanceReceiptEntity;
 import com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity;
@@ -96,6 +97,34 @@ class FinanceWriteOffAutoTest {
 
         when(writeOffs.selectSourceUsedAmount("RECEIPT", 9L)).thenReturn(BigDecimal.ZERO);
         when(idempotency.claim(any(), eq("key"), any())).thenReturn(claim);
+    }
+
+    @Test
+    void groupedCustomerPreviewAndCommitUseTheTargetsEffectiveBalance() {
+        when(receivables.selectAutoTargets(eq(3L), any(), anyInt()))
+            .thenReturn(List.of(candidate(11L, "80")));
+        when(receivables.selectNormalTargetsForUpdate(List.of(11L))).thenReturn(List.of(locked(11L, "100")));
+        when(receivables.selectRedAmount(11L)).thenReturn(BigDecimal.ZERO);
+        when(writeOffs.selectTargetWrittenOffAmount("RECEIVABLE", 11L)).thenReturn(BigDecimal.ZERO);
+        var credit = new FinanceReceivableCreditContextDto();
+        credit.setPoolAmount(new BigDecimal("20"));
+        credit.setPriorOpenAmount(BigDecimal.ZERO);
+        when(receivables.selectCreditContextForTarget(11L)).thenReturn(credit);
+        // 集团自身的扣减不能再次减到子客户的已计算余额上。
+        when(receivables.selectCustomerLevelRedAmount(3L, 3L)).thenReturn(new BigDecimal("10"));
+        when(writeOffs.insert(any(FinanceWriteOffEntity.class))).thenReturn(1);
+        var view = new com.xsy.scm.finance.domain.vo.FinanceReceiptQueryVO();
+        view.setReceiptId(9L);
+        view.setCustomerId(2L);
+        view.setSettlementCustomerId(3L);
+        view.setEntryType("NORMAL");
+        view.setEffectiveAmount(new BigDecimal("100"));
+        when(receipts.selectQueryById(9L)).thenReturn(view);
+        assertThat(service.autoPreview(form).getFirst().getAllocatedAmount()).isEqualByComparingTo("80");
+        try (MockedStatic<ScmOperator> operator = mockStatic(ScmOperator.class)) {
+            operator.when(ScmOperator::current).thenReturn("operator");
+            assertThat(service.autoAdd(form, "key").getItems().getFirst().getAmount()).isEqualByComparingTo("80");
+        }
     }
 
     @Test

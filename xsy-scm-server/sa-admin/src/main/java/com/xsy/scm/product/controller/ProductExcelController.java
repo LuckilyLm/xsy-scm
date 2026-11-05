@@ -4,8 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.xsy.scm.common.export.ScmExportColumnSelection;
 import com.xsy.scm.common.export.ScmExportColumnSelection.Column;
 import com.xsy.scm.common.exception.ScmBusinessException;
-
-import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import com.xsy.scm.common.error.ScmExportErrorCode;
 
 import cn.dev33.satoken.stp.StpUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -110,17 +109,21 @@ public class ProductExcelController {
     @OperateLog
     public void export(@RequestBody ProductSpuQueryForm form, HttpServletResponse response) throws IOException {
         form.setPageNum(1L);
-        form.setPageSize(EXPORT_MAX_ROWS + (form.getExportColumnKeys() == null ? 0L : 1L));
+        form.setPageSize(EXPORT_MAX_ROWS + 1L);
         PageResult<ProductSpuVO> page = productQueryService.query(form);
+        if (page.getList().size() > EXPORT_MAX_ROWS || (page.getTotal() != null && page.getTotal() > EXPORT_MAX_ROWS))
+            throw new ScmBusinessException(ScmExportErrorCode.EXPORT_ROW_LIMIT_EXCEEDED);
         var rows = new ArrayList<ProductExportExcelVO>();
-        for (var spu : page.getList())
+        // 一个商品可能展开多行规格，默认和自选列都必须在写响应前验证实际导出规模。
+        for (var spu : page.getList()) {
             rows.addAll(flatten(spu));
+            if (rows.size() > EXPORT_MAX_ROWS)
+                throw new ScmBusinessException(ScmExportErrorCode.EXPORT_ROW_LIMIT_EXCEEDED);
+        }
         if (form.getExportColumnKeys() == null) {
             SmartExcelUtil.exportExcel(response, "商品档案导出.xlsx", "商品", ProductExportExcelVO.class, rows);
             return;
         }
-        if (rows.size() > EXPORT_MAX_ROWS)
-            throw new ScmBusinessException(VALIDATION_ERROR);
         var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(), PRODUCT_EXPORT_COLUMNS, true);
         List<List<Object>> values = rows.stream()
             .map(row -> Arrays.<Object>asList(row.getSpuId(), row.getSpuVersion(), row.getSkuId(), row.getSkuVersion(),

@@ -183,7 +183,7 @@ class ProductImportUpdatePgIT {
                 row(second, secondPriceTarget, cell(MARKET_PRICE, "6.0000"), cell(BARCODE, clash))), ImportMode.UPDATE);
         assertThat(result.getErrors()).singleElement().satisfies(error -> {
             assertThat(error.getCode()).isEqualTo("40023");
-            assertThat(error.getMessage()).contains("整批已回滚");
+            assertThat(error.getMessage()).contains("本批数据未保存");
         });
         assertThat(result.getUpdatedProducts()).isZero();
         assertThat(price(firstPriceTarget)).isEqualByComparingTo("1.2000");

@@ -28,7 +28,7 @@ class OrderSingleStateTagPgIT extends ScmW6PgITBase {
         Long second = confirmedSalesOrder(customer, newOnShelfSku("STATUS-B"), "2.0000", "2.0000");
         assertThat(queries.detail(first).getStatus()).isEqualTo("CONFIRMED");
         lifecycle.markDispatched(first, OffsetDateTime.now(), "1:1");
-        jdbc.update("UPDATE xsy_sales_order SET locked_flag = TRUE WHERE id = ?", first);
+        jdbc.update("UPDATE xsy_sales_order SET locked_flag = TRUE, locked_at = CURRENT_TIMESTAMP, locked_by = '1:1' WHERE id = ?", first);
         evictMybatisCache();
         var form = query(customer, "DISPATCHED");
         assertThat(queries.query(form).getList()).extracting(row -> row.getOrderId()).containsExactly(first);

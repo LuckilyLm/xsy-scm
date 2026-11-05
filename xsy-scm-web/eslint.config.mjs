@@ -33,11 +33,11 @@ export default [
     rules: {'vue/multi-word-component-names': ['error', {ignores: ['index']}], 'vue/no-mutating-props': ['error', {shallowOnly: true}]},
   },
   {
-    files: ['src/**/*.ts', 'src/**/*.tsx', 'e2e/**/*.ts', 'playwright.config.ts'],
+    files: ['src/**/*.ts', 'src/**/*.tsx', 'e2e/**/*.ts', 'e2e-chains/**/*.ts', 'playwright.config.ts', 'playwright.chains.config.ts'],
     languageOptions: {parser: tsParser, parserOptions: {ecmaVersion: 'latest', sourceType: 'module'}},
   },
   {
-    files: ['e2e/**/*.ts', 'playwright.config.ts'],
+    files: ['e2e/**/*.ts', 'e2e-chains/**/*.ts', 'playwright.config.ts', 'playwright.chains.config.ts'],
     plugins: {'@typescript-eslint': tsPlugin},
     rules: {
       ...tsPlugin.configs.recommended.rules,

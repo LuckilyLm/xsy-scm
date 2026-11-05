@@ -788,7 +788,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     // 三条最容易被误读的码：提示里必须给出「怎么做」
     assert.match(inventoryError({code: 41042}), /不能相同/);
     assert.match(inventoryError({code: 41044}), /统一两仓的采购单位/);
-    assert.match(inventoryError({code: 41039}), /反向调拨/);
+    assert.match(inventoryError({code: 41039}), /另建调拨单将货物调回原仓库/);
   });
 
   // ------------------------------------------------------------------

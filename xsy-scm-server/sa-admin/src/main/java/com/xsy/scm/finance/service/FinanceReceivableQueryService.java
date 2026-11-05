@@ -12,7 +12,6 @@ import com.xsy.scm.finance.constant.ScmFinanceSettleStateEnum;
 import com.xsy.scm.finance.constant.ScmFinanceWriteOffTargetTypeEnum;
 import com.xsy.scm.finance.dao.FinanceReceivableDao;
 import com.xsy.scm.finance.dao.FinanceReceivableItemDao;
-import com.xsy.scm.finance.dao.FinanceReceivableSourceDao;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableEntity;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity;
 import com.xsy.scm.finance.domain.form.FinanceReceivableQueryForm;
@@ -47,7 +46,6 @@ public class FinanceReceivableQueryService {
 
     private final FinanceReceivableDao financeReceivableDao;
     private final FinanceReceivableItemDao financeReceivableItemDao;
-    private final FinanceReceivableSourceDao financeReceivableSourceDao;
     private final FinanceWriteOffQueryService writeOffQueryService;
     private final FinanceOperationLogQueryService financeOperationLogQueryService;
     private final ScmDataScopeService dataScopeService;
@@ -73,7 +71,8 @@ public class FinanceReceivableQueryService {
             throw new ScmBusinessException(FinanceErrorCode.RECEIVABLE_NOT_FOUND);
         }
         ScmDataScopeContext scope = dataScopeService.resolve();
-        Long sellerId = financeReceivableSourceDao.selectOrderSellerId(entity.getOrderId());
+        // 独立退货没有订单，详情必须与列表一样回落到客户负责人，不能把空订单误判为无权。
+        Long sellerId = financeReceivableDao.selectSellerId(receivableId);
         if (!scope.getOrderSellerScope().allows(sellerId)) {
             throw new ScmDataScopeException();
         }

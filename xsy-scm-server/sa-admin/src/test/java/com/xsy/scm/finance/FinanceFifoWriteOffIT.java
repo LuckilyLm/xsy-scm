@@ -3,6 +3,8 @@ package com.xsy.scm.finance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.scope.ScmValueScope;
+import com.xsy.scm.finance.dao.FinanceReceivableDao;
 import com.xsy.scm.finance.domain.form.FinanceReceiptAddForm;
 import com.xsy.scm.finance.domain.form.FinanceWriteOffAutoForm;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
@@ -34,6 +36,29 @@ class FinanceFifoWriteOffIT extends ScmW5PgITBase {
 
     @Autowired
     private FinanceWriteOffService financeWriteOffService;
+
+    @Autowired
+    private FinanceReceivableDao receivables;
+
+    @Test
+    void groupedCreditsStayWithTheirCustomerAndAreAppliedBeforeCandidateLimit() {
+        Long parent = newCustomer();
+        Long firstCustomer = newCustomer();
+        Long secondCustomer = newCustomer();
+        normalReceivable(firstCustomer, "100", EVENT_AT.minusDays(10), parent);
+        Long remaining = normalReceivable(firstCustomer, "50", EVENT_AT.minusDays(5), parent);
+        Long other = normalReceivable(secondCustomer, "100", EVENT_AT.minusDays(3), parent);
+        customerCredit(firstCustomer, parent, "120");
+        customerCredit(parent, parent, "999");
+        evictMybatisCache();
+        var one = receivables.selectAutoTargets(parent, ScmValueScope.all(), 1);
+        assertThat(one).hasSize(1);
+        assertThat(one.getFirst().getTargetId()).isEqualTo(remaining);
+        assertThat(one.getFirst().getOpenAmount()).isEqualByComparingTo("30");
+        var all = receivables.selectAutoTargets(parent, ScmValueScope.all(), 100);
+        assertThat(all).extracting(row -> row.getTargetId()).containsExactly(remaining, other);
+        assertThat(all.get(1).getOpenAmount()).isEqualByComparingTo("100");
+    }
 
     @Test
     @DisplayName("#1 自动核销按账单日期从旧到新分配，剩余额不落到更晚的单据")
@@ -95,13 +120,25 @@ class FinanceFifoWriteOffIT extends ScmW5PgITBase {
     }
 
     private Long normalReceivable(Long customerId, String amount, OffsetDateTime eventAt) {
+        return normalReceivable(customerId, amount, eventAt, customerId);
+    }
+
+    private void customerCredit(Long customerId, Long settlementId, String amount) {
+        jdbc.update("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, customer_id, "
+            + "customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at, reason) "
+            + "VALUES (?, 'ORDER_RETURN', ?, ?, 'FIFO客户', ?, 'FIFO集团', 'RED', ?, ?, '独立退货')",
+            prefix + "-credit-" + UUID.randomUUID(), uniqueNumber(), customerId, settlementId,
+            new BigDecimal(amount), EVENT_AT);
+    }
+
+    private Long normalReceivable(Long customerId, String amount, OffsetDateTime eventAt, Long settlementId) {
         long sourceId = uniqueNumber();
         return jdbc.queryForObject("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id,"
                 + " order_id, customer_id, customer_name_snapshot, settlement_customer_id,"
                 + " settlement_customer_name_snapshot, entry_type, amount, event_at, created_at, updated_at)"
                 + " VALUES (?, 'SALES_ORDER', ?, 1, ?, 'FIFO 测试客户', ?, 'FIFO 测试客户', 'NORMAL', ?, ?, now(), now())"
                 + " RETURNING id",
-            Long.class, "AR-FIFO-" + prefix + "-" + UUID.randomUUID(), sourceId, customerId, customerId,
+            Long.class, "AR-FIFO-" + prefix + "-" + UUID.randomUUID(), sourceId, customerId, settlementId,
             new BigDecimal(amount), eventAt);
     }
 

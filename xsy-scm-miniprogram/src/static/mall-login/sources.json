@@ -1,45 +1,45 @@
 [
   {
     "file": "hero.png",
-    "source": "登录页/ChatGPT 图像 2026年11月4日 11_27_36-1.png",
+    "source": "登录页/hero.png",
     "sourceSha256": "6e67b248556206c66be0d5cf2680aec54d744f94d83345edceab516bfbf9ef79",
-    "size": 98521
+    "size": 98171
   },
   {
     "file": "waves.png",
-    "source": "登录页/ChatGPT 图像 2026年11月4日 11_27_37-2.png",
+    "source": "登录页/waves.png",
     "sourceSha256": "2d0efb0be6a92d35e3d0eb1899823cf43dd5b553bb20ec8c139a12bb1c55ca12",
-    "size": 18214
+    "size": 17864
   },
   {
     "file": "logo.png",
-    "source": "登录页/ChatGPT 图像 2026年11月4日 11_27_40-3.png",
+    "source": "登录页/logo.png",
     "sourceSha256": "604281a7c1c0ca296bbe63b76db6aae36a5914e6e25d3d754ca259d37f0e907b",
-    "size": 11924
+    "size": 11574
   },
   {
     "file": "phone.png",
-    "source": "登录页/ChatGPT 图像 2026年11月4日 11_27_41-4.png",
+    "source": "登录页/phone.png",
     "sourceSha256": "f711f18eb302a13a586a7ed3569ae571e9fb58e53d3a2566e8d03caed5f80cbf",
-    "size": 2262
+    "size": 1912
   },
   {
     "file": "lock.png",
-    "source": "登录页/ChatGPT 图像 2026年11月4日 11_27_43-5.png",
+    "source": "登录页/lock.png",
     "sourceSha256": "86d881ded2880a5756ad46f398bb6d392d419ca385b66086bd317b375d9f5931",
-    "size": 2778
+    "size": 2428
   },
   {
     "file": "info.png",
-    "source": "登录页/ChatGPT 图像 2026年11月4日 11_27_45-6.png",
+    "source": "登录页/info.png",
     "sourceSha256": "12e21b8ffed4b5c07b97fc94265aa0214959f1209b03d66ce8cfee571816fb02",
-    "size": 2552
+    "size": 2202
   },
   {
     "file": "eye-closed.png",
-    "source": "登录页/ChatGPT 图像 2026年11月4日 11_27_46-7.png",
+    "source": "登录页/eye-closed.png",
     "sourceSha256": "1d42f02c5f1ca8d4c0eb0781a4bae1984e23c7e945fa6733855906947bb0f143",
-    "size": 3025
+    "size": 2675
   },
   {
     "file": "wechat.png",

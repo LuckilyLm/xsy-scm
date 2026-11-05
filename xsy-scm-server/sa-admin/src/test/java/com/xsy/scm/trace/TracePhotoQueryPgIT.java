@@ -42,7 +42,7 @@ class TracePhotoQueryPgIT extends ScmW3PgITBase {
 
     @Test
     void uploaderNameMatchesEvenWhenFileNameContainsNoName() {
-        String name = "报告上传员" + UUID.randomUUID();
+        String name = "报告上传员" + UUID.randomUUID().toString().substring(0, 8);
         jdbc.update("UPDATE t_employee SET actual_name = ? WHERE employee_id = 1", name);
         insertPhoto("market-inspection-2026.jpg", "2026-11-01T10:00:00+08:00");
         assertThat(reports.photos(null, null, null, name)).extracting(report -> report.getReportName())

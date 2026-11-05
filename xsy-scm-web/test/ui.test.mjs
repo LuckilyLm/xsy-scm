@@ -105,7 +105,10 @@ import ts from 'typescript';
     assert.match(api, /\/draft', \{version, themeCode, themeColor, blocks\}/);
     assert.match(api, /\/publish', \{draftVersion, pointerVersion\}/);
     assert.match(api, /\/rollback', \{targetReleaseId, pointerVersion, reason\}/);
-    assert.match(page, /:disabled="!blocks\.length"[^>]*@click="publish"/);
+    // 空组件允许仅发布主题色；发布仍受权限、保存流程与乐观锁约束。
+    assert.match(page, /v-privilege="'scm:mall:home:publish'"[^>]*@click="publish"/);
+    assert.doesNotMatch(page, /:disabled="!blocks\.length"[^>]*@click="publish"/);
+    assert.match(page, /async function publish\(\)[\s\S]*?if \(!\(await prepareSavedChanges\(\)\)\) return;/);
     assert.match(page, /mallHomeApi\.publish\(draftVersion\.value, pointerVersion\.value\)/);
     assert.match(page, /mallHomeApi\.rollback\(rollbackTarget\.value\.id, pointerVersion\.value, rollbackReason\.value\.trim\(\)\)/);
     assert.match(page, /mallHomeApi\.preview\(previewCustomerId\.value, previewWarehouseId\.value\)/);

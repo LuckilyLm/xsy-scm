@@ -329,7 +329,7 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.match(drawer, /class="amount-grid scm-summary"/);
     assert.match(drawer, /amount-cell__value scm-summary__value scm-money/);
     // 调整后金额 / 有效金额放在摘要的第一格
-    assert.match(drawer, /扣减后应收 \/ 扣减后应付/);
+    assert.match(drawer, /isReceivable \? '扣减后应收' : '扣减后应付'/);
     assert.match(drawer, /有效金额/);
     // 单据概要段里不得再出现金额（金额已迁到金额组成段）
     const header = drawer.slice(drawer.indexOf('<h3>单据概要</h3>'), drawer.indexOf('<h3>对象信息</h3>'));
@@ -406,7 +406,7 @@ import {readFileSync, existsSync} from 'node:fs';
   });
 
   test('外部账单页把虚拟单据口径写在界面上，并明确不进应收应付', () => {
-    assert.match(page, /不生成应收应付/);
+    assert.match(page, /不计入应收应付/);
     assert.match(page, /不参与账款抵扣/);
     // 税点只展示原值，不在前端算税额
     assert.match(page, /percentText\(text\)/);

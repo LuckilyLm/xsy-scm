@@ -54,7 +54,7 @@ public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity
      * 自动核销候选：同一结算客户的未结正常应收，按账单日期、id 升序（FIFO）。
      *
      * <p>
-     * 未结金额 = 应收金额 - 红字冲减 - 核销净额，现算；{@code scope} 为销售员数据范围，null 按失败关闭。
+     * 未结金额包含实际客户与结算主体下的客户级扣减；先计算FIFO余额，再筛选销售员范围与限数。
      */
     List<FinanceAutoWriteOffTargetDto> selectAutoTargets(@Param("settlementCustomerId") Long settlementCustomerId,
         @Param("scope") ScmValueScope scope, @Param("limit") int limit);
@@ -73,6 +73,13 @@ public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity
     FinanceReceivableCreditContextDto selectCreditContextForTarget(@Param("targetId") Long targetId);
 
     FinanceReceivableEntity selectActiveById(@Param("receivableId") Long receivableId);
+
+    /**
+     * @param receivableId
+     *            已存在的应收或扣减记录ID，不可为空
+     * @return 与列表一致的订单负责人或客户负责人；未分配或来源不可用时为空，仅全范围可见
+     */
+    Long selectSellerId(@Param("receivableId") Long receivableId);
 
     FinanceReceivableVO selectSummaryById(@Param("receivableId") Long receivableId);
 

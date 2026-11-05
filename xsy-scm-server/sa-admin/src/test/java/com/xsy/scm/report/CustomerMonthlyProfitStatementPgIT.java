@@ -12,6 +12,7 @@ import com.xsy.scm.report.constant.ScmFinanceProfitDimensionEnum;
 import com.xsy.scm.report.domain.form.ScmCustomerMonthlyProfitQueryForm;
 import com.xsy.scm.report.service.ScmCustomerMonthlyProfitService;
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.concurrent.atomic.AtomicLong;
@@ -105,7 +106,7 @@ class CustomerMonthlyProfitStatementPgIT extends ScmW6PgITBase {
         jdbc.update("INSERT INTO xsy_finance_receivable(receivable_no, source_type, source_id, order_id, customer_id,"
                 + " customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type,"
                 + " amount, event_at) VALUES (?, 'SALES_ORDER', ?, ?, ?, '对账客户', ?, '对账客户', 'NORMAL', ?, ?)",
-            prefix + "-AR-" + sourceId, sourceId, sourceId, customerId, customerId, amount, eventAt);
+            prefix + "-AR-" + sourceId, sourceId, sourceId, customerId, customerId, new BigDecimal(amount), eventAt);
     }
 
     private Long insertReceipt(Long customerId, String amount, String entryType, Long reverseOfId,
@@ -114,7 +115,7 @@ class CustomerMonthlyProfitStatementPgIT extends ScmW6PgITBase {
         jdbc.update("INSERT INTO xsy_finance_receipt(receipt_no, customer_id, customer_name_snapshot,"
                 + " settlement_customer_id, settlement_customer_name_snapshot, amount, method, received_at, entry_type,"
                 + " reverse_of_id, reason) VALUES (?, ?, '对账客户', ?, '对账客户', ?, 'BANK_TRANSFER', ?, ?, ?, ?)",
-            no, customerId, customerId, amount, receivedAt, entryType, reverseOfId,
+            no, customerId, customerId, new BigDecimal(amount), receivedAt, entryType, reverseOfId,
             "REVERSE".equals(entryType) ? "收款登记错误" : null);
         return jdbc.queryForObject("SELECT id FROM xsy_finance_receipt WHERE receipt_no = ?", Long.class, no);
     }
@@ -123,7 +124,7 @@ class CustomerMonthlyProfitStatementPgIT extends ScmW6PgITBase {
         String no = prefix + "-PO-" + SOURCE_IDS.incrementAndGet();
         jdbc.update("INSERT INTO xsy_finance_posting(posting_no, customer_id, customer_name_snapshot, document_date,"
                 + " amount, tax_rate) VALUES (?, ?, '对账客户', ?, ?, ?)",
-            no, customerId, documentDate, amount, taxRate);
+            no, customerId, documentDate, new BigDecimal(amount), new BigDecimal(taxRate));
         return jdbc.queryForObject("SELECT id FROM xsy_finance_posting WHERE posting_no = ?", Long.class, no);
     }
 

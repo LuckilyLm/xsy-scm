@@ -346,7 +346,7 @@ class SalesOrderImportServiceTest {
         assertThat(result.getErrors()).singleElement().satisfies(error -> {
             assertThat(error.getRowNumber()).isEqualTo(5);
             assertThat(error.getOrderKey()).isEqualTo(CUSTOMER_NAME);
-            assertThat(error.getMessage()).contains("整批已回滚");
+            assertThat(error.getMessage()).contains("本批数据未保存");
         });
     }
 
