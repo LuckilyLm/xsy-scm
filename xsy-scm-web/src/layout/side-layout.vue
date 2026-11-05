@@ -329,8 +329,18 @@ const {token} = useToken();
   .side-menu {
     height: 100vh;
     overflow-x: hidden;
-    /* auto 而不是 scroll：菜单没超出时不该凭空画一条滚动条轨道 */
     overflow-y: auto;
+    overscroll-behavior-y: contain;
+    --side-menu-scroll-thumb: color-mix(in srgb, var(--scm-text-secondary) 32%, transparent);
+    transition:
+      width 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+      min-width 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+      max-width 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+      flex-basis 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &.ant-layout-sider-dark {
+      --side-menu-scroll-thumb: rgba(255, 255, 255, 0.28);
+    }
 
     &.fixed-side {
       position: fixed;
@@ -344,14 +354,26 @@ const {token} = useToken();
     width: 4px;
   }
 
-  /* 默认不画滑块，只有鼠标进到侧栏里才显形：菜单本身不需要一直宣告「我可能能滚」 */
   .side-menu::-webkit-scrollbar-thumb {
     border-radius: 10px;
     background: transparent;
   }
 
-  .side-menu:hover::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.18);
+  .side-menu:hover::-webkit-scrollbar-thumb,
+  .side-menu:focus-within::-webkit-scrollbar-thumb {
+    background: var(--side-menu-scroll-thumb);
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    .side-menu {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+    }
+
+    .side-menu:hover,
+    .side-menu:focus-within {
+      scrollbar-color: var(--side-menu-scroll-thumb) transparent;
+    }
   }
 
   .side-menu::-webkit-scrollbar-track {
@@ -414,6 +436,10 @@ const {token} = useToken();
 }
 
 @media (max-width: 768px) {
+  .admin-layout .side-menu.ant-layout-sider-collapsed {
+    border-inline-end-width: 0;
+  }
+
   .mobile-menu-backdrop {
     display: block;
     position: fixed;
@@ -437,6 +463,11 @@ const {token} = useToken();
 
   :deep(.admin-layout-content) {
     padding: 10px 10px 48px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-layout .side-menu {
+    transition: none;
   }
 }
 </style>

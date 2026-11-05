@@ -6,19 +6,14 @@
   <a-menu
     :open-keys="openKeys"
     v-model:selectedKeys="selectedKeys"
-    class="smart-menu"
+    class="smart-menu smart-menu--side"
     :class="{'smart-menu--collapsed': collapsed}"
     mode="inline"
     :inline-indent="14"
     :theme="theme"
     @openChange="onOpenChange"
   >
-    <!-- 使用组件库的实心三角形：展开向下，收起向右。 -->
-    <template #expandIcon="{isOpen}">
-      <span class="smart-menu-caret-frame">
-        <CaretDownFilled class="smart-menu-caret" :class="{'smart-menu-caret-collapsed': !isOpen}" />
-      </span>
-    </template>
+    <template #expandIcon />
     <template v-for="item in menuTree" :key="item.menuId">
       <template v-if="item.visibleFlag && !item.disabledFlag">
         <template v-if="$lodash.isEmpty(item.children)">
@@ -43,7 +38,6 @@ import {computed, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import SubMenu from './sub-menu.vue';
 import {resolveMenuIcon} from '/@/lib/menu-icon';
-import {CaretDownFilled} from '@ant-design/icons-vue';
 import {router} from '/@/router/index';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -134,170 +128,193 @@ defineExpose({
 
 <style lang="less" scoped>
 .smart-menu {
-  position: relative;
-  padding: 8px 8px 16px;
+  --side-menu-motion: 0.22s;
+  --side-menu-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 10px 16px;
   border-inline-end: 0;
   background: transparent;
 
   :deep(.ant-menu-item),
   :deep(.ant-menu-submenu-title) {
+    display: flex;
+    align-items: center;
     width: 100%;
-    height: 42px;
-    line-height: 42px;
+    height: 46px;
     margin: 2px 0;
+    padding-inline-end: 12px;
     border-radius: 8px;
     font-size: 14px;
-    transition:
-      background-color 0.18s,
-      color 0.18s;
-  }
-
-  // expandIcon 自定义插槽直接插入标题中，必须定位插槽根元素。
-  :deep(.smart-menu-caret-frame) {
-    position: absolute;
-    top: 50%;
-    inset-inline-end: 14px;
-    width: 16px;
-    height: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    margin: 0;
-    transform: translateY(-50%);
-    color: var(--scm-text-secondary, rgba(0, 0, 0, 0.55));
-  }
-
-  :deep(.smart-menu-caret) {
-    font-size: 11px !important;
-    line-height: 1;
-    transform: rotate(0deg);
-    transition: transform 0.2s ease;
-  }
-
-  :deep(.smart-menu-caret-collapsed) {
-    transform: rotate(-90deg);
-  }
-
-  :deep(.ant-menu-item .anticon),
-  :deep(.ant-menu-submenu-title .anticon) {
-    font-size: 16px;
-  }
-
-  // 没有图标的菜单留一个等宽空位：antd 不会为空图标留位，不留的话同级菜单行首会差一格。
-  :deep(.smart-menu-icon-blank) {
-    display: inline-block;
-    width: 1em;
-    height: 1em;
-  }
-
-  :deep(.ant-menu-submenu-title) {
-    position: relative;
-    padding-inline-end: 32px;
     font-weight: 500;
-  }
-
-  :deep(.ant-menu-item) {
-    padding-inline-end: 12px;
+    line-height: 20px;
+    white-space: nowrap;
+    transition:
+      background-color 0.16s ease,
+      color 0.16s ease;
   }
 
   :deep(.ant-menu-sub .ant-menu-item),
   :deep(.ant-menu-sub .ant-menu-submenu-title) {
-    height: 38px;
-    line-height: 38px;
+    height: 40px;
+    margin-block: 2px;
     font-size: 13px;
     font-weight: 400;
   }
+
+  :deep(.ant-menu-sub.ant-menu-inline) {
+    background: transparent;
+  }
+
+  :deep(.ant-menu-item > .ant-menu-item-icon),
+  :deep(.ant-menu-submenu-title > .ant-menu-item-icon) {
+    display: inline-flex;
+    flex: 0 0 16px;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 16px;
+    line-height: 1;
+    transition: color 0.16s ease;
+  }
+
+  :deep(.smart-menu-icon-blank) {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+  }
+
+  // 保留组件库的高度测量与清理钩子；其 transition 带 important，只覆盖时长和曲线。
+  :deep(.ant-motion-collapse) {
+    transition-duration: var(--side-menu-motion) !important;
+    transition-timing-function: var(--side-menu-ease) !important;
+  }
 }
 
-.smart-menu:not(.smart-menu--collapsed) {
-  :deep(.ant-menu-item),
-  :deep(.ant-menu-submenu-title) {
-    height: auto;
-    min-height: 42px;
-    line-height: 20px;
-    padding-block: 11px;
-  }
-
-  :deep(.ant-menu-sub .ant-menu-item),
-  :deep(.ant-menu-sub .ant-menu-submenu-title) {
-    min-height: 38px;
-    padding-block: 9px;
-  }
-
-  :deep(.ant-menu-title-content) {
+.smart-menu.ant-menu-root:not(.smart-menu--collapsed) {
+  :deep(.ant-menu-item > .ant-menu-title-content),
+  :deep(.ant-menu-submenu-title > .ant-menu-title-content) {
+    flex: 1 1 0;
     min-width: 0;
-    white-space: normal;
+    margin-inline-start: 10px;
+    white-space: nowrap;
   }
 
   :deep(.smart-menu-label) {
-    display: -webkit-box;
+    display: block;
     max-width: 100%;
     overflow: hidden;
-    overflow-wrap: anywhere;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.smart-menu.ant-menu-root.smart-menu--collapsed {
+  width: 100%;
+
+  :deep(> .ant-menu-item),
+  :deep(> .ant-menu-submenu > .ant-menu-submenu-title) {
+    padding-inline: 14px;
+  }
+
+  :deep(.ant-menu-title-content) {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-inline-start: 0;
+    opacity: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  :deep(.ant-menu-item-icon) {
+    margin: 0;
   }
 }
 
 .smart-menu:not(.ant-menu-dark) {
+  :deep(.ant-menu-item),
+  :deep(.ant-menu-submenu-title) {
+    color: var(--scm-text);
+  }
+
+  :deep(.ant-menu-item > .anticon),
+  :deep(.ant-menu-submenu-title > .anticon) {
+    color: var(--scm-text-secondary);
+  }
+
+  :deep(.ant-menu-item:hover),
+  :deep(.ant-menu-submenu-title:hover) {
+    background: color-mix(in srgb, var(--scm-primary-bg) 65%, transparent);
+    color: var(--scm-primary);
+  }
+
+  :deep(.ant-menu-item:hover > .anticon),
+  :deep(.ant-menu-submenu-title:hover > .anticon),
+  :deep(.ant-menu-item-selected > .anticon),
+  :deep(.ant-menu-submenu-selected > .ant-menu-submenu-title > .anticon) {
+    color: var(--scm-primary);
+  }
+
   :deep(.ant-menu-item-selected) {
-    background: var(--scm-primary-bg, rgba(0, 185, 107, 0.09));
-    color: var(--scm-primary, #1677ff);
+    background: var(--scm-primary-bg);
+    color: var(--scm-primary);
     font-weight: 600;
   }
 
-  :deep(.ant-menu-submenu-open > .ant-menu-submenu-title) {
-    color: var(--scm-text, rgba(0, 0, 0, 0.88));
+  :deep(.ant-menu-submenu-selected > .ant-menu-submenu-title) {
+    color: var(--scm-primary);
   }
+}
 
+.smart-menu.ant-menu-root {
   :deep(.ant-menu-item-selected::before) {
     position: absolute;
-    top: 10px;
-    bottom: 10px;
-    left: 0;
+    inset: 10px auto 10px 0;
     width: 3px;
-    background: var(--scm-primary, #1677ff);
     border-radius: 0 3px 3px 0;
+    background: var(--scm-primary);
     content: '';
   }
+
+  :deep(.ant-menu-item-selected) {
+    font-weight: 600;
+  }
 }
 
-// 深色菜单使用浅灰箭头，悬停和展开后仍保持中性色。
 .smart-menu.ant-menu-dark {
-  :deep(.smart-menu-caret-frame) {
-    color: rgba(255, 255, 255, 0.7);
+  --side-menu-dark-active: color-mix(in srgb, var(--scm-primary) 20%, white);
+
+  :deep(.ant-menu-item:hover),
+  :deep(.ant-menu-submenu-title:hover) {
+    color: var(--side-menu-dark-active);
+    background: color-mix(in srgb, var(--scm-primary) 12%, transparent);
+  }
+
+  :deep(.ant-menu-submenu-selected > .ant-menu-submenu-title) {
+    color: var(--side-menu-dark-active);
+  }
+
+  :deep(.ant-menu-item-selected) {
+    color: var(--side-menu-dark-active);
+    background: color-mix(in srgb, var(--scm-primary) 20%, transparent);
   }
 }
 
-/*
- * 菜单图标配色
- *
- * antd 的菜单项图标是 `color: inherit`（`resetIcon()`），跟着菜单项自身的状态色走。
- * 亮色菜单下 antd 给的是：普通 = colorText、hover = colorText（只换背景、不换字色）、
- * 选中 = colorPrimary。也就是说 hover 时图标并不会变色 —— 这里把三档显式写出来，
- * 让「普通深色 / hover 主题色 / 当前主题色」成为明确的设计，而不是继承出来的巧合。
- *
- * 两条约束：
- * 1. 必须排除 `.ant-menu-dark`：暗色菜单的文字是浅色，用 `--scm-text`（深色）会把图标压到看不见。
- *    暗色下继续交给 antd 自己的 dark 主题 token。
- * 2. 用 `--scm-*` 而不是写死 `#333` / `#00b96b`：主题色可切换（当前是绿），写死会在换色后失效。
- *    这两个变量由 `useScmThemeVars()` 落在 `<html>` 上。
- */
-.smart-menu:not(.ant-menu-dark) {
-  :deep(.ant-menu-item .anticon),
-  :deep(.ant-menu-submenu-title .anticon) {
-    color: var(--scm-text, rgba(0, 0, 0, 0.88));
-  }
+@media (prefers-reduced-motion: reduce) {
+  .smart-menu {
+    :deep(.ant-menu-item),
+    :deep(.ant-menu-submenu-title),
+    :deep(.ant-menu-item-icon),
+    :deep(.ant-menu-title-content) {
+      transition: none;
+    }
 
-  :deep(.ant-menu-item:hover .anticon),
-  :deep(.ant-menu-submenu-title:hover .anticon) {
-    color: var(--scm-primary, #1677ff);
-  }
-
-  :deep(.ant-menu-item-selected .anticon),
-  :deep(.ant-menu-submenu-selected > .ant-menu-submenu-title .anticon) {
-    color: var(--scm-primary, #1677ff);
+    :deep(.ant-motion-collapse) {
+      transition-duration: 0.001s !important;
+    }
   }
 }
 </style>

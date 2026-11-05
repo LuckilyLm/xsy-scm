@@ -2004,38 +2004,31 @@ import ts from 'typescript';
     assert.match(configStore, /\.\.\.appDefaultConfig,\s*\.\.\.cached/, '迁移必须在默认值之上覆盖用户缓存，保留用户其他界面偏好');
   });
 
-  test('传统侧栏使用组件库的实心倒三角，右侧垂直居中，展开式侧栏仍隐藏自带折角', () => {
+  test('传统侧栏通过空 expandIcon 隐藏各级箭头，保留内联展开', () => {
     const sideExpandMenu = code('../src/layout/components/side-expand-menu/recursion-menu.vue');
-    // 使用组件库的实心 CaretDownFilled，折叠朝右、展开朝下，不能回退为描边 Chevron。
-    assert.match(recursionMenu, /<template #expandIcon="\{\s*isOpen\s*\}">/, '分组箭头应使用 expandIcon 插槽');
-    assert.match(recursionMenu, /<CaretDownFilled class="smart-menu-caret"/, '必须使用 Ant Design Vue 的实心三角');
-    assert.match(recursionMenu, /'smart-menu-caret-collapsed': !isOpen/, '展开向下，收起向右');
-    assert.match(recursionMenu, /import \{CaretDownFilled\} from '@ant-design\/icons-vue';/, '三角图标必须从 Ant Design Vue 导入');
-    assert.doesNotMatch(recursionMenu, /UpCircleFilled|DownCircleFilled/, '不再使用实心圆形箭头');
-    assert.match(recursionMenu, /\.smart-menu-caret-frame[\s\S]{0,120}?top:\s*50%/, '三角容器必须定位到标题高度中线');
-    assert.match(recursionMenu, /\.smart-menu-caret-frame[\s\S]{0,270}?translateY\(-50%\)/, '必须以自身高度向上补偿，不能偏到右下角');
-    assert.match(recursionMenu, /\.smart-menu-caret-collapsed[\s\S]{0,60}?rotate\(-90deg\)/, '收起态实心三角朝右');
-    assert.match(recursionMenu, /transition:\s*transform 0\.2s ease/, '箭头旋转动画为 0.2 秒');
-    assert.match(recursionMenu, /color:\s*var\(--scm-text-secondary[^;]*\)/, '实心箭头保持次要文字色');
-    assert.doesNotMatch(recursionMenu, /\.ant-menu-submenu-arrow/, '接管 expandIcon 之后不该再覆盖 antd 自带的折角');
-    assert.match(sideExpandMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/, '展开式侧栏的子菜单折角仍应隐藏');
+    assert.match(recursionMenu, /<template #expandIcon\s*\/>/, '使用空插槽关闭箭头，不能回退到组件库默认箭头');
+    assert.doesNotMatch(recursionMenu, /CaretDownFilled|smart-menu-caret|rotate\(/, '移除不再使用的三角图标与旋转样式');
+    assert.match(recursionMenu, /padding-inline-end:\s*12px/, '释放箭头空间后右侧只保留 12px 留白');
+    assert.match(recursionMenu, /margin-inline-start:\s*10px/, '图标和文字保留 10px 间距');
+    assert.match(recursionMenu, /--side-menu-motion:\s*0\.22s/, '子菜单继续使用 220ms 展开动画');
+    assert.match(recursionMenu, /cubic-bezier\(0\.22,\s*1,\s*0\.36,\s*1\)/, '保留子菜单平缓收尾的缓动');
+    assert.match(sideExpandMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/, '展开式侧栏仍隐藏自带折角');
     assert.match(recursionMenu, /mode="inline"/, '传统侧栏必须保留内联子菜单');
+    assert.match(recursionMenu, /class="smart-menu smart-menu--side"/, '传统侧栏保留独立的外观标识');
+    assert.match(code('../src/theme/scm/shell.less'), /\.ant-menu-light:not\(\.smart-menu--side\)/, '顶部导航保持原样');
     assert.match(sideExpandMenu, /mode="inline"/, '展开式侧栏必须保留内联子菜单');
-    assert.match(recursionMenu, /\.smart-menu:not\(\.ant-menu-dark\)/, '菜单图标配色规则仍须排除暗色菜单');
+    assert.match(recursionMenu, /\.smart-menu:not\(\.ant-menu-dark\)/, '菜单图标配色仍须区分暗色菜单');
   });
 
-  test('受控菜单展开正常，Chevron 在亮暗主题下都保持中性灰', () => {
+  test('移除箭头不改变受控菜单的展开和选中状态', () => {
     assert.match(
       recursionMenu,
       /if \(!menuSingleExpandFlag\.value\) \{\s*openKeys\.value = \[\.\.\.openKeysParams\];/,
       '允许多组展开时也要同步 openKeys'
     );
-    assert.doesNotMatch(
-      recursionMenu,
-      /\.ant-menu-submenu-open > \.ant-menu-submenu-title \.ant-menu-submenu-expand-icon[\s\S]{0,140}color:\s*var\(--scm-primary/,
-      '展开时箭头不应变为主题色'
-    );
-    assert.match(recursionMenu, /\.smart-menu\.ant-menu-dark\s*\{[\s\S]{0,140}rgba\(255, 255, 255/, '暗色主题保持足够对比度');
+    assert.match(recursionMenu, /:open-keys="openKeys"/, '保留受控展开状态');
+    assert.match(recursionMenu, /v-model:selectedKeys="selectedKeys"/, '保留受控选中状态');
+    assert.match(recursionMenu, /@openChange="onOpenChange"/, '父级整行点击继续交给组件库处理');
   });
 
   test('侧栏滚动条不常驻：auto + 透明轨道 + hover 才显形', () => {
@@ -2044,7 +2037,7 @@ import ts from 'typescript';
     assert.match(sideLayout, /\.side-menu::-webkit-scrollbar-track\s*\{[\s\S]{0,120}background:\s*transparent/, '轨道应透明');
     assert.match(
       sideLayout,
-      /\.side-menu:hover::-webkit-scrollbar-thumb\s*\{[\s\S]{0,120}background:\s*rgba\(0,\s*0,\s*0/,
+      /\.side-menu:hover::-webkit-scrollbar-thumb[\s\S]{0,200}background:\s*var\(--side-menu-scroll-thumb\)/,
       '滑块应只在 hover 侧栏时显形'
     );
 
@@ -2063,17 +2056,21 @@ import ts from 'typescript';
     );
   });
 
-  test('菜单图标三档配色：普通深色 / hover 主题色 / 当前主题色，且排除暗色菜单', () => {
-    // 三档都要显式写出来：antd 亮色菜单的 hover 只换背景不换字色，不写就没有 hover 变色
-    assert.match(recursionMenu, /:deep\(\.ant-menu-item \.anticon\),[\s\S]{0,200}color:\s*var\(--scm-text/, '普通态图标应显式用 --scm-text');
+  test('菜单图标三档配色：普通中性色 / hover 主题色 / 当前主题色，且排除暗色菜单', () => {
+    // 业务图标的普通态、悬停态与选中态继续跟随主题。
     assert.match(
       recursionMenu,
-      /:deep\(\.ant-menu-item:hover \.anticon\),[\s\S]{0,200}color:\s*var\(--scm-primary/,
+      /:deep\(\.ant-menu-item > \.anticon\),[\s\S]{0,200}color:\s*var\(--scm-text-secondary/,
+      '普通态图标应显式用 --scm-text-secondary'
+    );
+    assert.match(
+      recursionMenu,
+      /:deep\(\.ant-menu-item:hover > \.anticon\),[\s\S]{0,320}color:\s*var\(--scm-primary/,
       'hover 态图标应用 --scm-primary'
     );
     assert.match(
       recursionMenu,
-      /:deep\(\.ant-menu-item-selected \.anticon\),[\s\S]{0,200}color:\s*var\(--scm-primary/,
+      /:deep\(\.ant-menu-item-selected > \.anticon\),[\s\S]{0,200}color:\s*var\(--scm-primary/,
       '选中态图标应用 --scm-primary'
     );
     // 暗色菜单必须排除：--scm-text 是深色，染上去图标会看不见
