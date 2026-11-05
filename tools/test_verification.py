@@ -109,7 +109,10 @@ class MigrationChecksumGuardTest(unittest.TestCase):
         """把真实迁移目录与快照复制进临时目录，返回 (dir, snapshot, args)。"""
         root = Path(directory)
         migrations = root / "migration"
-        shutil.copytree(guard.MIGRATION_DIR, migrations)
+        migrations.mkdir()
+        for source_dir in guard.migration_directories(guard.MIGRATION_DIR):
+            for source in source_dir.glob("*.sql"):
+                shutil.copyfile(source, migrations / source.name)
         args = SimpleNamespace(migration_dir=str(migrations),
                                snapshot=str(root / "snapshot.json"), force=False, prune=False)
         self.assertEqual(0, self.assert_quiet(guard.cmd_sync, args))
@@ -130,18 +133,17 @@ class MigrationChecksumGuardTest(unittest.TestCase):
     def test_whitespace_reflow_of_an_applied_migration_fails_the_guard(self):
         with tempfile.TemporaryDirectory() as directory:
             migrations, _, args = self.temp_tree(directory)
-            target = migrations / "V19__scm_inventory.sql"
-            lines = target.read_text(encoding="utf-8").splitlines()
-            target.write_text("\n".join(lines[:1] + [" ".join(lines[1:3])] + lines[3:]) + "\n",
-                              encoding="utf-8")
-            # 只合并了一行缩进，SQL 语义不变；校验和变了就足以让真实库上的 validate 失败。
+            target = next(migrations.glob("V*__inventory.sql"))
+            text = target.read_text(encoding="utf-8")
+            target.write_text(text.replace("CREATE TABLE", "CREATE  TABLE", 1), encoding="utf-8")
+            # 只增加合法空白，SQL语义不变；校验和漂移仍必须阻止。
             self.assertEqual(1, self.assert_quiet(guard.cmd_check, args))
 
     def test_sync_refuses_to_bless_a_changed_migration(self):
         with tempfile.TemporaryDirectory() as directory:
             migrations, snapshot, args = self.temp_tree(directory)
             baked = snapshot.read_text(encoding="utf-8")
-            target = migrations / "V21__scm_inventory_movement_append_only.sql"
+            target = next(migrations.glob("V*__inventory.sql"))
             target.write_text(target.read_text(encoding="utf-8").replace("  ", "    "),
                               encoding="utf-8")
             self.assertEqual(1, self.assert_quiet(guard.cmd_check, args))
@@ -154,21 +156,21 @@ class MigrationChecksumGuardTest(unittest.TestCase):
     def test_renumbering_an_applied_migration_fails_the_guard(self):
         with tempfile.TemporaryDirectory() as directory:
             migrations, _, args = self.temp_tree(directory)
-            # 字节没动，只把已应用的 V43 改到一个空闲号：真实库上的历史行会悬空。
+            # 字节没动，只把已冻结模块改到一个空闲号，历史记录仍会悬空。
             # 目标号必须现算——写死 V44 之类会与后来落地的真实迁移撞号，
             # 届时守卫先抛「版本号重复」，本用例想验的改号路径根本走不到。
             taken = guard.scan_migrations(migrations)
             free = max(guard.version_key(version)[0] for version in taken) + 1
-            (migrations / "V43__scm_delivery_permissions.sql").rename(
-                migrations / f"V{free}__scm_delivery_permissions.sql")
+            next(migrations.glob("V*__delivery.sql")).rename(
+                migrations / f"V{free}__delivery.sql")
             self.assertEqual(1, self.assert_quiet(guard.cmd_check, args))
 
     def test_duplicate_version_number_is_an_error(self):
         with tempfile.TemporaryDirectory() as directory:
             migrations, _, args = self.temp_tree(directory)
             # Flyway 在解析阶段就报 "Found more than one migration with version"，任何库都起不来
-            shutil.copy(migrations / "V43__scm_delivery_permissions.sql",
-                        migrations / "V43__scm_delivery_permissions_copy.sql")
+            target = next(migrations.glob("V*__delivery.sql"))
+            shutil.copy(target, target.with_name(target.stem + "_copy.sql"))
             with self.assertRaises(ValueError):
                 guard.cmd_check(args)
 

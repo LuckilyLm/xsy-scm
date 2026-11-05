@@ -33,6 +33,15 @@
         <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows"
           >导出当前列</a-button
         >
+        <a-button
+          type="primary"
+          v-privilege="PERM.EXPORT"
+          :loading="exporting"
+          :disabled="!applied || loading || !!error"
+          @click="exportCustomerSheet"
+        >
+          导出客户对账单
+        </a-button>
       </a-space>
       <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_CUSTOMER_MONTHLY_PROFIT" :refresh="load" />
     </a-row>
@@ -48,6 +57,7 @@
     >
       <template #bodyCell="{column, record}">
         <template v-if="column.dataIndex === 'dimensionName'">{{ record.dimensionName }}</template>
+        <template v-else-if="column.dataIndex === 'statementPeriod'">{{ record.statementPeriod }}</template>
         <template v-else-if="column.dataIndex === 'costMissingCount'">{{ record.costMissingCount > 0 ? '待补成本' : '可核算' }}</template>
         <template v-else-if="column.dataIndex === 'action'"
           ><a-button v-if="canQueryExpenses && record.dimensionId != null" type="link" size="small" @click="openExpenses(record.dimensionId)"
@@ -293,6 +303,7 @@ const amountFields: {key: AmountKey; label: string}[] = [
 const amountKeys = amountFields.map((field) => field.key);
 const columns = ref<TableColumnsType<CustomerMonthlyProfitRow>>([
   {title: '客户名称', dataIndex: 'dimensionName', width: 200},
+  {title: '对账日期', dataIndex: 'statementPeriod', width: 240},
   ...[
     {key: 'revenueAmount', label: '销售收入'},
     {key: 'salesCostAmount', label: '实际商品成本'},
@@ -385,6 +396,17 @@ async function exportRows() {
     await financeProfitApi.monthlyExport(payload);
   } catch {
     /* 全局提示 */
+  } finally {
+    exporting.value = false;
+  }
+}
+
+/** 客户模板导出沿用已经查询的期间与客户条件，不受当前分页限制。 */
+async function exportCustomerSheet() {
+  if (!applied.value || exporting.value || loading.value || error.value) return;
+  exporting.value = true;
+  try {
+    await financeProfitApi.monthlyCustomerExport({...applied.value});
   } finally {
     exporting.value = false;
   }

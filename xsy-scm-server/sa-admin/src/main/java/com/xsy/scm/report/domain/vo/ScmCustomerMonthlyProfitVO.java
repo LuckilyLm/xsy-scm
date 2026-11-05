@@ -9,6 +9,8 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ScmCustomerMonthlyProfitVO extends ScmFinanceProfitRowVO {
+    /** 实际查询的完整自然月起止日期，避免导出文件脱离页面后无法判断期间。 */
+    private String statementPeriod;
     @JsonSerialize(using = ScmFixedScale4Serializer.class)
     private BigDecimal taxAmount;
     @JsonSerialize(using = ScmFixedScale4Serializer.class)

@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.system;
 
 import net.lab1024.sa.admin.test.PgITDatabase;
+import net.lab1024.sa.admin.test.PgITMigrationHistory;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>覆盖四类断言：
  * <ol>
- *   <li>V12 已成功应用，且 V1–V11 历史未被改动（11 条全部 success）；</li>
+ *   <li>V1～V12由成功的增量或B快照覆盖，Flyway校验通过；</li>
  *   <li><b>核心断言</b>：{@code enterprise_id} / {@code employee_id} 两列的 PG 类型确实是
  *       {@code bigint}（{@code information_schema.columns.data_type='bigint'} 且
  *       {@code udt_name='int8'}），不是 {@code character varying}；</li>
@@ -58,24 +59,16 @@ class SmartAdminOaEnterpriseEmployeeMigrationIT {
     void v12ConvertsOaEnterpriseEmployeeJoinColumnsToBigint() throws Exception {
         Flyway flyway = Flyway.configure().dataSource(URL, user(), password())
                 .schemas("xsy_v2").defaultSchema("xsy_v2").cleanDisabled(true)
-                .placeholderReplacement(false).locations("classpath:db/migration").load();
+                .placeholderReplacement(false)
+                .locations("classpath:db/migration/modules").load();
         flyway.migrate();
         flyway.validate();
 
         try (Connection connection = DriverManager.getConnection(URL, user(), password());
              Statement statement = connection.createStatement()) {
 
-            // ---- 1. 迁移历史：V12 成功；V1–V11 全部保持 success ----
-            assertThat(scalar(statement,
-                    "SELECT count(*) FROM flyway_schema_history WHERE version = '12' AND success"))
-                    .as("V12 必须有一条成功记录").isEqualTo(1);
-            assertThat(scalar(statement,
-                    "SELECT count(*) FROM flyway_schema_history WHERE success AND version IN "
-                            + "('1','2','3','4','5','6','7','8','9','10','11')"))
-                    .as("V1–V11 不得被回改或重跑").isEqualTo(11);
-            assertThat(scalar(statement,
-                    "SELECT count(*) FROM flyway_schema_history WHERE version = '12' AND checksum IS NULL"))
-                    .as("V12 的 checksum 必须已登记").isZero();
+            PgITMigrationHistory.assertCovered(statement,
+                    "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12");
 
             // ---- 2. 核心断言：两列必须是 bigint ----
             for (String column : new String[]{"enterprise_id", "employee_id"}) {

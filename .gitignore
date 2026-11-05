@@ -38,6 +38,15 @@ local-environment-info.txt
 !/tools/migration_checksum_snapshot.json
 !/tools/e2e_fixtures.py
 !/tools/requirements-dev.txt
+!/tools/build_install_baseline.py
+!/tools/install_baseline_manifest.json
+!/tools/requirements-baseline.txt
+!/tools/test_install_baseline.py
+!/tools/AGENTS.md
+!/tools/cutover_schema_baseline.py
+!/tools/schema_catalog.py
+!/tools/schema_baseline_catalog.json
+!/tools/legacy_migration_manifest.json
 # Java 质量门禁：守卫脚本、Java 源分段器、Checkstyle 规则与 baseline 都必须入库，
 # 否则干净检出跑不了 `python tools/verify.py quality`。
 # `/tools/*` 排除的是目录本身，所以必须先放行目录，里面的文件才不会被一并忽略。

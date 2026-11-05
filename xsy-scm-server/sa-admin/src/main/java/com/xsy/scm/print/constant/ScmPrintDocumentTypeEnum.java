@@ -78,7 +78,8 @@ public enum ScmPrintDocumentTypeEnum {
      * 客户送货单：一张纸一个客户，含实数量、单价、行金额和合计，末页留双方签字栏。
      */
     CUSTOMER_DELIVERY_NOTE("客户送货单", null, customerSheetHeader(),
-        customerSheetRows(new ScmPrintField("actualQuantity", "实数量", false, true),
+        customerSheetRows(new ScmPrintField("orderedQuantity", "数量", false, true),
+            new ScmPrintField("actualQuantity", "实数量", false, true),
             new ScmPrintField("lockedUnitPrice", "销售单价", true, true),
             new ScmPrintField("settlementLineAmount", "销售金额", true, true),
             new ScmPrintField("remark", "备注", false, false)),

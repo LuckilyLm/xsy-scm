@@ -17,10 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -77,7 +74,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     /**
      * 库存域迁移的文件名。
      *
-     * <p>backfill 的 SQL 不复制到测试里：本基类直接从 classpath 上读 V19 的原文并按
+     * <p>backfill 的 SQL 不复制到测试里：本基类直接从固定Git提交读 V19 的原文并按
      * {@code -- Step N} 标记切段执行。理由：把 SQL 抄一份到测试里，抄错或漂移都会让
      * 「backfill 已验证」变成一句没有依据的话；读原文则保证被测的就是上线的那段 SQL。
      * 标记一旦被改名，切段会立刻失败（断言非零长度），不会静默跳过。
@@ -335,16 +332,10 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * 读取 classpath 上的迁移文件原文。
+     * 读取固定Git提交中的历史迁移原文，仅供回放测试。
      */
     protected static String migrationSql(String fileName) {
-        try (InputStream in = ScmW6PgITBase.class.getClassLoader()
-                .getResourceAsStream("db/migration/" + fileName)) {
-            assertThat(in).as("classpath 上找不到迁移文件 db/migration/%s", fileName).isNotNull();
-            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalStateException("读取迁移文件失败: " + fileName, e);
-        }
+        return net.lab1024.sa.admin.test.LegacyMigrationSql.read(fileName);
     }
 
     /**

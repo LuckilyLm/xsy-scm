@@ -2,6 +2,7 @@ package com.xsy.scm.common;
 
 import net.lab1024.sa.admin.AdminApplication;
 import net.lab1024.sa.admin.test.PgITPaths;
+import org.flywaydb.core.api.MigrationVersion;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,7 +12,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Comparator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,13 +39,13 @@ class ScmMigrationTargetPgIT {
         }
         try {
             Resource[] resources = new PathMatchingResourcePatternResolver()
-                    .getResources("classpath:db/migration/V*.sql");
+                    .getResources("classpath:db/migration/modules/V*.sql");
             return Arrays.stream(resources)
                     .map(Resource::getFilename)
-                    .filter(name -> name != null && name.matches("V\\d+__.*"))
+                    .filter(name -> name != null && name.matches("V\\d+(?:\\.\\d+)*__.*"))
                     .map(name -> name.substring(1, name.indexOf("__")))
-                    .max(Comparator.comparingInt(Integer::parseInt))
-                    .orElseThrow(() -> new IllegalStateException("classpath:db/migration 下没有 V*.sql"));
+                    .max((left, right) -> MigrationVersion.fromVersion(left).compareTo(MigrationVersion.fromVersion(right)))
+                    .orElseThrow(() -> new IllegalStateException("classpath:db/migration/modules 下没有 V*.sql"));
         } catch (IOException exception) {
             throw new IllegalStateException("读取迁移脚本失败", exception);
         }
@@ -65,7 +65,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void mallClaimColumnsExistWhenTargetIs128OrLater() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 128) {
             return;
         }
@@ -82,7 +82,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void settlementMethodColumnExistsWhenTargetIs129OrLater() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 129) {
             return;
         }
@@ -108,7 +108,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void orderExceptionCompensationTablesExistFromV148() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 148) {
             return;
         }
@@ -137,7 +137,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceWeightTokenAndAttachmentSchemaExistsFromV173() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 175) {
             return;
         }
@@ -165,7 +165,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void codPermissionDefaultsToDisabledFromV130() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 130) {
             return;
         }
@@ -182,7 +182,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void codInstallmentOrderColumnExistsFromV132() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 132) {
             return;
         }
@@ -191,7 +191,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void mallWarehouseAndConversionSchemaExistsAt137() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 137) {
             return;
         }
@@ -220,7 +220,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void sortingPartRecordSchemaExistsAt141() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 141)
             return;
         assertColumn("xsy_sorting_part_record", "task_id");
@@ -236,7 +236,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void purchaseInquiryAndImmutableQuoteSchemaExistAt143() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 143)
             return;
         assertColumn("xsy_purchase_inquiry", "accepted_quote_id");
@@ -252,7 +252,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void personalFilterPresetSchemaExistsAt144() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 144) return;
         assertColumn("xsy_user_filter_preset", "owner_key");
         assertColumn("xsy_user_filter_preset", "view_key");
@@ -265,7 +265,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void orderTagSchemaExistsAt145() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 145) return;
         assertColumn("xsy_order_tag", "name");
         assertColumn("xsy_order_tag", "color");
@@ -280,7 +280,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void salesOrderPrintTypeAndDefaultTemplateExistAt146() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 146) return;
         Integer defaults = jdbc.queryForObject(
                 "SELECT count(*) FROM xsy_print_template "
@@ -303,7 +303,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void inventoryLotSchemaExistsFromV151() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 151) {
             return;
         }
@@ -339,7 +339,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitSchemaExistsFromV152() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 152) {
             return;
         }
@@ -365,7 +365,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitBindingSchemaExistsFromV153() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 153) {
             return;
         }
@@ -408,7 +408,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitPrintSchemaExistsFromV154() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 154) {
             return;
         }
@@ -439,7 +439,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitLabelCarriesQrUrlFromV177() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 177) {
             return;
         }
@@ -456,7 +456,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitVoidPermissionExistsFromV155() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 155) {
             return;
         }
@@ -471,7 +471,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitBindingActiveGuardExistsFromV156() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 156) {
             return;
         }
@@ -487,7 +487,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitCorrectionSchemaExistsFromV157() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 157) {
             return;
         }
@@ -513,7 +513,7 @@ class ScmMigrationTargetPgIT {
     /** V158：有效绑定共享码行锁，正式出库与解绑共享原订单行锁。 */
     @Test
     void traceUnitConsistencyGuardsExistFromV158() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 158) {
             return;
         }
@@ -542,7 +542,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void purchaseShareSchemaExistsFromV159() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 159) {
             return;
         }
@@ -569,7 +569,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void customerPromotionSchemaExistsFromV160() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 160) {
             return;
         }
@@ -596,7 +596,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void timePriceSchemaExistsFromV161() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 161) {
             return;
         }
@@ -620,7 +620,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void sortingTicketShowsSupplierFromV162() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 162) {
             return;
         }
@@ -636,7 +636,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void sharedSettlementGrantExistsFromV163() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 163) {
             return;
         }
@@ -652,7 +652,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void mallHomeThemeExistsFromV164() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 164) {
             return;
         }
@@ -669,7 +669,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void helpDocOperationsExistFromV165() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 165) {
             return;
         }
@@ -687,7 +687,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void timePriceAuditExistsFromV166() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 166) {
             return;
         }
@@ -705,7 +705,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void sortingTicketAllEnabledTemplatesHaveSupplierFromV167() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 167) {
             return;
         }
@@ -720,7 +720,7 @@ class ScmMigrationTargetPgIT {
     /** V181 起客户/供应商共用一张按 scope 隔离的小树，档案只存分类 id。 */
     @Test
     void businessCategoryExistsFromV181() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 181) {
             return;
         }
@@ -741,7 +741,7 @@ class ScmMigrationTargetPgIT {
     /** V182 起对账单可打印，客户专属模板按客户 + 单据类型唯一。 */
     @Test
     void statementPrintAndCustomerBindingExistFromV182() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 182) {
             return;
         }
@@ -769,7 +769,7 @@ class ScmMigrationTargetPgIT {
     /** V183 起最近采购价按商品规格取最新已提交行，索引支撑 DISTINCT ON。 */
     @Test
     void purchaseLastPriceIndexesExistFromV183() {
-        int target = Integer.parseInt(targetVersion());
+        int target = Integer.parseInt(targetVersion().split("\\.")[0]);
         if (target < 183) {
             return;
         }

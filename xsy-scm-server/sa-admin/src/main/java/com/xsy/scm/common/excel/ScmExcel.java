@@ -12,9 +12,12 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.poi.ss.usermodel.Cell;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.error.ScmCommonErrorCode;
 
 /**
- * 同步导出 Excel：日期按北京时间文本、金额按完整定点字符串输出，避免 Excel 自动舍入或用科学计数法。
+ * 同步导出 Excel：日期按北京时间输出；正常金额保留数值类型供计算，超出Excel精度的存量值保留文本。
  */
 public final class ScmExcel {
 
@@ -70,8 +73,29 @@ public final class ScmExcel {
             return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
         }
         if (value instanceof BigDecimal number) {
-            return number.toPlainString();
+            return number.stripTrailingZeros().precision() <= 15 ? number : number.toPlainString();
         }
         return value;
+    }
+
+    /**
+     * 写入客户模板的可计算数值；空值保留空白，超出Excel精度时拒绝整份文件，避免公式静默漏算。
+     *
+     * @param target
+     *            必填目标单元格
+     * @param value
+     *            四位业务数值，null表示未核实；最多15位有效数字
+     * @throws ScmBusinessException
+     *             数字超出Excel可安全计算范围
+     */
+    public static void setNumber(Cell target, BigDecimal value) {
+        if (value == null) {
+            target.setBlank();
+        } else if (value.stripTrailingZeros().precision() > 15) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR,
+                "金额或数量超过Excel的15位有效数字计算范围，请缩小数据范围或使用明细台账导出");
+        } else {
+            target.setCellValue(value.doubleValue());
+        }
     }
 }

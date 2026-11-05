@@ -120,6 +120,10 @@ class Verification:
         再执行一次 `e2e`。
         """
         self.spotless_coverage()
+        self.run("install-baseline",
+                 [sys.executable, str(ROOT / "tools/build_install_baseline.py"), "check"], ROOT)
+        self.run("install-baseline-selftest",
+                 [sys.executable, str(ROOT / "tools/test_install_baseline.py")], ROOT / "tools")
         self.run("checkstyle-report", ["mvn", "-B", "-N", "checkstyle:check"], SERVER)
         ratchet_ref = os.environ.get("QUALITY_RATCHET_FROM", "origin/main")
         self.run("spotless-check",
@@ -171,6 +175,8 @@ class Verification:
         # here instead of inside a minutes-long Surefire run.
         self.run("migration-checksums",
                  [sys.executable, str(ROOT / "tools/migration_checksum_guard.py"), "check"], ROOT)
+        self.run("install-baseline",
+                 [sys.executable, str(ROOT / "tools/build_install_baseline.py"), "check"], ROOT)
         started = time.time()
         self.run("backend", ["mvn", "-B", "-pl", "sa-admin", "-am", "test"], SERVER)
         suites = []

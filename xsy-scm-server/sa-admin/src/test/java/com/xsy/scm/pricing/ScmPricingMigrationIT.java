@@ -1,6 +1,7 @@
 package com.xsy.scm.pricing;
 
 import com.xsy.scm.common.ScmW3PgITBase;
+import net.lab1024.sa.admin.test.PgITMigrationHistory;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +13,11 @@ class ScmPricingMigrationIT extends ScmW3PgITBase {
     Flyway flyway;
 
     @Test
-    void validatesMigrationsAndPricingSchema() {
+    void validatesMigrationsAndPricingSchema() throws Exception {
         flyway.validate();
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE version IN ('10','11') AND success", Integer.class)).isEqualTo(2);
+        try (var connection = jdbc.getDataSource().getConnection(); var statement = connection.createStatement()) {
+            PgITMigrationHistory.assertCovered(statement, "10", "11");
+        }
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.tables WHERE table_schema=current_schema() AND table_name IN ('xsy_customer_agreement_price','xsy_price_operation_log','xsy_customer_sku_visibility')", Integer.class)).isEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT is_nullable FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='xsy_product_sku' AND column_name='market_price'", String.class)).isEqualTo("NO");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_constraint WHERE connamespace=current_schema()::regnamespace AND contype='x'", Integer.class)).isZero();

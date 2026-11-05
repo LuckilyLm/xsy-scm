@@ -35,6 +35,18 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <!-- 增量构建可能残留旧资源；只打包当前模块链，不带退役SQL。 -->
+                    <excludes>
+                        <exclude>db/migration/*.sql</exclude>
+                        <exclude>db/migration-history/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>

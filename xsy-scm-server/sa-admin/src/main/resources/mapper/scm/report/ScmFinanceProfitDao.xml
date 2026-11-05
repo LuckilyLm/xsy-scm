@@ -579,7 +579,8 @@
             <if test="scope == null or !scope.orderSellerScope.all or !scope.costVisible">AND FALSE</if>
             <if test="query.customerId != null">AND c.id = #{query.customerId}</if>
         ), monthly_rows AS (
-            SELECT *, tax_amount + service_amount + freight_amount + commission_amount AS expense_amount,
+            SELECT *, CAST(#{query.startDate} AS TEXT) || ' 至 ' || CAST(#{query.endDate} AS TEXT) AS statement_period,
+                tax_amount + service_amount + freight_amount + commission_amount AS expense_amount,
                 CASE WHEN cost_missing_count &gt; 0 THEN NULL
                     ELSE revenue_amount - sales_cost_amount END AS gross_profit,
                 CASE WHEN cost_missing_count &gt; 0 THEN NULL
@@ -592,8 +593,8 @@
                 ROUND((revenue_amount + posting_amount) * 0.06, 4) AS service_fee_amount,
                 CASE WHEN cost_missing_count &gt; 0 THEN NULL
                     ELSE ROUND(revenue_amount + posting_amount - sales_cost_amount
-                        - (revenue_amount + posting_amount) * 0.01
-                        - (revenue_amount + posting_amount) * 0.06 - freight_amount - commission_amount,
+                        - ROUND((revenue_amount + posting_amount) * 0.01, 4)
+                        - ROUND((revenue_amount + posting_amount) * 0.06, 4) - freight_amount - commission_amount,
                         4) END AS statement_profit
             FROM monthly_base
         )
@@ -606,7 +607,8 @@
 
     <select id="monthlySummary" resultType="com.xsy.scm.report.domain.vo.ScmCustomerMonthlyProfitVO">
         <include refid="monthlyFacts"/>
-        SELECT COALESCE(SUM(revenue_amount), 0) AS revenue_amount,
+        SELECT CAST(#{query.startDate} AS TEXT) || ' 至 ' || CAST(#{query.endDate} AS TEXT) AS statement_period,
+            COALESCE(SUM(revenue_amount), 0) AS revenue_amount,
             CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL ELSE COALESCE(SUM(sales_cost_amount), 0) END AS sales_cost_amount,
             COALESCE(SUM(gift_cost_amount), 0) AS gift_cost_amount,
             COALESCE(SUM(tax_amount), 0) AS tax_amount, COALESCE(SUM(service_amount), 0) AS service_amount,

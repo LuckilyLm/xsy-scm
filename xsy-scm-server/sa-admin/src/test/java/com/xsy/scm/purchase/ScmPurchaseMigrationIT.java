@@ -1,5 +1,6 @@
 package com.xsy.scm.purchase;
 
+import org.flywaydb.core.api.MigrationVersion;
 import com.xsy.scm.common.ScmW5PgITBase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -169,22 +170,36 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     }
 
     @Test
-    // 只守性质，不守清单：版本号必须从 1 开始、连续、按应用顺序排列。
-    // 早先这里逐条列举到某一个数字，每次新增迁移都要回来补一行，忘了补就是「库已经迁到新版、
-    // 测试还在断言旧版」——这类红与业务无关，却让人以为迁移没跑（曾停在 V133，库到 V167）。
-    // 真正要守的是「已应用的迁移只追加，不回改、不重排、不漏账」，等价于下面这个连续升序断言。
-    @DisplayName("flyway_schema_history：版本连续升序、全部 success，无失败记录")
+    @DisplayName("flyway_schema_history：模块记录完整升序或有保留旧历史的切换基线，全部成功")
     void flywayHistoryIsAppendOnly() {
-        List<Integer> versions = jdbc.queryForList(
+        List<MigrationVersion> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
                         + "WHERE success = TRUE AND version IS NOT NULL ORDER BY installed_rank",
-                Integer.class);
-        assertThat(versions).as("迁移记录不应为空，否则本用例是空跑").isNotEmpty();
-        int latest = versions.get(versions.size() - 1);
-        assertThat(versions)
-                .as("已应用的迁移必须从 V1 起连续升序：回改、重排、漏号或插入旧版本都会在这里失败")
-                .containsExactlyElementsOf(
-                        java.util.stream.IntStream.rangeClosed(1, latest).boxed().toList());
+                String.class).stream().map(MigrationVersion::fromVersion).toList();
+        assertThat(versions).as("迁移记录不应为空").isNotEmpty().doesNotHaveDuplicates();
+        assertThat(versions).isSorted();
+        Integer baselines = jdbc.queryForObject(
+                "SELECT count(*) FROM flyway_schema_history WHERE type='BASELINE'", Integer.class);
+        if (baselines == 0) {
+            MigrationVersion[] modules = java.util.stream.IntStream.rangeClosed(1, 24)
+                    .mapToObj(number -> MigrationVersion.fromVersion("1000." + number))
+                    .toArray(MigrationVersion[]::new);
+            assertThat(versions).as("新库必须完整记录24份模块初始化").startsWith(modules);
+        } else {
+            assertThat(baselines).isEqualTo(1);
+            assertThat(versions).startsWith(MigrationVersion.fromVersion("1000.24"));
+            assertThat(jdbc.queryForObject(
+                    "SELECT description FROM flyway_schema_history WHERE type='BASELINE'", String.class))
+                    .isEqualTo("SCM module baseline V244");
+            List<Integer> legacy = jdbc.queryForList(
+                    "SELECT version::integer FROM flyway_schema_history_legacy "
+                            + "WHERE version IS NOT NULL ORDER BY installed_rank", Integer.class);
+            assertThat(legacy.size()).isIn(243, 244);
+            assertThat(legacy).as("切换前的历史记录必须保留且连续")
+                    .containsExactlyElementsOf(java.util.stream.IntStream.rangeClosed(1, legacy.size()).boxed().toList());
+            assertThat(jdbc.queryForObject(
+                    "SELECT count(*) FROM flyway_schema_history_legacy WHERE NOT success", Integer.class)).isZero();
+        }
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
         // 除版本化迁移外，最多只有 1 条 << Flyway Schema Creation >> 基线（version 为空）。

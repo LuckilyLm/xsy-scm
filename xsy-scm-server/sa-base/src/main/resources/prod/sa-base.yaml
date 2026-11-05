@@ -2,7 +2,7 @@ spring:
   # 与开发环境使用同一迁移链；空库由 Flyway 创建 schema，禁止自动 baseline。
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    locations: classpath:db/migration/modules
     schemas: xsy_v2
     default-schema: xsy_v2
     create-schemas: true

@@ -88,6 +88,8 @@ export interface ReceivedCorrectionCandidate {
 }
 
 export const orderApi = {
+  exportCustomerOrder: (id: Id) => getDownload(`/scm/print/customer-sheet/${id}/order.xlsx`),
+  exportCustomerDelivery: (id: Id) => getDownload(`/scm/print/customer-sheet/${id}/delivery.xlsx`),
   unassignedPool: (data: OrderPoolQuery, options?: RequestOptions) => postRequest<ScmPage<OrderPoolRow>>('/scm/order/pool/query', data, options),
   poolAssignees: (options?: RequestOptions) => getRequest<OrderPoolAssignee[]>('/scm/order/pool/assignees', {}, options),
   claimPoolOrder: (data: {orderId: Id; version: number}) => orderCommand<OrderPoolRow>('/scm/order/pool/claim', data),
