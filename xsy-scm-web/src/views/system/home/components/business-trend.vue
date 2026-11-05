@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue';
+import {theme} from 'ant-design-vue';
 import {scmDashboardApi, type ScmDashboardTrend, type ScmTrendMetric, type ScmTrendRange} from '/@/api/business/scm/dashboard-api';
 import {useEcharts} from '/@/views/business/scm/screen/composables/use-echarts';
 import {formatAmount, formatCompact, formatQty, toNumber} from '/@/views/business/scm/screen/format';
@@ -53,6 +54,7 @@ const {data, loading, error, load} = useRegionData<ScmDashboardTrend>(() => scmD
 
 const chartEl = ref<HTMLElement>();
 const {setOption} = useEcharts(chartEl);
+const {token} = theme.useToken();
 
 const hasData = computed(() => {
   const trend = data.value;
@@ -186,7 +188,8 @@ function render() {
   });
 }
 
-watch(() => data.value, render, {flush: 'post'});
+// Canvas 不会继承后续 CSS 变量变化；主题更新后重新取色，只重绘，不重新请求数据。
+watch([() => data.value, token], render, {flush: 'post'});
 
 onMounted(load);
 

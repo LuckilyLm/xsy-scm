@@ -1,6 +1,6 @@
 package com.xsy.scm.inventory;
 
-import com.xsy.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.ScmBaselineMigrationPgITBase;
 import com.xsy.scm.inventory.dao.InventoryBalanceDao;
 import com.xsy.scm.inventory.dao.InventoryMovementDao;
 import com.xsy.scm.inventory.service.InventoryCommandService;
@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code expectSqlFailure}（SAVEPOINT 隔离）验证约束真的会拒绝坏数据。
  */
 @DisplayName("W6 库存域迁移与契约装配（PG IT）")
-class ScmInventoryMigrationIT extends ScmW6PgITBase {
+class ScmInventoryMigrationIT extends ScmBaselineMigrationPgITBase {
 
     private static final List<String> W6_TABLES = List.of("xsy_inventory_balance", "xsy_inventory_movement");
 

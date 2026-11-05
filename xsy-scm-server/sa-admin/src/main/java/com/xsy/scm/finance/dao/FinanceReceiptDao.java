@@ -1,6 +1,6 @@
 package com.xsy.scm.finance.dao;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xsy.scm.common.dao.AppendOnlyMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.time.ScmDateTimeRange;
@@ -17,7 +17,7 @@ import java.util.List;
  * 收款记录只允许新增和查询，错误的收款必须登记反向记录。登记反向记录和核销前要锁住原收款行，防止并发重复冲回。
  */
 @Mapper
-public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {
+public interface FinanceReceiptDao extends AppendOnlyMapper<FinanceReceiptEntity> {
 
     /**
      * 收款单号序列（全局非重置，不按日归零）。必须在事务内调用：{@code nextval} 不随事务回滚，跳号是可接受的代价（与应付单号一致）。

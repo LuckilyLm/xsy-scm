@@ -19,6 +19,15 @@ import java.util.List;
 public interface InventoryOutboundItemDao extends BaseMapper<InventoryOutboundItemEntity> {
 
     /**
+     * 与包装码绑定/解绑共用订单行锁，按主键排序，防止发车与追溯更正穿插。
+     *
+     * @param ids
+     *            非空且非空集合的销售订单行ID；不存在的行不返回。
+     * @return 已锁定的行ID，用于调用方核对来源完整性。
+     */
+    List<Long> lockSalesOrderItems(@Param("ids") Collection<Long> ids);
+
+    /**
      * 某单下的明细（含展示字段，按 id 升序 —— 即录入顺序）。
      */
     List<InventoryOutboundItemVO> listByOutboundId(@Param("outboundId") Long outboundId);

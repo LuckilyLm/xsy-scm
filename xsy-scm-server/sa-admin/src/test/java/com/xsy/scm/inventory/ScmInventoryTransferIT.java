@@ -477,8 +477,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         for (Long movementId : List.of(
                 ((Number) movementOf(wh1, sku, "TRANSFER_OUT").get("id")).longValue(),
                 ((Number) movementOf(wh2, sku, "TRANSFER_IN").get("id")).longValue())) {
-            expectSqlFailure("UPDATE xsy_inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
-            expectSqlFailure("DELETE FROM xsy_inventory_movement WHERE id = ?", movementId);
+            assertMovementImmutable(movementId);
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.xsy.scm.finance.dao;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xsy.scm.common.dao.AppendOnlyMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmValueScope;
@@ -20,7 +20,7 @@ import java.util.List;
  * 正常应付按业务来源防重；没有来源 ID 的手工红字应付用金额限制和请求幂等键防重。应付记录只能追加。
  */
 @Mapper
-public interface FinancePayableDao extends BaseMapper<FinancePayableEntity> {
+public interface FinancePayableDao extends AppendOnlyMapper<FinancePayableEntity> {
 
     /**
      * 应付单号序列（全局非重置，不按日归零）。

@@ -1,6 +1,6 @@
 package com.xsy.scm.finance.dao;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xsy.scm.common.dao.AppendOnlyMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.time.ScmDateTimeRange;
@@ -18,7 +18,7 @@ import org.apache.ibatis.annotations.Param;
  * 核销记录只能新增。撤销核销须新增一条反向记录，不能删除旧核销；已核销金额与结清状态在查询时计算。
  */
 @Mapper
-public interface FinanceWriteOffDao extends BaseMapper<FinanceWriteOffEntity> {
+public interface FinanceWriteOffDao extends AppendOnlyMapper<FinanceWriteOffEntity> {
 
     long nextWriteOffNo();
 

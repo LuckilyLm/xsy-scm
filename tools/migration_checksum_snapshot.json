@@ -96,6 +96,10 @@
     "1000.24": {
       "file": "V1000.24__preference.sql",
       "checksum": -921254922
+    },
+    "1001": {
+      "file": "V1001__backend_business_rules.sql",
+      "checksum": -677091279
     }
   }
 }

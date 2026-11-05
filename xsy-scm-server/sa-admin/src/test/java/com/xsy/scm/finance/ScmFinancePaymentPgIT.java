@@ -459,7 +459,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("J 不支持的来源类型：41139 拒绝；绕过 Java 也被库 CHECK 拒绝")
+    @DisplayName("J 不支持的来源及对方类型由后端拒绝，均不产生付款")
     void unsupportedSourceTypeIsRejectedTwice() {
         Long supplierId = supplier();
         Refund refund = completedRefund("J", "10.0000", "1.0000");
@@ -471,16 +471,8 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         assertThat(paymentsOfRefund(refund.refundId()) + paymentsOfSupplier(supplierId))
                 .as("两种越界来源都没落库").isZero();
 
-        expectSqlFailure("INSERT INTO xsy_finance_payment (payment_no, counterparty_type, counterparty_id,"
-                        + " counterparty_name_snapshot, amount, method, paid_at, entry_type, source_type,"
-                        + " source_id) VALUES ('PM-J-1', 'CUSTOMER', ?, '客户', 10.0000, 'CASH', now(),"
-                        + " 'NORMAL', 'PURCHASE_ORDER', ?)",
-                refund.customerId(), refund.refundId());
-        // 供应商（无来源）与未知对方类型同样被库层挡住
-        expectSqlFailure("INSERT INTO xsy_finance_payment (payment_no, counterparty_type, counterparty_id,"
-                        + " counterparty_name_snapshot, amount, method, paid_at, entry_type)"
-                        + " VALUES ('PM-J-2', 'WAREHOUSE', ?, '仓库', 10.0000, 'CASH', now(), 'NORMAL')",
-                supplierId);
+        expectCode(() -> add(form("WAREHOUSE", supplierId, "10.0000", "CASH", PAST, null, null)), 40000);
+        assertThat(paymentsOfRefund(refund.refundId()) + paymentsOfSupplier(supplierId)).isZero();
     }
 
     @Test
@@ -572,7 +564,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("Q 方式三值与收款共用同一枚举；R 越界方式服务层 41140、库层 CHECK 二道")
+    @DisplayName("Q 方式三值与收款共用同一枚举；R 越界方式由后端41140拒绝")
     void methodSharesTheReceiptEnumAndRejectsEverythingElse() {
         Long supplierId = supplier();
         assertThat(add(form("SUPPLIER", supplierId, "1.0000", "CASH", PAST, null, null)).getMethod())
@@ -587,10 +579,8 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         expectCode(() -> add(form("SUPPLIER", supplierId, "1.0000", "RECHARGE", PAST, null, null)), 41140);
         assertThat(paymentsOfSupplier(supplierId)).isEqualTo(3);
 
-        expectSqlFailure("INSERT INTO xsy_finance_payment (payment_no, counterparty_type, counterparty_id,"
-                        + " counterparty_name_snapshot, amount, method, paid_at, entry_type)"
-                        + " VALUES ('PM-R-1', 'SUPPLIER', ?, '供应商', 1.0000, 'ONLINE_PAYMENT', now(), 'NORMAL')",
-                supplierId);
+        expectCode(() -> add(form("SUPPLIER", supplierId, "1.0000", "ONLINE_PAYMENT", PAST, null, null)), 41140);
+        assertThat(paymentsOfSupplier(supplierId)).isEqualTo(3);
     }
 
     @Test

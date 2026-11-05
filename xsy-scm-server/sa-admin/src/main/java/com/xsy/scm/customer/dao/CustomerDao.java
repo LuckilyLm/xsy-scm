@@ -14,6 +14,9 @@ import java.util.List;
 @Mapper
 public interface CustomerDao extends BaseMapper<CustomerEntity> {
 
+    /** @return 新客户主键；由数据库序列分配，不随事务回滚，允许跳号。 */
+    Long nextId();
+
     /**
      * 分页查询；排序字段由 Service 校验后通过 {@link Page} 的 orders 传入。
      *

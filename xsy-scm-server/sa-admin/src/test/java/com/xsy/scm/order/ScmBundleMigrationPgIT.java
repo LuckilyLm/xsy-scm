@@ -1,6 +1,7 @@
 package com.xsy.scm.order;
 
 import net.lab1024.sa.admin.AdminApplication;
+import com.xsy.scm.common.ScmBaselineMigrationPgITBase;
 import net.lab1024.sa.admin.test.PgITPaths;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "file.storage.local.url-prefix=http://127.0.0.1:18082",
         "logging.level.root=WARN"})
 @Transactional
-class ScmBundleMigrationPgIT {
+class ScmBundleMigrationPgIT extends ScmBaselineMigrationPgITBase {
 
     @Autowired
     private JdbcTemplate jdbc;

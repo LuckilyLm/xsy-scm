@@ -115,12 +115,12 @@ public class TraceUnitService {
      * 分拣扫码绑定：把包装码绑到分拣任务行。
      *
      * <p>
-     * 先锁包装码行、再锁分拣行，都在同一事务内：前者让绑定与作废串行化，后者让同一分拣行上的并发绑定串行化， 否则两枚码各自读到相同的剩余可绑定量、合计超出实拣量。 校验顺序：码存在且有效 → 未绑过（一码一物）→ 分拣任务可绑定
-     * → 商品规格一致 → 仓库一致 → 该行绑定总量不超过实拣量。
+     * 先锁分拣与订单行，再锁包装码，与分拣完成自动绑定保持相同锁序；码锁同时让绑定与作废串行化。 分拣行锁使累计绑定量不能并发超额。校验顺序：码存在且有效 → 未绑过（一码一物）→ 分拣任务可绑定 → 商品规格一致 → 仓库一致 →
+     * 该行绑定总量不超过实拣量。
      */
     @Transactional(rollbackFor = Exception.class)
     public TraceUnitVO.Binding bind(TraceUnitBindForm form, String operator) {
-        TraceUnitVO.Unit unit = traceUnitDao.lockByCode(form.getUnitCode().trim());
+        TraceUnitVO.Unit unit = traceUnitDao.findByCode(form.getUnitCode().trim());
         if (unit == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
         }
@@ -133,6 +133,14 @@ public class TraceUnitService {
         TraceUnitVO.SortingItem item = traceUnitDao.lockSortingItem(form.getSortingTaskItemId());
         if (item == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_ITEM_NOT_FOUND);
+        }
+        // 前面的只读检查只保留错误语义，所有可变条件必须在统一锁序下重新确认。
+        unit = traceUnitDao.lockById(unit.getId());
+        if (unit == null || !ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_VOID);
+        }
+        if (traceUnitDao.findBinding(unit.getId()) != null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_ALREADY_BOUND);
         }
         // 已取消的任务不能再承接实物；未开始的任务也还没有实拣量
         if (!ScmSortingTaskStatusEnum.SORTING.name().equals(item.getTaskStatus())
@@ -178,7 +186,7 @@ public class TraceUnitService {
      * 作废：只对未绑定的码生效。
      *
      * <p>
-     * 与绑定共用同一把包装码行锁：否则「绑定读到 ACTIVE」与「作废读到无绑定」可以同时通过，留下「已作废的码挂着绑定」。 数据库侧另有触发器兜底。
+     * 与绑定共用同一把包装码行锁：否则「绑定读到 ACTIVE」与「作废读到无绑定」可以同时通过，留下「已作废的码挂着绑定」。
      */
     @Transactional(rollbackFor = Exception.class)
     public void voidUnit(TraceUnitVoidForm form, String operator) {
@@ -335,6 +343,13 @@ public class TraceUnitService {
         BigDecimal used = BigDecimal.ZERO;
         int bound = 0;
         for (TraceUnitVO.Unit unit : units) {
+            TraceUnitVO.Unit lockedUnit = traceUnitDao.lockById(unit.getId());
+            if (lockedUnit == null || !ScmTraceUnitStatusEnum.ACTIVE.name().equals(lockedUnit.getStatus())) {
+                throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_VOID);
+            }
+            if (traceUnitDao.findBinding(unit.getId()) != null) {
+                throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_ALREADY_BOUND);
+            }
             if (used.add(unit.getQuantity()).compareTo(remaining) > 0) {
                 break;
             }

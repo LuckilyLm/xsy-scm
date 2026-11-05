@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.finance.dao.FinanceSettlementRuleDao">
+    <select id="selectCreditRule" resultType="com.xsy.scm.finance.domain.dto.FinanceCreditRuleDto">
+        SELECT id AS customerId, credit_period_type AS type, credit_period_value AS value, credit_period_unit AS unit,
+            settle_day AS settleDay, credit_amount_threshold AS amountThreshold
+        FROM xsy_customer WHERE id = #{customerId}
+    </select>
+    <select id="selectPaymentDays" resultType="java.lang.Integer">
+        SELECT payment_period_days FROM xsy_supplier WHERE id = #{supplierId}
+    </select>
+</mapper>

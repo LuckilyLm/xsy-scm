@@ -1,7 +1,7 @@
 package com.xsy.scm.purchase;
 
 import org.flywaydb.core.api.MigrationVersion;
-import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.ScmBaselineMigrationPgITBase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p><b>V1–V12 永久冻结、V15/V16 只追加</b>：本类不修改任何数据，只读元数据 + 断言约束生效。
  */
 @DisplayName("W5 采购域迁移（PG IT）")
-class ScmPurchaseMigrationIT extends ScmW5PgITBase {
+class ScmPurchaseMigrationIT extends ScmBaselineMigrationPgITBase {
 
     /**
      * V15 建出的 9 张采购域表。

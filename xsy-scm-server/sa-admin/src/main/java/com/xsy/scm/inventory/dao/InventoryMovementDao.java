@@ -1,6 +1,6 @@
 package com.xsy.scm.inventory.dao;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xsy.scm.common.dao.AppendOnlyMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.inventory.domain.entity.InventoryMovementEntity;
@@ -16,7 +16,7 @@ import java.util.List;
  * 库存流水只允许新增和查询，不允许修改、删除历史记录。冲销时新增反向流水，原始记录继续保留。
  */
 @Mapper
-public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity> {
+public interface InventoryMovementDao extends AppendOnlyMapper<InventoryMovementEntity> {
     List<BundleSalesOutAllocationVO> listBundleSalesOutAllocations(@Param("orderItemId") Long orderItemId);
 
     /**

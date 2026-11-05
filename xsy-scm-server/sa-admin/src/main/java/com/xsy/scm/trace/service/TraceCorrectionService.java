@@ -83,12 +83,16 @@ public class TraceCorrectionService {
     @Transactional(rollbackFor = Exception.class)
     public TraceCorrectionVO approve(TraceCorrectionDecisionForm form, String operator) {
         TraceCorrectionVO correction = requirePending(form, operator);
+        // 订单行先于包装码加锁，与分拣自动绑定及手工绑定保持一致。
+        if (traceCorrectionDao.lockBoundOrderItem(correction.getBindingId()) == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_NO_BINDING);
+        }
         TraceUnitVO.Unit unit = traceUnitDao.lockById(correction.getUnitId());
         if (unit == null || !ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())
             || !correction.getBindingId().equals(traceUnitDao.findActiveBindingId(unit.getId()))) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_NO_BINDING);
         }
-        // 申请以后可能已发车，必须在批准这一事务中重新验证；数据库触发器再兜底。
+        // 与正式出库共用订单行锁；等待发货完成后重新检查，不能凭申请时的状态解绑。
         requireNotOutbound(correction.getBindingId());
         OffsetDateTime now = OffsetDateTime.now();
         traceCorrectionDao.insertUnbind(correction.getUnitId(), correction.getBindingId(), correction.getId(),

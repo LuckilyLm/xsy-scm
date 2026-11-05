@@ -820,18 +820,22 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("V60 约束独立生效：结果与量成对、差异必须有原因、活动占用唯一")
+    @DisplayName("后端校验结果与数量配对及差异原因；活动占用仍由唯一索引防重")
     void databaseConstraintsHoldOnTheirOwn() {
         var order = order("k1", "2.0000");
         Long taskId = as(lead, QUEUE_MANAGER,
                 () -> sorting.create(createForm("k1", List.of(order.item()), sorterA), key("k1"))).getTask().getId();
         Long itemId = itemIdOfTask(taskId);
 
-        expectSqlFailure("UPDATE xsy_sorting_task_item SET sorted_quantity = 1 WHERE id = ?", itemId);
-        expectSqlFailure("UPDATE xsy_sorting_task_item SET result = 'SHORT' WHERE id = ?", itemId);
-        expectSqlFailure("UPDATE xsy_sorting_task_item SET sorted_quantity = 1, result = 'OVER', reason = '  ' WHERE id = ?",
-                itemId);
-        expectSqlFailure("UPDATE xsy_sorting_task_item SET occupation_status = 'BOGUS' WHERE id = ?", itemId);
+        expectCode(() -> doAs(sorterA, SORTER, () -> sorting.enter(taskId,
+            entryForm(entryItem(itemId, 0, "1.0000", null, null)))), 40000);
+        var missingQuantity = entryItem(itemId, 0, "1.0000", "SHORT", "少拣");
+        missingQuantity.setSortedQuantity(null);
+        expectCode(() -> doAs(sorterA, SORTER, () -> sorting.enter(taskId, entryForm(missingQuantity))), 40000);
+        expectCode(() -> doAs(sorterA, SORTER, () -> sorting.enter(taskId,
+            entryForm(entryItem(itemId, 0, "1.0000", "OVER", "  ")))), 40000);
+        expectCode(() -> doAs(sorterA, SORTER, () -> sorting.enter(taskId,
+            entryForm(entryItem(itemId, 0, "1.0000", "BOGUS", "少拣")))), 40000);
         // 同一订单行第二条活动占用：绕过服务层直接插，也必须被部分唯一索引拦住。
         expectSqlFailure("INSERT INTO xsy_sorting_task_item (task_id, sales_order_id, sales_order_item_id,"
                         + " order_no_snapshot, customer_id, customer_name_snapshot, spu_id, sku_id,"
@@ -841,8 +845,8 @@ class SortingTaskPgIT extends ScmW6PgITBase {
                         + " 'NON_STANDARD', 1, 'ACTIVE' FROM xsy_sorting_task t, xsy_sales_order_item i"
                         + " WHERE t.id = ? AND i.id = ?", taskId, order.item());
         // 正常成对且带原因的写法必须通过，否则上面几条只是「什么都写不进去」。
-        jdbc.update("UPDATE xsy_sorting_task_item SET sorted_quantity = 1, result = 'SHORT', reason = '少拣' WHERE id = ?",
-                itemId);
+        doAs(sorterA, SORTER, () -> sorting.enter(taskId,
+            entryForm(entryItem(itemId, 0, "1.0000", "SHORT", "少拣"))));
         assertThat(jdbc.queryForObject("SELECT reason FROM xsy_sorting_task_item WHERE id = ?", String.class, itemId))
                 .isEqualTo("少拣");
     }

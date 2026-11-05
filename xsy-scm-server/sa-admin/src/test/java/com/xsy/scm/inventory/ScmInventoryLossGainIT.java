@@ -448,9 +448,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         approveAsAuditor(id, audit(id, null));
 
         Long movementId = ((Number) lossGainMovements(wh, sku).getFirst().get("id")).longValue();
-        expectSqlFailure("UPDATE xsy_inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
-        expectSqlFailure("UPDATE xsy_inventory_movement SET quantity = 1, after_quantity = 9 WHERE id = ?", movementId);
-        expectSqlFailure("DELETE FROM xsy_inventory_movement WHERE id = ?", movementId);
+        assertMovementImmutable(movementId);
     }
 
     @Test

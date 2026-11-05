@@ -46,6 +46,7 @@ public class FinanceReceivableService {
     private final FinanceReceivableSourceDao financeReceivableSourceDao;
     private final FinanceOperationLogRecorder operationLogs;
     private final FinanceOrderFundingSettlementService financeOrderFundingSettlementService;
+    private final FinanceSettlementRuleService settlementRules;
 
     /**
      * 签收后生成正常应收，并补齐之前已批准退货的红字应收。签收和退货审批通过订单行锁串行处理，避免并发漏账。生成过程与签收处于同一事务。
@@ -245,6 +246,7 @@ public class FinanceReceivableService {
         receivable.setEntryType(ScmFinanceEntryTypeEnum.NORMAL.name());
         receivable.setAmount(amount);
         receivable.setEventAt(source.getSignedAt());
+        settlementRules.freezeReceivable(receivable);
         receivable.setCreatedAt(now);
         receivable.setUpdatedAt(now);
         receivable.setCreatedBy(source.getSignedBy());

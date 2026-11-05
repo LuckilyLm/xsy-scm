@@ -19,10 +19,11 @@
             useGeneratedKeys="true"
             keyProperty="id">
         INSERT INTO xsy_finance_payable (payable_no, source_type, source_id, purchase_order_id, supplier_id,
-            supplier_name_snapshot, entry_type, original_payable_id, amount, event_at, reason, version, deleted,
+            supplier_name_snapshot, entry_type, original_payable_id, amount, event_at, reason, due_date, payment_rule_snapshot, version, deleted,
             created_at, updated_at, created_by, updated_by)
         VALUES (#{payableNo}, #{sourceType}, #{sourceId}, #{purchaseOrderId}, #{supplierId}, #{supplierNameSnapshot},
-            #{entryType}, #{originalPayableId}, #{amount}, #{eventAt}, #{reason}, 0, FALSE, #{createdAt}, #{updatedAt},
+            #{entryType}, #{originalPayableId}, #{amount}, #{eventAt}, #{reason}, #{dueDate},
+            #{paymentRuleSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler}, 0, FALSE, #{createdAt}, #{updatedAt},
             #{createdBy}, #{updatedBy})
         ON CONFLICT (source_type, source_id)
         WHERE deleted = FALSE

@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.trace.dao.TraceCorrectionDao">
+    <select id="lockBoundOrderItem" resultType="java.lang.Long">
+        SELECT i.id FROM xsy_sales_order_item i
+        JOIN xsy_trace_unit_binding b ON b.sales_order_item_id = i.id
+        WHERE b.id = #{bindingId} FOR UPDATE OF i
+    </select>
 
     <insert id="insertCorrection" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO xsy_trace_unit_correction (unit_id, binding_id, reason, status, requested_by, requested_at,

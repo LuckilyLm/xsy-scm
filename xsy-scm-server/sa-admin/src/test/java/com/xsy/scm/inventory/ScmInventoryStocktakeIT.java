@@ -379,8 +379,6 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
         stocktakeService.confirm(stocktakeService.create(form(wh, sku, "8.0000")));
 
         Long movementId = ((Number) stocktakeMovements(wh, sku).getFirst().get("id")).longValue();
-        expectSqlFailure("UPDATE xsy_inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
-        expectSqlFailure("UPDATE xsy_inventory_movement SET quantity = 1, after_quantity = 9 WHERE id = ?", movementId);
-        expectSqlFailure("DELETE FROM xsy_inventory_movement WHERE id = ?", movementId);
+        assertMovementImmutable(movementId);
     }
 }

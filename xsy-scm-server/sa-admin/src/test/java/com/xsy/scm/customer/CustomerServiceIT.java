@@ -395,7 +395,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
 
         // 上级不存在
         CustomerAddForm missing = form("N2");
-        missing.setParentCustomerId(-1L);
+        missing.setParentCustomerId(Long.MAX_VALUE);
         expectCode(() -> service.add(missing), 40430);
     }
 

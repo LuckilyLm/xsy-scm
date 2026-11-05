@@ -198,7 +198,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
 
     private Long issueFixedAmountCoupon(String tag, Long customerId, String discountAmount) {
         var coupon = new PromotionCouponForm();
-        coupon.setCouponCode(prefix + "-" + tag + "-COUPON");
+        coupon.setCouponCode("RETURN-" + java.util.UUID.randomUUID());
         coupon.setCouponName("退货金额口径 " + tag);
         coupon.setDiscountType("AMOUNT");
         coupon.setDiscountValue(new BigDecimal(discountAmount));

@@ -1,6 +1,6 @@
 package com.xsy.scm.balance.dao;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xsy.scm.common.dao.AppendOnlyMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity;
 import com.xsy.scm.balance.domain.form.BalanceMovementQueryForm;
@@ -14,7 +14,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface CustomerBalanceMovementDao extends BaseMapper<CustomerBalanceMovementEntity> {
+public interface CustomerBalanceMovementDao extends AppendOnlyMapper<CustomerBalanceMovementEntity> {
 
     int insertOnConflictDoNothing(CustomerBalanceMovementEntity movement);
 

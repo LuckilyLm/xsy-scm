@@ -1,18 +1,22 @@
 package com.xsy.scm.finance.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
+import java.util.Map;
 
 /**
  * 正常应付由已确认收货生成，红字应付独立新增而不改原单。金额等基础数据直接保存，核销与结清状态由查询计算，历史单据只能追加纠错。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("xsy_finance_payable")
+@TableName(value = "xsy_finance_payable", autoResultMap = true)
 public class FinancePayableEntity extends FinanceRecord {
 
     private String payableNo;
@@ -56,6 +60,11 @@ public class FinancePayableEntity extends FinanceRecord {
      * 是内部库存作业，不决定应付时点。
      */
     private OffsetDateTime eventAt;
+
+    private LocalDate dueDate;
+
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
+    private Map<String, Object> paymentRuleSnapshot;
 
     /**
      * 红字原因，红字必填非空。

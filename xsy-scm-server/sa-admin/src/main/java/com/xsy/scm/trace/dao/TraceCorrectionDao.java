@@ -29,6 +29,12 @@ public interface TraceCorrectionDao {
     /** 绑定的订单行已有正式出库记录时禁止解绑，不能把已交付实物重新派给别的客户。 */
     int countConfirmedOutboundByBinding(@Param("bindingId") Long bindingId);
 
+    /**
+     * @param bindingId
+     *            非空原绑定ID；不存在返回null。 @return 已锁定的来源订单行ID，锁与正式发货共用。
+     */
+    Long lockBoundOrderItem(@Param("bindingId") Long bindingId);
+
     int decide(@Param("id") Long id, @Param("version") Integer version, @Param("status") String status,
         @Param("operator") String operator, @Param("decidedAt") OffsetDateTime decidedAt,
         @Param("reason") String reason);

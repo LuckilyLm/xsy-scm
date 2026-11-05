@@ -168,10 +168,12 @@ public class CustomerService {
         entity.setDeleted(false);
         stamp(entity, true);
         try {
-            customerDao.insert(entity);
+            // 自结算主体须在写入前就绪，避免依赖数据库触发器填充非空字段。
+            entity.setId(customerDao.nextId());
             if (entity.getSettlementCustomerId() == null) {
                 entity.setSettlementCustomerId(entity.getId());
             }
+            customerDao.insert(entity);
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(CUSTOMER_CODE_DUPLICATE);
         }

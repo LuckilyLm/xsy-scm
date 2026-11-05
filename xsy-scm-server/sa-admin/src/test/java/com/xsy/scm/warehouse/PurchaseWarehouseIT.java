@@ -5,7 +5,10 @@ import com.xsy.scm.warehouse.constant.ScmWarehouseStatusEnum;
 import com.xsy.scm.warehouse.domain.form.WarehouseUpdateForm;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.warehouse.domain.form.WarehouseQueryForm;
+import com.xsy.scm.warehouse.service.WarehouseQueryService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +23,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 与 {@code PurchaseWarehouseReferenceGuard} 同时存在，属采购侧规则（40987）。
  */
 class PurchaseWarehouseIT extends ScmW5PgITBase {
+    @Autowired
+    private WarehouseQueryService queries;
 
     @Test
     @DisplayName("V15 播种 WH001 且为 ENABLED，仓库表只有这一行种子")
@@ -63,7 +68,7 @@ class PurchaseWarehouseIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("停用：enabled 为 false 但仍可读；非法状态被 ck_warehouse_status 拒绝")
+    @DisplayName("停用后仍可读；非法状态由后端校验拒绝")
     void disableKeepsRowReadableAndRejectsIllegalStatus() {
         Long id = newWarehouse("DIS");
         assertThat(warehouseService.enabled(id)).isTrue();
@@ -74,10 +79,10 @@ class PurchaseWarehouseIT extends ScmW5PgITBase {
         assertThat(warehouseService.require(id).getStatus())
                 .isEqualTo(ScmWarehouseStatusEnum.DISABLED.name());
 
-        // 取值域由 DB CHECK 兜住，不只靠 Java 枚举
-        assertThatThrownBy(() -> jdbc.update(
-                "UPDATE xsy_warehouse SET status = 'BROKEN' WHERE id = ?", id))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        WarehouseQueryForm query = new WarehouseQueryForm();
+        query.setStatus("BROKEN");
+        assertThatThrownBy(() -> queries.query(query)).isInstanceOf(ScmBusinessException.class);
+        assertThat(warehouseService.require(id).getStatus()).isEqualTo("DISABLED");
     }
 
     // ------------------------------------------------------------------

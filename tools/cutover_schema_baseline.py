@@ -38,6 +38,20 @@ def history_state(rows: list, manifest: dict) -> str:
     versions = ['.'.join(str(part) for part in version_key(row['version'])) for row in versioned]
     if any(row['type'] != 'SCHEMA' for row in rows if row['version'] is None):
         raise ValueError('存在未知非版本历史，需先核对')
+    upgraded = [row for row in versioned if version_key(row['version']) > version_key(VERSION)]
+    if upgraded:
+        if [row['version'] for row in upgraded] != ['1001'] or versioned[-len(upgraded):] != upgraded:
+            raise ValueError('存在尚未定义结构目标的增量历史')
+        base = history_state([row for row in rows if row not in upgraded], manifest)
+        if base not in ('modules', 'cutover'):
+            raise ValueError('增量历史缺少完整模块初始化或显式切换基线')
+        from migration_checksum_guard import scan_migrations, MIGRATION_DIR
+        known = scan_migrations(MIGRATION_DIR)
+        for row in upgraded:
+            entry = known.get(row['version'])
+            if not entry or row['type'] != 'SQL' or row['script'] != entry['file'] or row['checksum'] != entry['checksum']:
+                raise ValueError('增量脚本或checksum与当前发布文件不一致')
+        return base + '_upgraded'
     if (len(versioned) == 1 and versions[0] == VERSION
             and versioned[0]['type'] == 'BASELINE' and versioned[0]['description'] == DESCRIPTION):
         return 'cutover'
@@ -57,6 +71,20 @@ def history_state(rows: list, manifest: dict) -> str:
                 or row['checksum'] != expected['checksum']):
             raise ValueError(f"V{row['version']}脚本或checksum与已确认历史不一致")
     return 'legacy'
+
+
+def backend_rule_catalog(expected: dict) -> dict:
+    """仅为已验证V1001历史派生结构参照；其余对象的原始指纹一律保留。"""
+    checks = {key for key in expected if key.startswith('constraint:') and (
+        key.rsplit('.', 1)[-1].startswith('ck_')
+        or key.rsplit('.', 1)[-1].endswith('_check')
+        or key in {'constraint:xsy_trace_inspection_report.xsy_trace_inspection_report_check1',
+                   'constraint:xsy_trace_inspection_report.xsy_trace_inspection_report_check2'})}
+    triggers = {key for key in expected if key.startswith('trigger:')}
+    functions = {key for key in expected if key.startswith('function:')}
+    if (len(checks), len(triggers), len(functions)) != (675, 34, 31):
+        raise ValueError('冻结基线的业务保护清单不一致，不能派生V1001结构目标')
+    return {key: value for key, value in expected.items() if key not in checks | triggers | functions}
 
 
 def cutover(connection, expected_database: str | None, apply: bool) -> dict:
@@ -87,13 +115,15 @@ def cutover(connection, expected_database: str | None, apply: bool) -> dict:
         state = history_state(cursor.fetchall(), legacy)
         if state == 'legacy' and relations['legacy']:
             raise ValueError('旧历史备份表已存在，拒绝覆盖')
-        if state == 'cutover' and not relations['legacy']:
+        if state.startswith('cutover') and not relations['legacy']:
             raise ValueError('基线标记缺少保留的原迁移历史，拒绝接管')
-        if state == 'cutover':
+        if state.startswith('cutover'):
             cursor.execute('SELECT version,type,description,script,checksum,success '
                            'FROM xsy_v2.flyway_schema_history_legacy ORDER BY installed_rank')
             if history_state(cursor.fetchall(), legacy) != 'legacy':
                 raise ValueError('保留的原迁移历史异常')
+        if state.endswith('_upgraded'):
+            expected = backend_rule_catalog(expected)
         if apply:
             # 短暂阻止业务写入与DDL，防止目录核对和切换之间结构发生变化；超时整笔回滚。
             tables = sorted(key[6:] for key in expected if key.startswith('table:'))

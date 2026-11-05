@@ -1,6 +1,6 @@
 package com.xsy.scm.finance.dao;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xsy.scm.common.dao.AppendOnlyMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.time.ScmDateTimeRange;
@@ -17,7 +17,7 @@ import java.util.List;
  * 财务付款只追加不修改，退款付款以退款单来源唯一索引防重；反向付款无原业务来源 ID，不占用该索引。
  */
 @Mapper
-public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
+public interface FinancePaymentDao extends AppendOnlyMapper<FinancePaymentEntity> {
 
     /**
      * 付款单号序列（全局非重置，不按日归零）。必须在事务内调用：{@code nextval} 不随事务回滚，跳号是可接受的代价（与应付、收款单号一致）。

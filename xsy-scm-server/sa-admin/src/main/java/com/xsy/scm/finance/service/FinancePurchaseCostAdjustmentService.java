@@ -33,6 +33,7 @@ public class FinancePurchaseCostAdjustmentService {
     private final FinancePayableDao payableDao;
     private final FinancePayableItemDao payableItemDao;
     private final FinanceOperationLogRecorder operationLogs;
+    private final FinanceSettlementRuleService settlementRules;
 
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void generate(Long adjustmentId) {
@@ -93,6 +94,7 @@ public class FinancePurchaseCostAdjustmentService {
         payable.setUpdatedAt(source.getOccurredAt());
         payable.setCreatedBy(source.getCreatedBy());
         payable.setUpdatedBy(source.getCreatedBy());
+        settlementRules.freezePayable(payable);
         payableDao.insert(payable);
         FinancePayableItemEntity item = new FinancePayableItemEntity();
         item.setPayableId(payable.getId());

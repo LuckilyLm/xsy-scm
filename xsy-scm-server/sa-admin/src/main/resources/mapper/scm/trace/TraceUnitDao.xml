@@ -108,7 +108,7 @@
       按码加锁读：绑定与作废都要先拿这把锁。
       没有锁时，「绑定读到 ACTIVE」与「作废读到无绑定」可以同时通过，最终留下「已作废的码挂着绑定」。
     -->
-    <select id="lockByCode" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit">
+    <select id="lockByCode" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit" flushCache="true" useCache="false">
         SELECT u.id, u.unit_code AS unitCode, u.public_token AS publicToken, u.lot_id AS lotId, t.lot_no AS lotNo,
             t.source_lot_no AS sourceLotNo, u.package_type AS packageType, u.quantity, u.unit,
             u.net_weight AS netWeight, u.weight_unit AS weightUnit, u.weight_source AS weightSource,
@@ -139,7 +139,8 @@
         WHERE u.id = #{id}
     </select>
 
-    <select id="lockById" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit">
+    <!-- 持锁复核前清空本事务先前的只读结果，避免将缓存的“未绑定”当作最新事实。 -->
+    <select id="lockById" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit" flushCache="true" useCache="false">
         SELECT u.id, u.unit_code AS unitCode, u.lot_id AS lotId, u.quantity, u.unit, u.status, u.created_at AS createdAt
         FROM xsy_trace_unit u
         WHERE u.id = #{id}
@@ -162,7 +163,7 @@
       分拣任务行：绑定校验的客户/商品/实拣量来源；锁行以串行化同一行上的并发绑定。
       实拣量是销售单位口径，绑定总量比较前必须按订单行冻结的换算折成库存记账量，因此一并取出冻结换算。
     -->
-    <select id="lockSortingItem" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$SortingItem">
+    <select id="lockSortingItem" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$SortingItem" flushCache="true" useCache="false">
         SELECT i.task_id AS taskId, i.id AS itemId, i.sku_id AS skuId, i.sales_order_id AS salesOrderId,
             i.sales_order_item_id AS salesOrderItemId, i.customer_id AS customerId,
             i.customer_name_snapshot AS customerName, i.order_no_snapshot AS orderNo,
@@ -171,10 +172,10 @@
             t.status AS taskStatus, t.warehouse_id AS warehouseId
         FROM xsy_sorting_task_item i
         JOIN xsy_sorting_task t ON t.id = i.task_id
-        LEFT JOIN xsy_sales_order_item oi ON oi.id = i.sales_order_item_id
+        JOIN xsy_sales_order_item oi ON oi.id = i.sales_order_item_id
         WHERE i.id = #{itemId}
             AND i.deleted = FALSE
-        FOR UPDATE OF i
+        FOR UPDATE OF i, oi
     </select>
 
     <!-- 只算有效绑定：解绑后不再占用实拣量 -->

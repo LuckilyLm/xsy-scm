@@ -144,6 +144,12 @@ public class InventoryFulfillmentService {
         // 授权判定取本次真正要扣减的仓库，不信任调用方传来的任何其它仓库
         warehouseScopeGuard.require(command.warehouseId());
 
+        // 发货与包装码绑定/解绑必须锁同一业务行，锁在库存写入之前取得并持有到事务结束。
+        List<Long> sourceIds = command.lines().stream().map(Line::salesOrderItemId).distinct().sorted().toList();
+        if (inventoryOutboundItemDao.lockSalesOrderItems(sourceIds).size() != sourceIds.size()) {
+            throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
+        }
+
         Map<String, InventoryReservationEntity> reservations = lockReservations(command);
         Map<String, InventoryBalanceEntity> balances = lockBalances(command, reservations);
         retireReservations(command, reservations, balances);

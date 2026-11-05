@@ -1,13 +1,13 @@
 package com.xsy.scm.order;
 
-import com.xsy.scm.common.ScmW3PgITBase;
+import com.xsy.scm.common.ScmBaselineMigrationPgITBase;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ScmOrderMigrationIT extends ScmW3PgITBase {
+class ScmOrderMigrationIT extends ScmBaselineMigrationPgITBase {
     @Autowired
     Flyway flyway;
     static final String TABLES = "'xsy_sales_order','xsy_sales_order_item','xsy_order_address_snapshot','xsy_order_operation_log','xsy_idempotency_record','xsy_order_return','xsy_order_return_item','xsy_order_refund'";
@@ -37,8 +37,9 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
 
     @Test
     void permissionMenusGrantedAndBusinessLogsHaveNoMutationMapper() {
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM t_menu WHERE menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642)", Integer.class)).isEqualTo(23);
-        // 614「提交」随订单草稿态下线（V221）保留菜单行但收回超管授权，因此授权数比菜单少一条。
+        assertThat(jdbc.queryForList("SELECT menu_id FROM t_menu WHERE menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642) ORDER BY menu_id", Long.class))
+            .containsExactly(601L,602L,603L,604L,605L,611L,612L,613L,615L,616L,617L,618L,619L,621L,622L,623L,624L,625L,631L,632L,641L,642L);
+        // 模块基线不再初始化已退役的614「提交」菜单及授权。
         assertThat(jdbc.queryForObject("SELECT count(*) FROM t_role_menu WHERE role_id=1 AND menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642)", Integer.class)).isEqualTo(22);
         assertThat(jdbc.queryForObject("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='ck_sales_order_source'", String.class)).contains("IMPORT");
         // 订单日志 DAO 只允许「追加 + 读」：listByOrderId 是商城订单时间线的只读入口，

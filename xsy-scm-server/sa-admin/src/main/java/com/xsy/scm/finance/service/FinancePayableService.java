@@ -57,6 +57,7 @@ public class FinancePayableService {
     private final FinanceOperationLogRecorder operationLogs;
     private final ScmDataScopeService dataScopeService;
     private final ScmIdempotencyService idempotencyService;
+    private final FinanceSettlementRuleService settlementRules;
 
     /**
      * 追加一张手工红字应付。先锁正常应付行再检查累计红字金额，让同一来源的并发红字串行执行。
@@ -107,6 +108,7 @@ public class FinancePayableService {
         red.setUpdatedAt(now);
         red.setCreatedBy(operator);
         red.setUpdatedBy(operator);
+        settlementRules.freezePayable(red);
         if (financePayableDao.insert(red) != 1) {
             throw new IllegalStateException("手工扣减应付未保存: " + red.getPayableNo());
         }
@@ -253,6 +255,7 @@ public class FinancePayableService {
         }
 
         FinancePayableEntity payable = header(source, amount);
+        settlementRules.freezePayable(payable);
         if (financePayableDao.insertOnConflictDoNothing(payable) == 0) {
             return;
         }

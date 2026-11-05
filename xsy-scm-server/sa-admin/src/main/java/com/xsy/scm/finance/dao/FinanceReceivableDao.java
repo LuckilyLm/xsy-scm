@@ -1,6 +1,6 @@
 package com.xsy.scm.finance.dao;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xsy.scm.common.dao.AppendOnlyMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmValueScope;
@@ -21,7 +21,7 @@ import java.util.List;
  * 应收记录只允许新增和查询，不修改、删除历史应收。红字冲回也新增记录；数据库约束和来源唯一索引防止重复生成。
  */
 @Mapper
-public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity> {
+public interface FinanceReceivableDao extends AppendOnlyMapper<FinanceReceivableEntity> {
 
     /**
      * 应收单号序列（全局非重置，不按日归零）。

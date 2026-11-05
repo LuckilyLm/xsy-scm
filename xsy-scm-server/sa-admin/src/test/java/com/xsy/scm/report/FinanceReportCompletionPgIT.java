@@ -127,8 +127,9 @@ class FinanceReportCompletionPgIT extends ScmW6PgITBase {
             Integer.class, expense.getExpenseId())).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_finance_customer_expense_void WHERE expense_id = ?",
             Integer.class, expense.getExpenseId())).isEqualTo(1);
-        expectSqlFailure("UPDATE xsy_finance_customer_expense SET tax_amount = 0 WHERE id = ?", expense.getExpenseId());
-        expectSqlFailure("DELETE FROM xsy_finance_customer_expense_void WHERE expense_id = ?", expense.getExpenseId());
+        assertAppendOnlyDao(com.xsy.scm.finance.dao.FinanceCustomerExpenseDao.class);
+        assertThat(jdbc.queryForObject("SELECT tax_amount FROM xsy_finance_customer_expense WHERE id=?",
+            BigDecimal.class, expense.getExpenseId())).isEqualByComparingTo("10.0000");
     }
 
     @Test
@@ -267,13 +268,13 @@ class FinanceReportCompletionPgIT extends ScmW6PgITBase {
             BigDecimal.class, source.getPurchaseOrderItemId())).isEqualByComparingTo("5.0000");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_movement WHERE sku_id = ?",
             Integer.class, skuId)).isZero();
-        expectSqlFailure("UPDATE xsy_purchase_account_item SET unit_price = 1 WHERE id = ?", source.getAccountItemId());
+        assertAppendOnlyDao(com.xsy.scm.purchase.dao.PurchaseAccountDao.class);
 
         var profit = profitQuery();
         profit.setSkuId(skuId);
         assertThat(profitService.summary(profit).getSalesCostAmount()).isEqualByComparingTo("-50.0000");
-        expectSqlFailure("UPDATE xsy_purchase_cost_adjustment SET amount = 1 WHERE id = ?", increased.getId());
-        expectSqlFailure("DELETE FROM xsy_finance_purchase_cost_entry WHERE adjustment_id = ?", increased.getId());
+        assertAppendOnlyDao(com.xsy.scm.purchase.dao.PurchaseCostAdjustmentDao.class);
+        assertAppendOnlyDao(com.xsy.scm.finance.dao.FinancePurchaseCostEntryDao.class);
     }
 
     @Test
@@ -415,7 +416,7 @@ class FinanceReportCompletionPgIT extends ScmW6PgITBase {
         confirmPurchase(skuId, "5.0000");
         assertThat(balanceRow(warehouseId, skuId).getQuantity()).isEqualByComparingTo("8.0000");
         assertThat(snapshotService.detail(snapshot.getId()).getRows().get(0).path("quantity").asText()).isEqualTo("-2.0000");
-        expectSqlFailure("DELETE FROM xsy_report_negative_stock_snapshot WHERE id = ?", snapshot.getId());
+        assertAppendOnlyDao(com.xsy.scm.report.dao.ScmNegativeStockSnapshotDao.class);
     }
 
     @Test
@@ -492,6 +493,11 @@ class FinanceReportCompletionPgIT extends ScmW6PgITBase {
         form.setPageNum(1L);
         form.setPageSize(20L);
         return form;
+    }
+
+    private void assertAppendOnlyDao(Class<?> dao) {
+        assertThat(java.util.Arrays.stream(dao.getMethods()).map(java.lang.reflect.Method::getName))
+            .noneMatch(name -> name.matches("(?i)(update|delete|remove).*"));
     }
 
     private ScmDataScopeContext scope(ScmValueScope warehouses, ScmValueScope orders, ScmValueScope customers) {

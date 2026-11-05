@@ -1,6 +1,6 @@
 package com.xsy.scm.finance.dao;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xsy.scm.common.dao.AppendOnlyMapper;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -14,7 +14,7 @@ import java.util.List;
  * 红字明细锚定退货行主键。
  */
 @Mapper
-public interface FinanceReceivableItemDao extends BaseMapper<FinanceReceivableItemEntity> {
+public interface FinanceReceivableItemDao extends AppendOnlyMapper<FinanceReceivableItemEntity> {
 
     /**
      * 同一出库行只能生成一次应收明细。出现来源唯一冲突要检查是否重复入账，不得把异常冲突当成功。

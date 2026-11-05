@@ -3,6 +3,7 @@ package com.xsy.scm.common;
 import com.xsy.scm.customer.permission.CustomerPermission;
 import com.xsy.scm.supplier.permission.SupplierPermission;
 import net.lab1024.sa.admin.test.PgITDatabase;
+import net.lab1024.sa.admin.test.PgITBaselineDatabase;
 import net.lab1024.sa.admin.test.PgITMigrationHistory;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ScmCustomerSupplierMigrationIT {
 
-    private static final String URL = PgITDatabase.url();
+    private static final String URL = PgITBaselineDatabase.url();
 
     private static String user() {
         return PgITDatabase.user();
@@ -65,7 +66,7 @@ class ScmCustomerSupplierMigrationIT {
         Flyway flyway = Flyway.configure().dataSource(URL, user(), password())
                 .schemas("xsy_v2").defaultSchema("xsy_v2").cleanDisabled(true)
                 .placeholderReplacement(false)
-                .locations("classpath:db/migration/modules").load();
+                .locations("classpath:db/migration/modules").target("1000.24").load();
         flyway.migrate();
         flyway.validate();
 

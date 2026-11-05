@@ -84,7 +84,8 @@ class InstallBaselineTest(unittest.TestCase):
         _, legacy = self.legacy()
         snapshot = guard.load_snapshot(guard.SNAPSHOT_PATH)['migrations']
         rows = [{'version': v, 'type': 'SQL', 'description': '', 'script': entry['file'],
-                 'checksum': entry['checksum'], 'success': True} for v, entry in snapshot.items()]
+                 'checksum': entry['checksum'], 'success': True} for v, entry in snapshot.items()
+                if guard.version_key(v) <= guard.version_key(cutover.VERSION)]
         self.assertEqual('modules', cutover.history_state(rows, legacy))
         displayed = copy.deepcopy(rows)
         for index, row in enumerate(displayed, 1):
@@ -96,6 +97,28 @@ class InstallBaselineTest(unittest.TestCase):
         marker[0]['description'] = 'manual baseline'
         with self.assertRaises(ValueError):
             cutover.history_state(marker, legacy)
+
+    def test_backend_rules_upgrade_requires_known_history_and_preserves_other_catalog_objects(self):
+        _, legacy = self.legacy()
+        snapshot = guard.load_snapshot(guard.SNAPSHOT_PATH)['migrations']
+        rows = [{'version': v, 'type': 'SQL', 'description': '', 'script': e['file'],
+                 'checksum':e['checksum'], 'success':True} for v,e in snapshot.items()
+                if guard.version_key(v) <= guard.version_key(cutover.VERSION)]
+        entry = guard.scan_migrations(guard.MIGRATION_DIR)['1001']
+        upgrade = {'version':'1001','type':'SQL','description':'','script':entry['file'],
+                   'checksum':entry['checksum'],'success':True}
+        self.assertEqual('modules_upgraded', cutover.history_state(rows+[upgrade], legacy))
+        wrong = copy.deepcopy(upgrade)
+        wrong['checksum'] += 1
+        with self.assertRaises(ValueError):
+            cutover.history_state(rows+[wrong], legacy)
+        catalog = json.loads((baseline.ROOT/'tools/schema_baseline_catalog.json').read_text(encoding='utf-8'))['objects']
+        target = cutover.backend_rule_catalog(catalog)
+        self.assertEqual(740, len(catalog)-len(target))
+        for key,value in target.items():
+            self.assertEqual(catalog[key],value)
+        self.assertTrue(any(k.startswith('index:') for k in target))
+        self.assertTrue(any(k.startswith('column:') for k in target))
 
     def test_catalog_drift_is_explicit_and_order_independent(self):
         a = fingerprints({'table:a': {'not_null':True,'type':'bigint'}})

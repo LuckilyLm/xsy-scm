@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 被测的就是上线的那段 SQL（沿用 {@link ScmW6PgITBase} 对 V19 backfill 的做法）。
  */
 @DisplayName("地图 M0 地理数据地基（V40 PG IT）")
-class ScmGeoMigrationIT extends ScmW6PgITBase {
+class ScmGeoMigrationIT extends ScmBaselineMigrationPgITBase {
 
     private static final String V40 = "V40__scm_geo_region_and_master_location.sql";
 

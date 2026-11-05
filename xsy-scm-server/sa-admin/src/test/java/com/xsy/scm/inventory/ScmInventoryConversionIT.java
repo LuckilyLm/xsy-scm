@@ -330,8 +330,7 @@ class ScmInventoryConversionIT extends ScmW6PgITBase {
         for (Long movementId : List.of(
                 ((Number) convertMovements(wh, source).getFirst().get("id")).longValue(),
                 ((Number) convertMovements(wh, target).getFirst().get("id")).longValue())) {
-            expectSqlFailure("UPDATE xsy_inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
-            expectSqlFailure("DELETE FROM xsy_inventory_movement WHERE id = ?", movementId);
+            assertMovementImmutable(movementId);
         }
     }
 }

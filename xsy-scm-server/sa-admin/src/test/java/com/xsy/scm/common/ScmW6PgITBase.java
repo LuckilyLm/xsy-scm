@@ -50,6 +50,22 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public abstract class ScmW6PgITBase extends ScmW5PgITBase {
 
+    /** @param movementId 非空已存在流水ID；验证通用更新、逻辑删除和物理删除均被后端拒绝且事实不变。 */
+    protected void assertMovementImmutable(Long movementId) {
+        Map<String, Object> before = jdbc.queryForMap("SELECT * FROM xsy_inventory_movement WHERE id=?", movementId);
+        var changed = new com.xsy.scm.inventory.domain.entity.InventoryMovementEntity();
+        changed.setId(movementId);
+        changed.setDeleted(true);
+        changed.setQuantity(new BigDecimal("2.0000"));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> inventoryMovementDao.updateById(changed))
+            .isInstanceOf(UnsupportedOperationException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> inventoryMovementDao.deleteById(changed))
+            .isInstanceOf(UnsupportedOperationException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> inventoryMovementDao.deleteById((java.io.Serializable) movementId))
+            .isInstanceOf(UnsupportedOperationException.class);
+        assertThat(jdbc.queryForMap("SELECT * FROM xsy_inventory_movement WHERE id=?", movementId)).isEqualTo(before);
+    }
+
     /**
      * 库存域唯一写入路径（收货确认同事务调用；IT 也直接调用它验证命令侧的边界）。
      */

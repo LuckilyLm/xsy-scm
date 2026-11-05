@@ -57,6 +57,12 @@ class ScmTraceUnitConcurrencyIT extends ScmW6PgITBase {
     @Autowired
     private TraceCorrectionService traceCorrectionService;
 
+    @Autowired
+    private com.xsy.scm.inventory.service.InventoryFulfillmentService fulfillmentService;
+
+    @Autowired
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
+
     private Long lotWarehouseId;
 
     @BeforeEach
@@ -75,6 +81,62 @@ class ScmTraceUnitConcurrencyIT extends ScmW6PgITBase {
     @Override
     protected void evictMybatisCache() {
         // 无外层事务 → 每次 DAO 调用都是新 session → 一级缓存天然为空
+    }
+
+    @Test
+    void dispatchAndBindingSerializeOnTheOrderItem() throws Exception {
+        Long skuId = newOnShelfSku("CLOT-LOCK");
+        W6Fixture fixture = inboundFixture("CLOT-LOCK", skuId, "10.0000");
+        confirmWithLots(fixture.receipt().getId(), "10.0000", "10.0000");
+        var unit = traceUnitService.issue(issueForm(lotIdOf(skuId), 1, "1.0000"), "W9 lock").getFirst();
+        Long orderId = confirmedSalesOrder(newCustomer(), skuId, "10.0000", "10.0000");
+        sortingCompletedFor(orderId);
+        Long itemId = jdbc.queryForObject("SELECT id FROM xsy_sorting_task_item WHERE sales_order_id=?",
+            Long.class, orderId);
+        Long orderItemId = confirmedSalesOrderItemId(orderId);
+        var command = new com.xsy.scm.inventory.service.InventoryFulfillmentService.Command(
+            orderId, lotWarehouseId, java.time.OffsetDateTime.now(), "W9 dispatch", List.of(
+                new com.xsy.scm.inventory.service.InventoryFulfillmentService.Line(orderId, orderItemId, skuId,
+                    new BigDecimal("1.0000"), "kg", new BigDecimal("1.0000"))));
+        var form = new TraceUnitBindForm();
+        form.setUnitCode(unit.getUnitCode());
+        form.setSortingTaskItemId(itemId);
+        CountDownLatch dispatched = new CountDownLatch(1);
+        CountDownLatch commit = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> outbound = pool.submit(withOperator(() ->
+                new org.springframework.transaction.support.TransactionTemplate(transactionManager)
+                    .executeWithoutResult(status -> {
+                        fulfillmentService.dispatchOutbound(command);
+                        dispatched.countDown();
+                        try {
+                            if (!commit.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                                throw new IllegalStateException("等待测试释放发货事务超时");
+                            }
+                        } catch (InterruptedException exception) {
+                            Thread.currentThread().interrupt();
+                            throw new IllegalStateException(exception);
+                        }
+                    })));
+            assertThat(dispatched.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+            Future<?> binding = pool.submit(withOperator(() -> traceUnitService.bind(form, "W9 late bind")));
+            // 发货尚未提交时绑定必须等待；提交后必须复核出库，不能使用旧快照通过。
+            assertThatThrownBy(() -> binding.get(300, TimeUnit.MILLISECONDS))
+                .isInstanceOf(java.util.concurrent.TimeoutException.class);
+            commit.countDown();
+            outbound.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertThatThrownBy(() -> binding.get(TIMEOUT_SECONDS, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .hasCauseInstanceOf(ScmBusinessException.class)
+                .satisfies(error -> assertThat(((ScmBusinessException) error.getCause()).getErrorCode().getCode())
+                    .isEqualTo(41526));
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_trace_unit_binding WHERE unit_id=?",
+                Integer.class, unit.getId())).isZero();
+        } finally {
+            commit.countDown();
+            pool.shutdownNow();
+        }
     }
 
     private PurchaseReceiptVO confirmWithLots(Long receiptId, String quantity, String lotQuantity) {
@@ -222,8 +284,8 @@ class ScmTraceUnitConcurrencyIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("#4 旁路 SQL 并发插入同一码绑定：数据库行锁仍必须保证唯一有效绑定")
-    void concurrentDirectSqlBindCannotBypassDatabaseGuard() throws Exception {
+    @DisplayName("同一码并发绑定：后端共用行锁保证唯一有效绑定")
+    void concurrentBindPreservesSingleActiveBinding() throws Exception {
         Long skuId = newOnShelfSku("CLOT4");
         W6Fixture fx = inboundFixture("CLOT4", skuId, "10.0000");
         confirmWithLots(fx.receipt().getId(), "10.0000", "10.0000");
@@ -236,16 +298,10 @@ class ScmTraceUnitConcurrencyIT extends ScmW6PgITBase {
                 "SELECT id FROM xsy_sorting_task_item WHERE sales_order_id = ? AND sku_id = ? "
                         + "ORDER BY id DESC LIMIT 1", Long.class, salesOrderId, skuId);
 
-        Runnable directInsert = () -> jdbc.update(
-                "INSERT INTO xsy_trace_unit_binding "
-                        + "(unit_id, lot_id, sorting_task_id, sorting_task_item_id, sales_order_id, "
-                        + "sales_order_item_id, customer_id, customer_name_snapshot, order_no_snapshot, "
-                        + "bound_at, bound_by, created_by) "
-                        + "SELECT ?, ?, i.task_id, i.id, i.sales_order_id, i.sales_order_item_id, "
-                        + "i.customer_id, i.customer_name_snapshot, i.order_no_snapshot, "
-                        + "CURRENT_TIMESTAMP, 'W9 bypass', 'W9 bypass' "
-                        + "FROM xsy_sorting_task_item i WHERE i.id = ?",
-                unit.getId(), lotId, itemId);
+        TraceUnitBindForm form = new TraceUnitBindForm();
+        form.setUnitCode(unit.getUnitCode());
+        form.setSortingTaskItemId(itemId);
+        Runnable directInsert = () -> traceUnitService.bind(form, "并发绑定");
         List<Throwable> failures = runConcurrently(directInsert, directInsert);
         assertThat(failures).hasSize(1);
         Integer active = jdbc.queryForObject(
@@ -257,7 +313,7 @@ class ScmTraceUnitConcurrencyIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("#5 已绑定包装码禁止被旁路 SQL 直接作废")
+    @DisplayName("已绑定包装码禁止作废；不存在匹配更正申请时禁止解绑")
     void directSqlCannotVoidBoundUnit() {
         Long skuId = newOnShelfSku("CLOT5");
         W6Fixture fx = inboundFixture("CLOT5", skuId, "10.0000");
@@ -276,9 +332,11 @@ class ScmTraceUnitConcurrencyIT extends ScmW6PgITBase {
         bind.setSortingTaskItemId(itemId);
         traceUnitService.bind(bind, "W9 void guard");
 
-        assertThatThrownBy(() -> jdbc.update(
-                "UPDATE xsy_trace_unit SET status = 'VOID' WHERE unit_code = ?", code))
-                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        TraceUnitVoidForm voidForm = new TraceUnitVoidForm();
+        voidForm.setUnitCode(code);
+        voidForm.setReason("已绑定码不能作废");
+        assertThatThrownBy(() -> traceUnitService.voidUnit(voidForm, "独立测试操作人"))
+                .isInstanceOf(ScmBusinessException.class);
         assertThat(jdbc.queryForObject(
                 "SELECT status FROM xsy_trace_unit WHERE unit_code = ?", String.class, code))
                 .isEqualTo("ACTIVE");
@@ -287,18 +345,18 @@ class ScmTraceUnitConcurrencyIT extends ScmW6PgITBase {
                 Long.class, code);
         Long bindingId = jdbc.queryForObject("SELECT id FROM xsy_trace_unit_binding WHERE unit_id = ?",
                 Long.class, unitId);
-        // 不存在对应待审批更正单的 SQL 解绑也必须被数据库直接拒绝。
-        assertThatThrownBy(() -> jdbc.update(
-                "INSERT INTO xsy_trace_unit_unbind "
-                        + "(unit_id, binding_id, correction_id, reason, unbound_at, unbound_by, created_by) "
-                        + "VALUES (?, ?, -1, 'bypass', CURRENT_TIMESTAMP, 'bypass', 'bypass')",
-                unitId, bindingId))
-                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        var decision = new com.xsy.scm.trace.domain.form.TraceCorrectionDecisionForm();
+        decision.setId(Long.MAX_VALUE);
+        decision.setVersion(0);
+        assertThatThrownBy(() -> traceCorrectionService.approve(decision, "独立审批人"))
+                .isInstanceOf(ScmBusinessException.class);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_trace_unit_unbind WHERE binding_id=?",
+            Integer.class, bindingId)).isZero();
     }
 
     @Test
-    @DisplayName("#6 正式出库之后，服务与旁路 SQL 均不能解绑或补绑包装码")
-    void outboundPreventsCorrectionAndDirectSqlRebinding() {
+    @DisplayName("正式出库之后，后端拒绝解绑或补绑，原有效绑定不变")
+    void outboundPreventsCorrectionAndLateRebinding() {
         Long skuId = newOnShelfSku("CLOT6");
         W6Fixture fx = inboundFixture("CLOT6", skuId, "10.0000");
         confirmWithLots(fx.receipt().getId(), "10.0000", "10.0000");
@@ -344,12 +402,8 @@ class ScmTraceUnitConcurrencyIT extends ScmW6PgITBase {
         Long bindingId = jdbc.queryForObject(
                 "SELECT id FROM xsy_trace_unit_binding WHERE unit_id = ?",
                 Long.class, units.getFirst().getId());
-        assertThatThrownBy(() -> jdbc.update(
-                "INSERT INTO xsy_trace_unit_unbind "
-                        + "(unit_id, binding_id, correction_id, reason, unbound_at, unbound_by, created_by) "
-                        + "VALUES (?, ?, ?, 'bypass', CURRENT_TIMESTAMP, 'W9 approver', 'W9 approver')",
-                units.getFirst().getId(), bindingId, correction.getId()))
-                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_trace_unit_unbind WHERE binding_id=?",
+            Integer.class, bindingId)).isZero();
 
         TraceUnitBindForm lateBind = new TraceUnitBindForm();
         lateBind.setUnitCode(units.get(1).getUnitCode());
@@ -359,17 +413,8 @@ class ScmTraceUnitConcurrencyIT extends ScmW6PgITBase {
                 .satisfies(error -> assertThat(((ScmBusinessException) error).getErrorCode().getCode())
                         .isEqualTo(41526));
 
-        assertThatThrownBy(() -> jdbc.update(
-                "INSERT INTO xsy_trace_unit_binding "
-                        + "(unit_id, lot_id, sorting_task_id, sorting_task_item_id, sales_order_id, "
-                        + "sales_order_item_id, customer_id, customer_name_snapshot, order_no_snapshot, "
-                        + "bound_at, bound_by, created_by) "
-                        + "SELECT ?, ?, i.task_id, i.id, i.sales_order_id, i.sales_order_item_id, "
-                        + "i.customer_id, i.customer_name_snapshot, i.order_no_snapshot, "
-                        + "CURRENT_TIMESTAMP, 'W9 bypass', 'W9 bypass' "
-                        + "FROM xsy_sorting_task_item i WHERE i.id = ?",
-                units.get(1).getId(), lotId, itemId))
-                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_trace_unit_binding WHERE unit_id=?",
+            Integer.class, units.get(1).getId())).isZero();
     }
 
     @Test

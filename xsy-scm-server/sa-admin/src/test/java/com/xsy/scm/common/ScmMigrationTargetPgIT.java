@@ -2,16 +2,11 @@ package com.xsy.scm.common;
 
 import net.lab1024.sa.admin.AdminApplication;
 import net.lab1024.sa.admin.test.PgITPaths;
-import org.flywaydb.core.api.MigrationVersion;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.io.IOException;
-import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,35 +15,22 @@ import static org.assertj.core.api.Assertions.assertThat;
         "file.storage.local.upload-path=" + PgITPaths.DEFAULT_UPLOAD_PATH,
         "file.storage.local.url-prefix=http://127.0.0.1:18082",
         "logging.level.root=WARN"})
-class ScmMigrationTargetPgIT {
+class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
 
     @Autowired
     private JdbcTemplate jdbc;
 
     /**
-     * 目标迁移版本：默认取 classpath 上最新的 {@code V*.sql}，不再写死数字。
+     * 冻结模块基线的目标版本；当前V1001结构另由ScmBackendRulesPgIT验证。
      *
-     * <p>写死时每加一个迁移都要回来改一次测试；忘了改就是「库已经迁到新版、测试还在断言旧版」，
-     * 这类红与业务无关，却会让人以为迁移没跑。要验证旧版本兼容时用
-     * {@code -Dxsy.migration.expected-version=NNN} 显式指定。
+     * <p>这些断言验证已冻结模块的历史结构，不作为当前业务库仍存在触发器和CHECK的证明。
      */
     private static String targetVersion() {
         String override = System.getProperty("xsy.migration.expected-version");
         if (override != null && !override.isBlank()) {
             return override.trim();
         }
-        try {
-            Resource[] resources = new PathMatchingResourcePatternResolver()
-                    .getResources("classpath:db/migration/modules/V*.sql");
-            return Arrays.stream(resources)
-                    .map(Resource::getFilename)
-                    .filter(name -> name != null && name.matches("V\\d+(?:\\.\\d+)*__.*"))
-                    .map(name -> name.substring(1, name.indexOf("__")))
-                    .max((left, right) -> MigrationVersion.fromVersion(left).compareTo(MigrationVersion.fromVersion(right)))
-                    .orElseThrow(() -> new IllegalStateException("classpath:db/migration/modules 下没有 V*.sql"));
-        } catch (IOException exception) {
-            throw new IllegalStateException("读取迁移脚本失败", exception);
-        }
+        return "1000.24";
     }
 
     @Test

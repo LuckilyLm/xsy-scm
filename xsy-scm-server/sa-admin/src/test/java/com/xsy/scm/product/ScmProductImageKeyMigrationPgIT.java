@@ -5,7 +5,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.xsy.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.ScmBaselineMigrationPgITBase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 历史行的原 key 是搬运前的事实，改写它等于改审计。
  */
 @DisplayName("FA-3 商品图 key 搬运（PG IT）")
-class ScmProductImageKeyMigrationPgIT extends ScmW6PgITBase {
+class ScmProductImageKeyMigrationPgIT extends ScmBaselineMigrationPgITBase {
 
     private static final String V58 = "V58__scm_product_image_public_file_key.sql";
 

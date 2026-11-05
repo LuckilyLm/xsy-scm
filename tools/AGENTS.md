@@ -1,5 +1,7 @@
 # 本地工程工具
 
+- cutover_schema_baseline识别经过校验的V1001增量历史，只从冻结参照剔除明确的675CHECK、34触发器和31专用函数指纹；不能忽略其他结构差异或覆盖冻结参照。
+
 - 沿用根目录验证授权与临时文件约定。工具默认入口与职责见README.md；静态检查不能冒充数据库或应用运行验收。
 - migration_checksum_guard保留已冻结V键与校验和；B基线使用独立前缀键，同号B/V不是冲突，同类重复版本必须拒绝。
 - migration_checksum_guard只扫描当前模块目录，按Flyway数值规则规范化版本（前导0与末尾0不能绕过重复检查）。旧V校验元数据在legacy_migration_manifest，不再要求退役SQL仍留在资源中。

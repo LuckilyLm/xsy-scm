@@ -1,6 +1,6 @@
 package com.xsy.scm.finance.dao;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xsy.scm.common.dao.AppendOnlyMapper;
 import com.xsy.scm.finance.domain.entity.FinancePayableItemEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -11,7 +11,7 @@ import java.util.List;
  * 应付明细读写，只能追加，规则同 {@link FinanceReceivableDao}。
  */
 @Mapper
-public interface FinancePayableItemDao extends BaseMapper<FinancePayableItemEntity> {
+public interface FinancePayableItemDao extends AppendOnlyMapper<FinancePayableItemEntity> {
 
     /**
      * 一条有效收货明细只能生成一条应付明细，数据库来源唯一索引负责防重。重复写入需要区分合法重放与不一致业务记录。
