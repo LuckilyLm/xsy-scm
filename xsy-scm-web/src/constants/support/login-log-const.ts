@@ -3,9 +3,9 @@
  *
  */
 
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 
-export const LOGIN_RESULT_ENUM: SmartEnum<number> = {
+export const LOGIN_RESULT_ENUM: XsyEnum<number> = {
   LOGIN_SUCCESS: {
     value: 0,
     desc: '登录成功',

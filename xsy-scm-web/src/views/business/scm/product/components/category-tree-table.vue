@@ -16,7 +16,7 @@
       <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
         {{ record.status === 'ENABLED' ? '启用' : '停用' }}
       </a-tag>
-      <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
+      <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="xsy-table-operate scm-table-actions">
         <a-button
           v-if="record.level < 3"
           v-privilege="'scm:product:category:add'"

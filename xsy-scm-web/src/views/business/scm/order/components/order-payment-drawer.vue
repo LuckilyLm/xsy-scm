@@ -71,7 +71,7 @@
         </template>
       </template>
     </a-table>
-    <div v-if="queried" class="smart-query-table-page">
+    <div v-if="queried" class="xsy-query-table-page">
       <a-pagination
         show-quick-jumper
         show-less-items

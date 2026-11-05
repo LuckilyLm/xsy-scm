@@ -63,14 +63,14 @@
 import {nextTick, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import _ from 'lodash';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
 import {helpDocApi} from '/@/api/support/help-doc-api';
 import Wangeditor from '/@/components/framework/wangeditor/index.vue';
 import Upload from '/@/components/support/file-upload/index.vue';
 import HelpDocCatalogTreeSelect from './help-doc-catalog-tree-select.vue';
 import MenuTreeSelect from '/@/components/system/menu-tree-select/index.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const emits = defineEmits(['reloadList']);
 
@@ -133,7 +133,7 @@ const formRules = {
 // 查询详情
 async function getDetail(helpDocId) {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     const result = await helpDocApi.getDetail(helpDocId);
     const attachment = result.data.attachment;
     if (!_.isEmpty(attachment)) {
@@ -149,9 +149,9 @@ async function getDetail(helpDocId) {
       relateHomeFlag.value = false;
     }
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 
@@ -172,7 +172,7 @@ const menuTreeSelect = ref();
 
 async function save() {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     let param = _.cloneDeep(formData);
     // 首页显示的话，为0
     if (relateHomeFlag.value) {
@@ -196,9 +196,9 @@ async function save() {
     emits('reloadList');
     onClose();
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

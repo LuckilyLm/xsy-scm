@@ -29,7 +29,7 @@
       </a-form-item>
 
       <a-form-item label="类型" name="type">
-        <SmartEnumSelect width="100%" v-model:value="form.type" placeholder="请选择类型" enum-name="ENTERPRISE_TYPE_ENUM" />
+        <XsyEnumSelect width="100%" v-model:value="form.type" placeholder="请选择类型" enum-name="ENTERPRISE_TYPE_ENUM" />
       </a-form-item>
 
       <a-form-item label="联系人" name="contact">
@@ -72,11 +72,11 @@ import _ from 'lodash';
 import {nextTick, reactive, ref} from 'vue';
 import {enterpriseApi} from '/@/api/business/oa/enterprise-api';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import Upload from '/@/components/support/file-upload/index.vue';
 import {regular} from '/@/constants/regular-const';
-import {smartSentry} from '/@/lib/smart-sentry';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 
 defineExpose({
   showModal,
@@ -141,9 +141,9 @@ async function detail(enterpriseId) {
       ];
     });
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 
@@ -186,7 +186,7 @@ function onSubmit() {
   formRef.value
     .validate()
     .then(async () => {
-      SmartLoading.show();
+      XsyLoading.show();
       try {
         if (form.enterpriseId) {
           await enterpriseApi.update(form);
@@ -197,9 +197,9 @@ function onSubmit() {
         emit('refresh');
         onClose();
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     })
     .catch((error) => {

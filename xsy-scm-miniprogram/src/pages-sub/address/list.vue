@@ -37,7 +37,7 @@ import {useMallTheme} from '@/composables/use-mall-theme';
 
 import {onLoad, onShow} from '@dcloudio/uni-app';
 import {mallAddressApi} from '@/api/mall/address-api';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {COLOR_TEXT_PLACEHOLDER} from '@/constants/theme-color-const';
 import {CHECKOUT_ADDRESS} from '@/constants/local-storage-key-const';
 
@@ -71,7 +71,7 @@ async function load() {
     const response = await mallAddressApi.getList();
     list.value = response.data || [];
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
     loading.value = false;
   }
@@ -89,7 +89,7 @@ async function setDefault(item) {
     const response = await mallAddressApi.setDefault(item.addressId);
     list.value = response.data || [];
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     uni.showToast({title: error?.message || '设置失败', icon: 'none'});
   }
 }
@@ -104,7 +104,7 @@ function remove(item) {
         const response = await mallAddressApi.remove(item.addressId);
         list.value = response.data || [];
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
         uni.showToast({title: error?.message || '删除失败', icon: 'none'});
       }
     },

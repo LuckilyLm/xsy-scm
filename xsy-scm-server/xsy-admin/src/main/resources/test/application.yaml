@@ -1,0 +1,29 @@
+#############################################################################################################
+#                                                                                                           #
+# 为了减少重复配置，本配置文件为此xsy-admin的独有配置，更多配置请查看 xsy-base 项目中的 xsy-base.yaml 通用配置文件。      #
+# 其中此文件中配置可以覆盖 xsy-base.yaml 中的通用配置，具体实现类请看类：YamlProcessor.java                          #
+#                                                                                                           #
+#############################################################################################################
+
+# 项目配置: 名称、日志目录
+project:
+  name: xsy-scm-v2-test
+  log-directory: ${XSY_V2_LOG_DIRECTORY:../.runtime/logs/test}
+
+# 项目端口和url根路径
+server:
+  port: 18082
+  servlet:
+    context-path: /
+
+# 环境
+spring:
+  profiles:
+    active: '@profiles.active@'
+
+# 盘点表导入凭证的签名密钥：自动化测试沿用代码仓库内的开发默认值，pre/prod 必须由环境变量注入
+scm:
+  inventory:
+    stocktake:
+      snapshot:
+        secret: xsy-scm-stocktake-snapshot-dev-secret-change-in-production

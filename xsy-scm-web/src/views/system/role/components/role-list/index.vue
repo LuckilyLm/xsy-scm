@@ -29,9 +29,9 @@ import {message, Modal} from 'ant-design-vue';
 import _ from 'lodash';
 import {computed, onMounted, ref} from 'vue';
 import {roleApi} from '/@/api/system/role-api';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import RoleFormModal from '../role-form-modal/index.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 // ----------------------- 角色列表显示 ---------------------
 const roleList = ref([]);
@@ -73,15 +73,15 @@ function deleteRole(roleId) {
     okText: '确定',
     okType: 'danger',
     async onOk() {
-      SmartLoading.show();
+      XsyLoading.show();
       try {
         await roleApi.deleteRole(roleId);
         message.info('删除成功');
         queryAllRole();
       } catch (e) {
-        smartSentry.captureError(e);
+        xsySentry.captureError(e);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     },
     cancelText: '取消',

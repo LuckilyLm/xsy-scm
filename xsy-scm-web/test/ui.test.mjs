@@ -6,10 +6,11 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync, statSync, readdirSync} from 'node:fs';
+import {readSourceFileSync as readFileSync} from './helpers/source-reader.mjs';
+import {statSync, readdirSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {mergeColumn} from '../src/components/support/table-operator/smart-table-column-merge.ts';
+import {mergeColumn} from '../src/components/support/table-operator/xsy-table-column-merge.ts';
 import {tableColumnsWidth} from '../src/components/support/table-operator/table-width.ts';
 import {splitDrivingBatches, planRoadRoute} from '../src/components/business/scm/map/amap-driving-provider.ts';
 import {errorText} from '../src/utils/error-text.ts';
@@ -451,7 +452,7 @@ import ts from 'typescript';
         const selector = match[1];
         const body = match[2];
         // 只关心操作容器本身，不关心 .scm-tags 之类同样用 nowrap+hidden 的正当场景
-        if (!/scm-table-actions|smart-table-operate/.test(selector)) continue;
+        if (!/scm-table-actions|xsy-table-operate/.test(selector)) continue;
         if (/overflow:\s*hidden/.test(body) && /white-space:\s*nowrap/.test(body)) {
           offenders.push(`${path.relative(srcRoot, file).replace(/\\/g, '/')} → ${selector.trim()}`);
         }
@@ -701,8 +702,8 @@ import ts from 'typescript';
   const purchase = read('../src/views/business/scm/report/report-purchase-list.vue');
   const product = read('../src/views/business/scm/product/product-list.vue');
 
-  const reportController = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/controller/ScmReportController.java');
-  const productController = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/controller/ProductExcelController.java');
+  const reportController = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/report/controller/ScmReportController.java');
+  const productController = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/product/controller/ProductExcelController.java');
 
   test('导出只查询结果原权限查询，采购成本列仍受额外成本授权', () => {
     assert.match(reportController, /salesReportService\.orderList\(form\)/);
@@ -731,7 +732,7 @@ import ts from 'typescript';
   }
 
   const FILTER_STYLE = source('../src/theme/scm/filter.less');
-  const SMART_ADMIN_STYLE = source('../src/theme/smart-admin.less');
+  const XSY_STYLE = source('../src/theme/xsy-admin.less');
   const PAGES = [
     source('../src/views/business/scm/finance/finance-payable-list.vue'),
     source('../src/views/business/scm/purchase/purchase-demand-list.vue'),
@@ -741,10 +742,10 @@ import ts from 'typescript';
     source('../src/views/business/scm/inventory/inventory-trace-correction-list.vue'),
   ];
 
-  test('SCM 筛选区统一使用 smart-query-form', () => {
+  test('SCM 筛选区统一使用 xsy-query-form', () => {
     for (const page of PAGES) {
-      assert.match(page, /class="smart-query-form"/, '筛选区未使用 smart-query-form');
-      assert.match(page, /class="smart-query-form-row"/, '筛选区未使用 smart-query-form-row');
+      assert.match(page, /class="xsy-query-form"/, '筛选区未使用 xsy-query-form');
+      assert.match(page, /class="xsy-query-form-row"/, '筛选区未使用 xsy-query-form-row');
       assert.doesNotMatch(page, /scm-filter-(?:bar|fields|actions|range)/, '仍在使用已停用的 scm-filter-* 标记');
       assert.doesNotMatch(page, /<a-button-group>/, '查询按钮应使用 a-space');
       assert.match(page, /查询/);
@@ -753,19 +754,19 @@ import ts from 'typescript';
   });
 
   test('SCM toolbars keep their flex gap rules', () => {
-    assert.match(FILTER_STYLE, /\.scm-table-toolbar\.smart-table-btn-block\s*\{[\s\S]*?flex-wrap:\s*wrap/);
+    assert.match(FILTER_STYLE, /\.scm-table-toolbar\.xsy-table-btn-block\s*\{[\s\S]*?flex-wrap:\s*wrap/);
     assert.match(
       FILTER_STYLE,
-      /\.smart-table-setting-block\s*\{[\s\S]*?display:\s*flex[\s\S]*?gap:\s*12px[\s\S]*?float:\s*none[\s\S]*?margin-left:\s*auto/
+      /\.xsy-table-setting-block\s*\{[\s\S]*?display:\s*flex[\s\S]*?gap:\s*12px[\s\S]*?float:\s*none[\s\S]*?margin-left:\s*auto/
     );
-    assert.match(FILTER_STYLE, /\.smart-table-operate-block[\s\S]*?gap:\s*8px[\s\S]*?margin-right:\s*0/);
-    assert.doesNotMatch(SMART_ADMIN_STYLE, /scm-table-toolbar/);
-    assert.match(SMART_ADMIN_STYLE, /\.smart-query-form\.ant-form-inline/);
+    assert.match(FILTER_STYLE, /\.xsy-table-operate-block[\s\S]*?gap:\s*8px[\s\S]*?margin-right:\s*0/);
+    assert.doesNotMatch(XSY_STYLE, /scm-table-toolbar/);
+    assert.match(XSY_STYLE, /\.xsy-query-form\.ant-form-inline/);
   });
 
   test('迁移后的页面保留表格工具栏', () => {
     for (const page of PAGES) {
-      assert.match(page, /class="smart-table-btn-block scm-table-toolbar"/);
+      assert.match(page, /class="xsy-table-btn-block scm-table-toolbar"/);
     }
   });
 
@@ -793,13 +794,13 @@ import ts from 'typescript';
       }
       // 导出按钮所在的工具栏必须走 flex gap，间距不再靠按钮自身外边距硬凑。
       if (page.includes('scm-export-btn')) {
-        assert.match(page, /class="smart-table-btn-block scm-table-toolbar"/, '含导出按钮的工具栏未使用 scm-table-toolbar');
+        assert.match(page, /class="xsy-table-btn-block scm-table-toolbar"/, '含导出按钮的工具栏未使用 scm-table-toolbar');
       }
     }
     assert.ok(exportButtons >= 25, `表格导出按钮数量异常：${exportButtons}`);
 
     assert.doesNotMatch(ACTION_STYLE, /scm-export-btn/, '导出按钮不再单独覆盖组件库外观和交互状态');
-    assert.match(FILTER_STYLE, /\.smart-table-setting-block\s*\{[\s\S]*?> \.ant-btn\s*\{[\s\S]*?margin-left:\s*0/);
+    assert.match(FILTER_STYLE, /\.xsy-table-setting-block\s*\{[\s\S]*?> \.ant-btn\s*\{[\s\S]*?margin-left:\s*0/);
     assert.doesNotMatch(FILTER_STYLE, /scm-export-btn[\s\S]{0,80}margin-right:\s*10px/, '导出按钮不应再单独设置右外边距');
   });
 }
@@ -814,8 +815,8 @@ import ts from 'typescript';
   }
 
   const THRESHOLD = code('../src/views/business/scm/inventory/inventory-warning-threshold-list.vue');
-  const COLUMN_MERGE = code('../src/components/support/table-operator/smart-table-column-merge.ts');
-  const COLUMN_MODAL = code('../src/components/support/table-operator/smart-table-column-modal.vue');
+  const COLUMN_MERGE = code('../src/components/support/table-operator/xsy-table-column-merge.ts');
+  const COLUMN_MODAL = code('../src/components/support/table-operator/xsy-table-column-modal.vue');
   const VISIBILITY = code('../src/views/business/scm/customer/customer-sku-visibility-list.vue');
   const PRODUCT_CONST = code('../src/constants/business/scm/product-const.ts');
   const PRODUCT_LIST = code('../src/views/business/scm/product/product-list.vue');
@@ -1433,7 +1434,7 @@ import ts from 'typescript';
    * 页面照常渲染、照常首屏查询，只有点按钮没反应，单测里 `search()` 的实现再怎么对也没用。
    *
    * 本门禁只钉两件事：
-   * 1. 业务页面不得再用 `html-type="submit"`（查询按钮沿用 SmartAdmin 原生 `@click` 范式）；
+   * 1. 业务页面不得再用 `html-type="submit"`（查询按钮沿用 系统通用 `@click` 范式）；
    * 2. 任何带 `@finish` 的 `a-form` 必须同时带 `:model`，否则 finish 分支永不触发。
    */
 
@@ -1935,7 +1936,7 @@ import ts from 'typescript';
     '../src/layout/components/page-tag/components/antd-tab.vue',
   ];
   const LAYOUTS = ['../src/layout/side-layout.vue', '../src/layout/side-expand-layout.vue', '../src/layout/top-expand-layout.vue'];
-  const V110 = '../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V110__scm_reorder_root_navigation.sql';
+  const V110 = '../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V110__scm_reorder_root_navigation.sql';
 
   const appConfig = code(APP_CONFIG);
   const setting = code(SETTING);
@@ -2007,17 +2008,17 @@ import ts from 'typescript';
   test('传统侧栏通过空 expandIcon 隐藏各级箭头，保留内联展开', () => {
     const sideExpandMenu = code('../src/layout/components/side-expand-menu/recursion-menu.vue');
     assert.match(recursionMenu, /<template #expandIcon\s*\/>/, '使用空插槽关闭箭头，不能回退到组件库默认箭头');
-    assert.doesNotMatch(recursionMenu, /CaretDownFilled|smart-menu-caret|rotate\(/, '移除不再使用的三角图标与旋转样式');
+    assert.doesNotMatch(recursionMenu, /CaretDownFilled|xsy-menu-caret|rotate\(/, '移除不再使用的三角图标与旋转样式');
     assert.match(recursionMenu, /padding-inline-end:\s*12px/, '释放箭头空间后右侧只保留 12px 留白');
     assert.match(recursionMenu, /margin-inline-start:\s*10px/, '图标和文字保留 10px 间距');
     assert.match(recursionMenu, /--side-menu-motion:\s*0\.22s/, '子菜单继续使用 220ms 展开动画');
     assert.match(recursionMenu, /cubic-bezier\(0\.22,\s*1,\s*0\.36,\s*1\)/, '保留子菜单平缓收尾的缓动');
     assert.match(sideExpandMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/, '展开式侧栏仍隐藏自带折角');
     assert.match(recursionMenu, /mode="inline"/, '传统侧栏必须保留内联子菜单');
-    assert.match(recursionMenu, /class="smart-menu smart-menu--side"/, '传统侧栏保留独立的外观标识');
-    assert.match(code('../src/theme/scm/shell.less'), /\.ant-menu-light:not\(\.smart-menu--side\)/, '顶部导航保持原样');
+    assert.match(recursionMenu, /class="xsy-menu xsy-menu--side"/, '传统侧栏保留独立的外观标识');
+    assert.match(code('../src/theme/scm/shell.less'), /\.ant-menu-light:not\(\.xsy-menu--side\)/, '顶部导航保持原样');
     assert.match(sideExpandMenu, /mode="inline"/, '展开式侧栏必须保留内联子菜单');
-    assert.match(recursionMenu, /\.smart-menu:not\(\.ant-menu-dark\)/, '菜单图标配色仍须区分暗色菜单');
+    assert.match(recursionMenu, /\.xsy-menu:not\(\.ant-menu-dark\)/, '菜单图标配色仍须区分暗色菜单');
   });
 
   test('移除箭头不改变受控菜单的展开和选中状态', () => {
@@ -2074,7 +2075,7 @@ import ts from 'typescript';
       '选中态图标应用 --scm-primary'
     );
     // 暗色菜单必须排除：--scm-text 是深色，染上去图标会看不见
-    assert.match(recursionMenu, /\.smart-menu:not\(\.ant-menu-dark\)/, '配色规则必须排除 .ant-menu-dark');
+    assert.match(recursionMenu, /\.xsy-menu:not\(\.ant-menu-dark\)/, '配色规则必须排除 .ant-menu-dark');
     // 不写死色值：主题色可切换
     const styleBlock = recursionMenu.slice(recursionMenu.indexOf('<style'));
     assert.doesNotMatch(styleBlock, /#333|#00b96b|#515a6e/, '菜单样式里不应出现写死的主题色');
@@ -2094,13 +2095,13 @@ import ts from 'typescript';
   test('all page-tag styles keep labels ellipsized, scrollable and closable by keyboard', () => {
     for (const path of PAGE_TAGS) {
       const pageTag = code(path);
-      assert.match(pageTag, /class="smart-page-tag-title"/);
+      assert.match(pageTag, /class="xsy-page-tag-title"/);
       assert.match(pageTag, /min-width:\s*96px/);
       assert.match(pageTag, /max-width:\s*220px/);
       assert.match(pageTag, /text-overflow:\s*ellipsis/);
       assert.match(pageTag, /flex-wrap:\s*nowrap/);
       assert.match(pageTag, /:aria-label="`关闭\$\{item\.menuTitle\}`"/);
-      assert.match(pageTag, /<button[\s\S]{0,180}class="smart-page-tag-close"/);
+      assert.match(pageTag, /<button[\s\S]{0,180}class="xsy-page-tag-close"/);
       assert.match(pageTag, /:deep\(\.ant-tabs-tab-active\)[\s\S]{0,120}color:\s*@color-primary/);
     }
   });

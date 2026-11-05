@@ -1,0 +1,73 @@
+package com.xsy.scm.dashboard.controller;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.dashboard.domain.vo.ScmDashboardCardVO;
+import com.xsy.scm.dashboard.domain.vo.ScmDashboardInventoryHealthVO;
+import com.xsy.scm.dashboard.domain.vo.ScmDashboardTrendVO;
+import com.xsy.scm.dashboard.permission.DashboardPermission;
+import com.xsy.scm.dashboard.service.ScmDashboardService;
+import com.xsy.scm.metrics.domain.RankItem;
+import com.xsy.scm.base.common.domain.ResponseDTO;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+/**
+ * 首页接口仅返回当前用户有权查看的指标与待办，其他业务模块的统计不在控制器中重复计算。
+ */
+@RestController
+@RequestMapping("/scm/dashboard")
+@Tag(name = "SCM 供应链工作台")
+@RequiredArgsConstructor
+public class ScmDashboardController {
+
+    @Resource
+    private ScmDashboardService dashboardService;
+
+    /**
+     * KPI 卡片：只返回业务信息（key / 值 / 单位 / 跳转），中文文案与配色由前端决定。
+     */
+    @GetMapping("/overview")
+    @SaCheckPermission(DashboardPermission.QUERY)
+    public ResponseDTO<List<ScmDashboardCardVO>> overview() {
+        return ResponseDTO.ok(dashboardService.overview());
+    }
+
+    /**
+     * 趋势：{@code metric} 取 {@code sales / purchase / inventory}，{@code range} 取 {@code 7d / 30d}。
+     */
+    @GetMapping("/trend")
+    @SaCheckPermission(DashboardPermission.QUERY)
+    public ResponseDTO<ScmDashboardTrendVO> trend(@RequestParam("metric") String metric,
+        @RequestParam(value = "range", required = false, defaultValue = "7d") String range) {
+        return ResponseDTO.ok(dashboardService.trend(metric, range));
+    }
+
+    /**
+     * 排行：{@code dimension} 取 {@code customer / product}，{@code limit} 默认 5、上限为指标层已取回的条数。
+     */
+    @GetMapping("/ranking")
+    @SaCheckPermission(DashboardPermission.QUERY)
+    public ResponseDTO<List<RankItem>> ranking(@RequestParam("dimension") String dimension,
+        @RequestParam(value = "limit", required = false) Integer limit) {
+        return ResponseDTO.ok(dashboardService.ranking(dimension, limit));
+    }
+
+    /**
+     * 库存健康度五档，供首页的库存健康卡使用。
+     *
+     * <p>
+     * 与顶部「库存预警」卡片是两个指标：这里含缺货与未配置阈值，预警列表只收低于下限 / 高于上限。除入口权限外还要求库存预警权（服务层校验）。
+     */
+    @GetMapping("/inventory-health")
+    @SaCheckPermission(DashboardPermission.QUERY)
+    public ResponseDTO<ScmDashboardInventoryHealthVO> inventoryHealth() {
+        return ResponseDTO.ok(dashboardService.inventoryHealth());
+    }
+}

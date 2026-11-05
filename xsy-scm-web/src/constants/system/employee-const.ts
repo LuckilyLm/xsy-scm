@@ -3,9 +3,9 @@
  *
  */
 
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 
-export const GENDER_ENUM: SmartEnum<number> = {
+export const GENDER_ENUM: XsyEnum<number> = {
   UNKNOWN: {
     value: 0,
     desc: '未知',

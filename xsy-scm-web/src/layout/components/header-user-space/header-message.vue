@@ -53,7 +53,7 @@
 import {computed, ref} from 'vue';
 import {BellOutlined} from '@ant-design/icons-vue';
 import {useUserStore} from '/@/store/modules/system/user';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import {messageApi} from '/@/api/support/message-api';
 import dayjs from 'dayjs';
 import {theme} from 'ant-design-vue';
@@ -103,7 +103,7 @@ async function queryMessage() {
     // 若中途有新消息了 打开列表也能及时更新未读数量
     useUserStore().queryUnreadMessageCount();
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     loading.value = false;
   }
@@ -168,7 +168,7 @@ function timeago(dateStr) {
 </script>
 
 <style lang="less" scoped>
-@smart-page-tag-operate-width: 40px;
+@xsy-page-tag-operate-width: 40px;
 @color-primary: v-bind('token.colorPrimary');
 
 .message-icon-div {

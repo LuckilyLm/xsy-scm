@@ -1,6 +1,6 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
       <a-form-item label="外部账单日期">
         <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'外部账单开始日期'" />
         <span class="date-separator">至</span>
@@ -48,7 +48,7 @@
           v-aria-label="'外部账单状态'"
         />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" v-privilege="PERM.POSTING_QUERY" @click="onSearch">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -62,12 +62,12 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
+    <a-row class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" v-privilege="PERM.POSTING_ADD" @click="openCreate">新建外部账单</a-button>
         <span class="posting-hint">仅作记录，不计入应收应付，不参与账款抵扣</span>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_POSTING" :refresh="queryData" />
       </div>
@@ -126,7 +126,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

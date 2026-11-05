@@ -178,7 +178,7 @@ class Verification:
         self.run("install-baseline",
                  [sys.executable, str(ROOT / "tools/build_install_baseline.py"), "check"], ROOT)
         started = time.time()
-        self.run("backend", ["mvn", "-B", "-pl", "sa-admin", "-am", "test"], SERVER)
+        self.run("backend", ["mvn", "-B", "-pl", "xsy-admin", "-am", "test"], SERVER)
         suites = []
         for report in SERVER.glob("*/target/surefire-reports/TEST-*.xml"):
             if report.stat().st_mtime < started:

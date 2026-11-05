@@ -3,7 +3,7 @@
   *
 -->
 <template>
-  <div class="smart-detail-header">
+  <div class="xsy-detail-header">
     <a-page-header :title="detail.enterpriseName" :avatar="{src: logo}">
       <template #extra>
         <a-button @click="showUpdate" type="primary">编辑</a-button>
@@ -26,7 +26,7 @@
     </a-page-header>
   </div>
   <a-card
-    class="smart-margin-top10"
+    class="xsy-margin-top10"
     size="small"
     v-if="$privilege('oa:enterprise:queryEmployee') || $privilege('oa:bank:query') || $privilege('oa:invoice:query')"
   >
@@ -57,11 +57,11 @@ import EmployeeList from './components/enterprise-employee-list.vue';
 import InvoiceList from './components/enterprise-invoice-list.vue';
 import EnterpriseOperate from './components/enterprise-operate-modal.vue';
 import {enterpriseApi} from '/@/api/business/oa/enterprise-api';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import DataTracer from '/@/components/support/data-tracer/index.vue';
 import FilePreview from '/@/components/support/file-preview/index.vue';
 import {DATA_TRACER_TYPE_ENUM} from '/@/constants/support/data-tracer-const';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const route = useRoute();
 let enterpriseId = ref();
@@ -87,9 +87,9 @@ async function getDetail() {
     let result = await enterpriseApi.detail(enterpriseId.value);
     detail.value = result.data;
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

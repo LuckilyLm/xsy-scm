@@ -102,7 +102,7 @@ import {useMallTheme} from '@/composables/use-mall-theme';
 import {onLoad} from '@dcloudio/uni-app';
 import {mallAddressApi} from '@/api/mall/address-api';
 import {mallMapApi} from '@/api/mall/map-api';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {useKeyboardHeight} from '@/composables/use-keyboard-height';
 import {getCurrentLocation, requestLocationPermission} from '@/composables/use-location-permission';
 import {guideToSetting} from '@/composables/use-permission';
@@ -161,7 +161,7 @@ onLoad(async (options) => {
       mapLatitude.value = Number(form.latitude);
     }
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   }
 });
 
@@ -181,7 +181,7 @@ async function searchPlaces() {
     places.value = response.data || [];
     if (!places.value.length) uni.showToast({title: '未找到地点，请换个关键词', icon: 'none'});
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     uni.showToast({title: error?.message || '地点搜索失败', icon: 'none'});
   } finally {
     searching.value = false;
@@ -201,7 +201,7 @@ async function selectCoordinates(longitude, latitude) {
     regionCodes.value = [place.provinceCode, place.cityCode, place.districtCode];
     places.value = [];
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     uni.showToast({title: error?.message || '无法确定位置，请重新选择地图位置', icon: 'none'});
   }
 }
@@ -315,7 +315,7 @@ async function save() {
     uni.showToast({title: '已保存', icon: 'none'});
     setTimeout(() => uni.navigateBack(), 400);
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
     uni.showToast({title: err?.message || '保存失败', icon: 'none'});
   } finally {
     saving.value = false;

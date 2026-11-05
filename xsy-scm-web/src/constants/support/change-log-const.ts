@@ -7,9 +7,9 @@
  * 更新类型:[1:特大版本功能更新;2:功能更新;3:bug修复]
  */
 
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 
-export const CHANGE_LOG_TYPE_ENUM: SmartEnum<number> = {
+export const CHANGE_LOG_TYPE_ENUM: XsyEnum<number> = {
   MAJOR_UPDATE: {
     value: 1,
     desc: '重大更新',

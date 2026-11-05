@@ -2,7 +2,7 @@
   <div class="report-header">
     <h2>订单异常工作台</h2>
   </div>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="search">
     <a-form-item label="发生日期" required>
       <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD" />
     </a-form-item>
@@ -72,7 +72,7 @@
         <template v-else>{{ text ?? '—' }}</template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         v-model:current="pageNum"

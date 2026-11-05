@@ -1,5 +1,5 @@
 /** 审计日志枚举值转中文；未知值保留原文。 */
-import type {SmartEnum} from '/@/types/smart-enum';
+import type {XsyEnum} from '/@/types/xsy-enum';
 import {
   SCM_ORDER_PRICE_SOURCE_ENUM,
   SCM_ORDER_REFUND_STATUS_ENUM,
@@ -17,7 +17,7 @@ import {
 import {SETTLE_MODE_ENUM} from '/@/constants/business/scm/customer-const';
 import {SCM_SORTING_PRODUCT_TYPE_ENUM} from '/@/constants/business/scm/sorting-const';
 
-type ValueEnum = SmartEnum<string>;
+type ValueEnum = XsyEnum<string>;
 
 /** 合并枚举，后写的覆盖先写的。 */
 function merge(...enums: ValueEnum[]): ValueEnum {

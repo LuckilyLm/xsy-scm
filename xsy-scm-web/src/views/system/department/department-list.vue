@@ -1,11 +1,11 @@
 <template>
-  <a-form class="smart-query-form">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="部门名称" class="smart-query-form-item">
+  <a-form class="xsy-query-form">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="部门名称" class="xsy-query-form-item">
         <a-input style="width: 300px" v-model:value="keywords" placeholder="请输入部门名称" />
       </a-form-item>
 
-      <a-form-item class="smart-query-form-item smart-margin-left10">
+      <a-form-item class="xsy-query-form-item xsy-margin-left10">
         <a-button-group>
           <a-button v-privilege="'support:department:query'" type="primary" @click="onSearch">
             <template #icon>
@@ -21,7 +21,7 @@
           </a-button>
         </a-button-group>
       </a-form-item>
-      <div class="smart-query-table-actions">
+      <div class="xsy-query-table-actions">
         <a-button v-privilege="'system:department:add'" type="primary" @click="addDepartment">
           <template #icon>
             <PlusOutlined />
@@ -46,7 +46,7 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="xsy-table-operate">
             <a-button @click="addDepartment(record)" v-privilege="'system:department:add'" type="link">添加下级 </a-button>
             <a-button @click="updateDepartment(record)" v-privilege="'system:department:update'" type="link">编辑 </a-button>
             <a-button
@@ -72,9 +72,9 @@ import {departmentApi} from '/@/api/system/department-api';
 import {Modal} from 'ant-design-vue';
 import {ExclamationCircleOutlined} from '@ant-design/icons-vue';
 import _ from 'lodash';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import DepartmentFormModal from './components/department-form-modal.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const DEPARTMENT_PARENT_ID = 0;
 
@@ -157,7 +157,7 @@ async function queryDepartmentTree() {
     defaultExpandedRowList.value = [];
     defaultExpandedRowList.push(topDepartmentId.value);
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }
@@ -244,14 +244,14 @@ function deleteDepartment(id) {
     okText: '删除',
     okType: 'danger',
     async onOk() {
-      SmartLoading.show();
+      XsyLoading.show();
       try {
         await departmentApi.deleteDepartment(id);
         await queryDepartmentTree();
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     },
     cancelText: '取消',

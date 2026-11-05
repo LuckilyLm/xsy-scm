@@ -7,7 +7,7 @@
  * - 能不能申请（订单状态、可退数量）由服务端权威判定，客户端只按 cancelable 与服务端报错呈现；
  * - 金额一律为服务端下发的四位小数字符串；申请页预估金额仅作展示，以审核为准。
  */
-import { getRequest, postRequest } from '@/lib/smart-request';
+import { getRequest, postRequest } from '@/lib/xsy-request';
 
 export const mallAfterSaleApi = {
   /**

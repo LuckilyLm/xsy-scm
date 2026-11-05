@@ -39,7 +39,7 @@
 
   import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
-  import { smartSentry } from '@/lib/smart-sentry';
+  import { xsySentry } from '@/lib/xsy-sentry';
   import { formatDateTime } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
   import { movementTypeText } from '@/utils/funds-display';
@@ -79,7 +79,7 @@
       stale.value = false;
     } catch (failure) {
       if (seq !== requestSeq) return;
-      smartSentry.captureError(failure);
+      xsySentry.captureError(failure);
       error.value = failure?.message || '钱包信息加载失败';
       stale.value = !!summary.value;
     } finally {

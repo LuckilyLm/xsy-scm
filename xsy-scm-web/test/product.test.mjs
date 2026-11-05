@@ -420,9 +420,9 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
 
   test('前后端图片白名单一致，公开图片目录强制按内容校验', () => {
     const backend = read(
-      '../../xsy-scm-server/sa-base/src/main/java/net/lab1024/sa/base/module/support/securityprotect/service/SecurityFileService.java'
+      '../../xsy-scm-server/xsy-base/src/main/java/com/xsy/scm/base/module/support/securityprotect/service/SecurityFileService.java'
     );
-    const fileService = read('../../xsy-scm-server/sa-base/src/main/java/net/lab1024/sa/base/module/support/file/service/FileService.java');
+    const fileService = read('../../xsy-scm-server/xsy-base/src/main/java/com/xsy/scm/base/module/support/file/service/FileService.java');
     for (const mime of IMAGE_MIME_TYPES) {
       assert.ok(backend.includes(mime), `后端白名单缺 ${mime}`);
     }
@@ -432,10 +432,10 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
   });
 
   test('图片绑定后由服务端按商品编码重命名并递增', () => {
-    const service = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImageCenterService.java');
+    const service = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/product/service/ProductImageCenterService.java');
     assert.match(service, /generatedFileNames\(/, '缺少按商品编码生成展示名的逻辑');
     assert.match(service, /base \+ "-" \+ sequence \+ extension/, '多张图片没有递增命名');
-    const sync = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/manager/ProductImageSyncManager.java');
+    const sync = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/product/manager/ProductImageSyncManager.java');
     assert.match(sync, /form\.getFileName\(\)[\s\S]{0,100}file\.getFileName\(\)/, '同步时仍只使用原始文件名');
   });
 }

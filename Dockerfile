@@ -6,8 +6,8 @@ FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /build
 
 COPY xsy-scm-server/pom.xml ./pom.xml
-COPY xsy-scm-server/sa-base/pom.xml ./sa-base/pom.xml
-COPY xsy-scm-server/sa-admin/pom.xml ./sa-admin/pom.xml
+COPY xsy-scm-server/xsy-base/pom.xml ./xsy-base/pom.xml
+COPY xsy-scm-server/xsy-admin/pom.xml ./xsy-admin/pom.xml
 
 COPY xsy-scm-server/ ./
 
@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl fontconfig
     && chown -R app:app /app
 
 WORKDIR /app
-COPY --from=builder --chown=app:app /build/sa-admin/target/*.jar /app/app.jar
+COPY --from=builder --chown=app:app /build/xsy-admin/target/*.jar /app/app.jar
 
 VOLUME ["/app/logs"]
 EXPOSE 1024

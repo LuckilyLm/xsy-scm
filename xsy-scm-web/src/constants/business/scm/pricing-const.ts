@@ -1,17 +1,17 @@
-import type {SmartEnum} from '/@/types/smart-enum';
+import type {XsyEnum} from '/@/types/xsy-enum';
 
-export const SCM_PRICE_SOURCE_ENUM: SmartEnum<string> = {
+export const SCM_PRICE_SOURCE_ENUM: XsyEnum<string> = {
   AGREEMENT: {value: 'AGREEMENT', desc: '客户协议价'},
   CUSTOMER_GROUP: {value: 'CUSTOMER_GROUP', desc: '客户分组价'},
   TIME_PRICE: {value: 'TIME_PRICE', desc: '时价'},
   MARKET: {value: 'MARKET', desc: '市场价'},
   LEGACY: {value: 'LEGACY', desc: '历史价格'},
 };
-export const SCM_PRICE_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_PRICE_STATUS_ENUM: XsyEnum<string> = {
   PRICED: {value: 'PRICED', desc: '已定价'},
   UNPRICED: {value: 'UNPRICED', desc: '未定价'},
 };
-export const UNPRICED_REASON_ENUM: SmartEnum<string> = {
+export const UNPRICED_REASON_ENUM: XsyEnum<string> = {
   NO_PRICE_SOURCE: {
     value: 'NO_PRICE_SOURCE',
     desc: '无可用价格来源',
@@ -20,7 +20,7 @@ export const UNPRICED_REASON_ENUM: SmartEnum<string> = {
   AGREEMENT_MARKET_PRICE_MISSING: {value: 'AGREEMENT_MARKET_PRICE_MISSING', desc: '商品缺少市场价'},
   AGREEMENT_RESULT_INVALID: {value: 'AGREEMENT_RESULT_INVALID', desc: '公式计算结果超出有效价格范围'},
 };
-export const UNAVAILABLE_REASON_ENUM: SmartEnum<string> = {
+export const UNAVAILABLE_REASON_ENUM: XsyEnum<string> = {
   SKU_NOT_FOUND: {value: 'SKU_NOT_FOUND', desc: '商品规格不存在'},
   SKU_OFF_SHELF: {value: 'SKU_OFF_SHELF', desc: '商品规格已下架'},
   SPU_OFF_SHELF: {value: 'SPU_OFF_SHELF', desc: '商品已下架'},

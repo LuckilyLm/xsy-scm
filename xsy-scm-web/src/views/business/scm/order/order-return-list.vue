@@ -1,13 +1,13 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="单号 / 客户" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="单号 / 客户" class="xsy-query-form-item">
         <a-input v-model:value="queryForm.keyword" placeholder="退货单号、原订单号或客户名称" @pressEnter="onSearch" allow-clear />
       </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_ORDER_RETURN_STATUS_ENUM" v-model:value="queryForm.status" width="160px" />
+      <a-form-item label="状态" class="xsy-query-form-item">
+        <XsyEnumSelect enum-name="SCM_ORDER_RETURN_STATUS_ENUM" v-model:value="queryForm.status" width="160px" />
       </a-form-item>
-      <a-form-item label="来源" class="smart-query-form-item">
+      <a-form-item label="来源" class="xsy-query-form-item">
         <a-select
           v-model:value="queryForm.sourceType"
           allow-clear
@@ -20,7 +20,7 @@
           ]"
         />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:order:return:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -64,7 +64,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 常驻详情和当前状态的推进动作；驳回、取消收进「更多」 -->
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:order:return:query'" @click="showDetail(record.returnId)">详情</a-button>
             <a-button
               type="link"
@@ -87,7 +87,7 @@
         </template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer
@@ -236,7 +236,7 @@ import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.v
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {orderReturnApi as api} from '/@/api/business/scm/order-return-api';
 import {SCM_ORDER_RETURN_STATUS_ENUM} from '/@/constants/business/scm/order-const';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';

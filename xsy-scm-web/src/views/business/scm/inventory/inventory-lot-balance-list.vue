@@ -1,7 +1,7 @@
 <!-- 批次库存：按仓库 + 商品规格 + 批次展开；页面只读，批次写入发生在收货和出库命令中。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
-    <a-row class="smart-query-form-row">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
+    <a-row class="xsy-query-form-row">
       <a-form-item label="仓库">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
       </a-form-item>
@@ -14,7 +14,7 @@
       <a-form-item label="商品名称">
         <a-input v-model:value="queryForm.productName" placeholder="商品名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-space>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:lot:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -30,9 +30,9 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block"></div>
-      <div class="smart-table-setting-block">
+    <a-row class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-operate-block"></div>
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_LOT_BALANCE" :refresh="queryData" />
       </div>
     </a-row>
@@ -67,7 +67,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

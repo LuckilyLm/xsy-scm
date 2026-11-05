@@ -1,6 +1,6 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
       <a-form-item label="账款抵扣日期">
         <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'账款抵扣开始日期'" />
         <span class="date-separator">至</span>
@@ -35,7 +35,7 @@
           style="width: 120px"
           v-aria-label="'记录类型'"
       /></a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" v-privilege="PERM.WRITE_OFF_QUERY" @click="onSearch">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -49,8 +49,8 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-setting-block">
+    <a-row class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-setting-block">
         <a-button v-privilege="PERM.WRITE_OFF_ADD" type="primary" @click="openAdd">登记抵扣</a-button>
         <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_WRITE_OFF" :refresh="queryData" />
@@ -133,7 +133,7 @@
         <template v-else-if="column.dataIndex === 'operator'">{{ record.operator || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 撤销抵扣是追加撤销记录，不是编辑，所以用危险样式并单独确认 -->
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button
               v-if="record.entryType === 'NORMAL' && !record.reversed && record.sourceType !== 'WAIVER'"
               type="link"
@@ -158,7 +158,7 @@
         </template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

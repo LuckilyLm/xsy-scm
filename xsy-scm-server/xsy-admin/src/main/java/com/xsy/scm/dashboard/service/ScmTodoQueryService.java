@@ -1,0 +1,120 @@
+package com.xsy.scm.dashboard.service;
+
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.dashboard.constant.ScmTodoCardEnum;
+import com.xsy.scm.dashboard.domain.vo.ScmTodoVO;
+import com.xsy.scm.delivery.constant.ScmDeliveryRouteStatusEnum;
+import com.xsy.scm.delivery.domain.form.DeliveryQueryForm;
+import com.xsy.scm.delivery.service.DeliveryRouteQueryService;
+import com.xsy.scm.inventory.constant.ScmInventoryLossGainStatusEnum;
+import com.xsy.scm.inventory.domain.form.InventoryLossGainQueryForm;
+import com.xsy.scm.inventory.domain.form.InventoryWarningQueryForm;
+import com.xsy.scm.inventory.service.InventoryLossGainQueryService;
+import com.xsy.scm.inventory.service.InventoryWarningQueryService;
+import com.xsy.scm.purchase.constant.ScmPutawayStatusEnum;
+import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
+import com.xsy.scm.purchase.constant.ScmReceiptStatusEnum;
+import com.xsy.scm.purchase.domain.form.PurchaseReceiptQueryForm;
+import com.xsy.scm.purchase.service.PurchaseQueryService;
+import com.xsy.scm.admin.module.system.login.manager.LoginManager;
+import com.xsy.scm.base.common.domain.PageResult;
+import com.xsy.scm.base.common.domain.RequestUser;
+import com.xsy.scm.base.common.domain.UserPermission;
+import com.xsy.scm.base.common.util.XsyRequestUtil;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 待办从现有业务表实时查询，不另建一份消息表。无权的待办卡片直接省略；有权但没有任务才显示零。
+ */
+@Service
+@RequiredArgsConstructor
+public class ScmTodoQueryService {
+
+    private final LoginManager loginManager;
+    private final InventoryWarningQueryService inventoryWarningQueryService;
+    private final PurchaseQueryService purchaseQueryService;
+    private final InventoryLossGainQueryService inventoryLossGainQueryService;
+    private final DeliveryRouteQueryService deliveryRouteQueryService;
+
+    /** 当前登录员工的待办卡片列表。 */
+    public List<ScmTodoVO> currentEmployeeTodos() {
+        RequestUser user = XsyRequestUtil.getRequestUser();
+        if (user == null || user.getUserId() == null) {
+            return List.of();
+        }
+        UserPermission permission = loginManager.getUserPermission(user.getUserId());
+        List<String> held = permission == null ? List.of() : permission.getPermissionList();
+        return todosFor(held);
+    }
+
+    /**
+     * 按给定权限集合计算卡片（与登录态解耦，便于负向夹具直接验证省略 / 零值）。
+     */
+    public List<ScmTodoVO> todosFor(List<String> heldPermissions) {
+        List<String> held = heldPermissions == null ? List.of() : heldPermissions;
+        List<ScmTodoVO> result = new ArrayList<>();
+        for (ScmTodoCardEnum card : ScmTodoCardEnum.values()) {
+            if (!card.visibleTo(held)) {
+                continue;
+            }
+            ScmTodoVO vo = new ScmTodoVO();
+            vo.setKey(card.getKey());
+            vo.setLabel(card.getLabel());
+            vo.setRoute(card.getRoute());
+            vo.setCount(countOf(card));
+            result.add(vo);
+        }
+        return result;
+    }
+
+    private long countOf(ScmTodoCardEnum card) {
+        return switch (card) {
+            // status 为空即预警列表的默认筛选：只含异常（LOW / HIGH），与列表页一致
+            case INVENTORY_WARNING -> total(inventoryWarningQueryService.queryWarningPage(newWarningForm()));
+            case RECEIPT_PUTAWAY -> total(purchaseQueryService.receiptQuery(putawayForm()));
+            // PENDING 即待审批列表筛选，approve / reject 权限由卡片可见性把关
+            case LOSS_GAIN_AUDIT -> total(inventoryLossGainQueryService.queryPage(pendingLossGainForm()));
+            case DELIVERY_ROUTE_PENDING -> total(deliveryRouteQueryService.query(pendingRouteForm()));
+        };
+    }
+
+    private static long total(PageResult<?> page) {
+        return page == null || page.getTotal() == null ? 0L : page.getTotal();
+    }
+
+    private static InventoryWarningQueryForm newWarningForm() {
+        InventoryWarningQueryForm form = new InventoryWarningQueryForm();
+        form.setPageNum(1L);
+        form.setPageSize(1L);
+        return form;
+    }
+
+    private static PurchaseReceiptQueryForm putawayForm() {
+        PurchaseReceiptQueryForm form = new PurchaseReceiptQueryForm();
+        form.setPageNum(1L);
+        form.setPageSize(1L);
+        form.setStatus(ScmReceiptStatusEnum.CONFIRMED.name());
+        form.setReceiptMode(ScmReceiptModeEnum.WAREHOUSE_CONFIRM.name());
+        form.setPutawayStatus(ScmPutawayStatusEnum.PENDING.name());
+        return form;
+    }
+
+    private static InventoryLossGainQueryForm pendingLossGainForm() {
+        InventoryLossGainQueryForm form = new InventoryLossGainQueryForm();
+        form.setPageNum(1L);
+        form.setPageSize(1L);
+        form.setStatus(ScmInventoryLossGainStatusEnum.PENDING.name());
+        return form;
+    }
+
+    private static DeliveryQueryForm pendingRouteForm() {
+        DeliveryQueryForm form = new DeliveryQueryForm();
+        form.setPageNum(1L);
+        form.setPageSize(1L);
+        form.setStatus(ScmDeliveryRouteStatusEnum.PENDING.name());
+        return form;
+    }
+}

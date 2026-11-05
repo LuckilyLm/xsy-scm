@@ -3,7 +3,7 @@
   <section aria-label="客户商品规格可见性">
     <!-- 客户卡片 -->
     <a-card v-if="!selected" size="small" :bordered="false">
-      <a-row class="smart-table-btn-block" justify="space-between" align="middle">
+      <a-row class="xsy-table-btn-block" justify="space-between" align="middle">
         <a-space>
           <a-input-search v-model:value="keyword" placeholder="搜索客户名称" allow-clear style="width: 240px" />
           <a-select v-model:value="policyFilter" allow-clear placeholder="全部策略" style="width: 150px">
@@ -13,7 +13,7 @@
         </a-space>
       </a-row>
 
-      <a-alert v-if="cardError" type="error" show-icon :message="cardError" class="smart-margin-bottom10">
+      <a-alert v-if="cardError" type="error" show-icon :message="cardError" class="xsy-margin-bottom10">
         <template #action>
           <a-button size="small" @click="loadCards">重新加载</a-button>
         </template>
@@ -45,7 +45,7 @@
 
     <!-- 某家客户的可见商品规格明细 -->
     <a-card v-else size="small" :bordered="false">
-      <a-row class="smart-table-btn-block" justify="space-between" align="middle">
+      <a-row class="xsy-table-btn-block" justify="space-between" align="middle">
         <a-button type="link" class="scm-detail-header__back" @click="backToCards">
           <ArrowLeftOutlined />
           返回客户列表
@@ -60,12 +60,12 @@
       <a-empty v-if="selected.visibilityPolicy === 'ALL_ENABLED'" description="该客户设置为「全部可售」，不限制具体商品规格" />
 
       <template v-else>
-        <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
-          <a-row class="smart-query-form-row">
-            <a-form-item label="商品规格" class="smart-query-form-item">
+        <a-form class="xsy-query-form" layout="inline" @submit.prevent="search">
+          <a-row class="xsy-query-form-row">
+            <a-form-item label="商品规格" class="xsy-query-form-item">
               <SkuSelect v-model:value="filters.skuId" width="300px" />
             </a-form-item>
-            <a-form-item class="smart-query-form-item">
+            <a-form-item class="xsy-query-form-item">
               <a-space>
                 <a-button type="primary" @click="search">查询</a-button>
                 <a-button @click="resetDetail">重置</a-button>
@@ -74,7 +74,7 @@
           </a-row>
         </a-form>
 
-        <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+        <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
           <template #action>
             <a-button size="small" @click="load">重新加载</a-button>
           </template>
@@ -104,7 +104,7 @@
           </template>
         </a-table>
 
-        <div class="smart-query-table-page">
+        <div class="xsy-query-table-page">
           <a-pagination
             show-quick-jumper
             show-less-items

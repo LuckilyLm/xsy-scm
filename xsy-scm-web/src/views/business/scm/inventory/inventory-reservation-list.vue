@@ -1,14 +1,14 @@
 <!-- 库存预留由销售订单确认产生，本页只查询和释放。释放后占用量归还可用量，重复释放会被拒绝。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="仓库" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="仓库" class="xsy-query-form-item">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px" />
       </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
+      <a-form-item label="状态" class="xsy-query-form-item">
         <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 140px" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:reservation:query'"> 查询 </a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -24,8 +24,8 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-setting-block">
+    <a-row class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_RESERVATION" :refresh="queryData" />
       </div>
     </a-row>
@@ -56,7 +56,7 @@
         <template v-else-if="column.dataIndex === 'occurredAt'">{{ datetime(record.occurredAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 只有生效中的预留可以释放 -->
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button
               v-if="record.status === 'ACTIVE'"
               type="link"
@@ -74,7 +74,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

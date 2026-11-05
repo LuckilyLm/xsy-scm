@@ -1,5 +1,5 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="freeze">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="freeze">
     <a-form-item label="供应商" required><SupplierSelect v-model:value="supplierId" width="200px" /></a-form-item>
     <a-form-item label="采购仓库"><WarehouseSelect v-model:value="warehouseId" width="190px" /></a-form-item>
     <a-form-item label="对账期间" required><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>

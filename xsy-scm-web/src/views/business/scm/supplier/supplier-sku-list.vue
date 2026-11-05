@@ -3,11 +3,11 @@
   <section aria-label="商品-供应商关系">
     <!-- 公司卡片 -->
     <a-card v-if="!selected" size="small" :bordered="false">
-      <a-row class="smart-table-btn-block" justify="space-between" align="middle">
+      <a-row class="xsy-table-btn-block" justify="space-between" align="middle">
         <a-input-search v-model:value="keyword" placeholder="搜索公司名称或编码" allow-clear style="width: 260px" />
       </a-row>
 
-      <a-alert v-if="cardError" type="error" show-icon :message="cardError" class="smart-margin-bottom10">
+      <a-alert v-if="cardError" type="error" show-icon :message="cardError" class="xsy-margin-bottom10">
         <template #action>
           <a-button size="small" @click="loadCards">重新加载</a-button>
         </template>
@@ -35,7 +35,7 @@
 
     <!-- 某家公司的商品明细 -->
     <a-card v-else size="small" :bordered="false">
-      <a-row class="smart-table-btn-block" justify="space-between" align="middle">
+      <a-row class="xsy-table-btn-block" justify="space-between" align="middle">
         <a-space size="middle">
           <a-button type="link" class="scm-detail-header__back" @click="backToCards">
             <ArrowLeftOutlined />
@@ -46,15 +46,15 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER_SKU" :refresh="load" />
       </a-row>
 
-      <a-form class="smart-query-form" layout="inline">
-        <a-row class="smart-query-form-row">
-          <a-form-item label="商品规格" class="smart-query-form-item">
+      <a-form class="xsy-query-form" layout="inline">
+        <a-row class="xsy-query-form-row">
+          <a-form-item label="商品规格" class="xsy-query-form-item">
             <SkuSelect v-model:value="filters.skuId" width="300px" />
           </a-form-item>
-          <a-form-item label="状态" class="smart-query-form-item">
-            <SmartEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_SKU_STATUS_ENUM" width="130px" />
+          <a-form-item label="状态" class="xsy-query-form-item">
+            <XsyEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_SKU_STATUS_ENUM" width="130px" />
           </a-form-item>
-          <a-form-item class="smart-query-form-item">
+          <a-form-item class="xsy-query-form-item">
             <a-space>
               <a-button type="primary" @click="search">查询</a-button>
               <a-button @click="resetDetail">重置</a-button>
@@ -64,7 +64,7 @@
         </a-row>
       </a-form>
 
-      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+      <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
         <template #action>
           <a-button size="small" @click="load">重新加载</a-button>
         </template>
@@ -92,7 +92,7 @@
           </a-tag>
         </template>
       </a-table>
-      <div class="smart-query-table-page">
+      <div class="xsy-query-table-page">
         <a-pagination
           show-quick-jumper
           show-less-items
@@ -150,7 +150,7 @@ import type {
 } from '/@/types/business/scm/supplier';
 import {SUPPLIER_SKU_STATUS_ENUM} from '/@/constants/business/scm/supplier-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {supplierError} from './supplier-errors';

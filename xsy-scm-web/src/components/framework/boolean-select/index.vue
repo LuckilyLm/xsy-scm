@@ -13,7 +13,7 @@
     :size="size"
     @change="handleChange"
   >
-    <a-select-option v-for="item in $smartEnumPlugin.getValueDescList('FLAG_NUMBER_ENUM')" :key="item.value" :value="item.value">
+    <a-select-option v-for="item in $xsyEnumPlugin.getValueDescList('FLAG_NUMBER_ENUM')" :key="item.value" :value="item.value">
       {{ item.desc }}
     </a-select-option>
   </a-select>

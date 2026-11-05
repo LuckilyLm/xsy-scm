@@ -1,4 +1,4 @@
-import {getRequest, postRequest} from '@/lib/smart-request';
+import {getRequest, postRequest} from '@/lib/xsy-request';
 
 export const mallAuthApi = {
   login: (form) => postRequest('/scm/mall/auth/login', form),

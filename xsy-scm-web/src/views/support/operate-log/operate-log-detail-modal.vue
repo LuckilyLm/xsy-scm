@@ -5,7 +5,7 @@
 <template>
   <a-modal :open="visible" title="请求详情" width="60%" :footer="null" @cancel="close">
     <div class="info-box">
-      <a-row class="smart-margin-top10">
+      <a-row class="xsy-margin-top10">
         <a-col :span="16">
           <a-row class="detail-info">
             <a-col :span="12"> 用户id：{{ detail.operateUserId }}</a-col>
@@ -61,8 +61,8 @@
 import {reactive, ref} from 'vue';
 import {JsonViewer} from 'vue3-json-viewer';
 import {operateLogApi} from '/@/api/support/operate-log-api';
-import {smartSentry} from '/@/lib/smart-sentry';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import uaparser from 'ua-parser-js';
 import {maskSensitive} from './operate-log-mask';
 
@@ -110,7 +110,7 @@ let detail = reactive({
 
 async function getDetail(operateLogId) {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     let res = await operateLogApi.detail(operateLogId);
     detail = Object.assign(detail, res.data);
     let ua = uaparser(res.data.userAgent);
@@ -118,9 +118,9 @@ async function getDetail(operateLogId) {
     detail.os = ua.os.name;
     detail.device = ua.device.vendor ? ua.device.vendor + ua.device.model : '';
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 </script>

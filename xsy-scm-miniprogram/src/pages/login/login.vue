@@ -93,7 +93,7 @@ import {mallAuthApi} from '@/api/mall';
 import {useUserStore} from '@/store/modules/system/user';
 import {useMallTheme} from '@/composables/use-mall-theme';
 import {useMallStorefront} from '@/composables/use-mall-storefront';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 
 const {themeStyle, theme} = useMallTheme();
 const {storeName} = useMallStorefront();
@@ -140,7 +140,7 @@ async function submit() {
     const response = await mallAuthApi.login({phone: form.phone, password: form.password});
     finishLogin(response.data);
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
     submitting.value = false;
     uni.hideLoading();
@@ -166,7 +166,7 @@ async function wechatLogin(event) {
     const response = await mallAuthApi.wechatPhoneLogin({code: detail.code});
     finishLogin(response.data);
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
     submitting.value = false;
     wechatSubmitting.value = false;

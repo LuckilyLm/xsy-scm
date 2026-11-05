@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import {onMounted, ref, watch} from 'vue';
 import {customerGroupApi} from '/@/api/business/scm/customer-api';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import type {CustomerGroupOption, ScmId} from '/@/types/business/scm/customer';
 
 const props = withDefaults(
@@ -46,7 +46,7 @@ async function query() {
     const resp = await customerGroupApi.options();
     groupList.value = resp.data ?? [];
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 

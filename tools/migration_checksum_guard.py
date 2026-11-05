@@ -20,7 +20,7 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION_DIR = ROOT / "xsy-scm-server/sa-admin/src/main/resources/db/migration/modules"
+MIGRATION_DIR = ROOT / "xsy-scm-server/xsy-admin/src/main/resources/db/migration/modules"
 SNAPSHOT_PATH = ROOT / "tools/migration_checksum_snapshot.json"
 ALGORITHM = "flyway-crc32-readline-v11"
 FILENAME_RE = re.compile(r"^(?P<prefix>[VB])(?P<version>[0-9][0-9.]*)__(?P<description>.+)\.sql$")

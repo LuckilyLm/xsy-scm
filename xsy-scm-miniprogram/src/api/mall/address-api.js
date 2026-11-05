@@ -4,7 +4,7 @@
  * 归属由服务端从登录身份派生，客户端提交的 customerId 一律被忽略。
  * 所有写操作返回刷新后的地址列表。
  */
-import { deleteRequest, getRequest, postRequest, putRequest } from '@/lib/smart-request';
+import { deleteRequest, getRequest, postRequest, putRequest } from '@/lib/xsy-request';
 
 export const mallAddressApi = {
   /** 地址列表（默认地址在前） */

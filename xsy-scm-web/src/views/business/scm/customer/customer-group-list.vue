@@ -1,16 +1,16 @@
 <!-- 客户分组：组内客户共用分组价；每个分组至少保留一个客户。 -->
 <template>
   <section aria-label="客户分组">
-    <div class="smart-query-layout">
-      <a-form class="smart-query-form" layout="inline">
-        <a-row class="smart-query-form-row">
-          <a-form-item label="关键字" class="smart-query-form-item">
+    <div class="xsy-query-layout">
+      <a-form class="xsy-query-form" layout="inline">
+        <a-row class="xsy-query-form-row">
+          <a-form-item label="关键字" class="xsy-query-form-item">
             <a-input v-model:value="query.keyword" allow-clear placeholder="分组编码 / 分组名称" style="width: 220px" />
           </a-form-item>
-          <a-form-item label="状态" class="smart-query-form-item">
+          <a-form-item label="状态" class="xsy-query-form-item">
             <a-select v-model:value="query.status" allow-clear placeholder="全部" style="width: 120px" :options="statusOptions" />
           </a-form-item>
-          <a-form-item class="smart-query-form-item">
+          <a-form-item class="xsy-query-form-item">
             <a-space :size="10">
               <a-button type="primary" v-privilege="'scm:customer:group:query'" @click="search">查询</a-button>
               <a-button @click="reset">重置</a-button>
@@ -18,14 +18,14 @@
           </a-form-item>
         </a-row>
       </a-form>
-      <a-row data-toolbar-layout="query" class="smart-table-btn-block" justify="space-between" align="middle">
+      <a-row data-toolbar-layout="query" class="xsy-table-btn-block" justify="space-between" align="middle">
         <a-button type="primary" v-privilege="'scm:customer:group:add'" @click="openForm()">新增分组</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER_GROUP" :refresh="load" />
       </a-row>
     </div>
 
     <a-card size="small" :bordered="false">
-      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+      <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
         <template #action>
           <a-button size="small" @click="load">重新加载</a-button>
         </template>
@@ -45,7 +45,7 @@
             <ScmStatusTag :tone="record.status === 'ENABLED' ? 'success' : 'neutral'" :label="statusText(record.status)" />
           </template>
           <template v-else-if="column.dataIndex === 'action'">
-            <div class="smart-table-operate scm-table-actions">
+            <div class="xsy-table-operate scm-table-actions">
               <a-button type="link" v-privilege="'scm:customer:group:update'" @click="openForm(record.groupId)">编辑</a-button>
               <a-button type="link" danger v-privilege="'scm:customer:group:delete'" @click="remove(record)">删除</a-button>
             </div>
@@ -53,7 +53,7 @@
           <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
         </template>
       </a-table>
-      <div class="smart-query-table-page">
+      <div class="xsy-query-table-page">
         <a-pagination
           show-quick-jumper
           show-less-items
@@ -77,7 +77,7 @@
       @ok="submit"
     >
       <a-spin :spinning="formLoading">
-        <a-alert v-if="formError" :message="formError" type="error" show-icon class="smart-margin-bottom10" />
+        <a-alert v-if="formError" :message="formError" type="error" show-icon class="xsy-margin-bottom10" />
         <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
           <a-form-item label="分组编码" name="groupCode">
             <a-input v-model:value="form.groupCode" :maxlength="32" placeholder="例如 G-YUJIN" />

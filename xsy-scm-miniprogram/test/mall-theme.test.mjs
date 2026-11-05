@@ -18,7 +18,7 @@ function createStore(fetchTheme) {
     defineStore,
     ...colors,
     mallHomeApi: {theme: fetchTheme},
-    smartSentry: {captureError() {}},
+    xsySentry: {captureError() {}},
     applyNativeTheme: (code) => native.push(code),
   });
   vm.runInContext(source, context);
@@ -184,7 +184,7 @@ test('success and incoming funds retain semantic colors', () => {
 test('anonymous theme failure is silent and cannot clear the customer session', async () => {
   const effects = [];
   let headers;
-  const source = read('../src/lib/smart-request.js')
+  const source = read('../src/lib/xsy-request.js')
     .replace(/^import[\s\S]*?;\r?\n/gm, '')
     .replace('import.meta.env.VITE_APP_API_URL', "'http://example.invalid'")
     .replace(/export (const|function|class) /g, '$1 ');

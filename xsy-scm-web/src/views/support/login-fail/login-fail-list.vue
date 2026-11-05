@@ -4,20 +4,20 @@
 -->
 <template>
   <!---------- 查询表单form begin ----------->
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="登录名" class="smart-query-form-item">
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="登录名" class="xsy-query-form-item">
           <a-input style="width: 300px" v-model:value="queryForm.loginName" placeholder="登录名" />
         </a-form-item>
-        <a-form-item label="快速筛选" class="smart-query-form-item">
+        <a-form-item label="快速筛选" class="xsy-query-form-item">
           <a-radio-group v-model:value="queryForm.lockFlag" @change="onSearch" button-style="solid">
             <a-radio-button :value="undefined">全部</a-radio-button>
             <a-radio-button :value="true">已锁定</a-radio-button>
             <a-radio-button :value="false">未锁定</a-radio-button>
           </a-radio-group>
         </a-form-item>
-        <a-form-item label="锁定时间" class="smart-query-form-item">
+        <a-form-item label="锁定时间" class="xsy-query-form-item">
           <a-range-picker
             v-model:value="queryForm.loginLockBeginTime"
             :presets="defaultTimeRanges"
@@ -25,7 +25,7 @@
             @change="onChangeLoginLockBeginTime"
           />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-button-group>
             <a-button type="primary" @click="onSearch">
               <template #icon>
@@ -33,7 +33,7 @@
               </template>
               查询
             </a-button>
-            <a-button @click="resetQuery" class="smart-margin-left10">
+            <a-button @click="resetQuery" class="xsy-margin-left10">
               <template #icon>
                 <ReloadOutlined />
               </template>
@@ -43,8 +43,8 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
         <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0">
           <template #icon>
             <DeleteOutlined />
@@ -52,7 +52,7 @@
           解除锁定
         </a-button>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :tableId="null" :refresh="queryData" />
       </div>
     </a-row>
@@ -77,7 +77,7 @@
     >
       <template #bodyCell="{text, column}">
         <template v-if="column.dataIndex === 'userType'">
-          <span>{{ $smartEnumPlugin.getDescByValue('USER_TYPE_ENUM', text) }}</span>
+          <span>{{ $xsyEnumPlugin.getDescByValue('USER_TYPE_ENUM', text) }}</span>
         </template>
         <template v-if="column.dataIndex === 'lockFlag'">
           <template v-if="text">
@@ -91,7 +91,7 @@
     </a-table>
     <!---------- 表格 end ----------->
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -110,10 +110,10 @@
 <script setup lang="ts">
 import {reactive, ref, onMounted} from 'vue';
 import {message, Modal} from 'ant-design-vue';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {loginFailApi} from '/@/api/support/login-fail-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
 
@@ -195,7 +195,7 @@ async function queryData() {
     tableData.value = queryResult.data.list;
     total.value = queryResult.data.total;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }
@@ -235,14 +235,14 @@ function confirmBatchDelete() {
 //请求批量删除
 async function requestBatchDelete() {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     await loginFailApi.batchDelete(selectedRowKeyList.value);
     message.success('解锁成功');
     queryData();
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 </script>

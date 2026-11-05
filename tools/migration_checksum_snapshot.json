@@ -100,6 +100,10 @@
     "1001": {
       "file": "V1001__backend_business_rules.sql",
       "checksum": -677091279
+    },
+    "1002": {
+      "file": "V1002__xsy_job_class_names.sql",
+      "checksum": 1534197987
     }
   }
 }

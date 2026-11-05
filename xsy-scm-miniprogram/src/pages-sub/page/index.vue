@@ -28,7 +28,7 @@ import XsySkeleton from '@/components/common/xsy-skeleton.vue';
 import XsyEmpty from '@/components/common/xsy-empty.vue';
 import {mallDecorationApi} from '@/api/mall';
 import {useMallTheme} from '@/composables/use-mall-theme';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 
 const {themeStyle} = useMallTheme();
 
@@ -69,7 +69,7 @@ async function load() {
   } catch (cause) {
     if (request !== requestSeq) return;
     const unpublished = cause?.code === MALL_ERROR_CODE.INVALID_PAGE;
-    if (!unpublished) smartSentry.captureError(cause);
+    if (!unpublished) xsySentry.captureError(cause);
     error.value = unpublished ? '内容暂未发布' : '内容加载失败，请重试';
     title.value = PAGE_TITLES[pageCode.value] || '商城页面';
   } finally {

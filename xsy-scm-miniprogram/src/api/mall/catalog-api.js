@@ -2,7 +2,7 @@
  * 商城商品可见性、客户价格和库存由服务端按登录客户决定。
  * 页面只使用 product-adapter 转换后的字段；无价格时显示“询价”。
  */
-import {getRequest} from '@/lib/smart-request';
+import {getRequest} from '@/lib/xsy-request';
 import {adaptPage, adaptProduct, adaptProducts} from './product-adapter';
 
 /** 映射 ResponseDTO.data，其余字段原样保留 */

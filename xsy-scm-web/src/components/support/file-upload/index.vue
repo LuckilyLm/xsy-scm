@@ -42,9 +42,9 @@ import {computed, ref, watch} from 'vue';
 import {Modal} from 'ant-design-vue';
 import {fileApi} from '/@/api/support/file-api';
 import {useUserStore} from '/@/store/modules/system/user';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const props = defineProps({
   value: String,
@@ -124,7 +124,7 @@ watch(
 
 const emit = defineEmits(['update:value', 'change']);
 const customRequest = async (options) => {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     console.log(options);
     const formData = new FormData();
@@ -136,9 +136,9 @@ const customRequest = async (options) => {
     fileList.value.push(file);
     emit('change', fileList.value);
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 };
 

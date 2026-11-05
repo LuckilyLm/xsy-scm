@@ -1,0 +1,148 @@
+package com.xsy.scm.common;
+
+
+import com.xsy.scm.admin.test.PgITPaths;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xsy.scm.admin.XsyApplication;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.product.domain.form.ProductSkuForm;
+import com.xsy.scm.product.domain.form.ProductSpuAddForm;
+import com.xsy.scm.product.service.ProductSpuService;
+import com.xsy.scm.admin.module.system.login.domain.RequestEmployee;
+import com.xsy.scm.base.common.enumeration.UserTypeEnum;
+import com.xsy.scm.base.common.util.XsyRequestUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+/**
+ * 客户与供应商域 PostgreSQL 集成测试基类。
+ *
+ * <p>客户与供应商的读写语义只有真实数据库能完整验证：partial unique index、CHECK 约束、
+ * {@code FOR UPDATE} 锁序、{@code JSONB} 映射、{@code NUMERIC(18,4)} 精度。
+ *
+ * <p><b>事务策略：</b>整个用例包在一个事务里，结束时回滚，不向开发库留下任何数据。
+ *
+ * <p><b>不 mock 商品域：</b>{@code xsy_supplier_sku} 的外键语义依赖真实存在的 {@code xsy_product_spu} /
+ * {@code xsy_product_sku}，所以这里通过 {@link ProductSpuService} 造数，而不是直接插表——
+ * 直接插表会绕过商品聚合的不变量，让 IT 验证到一份「现实中不可能出现」的商品数据。
+ */
+@SpringBootTest(classes = XsyApplication.class, properties = {
+        "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
+        "file.storage.local.upload-path=" + PgITPaths.DEFAULT_UPLOAD_PATH,
+        "file.storage.local.url-prefix=http://127.0.0.1:18082",
+        "logging.level.root=WARN"})
+@Transactional
+public abstract class ScmW2PgITBase {
+
+    @Autowired
+    protected JdbcTemplate jdbc;
+
+    @Autowired
+    protected ObjectMapper objectMapper;
+
+    @Autowired
+    protected ProductSpuService productSpuService;
+
+    /**
+     * 每个用例独立的编码前缀，避免与其它用例或既有数据撞 partial unique index。
+     */
+    protected String prefix;
+
+    @BeforeEach
+    void setUpOperator() {
+        prefix = PgITFixtureNames.brand();
+        RequestEmployee employee = new RequestEmployee();
+        employee.setEmployeeId(1L);
+        employee.setActualName(PgITFixtureNames.operator());
+        employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
+        XsyRequestUtil.setRequestUser(employee);
+    }
+
+    @AfterEach
+    void tearDownOperator() {
+        XsyRequestUtil.remove();
+    }
+
+    // ------------------------------------------------------------------
+    // 断言辅助
+    // ------------------------------------------------------------------
+
+    /**
+     * 断言动作抛出带指定业务码的 {@link ScmBusinessException}。
+     */
+    protected static void expectCode(Runnable action, int code) {
+        assertThatThrownBy(action::run)
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        e -> assertThat(e.getErrorCode().getCode()).isEqualTo(code));
+    }
+
+    // ------------------------------------------------------------------
+    // 数据辅助
+    // ------------------------------------------------------------------
+
+    /**
+     * 任一可用员工 id，用于业务员 / 默认采购员引用。
+     */
+    protected Long anyEmployeeId() {
+        return jdbc.queryForObject(
+                "SELECT employee_id FROM t_employee WHERE deleted_flag = FALSE ORDER BY employee_id LIMIT 1",
+                Long.class);
+    }
+
+    protected Long newOnShelfSku(String suffix) {
+        return newProductSku(suffix, "ON_SHELF", "ON_SHELF");
+    }
+
+    /**
+     * 用商品聚合服务造一个真实 SKU，返回 {@code xsy_product_sku.id}。
+     *
+     * @param spuStatus SPU 上下架状态（{@code ON_SHELF} / {@code OFF_SHELF}）
+     * @param skuStatus SKU 上下架状态
+     */
+    protected Long newProductSku(String suffix, String spuStatus, String skuStatus) {
+        ProductSpuAddForm form = new ProductSpuAddForm();
+        form.setSpuCode(prefix + suffix);
+        form.setName(prefix + suffix + "商品");
+        form.setStatus(spuStatus);
+        form.setCategoryId(jdbc.queryForObject(
+                "SELECT id FROM xsy_product_category WHERE category_code = 'FRESH-FRUIT' AND deleted = FALSE", Long.class));
+
+        ProductSkuForm sku = new ProductSkuForm();
+        sku.setSkuCode(prefix + suffix + "-K");
+        sku.setSpecName("规格" + suffix);
+        sku.setSpecValues(new LinkedHashMap<>(Map.of("规格", suffix)));
+        sku.setSaleUnit("kg");
+        sku.setProductType("NON_STANDARD");
+        sku.setMarketPrice(new BigDecimal("1.2000"));
+        sku.setStatus(skuStatus);
+        sku.setDefaultFlag(true);
+        form.setSkuList(new ArrayList<>(List.of(sku)));
+
+        Long spuId = productSpuService.add(form);
+        return jdbc.queryForObject(
+                "SELECT id FROM xsy_product_sku WHERE spu_id = ? AND deleted = FALSE", Long.class, spuId);
+    }
+
+    /**
+     * 读回服务端发号的 SKU 内部编码。
+     *
+     * <p>V147 起 SPU / SKU 编码由后端 sequence 生成，{@code ProductSkuForm#setSkuCode} 不再被采信；
+     * 断言编码时必须回读写入数据库值，不能沿用造数时传入的字符串。
+     */
+    protected String skuCodeOf(Long skuId) {
+        return jdbc.queryForObject("SELECT sku_code FROM xsy_product_sku WHERE id = ?", String.class, skuId);
+    }
+}

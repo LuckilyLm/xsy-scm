@@ -29,7 +29,7 @@
     </div>
   </a-card>
 
-  <a-card title="记录" size="small" class="smart-margin-top10">
+  <a-card title="记录" size="small" class="xsy-margin-top10">
     <NoticeViewRecordList ref="noticeViewRecordList" :noticeId="route.query.noticeId" />
   </a-card>
 </template>
@@ -39,9 +39,9 @@ import {onMounted, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import NoticeViewRecordList from './components/notice-view-record-list.vue';
 import {noticeApi} from '/@/api/business/oa/notice-api';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import FilePreview from '/@/components/support/file-preview/index.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const route = useRoute();
 
@@ -58,15 +58,15 @@ const noticeViewRecordList = ref();
 // 查询详情
 async function queryNoticeDetail() {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     const result = await noticeApi.view(route.query.noticeId);
     noticeDetail.value = result.data;
 
     noticeViewRecordList.value.onSearch();
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

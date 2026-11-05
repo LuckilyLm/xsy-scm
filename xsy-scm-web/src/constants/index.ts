@@ -21,11 +21,11 @@ import message from './business/message/message-const';
 import changeLogConst from './support/change-log-const';
 import jobConst from './support/job-const';
 import dictConst from './support/dict-const';
-// SCM 业务枚举：注册进 SmartEnum 插件后，SmartEnumSelect / $smartEnumPlugin 才能取到值
+// SCM 业务枚举：注册进 XsyEnum 插件后，XsyEnumSelect / $xsyEnumPlugin 才能取到值
 import scmCustomer from './business/scm/customer-const';
 import scmSupplier from './business/scm/supplier-const';
 import scmReport from './business/scm/report-const';
-import type {SmartEnumWrapper} from '/@/types/smart-enum';
+import type {XsyEnumWrapper} from '/@/types/xsy-enum';
 
 const constantsInfo = {
   FLAG_NUMBER_ENUM,
@@ -57,9 +57,9 @@ const constantsInfo = {
 /*
  * 显式声明导出类型。
  *
- * 上游 SmartAdmin 的 `DICT_CODE_ENUM` 形状是 `{ GOODS_PLACE: string }`，不是 `SmartEnumItem`，
- * 因此这个对象字面量无法直接赋给 `SmartEnumWrapper<unknown>`（TS2769）。
+ * 上游 XSY 的 `DICT_CODE_ENUM` 形状是 `{ GOODS_PLACE: string }`，不是 `XsyEnumItem`，
+ * 因此这个对象字面量无法直接赋给 `XsyEnumWrapper<unknown>`（TS2769）。
  * 枚举注册表在类型上本来就是「异构枚举袋」，参数化为 `unknown` 才是诚实的表达；
  * 这里用一次显式断言把上游的形状缺陷挡在模块边界上，调用方（main.ts 的插件注册）不再受影响。
  */
-export default constantsInfo as unknown as SmartEnumWrapper<unknown>;
+export default constantsInfo as unknown as XsyEnumWrapper<unknown>;

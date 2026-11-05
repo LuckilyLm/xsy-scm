@@ -44,8 +44,8 @@ class CrossDomainDaoGuardFixtureTest(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
-        self.source_path = self.root / "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/finance/service/FinanceReader.java"
-        self.mapper_path = self.root / "xsy-scm-server/sa-admin/src/main/resources/mapper/product/ProductReadDao.xml"
+        self.source_path = self.root / "xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/finance/service/FinanceReader.java"
+        self.mapper_path = self.root / "xsy-scm-server/xsy-admin/src/main/resources/mapper/product/ProductReadDao.xml"
         self.allowlist_path = self.root / "tools/quality/cross-domain-dao-allowlist.tsv"
         self.source_path.parent.mkdir(parents=True)
         self.mapper_path.parent.mkdir(parents=True)
@@ -260,7 +260,7 @@ class MagicStringRulingTest(unittest.TestCase):
 
     def test_a_literal_without_a_ruling_is_still_reported(self) -> None:
         findings = self.scan(
-            "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderTagService.java",
+            "xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/order/service/OrderTagService.java",
             "class OrderTagService {\n"
             '    boolean f(String s) {\n        return "CANCELLED".equals(s);\n    }\n'
             "}\n",
@@ -269,7 +269,7 @@ class MagicStringRulingTest(unittest.TestCase):
         self.assertEqual([finding.locator for finding in findings], ['OrderTagService#"CANCELLED"'])
 
     def test_a_ruled_collision_is_excused_only_on_the_matching_line(self) -> None:
-        path = "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderTagService.java"
+        path = "xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/order/service/OrderTagService.java"
         excused = self.scan(
             path,
             "class OrderTagService {\n"
@@ -313,10 +313,10 @@ class MagicStringRulingTest(unittest.TestCase):
 
 
 
-OLD_MAIN = "xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/"
-NEW_MAIN = "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/"
-OLD_TEST = "xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/"
-TEST_BASE_NEW = "xsy-scm-server/sa-admin/src/test/java/com/xsy/scm/"
+OLD_MAIN = "xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/admin/module/scm/"
+NEW_MAIN = "xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/"
+OLD_TEST = "xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/admin/module/scm/"
+TEST_BASE_NEW = "xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/"
 MAPPINGS = ((OLD_MAIN, NEW_MAIN),)
 
 # Records used by the transform tests are not real files, so the on-disk move check
@@ -350,7 +350,7 @@ class MigrateLineTest(unittest.TestCase):
         self.assertEqual(after[2][len(NEW_MAIN):], before[2][len(OLD_MAIN):])
 
     def test_unrelated_path_is_left_alone(self) -> None:
-        line = record(1, "stage-comment", "xsy-scm-server/sa-base/src/main/java/Foo.java", "Q13")
+        line = record(1, "stage-comment", "xsy-scm-server/xsy-base/src/main/java/Foo.java", "Q13")
         migrated, rewritten = migrate_line(line, MAPPINGS)
         self.assertFalse(rewritten)
         self.assertEqual(migrated, line)
@@ -761,9 +761,9 @@ class CaptureRefusalTest(unittest.TestCase):
 
 
 
-MAIN_REL = "sa-admin/src/main/java"
-TEST_REL = "sa-admin/src/test/java"
-LEGACY = "net/lab1024/sa/admin/module/scm"
+MAIN_REL = "xsy-admin/src/main/java"
+TEST_REL = "xsy-admin/src/test/java"
+LEGACY = "com/xsy/scm/admin/module/scm"
 NEW = "com/xsy/scm"
 
 

@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm"
+SOURCE = ROOT / "xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm"
 BASELINE = ROOT / "tools/quality/baseline/scm-error-code-collisions.json"
 ENTRY = re.compile(r"^\s*([A-Z][A-Z0-9_]*)\((\d{5}),", re.MULTILINE)
 

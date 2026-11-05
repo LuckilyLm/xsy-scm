@@ -120,6 +120,27 @@ class InstallBaselineTest(unittest.TestCase):
         self.assertTrue(any(k.startswith('index:') for k in target))
         self.assertTrue(any(k.startswith('column:') for k in target))
 
+    def test_job_class_upgrade_requires_complete_known_incremental_history(self):
+        _, legacy = self.legacy()
+        snapshot = guard.scan_migrations(guard.MIGRATION_DIR)
+        rows = [{'version': v, 'type': 'SQL', 'description': '', 'script': e['file'],
+                 'checksum': e['checksum'], 'success': True} for v, e in snapshot.items()
+                if guard.version_key(v) <= guard.version_key(cutover.VERSION)]
+        increments = [{'version': v, 'type': 'SQL', 'description': '', 'script': snapshot[v]['file'],
+                       'checksum': snapshot[v]['checksum'], 'success': True} for v in ('1001', '1002')]
+        self.assertEqual('modules_upgraded', cutover.history_state(rows + increments, legacy))
+        marker = [{'version': cutover.VERSION, 'type': 'BASELINE', 'description': cutover.DESCRIPTION,
+                   'script': '<< Flyway Baseline >>', 'checksum': None, 'success': True}]
+        self.assertEqual('cutover_upgraded', cutover.history_state(marker + increments, legacy))
+        with self.assertRaises(ValueError):
+            cutover.history_state(rows + increments[1:], legacy)
+        for field, value in [('checksum', increments[1]['checksum'] + 1),
+                             ('script', 'changed.sql'), ('success', False), ('type', 'BASELINE')]:
+            changed = copy.deepcopy(increments)
+            changed[1][field] = value
+            with self.assertRaises(ValueError):
+                cutover.history_state(rows + changed, legacy)
+
     def test_catalog_drift_is_explicit_and_order_independent(self):
         a = fingerprints({'table:a': {'not_null':True,'type':'bigint'}})
         self.assertEqual(a, fingerprints({'table:a': {'type':'bigint','not_null':True}}))

@@ -10,7 +10,7 @@ from pathlib import Path
 import quality_guard
 
 ROOT = Path(__file__).resolve().parents[2]
-COMMON_SOURCE_ROOT = ROOT / "xsy-scm-server" / "sa-admin" / "src" / "main" / "java" / "com" / "xsy" / "scm" / "common"
+COMMON_SOURCE_ROOT = ROOT / "xsy-scm-server" / "xsy-admin" / "src" / "main" / "java" / "com" / "xsy" / "scm" / "common"
 
 FORBIDDEN_DOMAINS = (
     "product", "customer", "supplier", "pricing", "order", "purchase", "inventory", "sorting",

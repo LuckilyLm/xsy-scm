@@ -38,7 +38,7 @@
             <a-range-picker v-model:value="createDateRange" picker="month" @change="changeCreateDate" />
           </template>
           <template v-else-if="column.filterOptions.type === 'submit'">
-            <div class="smart-table-operate">
+            <div class="xsy-table-operate">
               <a-button :type="column.filterOptions.btnType" @click="submit">查询</a-button>
             </div>
           </template>
@@ -81,7 +81,7 @@ const props = defineProps({
 });
 
 const components = {
-  'enum-select': defineAsyncComponent(() => import('/src/components/framework/smart-enum-select/index.vue')),
+  'enum-select': defineAsyncComponent(() => import('/src/components/framework/xsy-enum-select/index.vue')),
   'dict-select': defineAsyncComponent(() => import('/src/components/support/dict-select/index.vue')),
   'employee-select': defineAsyncComponent(() => import('/src/components/system/employee-select/index.vue')),
   'enterprise-select': defineAsyncComponent(() => import('/src/components/business/oa/enterprise-select/index.vue')),

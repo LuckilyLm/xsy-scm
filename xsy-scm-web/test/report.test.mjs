@@ -837,8 +837,8 @@ import {
   const purchase = read('../src/views/business/scm/report/report-purchase-list.vue');
   const productApi = read('../src/api/business/scm/product-api.ts');
   const reportApi = read('../src/api/business/scm/report-api.ts');
-  const reportController = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/controller/ScmReportController.java');
-  const productService = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductQueryService.java');
+  const reportController = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/report/controller/ScmReportController.java');
+  const productService = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/product/service/ProductQueryService.java');
 
   test('动态条件来自服务端权限约束的字段列表', () => {
     assert.match(productApi, /query\/filters/);
@@ -865,8 +865,8 @@ import {
   const read = (file) => readFileSync(new URL(file, import.meta.url), 'utf8');
   const api = read('../src/api/business/scm/filter-preset-api.ts');
   const component = read('../src/components/business/scm/advanced-filter/saved-presets.vue');
-  const service = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/preference/filter/UserFilterPresetService.java');
-  const dao = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/preference/filter/UserFilterPresetDao.java');
+  const service = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/preference/filter/UserFilterPresetService.java');
+  const dao = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/preference/filter/UserFilterPresetDao.java');
   const product = read('../src/views/business/scm/product/product-list.vue');
   const sales = read('../src/views/business/scm/report/report-sales-list.vue');
   const purchase = read('../src/views/business/scm/report/report-purchase-list.vue');

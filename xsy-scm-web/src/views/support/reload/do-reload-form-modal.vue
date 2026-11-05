@@ -21,8 +21,8 @@
 import {message} from 'ant-design-vue';
 import {reactive, ref} from 'vue';
 import {reloadApi} from '/@/api/support/reload-api';
-import {smartSentry} from '/@/lib/smart-sentry';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 
 // emit
 const emit = defineEmits(['refresh']);
@@ -66,16 +66,16 @@ function onSubmit() {
   formRef.value
     .validate()
     .then(async () => {
-      SmartLoading.show();
+      XsyLoading.show();
       try {
         await reloadApi.reload(form);
         message.success('reload成功');
         emit('refresh');
         onClose();
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     })
     .catch((error) => {

@@ -1,8 +1,3 @@
-/*
- * @Description:
- * @LastEditTime: 2021-08-14
- * @LastEditors:
- */
 export interface SortItemModel {
   /**
    *

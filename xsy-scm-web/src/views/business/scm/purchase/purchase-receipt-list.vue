@@ -1,24 +1,24 @@
 <template>
   <a-tabs v-model:activeKey="activeTab">
     <a-tab-pane key="by-order" tab="按单据">
-      <a-form class="smart-query-form" layout="inline" @submit.prevent>
-        <a-row class="smart-query-form-row">
-          <a-form-item label="收货单号" class="smart-query-form-item">
+      <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+        <a-row class="xsy-query-form-row">
+          <a-form-item label="收货单号" class="xsy-query-form-item">
             <a-input v-model:value="queryForm.receiptNo" placeholder="收货单号" allow-clear @pressEnter="onSearch" />
           </a-form-item>
-          <a-form-item label="采购单号" class="smart-query-form-item">
+          <a-form-item label="采购单号" class="xsy-query-form-item">
             <a-input v-model:value="orderNoInput" placeholder="输入采购单号" allow-clear @pressEnter="onSearch" />
           </a-form-item>
-          <a-form-item label="状态" class="smart-query-form-item">
-            <SmartEnumSelect enum-name="SCM_RECEIPT_STATUS_ENUM" v-model:value="queryForm.status" width="140px" />
+          <a-form-item label="状态" class="xsy-query-form-item">
+            <XsyEnumSelect enum-name="SCM_RECEIPT_STATUS_ENUM" v-model:value="queryForm.status" width="140px" />
           </a-form-item>
-          <a-form-item label="入库方式" class="smart-query-form-item">
+          <a-form-item label="入库方式" class="xsy-query-form-item">
             <a-select v-model:value="queryForm.receiptMode" :options="receiptModeOptions" placeholder="全部" allow-clear style="width: 160px" />
           </a-form-item>
-          <a-form-item label="入库状态" class="smart-query-form-item">
+          <a-form-item label="入库状态" class="xsy-query-form-item">
             <a-select v-model:value="queryForm.putawayStatus" :options="putawayStatusOptions" placeholder="全部" allow-clear style="width: 130px" />
           </a-form-item>
-          <a-form-item class="smart-query-form-item">
+          <a-form-item class="xsy-query-form-item">
             <a-button-group>
               <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:receipt:query'">查询</a-button>
               <a-button @click="resetQuery">重置</a-button>
@@ -34,12 +34,12 @@
       </a-alert>
 
       <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
+        <a-row class="xsy-table-btn-block">
+          <div class="xsy-table-operate-block">
             <a-button type="primary" v-privilege="'scm:purchase:receipt:add'" @click="form?.open()">新建收货单</a-button>
             <a-button danger v-privilege="'scm:purchase:receipt:delete'" :disabled="!selected.length" @click="batchDelete"> 批量删除 </a-button>
           </div>
-          <div class="smart-table-setting-block">
+          <div class="xsy-table-setting-block">
             <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_RECEIPT" :refresh="queryData" />
           </div>
         </a-row>
@@ -75,7 +75,7 @@
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <!-- 只保留当前状态的推进动作，编辑备注和删除收进“更多” -->
-              <a-space :size="0" class="smart-table-operate scm-table-actions">
+              <a-space :size="0" class="xsy-table-operate scm-table-actions">
                 <a-button
                   v-if="record.status === 'PENDING'"
                   type="link"
@@ -101,7 +101,7 @@
           </template>
         </a-table>
 
-        <div class="smart-query-table-page">
+        <div class="xsy-query-table-page">
           <a-pagination
             show-less-items
             show-size-changer
@@ -135,7 +135,7 @@ import type {TableColumnsType} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
 import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
 import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';

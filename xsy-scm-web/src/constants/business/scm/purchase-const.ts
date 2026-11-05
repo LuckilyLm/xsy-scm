@@ -1,7 +1,7 @@
-import type {SmartEnum} from '/@/types/smart-enum';
+import type {XsyEnum} from '/@/types/xsy-enum';
 
 /** 采购单新建即为已提交，随后进入部分收货、收货完成等状态。部分收货不能直接取消；已收货、少收关单和已取消均为终态。 */
-export const SCM_PURCHASE_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_PURCHASE_STATUS_ENUM: XsyEnum<string> = {
   SUBMITTED: {value: 'SUBMITTED', desc: '已提交'},
   ACCOUNTED: {value: 'ACCOUNTED', desc: '采购已确认'},
   PARTIALLY_RECEIVED: {value: 'PARTIALLY_RECEIVED', desc: '部分收货'},
@@ -11,38 +11,38 @@ export const SCM_PURCHASE_STATUS_ENUM: SmartEnum<string> = {
 };
 
 /** 收货单状态（2 值：待确认 → 已确认，确认后不可改不可删）。 */
-export const SCM_RECEIPT_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_RECEIPT_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待确认'},
   CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
 };
 
 /** 采购需求状态（由 `allocated_quantity` 与 `required_quantity` 派生，必须能回落）。 */
-export const SCM_DEMAND_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_DEMAND_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待分配'},
   PARTIALLY_ALLOCATED: {value: 'PARTIALLY_ALLOCATED', desc: '部分分配'},
   ALLOCATED: {value: 'ALLOCATED', desc: '已分配'},
 };
 
 /** 净需求计算批次状态：保存后待生成 → 已按批次生成需求。 */
-export const SCM_DEMAND_BATCH_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_DEMAND_BATCH_STATUS_ENUM: XsyEnum<string> = {
   READY: {value: 'READY', desc: '待生成'},
   GENERATED: {value: 'GENERATED', desc: '已生成'},
 };
 
 /** 仓库状态。 */
-export const SCM_WAREHOUSE_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_WAREHOUSE_STATUS_ENUM: XsyEnum<string> = {
   ENABLED: {value: 'ENABLED', desc: '启用'},
   DISABLED: {value: 'DISABLED', desc: '停用'},
 };
 
 /** 收货入库方式：确认即入库 / 确认后仓库二次入库。 */
-export const SCM_RECEIPT_MODE_ENUM: SmartEnum<string> = {
+export const SCM_RECEIPT_MODE_ENUM: XsyEnum<string> = {
   DIRECT: {value: 'DIRECT', desc: '直接入库'},
   WAREHOUSE_CONFIRM: {value: 'WAREHOUSE_CONFIRM', desc: '仓库确认入库'},
 };
 
 /** 入库状态：待入库 / 已入库，与收货单 status 解耦。 */
-export const SCM_PUTAWAY_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_PUTAWAY_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待入库'},
   COMPLETED: {value: 'COMPLETED', desc: '已入库'},
 };
@@ -53,7 +53,7 @@ export const SCM_PUTAWAY_STATUS_ENUM: SmartEnum<string> = {
  * 只读辅助决策：`UNIT_MISMATCH` 表示需求单位与余额记账单位不一致，缺口为 null 不猜折算率；
  * `NO_BALANCE` 表示该仓库下该 SKU 无余额行。
  */
-export const SCM_DEMAND_SUMMARY_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_DEMAND_SUMMARY_STATUS_ENUM: XsyEnum<string> = {
   STOCK_ENOUGH: {value: 'STOCK_ENOUGH', desc: '库存充足'},
   SHORTAGE: {value: 'SHORTAGE', desc: '存在缺口'},
   ZERO_STOCK: {value: 'ZERO_STOCK', desc: '零库存'},
@@ -76,7 +76,7 @@ export const SCM_DEMAND_SUMMARY_STATUS_COLOR: Record<string, string> = {
  * 归属由操作类型决定：需求类日志没有单据、分配类靠反查、
  * 收货类同时挂采购单与收货单。
  */
-export const SCM_PURCHASE_OPERATION_ENUM: SmartEnum<string> = {
+export const SCM_PURCHASE_OPERATION_ENUM: XsyEnum<string> = {
   DEMAND_GENERATE: {value: 'DEMAND_GENERATE', desc: '生成需求'},
   DEMAND_ALLOCATE: {value: 'DEMAND_ALLOCATE', desc: '分配需求'},
   CREATE: {value: 'CREATE', desc: '创建采购单'},
@@ -147,7 +147,7 @@ export default {
   SCM_PURCHASE_OPERATION_ENUM,
   SCM_PURCHASE_EXPORT_COLUMNS,
 };
-export const SCM_PURCHASE_COST_DIRECTION_ENUM: SmartEnum<string> = {
+export const SCM_PURCHASE_COST_DIRECTION_ENUM: XsyEnum<string> = {
   INCREASE: {value: 'INCREASE', desc: '调增'},
   DECREASE: {value: 'DECREASE', desc: '调减'},
 };

@@ -89,7 +89,7 @@ import {onReachBottom} from '@dcloudio/uni-app';
 import ProductCard from '@/components/business/product-card.vue';
 import {mallCatalogApi} from '@/api/mall';
 import {SEARCH_HISTORY} from '@/constants/local-storage-key-const';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {useMallCart} from '@/composables/use-mall-cart';
 import {COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_TERTIARY} from '@/constants/theme-color-const';
 import {LOAD_MORE_TEXT} from '@/constants/load-more-const';
@@ -158,7 +158,7 @@ async function loadHotKeywords() {
     const res = await mallCatalogApi.getHotKeywords();
     hotKeywords.value = res.data || [];
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 
@@ -184,7 +184,7 @@ async function loadProducts(reset = false) {
     total.value = page.total || 0;
     pageNum.value += 1;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     loading.value = false;
   }

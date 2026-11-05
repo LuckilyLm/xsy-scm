@@ -2,17 +2,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>net.lab1024</groupId>
-    <artifactId>sa-parent</artifactId>
+    <groupId>com.xsy.scm</groupId>
+    <artifactId>xsy-parent</artifactId>
     <version>3.0.0</version>
     <packaging>pom</packaging>
 
     <name>xsy-scm-v2-parent</name>
-    <description>鲜蔬源智链 V2 后台服务（基于 SmartAdmin v3.31 基线，Java 21 + PostgreSQL）</description>
+    <description>鲜蔬源智链 V2 后台服务（基于 系统通用功能 基线，Java 21 + PostgreSQL）</description>
 
 	<modules>
-        <module>sa-base</module>
-		<module>sa-admin</module>
+        <module>xsy-base</module>
+		<module>xsy-admin</module>
     </modules>
 
     <properties>
@@ -43,7 +43,6 @@
         <sa-token.version>1.44.0</sa-token.version>
         <ip2region.version>2.7.0</ip2region.version>
         <bcprov.version>1.80</bcprov.version>
-        <smartdb.version>1.2.0</smartdb.version>
         <redisson.version>3.50.0</redisson.version>
         <snakeyaml.version>2.4</snakeyaml.version>
         <freemarker.version>2.3.34</freemarker.version>
@@ -253,12 +252,6 @@
                 <version>${poi.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>net.1024lab</groupId>
-                <artifactId>smartdb</artifactId>
-                <version>${smartdb.version}</version>
-            </dependency>
-
             <!-- redisson -->
             <dependency>
                 <groupId>org.redisson</groupId>
@@ -360,7 +353,7 @@
 
         <plugins>
             <!--
-              V2 修正：SmartAdmin 原基线的根 pom 没有继承 spring-boot-starter-parent，
+              V2 修正：早期系统配置的根 pom 没有继承 spring-boot-starter-parent，
               因此 maven-resources-plugin 只认 ${...} 分隔符，不认 @...@。
               结果 dev/application.yaml 中的 spring.profiles.active: '@profiles.active@'
               不会被替换，打进 jar 后 Spring Boot 启动即失败：
@@ -410,7 +403,7 @@
             <!--
               SCM 静态质量检查在 validate 阶段运行。Checkstyle 只生成 baseline 输入，
               新增债务由 quality_guard 在 `python tools/verify.py quality` 中阻断；
-              Spotless 只格式化 com.xsy.scm 生产源码，不触碰测试或 SmartAdmin 底座。
+              Spotless 只格式化 com.xsy.scm 生产源码，不触碰测试或 XSY 底座。
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -429,18 +422,19 @@
                 </dependencies>
                 <configuration>
                     <!-- 只在聚合模块上执行一次：本模块是 pom 打包，没有自己的源码，
-                         因此显式指向 sa-admin 的 SCM 生产代码，避免底座与业务混在一个 baseline 里。 -->
+                         因此显式指向 xsy-admin 的 SCM 生产代码，避免底座与业务混在一个 baseline 里。 -->
                     <configLocation>${project.basedir}/../tools/quality/checkstyle.xml</configLocation>
                     <sourceDirectories>
-                        <sourceDirectory>${project.basedir}/sa-admin/src/main/java</sourceDirectory>
+                        <sourceDirectory>${project.basedir}/xsy-admin/src/main/java</sourceDirectory>
                     </sourceDirectories>
                     <!-- check 目标的 includes 是逗号分隔字符串，不是列表。
                          两条模式分别覆盖 Q1 迁移的两侧：只留旧路径会让迁进 com/xsy/scm 的代码
                          静默脱离 Checkstyle 检查，而 Checkstyle 是 baseline 新增问题检查的一路输入，
                          表现是「违规数下降」这种假改善。sourceDirectories 已限定在
-                         sa-admin/src/main/java，所以这里不会把 SmartAdmin 底座扫进来。 -->
+                         xsy-admin/src/main/java，所以这里不会把 XSY 底座扫进来。 -->
                     <includes>**/module/scm/**/*.java,**/com/xsy/scm/**/*.java</includes>
-                    <includeTestSourceDirectory>false</includeTestSourceDirectory>
+                    <excludes>**/com/xsy/scm/admin/**,**/com/xsy/scm/base/**</excludes>
+                      <includeTestSourceDirectory>false</includeTestSourceDirectory>
                     <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
                     <!-- 历史债务由 tools/quality/quality_guard.py 的 baseline 承接；
                          这里失败会让 mvn 本身变红，把「新增 0」的新增问题检查语义丢掉。 -->

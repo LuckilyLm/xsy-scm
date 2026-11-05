@@ -1,20 +1,20 @@
 <template>
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form" layout="inline" @submit.prevent="search">
       <a-form-item :label="isDriver ? '司机编码' : '车牌号'">
         <a-input v-model:value="query.keyword" allow-clear @pressEnter="search" />
       </a-form-item>
       <a-form-item label="状态">
         <a-select v-model:value="query.status" allow-clear :options="statusOptions" class="status-select" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-space>
           <a-button type="primary" @click="search">查询</a-button>
           <a-button @click="reset">重置</a-button>
         </a-space>
       </a-form-item>
     </a-form>
-    <div data-toolbar-layout="query" class="smart-table-btn-block">
+    <div data-toolbar-layout="query" class="xsy-table-btn-block">
       <a-button type="primary" v-privilege="editPermission" @click="open()">新建{{ label }}</a-button>
     </div>
   </div>
@@ -44,13 +44,13 @@
           <ScmStatusTag v-else tone="warning" label="未绑定" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="editPermission" @click="open(record)">编辑</a-button>
           </a-space>
         </template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-quick-jumper
         show-less-items

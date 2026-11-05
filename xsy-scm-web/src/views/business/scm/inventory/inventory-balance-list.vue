@@ -1,14 +1,14 @@
 <!-- 库存余额只读查询，数量来自收货确认产生的流水。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="仓库" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="仓库" class="xsy-query-form-item">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px" />
       </a-form-item>
-      <a-form-item label="商品名称" class="smart-query-form-item">
+      <a-form-item label="商品名称" class="xsy-query-form-item">
         <a-input v-model:value="queryForm.productName" placeholder="商品名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:balance:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -63,7 +63,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

@@ -1,20 +1,20 @@
 <!-- 按商品汇总的收货工作台，只读。数量都由后端算好，前端不再重算。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="供应商" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="供应商" class="xsy-query-form-item">
         <SupplierSelect v-model:value="supplierId" width="200px" />
       </a-form-item>
-      <a-form-item label="收货仓库" class="smart-query-form-item">
+      <a-form-item label="收货仓库" class="xsy-query-form-item">
         <WarehouseSelect v-model:value="warehouseId" width="200px" placeholder="请选择仓库" />
       </a-form-item>
-      <a-form-item label="采购单号" class="smart-query-form-item">
+      <a-form-item label="采购单号" class="xsy-query-form-item">
         <a-input v-model:value="orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item label="商品关键字" class="smart-query-form-item">
+      <a-form-item label="商品关键字" class="xsy-query-form-item">
         <a-input v-model:value="keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:receipt:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -54,7 +54,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

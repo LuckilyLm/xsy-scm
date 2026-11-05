@@ -59,9 +59,9 @@ import {useRoute} from 'vue-router';
 import NoticeFormDrawer from './components/notice-form-drawer.vue';
 import NoticeViewRecordList from './components/notice-view-record-list.vue';
 import {noticeApi} from '/@/api/business/oa/notice-api';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import FilePreviewModal from '/@/components/support/file-preview-modal/index.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const route = useRoute();
 
@@ -86,13 +86,13 @@ onMounted(() => {
 // 查询详情
 async function queryNoticeDetail() {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     const result = await noticeApi.getUpdateNoticeInfo(route.query.noticeId);
     noticeDetail.value = result.data;
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

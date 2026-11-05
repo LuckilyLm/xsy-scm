@@ -24,8 +24,8 @@
 
 #### Java 格式
 
-- 唯一格式化入口是 `xsy-scm-server/` 下的 `mvn -B -pl sa-admin spotless:apply`，配置为 `tools/quality/eclipse-formatter.xml`：4 空格缩进、120 列、续行缩进 4 空格、LF 换行。
-- 授权验证时运行 `mvn -B -pl sa-admin spotless:check`；不要手工制造与 Spotless 冲突的空白或换行。
+- 唯一格式化入口是 `xsy-scm-server/` 下的 `mvn -B -pl xsy-admin spotless:apply`，配置为 `tools/quality/eclipse-formatter.xml`：4 空格缩进、120 列、续行缩进 4 空格、LF 换行。
+- 授权验证时运行 `mvn -B -pl xsy-admin spotless:check`；不要手工制造与 Spotless 冲突的空白或换行。
 - `.editorconfig` 已同步 IDEA 的缩进、续行和注释换行设置。Spotless 只覆盖 `src/main/java/com/xsy/scm/**`，测试源码保持现状。
 
 #### 前端格式

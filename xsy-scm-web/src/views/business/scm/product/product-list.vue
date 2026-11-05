@@ -1,34 +1,34 @@
 <template>
   <section aria-label="商品档案">
-    <a-form class="smart-query-form" layout="inline">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="分类" class="smart-query-form-item"
+    <a-form class="xsy-query-form" layout="inline">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="分类" class="xsy-query-form-item"
           ><CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px"
         /></a-form-item>
-        <a-form-item label="关键字" class="smart-query-form-item"
+        <a-form-item label="关键字" class="xsy-query-form-item"
           ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称 / 条码" style="width: 260px"
         /></a-form-item>
-        <a-form-item label="商品状态" class="smart-query-form-item"
+        <a-form-item label="商品状态" class="xsy-query-form-item"
           ><a-select v-model:value="filters.status" allow-clear :options="SHELF_STATUS_ENUM" style="width: 110px"
         /></a-form-item>
-        <a-form-item class="smart-query-form-item"
+        <a-form-item class="xsy-query-form-item"
           ><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space
-          ><a-button class="smart-margin-left20" :aria-expanded="advanced" @click="toggleAdvanced">{{
+          ><a-button class="xsy-margin-left20" :aria-expanded="advanced" @click="toggleAdvanced">{{
             advanced ? '收起筛选' : '高级筛选'
           }}</a-button></a-form-item
         >
       </a-row>
-      <a-row v-if="advanced" class="smart-query-form-row">
-        <a-form-item label="商品规格状态" class="smart-query-form-item"
+      <a-row v-if="advanced" class="xsy-query-form-row">
+        <a-form-item label="商品规格状态" class="xsy-query-form-item"
           ><a-select v-model:value="filters.skuStatus" allow-clear :options="SHELF_STATUS_ENUM" style="width: 120px"
         /></a-form-item>
-        <a-form-item label="商品类型" class="smart-query-form-item"
+        <a-form-item label="商品类型" class="xsy-query-form-item"
           ><a-select v-model:value="filters.productType" allow-clear :options="PRODUCT_TYPE_ENUM" style="width: 120px"
         /></a-form-item>
-        <a-form-item label="储存方式" class="smart-query-form-item"
+        <a-form-item label="储存方式" class="xsy-query-form-item"
           ><a-select v-model:value="filters.storageMethod" allow-clear :options="STORAGE_METHOD_ENUM" style="width: 110px"
         /></a-form-item>
-        <a-form-item label="标签" class="smart-query-form-item"
+        <a-form-item label="标签" class="xsy-query-form-item"
           ><a-select
             v-model:value="filters.tagIds"
             mode="multiple"
@@ -38,19 +38,19 @@
             placeholder="命中任一标签"
             style="width: 220px"
         /></a-form-item>
-        <a-form-item label="主图" class="smart-query-form-item"
+        <a-form-item label="主图" class="xsy-query-form-item"
           ><a-select v-model:value="filters.hasPrimaryImage" allow-clear :options="YES_NO_ENUM" style="width: 90px"
         /></a-form-item>
-        <a-form-item label="条码" class="smart-query-form-item"
+        <a-form-item label="条码" class="xsy-query-form-item"
           ><a-select v-model:value="filters.hasBarcode" allow-clear :options="YES_NO_ENUM" style="width: 90px"
         /></a-form-item>
-        <a-form-item label="创建时间" class="smart-query-form-item"
+        <a-form-item label="创建时间" class="xsy-query-form-item"
           ><a-range-picker v-model:value="createdRange" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]"
         /></a-form-item>
       </a-row>
     </a-form>
     <a-card size="small" :bordered="false">
-      <a-row class="smart-table-btn-block scm-table-toolbar" justify="space-between" align="middle">
+      <a-row class="xsy-table-btn-block scm-table-toolbar" justify="space-between" align="middle">
         <a-space>
           <a-button v-privilege="'scm:product:add'" type="primary" @click="drawer?.open()">新增商品</a-button>
           <a-button v-privilege="'scm:product:import'" @click="importModal?.show()">导入</a-button>
@@ -65,7 +65,7 @@
         </a-space>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRODUCT" :refresh="load" />
       </a-row>
-      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+      <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
         <template #action>
           <a-button size="small" @click="load">重新加载</a-button>
         </template>
@@ -153,7 +153,7 @@
           <span v-else-if="column.dataIndex === 'lossRate'">{{ percent(record.lossRate) }}</span>
           <span v-else-if="column.dataIndex === 'taxRate'">{{ percent(record.taxRate) }}</span>
           <span v-else-if="column.dataIndex === 'taxExempt'">{{ record.taxExempt ? '是' : '否' }}</span>
-          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
+          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="xsy-table-operate scm-table-actions">
             <a-button v-privilege="'scm:product:update'" type="link" size="small" @click="drawer?.open(record.spuId)"> 编辑 </a-button>
             <a-popconfirm title="确认删除商品及其规格和图集？" @confirm="remove(record)">
               <a-button v-privilege="'scm:product:delete'" type="link" danger size="small">删除</a-button>
@@ -162,7 +162,7 @@
           <span v-else>{{ cellText(record, column.dataIndex) }}</span>
         </template>
       </a-table>
-      <div class="smart-query-table-page">
+      <div class="xsy-query-table-page">
         <a-pagination
           show-quick-jumper
           show-less-items

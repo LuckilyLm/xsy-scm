@@ -5,9 +5,9 @@ import {URL} from 'node:url';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
-test('SmartAdmin success contract uses code zero', () => {
+test('XSY success contract uses code zero', () => {
   const constants = read('../src/constants/error-code-const.js');
-  const request = read('../src/lib/smart-request.js');
+  const request = read('../src/lib/xsy-request.js');
   assert.match(constants, /SUCCESS_CODE = 0/);
   assert.match(request, /code === SUCCESS_CODE && res\?\.ok !== false/);
 });
@@ -138,7 +138,7 @@ test('checkout submits a price fingerprint and an idempotency key', () => {
   const page = read('../src/pages-sub/checkout/index.vue');
   assert.match(api, /\/scm\/mall\/orders\/preview/);
   assert.match(api, /idempotencyKey/);
-  const request = read('../src/lib/smart-request.js');
+  const request = read('../src/lib/xsy-request.js');
   const mock = read('../mock/routes/order.js');
   assert.match(request, /dispatchMock\(url, method, data, \{\s*header\s*\}\)/);
   assert.match(mock, /Idempotency-Key/);

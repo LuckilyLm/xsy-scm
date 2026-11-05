@@ -3,19 +3,19 @@
   *
 -->
 <template>
-  <a-form class="smart-query-form">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键字" class="smart-query-form-item">
+  <a-form class="xsy-query-form">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="关键字" class="xsy-query-form-item">
         <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="开票抬头/银行账户/创建人" />
       </a-form-item>
 
-      <a-form-item label="创建时间" class="smart-query-form-item">
+      <a-form-item label="创建时间" class="xsy-query-form-item">
         <a-space direction="vertical" :size="12">
           <a-range-picker v-model:value="searchDate" :presets="defaultTimeRanges" @change="dateChange" />
         </a-space>
       </a-form-item>
 
-      <a-form-item class="smart-query-form-item smart-margin-left10">
+      <a-form-item class="xsy-query-form-item xsy-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
@@ -31,7 +31,7 @@
           </a-button>
         </a-button-group>
       </a-form-item>
-      <div class="smart-query-table-actions">
+      <div class="xsy-query-table-actions">
         <a-button @click="addOrUpdate()" type="primary" v-if="$privilege('oa:invoice:add')">
           <template #icon>
             <PlusOutlined />
@@ -50,7 +50,7 @@
           {{ record.disabledFlag ? '禁用' : '启用' }}
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="xsy-table-operate">
             <a-button @click="addOrUpdate(record)" type="link" v-if="$privilege('oa:invoice:update')">编辑</a-button>
             <a-button @click="confirmDelete(record.invoiceId)" type="link" danger v-if="$privilege('oa:invoice:delete')">删除 </a-button>
           </div>
@@ -58,7 +58,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -81,9 +81,9 @@ import {reactive, ref, watch} from 'vue';
 import {invoiceApi} from '/@/api/business/oa/invoice-api';
 import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import InvoiceOperateModal from './enterprise-invoice-operate-modal.vue';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {message, Modal} from 'ant-design-vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
@@ -194,7 +194,7 @@ async function ajaxQuery() {
     total.value = responseModel.data.total;
     tableData.value = list;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }
@@ -216,14 +216,14 @@ function confirmDelete(invoiceId) {
 
 async function del(invoiceId) {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     await invoiceApi.delete(invoiceId);
     message.success('删除成功');
     ajaxQuery();
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

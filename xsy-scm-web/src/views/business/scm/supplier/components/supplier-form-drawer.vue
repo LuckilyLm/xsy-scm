@@ -2,7 +2,7 @@
 <template>
   <a-drawer :open="visible" :title="title" :width="scmDrawerWidth('s')" :mask-closable="!saving" @close="requestClose">
     <a-spin :spinning="loading">
-      <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
+      <a-alert v-if="error" type="error" :message="error" show-icon class="xsy-margin-bottom10" />
       <a-form ref="formRef" :model="form" layout="vertical" class="app-drawer-form">
         <section class="scm-form-section">
           <div class="scm-form-section__head">

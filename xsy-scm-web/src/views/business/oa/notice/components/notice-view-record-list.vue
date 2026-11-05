@@ -4,15 +4,15 @@
 -->
 <template>
   <div>
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="部门" class="smart-query-form-item" style="width: 280px; margin-right: 20px">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="部门" class="xsy-query-form-item" style="width: 280px; margin-right: 20px">
           <DepartmentTreeSelect v-model:value="queryForm.departmentId" width="100%" />
         </a-form-item>
-        <a-form-item label="关键字" class="smart-query-form-item" style="width: 280px">
+        <a-form-item label="关键字" class="xsy-query-form-item" style="width: 280px">
           <a-input v-model:value="queryForm.keywords" placeholder="姓名/IP/设备" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item smart-margin-left10">
+        <a-form-item class="xsy-query-form-item xsy-margin-left10">
           <a-button-group>
             <a-button type="primary" @click="onSearch">
               <template #icon>
@@ -37,7 +37,7 @@
         <template v-if="column.dataIndex === 'lastIp'"> {{ text }} ({{ record.lastDevice }})</template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper

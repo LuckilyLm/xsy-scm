@@ -21,8 +21,8 @@
 import {ref, reactive} from 'vue';
 import {message} from 'ant-design-vue';
 import {employeeApi} from '/@/api/system/employee-api';
-import {SmartLoading} from '/@/components/framework/smart-loading';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const visible = ref(false);
 const formRef = ref();
@@ -51,15 +51,15 @@ async function updatePwd() {
         message.error('新密码与确认密码不一致');
         return;
       }
-      SmartLoading.show();
+      XsyLoading.show();
       try {
         await employeeApi.updateEmployeePassword(form);
         message.success('修改成功');
         visible.value = false;
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     })
     .catch((error) => {

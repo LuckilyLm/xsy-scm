@@ -16,7 +16,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -36,7 +36,7 @@
 import {reactive, ref} from 'vue';
 import {serialNumberApi} from '/@/api/support/serial-number-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 defineExpose({
   showModal,
@@ -101,7 +101,7 @@ async function ajaxQuery() {
     total.value = responseModel.data.total;
     tableData.value = list;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

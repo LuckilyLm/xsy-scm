@@ -1,0 +1,68 @@
+package com.xsy.scm.finance.controller;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.finance.permission.FinancePermission;
+import com.xsy.scm.finance.domain.form.FinancePaymentAddForm;
+import com.xsy.scm.finance.domain.form.FinanceRefundOptionQueryForm;
+import com.xsy.scm.finance.domain.form.FinancePaymentReverseForm;
+import com.xsy.scm.finance.domain.vo.FinancePaymentVO;
+import com.xsy.scm.finance.domain.vo.FinanceRefundOptionVO;
+import com.xsy.scm.finance.service.FinanceRefundOptionQueryService;
+import com.xsy.scm.finance.service.FinancePaymentService;
+import com.xsy.scm.base.common.domain.PageResult;
+import com.xsy.scm.base.common.domain.ResponseDTO;
+import com.xsy.scm.base.module.support.operatelog.annotation.OperateLog;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * 财务付款登记入口。
+ *
+ * <p>
+ * 付款查询、导出与反向动作由独立端点提供，不复用本登记端点的权限。
+ *
+ * <p>
+ * 付款是资金动作，重复请求会重复付款，因此需要 {@code Idempotency-Key}：同键同内容重放首次结果。退款付款另由来源唯一索引兜底，两个不同键并发付同一张退款也只留一笔。
+ */
+@RestController
+@RequestMapping("/scm/finance/payment")
+@Tag(name = "SCM 财务付款")
+@RequiredArgsConstructor
+public class FinancePaymentController {
+
+    private final FinancePaymentService financePaymentService;
+
+    private final FinanceRefundOptionQueryService financeRefundOptionQueryService;
+
+    /**
+     * 付款表单可选的已完成、未付款退款单；可见范围跟随客户业务员范围。
+     */
+    @PostMapping("/refund-options")
+    @SaCheckPermission(FinancePermission.PAYMENT_ADD)
+    public ResponseDTO<PageResult<FinanceRefundOptionVO>> refundOptions(
+        @Valid @RequestBody FinanceRefundOptionQueryForm form) {
+        return ResponseDTO.ok(financeRefundOptionQueryService.query(form));
+    }
+
+    @PostMapping("/add")
+    @SaCheckPermission(FinancePermission.PAYMENT_ADD)
+    @OperateLog
+    public ResponseDTO<FinancePaymentVO> add(@Valid @RequestBody FinancePaymentAddForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseDTO.ok(financePaymentService.add(form, idempotencyKey));
+    }
+
+    @PostMapping("/reverse")
+    @SaCheckPermission(FinancePermission.PAYMENT_REVERSE)
+    @OperateLog
+    public ResponseDTO<FinancePaymentVO> reverse(@Valid @RequestBody FinancePaymentReverseForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseDTO.ok(financePaymentService.reverse(form, idempotencyKey));
+    }
+}

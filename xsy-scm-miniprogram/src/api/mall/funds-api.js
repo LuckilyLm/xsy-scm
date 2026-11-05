@@ -1,4 +1,4 @@
-import { getRequest } from '@/lib/smart-request';
+import { getRequest } from '@/lib/xsy-request';
 
 export const mallFundsApi = {
   walletSummary: () => getRequest('/scm/mall/funds/wallet/summary'),

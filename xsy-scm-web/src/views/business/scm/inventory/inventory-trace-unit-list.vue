@@ -1,8 +1,8 @@
 <!-- 包装码：一个码对应一个批次，由系统发号且不复用。页面提供发码、绑定和历史记录查询。 -->
 <template>
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
-      <a-row class="smart-query-form-row">
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
+      <a-row class="xsy-query-form-row">
         <a-form-item label="批次号">
           <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch" />
         </a-form-item>
@@ -12,7 +12,7 @@
         <a-form-item label="状态">
           <a-select v-model:value="queryForm.status" :options="STATUS_OPTIONS" allow-clear placeholder="全部" style="width: 140px" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-space>
             <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:unit:query'">查询</a-button>
             <a-button @click="resetQuery">重置</a-button>
@@ -20,11 +20,11 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-row data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
+    <a-row data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" @click="openIssue" v-privilege="'scm:inventory:unit:issue'">按批次发码</a-button>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRACE_UNIT" :refresh="queryData" />
       </div>
     </a-row>
@@ -66,7 +66,7 @@
           <ScmStatusTag :tone="record.status === 'ACTIVE' ? 'success' : 'neutral'" :label="record.status === 'ACTIVE' ? '有效' : '已作废'" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openReplay(record)">历史记录查询</a-button>
             <a-button type="link" size="small" @click="openBind(record)" v-privilege="'scm:inventory:unit:bind'">绑定分拣</a-button>
             <ScmActionMore :actions="moreActions(record)" @select="onMore(record, $event)" />
@@ -76,7 +76,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

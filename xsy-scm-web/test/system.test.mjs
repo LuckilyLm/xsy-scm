@@ -6,7 +6,8 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync, readdirSync, statSync} from 'node:fs';
+import {readSourceFileSync as readFileSync} from './helpers/source-reader.mjs';
+import {readdirSync, statSync} from 'node:fs';
 import {areaColumnsOf, areaNodesOf} from '../src/views/business/scm/common/scm-area.ts';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
@@ -138,23 +139,23 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
       ]),
     },
     {
-      key: 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm',
-      root: `${REPO}xsy-scm-server/sa-admin/src/main/java/com/xsy/scm`,
+      key: 'xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm',
+      root: `${REPO}xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm`,
       extensions: new Set(['.java']),
       java: true,
     },
     {
-      key: 'xsy-scm-server/sa-admin/src/main/resources',
-      root: `${REPO}xsy-scm-server/sa-admin/src/main/resources`,
+      key: 'xsy-scm-server/xsy-admin/src/main/resources',
+      root: `${REPO}xsy-scm-server/xsy-admin/src/main/resources`,
       extensions: new Set(['.xml', '.yml', '.yaml', '.properties']),
     },
     {
       // 后端测试树。与 `xsy-scm-web/test` 同理：只扫注释，测试类名、方法名、@DisplayName
       // 与断言里的字符串都不在射程内（`commentsOf` 对 `.java` 走 codeComments，先看字面量
       // 再看注释），所以「W5-」这类造数前缀、`assertThat(...)` 的期望值不会被误判。
-      // 范围刻意覆盖 net/lab1024 —— SmartAdminMapperPgValidationIT 的阶段演进账就在里面。
-      key: 'xsy-scm-server/sa-admin/src/test/java',
-      root: `${REPO}xsy-scm-server/sa-admin/src/test/java`,
+      // 范围刻意覆盖 管理模块 —— XsyMapperPgValidationIT 的阶段演进账就在里面。
+      key: 'xsy-scm-server/xsy-admin/src/test/java',
+      root: `${REPO}xsy-scm-server/xsy-admin/src/test/java`,
       extensions: new Set(['.java']),
       java: true,
     },
@@ -312,12 +313,12 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
       reason: '指向 docs/status.md 的 B7 缺口溯源，是活约定',
     },
     {
-      file: 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintPaperEnum.java',
+      file: 'xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintPaperEnum.java',
       marker: 'An 条目号（非业务值）',
       reason: '`{@link #A4}` 是纸张尺寸枚举值，不是计划编号',
     },
     {
-      file: 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/domain/model/ScmPrintTemplateModel.java',
+      file: 'xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/domain/model/ScmPrintTemplateModel.java',
       marker: 'An 条目号（非业务值）',
       reason: '`{@code A4}` 是纸张尺寸，不是计划编号',
     },
@@ -361,9 +362,9 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     // order-return-list 的 2 个 §14.5 引用随 B6 缺口补齐（原订单号/当时的客户资料已入 VO）一并移除，基线 4→2。
     'xsy-scm-web/src': {anchoredSection: 2},
     'xsy-scm-web/test': {anchoredSection: 0},
-    'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm': {anchoredSection: 0},
-    'xsy-scm-server/sa-admin/src/main/resources': {anchoredSection: 0},
-    'xsy-scm-server/sa-admin/src/test/java': {anchoredSection: 0},
+    'xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm': {anchoredSection: 0},
+    'xsy-scm-server/xsy-admin/src/main/resources': {anchoredSection: 0},
+    'xsy-scm-server/xsy-admin/src/test/java': {anchoredSection: 0},
   };
 
   // ------------------------------------------------------------------
@@ -675,10 +676,10 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     assert.deepEqual(migrations, [], 'db/migration 被纳入了扫描；已应用的 migration 不得修改');
     assert.ok(files.length > 10, 'resources 范围扫描不到文件，排除规则可能写错了');
     // 直接确认排除规则本身生效（而不是靠扩展名恰好不匹配兜住）
-    assert.ok(
-      readdirSync(`${REPO}xsy-scm-server/sa-admin/src/main/resources/db/migration`).length > 50,
-      'migration 目录不存在或为空，排除规则没有被真正验证'
-    );
+    const directory = `${REPO}xsy-scm-server/xsy-admin/src/main/resources/db/migration/modules`;
+    const modules = readdirSync(directory).filter((name) => /^V1000\.\d{2}__.*\.sql$/.test(name));
+    assert.equal(modules.length, 24, '24份已发布模块SQL必须完整存在');
+    assert.deepEqual(collectFiles(resources.root, new Set(['.sql'])), [], '即使显式选择SQL扩展名，也必须排除迁移目录');
   });
 
   test('过程标记必须为 0（未登记白名单的一律失败）', () => {
@@ -730,7 +731,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     // 否则开发者为了过测试会把 9 行有价值的说明硬压成 5 行，反而降低代码质量。
     const report = SCOPES.map((scope) => {
       const {longCommentCount, anchoredSection} = RESULTS.get(scope.key);
-      const short = scope.key.replace('xsy-scm-server/sa-admin/src/', '');
+      const short = scope.key.replace('xsy-scm-server/xsy-admin/src/', '');
       return `${short} >8行=${longCommentCount} 合法§链接=${anchoredSection}`;
     });
     console.log(`[scm-comment-noise] 审计信号（非违规）：${report.join(' | ')}`);
@@ -752,11 +753,11 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    */
 
   const ROOT = path.resolve(fileURLToPath(new URL('../../', import.meta.url)));
-  const MAPPERS = path.join(ROOT, 'xsy-scm-server/sa-admin/src/main/resources/mapper/scm');
+  const MAPPERS = path.join(ROOT, 'xsy-scm-server/xsy-admin/src/main/resources/mapper/scm');
   const METRICS_MAPPER = path.join(MAPPERS, 'metrics/ScmBusinessMetricsMapper.xml');
   const SCREEN_MAPPER = path.join(MAPPERS, 'screen/ScreenDataMapper.xml');
   const REPORT_MAPPER = path.join(MAPPERS, 'report/ReportDao.xml');
-  const DASHBOARD_SRC = path.join(ROOT, 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard');
+  const DASHBOARD_SRC = path.join(ROOT, 'xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/dashboard');
 
   const read = (file) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
 
@@ -1325,7 +1326,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    *
    * 注释层的同类规则在 `scm-comment-noise-contract`，那里只扫注释，因此写在正文里的
    * `**加粗**` 会原样显示成星号 —— 实测在库存盘点详情与转换单页各漏了一处。
-   * 只扫 SCM 自己的页面；SmartAdmin 页面按各自的界面约定检查。
+   * 只扫 SCM 自己的页面；XSY 页面按各自的界面约定检查。
    */
   const VISIBLE_MARKDOWN = [
     {label: 'markdown 加粗', pattern: /\*\*/},
@@ -1449,7 +1450,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 
   const GEO_JSON = new URL('../public/screen/china-province.json', import.meta.url);
   /** 区划字典种子的原文：被测的就是上线的那段 SQL，测试里不复制第二份省名清单。 */
-  const V40 = new URL('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V40__scm_geo_region_and_master_location.sql', import.meta.url);
+  const V40 = new URL('../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V40__scm_geo_region_and_master_location.sql', import.meta.url);
 
   function geoFeatures() {
     const collection = JSON.parse(readFileSync(GEO_JSON, 'utf8'));
@@ -1623,8 +1624,8 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 
   const ACCOUNT_DETAIL = '../src/views/system/account/components/message/components/message-detail.vue';
   const HEADER_DETAIL = '../src/layout/components/header-user-space/header-message-detail-modal.vue';
-  const BACKEND_ENUM = '../../xsy-scm-server/sa-base/src/main/java/net/lab1024/sa/base/module/support/message/constant/MessageTypeEnum.java';
-  const LOSS_GAIN_SERVICE = '../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/service/InventoryLossGainService.java';
+  const BACKEND_ENUM = '../../xsy-scm-server/xsy-base/src/main/java/com/xsy/scm/base/module/support/message/constant/MessageTypeEnum.java';
+  const LOSS_GAIN_SERVICE = '../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/inventory/service/InventoryLossGainService.java';
 
   test('驳回消息解析为单据入口，主键原样进 query', () => {
     const link = messageBusinessLink(MESSAGE_TYPE_INVENTORY_LOSS_GAIN, '1234567890123456789');
@@ -1655,7 +1656,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
       '后端 MessageTypeEnum 的数值必须与前端镜像一致，否则入口静默失效'
     );
     const todo = readFileSync(
-      new URL('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/constant/ScmTodoCardEnum.java', import.meta.url),
+      new URL('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/dashboard/constant/ScmTodoCardEnum.java', import.meta.url),
       'utf8'
     );
     assert.ok(todo.includes(`"${INVENTORY_LOSS_GAIN_LIST_PATH}`), '消息入口应跳到待办使用的同一个列表页');
@@ -1704,7 +1705,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
       .replace(/^\s*\/\/.*$/gm, '');
   }
 
-  const TODO_ENUM_JAVA = '../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/constant/ScmTodoCardEnum.java';
+  const TODO_ENUM_JAVA = '../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/dashboard/constant/ScmTodoCardEnum.java';
 
   const RECEIPT = '../src/views/business/scm/purchase/purchase-receipt-list.vue';
   const LOSS_GAIN = '../src/views/business/scm/inventory/inventory-loss-gain-list.vue';

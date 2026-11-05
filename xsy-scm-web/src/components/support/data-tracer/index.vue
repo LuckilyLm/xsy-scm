@@ -4,13 +4,13 @@
   *
 -->
 <template>
-  <a-form class="smart-query-form">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键字" class="smart-query-form-item">
+  <a-form class="xsy-query-form">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="关键字" class="xsy-query-form-item">
         <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="变更内容" />
       </a-form-item>
 
-      <a-form-item class="smart-query-form-item smart-margin-left10">
+      <a-form-item class="xsy-query-form-item xsy-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
@@ -61,7 +61,7 @@ import uaparser from 'ua-parser-js';
 import {nextTick, reactive, ref, watch} from 'vue';
 import {dataTracerApi} from '/@/api/support/data-tracer-api';
 import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import DataTracerTimeline from './data-tracer-timeline.vue';
 
 let props = defineProps({
@@ -121,7 +121,7 @@ async function ajaxQuery() {
     total.value = responseModel.data.total;
     tableData.value = list;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

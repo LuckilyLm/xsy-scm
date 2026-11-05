@@ -1,0 +1,152 @@
+package com.xsy.scm.trace.service;
+
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
+import com.xsy.scm.trace.constant.ScmTraceCorrectionStatusEnum;
+import com.xsy.scm.trace.constant.ScmTraceUnitStatusEnum;
+import com.xsy.scm.trace.constant.TraceErrorCode;
+import com.xsy.scm.trace.dao.TraceCorrectionDao;
+import com.xsy.scm.trace.dao.TraceUnitDao;
+import com.xsy.scm.trace.domain.form.TraceCorrectionApplyForm;
+import com.xsy.scm.trace.domain.form.TraceCorrectionDecisionForm;
+import com.xsy.scm.trace.domain.form.TraceCorrectionQueryForm;
+import com.xsy.scm.trace.domain.vo.TraceCorrectionVO;
+import com.xsy.scm.trace.domain.vo.TraceUnitVO;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.base.common.domain.PageResult;
+import com.xsy.scm.base.common.util.XsyPageUtil;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 包装码更正：带审批的解绑。
+ *
+ * <p>
+ * 绑定只能新增，撤销也追加一条解绑记录，原绑定行不动；解绑后该码回到可绑定状态，可以重新绑到正确的分拣行。 申请与审批必须是不同的人：谁提出、谁批准、为什么，全部留痕。
+ */
+@Service
+@RequiredArgsConstructor
+public class TraceCorrectionService {
+
+    private final TraceCorrectionDao traceCorrectionDao;
+
+    private final TraceUnitDao traceUnitDao;
+
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
+
+    private final ScmDataScopeService dataScopeService;
+
+    /** 申请更正：撤销当前这条绑定。 */
+    @Transactional(rollbackFor = Exception.class)
+    public TraceCorrectionVO apply(TraceCorrectionApplyForm form, String operator) {
+        TraceUnitVO.Unit unit = traceUnitDao.lockByCode(form.getUnitCode().trim());
+        if (unit == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
+        }
+        if (!ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_VOID);
+        }
+        warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(unit.getLotId()));
+        Long bindingId = traceUnitDao.findActiveBindingId(unit.getId());
+        if (bindingId == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_NO_BINDING);
+        }
+        requireNotOutbound(bindingId);
+        if (traceCorrectionDao.countPending(unit.getId()) > 0) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_PENDING_EXISTS);
+        }
+
+        TraceCorrectionVO correction = new TraceCorrectionVO();
+        correction.setUnitId(unit.getId());
+        correction.setUnitCode(unit.getUnitCode());
+        correction.setLotId(unit.getLotId());
+        correction.setBindingId(bindingId);
+        correction.setReason(form.getReason().trim());
+        correction.setRequestedBy(operator);
+        correction.setRequestedAt(OffsetDateTime.now());
+        traceCorrectionDao.insertCorrection(correction);
+        return traceCorrectionDao.findById(correction.getId());
+    }
+
+    /**
+     * 批准：追加解绑记录 + UNBIND 事件，绑定不再生效。
+     *
+     * <p>
+     * 自审禁止按操作者标识比较（{@code <userType>:<userId>}），与报损报溢一致。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public TraceCorrectionVO approve(TraceCorrectionDecisionForm form, String operator) {
+        TraceCorrectionVO correction = requirePending(form, operator);
+        // 订单行先于包装码加锁，与分拣自动绑定及手工绑定保持一致。
+        if (traceCorrectionDao.lockBoundOrderItem(correction.getBindingId()) == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_NO_BINDING);
+        }
+        TraceUnitVO.Unit unit = traceUnitDao.lockById(correction.getUnitId());
+        if (unit == null || !ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())
+            || !correction.getBindingId().equals(traceUnitDao.findActiveBindingId(unit.getId()))) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_NO_BINDING);
+        }
+        // 与正式出库共用订单行锁；等待发货完成后重新检查，不能凭申请时的状态解绑。
+        requireNotOutbound(correction.getBindingId());
+        OffsetDateTime now = OffsetDateTime.now();
+        traceCorrectionDao.insertUnbind(correction.getUnitId(), correction.getBindingId(), correction.getId(),
+            correction.getReason(), now, operator);
+        traceCorrectionDao.appendUnbindEvent(correction.getUnitId(), correction.getLotId(), correction.getId(), now,
+            operator, correction.getReason());
+        decide(form, operator, ScmTraceCorrectionStatusEnum.APPROVED.name(), now);
+        return traceCorrectionDao.findById(correction.getId());
+    }
+
+    /** 驳回：只留审批意见，绑定继续有效。 */
+    @Transactional(rollbackFor = Exception.class)
+    public TraceCorrectionVO reject(TraceCorrectionDecisionForm form, String operator) {
+        TraceCorrectionVO correction = requirePending(form, operator);
+        decide(form, operator, ScmTraceCorrectionStatusEnum.REJECTED.name(), OffsetDateTime.now());
+        return traceCorrectionDao.findById(correction.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public PageResult<TraceCorrectionVO> query(TraceCorrectionQueryForm form) {
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
+        var page = XsyPageUtil.convert2PageQuery(form);
+        List<TraceCorrectionVO> list = traceCorrectionDao.queryPage(page, form, scope.getWarehouseScope());
+        return XsyPageUtil.convert2PageResult(page, list);
+    }
+
+    private TraceCorrectionVO requirePending(TraceCorrectionDecisionForm form, String operator) {
+        TraceCorrectionVO correction = traceCorrectionDao.lockById(form.getId());
+        if (correction == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_NOT_FOUND);
+        }
+        warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(correction.getLotId()));
+        if (!ScmTraceCorrectionStatusEnum.PENDING.name().equals(correction.getStatus())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_STATE_INVALID);
+        }
+        if (operator != null && operator.equals(correction.getRequestedBy())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_SELF_APPROVAL);
+        }
+        return correction;
+    }
+
+    private void requireNotOutbound(Long bindingId) {
+        if (traceCorrectionDao.countConfirmedOutboundByBinding(bindingId) > 0) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_ALREADY_OUTBOUND);
+        }
+    }
+
+    private void decide(TraceCorrectionDecisionForm form, String operator, String status, OffsetDateTime now) {
+        if (traceCorrectionDao.decide(form.getId(), form.getVersion(), status, operator, now,
+            form.getReason() == null ? null : form.getReason().trim()) != 1) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_STATE_INVALID);
+        }
+    }
+}

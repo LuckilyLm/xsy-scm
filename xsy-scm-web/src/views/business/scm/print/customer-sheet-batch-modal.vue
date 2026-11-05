@@ -100,10 +100,7 @@ async function reload() {
   result.value = null;
   previewHtml.value = '';
   try {
-    const r = await printApi.batchPreview(
-      {documentType: documentType.value, businessDate: businessDate.value},
-      {suppressGlobalErrorMessage: true}
-    );
+    const r = await printApi.batchPreview({documentType: documentType.value, businessDate: businessDate.value}, {suppressGlobalErrorMessage: true});
     if (id !== requestId) return;
     result.value = r.data;
     previewHtml.value = r.data.renders.map(renderPrintHtml).join('');

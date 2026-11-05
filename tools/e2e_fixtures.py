@@ -35,8 +35,8 @@ from decimal import Decimal, InvalidOperation
 # 所以不能在浏览器里伪造 token，必须有真实账号。为避免污染种子管理员
 # （employee_id = 1），每次运行前新建一个临时员工，运行后按 login_name 精确清理。
 #
-# SmartAdmin 口令规则（从正式源码反推，勿凭记忆猜）：
-#   net.lab1024.sa.admin.module.system.employee.service.EmployeeService
+# XSY 口令规则（从正式源码反推，勿凭记忆猜）：
+#   com.xsy.scm.admin.module.system.employee.service.EmployeeService
 #     · employeeUid = UUID(true).toString(true)          → 无连字符小写 32 位十六进制
 #     · saltPwd     = password + "_" + UID.upper() + "_" + UID.lower()
 #     · loginPwd    = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8().encode(saltPwd)

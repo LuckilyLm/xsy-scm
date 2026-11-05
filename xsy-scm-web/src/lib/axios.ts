@@ -20,7 +20,7 @@ export type RequestOptions = {
   suppressGlobalErrorMessage?: boolean;
 };
 
-/** SmartAdmin 统一响应信封；文件流等其他响应不经过此类型。 */
+/** XSY 统一响应信封；文件流等其他响应不经过此类型。 */
 export interface ApiResponse<T = any> {
   code: number;
   ok: boolean;
@@ -34,7 +34,7 @@ export interface ApiResponse<T = any> {
 
 const TOKEN_HEADER = 'Authorization';
 
-const smartAxios = axios.create({
+const xsyAxios = axios.create({
   baseURL: import.meta.env.VITE_APP_API_URL,
 });
 
@@ -46,7 +46,7 @@ function logout() {
 
 // 请求拦截器
 
-smartAxios.interceptors.request.use(
+xsyAxios.interceptors.request.use(
   (config) => {
     // 带上登录令牌
     const token = localRead(LocalStorageKeyConst.USER_TOKEN);
@@ -63,7 +63,7 @@ smartAxios.interceptors.request.use(
 );
 
 // 响应拦截器
-smartAxios.interceptors.response.use(
+xsyAxios.interceptors.response.use(
   (response) => {
     // 非 JSON 直接返回原响应
     let contentType = response.headers['content-type'] ? response.headers['content-type'] : response.headers['Content-Type'];
@@ -147,7 +147,7 @@ smartAxios.interceptors.response.use(
  * 运行时分支无法用单一类型表达，只在 dispatch 出口做一次收口。
  */
 function dispatch(config: AxiosRequestConfig): Promise<unknown> {
-  return smartAxios.request(config);
+  return xsyAxios.request(config);
 }
 
 /** GET 请求 */

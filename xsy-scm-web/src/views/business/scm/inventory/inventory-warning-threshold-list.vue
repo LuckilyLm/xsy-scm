@@ -1,12 +1,12 @@
 <!-- 预警阈值配置。同一仓库和商品规格只能有一条配置，修改后立即生效。 -->
 <template>
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
-      <a-row class="smart-query-form-row">
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
+      <a-row class="xsy-query-form-row">
         <a-form-item label="仓库">
           <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-space>
             <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
             <a-button @click="resetQuery">重置</a-button>
@@ -14,11 +14,11 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-row data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
+    <a-row data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:threshold:add'"> 新建阈值配置 </a-button>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING_THRESHOLD" :refresh="queryData" />
       </div>
     </a-row>
@@ -57,7 +57,7 @@
           <span class="scm-quantity">{{ quantityText(record.warnMax) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openEdit(record)" v-privilege="'scm:inventory:threshold:update'"> 编辑 </a-button>
             <a-button type="link" size="small" danger @click="onDelete(record)" v-privilege="'scm:inventory:threshold:delete'"> 删除 </a-button>
           </a-space>
@@ -66,7 +66,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

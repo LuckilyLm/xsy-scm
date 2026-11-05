@@ -10,7 +10,7 @@
   >
     <a-spin :spinning="loading">
       <div class="drawer-body">
-        <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+        <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
           <template #action>
             <a-button v-if="loadFailed" size="small" @click="load(form.spuId)">重新加载</a-button>
           </template>

@@ -1,17 +1,17 @@
 <!-- 库存盘点单：确认时把“实盘量 − 账面量”的差异计入库存。确认时的账面量可能与保存时不同。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="盘点单号" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="盘点单号" class="xsy-query-form-item">
         <a-input v-model:value="queryForm.stocktakeNo" placeholder="盘点单号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item label="仓库" class="smart-query-form-item">
+      <a-form-item label="仓库" class="xsy-query-form-item">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px" />
       </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
+      <a-form-item label="状态" class="xsy-query-form-item">
         <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 140px" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:stocktake:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -27,8 +27,8 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+    <a-row class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:stocktake:add'"> 新建盘点单 </a-button>
         <a-button
           type="primary"
@@ -43,7 +43,7 @@
           <a-button :loading="importing" v-privilege="'scm:inventory:stocktake:import'">导入盘点</a-button>
         </a-upload>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_STOCKTAKE" :refresh="queryData" />
       </div>
     </a-row>
@@ -68,7 +68,7 @@
         <template v-else-if="column.dataIndex === 'confirmedAt'">{{ datetime(record.confirmedAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 详情和确认盘点常驻，其他操作收进“更多” -->
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
               v-if="record.status === 'PENDING'"
@@ -86,7 +86,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

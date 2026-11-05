@@ -20,8 +20,8 @@ import _ from 'lodash';
 import RoleTreeCheckbox from './role-tree-checkbox.vue';
 import {roleMenuApi} from '/@/api/system/role-menu-api';
 import {useRoleStore} from '/@/store/modules/system/role';
-import {SmartLoading} from '/@/components/framework/smart-loading';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 let roleStore = useRoleStore();
 let tree = ref();
@@ -54,14 +54,14 @@ async function saveChange() {
     roleId: selectRoleId.value,
     menuIdList: checkedData,
   };
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     await roleMenuApi.updateRoleMenu(params);
     message.success('保存成功');
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 </script>

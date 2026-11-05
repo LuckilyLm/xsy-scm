@@ -23,7 +23,7 @@ import {useSpinStore} from '/@/store/modules/system/spin';
 import {Popover, theme} from 'ant-design-vue';
 import {mixColor, themeColors} from '/@/theme/color';
 import {useScmThemeVars} from '/@/theme/scm/use-scm-theme-vars';
-import SmartCopyIcon from '/@/components/framework/smart-copy-icon/index.vue';
+import XsyCopyIcon from '/@/components/framework/xsy-copy-icon/index.vue';
 
 const antdLocale = computed(() => messages[useAppConfigStore().language].antdLocale);
 const dayjsLocale = computed(() => messages[useAppConfigStore().language].dayjsLocale);
@@ -100,7 +100,7 @@ function transformCellText({text, column, record, index}) {
         content: () =>
           h('div', {style: {display: 'flex'}}, [
             h('div', text),
-            h(SmartCopyIcon, {value: document.getElementById(`${column.dataIndex}${index}`).innerText}),
+            h(XsyCopyIcon, {value: document.getElementById(`${column.dataIndex}${index}`).innerText}),
           ]),
       }
     );
@@ -114,7 +114,7 @@ const {token} = useToken();
 // SCM 全局样式变量：主题色与暗色切换时同步刷新，业务组件不必各自注入一份
 useScmThemeVars();
 
-// 只在 SCM 页面挂外观类，OA 与系统设置页保持 SmartAdmin 原貌
+// 只在 SCM 页面挂外观类，OA 与系统设置页保持 XSY 原貌
 const route = useRoute();
 watchEffect(() => {
   document.body.classList.toggle('scm-module', route.meta?.scmModule === true);
@@ -127,13 +127,13 @@ watchEffect(() => {
   align-items: flex-start !important;
 }
 
-.smart-query-form {
+.xsy-query-form {
   background-color: @color-bg-container;
   padding: 5px 10px;
   margin-bottom: 10px;
 }
 
-.smart-detail-header {
+.xsy-detail-header {
   background-color: @color-bg-container;
   padding: 10px;
 }

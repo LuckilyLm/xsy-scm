@@ -26,7 +26,7 @@
         <template #icon><setting-outlined /></template>
       </a-button>
     </a-tooltip>
-    <SmartTableColumnModal ref="smartTableColumnModal" @change="updateColumn" />
+    <XsyTableColumnModal ref="xsyTableColumnModal" @change="updateColumn" />
   </span>
 </template>
 
@@ -34,10 +34,10 @@
 import _ from 'lodash';
 import {tableColumnApi} from '/@/api/support/table-column-api';
 import {onMounted, ref, watch, reactive} from 'vue';
-import SmartTableColumnModal from './smart-table-column-modal.vue';
+import XsyTableColumnModal from './xsy-table-column-modal.vue';
 import {message} from 'ant-design-vue';
-import {mergeColumn} from './smart-table-column-merge';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {mergeColumn} from './xsy-table-column-merge';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
 
 const props = defineProps({
@@ -112,11 +112,11 @@ async function buildUserTableColumns() {
       try {
         userTableColumnArray = JSON.parse(res.data);
       } catch (e1) {
-        smartSentry.captureError(e1);
+        xsySentry.captureError(e1);
       }
     }
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
   updateColumn(userTableColumnArray);
 }
@@ -138,7 +138,7 @@ function onFullScreen() {
 
 // 处理退出全屏
 function handleExitFullScreen() {
-  document.querySelector('#smartAdminHeader').style.display = 'block';
+  document.querySelector('#xsyHeader').style.display = 'block';
   fullScreenFlag.value = false;
   useAppConfigStore().exitFullScreen();
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
@@ -149,7 +149,7 @@ function handleExitFullScreen() {
 
 //判断各种浏览器 -全屏
 function launchElementFullScreen(element) {
-  document.querySelector('#smartAdminHeader').style.display = 'none';
+  document.querySelector('#xsyHeader').style.display = 'none';
   if (element.requestFullscreen) {
     element.requestFullscreen();
   } else if (element.mozRequestFullScreen) {
@@ -191,7 +191,7 @@ function exitElementFullscreen(element) {
 
 // ----------------- 弹窗 修改表格列 -------------------
 
-const smartTableColumnModal = ref<{show: (columns: unknown[], tableId?: number | string) => void}>();
+const xsyTableColumnModal = ref<{show: (columns: unknown[], tableId?: number | string) => void}>();
 
 function showModal() {
   const excluded = new Set(props.excludeColumnKeys);
@@ -201,7 +201,7 @@ function showModal() {
         return !excluded.has(key);
       })
     : newColumn;
-  smartTableColumnModal.value?.show(visibleColumns, props.tableId);
+  xsyTableColumnModal.value?.show(visibleColumns, props.tableId);
 }
 
 // 将弹窗修改的列数据，赋值给原表格 列数组

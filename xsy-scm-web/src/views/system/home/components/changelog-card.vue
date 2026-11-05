@@ -7,7 +7,7 @@
         <ul v-else class="home-changelog__list">
           <li v-for="item in entries" :key="item.changeLogId" class="home-changelog__item">
             <button type="button" class="home-changelog__link" @click="goDetail(item)">
-              {{ $smartEnumPlugin.getDescByValue('CHANGE_LOG_TYPE_ENUM', item.type) }}：{{ item.updateVersion }} 版本
+              {{ $xsyEnumPlugin.getDescByValue('CHANGE_LOG_TYPE_ENUM', item.type) }}：{{ item.updateVersion }} 版本
             </button>
             <span class="home-changelog__time">{{ item.publicDate }}</span>
           </li>

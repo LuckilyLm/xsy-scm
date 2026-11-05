@@ -85,7 +85,7 @@ import {useMallTheme} from '@/composables/use-mall-theme';
 import {onLoad} from '@dcloudio/uni-app';
 import {mallOrderApi} from '@/api/mall/order-api';
 import {mallAfterSaleApi} from '@/api/mall/after-sale-api';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {displayQuantity} from '@/utils/order-display';
 import {displayMoney} from '@/utils/money-display';
 import {AFTERSALE_REASONS, estimateLineAmount, isValidApplyQuantity, sumAmounts} from '@/utils/after-sale-display';
@@ -135,7 +135,7 @@ async function load() {
     const response = await mallOrderApi.getDetail(orderId.value);
     order.value = response.data || null;
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     uni.showToast({title: error?.message || '订单加载失败', icon: 'none'});
   } finally {
     loading.value = false;
@@ -193,7 +193,7 @@ async function submit() {
       setTimeout(() => uni.navigateBack(), 600);
     }
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     uni.showToast({title: error?.message || '提交失败，请稍后重试', icon: 'none'});
   } finally {
     submitting.value = false;

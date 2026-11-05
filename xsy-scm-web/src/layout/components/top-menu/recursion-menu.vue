@@ -3,14 +3,14 @@
   *
 -->
 <template>
-  <a-menu v-model:openKeys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu" mode="horizontal" :theme="theme">
+  <a-menu v-model:openKeys="openKeys" v-model:selectedKeys="selectedKeys" class="xsy-menu" mode="horizontal" :theme="theme">
     <template v-for="item in menuTree" :key="item.menuId">
       <template v-if="item.visibleFlag && !item.disabledFlag">
         <template v-if="$lodash.isEmpty(item.children)">
           <a-menu-item :key="item.menuId" @click="turnToPage(item)">
             <template #icon>
               <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)" />
-              <span v-else class="smart-menu-icon-blank" />
+              <span v-else class="xsy-menu-icon-blank" />
             </template>
             {{ item.menuName }}
           </a-menu-item>
@@ -49,7 +49,7 @@ function turnToPage(menu) {
 }
 
 /**
- * SmartAdmin中 router的name 就是 后端存储menu的id
+ * XSY中 router的name 就是 后端存储menu的id
  * 所以此处可以直接监听路由，根据路由更新菜单的选中和展开
  */
 function updateSelectKeys() {
@@ -73,7 +73,7 @@ defineExpose({
 </script>
 
 <style lang="less" scoped>
-.smart-menu {
+.xsy-menu {
   position: relative;
   // 顶部菜单是 header-main（flex）里的一段。不给宽度约束时它会按内容撑到 1723px，
   // 视口一变窄就整段溢出、连右侧图标一起被挤出屏幕，且没有滚动条。
@@ -84,7 +84,7 @@ defineExpose({
   overflow: hidden;
 
   // 没有图标的菜单留一个等宽空位，避免项宽随有无图标跳变。
-  :deep(.smart-menu-icon-blank) {
+  :deep(.xsy-menu-icon-blank) {
     display: inline-block;
     width: 1em;
     height: 1em;

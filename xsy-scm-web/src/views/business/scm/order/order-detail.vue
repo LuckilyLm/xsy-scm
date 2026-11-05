@@ -56,7 +56,7 @@
 
         <section class="detail-section">
           <h3>核心摘要</h3>
-          <a-space :size="4" wrap class="smart-margin-bottom10">
+          <a-space :size="4" wrap class="xsy-margin-bottom10">
             <ScmStatusTag :tone="orderStatusTone(order.status)" :label="SCM_ORDER_STATUS_ENUM[order.status || '']?.desc || '—'" />
             <a-tag v-if="order.tag" :color="tagColor(order.tag.color)">{{ order.tag.name }}</a-tag>
           </a-space>
@@ -141,7 +141,7 @@
 
           <h3 class="detail-section--nested">操作记录</h3>
           <a-button v-privilege="'scm:order:log:query'" @click="loadLogs">查看操作记录</a-button>
-          <a-timeline class="smart-margin-top10">
+          <a-timeline class="xsy-margin-top10">
             <a-timeline-item v-for="log in logs" :key="log.logId">
               <span class="scm-log-line">
                 <span>{{ datetime(log.createdAt) }}</span>

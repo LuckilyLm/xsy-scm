@@ -1,4 +1,4 @@
-import type {SmartEnum} from '/@/types/smart-enum';
+import type {XsyEnum} from '/@/types/xsy-enum';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 
 /** 与 ScmTraceInspectionStatusEnum 和报告表 CHECK 约束逐值对应。过期是按时间算出来的。 */
@@ -6,14 +6,14 @@ export const SCM_TRACE_INSPECTION_STATUS_ENUM = {
   DRAFT: {value: 'DRAFT', desc: '草稿'},
   PUBLISHED: {value: 'PUBLISHED', desc: '已发布'},
   WITHDRAWN: {value: 'WITHDRAWN', desc: '已撤回'},
-} as const satisfies SmartEnum<string>;
+} as const satisfies XsyEnum<string>;
 
 /** 与 ScmTraceInspectionConclusionEnum 对应；未判定不能按合格展示。 */
 export const SCM_TRACE_INSPECTION_CONCLUSION_ENUM = {
   QUALIFIED: {value: 'QUALIFIED', desc: '合格'},
   UNQUALIFIED: {value: 'UNQUALIFIED', desc: '不合格'},
   UNDETERMINED: {value: 'UNDETERMINED', desc: '未判定'},
-} as const satisfies SmartEnum<string>;
+} as const satisfies XsyEnum<string>;
 
 export type InspectionStatus = keyof typeof SCM_TRACE_INSPECTION_STATUS_ENUM;
 export type InspectionConclusion = keyof typeof SCM_TRACE_INSPECTION_CONCLUSION_ENUM;
@@ -29,8 +29,8 @@ export const INSPECTION_CONCLUSION_TONE: Record<InspectionConclusion, ScmStatusT
   UNDETERMINED: 'neutral',
 };
 
-export const inspectionStatusLabel = (value: string) => (SCM_TRACE_INSPECTION_STATUS_ENUM as SmartEnum<string>)[value]?.desc ?? '未知状态';
-export const inspectionConclusionLabel = (value: string) => (SCM_TRACE_INSPECTION_CONCLUSION_ENUM as SmartEnum<string>)[value]?.desc ?? '未知结论';
+export const inspectionStatusLabel = (value: string) => (SCM_TRACE_INSPECTION_STATUS_ENUM as XsyEnum<string>)[value]?.desc ?? '未知状态';
+export const inspectionConclusionLabel = (value: string) => (SCM_TRACE_INSPECTION_CONCLUSION_ENUM as XsyEnum<string>)[value]?.desc ?? '未知结论';
 
 export function inspectionPublicResult(report: {status: string; expired: boolean; conclusion: string}) {
   if (report.status !== SCM_TRACE_INSPECTION_STATUS_ENUM.PUBLISHED.value) return {label: '报告未公开', tone: 'neutral' as const};

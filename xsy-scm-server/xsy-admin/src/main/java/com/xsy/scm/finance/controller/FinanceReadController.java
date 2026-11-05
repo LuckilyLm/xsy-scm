@@ -1,0 +1,189 @@
+package com.xsy.scm.finance.controller;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.finance.domain.form.FinanceOperationLogQueryForm;
+import com.xsy.scm.finance.domain.form.FinancePayableQueryForm;
+import com.xsy.scm.finance.domain.form.FinancePaymentQueryForm;
+import com.xsy.scm.finance.domain.form.FinanceReceivableQueryForm;
+import com.xsy.scm.finance.domain.form.FinanceReceiptQueryForm;
+import com.xsy.scm.finance.domain.vo.FinanceOperationLogVO;
+import com.xsy.scm.finance.domain.vo.FinancePayableDetailVO;
+import com.xsy.scm.finance.domain.vo.FinancePayableVO;
+import com.xsy.scm.finance.domain.vo.FinancePaymentDetailVO;
+import com.xsy.scm.finance.domain.vo.FinancePaymentQueryVO;
+import com.xsy.scm.finance.domain.vo.FinanceReceivableDetailVO;
+import com.xsy.scm.finance.domain.vo.FinanceReceivableVO;
+import com.xsy.scm.finance.domain.vo.FinanceReceiptDetailVO;
+import com.xsy.scm.finance.domain.vo.FinanceReceiptQueryVO;
+import com.xsy.scm.finance.permission.FinancePermission;
+import com.xsy.scm.finance.service.FinanceOperationLogQueryService;
+import com.xsy.scm.finance.service.FinancePayableQueryService;
+import com.xsy.scm.finance.service.FinancePaymentQueryService;
+import com.xsy.scm.finance.service.FinanceReceivableQueryService;
+import com.xsy.scm.finance.service.FinanceReceiptQueryService;
+import com.xsy.scm.common.excel.ScmExcel;
+import com.xsy.scm.finance.support.FinanceExportLabels;
+import com.xsy.scm.base.common.domain.PageResult;
+import com.xsy.scm.base.common.domain.ResponseDTO;
+import com.xsy.scm.base.module.support.operatelog.annotation.OperateLog;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * 财务的只读列表、详情、导出与操作日志。
+ */
+@RestController
+@RequestMapping("/scm/finance")
+@Tag(name = "SCM 财务查询")
+@RequiredArgsConstructor
+public class FinanceReadController {
+
+    private static final List<String> RECEIVABLE_EXPORT_TITLES = List.of("应收单号", "订单号", "客户名称", "记录类型", "金额", "扣减后应收",
+        "已抵扣", "剩余待收", "抵扣超额", "结清状态", "业务时间", "原因");
+
+    private static final List<String> PAYABLE_EXPORT_TITLES = List.of("应付单号", "采购单号", "供应商名称", "记录类型", "金额", "扣减后应付",
+        "已抵扣", "剩余待付", "抵扣超额", "结清状态", "业务时间", "原因");
+
+    private static final List<String> RECEIPT_EXPORT_TITLES = List.of("收款单号", "客户名称", "记录类型", "金额", "有效金额", "已抵扣",
+        "待抵扣", "方式", "收款时间", "收付款凭证号", "撤销原因");
+
+    private static final List<String> PAYMENT_EXPORT_TITLES = List.of("付款单号", "客户或供应商类型", "客户或供应商名称", "记录类型", "金额",
+        "有效金额", "已抵扣", "待抵扣", "方式", "付款时间", "来源类型", "来源编号");
+
+    private final FinanceReceivableQueryService financeReceivableQueryService;
+    private final FinancePayableQueryService financePayableQueryService;
+    private final FinanceReceiptQueryService financeReceiptQueryService;
+    private final FinancePaymentQueryService financePaymentQueryService;
+    private final FinanceOperationLogQueryService financeOperationLogQueryService;
+
+    @PostMapping("/receivable/query")
+    @SaCheckPermission(FinancePermission.RECEIVABLE_QUERY)
+    public ResponseDTO<PageResult<FinanceReceivableVO>> receivableQuery(
+        @Valid @RequestBody FinanceReceivableQueryForm form) {
+        return ResponseDTO.ok(financeReceivableQueryService.query(form));
+    }
+
+    @GetMapping("/receivable/{id}")
+    @SaCheckPermission(FinancePermission.RECEIVABLE_QUERY)
+    public ResponseDTO<FinanceReceivableDetailVO> receivableDetail(@PathVariable("id") Long id) {
+        return ResponseDTO.ok(financeReceivableQueryService.detail(id));
+    }
+
+    @PostMapping("/receivable/export")
+    @SaCheckPermission(value = {FinancePermission.RECEIVABLE_QUERY, FinancePermission.EXPORT}, mode = SaMode.AND)
+    @OperateLog
+    public void exportReceivables(@Valid @RequestBody FinanceReceivableQueryForm form, HttpServletResponse response)
+        throws IOException {
+        List<FinanceReceivableVO> rows = financeReceivableQueryService.exportRows(form);
+        List<List<Object>> data = rows.stream()
+            .map(row -> ScmExcel.row(RECEIVABLE_EXPORT_TITLES, row.getReceivableNo(), row.getOrderNo(),
+                row.getCustomerName(), FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(),
+                row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(),
+                FinanceExportLabels.settleState(row.getSettleState()), row.getEventAt(), row.getReason()))
+            .toList();
+        ScmExcel.write(response, "应收明细.xlsx", "应收明细", RECEIVABLE_EXPORT_TITLES, data);
+    }
+
+    @PostMapping("/payable/query")
+    @SaCheckPermission(FinancePermission.PAYABLE_QUERY)
+    public ResponseDTO<PageResult<FinancePayableVO>> payableQuery(@Valid @RequestBody FinancePayableQueryForm form) {
+        return ResponseDTO.ok(financePayableQueryService.query(form));
+    }
+
+    @GetMapping("/payable/{id}")
+    @SaCheckPermission(FinancePermission.PAYABLE_QUERY)
+    public ResponseDTO<FinancePayableDetailVO> payableDetail(@PathVariable("id") Long id) {
+        return ResponseDTO.ok(financePayableQueryService.detail(id));
+    }
+
+    @PostMapping("/payable/export")
+    @SaCheckPermission(value = {FinancePermission.PAYABLE_QUERY, FinancePermission.EXPORT}, mode = SaMode.AND)
+    @OperateLog
+    public void exportPayables(@Valid @RequestBody FinancePayableQueryForm form, HttpServletResponse response)
+        throws IOException {
+        List<FinancePayableVO> rows = financePayableQueryService.exportRows(form);
+        List<List<Object>> data = rows.stream()
+            .map(row -> ScmExcel.row(PAYABLE_EXPORT_TITLES, row.getPayableNo(), row.getPurchaseOrderNo(),
+                row.getSupplierName(), FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(),
+                row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(),
+                FinanceExportLabels.settleState(row.getSettleState()), row.getEventAt(), row.getReason()))
+            .toList();
+        ScmExcel.write(response, "应付明细.xlsx", "应付明细", PAYABLE_EXPORT_TITLES, data);
+    }
+
+    @PostMapping("/receipt/query")
+    @SaCheckPermission(FinancePermission.RECEIPT_QUERY)
+    public ResponseDTO<PageResult<FinanceReceiptQueryVO>> receiptQuery(
+        @Valid @RequestBody FinanceReceiptQueryForm form) {
+        return ResponseDTO.ok(financeReceiptQueryService.query(form));
+    }
+
+    @GetMapping("/receipt/{id}")
+    @SaCheckPermission(FinancePermission.RECEIPT_QUERY)
+    public ResponseDTO<FinanceReceiptDetailVO> receiptDetail(@PathVariable("id") Long id) {
+        return ResponseDTO.ok(financeReceiptQueryService.detail(id));
+    }
+
+    @PostMapping("/receipt/export")
+    @SaCheckPermission(value = {FinancePermission.RECEIPT_QUERY, FinancePermission.EXPORT}, mode = SaMode.AND)
+    @OperateLog
+    public void exportReceipts(@Valid @RequestBody FinanceReceiptQueryForm form, HttpServletResponse response)
+        throws IOException {
+        List<FinanceReceiptQueryVO> rows = financeReceiptQueryService.exportRows(form);
+        List<List<Object>> data = rows.stream()
+            .map(row -> ScmExcel.row(RECEIPT_EXPORT_TITLES, row.getReceiptNo(), row.getCustomerName(),
+                FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(), row.getEffectiveAmount(),
+                row.getUsedAmount(), row.getPendingWriteOffAmount(), FinanceExportLabels.receiptMethod(row.getMethod()),
+                row.getReceivedAt(), row.getExternalReference(), row.getReason()))
+            .toList();
+        ScmExcel.write(response, "收款明细.xlsx", "收款明细", RECEIPT_EXPORT_TITLES, data);
+    }
+
+    @PostMapping("/payment/query")
+    @SaCheckPermission(FinancePermission.PAYMENT_QUERY)
+    public ResponseDTO<PageResult<FinancePaymentQueryVO>> paymentQuery(
+        @Valid @RequestBody FinancePaymentQueryForm form) {
+        return ResponseDTO.ok(financePaymentQueryService.query(form));
+    }
+
+    @GetMapping("/payment/{id}")
+    @SaCheckPermission(FinancePermission.PAYMENT_QUERY)
+    public ResponseDTO<FinancePaymentDetailVO> paymentDetail(@PathVariable("id") Long id) {
+        return ResponseDTO.ok(financePaymentQueryService.detail(id));
+    }
+
+    @PostMapping("/payment/export")
+    @SaCheckPermission(value = {FinancePermission.PAYMENT_QUERY, FinancePermission.EXPORT}, mode = SaMode.AND)
+    @OperateLog
+    public void exportPayments(@Valid @RequestBody FinancePaymentQueryForm form, HttpServletResponse response)
+        throws IOException {
+        List<FinancePaymentQueryVO> rows = financePaymentQueryService.exportRows(form);
+        List<List<Object>> data = rows.stream()
+            .map(row -> ScmExcel.row(PAYMENT_EXPORT_TITLES, row.getPaymentNo(),
+                FinanceExportLabels.counterpartyType(row.getCounterpartyType()), row.getCounterpartyName(),
+                FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(), row.getEffectiveAmount(),
+                row.getUsedAmount(), row.getPendingWriteOffAmount(), FinanceExportLabels.paymentMethod(row.getMethod()),
+                row.getPaidAt(), FinanceExportLabels.paymentSourceType(row.getSourceType()), row.getSourceId()))
+            .toList();
+        ScmExcel.write(response, "付款明细.xlsx", "付款明细", PAYMENT_EXPORT_TITLES, data);
+    }
+
+    @GetMapping("/log/query")
+    public ResponseDTO<List<FinanceOperationLogVO>> operationLogs(
+        @Valid @ModelAttribute FinanceOperationLogQueryForm form) {
+        return ResponseDTO.ok(financeOperationLogQueryService.query(form));
+    }
+}

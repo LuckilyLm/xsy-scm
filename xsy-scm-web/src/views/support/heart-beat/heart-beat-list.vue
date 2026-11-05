@@ -6,33 +6,32 @@
   <a-card size="small" :bordered="false" :hoverable="true">
     <a-alert>
       <template v-slot:message>
-        <h4>Smart-Heart-Beat 心跳服务介绍：</h4>
+        <h4>服务运行状态说明：</h4>
       </template>
       <template v-slot:description>
         <pre>
-简介：Smart-Heart-Beat 是心跳服务，用于监测Java应用的状态等其他信息。
-原理：Java后端会在项目启动的时候开启一个线程，每隔一段时间将该应用的IP、进程号更新到数据库t_heart_beat_record表中。
+简介：服务定期上报运行信息，便于查看当前状态。
+列表显示服务地址、进程号及最近上报时间，可按关键字和时间查询。
 
 用途：
-1）在各个环境（无论开发、测试、生产）能统一看到所有启动的服务列表；
-2）检测Java应用是否存活；
-3）当某些业务只允许有一个服务启动的时候，用于排查是否别人也启动的服务；
-4） ※强烈推荐※</pre
+1）查看已上报的服务列表；
+2）根据最近上报时间排查服务是否仍在运行；
+3）核对是否有重复启动的服务。</pre
         >
       </template>
     </a-alert>
 
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键字" class="smart-query-form-item">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="关键字" class="xsy-query-form-item">
           <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="关键字" />
         </a-form-item>
 
-        <a-form-item label="心跳时间" class="smart-query-form-item">
+        <a-form-item label="心跳时间" class="xsy-query-form-item">
           <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange" style="width: 240px" />
         </a-form-item>
 
-        <a-form-item class="smart-query-form-item smart-margin-left10">
+        <a-form-item class="xsy-query-form-item xsy-margin-left10">
           <a-button-group>
             <a-button type="primary" @click="onSearch">
               <template #icon>
@@ -51,19 +50,19 @@
       </a-row>
     </a-form>
     <a-row justify="end">
-      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.HEART_BEAT" :refresh="ajaxQuery" />
+      <TableOperator class="xsy-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.HEART_BEAT" :refresh="ajaxQuery" />
     </a-row>
     <a-table
       size="small"
       bordered
       :loading="tableLoading"
-      class="smart-margin-top10"
+      class="xsy-margin-top10"
       :dataSource="tableData"
       :columns="columns"
       rowKey="goodsId"
       :pagination="false"
     />
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -84,7 +83,7 @@ import {onMounted, reactive, ref} from 'vue';
 import {heartBeatApi} from '/@/api/support/heart-beat-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 
@@ -159,7 +158,7 @@ async function ajaxQuery() {
     total.value = responseModel.data.total;
     tableData.value = list;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

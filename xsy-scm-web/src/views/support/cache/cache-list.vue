@@ -20,10 +20,10 @@ Caffeine ：
       </template>
     </a-alert>
 
-    <LocalTable size="small" bordered class="smart-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag">
+    <LocalTable size="small" bordered class="xsy-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="xsy-table-operate">
             <a-button @click="remove(record.key)" v-privilege="'support:cache:delete'" type="link">清除</a-button>
             <a-button @click="getAllKeys(record.key)" v-privilege="'support:cache:keys'" type="link">获取所有key </a-button>
           </div>
@@ -37,10 +37,10 @@ import LocalTable from '/@/components/support/local-table/index.vue';
 import {message} from 'ant-design-vue';
 import {onMounted, reactive, ref, h} from 'vue';
 import {cacheApi} from '/@/api/support/cache-api';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {Modal} from 'ant-design-vue';
 import _ from 'lodash';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 //------------------------ 删除 ---------------------
 
@@ -50,16 +50,16 @@ async function remove(key) {
     message.success('删除成功');
     ajaxQuery();
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 
 //------------------------ 获取所有key ---------------------
 async function getAllKeys(cacheName) {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     let res = await cacheApi.getKeys(cacheName);
-    SmartLoading.hide();
+    XsyLoading.hide();
     Modal.info({
       title: '所有Key:' + cacheName,
       content: h('div', {}, [h('p', _.join(res.data, ' , '))]),
@@ -68,9 +68,9 @@ async function getAllKeys(cacheName) {
       },
     });
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 
@@ -99,7 +99,7 @@ async function ajaxQuery() {
     let res = await cacheApi.getAllCacheNames();
     tableData.value = res.data.map((e) => Object.assign({}, {key: e}));
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

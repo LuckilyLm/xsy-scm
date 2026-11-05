@@ -1,5 +1,5 @@
 <template>
-  <div data-toolbar-layout="single" class="smart-table-btn-block">
+  <div data-toolbar-layout="single" class="xsy-table-btn-block">
     <a-button v-if="routeStatus === 'PENDING'" type="primary" v-privilege="'scm:delivery:route:update'" :disabled="busy" @click="emit('addOrders')"
       >加入订单
     </a-button>

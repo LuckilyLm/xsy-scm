@@ -1,14 +1,14 @@
 <!-- 打印记录只读；重印使用当时保存的内容，金额按当前权限隐藏。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="单据类型" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="单据类型" class="xsy-query-form-item">
         <a-select v-model:value="queryForm.documentType" :options="typeOptions" style="width: 180px" placeholder="全部类型" />
       </a-form-item>
-      <a-form-item label="业务单号" class="smart-query-form-item">
+      <a-form-item label="业务单号" class="xsy-query-form-item">
         <a-input v-model:value="queryForm.businessNo" placeholder="采购单号等" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:print:record:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -41,14 +41,14 @@
         <template v-else-if="column.dataIndex === 'printedAt'">{{ datetime(record.printedAt) }}</template>
         <template v-else-if="column.dataIndex === 'printedBy'">{{ record.printedBy || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" :loading="reprinting === record.id" @click="reprint(record)">重印</a-button>
           </a-space>
         </template>
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

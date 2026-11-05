@@ -6,7 +6,7 @@ import {createRouter, createWebHashHistory} from 'vue-router';
 import {routerArray} from './routers';
 import {PAGE_PATH_404, PAGE_PATH_LOGIN, HOME_PAGE_PATH} from '/@/constants/common-const';
 import {HOME_PAGE_NAME} from '/@/constants/system/home-const';
-import SmartLayout from '../layout/index.vue';
+import XsyLayout from '../layout/index.vue';
 import {useUserStore} from '/@/store/modules/system/user';
 import {localClear, localRead} from '/@/utils/local-util';
 import _ from 'lodash';
@@ -160,7 +160,7 @@ export function buildRoutes(menuRouterList) {
   router.addRoute({
     path: '/',
     meta: {},
-    component: SmartLayout,
+    component: XsyLayout,
     children: routerList,
   });
 }

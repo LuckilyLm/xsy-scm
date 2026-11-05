@@ -115,7 +115,7 @@
               <span v-else class="scm-money">{{ price(record.purchasePrice) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'action'">
-              <a-space :size="0" class="smart-table-operate scm-table-actions">
+              <a-space :size="0" class="xsy-table-operate scm-table-actions">
                 <a-button v-if="canFill(record)" type="link" size="small" v-privilege="'scm:purchase:price:fill'" @click="openPrice('FILL', record)"
                   >补价</a-button
                 >

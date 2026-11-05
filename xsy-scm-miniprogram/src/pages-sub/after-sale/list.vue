@@ -42,7 +42,7 @@
 
   import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app';
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
-  import { smartSentry } from '@/lib/smart-sentry';
+  import { xsySentry } from '@/lib/xsy-sentry';
   import { COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
   import { formatDateTime } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
@@ -95,7 +95,7 @@
       hasMore.value = (page.list || []).length >= PAGE_SIZE;
     } catch (error) {
       if (seq !== loadSeq) return;
-      smartSentry.captureError(error);
+      xsySentry.captureError(error);
       uni.showToast({ title: error?.message || '售后单加载失败', icon: 'none' });
     } finally {
       if (seq === loadSeq) loading.value = false;

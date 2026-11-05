@@ -13,10 +13,10 @@
     <!--中间内容，一共三部分：1、顶部;2、中间内容区域;3、底部（一般是公司版权信息）;-->
     <a-layout class="admin-layout-main" :style="`height: ${windowHeight}px`" :id="LAYOUT_ELEMENT_IDS.main">
       <!-- 顶部头部信息 -->
-      <a-layout-header class="smart-layout-header" :id="LAYOUT_ELEMENT_IDS.header" v-show="!fullScreenFlag">
-        <a-row justify="space-between" class="smart-layout-header-user">
+      <a-layout-header class="xsy-layout-header" :id="LAYOUT_ELEMENT_IDS.header" v-show="!fullScreenFlag">
+        <a-row justify="space-between" class="xsy-layout-header-user">
           <a-col
-            class="smart-layout-header-left"
+            class="xsy-layout-header-left"
             :style="{
               'max-width': `calc(100% - ${rightWidth}px)`,
             }"
@@ -37,7 +37,7 @@
             </span>
           </a-col>
           <!---用戶操作区域-->
-          <a-col class="smart-layout-header-right">
+          <a-col class="xsy-layout-header-right">
             <HeaderUserSpace />
           </a-col>
         </a-row>
@@ -70,8 +70,8 @@
         </div>
       </a-layout-content>
       <!-- footer 版权公司信息 -->
-      <a-layout-footer class="smart-layout-footer" v-show="footerFlag">
-        <SmartFooter />
+      <a-layout-footer class="xsy-layout-footer" v-show="footerFlag">
+        <XsyFooter />
       </a-layout-footer>
       <!---- 回到顶部 --->
       <a-back-top :target="backTopTarget" :visibilityHeight="80" />
@@ -96,10 +96,10 @@ import HeaderUserSpace from './components/header-user-space/index.vue';
 import MenuLocationBreadcrumb from './components/menu-location-breadcrumb/index.vue';
 import PageTag from './components/page-tag/index.vue';
 import SideExpandMenu from './components/side-expand-menu/index.vue';
-import SmartFooter from './components/smart-footer/index.vue';
-import {smartKeepAlive} from './components/smart-keep-alive';
+import XsyFooter from './components/xsy-footer/index.vue';
+import {xsyKeepAlive} from './components/xsy-keep-alive';
 import IframeIndex from '/@/components/framework/iframe/iframe-index.vue';
-import watermark from '../lib/smart-watermark';
+import watermark from '../lib/xsy-watermark';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
 import {useUserStore} from '/@/store/modules/system/user';
 import SideHelpDoc from './components/side-help-doc/index.vue';
@@ -157,8 +157,8 @@ const rightWidth = ref(0);
 function sizeComputed() {
   const tagParentElement = document.querySelector('.location-breadcrumb');
   const tagsElement = tagParentElement.querySelector('.ant-tabs-nav-list');
-  const parentElement = document.querySelector('.smart-layout-header-user');
-  const rightElement = document.querySelector('.smart-layout-header-right');
+  const parentElement = document.querySelector('.xsy-layout-header-user');
+  const rightElement = document.querySelector('.xsy-layout-header-right');
   rightWidth.value = rightElement.offsetWidth;
   let ro = new ResizeObserver((e) => {
     rightWidth.value = rightElement.offsetWidth + 10;
@@ -200,7 +200,7 @@ const backTopTarget = () => {
   return document.getElementById(LAYOUT_ELEMENT_IDS.main);
 };
 // ----------------------- keep-alive相关 -----------------------
-let {route, keepAliveIncludes, iframeNotKeepAlivePageFlag, keepAliveIframePages} = smartKeepAlive();
+let {route, keepAliveIncludes, iframeNotKeepAlivePageFlag, keepAliveIframePages} = xsyKeepAlive();
 const router = useRouter();
 
 function goHome() {
@@ -222,18 +222,18 @@ const {token} = useToken();
   height: auto;
 }
 
-.smart-layout-header {
+.xsy-layout-header {
   background: @color-bg-container;
   padding: 0;
   z-index: 21;
 }
 
-.smart-layout-header-user {
+.xsy-layout-header-user {
   height: @header-user-height;
   border-bottom: 1px solid @color-border-secondary;
 }
 
-.smart-layout-header-left {
+.xsy-layout-header-left {
   display: flex;
   height: @header-user-height;
 
@@ -280,7 +280,7 @@ const {token} = useToken();
   }
 }
 
-.smart-layout-header-right {
+.xsy-layout-header-right {
   display: flex;
   height: @header-user-height;
 }
@@ -342,7 +342,7 @@ const {token} = useToken();
   }
 }
 
-.smart-layout-footer {
+.xsy-layout-footer {
   position: relative;
   padding: 10px 0;
   display: flex;

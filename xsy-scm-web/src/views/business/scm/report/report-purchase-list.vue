@@ -1,37 +1,37 @@
 <!-- 采购分析按提交日统计，只读。承诺金额和收货金额都不等于应付金额。 -->
 <template>
-  <a-form v-if="activeTab !== 'daily'" class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="提交日期" class="smart-query-form-item">
+  <a-form v-if="activeTab !== 'daily'" class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="提交日期" class="xsy-query-form-item">
         <ReportDateRangePicker v-model:value="dateRange" />
       </a-form-item>
-      <a-form-item label="供应商" class="smart-query-form-item">
+      <a-form-item label="供应商" class="xsy-query-form-item">
         <SupplierSelect v-model:value="filters.supplierId" width="200px" />
       </a-form-item>
-      <a-form-item label="采购员" class="smart-query-form-item">
+      <a-form-item label="采购员" class="xsy-query-form-item">
         <EmployeeSelect v-model:value="filters.purchaserId" width="160px" />
       </a-form-item>
-      <a-form-item label="仓库" class="smart-query-form-item">
+      <a-form-item label="仓库" class="xsy-query-form-item">
         <WarehouseSelect v-model:value="filters.warehouseId" width="180px" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" v-privilege="PERM.PURCHASE_QUERY" @click="onSearch">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
-        <a-button class="smart-margin-left10" @click="toggleAdvanced">
+        <a-button class="xsy-margin-left10" @click="toggleAdvanced">
           {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
         </a-button>
       </a-form-item>
     </a-row>
-    <a-row v-if="advanced" class="smart-query-form-row">
-      <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.status" enum-name="SCM_PURCHASE_STATUS_ENUM" width="160px" />
+    <a-row v-if="advanced" class="xsy-query-form-row">
+      <a-form-item label="状态" class="xsy-query-form-item">
+        <XsyEnumSelect v-model:value="filters.status" enum-name="SCM_PURCHASE_STATUS_ENUM" width="160px" />
       </a-form-item>
-      <a-form-item label="商品关键字" class="smart-query-form-item">
+      <a-form-item label="商品关键字" class="xsy-query-form-item">
         <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item v-if="activeTab === 'trend'" label="商品规格" class="smart-query-form-item">
+      <a-form-item v-if="activeTab === 'trend'" label="商品规格" class="xsy-query-form-item">
         <SkuSelect v-model:value="filters.skuId" width="240px" placeholder="按商品规格看价格曲线" />
       </a-form-item>
     </a-row>
@@ -50,7 +50,7 @@
     </template>
   </a-alert>
 
-  <a-space v-if="activeTab === 'product'" class="smart-margin-top10" v-privilege="PERM.EXPORT">
+  <a-space v-if="activeTab === 'product'" class="xsy-margin-top10" v-privilege="PERM.EXPORT">
     <span>导出字段</span>
     <a-select
       v-model:value="purchaseProductExportKeys"
@@ -63,13 +63,13 @@
       @focus="loadPurchaseProductExportColumns"
     />
   </a-space>
-  <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
+  <a-tabs v-model:activeKey="activeTab" class="xsy-margin-top10" @change="onTabChange">
     <a-tab-pane key="daily" tab="每日清单">
       <PurchaseDailyReport />
     </a-tab-pane>
     <a-tab-pane key="overview" tab="采购概览">
-      <a-row data-toolbar-layout="single" class="smart-table-btn-block scm-table-toolbar">
-        <div class="smart-table-operate-block">
+      <a-row data-toolbar-layout="single" class="xsy-table-btn-block scm-table-toolbar">
+        <div class="xsy-table-operate-block">
           <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="overviewExport.exporting" @click="exportOverview"
             >导出</a-button
           >
@@ -80,7 +80,7 @@
           <ReportKpiCard :label="card.label" :value="card.value" :warning="card.warning" />
         </a-col>
       </a-row>
-      <ReportBarChart class="smart-margin-top10" title="供应商采购入库成本 TOP10" :items="topItems(supplierTopRows)" series-name="采购入库成本金额" />
+      <ReportBarChart class="xsy-margin-top10" title="供应商采购入库成本 TOP10" :items="topItems(supplierTopRows)" series-name="采购入库成本金额" />
     </a-tab-pane>
 
     <a-tab-pane key="product" tab="按商品">
@@ -218,7 +218,7 @@ import PurchaseDailyReport from './report-components/purchase-daily-report.vue';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import {message, type TableColumnsType} from 'ant-design-vue';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import ScmAdvancedFilterBuilder from '/@/components/business/scm/advanced-filter/index.vue';
 import ScmSavedFilterPresets from '/@/components/business/scm/advanced-filter/saved-presets.vue';

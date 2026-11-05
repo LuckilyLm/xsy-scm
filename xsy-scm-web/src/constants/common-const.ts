@@ -2,7 +2,7 @@
  * 通用常量
  *
  */
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 
 export const PAGE_SIZE = 10;
 
@@ -20,7 +20,7 @@ export const showTableTotal = function (total: number | string) {
   return `共${total}条`;
 };
 
-export const FLAG_NUMBER_ENUM: SmartEnum<number> = {
+export const FLAG_NUMBER_ENUM: XsyEnum<number> = {
   TRUE: {
     value: 1,
     desc: '是',
@@ -31,7 +31,7 @@ export const FLAG_NUMBER_ENUM: SmartEnum<number> = {
   },
 };
 
-export const GENDER_ENUM: SmartEnum<number> = {
+export const GENDER_ENUM: XsyEnum<number> = {
   UNKNOWN: {
     value: 0,
     desc: '未知',
@@ -46,7 +46,7 @@ export const GENDER_ENUM: SmartEnum<number> = {
   },
 };
 
-export const USER_TYPE_ENUM: SmartEnum<number> = {
+export const USER_TYPE_ENUM: XsyEnum<number> = {
   ADMIN_EMPLOYEE: {
     value: 1,
     desc: '员工',

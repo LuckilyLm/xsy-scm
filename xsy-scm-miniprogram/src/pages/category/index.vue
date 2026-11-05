@@ -97,7 +97,7 @@ import XsyEmpty from '@/components/common/xsy-empty.vue';
 import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
 import {LOAD_MORE_TEXT} from '@/constants/load-more-const';
 import {mallCatalogApi} from '@/api/mall';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {useMallNavigationStore} from '@/store/modules/mall/navigation';
 import {useMallCart} from '@/composables/use-mall-cart';
 import {categoryIcon} from '@/utils/category-icon';
@@ -159,7 +159,7 @@ async function loadCategories() {
     }
   } catch (e) {
     if (request !== categoryRequest) return;
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     if (request === categoryRequest) {
       categoriesLoaded.value = true;
@@ -202,7 +202,7 @@ async function loadProducts(reset = false) {
   } catch (e) {
     if (request !== productRequest || categoryId !== effectiveCategoryId.value) return;
     productError.value = e?.message || '商品加载失败，请重试';
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     if (request === productRequest) loading.value = false;
   }

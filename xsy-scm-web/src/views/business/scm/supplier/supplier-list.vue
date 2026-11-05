@@ -1,19 +1,19 @@
 <!-- 供应商列表：只有单条删除；关联商品走独立的整表替换接口。 -->
 <template>
   <section aria-label="供应商档案">
-    <div class="smart-query-layout">
-      <a-form class="smart-query-form" layout="inline">
-        <a-row class="smart-query-form-row">
-          <a-form-item label="关键字" class="smart-query-form-item">
+    <div class="xsy-query-layout">
+      <a-form class="xsy-query-form" layout="inline">
+        <a-row class="xsy-query-form-row">
+          <a-form-item label="关键字" class="xsy-query-form-item">
             <a-input v-model:value="filters.keyword" allow-clear placeholder="编码 / 名称 / 联系人 / 电话" style="width: 240px" />
           </a-form-item>
-          <a-form-item label="供应商分类" class="smart-query-form-item">
+          <a-form-item label="供应商分类" class="xsy-query-form-item">
             <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="SUPPLIER" style="width: 160px" />
           </a-form-item>
-          <a-form-item label="状态" class="smart-query-form-item">
-            <SmartEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_STATUS_ENUM" width="130px" />
+          <a-form-item label="状态" class="xsy-query-form-item">
+            <XsyEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_STATUS_ENUM" width="130px" />
           </a-form-item>
-          <a-form-item class="smart-query-form-item">
+          <a-form-item class="xsy-query-form-item">
             <a-space>
               <a-button type="primary" @click="search">查询</a-button>
               <a-button @click="reset">重置</a-button>
@@ -21,14 +21,14 @@
           </a-form-item>
         </a-row>
       </a-form>
-      <a-row data-toolbar-layout="query" class="smart-table-btn-block" justify="space-between" align="middle">
+      <a-row data-toolbar-layout="query" class="xsy-table-btn-block" justify="space-between" align="middle">
         <a-button v-privilege="'scm:supplier:add'" type="primary" @click="drawer?.open()">新增供应商</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER" :refresh="load" />
       </a-row>
     </div>
 
     <a-card size="small" :bordered="false">
-      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+      <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
         <template #action>
           <a-button size="small" @click="load">重新加载</a-button>
         </template>
@@ -76,14 +76,14 @@
             un-checked-children="停用"
             @change="(checked: unknown) => onStatusSwitch(record, Boolean(checked))"
           />
-          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
+          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="xsy-table-operate scm-table-actions">
             <a-button v-privilege="'scm:supplier:update'" type="link" size="small" @click="drawer?.open(record.supplierId)">编辑 </a-button>
             <a-button v-privilege="'scm:supplier:sku:update'" type="link" size="small" @click="openSku(record)"> 关联商品 </a-button>
             <ScmActionMore :actions="rowActions()" @select="onRowAction($event, record)" />
           </a-space>
         </template>
       </a-table>
-      <div class="smart-query-table-page">
+      <div class="xsy-query-table-page">
         <a-pagination
           show-quick-jumper
           show-less-items
@@ -112,7 +112,7 @@ import type {TableColumnsType, TableProps} from 'ant-design-vue';
 import {supplierApi} from '/@/api/business/scm/supplier-api';
 import type {EnableStatus, ScmId, SupplierQuery, SupplierRow} from '/@/types/business/scm/supplier';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';

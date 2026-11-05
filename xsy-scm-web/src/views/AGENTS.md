@@ -6,4 +6,4 @@
 - 菜单树、部门树、分类树、编辑/批量确认与打印表格保持完整上下文；游标加载继续使用原有加载入口。
 - 商品图片中心选择区使用商品查询接口的服务端分页，不能恢复成固定只取前 50 条。
 - 导出按钮使用 `type="primary"` 的文字形式，保留原有权限、加载、禁用与事件；工具栏间距交给公共主题。
-- 单一表格操作优先用 `smart-query-layout` 与查询区并排；已在查询表单内的操作可用 `smart-query-table-actions` 靠右。无查询条件时用 `data-toolbar-layout="single"` 单独一行右对齐。
+- 单一表格操作优先用 `xsy-query-layout` 与查询区并排；已在查询表单内的操作可用 `xsy-query-table-actions` 靠右。无查询条件时用 `data-toolbar-layout="single"` 单独一行右对齐。

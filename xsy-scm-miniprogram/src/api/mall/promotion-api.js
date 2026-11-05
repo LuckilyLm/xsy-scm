@@ -1,4 +1,4 @@
-import { getRequest, postRequest } from '@/lib/smart-request';
+import { getRequest, postRequest } from '@/lib/xsy-request';
 import { adaptProducts } from './product-adapter';
 
 export const mallPromotionApi = {

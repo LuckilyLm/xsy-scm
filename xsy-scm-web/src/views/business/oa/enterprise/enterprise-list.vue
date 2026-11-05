@@ -3,19 +3,19 @@
   *
 -->
 <template>
-  <a-form class="smart-query-form" v-privilege="'oa:enterprise:query'">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键字" class="smart-query-form-item">
+  <a-form class="xsy-query-form" v-privilege="'oa:enterprise:query'">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="关键字" class="xsy-query-form-item">
         <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="企业名称/联系人/联系电话" />
       </a-form-item>
 
-      <a-form-item label="创建时间" class="smart-query-form-item">
+      <a-form-item label="创建时间" class="xsy-query-form-item">
         <a-space direction="vertical" :size="12">
           <a-range-picker v-model:value="searchDate" :presets="defaultTimeRanges" @change="dateChange" />
         </a-space>
       </a-form-item>
 
-      <a-form-item class="smart-query-form-item smart-margin-left10">
+      <a-form-item class="xsy-query-form-item xsy-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
@@ -35,8 +35,8 @@
   </a-form>
 
   <a-card size="small" :bordered="false" :hoverable="true">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+    <a-row class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
         <a-button @click="add()" v-privilege="'oa:enterprise:add'" type="primary">
           <template #icon>
             <PlusOutlined />
@@ -50,7 +50,7 @@
           导出数据（带水印）
         </a-button>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.OA.ENTERPRISE" :refresh="ajaxQuery" />
       </div>
     </a-row>
@@ -75,10 +75,10 @@
           </a-button>
         </template>
         <template v-if="column.dataIndex === 'type'">
-          <span>{{ $smartEnumPlugin.getDescByValue('ENTERPRISE_TYPE_ENUM', text) }}</span>
+          <span>{{ $xsyEnumPlugin.getDescByValue('ENTERPRISE_TYPE_ENUM', text) }}</span>
         </template>
         <template v-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="xsy-table-operate">
             <a-button @click="update(record.enterpriseId)" size="small" v-privilege="'oa:enterprise:update'" type="link">编辑 </a-button>
             <a-button @click="confirmDelete(record.enterpriseId)" size="small" danger v-privilege="'oa:enterprise:delete'" type="link"
               >删除
@@ -88,7 +88,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -108,12 +108,12 @@
 <script setup lang="ts">
 import {reactive, ref, onMounted} from 'vue';
 import {message, Modal} from 'ant-design-vue';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {enterpriseApi} from '/@/api/business/oa/enterprise-api';
 import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import {useRouter} from 'vue-router';
 import EnterpriseOperate from './components/enterprise-operate-modal.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -224,7 +224,7 @@ async function ajaxQuery() {
     total.value = responseModel.data.total;
     tableData.value = list;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }
@@ -253,14 +253,14 @@ function confirmDelete(enterpriseId) {
 
 async function del(enterpriseId) {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     await enterpriseApi.delete(enterpriseId);
     message.success('删除成功');
     ajaxQuery();
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

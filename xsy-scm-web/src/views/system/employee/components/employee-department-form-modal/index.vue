@@ -17,8 +17,8 @@ import _ from 'lodash';
 import {ref} from 'vue';
 import DepartmentTree from '../department-tree/index.vue';
 import {employeeApi} from '/@/api/system/employee-api';
-import {smartSentry} from '/@/lib/smart-sentry';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 
 // ----------------------- 以下是字段定义 emits props ---------------------
 
@@ -43,7 +43,7 @@ function closeModal() {
 
 // ----------------------- form操作 ---------------------------------
 async function handleOk() {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     if (_.isEmpty(employeeIdList.value)) {
       message.warning('请选择要调整的员工');
@@ -63,9 +63,9 @@ async function handleOk() {
     emit('refresh');
     closeModal();
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

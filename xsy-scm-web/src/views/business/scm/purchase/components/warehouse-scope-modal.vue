@@ -8,7 +8,7 @@
     :confirm-loading="saving"
     @ok="save"
   >
-    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
+    <a-alert v-if="error" type="error" :message="error" show-icon class="xsy-margin-bottom10" />
 
     <template v-if="isView">
       <p>
@@ -224,7 +224,7 @@ defineExpose({open, openEmployees});
 </script>
 
 <style scoped>
-.smart-margin-bottom10 {
+.xsy-margin-bottom10 {
   margin-bottom: 10px;
 }
 </style>

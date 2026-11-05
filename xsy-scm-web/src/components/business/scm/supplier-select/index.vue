@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import {onMounted, ref, watch} from 'vue';
 import {supplierApi} from '/@/api/business/scm/supplier-api';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import type {ScmId, SupplierOption} from '/@/types/business/scm/supplier';
 
 const props = withDefaults(
@@ -46,7 +46,7 @@ async function query() {
     const resp = await supplierApi.optionList({suppressGlobalErrorMessage: true});
     supplierList.value = resp.data ?? [];
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 

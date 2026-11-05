@@ -3,10 +3,10 @@
  *
  */
 
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 
 // 业务类型
-export const DATA_TRACER_TYPE_ENUM: SmartEnum<number> = {
+export const DATA_TRACER_TYPE_ENUM: XsyEnum<number> = {
   GOODS: {
     value: 1,
     desc: '商品',

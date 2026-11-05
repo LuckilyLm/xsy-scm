@@ -22,8 +22,8 @@ import message from 'ant-design-vue/lib/message';
 import {reactive, ref} from 'vue';
 import {helpDocCatalogApi} from '/@/api/support/help-doc-catalog-api';
 import HelpDocCatalogTreeSelect from './help-doc-catalog-tree-select.vue';
-import {SmartLoading} from '/@/components/framework/smart-loading';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 // ----------------------- 对外暴漏 ---------------------
 
@@ -99,21 +99,21 @@ async function handleOk() {
 // ----------------------- form 表单  ajax 操作 ---------------------
 //添加目录ajax请求
 async function addHelpDocCatalog() {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     await helpDocCatalogApi.add(formState);
     emits('refresh');
     closeModal();
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 
 //更新目录ajax请求
 async function updateHelpDocCatalog() {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     if (formState.parentId === formState.helpDocCatalogId) {
       message.warning('上级菜单不能为自己');
@@ -123,9 +123,9 @@ async function updateHelpDocCatalog() {
     emits('refresh');
     closeModal();
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 </script>

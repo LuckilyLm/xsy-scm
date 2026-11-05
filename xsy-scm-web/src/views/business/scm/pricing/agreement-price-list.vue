@@ -1,18 +1,18 @@
 <template>
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form" layout="inline">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键字" class="smart-query-form-item"
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form" layout="inline">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="关键字" class="xsy-query-form-item"
           ><a-input v-model:value="query.keyword" placeholder="客户或商品名称" allow-clear
         /></a-form-item>
-        <a-form-item label="客户" class="smart-query-form-item"><CustomerSelect v-model:value="query.customerId" width="190px" /></a-form-item>
-        <a-form-item label="商品规格" class="smart-query-form-item"
+        <a-form-item label="客户" class="xsy-query-form-item"><CustomerSelect v-model:value="query.customerId" width="190px" /></a-form-item>
+        <a-form-item label="商品规格" class="xsy-query-form-item"
           ><SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]"
         /></a-form-item>
-        <a-form-item label="有效区间" class="smart-query-form-item"
+        <a-form-item label="有效区间" class="xsy-query-form-item"
           ><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]"
         /></a-form-item>
-        <a-form-item class="smart-query-form-item"
+        <a-form-item class="xsy-query-form-item"
           ><a-space
             ><a-button type="primary" @click="search" v-privilege="'scm:pricing:agreement:query'">查询</a-button
             ><a-button @click="reset">重置</a-button></a-space
@@ -20,11 +20,11 @@
         >
       </a-row>
     </a-form>
-    <a-row data-toolbar-layout="query" class="smart-table-btn-block"
-      ><div class="smart-table-operate-block">
+    <a-row data-toolbar-layout="query" class="xsy-table-btn-block"
+      ><div class="xsy-table-operate-block">
         <a-button type="primary" v-privilege="'scm:pricing:agreement:add'" @click="drawer?.open()">新增客户协议价</a-button>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_AGREEMENT" :refresh="load" /></div
     ></a-row>
   </div>
@@ -55,14 +55,14 @@
         >
         <ScmStatusTag v-else-if="column.dataIndex === 'effectiveness'" v-bind="effectiveness(record)" />
         <template v-else-if="column.dataIndex === 'action'"
-          ><div class="smart-table-operate scm-table-actions">
+          ><div class="xsy-table-operate scm-table-actions">
             <a-button type="link" v-privilege="'scm:pricing:agreement:update'" @click="drawer?.open(record.agreementPriceId)">编辑</a-button
             ><a-button type="link" danger v-privilege="'scm:pricing:agreement:delete'" @click="remove(record)">删除</a-button>
           </div></template
         >
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         v-model:current="query.pageNum"

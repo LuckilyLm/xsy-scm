@@ -2,8 +2,8 @@ import { defineStore } from 'pinia';
 import { USER_TOKEN } from '@/constants/local-storage-key-const';
 import { PLATFORM_ERROR_CODE } from '@/constants/error-code-const';
 import { mallAuthApi } from '@/api/mall/auth-api';
-import { setSessionExpiredHandler } from '@/lib/smart-request';
-import { smartSentry } from '@/lib/smart-sentry';
+import { setSessionExpiredHandler } from '@/lib/xsy-request';
+import { xsySentry } from '@/lib/xsy-sentry';
 
 const initialState = () => ({
   token: '',
@@ -29,7 +29,7 @@ export const useUserStore = defineStore({
       try {
         await mallAuthApi.logout();
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       } finally {
         this.clearUserLoginInfo();
       }
@@ -58,7 +58,7 @@ export const useUserStore = defineStore({
           this.clearUserLoginInfo();
           return;
         }
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       }
     },
     setUserLoginInfo(data) {

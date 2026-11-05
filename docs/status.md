@@ -26,7 +26,7 @@
 
 | 领域 | 当前源码能力 | 边界 |
 | --- | --- | --- |
-| 系统底座 | SmartAdmin 登录、员工、部门、角色、菜单、权限、日志、字典、文件与后台布局 | 角色是唯一权限载体，职务已下线；SCM 数据范围独立显式解析 |
+| 系统底座 | XSY 登录、员工、部门、角色、菜单、权限、日志、字典、文件与后台布局 | 角色是唯一权限载体，职务已下线；SCM 数据范围独立显式解析 |
 | 商品与客户 | 商品/规格、单位、分类、标签、供应商关联、客户分组、可售白名单、商品图片中心 | 客户类型及类型价、商品主档状态已下线；客户仅合作中可交易 |
 | 定价 | 逐客协议价、客户分组价、时价、市场价、最近成交/采购参考价、人工改价审计 | 采购参考价不自动成为销售价；跨单位不直接比较成本 |
 | 销售订单 | 客户整单录入、客户送货单 Excel 导入、行备注、改单、锁单、非标先确认后称重、实发量同步 | 已签收不能直接改单；发车后或锁单后修改受额外权限约束；当前状态唯一、标签单选 |
@@ -40,6 +40,11 @@
 | 追溯与报告 | L1 批次、L2 包装码、分拣绑定/更正、受控标签、公开令牌、批次检测报告、独立报告照片库 | 批次出库不等于逐包装码出库；简化报告照片无需批次或发布 |
 
 ## 最近变更与待回归范围
+
+### 工程命名统一
+
+- 后端包根统一为 `com.xsy.scm`，模块为 `xsy-admin` 与 `xsy-base`；前端组件、工具和资源引用同步使用 XSY 名称。
+- 升级包含旧缓存类型、浏览器本地配置键与系统任务类名的迁移。源码回归与本地构建的结果由验证记录保存，目标环境部署和真实设备验收仍需单独执行。
 
 ### 核心链路六项修复
 
@@ -106,10 +111,10 @@
 
 | 范围 | 文件或入口 |
 | --- | --- |
-| 订单明细与金额 | `xsy-scm-server/sa-admin/src/test/java/com/xsy/scm/order/OrderRulesTest.java`、`OrderLockPgIT.java` |
-| 采购补价重复提交 | `xsy-scm-server/sa-admin/src/test/java/com/xsy/scm/purchase/service/PurchasePriceReplayTest.java` |
-| 分拣版本与多商品 | `xsy-scm-server/sa-admin/src/test/java/com/xsy/scm/sorting/SortingTaskPgIT.java` |
-| 财务过账防重复处理 | `xsy-scm-server/sa-admin/src/test/java/com/xsy/scm/finance/FinancePostingIT.java` |
+| 订单明细与金额 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/order/OrderRulesTest.java`、`OrderLockPgIT.java` |
+| 采购补价重复提交 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/purchase/service/PurchasePriceReplayTest.java` |
+| 分拣版本与多商品 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/sorting/SortingTaskPgIT.java` |
+| 财务过账防重复处理 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/finance/FinancePostingIT.java` |
 | 后台表单与分页 | `xsy-scm-web/test/order.test.mjs`、`test/local-table.test.mjs`、`e2e/` |
 | 小程序与秤端 | 各模块测试目录及 README 中的验证入口 |
 | 统一验证与结果产物 | [tools/README.md](../tools/README.md) |

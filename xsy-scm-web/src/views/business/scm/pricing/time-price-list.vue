@@ -1,11 +1,11 @@
 <template>
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form" layout="inline">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键字" class="smart-query-form-item">
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form" layout="inline">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="关键字" class="xsy-query-form-item">
           <a-input v-model:value="query.keyword" placeholder="商品名称或规格" allow-clear />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-space>
             <a-button type="primary" @click="search" v-privilege="'scm:pricing:time-price:manage'">查询</a-button>
             <a-button @click="reset">重置</a-button>
@@ -13,11 +13,11 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" v-privilege="'scm:pricing:time-price:manage'" @click="openDrawer()">新增时价</a-button>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_TIME_PRICE" :refresh="load" />
       </div>
     </a-row>
@@ -49,7 +49,7 @@
           <ScmStatusTag :tone="effectiveState(record).tone" :label="effectiveState(record).label" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate scm-table-actions">
+          <div class="xsy-table-operate scm-table-actions">
             <a-button type="link" v-privilege="'scm:pricing:time-price:manage'" @click="openDrawer(record)">编辑</a-button>
             <a-button type="link" danger v-privilege="'scm:pricing:time-price:manage'" @click="remove(record)">删除</a-button>
           </div>
@@ -57,7 +57,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         v-model:current="query.pageNum"

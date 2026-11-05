@@ -6,7 +6,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readSourceFileSync as readFileSync} from './helpers/source-reader.mjs';
 
 // ---------------------------------------------------------------- 来源：print-center-contract.test.mjs
 {
@@ -92,10 +92,10 @@ import {readFileSync} from 'node:fs';
   const detail = read('../src/views/business/scm/order/order-detail-page.vue');
   const modal = read('../src/views/business/scm/print/print-document-modal.vue');
   const provider =
-    read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/support/ScmOrderPrintSourceProvider.java') +
-    read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/support/SalesOrderPrintSourceProvider.java');
-  const service = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/service/ScmPrintService.java');
-  const migration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V146__scm_sales_order_print.sql');
+    read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/support/ScmOrderPrintSourceProvider.java') +
+    read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/support/SalesOrderPrintSourceProvider.java');
+  const service = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/service/ScmPrintService.java');
+  const migration = read('../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V146__scm_sales_order_print.sql');
 
   test('复用打印中心的模板、保存的数据与记录，不另建订单打印写接口', () => {
     assert.match(type, /'SALES_ORDER'/);
@@ -124,7 +124,7 @@ import {readFileSync} from 'node:fs';
     assert.doesNotMatch(list, /selected\.length > 10/);
     assert.match(list, /selectedRows\.value\.length !== selected\.value\.length/);
     const batchService = readFileSync(
-      new URL('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/service/ScmPrintBatchService.java', import.meta.url),
+      new URL('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/service/ScmPrintBatchService.java', import.meta.url),
       'utf8'
     );
     assert.match(batchService, /MAX_ORDERS = 200/);
@@ -136,8 +136,8 @@ import {readFileSync} from 'node:fs';
 {
   const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
   const render = read('../src/views/business/scm/print/print-render.ts');
-  const type = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintDocumentTypeEnum.java');
-  const migration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V177__scm_trace_unit_label_qr.sql');
+  const type = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintDocumentTypeEnum.java');
+  const migration = read('../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V177__scm_trace_unit_label_qr.sql');
 
   test('包装码标签的扫码地址只生成二维码，不印 URL 文本', () => {
     assert.match(render, /field\.key !== 'traceUrl'/, '表头文本必须排除 traceUrl');
@@ -157,11 +157,11 @@ import {readFileSync} from 'node:fs';
   const bindingDrawer = read('../src/views/business/scm/print/print-customer-binding-drawer.vue');
   const statementPage = read('../src/views/business/scm/report/report-customer-statement.vue');
   const dailyReport = read('../src/views/business/scm/report/report-components/purchase-daily-report.vue');
-  const documentTypeEnum = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintDocumentTypeEnum.java');
-  const statementProvider = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/support/StatementPrintSourceProvider.java');
-  const printService = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/service/ScmPrintService.java');
-  const statementService = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/service/ScmCustomerStatementService.java');
-  const migration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V182__scm_print_statement_and_customer_binding.sql');
+  const documentTypeEnum = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintDocumentTypeEnum.java');
+  const statementProvider = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/support/StatementPrintSourceProvider.java');
+  const printService = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/service/ScmPrintService.java');
+  const statementService = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/report/service/ScmCustomerStatementService.java');
+  const migration = read('../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V182__scm_print_statement_and_customer_binding.sql');
 
   test('对账单接入打印中心：字段目录含金额列，默认模板与两类约束同步扩展', () => {
     assert.match(types, /'STATEMENT'/);
@@ -218,9 +218,9 @@ import {readFileSync} from 'node:fs';
 {
   const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
   const render = read('../src/views/business/scm/print/print-render.ts');
-  const printText = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/support/ScmPrintText.java');
-  const salesProvider = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/support/SalesOrderPrintSourceProvider.java');
-  const migration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V178__scm_print_template_remove_noise.sql');
+  const printText = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/support/ScmPrintText.java');
+  const salesProvider = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/print/support/SalesOrderPrintSourceProvider.java');
+  const migration = read('../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V178__scm_print_template_remove_noise.sql');
 
   test('纸面不印模板名与版本，只有正式打印才标打印时间', () => {
     assert.doesNotMatch(render, /模板 \$\{/, '页脚又把模板名/版本印到纸上了');

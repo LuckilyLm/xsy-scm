@@ -20,8 +20,8 @@
 <script setup lang="ts">
 import {ref} from 'vue';
 import {fileApi} from '/@/api/support/file-api';
-import {smartSentry} from '/@/lib/smart-sentry';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 
 const imgFileType = ['jpg', 'jpeg', 'png', 'gif'];
 const previewUrl = ref();
@@ -29,15 +29,15 @@ const previewUrl = ref();
 function showPreview(fileItem) {
   if (!fileItem.fileUrl) {
     (async () => {
-      SmartLoading.show();
+      XsyLoading.show();
       try {
         let res = await fileApi.getUrl(fileItem.fileKey);
         fileItem.fileUrl = res.data;
         showFile(fileItem);
       } catch (e) {
-        smartSentry.captureError(e);
+        xsySentry.captureError(e);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     })();
   } else {

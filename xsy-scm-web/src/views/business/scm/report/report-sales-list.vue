@@ -1,34 +1,34 @@
 <!-- 销售分析：按已确认订单和结算金额统计；每个标签页独立保存分页和状态。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="确认日期" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="确认日期" class="xsy-query-form-item">
         <ReportDateRangePicker v-model:value="dateRange" />
       </a-form-item>
-      <a-form-item label="客户" class="smart-query-form-item">
+      <a-form-item label="客户" class="xsy-query-form-item">
         <CustomerSelect v-model:value="filters.customerId" width="200px" />
       </a-form-item>
-      <a-form-item label="销售员" class="smart-query-form-item">
+      <a-form-item label="销售员" class="xsy-query-form-item">
         <EmployeeSelect v-model:value="filters.sellerId" width="160px" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" v-privilege="PERM.SALES_QUERY" @click="onSearch">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
-        <a-button class="smart-margin-left10" @click="toggleAdvanced">
+        <a-button class="xsy-margin-left10" @click="toggleAdvanced">
           {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
         </a-button>
       </a-form-item>
     </a-row>
-    <a-row v-if="advanced" class="smart-query-form-row">
-      <a-form-item label="订单来源" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.orderSource" enum-name="SCM_ORDER_SOURCE_ENUM" width="150px" />
+    <a-row v-if="advanced" class="xsy-query-form-row">
+      <a-form-item label="订单来源" class="xsy-query-form-item">
+        <XsyEnumSelect v-model:value="filters.orderSource" enum-name="SCM_ORDER_SOURCE_ENUM" width="150px" />
       </a-form-item>
-      <a-form-item label="商品分类" class="smart-query-form-item">
+      <a-form-item label="商品分类" class="xsy-query-form-item">
         <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
       </a-form-item>
-      <a-form-item label="商品关键字" class="smart-query-form-item">
+      <a-form-item label="商品关键字" class="xsy-query-form-item">
         <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
       </a-form-item>
     </a-row>
@@ -42,7 +42,7 @@
     </template>
   </a-alert>
 
-  <a-space v-if="activeTab === 'order'" class="smart-margin-top10" v-privilege="PERM.EXPORT">
+  <a-space v-if="activeTab === 'order'" class="xsy-margin-top10" v-privilege="PERM.EXPORT">
     <span>导出字段</span>
     <a-select
       v-model:value="orderExportKeys"
@@ -55,7 +55,7 @@
       @focus="loadOrderExportColumns"
     />
   </a-space>
-  <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
+  <a-tabs v-model:activeKey="activeTab" class="xsy-margin-top10" @change="onTabChange">
     <a-tab-pane key="product" tab="按商品">
       <SalesProductTab
         :items="topItems(productTop)"
@@ -158,7 +158,7 @@
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import ScmAdvancedFilterBuilder from '/@/components/business/scm/advanced-filter/index.vue';
 import ScmSavedFilterPresets from '/@/components/business/scm/advanced-filter/saved-presets.vue';

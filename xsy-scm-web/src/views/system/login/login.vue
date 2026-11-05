@@ -64,11 +64,11 @@ import {message, notification} from 'ant-design-vue';
 import {onMounted, onUnmounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {loginApi} from '/@/api/system/login-api';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {LOGIN_DEVICE_ENUM} from '/@/constants/system/login-device-const';
 import {useUserStore} from '/@/store/modules/system/user';
 import {buildRoutes} from '/@/router/index';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import {encryptData} from '/@/lib/encrypt';
 import {localSave} from '/@/utils/local-util';
 import LocalStorageKeyConst from '/@/constants/local-storage-key-const';
@@ -118,7 +118,7 @@ onUnmounted(() => {
 async function onLogin() {
   formRef.value.validate().then(async () => {
     try {
-      SmartLoading.show();
+      XsyLoading.show();
       // 密码加密
       let encryptPasswordForm = Object.assign({}, loginForm, {
         password: encryptData(loginForm.password),
@@ -140,9 +140,9 @@ async function onLogin() {
         loginForm.captchaCode = '';
         getCaptcha();
       }
-      smartSentry.captureError(e);
+      xsySentry.captureError(e);
     } finally {
-      SmartLoading.hide();
+      XsyLoading.hide();
     }
   });
 }
@@ -213,21 +213,21 @@ async function getTwoFactorLoginFlag() {
     let result = await loginApi.getTwoFactorLoginFlag();
     emailCodeShowFlag.value = result.data;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 
 // 发送邮箱验证码
 async function sendSmsCode() {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     let result = await loginApi.sendLoginEmailCode(loginForm.loginName);
     message.success('验证码发送成功!请登录邮箱查看验证码~');
     runCountDown();
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 </script>

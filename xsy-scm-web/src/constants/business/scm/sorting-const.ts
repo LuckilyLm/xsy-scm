@@ -1,8 +1,8 @@
 /** 分拣状态、明细结果及占用标记与后端枚举和数据库约束保持一致。相同英文状态在其他业务中可能含义不同，不能复用枚举。 */
-import type {SmartEnum} from '/@/types/smart-enum';
+import type {XsyEnum} from '/@/types/xsy-enum';
 
 /** 分拣任务从待分拣到分拣中、已完成；已完成只能重开，不能直接取消。取消会释放订单行占用，历史记录保留。 */
-export const SCM_SORTING_TASK_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_SORTING_TASK_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待分拣'},
   SORTING: {value: 'SORTING', desc: '分拣中'},
   COMPLETED: {value: 'COMPLETED', desc: '已完成'},
@@ -15,7 +15,7 @@ export const SCM_SORTING_TASK_STATUS_ENUM: SmartEnum<string> = {
  * 结果为 0 是合法的（整行缺货），所以「缺货」必须能被显式表达 ——
  * 靠「不提交这一行」表达缺货会让任务永远无法完成。
  */
-export const SCM_SORTING_RESULT_ENUM: SmartEnum<string> = {
+export const SCM_SORTING_RESULT_ENUM: XsyEnum<string> = {
   NORMAL: {value: 'NORMAL', desc: '正常'},
   SHORT: {value: 'SHORT', desc: '少拣'},
   OUT_OF_STOCK: {value: 'OUT_OF_STOCK', desc: '缺货'},
@@ -23,7 +23,7 @@ export const SCM_SORTING_RESULT_ENUM: SmartEnum<string> = {
 };
 
 /** 商品类型：标品按订购量核对，非标品以录入的实重为准。 */
-export const SCM_SORTING_PRODUCT_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_SORTING_PRODUCT_TYPE_ENUM: XsyEnum<string> = {
   STANDARD: {value: 'STANDARD', desc: '标品'},
   NON_STANDARD: {value: 'NON_STANDARD', desc: '非标品'},
 };
@@ -34,7 +34,7 @@ export const SCM_SORTING_PRODUCT_TYPE_ENUM: SmartEnum<string> = {
  * 活动占用下「订单行 → 分拣任务」由部分唯一索引保证一对一；
  * 取消释放后同一订单行可以进入新任务，历史行仍随详情返回以便追溯。
  */
-export const SCM_SORTING_OCCUPATION_ENUM: SmartEnum<string> = {
+export const SCM_SORTING_OCCUPATION_ENUM: XsyEnum<string> = {
   ACTIVE: {value: 'ACTIVE', desc: '已分配'},
   RELEASED: {value: 'RELEASED', desc: '已取消分配'},
 };
@@ -105,7 +105,7 @@ export const SCM_SORTING_MAX_PAGE_SIZE = 100;
 
 export default {
   // 只导出枚举：`SCM_SORTING_TABLE_ID` / `SCM_SORTING_PERMISSION` 不是枚举，
-  // 混进 `constantsInfo` 会让 `$smartEnumPlugin.getValueDescList` 拿到非枚举对象。
+  // 混进 `constantsInfo` 会让 `$xsyEnumPlugin.getValueDescList` 拿到非枚举对象。
   SCM_SORTING_TASK_STATUS_ENUM,
   SCM_SORTING_RESULT_ENUM,
   SCM_SORTING_PRODUCT_TYPE_ENUM,

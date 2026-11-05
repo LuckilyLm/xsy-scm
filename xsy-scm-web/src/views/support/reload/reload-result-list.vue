@@ -10,7 +10,7 @@
       </template>
       刷新
     </a-button>
-    <a-table :scroll="{y: 350}" size="small" bordered rowKey="id" class="smart-margin-top10" :dataSource="tableData" :columns="columns">
+    <a-table :scroll="{y: 350}" size="small" bordered rowKey="id" class="xsy-margin-top10" :dataSource="tableData" :columns="columns">
       <template #bodyCell="{text, column}">
         <template v-if="column.dataIndex === 'result'">
           <a-tag :color="text ? 'success' : 'error'">{{ text ? '成功' : '失败' }}</a-tag>
@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import {reactive, ref} from 'vue';
 import {reloadApi} from '/@/api/support/reload-api';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 defineExpose({
   showModal,
@@ -62,7 +62,7 @@ async function ajaxQuery() {
     }
     tableData.value = res.data;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

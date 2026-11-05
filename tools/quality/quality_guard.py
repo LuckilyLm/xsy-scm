@@ -52,10 +52,10 @@ from java_source import JavaSource, StringLiteral
 
 ROOT = Path(__file__).resolve().parents[2]
 SERVER = ROOT / "xsy-scm-server"
-MAIN_SOURCE_ROOT = SERVER / "sa-admin/src/main/java"
-TEST_SOURCE_ROOT = SERVER / "sa-admin/src/test/java"
+MAIN_SOURCE_ROOT = SERVER / "xsy-admin/src/main/java"
+TEST_SOURCE_ROOT = SERVER / "xsy-admin/src/test/java"
 
-# Q1 迁包于 2026-09-26 收口：旧包 net/lab1024/sa/admin/module/scm 下已无任何 .java，
+# Q1 迁包于 2026-09-26 收口：旧包 com/xsy/scm/admin/module/scm 下已无任何 .java，
 # SCM 全部落在 com.xsy.scm（847 个文件 = manifest main 692 + test 155）。
 # 因此**扫描范围**从「两条路径的并集」收缩为单条，旧包路径不再参与扫描。
 # 收缩的依据不是「迁移做完了」这句话，而是 readiness 的 domain-completeness 断言：
@@ -68,7 +68,7 @@ TEST_SOURCE_ROOT = SERVER / "sa-admin/src/test/java"
 # LEGACY_SCM_PACKAGE_PATH 常量**保留**：它仍是「旧包在哪」的唯一出处，
 # readiness / metrics / baseline 迁移工具都需要它来表达历史路径，
 # 只是不再出现在 SCM_PACKAGE_PATHS 里。
-LEGACY_SCM_PACKAGE_PATH = Path("net/lab1024/sa/admin/module/scm")
+LEGACY_SCM_PACKAGE_PATH = Path("com/xsy/scm/admin/module/scm")
 NEW_SCM_PACKAGE_PATH = Path("com/xsy/scm")
 SCM_PACKAGE_PATHS = (NEW_SCM_PACKAGE_PATH,)
 
@@ -235,11 +235,15 @@ def load_sources(roots: list[Path]) -> list[JavaSource]:
 
 
 def scm_main_sources() -> list[JavaSource]:
-    return load_sources(package_roots(MAIN_SOURCE_ROOT))
+    return [source for source in load_sources(package_roots(MAIN_SOURCE_ROOT))
+            if not any(source.path.is_relative_to(MAIN_SOURCE_ROOT / NEW_SCM_PACKAGE_PATH / module)
+                       for module in ("admin", "base"))]
 
 
 def scm_test_sources() -> list[JavaSource]:
-    return load_sources(package_roots(TEST_SOURCE_ROOT))
+    return [source for source in load_sources(package_roots(TEST_SOURCE_ROOT))
+            if not any(source.path.is_relative_to(TEST_SOURCE_ROOT / NEW_SCM_PACKAGE_PATH / module)
+                       for module in ("admin", "base"))]
 
 
 _FIELD_DECLARATION = re.compile(
@@ -651,8 +655,8 @@ FAMILIES: tuple[RuleFamily, ...] = (
     RuleFamily(
         "generic-dependency-field",
         "语义贫乏的依赖字段名",
-        "SCM 生产代码：sa-admin/src/main/java 下的 com/xsy/scm（Q1 收口后唯一扫描根；"
-        "迁移期曾是 net/lab1024/.../scm 与 com/xsy/scm 两个包）",
+        "SCM 生产代码：xsy-admin/src/main/java 下的 com/xsy/scm（Q1 收口后唯一扫描根；"
+        "迁移期曾是 历史供应链包 与 com/xsy/scm 两个包）",
         "字段声明行匹配 private/protected [final] <Type> <name>;，name 属于 "
         "{dao,service,query,manager,validator,repository,mapper,reader,writer,client}，"
         "且类型简单名小写后不等于该字段名",
@@ -684,7 +688,7 @@ FAMILIES: tuple[RuleFamily, ...] = (
     RuleFamily(
         "legacy-scm-package",
         "旧包回流检测（迁移债务已归零，防回流保留）",
-        "旧包（net/lab1024/sa/admin/module/scm）的 main 与 test 源根；Q1 收口后实际为 0",
+        "旧包（com/xsy/scm/admin/module/scm）的 main 与 test 源根；Q1 收口后实际为 0",
         "【迁移债务已退役 2026-09-26，防回流检测保留】Q1 收口前：每个旧包文件记一条 "
         "identity，向旧 namespace **新增**文件即 NEW DEFECT，**移出**旧包是 improvement。"
         "Q1 收口后旧包 .java = 0、baseline 已归零，因此本 family 的**结果**恒为 0 条 —— "

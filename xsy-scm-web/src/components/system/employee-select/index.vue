@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue';
 import {employeeApi} from '/@/api/system/employee-api';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 type EmployeeOption = {employeeId: number; actualName: string; departmentName?: string};
 
@@ -95,7 +95,7 @@ async function query() {
     let resp = await employeeApi.queryAll(params);
     employeeList.value = resp.data;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 

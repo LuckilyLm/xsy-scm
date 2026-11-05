@@ -1,7 +1,7 @@
 <template>
   <a-modal :open="open" title="选择已完成退款" width="min(1120px, 96vw)" :footer="null" destroy-on-close @cancel="close">
-    <a-form class="smart-query-form" layout="inline" @submit.prevent>
-      <a-row class="smart-query-form-row">
+    <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+      <a-row class="xsy-query-form-row">
         <a-form-item label="退款 / 退货 / 订单 / 客户">
           <a-input v-model:value="keyword" allow-clear placeholder="输入退款单号、订单号或客户名称" @press-enter="search" />
         </a-form-item>
@@ -30,7 +30,7 @@
       </template>
     </a-table>
     <a-empty v-if="!loading && !rows.length" description="没有可登记的退款；请确认退款已完成且未登记付款。" />
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

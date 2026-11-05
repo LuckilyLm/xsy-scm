@@ -37,7 +37,7 @@ import {useMallTheme} from '@/composables/use-mall-theme';
 import {onLoad, onShow, onPullDownRefresh, onReachBottom} from '@dcloudio/uni-app';
 import MallCouponCard from '@/components/business/mall-coupon-card.vue';
 import {mallPromotionApi} from '@/api/mall/promotion-api';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {COUPON_TABS, couponStatusText} from '@/utils/promotion-display';
 
 const {themeStyle} = useMallTheme();
@@ -89,7 +89,7 @@ async function load(reset) {
     hasMore.value = nextPage < Number(page.pages || 0);
   } catch (failure) {
     if (seq !== requestSeq) return;
-    smartSentry.captureError(failure);
+    xsySentry.captureError(failure);
     error.value = failure?.message || '优惠券加载失败';
   } finally {
     if (seq === requestSeq) loading.value = false;

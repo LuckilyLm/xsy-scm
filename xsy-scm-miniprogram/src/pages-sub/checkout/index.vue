@@ -136,7 +136,7 @@ import {onLoad, onShow} from '@dcloudio/uni-app';
 import {mallCartApi} from '@/api/mall/cart-api';
 import {mallAddressApi} from '@/api/mall/address-api';
 import {mallOrderApi} from '@/api/mall/order-api';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {shanghaiDate} from '@/utils/mall-date';
 import {displayMoney} from '@/utils/money-display';
 import {CHECKOUT_ADDRESS} from '@/constants/local-storage-key-const';
@@ -259,7 +259,7 @@ async function loadAddress() {
     address.value = chosen || list.find((item) => item.isDefault) || list[0] || null;
     if (picked) uni.removeStorageSync(CHECKOUT_ADDRESS);
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   }
 }
 
@@ -280,7 +280,7 @@ async function loadWarehouses() {
   } catch (error) {
     warehouseId.value = null;
     warehouseError.value = error?.message || '配送仓信息加载失败，请稍后重试';
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   }
 }
 
@@ -301,7 +301,7 @@ async function loadItems() {
     // 不能提前丢弃行；统一由选仓后的结算预览给出可售性及原因。
     items.value = selected;
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   }
 }
 
@@ -345,7 +345,7 @@ async function refreshPreview() {
     syncIdempotencyKey();
   } catch (error) {
     if (seq !== previewSeq) return;
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     estimatedAmount.value = '';
     uni.showToast({title: error?.message || '订单信息获取失败', icon: 'none'});
   } finally {
@@ -452,7 +452,7 @@ async function submit() {
       }&discount=${discount}&payable=${payable}`,
     });
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     // 变价必须让客户重新确认，不做静默重试
     if (error?.code === 40985) {
       uni.showModal({

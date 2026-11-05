@@ -2,7 +2,7 @@
  * 库存流水、单据和状态的前端枚举，与后端及数据库约束保持一致。
  * 数量始终为正，入库或出库方向由流水类型决定。
  */
-import type {SmartEnum} from '/@/types/smart-enum';
+import type {XsyEnum} from '/@/types/xsy-enum';
 
 /**
  * 库存流水类型。
@@ -11,7 +11,7 @@ import type {SmartEnum} from '/@/types/smart-enum';
  * `CONVERT_IN` 即「入」，其余即「出」，因此流水没有独立的 `direction` 列，
  * `quantity` 恒为正。新增类型要先改数据库 CHECK 约束。
  */
-export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: XsyEnum<string> = {
   PURCHASE_IN: {value: 'PURCHASE_IN', desc: '采购入库'},
   SALES_OUT: {value: 'SALES_OUT', desc: '销售出库'},
   /** 退货实物回库：方向为「入」，来源是退货接收单（ADM-02）。 */
@@ -45,7 +45,7 @@ export const SCM_INVENTORY_MOVEMENT_INBOUND_TYPES: readonly string[] = [
 ];
 
 /** 流水来源类型与来源明细 ID 组成防重键；页面另用来源单号展示和跳转。调拨及规格转换的转入、转出必须用不同类型。 */
-export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_INVENTORY_SOURCE_TYPE_ENUM: XsyEnum<string> = {
   PURCHASE_RECEIPT_ITEM: {value: 'PURCHASE_RECEIPT_ITEM', desc: '采购收货行'},
   SALES_OUTBOUND_ITEM: {value: 'SALES_OUTBOUND_ITEM', desc: '出库单行'},
   /** 退货接收单行：`source_document_item_id = sales_return_receipt_item.id`（ADM-02 实物回库追溯）。 */
@@ -67,14 +67,14 @@ export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
  * `PENDING → CONFIRMED`，待确认可 `CANCELLED`。已确认不可回退 ——
  * 流水 append-only，冲销必须新增反向流水。
  */
-export const SCM_INVENTORY_OUTBOUND_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_INVENTORY_OUTBOUND_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待出库'},
   CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
   CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };
 
 /** 预留状态（与后端 `ScmInventoryReservationStatusEnum` 逐字对应）。 */
-export const SCM_INVENTORY_RESERVATION_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_INVENTORY_RESERVATION_STATUS_ENUM: XsyEnum<string> = {
   ACTIVE: {value: 'ACTIVE', desc: '预留中'},
   RELEASED: {value: 'RELEASED', desc: '已取消预留'},
   CONSUMED: {value: 'CONSUMED', desc: '已用于出库'},
@@ -86,7 +86,7 @@ export const SCM_INVENTORY_RESERVATION_STATUS_ENUM: SmartEnum<string> = {
  * 状态机与出库单刻意同构。没有独立的「盘点中」状态：
  * 录入实盘数就是待确认态的编辑动作，`PENDING` 即「盘点进行中」。
  */
-export const SCM_INVENTORY_STOCKTAKE_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_INVENTORY_STOCKTAKE_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待确认'},
   CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
   CANCELLED: {value: 'CANCELLED', desc: '已取消'},
@@ -97,7 +97,7 @@ export const SCM_INVENTORY_STOCKTAKE_STATUS_ENUM: SmartEnum<string> = {
  *
  * 方向是单据级属性：一张单要么全报损、要么全报溢，行上的数量恒为正。
  */
-export const SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM: XsyEnum<string> = {
   LOSS: {value: 'LOSS', desc: '报损'},
   OVERFLOW: {value: 'OVERFLOW', desc: '报溢'},
 };
@@ -107,7 +107,7 @@ export const SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM: SmartEnum<string> = {
  *
  * 没有 DRAFT：报损报溢创建即提交（待审核），因为「把货从账上抹掉」需要制衡。
  */
-export const SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待审核'},
   COMPLETED: {value: 'COMPLETED', desc: '已完成'},
   REJECTED: {value: 'REJECTED', desc: '已驳回'},
@@ -120,7 +120,7 @@ export const SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM: SmartEnum<string> = {
  * `SHIPPED` 不可取消 —— 货已经物理离开源仓，账上只能靠一张反向调拨单冲回。
  * 在途期间这批货不在任何余额行里，需用「在途库存」报表查看（不进余额表）。
  */
-export const SCM_INVENTORY_TRANSFER_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_INVENTORY_TRANSFER_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待发货'},
   SHIPPED: {value: 'SHIPPED', desc: '在途'},
   RECEIVED: {value: 'RECEIVED', desc: '已完成'},
@@ -134,7 +134,7 @@ export const SCM_INVENTORY_TRANSFER_STATUS_ENUM: SmartEnum<string> = {
  * 判定基准是可用量（现有量 − 预留量）而不是现有量。
  * 取等号算正常：`可用量 == 下限` 是「不低于下限」，属 `NORMAL`。
  */
-export const SCM_INVENTORY_WARNING_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_INVENTORY_WARNING_STATUS_ENUM: XsyEnum<string> = {
   NORMAL: {value: 'NORMAL', desc: '正常'},
   LOW: {value: 'LOW', desc: '低于下限'},
   HIGH: {value: 'HIGH', desc: '高于上限'},
@@ -147,7 +147,7 @@ export const SCM_INVENTORY_WARNING_STATUS_ENUM: SmartEnum<string> = {
  * 折算关系（源数量 : 目标数量）由单据显式声明，系统不推断 ——
  * 一箱到底是 9.5 kg 还是 10 kg 取决于供应商与批次，猜错会直接污染两边余额。
  */
-export const SCM_INVENTORY_CONVERSION_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_INVENTORY_CONVERSION_TYPE_ENUM: XsyEnum<string> = {
   SPLIT: {value: 'SPLIT', desc: '整件拆零'},
   COMBINE: {value: 'COMBINE', desc: '组合拆分'},
 };
@@ -158,7 +158,7 @@ export const SCM_INVENTORY_CONVERSION_TYPE_ENUM: SmartEnum<string> = {
  * 与报损报溢刻意同构：转换会把两个 SKU 的余额同时改掉，且折算率是人工声明的，
  * 没有审批等于录单人可以单方面决定「一箱等于多少 kg」。
  */
-export const SCM_INVENTORY_CONVERSION_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_INVENTORY_CONVERSION_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待审核'},
   COMPLETED: {value: 'COMPLETED', desc: '已完成'},
   REJECTED: {value: 'REJECTED', desc: '已驳回'},
@@ -188,7 +188,7 @@ export const SCM_INVENTORY_TABLE_ID = {
 
 export default {
   // 只导出枚举：`SCM_INVENTORY_TABLE_ID` 不是枚举，混进 `constantsInfo` 会让
-  // `$smartEnumPlugin.getValueDescList` 拿到一个非枚举对象。
+  // `$xsyEnumPlugin.getValueDescList` 拿到一个非枚举对象。
   SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
   SCM_INVENTORY_SOURCE_TYPE_ENUM,
   SCM_INVENTORY_OUTBOUND_STATUS_ENUM,

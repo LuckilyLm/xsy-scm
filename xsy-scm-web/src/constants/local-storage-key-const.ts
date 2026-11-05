@@ -6,7 +6,10 @@
 /**
  * key前缀
  */
-const KEY_PREFIX = 'smart_admin_';
+import {upgradeStoredSettings} from '/@/utils/xsy-storage-upgrade';
+
+upgradeStoredSettings();
+const KEY_PREFIX = 'xsy_';
 /**
  * localStorageKey集合
  */

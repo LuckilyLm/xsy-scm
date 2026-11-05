@@ -1,7 +1,7 @@
 <!-- 分拣汇总，只读。不同销售单位不能直接合计；修改分拣数量请进入分拣任务。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
-    <a-form-item label="关键词" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
+    <a-form-item label="关键词" class="xsy-query-form-item">
       <a-input
         v-model:value="queryForm.keyword"
         :placeholder="viewMode === 'sku' ? '商品名称 / 编码 / 规格' : '客户 / 订单号 / 商品 / 编码'"
@@ -11,16 +11,16 @@
         @pressEnter="onSearch"
       />
     </a-form-item>
-    <a-form-item label="仓库" class="smart-query-form-item">
+    <a-form-item label="仓库" class="xsy-query-form-item">
       <WarehouseSelect v-model:value="queryForm.warehouseId" placeholder="全部仓库" width="200px" />
     </a-form-item>
-    <a-form-item label="送货日期" class="smart-query-form-item">
+    <a-form-item label="送货日期" class="xsy-query-form-item">
       <a-date-picker v-model:value="queryForm.deliveryDate" value-format="YYYY-MM-DD" placeholder="按送货日期筛选" style="width: 190px" />
     </a-form-item>
-    <a-form-item label="任务状态" class="smart-query-form-item">
+    <a-form-item label="任务状态" class="xsy-query-form-item">
       <a-select v-model:value="queryForm.taskStatus" :options="statusOptions" placeholder="全部" allow-clear style="width: 140px" />
     </a-form-item>
-    <a-form-item class="smart-query-form-item">
+    <a-form-item class="xsy-query-form-item">
       <a-button-group>
         <a-button type="primary" v-privilege="'scm:sorting:summary:query'" @click="onSearch">查询</a-button>
         <a-button @click="resetQuery">重置</a-button>
@@ -126,7 +126,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

@@ -1,14 +1,14 @@
 <!-- 采购操作日志。先按采购单号找到采购单，再查询它的日志。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="采购单号" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="采购单号" class="xsy-query-form-item">
         <a-input v-model:value="orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item label="操作类型" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_PURCHASE_OPERATION_ENUM" v-model:value="operationType" width="170px" />
+      <a-form-item label="操作类型" class="xsy-query-form-item">
+        <XsyEnumSelect enum-name="SCM_PURCHASE_OPERATION_ENUM" v-model:value="operationType" width="170px" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:log:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -47,7 +47,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'reason'">{{ record.reason || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate scm-table-actions">
+          <div class="xsy-table-operate scm-table-actions">
             <a-button
               type="link"
               @click="
@@ -75,7 +75,7 @@ import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const'
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';

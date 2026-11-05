@@ -1,6 +1,6 @@
 # 鲜蔬源智慧供应链管理平台
 
-鲜蔬源智链（`xsy-scm`）V2：以 SmartAdmin v3.31 为系统底座、按业务域组织的供应链管理平台，覆盖客户与商品、销售订单、采购收货、库存、分拣、配送、财务和报表，并提供配套的微信小程序与 Windows 秤端工作台。
+鲜蔬源智链（`xsy-scm`）V2 是按业务域组织的供应链管理平台，覆盖客户与商品、销售订单、采购收货、库存、分拣、配送、财务和报表，并提供配套的微信小程序与 Windows 秤端工作台。
 
 当前交付状态、验证证据和未完成工作以 [项目状态](docs/status.md) 为准；业务边界以 [项目决策](docs/decisions.md) 和 [需求基线](docs/requirements/产品功能需求基线.md) 为准。本文只说明工程组成、启动方式和常用入口。
 
@@ -8,7 +8,7 @@
 
 | 模块 | 技术栈 | 说明 |
 | --- | --- | --- |
-| [`xsy-scm-server/`](xsy-scm-server/) | Java 21、Spring Boot、MyBatis-Plus、Sa-Token、Redis、PostgreSQL、Flyway | 正式后端，`sa-base` + `sa-admin` 两模块 Maven 工程 |
+| [`xsy-scm-server/`](xsy-scm-server/) | Java 21、Spring Boot、MyBatis-Plus、Sa-Token、Redis、PostgreSQL、Flyway | 正式后端，`xsy-base` + `xsy-admin` 两模块 Maven 工程 |
 | [`xsy-scm-web/`](xsy-scm-web/) | Vue 3、TypeScript、Ant Design Vue、Vite、Pinia、Playwright | 管理后台与浏览器 E2E |
 | [`xsy-scm-miniprogram/`](xsy-scm-miniprogram/README.md) | uni-app、Vue 3、Vite、Pinia | 面向客户的正式微信小程序 |
 | [`xsy-scale-agent/`](xsy-scale-agent/README.md) | .NET 10、SQLite、Vue 3 | 独立 Windows 秤端服务与触屏工作台；正式业务记录仍由服务端维护 |
@@ -16,13 +16,13 @@
 | [`deploy/`](deploy/README.md) | Docker Compose、MinIO | 对象存储初始化、数据库容器与部署期必填配置说明 |
 | [`docs/`](docs/README.md) | Markdown | 状态、决策、需求、架构与操作说明 |
 
-系统登录、认证、用户、角色、权限、菜单、日志、字典、文件和后台 Layout 使用 SmartAdmin 原生实现；SCM 只实现供应链业务，不复制通用能力。
+登录、认证、用户、角色、权限、菜单和后台布局由系统管理模块维护，日志、字典、文件等公共能力由基础模块提供，供应链业务按领域复用这些能力。
 
 ## 目录结构
 
 ```text
 xsy-scm/
-├── xsy-scm-server/        # 后端（sa-base、sa-admin、Flyway migrations）
+├── xsy-scm-server/        # 后端（xsy-base、xsy-admin、Flyway migrations）
 ├── xsy-scm-web/           # 管理后台（src、e2e、e2e-chains）
 ├── xsy-scm-miniprogram/   # 微信小程序
 ├── xsy-scale-agent/       # Windows 秤端服务与触屏工作台
@@ -42,17 +42,17 @@ xsy-scm/
 
 ## 本地开发
 
-后端环境配置见 `xsy-scm-server/sa-admin/src/main/resources/dev/application.yaml` 及对应 profile 资源。数据库连接、Redis 和其他密钥使用本地配置或环境变量，不提交真实凭据。
+后端环境配置见 `xsy-scm-server/xsy-admin/src/main/resources/dev/application.yaml` 及对应 profile 资源。数据库连接、Redis 和其他密钥使用本地配置或环境变量，不提交真实凭据。
 
 ### 后端
 
 ```powershell
 cd xsy-scm-server
-mvn.cmd -pl sa-admin -am compile
+mvn.cmd -pl xsy-admin -am compile
 
 # 首次运行或依赖变更后
 mvn.cmd install -DskipTests
-mvn.cmd -pl sa-admin spring-boot:run
+mvn.cmd -pl xsy-admin spring-boot:run
 ```
 
 Linux / macOS 将 `mvn.cmd` 替换为 `mvn`。dev profile 默认端口为 `18080`，可通过 `XSY_V2_SERVER_PORT` 覆盖。数据库使用独立 schema `xsy_v2`；Flyway 是唯一的 schema 演进机制，已应用的 migration 不得回改。

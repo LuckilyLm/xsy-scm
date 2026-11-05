@@ -68,7 +68,7 @@
         />
       </a-form-item>
       <a-form-item label="公告内容" name="contentHtml">
-        <SmartWangeditor ref="contentRef" :modelValue="formData.contentHtml" :height="300" />
+        <XsyWangeditor ref="contentRef" :modelValue="formData.contentHtml" :height="300" />
       </a-form-item>
       <a-form-item label="附件">
         <Upload
@@ -100,13 +100,13 @@ import {reactive, ref, onMounted, watch, computed, nextTick} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import _ from 'lodash';
 import dayjs, {Dayjs} from 'dayjs';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
 import {noticeApi} from '/@/api/business/oa/notice-api';
-import SmartWangeditor from '/@/components/framework/wangeditor/index.vue';
+import XsyWangeditor from '/@/components/framework/wangeditor/index.vue';
 import Upload from '/@/components/support/file-upload/index.vue';
 import NoticeFormVisibleModal from './notice-form-visible-modal.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const emits = defineEmits(['reloadList']);
 
@@ -181,7 +181,7 @@ const formRules = {
 // 查询详情
 async function getNoticeUpdate(noticeId) {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     const result = await noticeApi.getUpdateNoticeInfo(noticeId);
     const attachment = result.data.attachment;
     if (!_.isEmpty(attachment)) {
@@ -195,9 +195,9 @@ async function getNoticeUpdate(noticeId) {
     releaseTime.value = dayjs(result.data.publishTime);
     visibleFlag.value = true;
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 
@@ -216,7 +216,7 @@ async function onSubmit() {
 // 新建、编辑API
 async function save() {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     if (formData.allVisibleFlag) {
       formData.visibleRangeList = [];
     }
@@ -232,9 +232,9 @@ async function save() {
     emits('reloadList');
     onClose();
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 
@@ -251,7 +251,7 @@ async function queryNoticeTypeList() {
       formData.noticeTypeId = noticeTypeList.value[0].noticeTypeId;
     }
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   }
 }
 

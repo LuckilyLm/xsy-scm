@@ -3,9 +3,9 @@
  *
  */
 
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 
-export const LOGIN_DEVICE_ENUM: SmartEnum<number> = {
+export const LOGIN_DEVICE_ENUM: XsyEnum<number> = {
   PC: {
     value: 1,
     desc: '电脑端',

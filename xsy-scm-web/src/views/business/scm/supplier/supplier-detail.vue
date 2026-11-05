@@ -91,7 +91,7 @@
               </a-tag>
             </template>
           </LocalTable>
-          <a-alert v-if="relationsError" type="error" show-icon :message="relationsError" class="smart-margin-bottom10">
+          <a-alert v-if="relationsError" type="error" show-icon :message="relationsError" class="xsy-margin-bottom10">
             <template #action>
               <a-button size="small" @click="loadRelations(supplier.supplierId)">重试</a-button>
             </template>

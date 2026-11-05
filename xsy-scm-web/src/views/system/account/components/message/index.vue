@@ -1,21 +1,21 @@
 <template>
-  <a-form class="smart-query-form">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键字" class="smart-query-form-item">
+  <a-form class="xsy-query-form">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="关键字" class="xsy-query-form-item">
         <a-input style="width: 300px" v-model:value.trim="queryForm.searchWord" placeholder="标题/内容" />
       </a-form-item>
 
-      <a-form-item label="类型" class="smart-query-form-item">
-        <smart-enum-select style="width: 150px" v-model:value="queryForm.messageType" placeholder="消息类型" enum-name="MESSAGE_TYPE_ENUM" />
+      <a-form-item label="类型" class="xsy-query-form-item">
+        <xsy-enum-select style="width: 150px" v-model:value="queryForm.messageType" placeholder="消息类型" enum-name="MESSAGE_TYPE_ENUM" />
       </a-form-item>
 
-      <a-form-item label="消息时间" class="smart-query-form-item">
+      <a-form-item label="消息时间" class="xsy-query-form-item">
         <a-space direction="vertical" :size="12">
           <a-range-picker v-model:value="searchDate" @change="dateChange" style="width: 220px" />
         </a-space>
       </a-form-item>
 
-      <a-form-item label="已读" class="smart-query-form-item">
+      <a-form-item label="已读" class="xsy-query-form-item">
         <a-radio-group v-model:value="queryForm.readFlag" @change="quickQuery">
           <a-radio-button :value="null">全部</a-radio-button>
           <a-radio-button :value="false">未读</a-radio-button>
@@ -23,7 +23,7 @@
         </a-radio-group>
       </a-form-item>
 
-      <a-form-item class="smart-query-form-item smart-margin-left10">
+      <a-form-item class="xsy-query-form-item xsy-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="quickQuery">
             <template #icon>
@@ -45,7 +45,7 @@
   <a-table size="small" :dataSource="tableData" :columns="columns" rowKey="messageId" :pagination="false" bordered>
     <template #bodyCell="{text, record, column}">
       <template v-if="column.dataIndex === 'messageType'">
-        <span>{{ $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', text) }}</span>
+        <span>{{ $xsyEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', text) }}</span>
       </template>
       <template v-if="column.dataIndex === 'readFlag'">
         <span v-show="record.readFlag">已读</span>
@@ -54,17 +54,17 @@
       <template v-if="column.dataIndex === 'title'">
         <span v-show="record.readFlag">
           <a @click="toDetail(record)" style="color: #8c8c8c"
-            >【{{ $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', record.messageType) }}】{{ text }}</a
+            >【{{ $xsyEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', record.messageType) }}】{{ text }}</a
           >
         </span>
         <span v-show="!record.readFlag">
-          <a @click="toDetail(record)">【{{ $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', record.messageType) }}】{{ text }} </a>
+          <a @click="toDetail(record)">【{{ $xsyEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', record.messageType) }}】{{ text }} </a>
         </span>
       </template>
     </template>
   </a-table>
 
-  <div class="smart-query-table-page">
+  <div class="xsy-query-table-page">
     <a-pagination
       showSizeChanger
       showQuickJumper
@@ -85,8 +85,8 @@
 import {reactive, ref, onMounted} from 'vue';
 import {messageApi} from '/@/api/support/message-api';
 import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select//index.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select//index.vue';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import MessageDetail from './components/message-detail.vue';
 
 const columns = reactive([
@@ -153,7 +153,7 @@ async function ajaxQuery() {
     total.value = responseModel.data.total;
     tableData.value = list;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

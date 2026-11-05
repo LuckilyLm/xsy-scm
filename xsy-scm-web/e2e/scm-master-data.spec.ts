@@ -43,14 +43,14 @@ test.describe('scm-customer', () => {
     const captcha = (await (await client.get('/login/getCaptcha')).json()).data;
     const source = readFileSync('src/lib/encrypt.ts', 'utf8');
     const key = /const SM4_KEY = '([^']+)'/.exec(source)?.[1];
-    if (!key) throw new Error('SmartAdmin transport key not found');
+    if (!key) throw new Error('XSY transport key not found');
     const encrypted = Buffer.from(smCrypto.sm4.encrypt(password, Buffer.from(key).toString('hex'))).toString('base64');
     const result = await (
       await client.post('/login', {
         data: {loginName: account, password: encrypted, captchaUuid: captcha.captchaUuid, captchaCode: captcha.captchaText, loginDevice: 1},
       })
     ).json();
-    expect(result.code, 'SmartAdmin login succeeds').toBe(0);
+    expect(result.code, 'XSY login succeeds').toBe(0);
     await client.dispose();
     return result.data.token as string;
   }
@@ -74,7 +74,7 @@ test.describe('scm-customer', () => {
   });
 
   async function authenticate(page: Page, value = token) {
-    await page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), value);
+    await page.addInitScript((v) => localStorage.setItem('xsy_user_token', v), value);
   }
 
   test('live customer pilot: credit period, status, search, deep link and deletion', async ({page}) => {
@@ -353,7 +353,7 @@ test.describe('scm-customer-360', () => {
 
 // ---------------------------------------------------------------- 来源：e2e/scm-pricing.spec.ts
 test.describe('scm-pricing', () => {
-  /* W3 verification: real browser/API calls against the running SmartAdmin server.
+  /* W3 verification: real browser/API calls against the running XSY server.
    * The fixture helper creates an administrator and a read-only account; secrets
    * remain in process memory and are never written to the report.
    */
@@ -373,7 +373,7 @@ test.describe('scm-pricing', () => {
     const captcha = (await (await client.get('/login/getCaptcha')).json()).data;
     const source = readFileSync('src/lib/encrypt.ts', 'utf8');
     const key = /const SM4_KEY = '([^']+)'/.exec(source)?.[1];
-    if (!key) throw new Error('SmartAdmin transport key not found');
+    if (!key) throw new Error('XSY transport key not found');
     const encrypted = Buffer.from(smCrypto.sm4.encrypt(password, Buffer.from(key).toString('hex'))).toString('base64');
     const result = await (
       await client.post('/login', {
@@ -488,10 +488,10 @@ test.describe('scm-pricing', () => {
       unavailableReason: 'SKU_OFF_SHELF',
       unpricedReason: null,
     });
-    await page.addInitScript((value) => localStorage.setItem('smart_admin_user_token', value), token);
+    await page.addInitScript((value) => localStorage.setItem('xsy_user_token', value), token);
     await page.goto('/#/pricing/price-preview');
     // V150 起菜单名与页面标题统一为「价格试算」
-    await expect(page.locator('#smartAdminLayoutContent').getByText('价格试算', {exact: true}).first()).toBeVisible();
+    await expect(page.locator('#xsyLayoutContent').getByText('价格试算', {exact: true}).first()).toBeVisible();
   });
 
   test('read-only role cannot mutate pricing and successful batch keys are protected', async () => {
@@ -549,14 +549,14 @@ test.describe('scm-product', () => {
     const captcha = (await (await client.get('/login/getCaptcha')).json()).data;
     const source = readFileSync('src/lib/encrypt.ts', 'utf8');
     const key = /const SM4_KEY = '([^']+)'/.exec(source)?.[1];
-    if (!key) throw new Error('SmartAdmin transport key not found');
+    if (!key) throw new Error('XSY transport key not found');
     const encrypted = Buffer.from(smCrypto.sm4.encrypt(password, Buffer.from(key).toString('hex'))).toString('base64');
     const result = await (
       await client.post('/login', {
         data: {loginName: account, password: encrypted, captchaUuid: captcha.captchaUuid, captchaCode: captcha.captchaText, loginDevice: 1},
       })
     ).json();
-    expect(result.code, 'SmartAdmin login succeeds').toBe(0);
+    expect(result.code, 'XSY login succeeds').toBe(0);
     await client.dispose();
     return result.data.token as string;
   }
@@ -592,7 +592,7 @@ test.describe('scm-product', () => {
     execFileSync('python', ['../tools/e2e_fixtures.py', 'account-cleanup', '--wave', 'w1'], {env, stdio: 'pipe'});
   });
   async function authenticate(page: Page, value = token) {
-    await page.addInitScript((value) => localStorage.setItem('smart_admin_user_token', value), value);
+    await page.addInitScript((value) => localStorage.setItem('xsy_user_token', value), value);
   }
   async function saveCategory(page: Page, _code: string, label: string) {
     const modal = page.locator('.ant-modal:visible');
@@ -703,7 +703,7 @@ test.describe('scm-product', () => {
     await expect(row).toBeVisible();
     await button(page, '高级筛选').click();
     // 查询区的 a-form-item 只有 label 没有 name，AntD 不会生成 label/for 关联，只能按结构定位
-    const queryForm = page.locator('form.smart-query-form');
+    const queryForm = page.locator('form.xsy-query-form');
     const querySelect = (label: string) => queryForm.locator('.ant-form-item').filter({hasText: label}).locator('.ant-select').first();
     await pick(page, querySelect('储存方式'), '冷藏');
     await button(page, '查询').click();
@@ -1343,14 +1343,14 @@ test.describe('scm-supplier', () => {
     const captcha = (await (await client.get('/login/getCaptcha')).json()).data;
     const source = readFileSync('src/lib/encrypt.ts', 'utf8');
     const key = /const SM4_KEY = '([^']+)'/.exec(source)?.[1];
-    if (!key) throw new Error('SmartAdmin transport key not found');
+    if (!key) throw new Error('XSY transport key not found');
     const encrypted = Buffer.from(smCrypto.sm4.encrypt(password, Buffer.from(key).toString('hex'))).toString('base64');
     const result = await (
       await client.post('/login', {
         data: {loginName: account, password: encrypted, captchaUuid: captcha.captchaUuid, captchaCode: captcha.captchaText, loginDevice: 1},
       })
     ).json();
-    expect(result.code, 'SmartAdmin login succeeds').toBe(0);
+    expect(result.code, 'XSY login succeeds').toBe(0);
     await client.dispose();
     return result.data.token as string;
   }
@@ -1453,7 +1453,7 @@ test.describe('scm-supplier', () => {
   });
 
   async function authenticate(page: Page, value = token) {
-    await page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), value);
+    await page.addInitScript((v) => localStorage.setItem('xsy_user_token', v), value);
   }
 
   /** 当前打开的抽屉（同一时刻只有一个）。 */

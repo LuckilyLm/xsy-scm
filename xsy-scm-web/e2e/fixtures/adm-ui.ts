@@ -3,7 +3,7 @@ import Antd from 'ant-design-vue';
 import {createMemoryHistory, createRouter} from 'vue-router';
 import {setActivePinia} from 'pinia';
 import {store} from '/@/store';
-import smartEnumPlugin from '/@/plugins/smart-enums-plugin';
+import xsyEnumPlugin from '/@/plugins/xsy-enums-plugin';
 import constants from '/@/constants';
 import 'ant-design-vue/dist/reset.css';
 import '/@/theme/index.less';
@@ -28,7 +28,7 @@ const router = createRouter({
   history: createMemoryHistory(),
   routes: [{path: '/:pathMatch(.*)*', name: 'adm-fixture', component: {render: (): null => null}}],
 });
-app.use(store).use(Antd).use(router).use(smartEnumPlugin, constants);
+app.use(store).use(Antd).use(router).use(xsyEnumPlugin, constants);
 // Permission enforcement has separate backend coverage; this fixture renders authorized controls.
 app.directive('privilege', {});
 await router.push(location.pathname + location.search);

@@ -1,0 +1,264 @@
+package com.xsy.scm.product.service;
+
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.product.dao.ProductImageDao;
+import com.xsy.scm.product.dao.ProductSpuDao;
+import com.xsy.scm.product.domain.entity.ProductImageEntity;
+import com.xsy.scm.product.domain.entity.ProductSpuEntity;
+import com.xsy.scm.product.domain.form.ProductImageCenterForms;
+import com.xsy.scm.product.domain.form.ProductImageForm;
+import com.xsy.scm.product.domain.vo.ProductImageCenterVO;
+import com.xsy.scm.product.domain.vo.ProductImageMatchTargetVO;
+import com.xsy.scm.product.domain.vo.ProductImageVO;
+import com.xsy.scm.product.domain.vo.ProductUnboundImageVO;
+import com.xsy.scm.product.manager.ProductAggregateValidator;
+import com.xsy.scm.product.manager.ProductImageChangeSet;
+import com.xsy.scm.product.manager.ProductImageSyncManager;
+import com.xsy.scm.base.common.util.XsyRequestUtil;
+import com.xsy.scm.base.module.support.file.constant.FileFolderTypeEnum;
+import com.xsy.scm.base.module.support.file.domain.vo.FileVO;
+import com.xsy.scm.base.module.support.file.service.FileService;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.xsy.scm.product.constant.ProductErrorCode.IMAGE_NOT_OWNED;
+import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
+
+/**
+ * 图片中心：脱离商品编辑弹窗、按 SPU 单独维护图片。所有写操作都走 {@link ProductImageSyncManager#sync} 一条链路， 复用它对 public/image/ 前缀、文件存在性与「每 SPU
+ * 至多一张主图」的校验，不在这里另写一套图片写入逻辑。
+ */
+@Service
+@RequiredArgsConstructor
+public class ProductImageCenterService {
+
+    /**
+     * 未绑定图片池一次最多回多少张：这页是「挑图」而不是「翻库」，给到几百张已经够用。
+     */
+    private static final int MAX_UNBOUND_IMAGES = 300;
+
+    private final ProductSpuDao productSpuDao;
+    private final ProductImageDao productImageDao;
+    private final ProductImageSyncManager productImageSyncManager;
+    private final ProductAggregateValidator productAggregateValidator;
+    private final FileService fileService;
+
+    public ProductImageCenterVO query(Long spuId) {
+        ProductSpuEntity spu = requireSpu(spuId);
+        List<ProductImageEntity> rows = productImageSyncManager.existing(spuId);
+        Map<String,
+            String> urls = fileService
+                .getFileList(rows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
+                    XsyRequestUtil.getRequestUser())
+                .stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
+        List<ProductImageVO> images = rows.stream().map(i -> {
+            ProductImageVO vo = new ProductImageVO();
+            BeanUtils.copyProperties(i, vo);
+            vo.setImageId(i.getId());
+            vo.setFileUrl(urls.get(i.getFileKey()));
+            return vo;
+        }).toList();
+        ProductImageCenterVO result = new ProductImageCenterVO();
+        result.setSpuId(spu.getId());
+        result.setSpuCode(spu.getSpuCode());
+        result.setName(spu.getName());
+        result.setImages(images);
+        return result;
+    }
+
+    /**
+     * 图片文件名里的商品编码 → 商品身份。编码按 trim + lower 归一化后去重， 库内再用 lower(trim(spu_code)) 匹配；返回空列表表示这些编码都没有对应活动商品。
+     */
+    public List<ProductImageMatchTargetVO> matchTargets(ProductImageCenterForms.MatchTargetsForm form) {
+        List<String> codes = form.getCodes().stream().filter(Objects::nonNull)
+            .map(code -> code.trim().toLowerCase(Locale.ROOT)).filter(code -> !code.isEmpty()).distinct().toList();
+        if (codes.isEmpty()) {
+            return List.of();
+        }
+        return productSpuDao.findByNormalizedCodes(codes);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void batchBind(ProductImageCenterForms.BatchBindForm form) {
+        Map<Long, List<ProductImageCenterForms.BindItem>> bySpu = form.getItems().stream().collect(
+            Collectors.groupingBy(ProductImageCenterForms.BindItem::getSpuId, LinkedHashMap::new, Collectors.toList()));
+        for (var entry : bySpu.entrySet()) {
+            Long spuId = entry.getKey();
+            ProductSpuEntity spu = requireSpu(spuId);
+            List<ProductImageEntity> existing = productImageSyncManager.existing(spuId);
+            productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing,
+                requestedWithBinds(existing, spu.getSpuCode(), entry.getValue())));
+        }
+    }
+
+    /**
+     * 图片重新绑定前先汇总现有及新增图片，检查数量上限、文件键重复和主图唯一性，避免直接触发数据库唯一约束。
+     *
+     * <p>
+     * 新增图片的展示名由服务端统一生成（商品编码 + 递增序号），上传文件的原始名称不参与绑定，也不再要求文件名等于商品编码。
+     */
+    private List<ProductImageForm> requestedWithBinds(List<ProductImageEntity> existing, String spuCode,
+        List<ProductImageCenterForms.BindItem> binds) {
+        List<ProductImageForm> requested = new ArrayList<>(existing.stream().map(this::toForm).toList());
+        List<String> names = generatedFileNames(spuCode, existing, binds);
+        for (int i = 0; i < binds.size(); i++) {
+            var item = binds.get(i);
+            ProductImageForm add = new ProductImageForm();
+            add.setFileKey(item.getFileKey());
+            add.setFileName(names.get(i));
+            add.setPrimaryFlag(Boolean.TRUE.equals(item.getPrimaryFlag()));
+            add.setSortOrder(item.getSortOrder() == null ? 0 : item.getSortOrder());
+            requested.add(add);
+        }
+        productAggregateValidator.validateImages(requested);
+        return requested;
+    }
+
+    /**
+     * 生成「商品编码.jpg / 商品编码-2.jpg / 商品编码-3.jpg」形式的展示名。
+     *
+     * <p>
+     * 只影响商品图片记录里的 fileName，存储 key 仍是上传时的不可修改文件名；序号会跳过该商品已占用的名称。
+     */
+    private List<String> generatedFileNames(String spuCode, List<ProductImageEntity> existing,
+        List<ProductImageCenterForms.BindItem> binds) {
+        String base = safeImageBaseName(spuCode);
+        Set<String> used = existing.stream().map(ProductImageEntity::getFileName)
+            .filter(name -> name != null && !name.isBlank()).map(name -> name.toLowerCase(Locale.ROOT))
+            .collect(Collectors.toCollection(HashSet::new));
+        List<String> names = new ArrayList<>(binds.size());
+        int sequence = 1;
+        for (var item : binds) {
+            String extension = imageExtension(item.getFileKey());
+            String candidate;
+            do {
+                candidate = sequence == 1 ? base + extension : base + "-" + sequence + extension;
+                sequence++;
+            } while (!used.add(candidate.toLowerCase(Locale.ROOT)));
+            names.add(candidate);
+        }
+        return names;
+    }
+
+    private static String safeImageBaseName(String spuCode) {
+        String base = spuCode == null ? "" : spuCode.trim().replaceAll("[\\\\/:*?\"<>|\\s]", "_");
+        return base.isEmpty() ? "image" : base;
+    }
+
+    /** 扩展名取自上传 key（存储侧保留原始扩展名），未知类型按 .jpg 处理。 */
+    private static String imageExtension(String fileKey) {
+        if (fileKey == null) {
+            return ".jpg";
+        }
+        int dot = fileKey.lastIndexOf('.');
+        if (dot < 0 || dot == fileKey.length() - 1) {
+            return ".jpg";
+        }
+        String extension = fileKey.substring(dot).toLowerCase(Locale.ROOT);
+        return extension.matches("\\.(jpg|jpeg|png|webp|gif|bmp)") ? extension : ".jpg";
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void batchRemove(ProductImageCenterForms.BatchRemoveForm form) {
+        Long spuId = form.getSpuId();
+        requireSpu(spuId);
+        List<ProductImageEntity> existing = productImageSyncManager.existing(spuId);
+        Set<Long> owned = existing.stream().map(ProductImageEntity::getId).collect(Collectors.toSet());
+        for (Long id : form.getImageIds()) {
+            if (!owned.contains(id))
+                throw new ScmBusinessException(IMAGE_NOT_OWNED);
+        }
+        Set<Long> removing = new HashSet<>(form.getImageIds());
+        List<ProductImageForm> requested = existing.stream().filter(e -> !removing.contains(e.getId()))
+            .map(this::toForm).collect(Collectors.toList());
+        productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing, requested));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void setPrimary(ProductImageCenterForms.SetPrimaryForm form) {
+        Long spuId = form.getSpuId();
+        requireSpu(spuId);
+        List<ProductImageEntity> existing = productImageSyncManager.existing(spuId);
+        boolean owned = existing.stream().anyMatch(e -> e.getId().equals(form.getImageId()));
+        if (!owned)
+            throw new ScmBusinessException(IMAGE_NOT_OWNED);
+        List<ProductImageForm> requested = existing.stream().map(this::toForm)
+            .peek(f -> f.setPrimaryFlag(f.getImageId().equals(form.getImageId()))).collect(Collectors.toList());
+        productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing, requested));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void reorder(ProductImageCenterForms.ReorderForm form) {
+        Long spuId = form.getSpuId();
+        requireSpu(spuId);
+        List<ProductImageEntity> existing = productImageSyncManager.existing(spuId);
+        Map<Long, ProductImageEntity> byId = existing.stream()
+            .collect(Collectors.toMap(ProductImageEntity::getId, Function.identity()));
+        List<Long> ordered = form.getOrderedImageIds();
+        if (ordered.size() != byId.size() || !new HashSet<>(ordered).equals(byId.keySet())) {
+            throw new ScmBusinessException(IMAGE_NOT_OWNED);
+        }
+        Map<Long, ProductImageForm> forms = existing.stream().map(this::toForm)
+            .collect(Collectors.toMap(ProductImageForm::getImageId, Function.identity()));
+        for (int i = 0; i < ordered.size(); i++) {
+            forms.get(ordered.get(i)).setSortOrder(i);
+        }
+        productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing, new ArrayList<>(forms.values())));
+    }
+
+    /**
+     * 已上传但还没挂到任何商品的公开图片，供图片中心直接挑图绑定。
+     *
+     * <p>
+     * 只做展示，不改数据；绑定仍走 {@link #batchBind}，所以这里不做 public/image/ 之外的过滤 —— 能查出来的本来就只在那个目录。
+     */
+    public List<ProductUnboundImageVO> unboundImages(int limit) {
+        int capped = Math.min(Math.max(limit, 1), MAX_UNBOUND_IMAGES);
+        List<ProductUnboundImageVO> rows = productImageDao
+            .selectUnboundPublicImages((Integer) FileFolderTypeEnum.PUBLIC_IMAGE.getValue(), capped);
+        if (rows.isEmpty()) {
+            return rows;
+        }
+        Map<String,
+            String> urls = fileService
+                .getFileList(rows.stream().map(ProductUnboundImageVO::getFileKey).distinct().toList(),
+                    XsyRequestUtil.getRequestUser())
+                .stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
+        rows.forEach(row -> row.setFileUrl(urls.get(row.getFileKey())));
+        return rows;
+    }
+
+    private ProductImageForm toForm(ProductImageEntity e) {
+        ProductImageForm f = new ProductImageForm();
+        f.setImageId(e.getId());
+        f.setVersion(e.getVersion());
+        f.setFileKey(e.getFileKey());
+        f.setFileName(e.getFileName());
+        f.setFileSize(e.getFileSize());
+        f.setPrimaryFlag(e.getPrimaryFlag());
+        f.setSortOrder(e.getSortOrder());
+        return f;
+    }
+
+    private ProductSpuEntity requireSpu(Long spuId) {
+        ProductSpuEntity spu = productSpuDao.selectById(spuId);
+        if (spu == null)
+            throw new ScmBusinessException(PRODUCT_NOT_FOUND);
+        return spu;
+    }
+}

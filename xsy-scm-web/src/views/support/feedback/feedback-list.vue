@@ -3,12 +3,12 @@
   *
 -->
 <template>
-  <a-form class="smart-query-form">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键字" class="smart-query-form-item" style="margin-right: 20px">
+  <a-form class="xsy-query-form">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="关键字" class="xsy-query-form-item" style="margin-right: 20px">
         <a-input style="width: 240px" v-model:value.trim="queryForm.searchWord" placeholder="反馈内容/创建人" />
       </a-form-item>
-      <a-form-item label="创建日期" class="smart-query-form-item" style="margin-right: 20px">
+      <a-form-item label="创建日期" class="xsy-query-form-item" style="margin-right: 20px">
         <a-range-picker
           v-model:value="chooseTimeRange"
           @change="changeCreateDate"
@@ -17,7 +17,7 @@
           style="width: 240px"
         />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group v-privilege="'feedback:query'">
           <a-button type="primary" @click="onSearch">
             <template #icon>
@@ -43,12 +43,12 @@
           <FilePreview :fileList="text" type="picture" />
         </template>
         <template v-if="column.dataIndex === 'userType'">
-          <span>{{ $smartEnumPlugin.getDescByValue('USER_TYPE_ENUM', text) }}</span>
+          <span>{{ $xsyEnumPlugin.getDescByValue('USER_TYPE_ENUM', text) }}</span>
         </template>
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -71,7 +71,7 @@ import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
 import {feedbackApi} from '/@/api/support/feedback-api';
 import FilePreview from '/@/components/support/file-preview/index.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 // ----------------------- 表格列 --------------------------------------
 const tableColumns = reactive([
@@ -130,7 +130,7 @@ async function queryList() {
     tableData.value = result.data.list;
     total.value = result.data.total;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

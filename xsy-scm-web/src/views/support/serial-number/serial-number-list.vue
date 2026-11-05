@@ -25,17 +25,17 @@
 
     <a-row justify="end">
       <TableOperator
-        class="smart-margin-bottom5 smart-margin-top5"
+        class="xsy-margin-bottom5 xsy-margin-top5"
         v-model="columns"
         :tableId="TABLE_ID_CONST.SUPPORT.SERIAL_NUMBER"
         :refresh="ajaxQuery"
       />
     </a-row>
 
-    <LocalTable size="small" :loading="tableLoading" bordered class="smart-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag">
+    <LocalTable size="small" :loading="tableLoading" bordered class="xsy-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="xsy-table-operate">
             <a-button @click="generate(record)" v-privilege="'support:serialNumber:generate'" type="link">生成 </a-button>
             <a-button @click="showRecord(record.serialNumberId)" v-privilege="'support:serialNumber:record'" type="link">查看记录 </a-button>
           </div>
@@ -57,7 +57,7 @@ import SerialNumberRecordList from './serial-number-record-list.vue';
 import {serialNumberApi} from '/@/api/support/serial-number-api';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 //------------------------ 表格渲染 ---------------------
 
@@ -117,7 +117,7 @@ async function ajaxQuery() {
     let res = await serialNumberApi.getAll();
     tableData.value = res.data;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

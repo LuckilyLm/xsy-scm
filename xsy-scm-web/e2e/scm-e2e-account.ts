@@ -111,7 +111,7 @@ export async function login(accounts: TempAccounts, loginName: string): Promise<
   try {
     const captcha = (await (await client.get('/login/getCaptcha')).json()).data;
     const key = /const SM4_KEY = '([^']+)'/.exec(readFileSync('src/lib/encrypt.ts', 'utf8'))?.[1];
-    if (!key) throw new Error('SmartAdmin transport key not found');
+    if (!key) throw new Error('XSY transport key not found');
     const encrypted = Buffer.from(smCrypto.sm4.encrypt(accounts.password, Buffer.from(key).toString('hex'))).toString('base64');
     const result = await (
       await client.post('/login', {
@@ -130,9 +130,9 @@ export async function apiClient(token: string): Promise<APIRequestContext> {
   return request.newContext({baseURL: apiUrl, extraHTTPHeaders: {Authorization: `Bearer ${token}`}});
 }
 
-/** 令牌注入 localStorage（SmartAdmin 读取 `smart_admin_user_token`），必须在 goto 之前调用。 */
+/** 令牌注入 localStorage（XSY 读取 `xsy_user_token`），必须在 goto 之前调用。 */
 export function authenticate(page: Page, token: string) {
-  return page.addInitScript((t) => localStorage.setItem('smart_admin_user_token', t), token);
+  return page.addInitScript((t) => localStorage.setItem('xsy_user_token', t), token);
 }
 
 const escapeRe = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

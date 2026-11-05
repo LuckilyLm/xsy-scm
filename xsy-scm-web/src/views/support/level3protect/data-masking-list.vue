@@ -16,15 +16,15 @@
 
 使用方式：
 1）脱敏注解 @DataMasking ，支持数据类型如：用户ID、手机号、密码、地址、银行卡、车牌号等；
-2）脱敏工具类： SmartDataMaskingUtil ；
+2）脱敏工具类： XsyDataMaskingUtil ；
 </pre
         >
       </template>
     </a-alert>
 
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item class="smart-query-form-item smart-margin-left10">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item class="xsy-query-form-item xsy-margin-left10">
           <a-button-group>
             <a-button type="primary" @click="onSearch">
               <template #icon>
@@ -42,7 +42,7 @@
       bordered
       :scroll="{x: tableColumnsWidth(columns)}"
       :loading="tableLoading"
-      class="smart-margin-top10"
+      class="xsy-margin-top10"
       :dataSource="tableData"
       :columns="columns"
     />
@@ -55,7 +55,7 @@ import {onMounted, reactive, ref} from 'vue';
 import {heartBeatApi} from '/@/api/support/heart-beat-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {dataMaskingApi} from '/@/api/support/data-masking-api';
@@ -123,7 +123,7 @@ async function ajaxQuery() {
     let responseModel = await dataMaskingApi.query();
     tableData.value = responseModel.data;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

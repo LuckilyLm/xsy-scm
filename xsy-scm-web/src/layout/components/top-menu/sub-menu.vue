@@ -6,7 +6,7 @@
   <a-sub-menu :key="menuInfo.menuId">
     <template #icon>
       <component :is="resolveMenuIcon(menuInfo.icon)" v-if="resolveMenuIcon(menuInfo.icon)" />
-      <span v-else class="smart-menu-icon-blank" />
+      <span v-else class="xsy-menu-icon-blank" />
     </template>
     <template #title>{{ menuInfo.menuName }}</template>
     <template v-for="item in menuInfo.children" :key="item.menuId">
@@ -15,7 +15,7 @@
           <a-menu-item :key="item.menuId" @click="turnToPage(item)">
             <template #icon>
               <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)" />
-              <span v-else class="smart-menu-icon-blank" />
+              <span v-else class="xsy-menu-icon-blank" />
             </template>
             {{ item.menuName }}
           </a-menu-item>

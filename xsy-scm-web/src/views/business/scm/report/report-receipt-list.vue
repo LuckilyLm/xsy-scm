@@ -1,43 +1,43 @@
 <!-- 收货确认和库存入账是两步，报表只读：收货明细按确认时间，入库明细按流水时间。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="业务日期" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="业务日期" class="xsy-query-form-item">
         <ReportDateRangePicker v-model:value="dateRange" />
       </a-form-item>
-      <a-form-item label="供应商" class="smart-query-form-item">
+      <a-form-item label="供应商" class="xsy-query-form-item">
         <SupplierSelect v-model:value="filters.supplierId" width="200px" />
       </a-form-item>
-      <a-form-item label="仓库" class="smart-query-form-item">
+      <a-form-item label="仓库" class="xsy-query-form-item">
         <WarehouseSelect v-model:value="filters.warehouseId" width="180px" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" v-privilege="PERM.PURCHASE_QUERY" @click="onSearch">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
-        <a-button class="smart-margin-left10" @click="advanced = !advanced">
+        <a-button class="xsy-margin-left10" @click="advanced = !advanced">
           {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
         </a-button>
       </a-form-item>
     </a-row>
-    <a-row v-if="advanced" class="smart-query-form-row">
-      <a-form-item label="收货模式" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.receiptMode" enum-name="SCM_RECEIPT_MODE_ENUM" width="170px" />
+    <a-row v-if="advanced" class="xsy-query-form-row">
+      <a-form-item label="收货模式" class="xsy-query-form-item">
+        <XsyEnumSelect v-model:value="filters.receiptMode" enum-name="SCM_RECEIPT_MODE_ENUM" width="170px" />
       </a-form-item>
-      <a-form-item label="入库状态" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.putawayStatus" enum-name="SCM_PUTAWAY_STATUS_ENUM" width="140px" />
+      <a-form-item label="入库状态" class="xsy-query-form-item">
+        <XsyEnumSelect v-model:value="filters.putawayStatus" enum-name="SCM_PUTAWAY_STATUS_ENUM" width="140px" />
       </a-form-item>
-      <a-form-item label="关键字" class="smart-query-form-item">
+      <a-form-item label="关键字" class="xsy-query-form-item">
         <a-input v-model:value="filters.keyword" placeholder="收货单号 / 采购单号 / 商品" allow-clear @pressEnter="onSearch" />
       </a-form-item>
     </a-row>
   </a-form>
 
-  <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
+  <a-tabs v-model:activeKey="activeTab" class="xsy-margin-top10" @change="onTabChange">
     <a-tab-pane key="receipt" tab="收货明细">
       <a-card size="small" :bordered="false">
-        <a-alert v-if="receiptSummaryError" :message="receiptSummaryError" type="error" show-icon class="smart-margin-bottom10">
+        <a-alert v-if="receiptSummaryError" :message="receiptSummaryError" type="error" show-icon class="xsy-margin-bottom10">
           <template #action><a-button @click="loadReceiptTab">重试</a-button></template>
         </a-alert>
         <div v-else class="scm-report-summary">
@@ -57,17 +57,17 @@
             >
           </template>
         </div>
-        <a-row data-toolbar-layout="single" class="smart-table-btn-block scm-table-toolbar">
-          <div class="smart-table-operate-block">
+        <a-row data-toolbar-layout="single" class="xsy-table-btn-block scm-table-toolbar">
+          <div class="xsy-table-operate-block">
             <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="receiptExport.exporting" @click="exportReceipt"
               >导出</a-button
             >
           </div>
-          <div class="smart-table-setting-block">
+          <div class="xsy-table-setting-block">
             <TableOperator v-model="receiptColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_RECEIPT" :refresh="loadReceiptTab" />
           </div>
         </a-row>
-        <a-alert v-if="receipt.error" :message="receipt.error" type="error" show-icon class="smart-margin-bottom10">
+        <a-alert v-if="receipt.error" :message="receipt.error" type="error" show-icon class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadReceipt">重试</a-button>
           </template>
@@ -124,7 +124,7 @@
             <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
           </template>
         </a-table>
-        <div class="smart-query-table-page">
+        <div class="xsy-query-table-page">
           <a-pagination
             show-less-items
             show-size-changer
@@ -143,7 +143,7 @@
 
     <a-tab-pane key="inbound" tab="入库明细">
       <a-card size="small" :bordered="false">
-        <a-alert v-if="inboundSummaryError" :message="inboundSummaryError" type="error" show-icon class="smart-margin-bottom10">
+        <a-alert v-if="inboundSummaryError" :message="inboundSummaryError" type="error" show-icon class="xsy-margin-bottom10">
           <template #action><a-button @click="loadInboundTab">重试</a-button></template>
         </a-alert>
         <div v-else class="scm-report-summary">
@@ -163,13 +163,13 @@
             </template>
           </template>
         </div>
-        <a-row data-toolbar-layout="single" class="smart-table-btn-block scm-table-toolbar">
-          <div class="smart-table-operate-block">
+        <a-row data-toolbar-layout="single" class="xsy-table-btn-block scm-table-toolbar">
+          <div class="xsy-table-operate-block">
             <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="inboundExport.exporting" @click="exportInbound"
               >导出</a-button
             >
           </div>
-          <div class="smart-table-setting-block">
+          <div class="xsy-table-setting-block">
             <TableOperator
               v-model="inboundColumns"
               :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INBOUND"
@@ -178,7 +178,7 @@
             />
           </div>
         </a-row>
-        <a-alert v-if="inbound.error" :message="inbound.error" type="error" show-icon class="smart-margin-bottom10">
+        <a-alert v-if="inbound.error" :message="inbound.error" type="error" show-icon class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadInbound">重试</a-button>
           </template>
@@ -215,7 +215,7 @@
             <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
           </template>
         </a-table>
-        <div class="smart-query-table-page">
+        <div class="xsy-query-table-page">
           <a-pagination
             show-less-items
             show-size-changer
@@ -234,7 +234,7 @@
 
     <a-tab-pane key="pending" tab="待入库">
       <a-card size="small" :bordered="false">
-        <a-alert v-if="pendingSummaryError" :message="pendingSummaryError" type="error" show-icon class="smart-margin-bottom10">
+        <a-alert v-if="pendingSummaryError" :message="pendingSummaryError" type="error" show-icon class="xsy-margin-bottom10">
           <template #action><a-button @click="loadPendingTab">重试</a-button></template>
         </a-alert>
         <div v-else class="scm-report-summary">
@@ -249,13 +249,13 @@
             <span>当前状态不受业务日期筛选影响</span>
           </template>
         </div>
-        <a-row class="smart-table-btn-block scm-table-toolbar">
-          <div class="smart-table-operate-block"></div>
-          <div class="smart-table-setting-block">
+        <a-row class="xsy-table-btn-block scm-table-toolbar">
+          <div class="xsy-table-operate-block"></div>
+          <div class="xsy-table-setting-block">
             <TableOperator v-model="pendingColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PENDING_PUTAWAY" :refresh="loadPendingTab" />
           </div>
         </a-row>
-        <a-alert v-if="pending.error" :message="pending.error" type="error" show-icon class="smart-margin-bottom10">
+        <a-alert v-if="pending.error" :message="pending.error" type="error" show-icon class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadPending">重试</a-button>
           </template>
@@ -283,7 +283,7 @@
               {{ textOrDash(record.quantityText) }}
             </template>
             <template v-else-if="column.dataIndex === 'action'">
-              <div class="smart-table-operate scm-table-actions">
+              <div class="xsy-table-operate scm-table-actions">
                 <!-- 报表只提供跳转，不提供确认入库 -->
                 <a-button type="link" @click="openReceipt(record.receiptNo)">查看原收货单</a-button>
               </div>
@@ -291,7 +291,7 @@
             <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
           </template>
         </a-table>
-        <div class="smart-query-table-page">
+        <div class="xsy-query-table-page">
           <a-pagination
             show-less-items
             show-size-changer
@@ -315,7 +315,7 @@ import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';

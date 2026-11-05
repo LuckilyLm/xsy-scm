@@ -1,16 +1,16 @@
 <template>
   <a-card size="small" :bordered="false">
-    <a-row data-toolbar-layout="single" class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
+    <a-row data-toolbar-layout="single" class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" class="scm-export-btn" v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')"
           >导出</a-button
         >
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PURCHASE_ITEM" :refresh="refresh" />
       </div>
     </a-row>
-    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+    <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
       <template #action>
         <a-button @click="refresh">重试</a-button>
       </template>
@@ -56,7 +56,7 @@
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         :disabled="exporting"

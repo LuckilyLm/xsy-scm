@@ -6,8 +6,8 @@
   <a-menu
     :open-keys="openKeys"
     v-model:selectedKeys="selectedKeys"
-    class="smart-menu smart-menu--side"
-    :class="{'smart-menu--collapsed': collapsed}"
+    class="xsy-menu xsy-menu--side"
+    :class="{'xsy-menu--collapsed': collapsed}"
     mode="inline"
     :inline-indent="14"
     :theme="theme"
@@ -20,9 +20,9 @@
           <a-menu-item :key="item.menuId" @click="turnToPage(item)">
             <template #icon>
               <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)" />
-              <span v-else class="smart-menu-icon-blank" />
+              <span v-else class="xsy-menu-icon-blank" />
             </template>
-            <span class="smart-menu-label" :title="item.menuName">{{ item.menuName }}</span>
+            <span class="xsy-menu-label" :title="item.menuName">{{ item.menuName }}</span>
           </a-menu-item>
         </template>
         <template v-else>
@@ -52,7 +52,7 @@ const props = defineProps({
   },
 });
 
-// 菜单树来自 SmartAdmin 的用户 store（`menuTree` 初值空数组，元素类型未声明）；
+// 菜单树来自 XSY 的用户 store（`menuTree` 初值空数组，元素类型未声明）；
 // 不显式放宽的话 computed 会被推成 never[]，模板里读 item.menuName 直接报错。
 const menuTree = computed<any[]>(() => useUserStore().getMenuTree || []);
 const rootSubmenuKeys = computed(() => menuTree.value.map((item) => item.menuId));
@@ -69,7 +69,7 @@ function turnToPage(menu) {
 }
 
 /**
- * SmartAdmin中 router的name 就是 后端存储menu的id
+ * XSY中 router的name 就是 后端存储menu的id
  * 所以此处可以直接监听路由，根据路由更新菜单的选中和展开
  */
 function updateOpenKeysAndSelectKeys() {
@@ -127,7 +127,7 @@ defineExpose({
 </script>
 
 <style lang="less" scoped>
-.smart-menu {
+.xsy-menu {
   --side-menu-motion: 0.22s;
   --side-menu-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -181,7 +181,7 @@ defineExpose({
     transition: color 0.16s ease;
   }
 
-  :deep(.smart-menu-icon-blank) {
+  :deep(.xsy-menu-icon-blank) {
     display: inline-block;
     width: 16px;
     height: 16px;
@@ -194,7 +194,7 @@ defineExpose({
   }
 }
 
-.smart-menu.ant-menu-root:not(.smart-menu--collapsed) {
+.xsy-menu.ant-menu-root:not(.xsy-menu--collapsed) {
   :deep(.ant-menu-item > .ant-menu-title-content),
   :deep(.ant-menu-submenu-title > .ant-menu-title-content) {
     flex: 1 1 0;
@@ -203,7 +203,7 @@ defineExpose({
     white-space: nowrap;
   }
 
-  :deep(.smart-menu-label) {
+  :deep(.xsy-menu-label) {
     display: block;
     max-width: 100%;
     overflow: hidden;
@@ -212,7 +212,7 @@ defineExpose({
   }
 }
 
-.smart-menu.ant-menu-root.smart-menu--collapsed {
+.xsy-menu.ant-menu-root.xsy-menu--collapsed {
   width: 100%;
 
   :deep(> .ant-menu-item),
@@ -234,7 +234,7 @@ defineExpose({
   }
 }
 
-.smart-menu:not(.ant-menu-dark) {
+.xsy-menu:not(.ant-menu-dark) {
   :deep(.ant-menu-item),
   :deep(.ant-menu-submenu-title) {
     color: var(--scm-text);
@@ -269,7 +269,7 @@ defineExpose({
   }
 }
 
-.smart-menu.ant-menu-root {
+.xsy-menu.ant-menu-root {
   :deep(.ant-menu-item-selected::before) {
     position: absolute;
     inset: 10px auto 10px 0;
@@ -284,7 +284,7 @@ defineExpose({
   }
 }
 
-.smart-menu.ant-menu-dark {
+.xsy-menu.ant-menu-dark {
   --side-menu-dark-active: color-mix(in srgb, var(--scm-primary) 20%, white);
 
   :deep(.ant-menu-item:hover),
@@ -304,7 +304,7 @@ defineExpose({
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .smart-menu {
+  .xsy-menu {
     :deep(.ant-menu-item),
     :deep(.ant-menu-submenu-title),
     :deep(.ant-menu-item-icon),

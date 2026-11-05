@@ -2,9 +2,9 @@
 <template>
   <a-tabs v-model:activeKey="activeTab">
     <a-tab-pane key="list" tab="采购需求">
-      <div class="smart-query-layout">
-        <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
-          <a-row class="smart-query-form-row">
+      <div class="xsy-query-layout">
+        <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
+          <a-row class="xsy-query-form-row">
             <a-form-item label="来源销售单号">
               <a-input v-model:value="queryForm.salesOrderNo" placeholder="销售单号" allow-clear @pressEnter="onSearch" />
             </a-form-item>
@@ -12,12 +12,12 @@
               <SkuSelect v-model:value="queryForm.skuId" width="240px" />
             </a-form-item>
             <a-form-item label="需求状态">
-              <SmartEnumSelect enum-name="SCM_DEMAND_STATUS_ENUM" v-model:value="queryForm.status" width="150px" />
+              <XsyEnumSelect enum-name="SCM_DEMAND_STATUS_ENUM" v-model:value="queryForm.status" width="150px" />
             </a-form-item>
             <a-form-item label="需求日期">
               <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD" />
             </a-form-item>
-            <a-form-item class="smart-query-form-item">
+            <a-form-item class="xsy-query-form-item">
               <a-space>
                 <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:demand:query'">查询</a-button>
                 <a-button @click="resetQuery">重置</a-button>
@@ -25,11 +25,11 @@
             </a-form-item>
           </a-row>
         </a-form>
-        <a-row data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
-          <div class="smart-table-operate-block">
+        <a-row data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
+          <div class="xsy-table-operate-block">
             <a-button type="primary" v-privilege="'scm:purchase:demand:batch:create'" @click="generateOpen = true"> 生成采购需求 </a-button>
           </div>
-          <div class="smart-table-setting-block">
+          <div class="xsy-table-setting-block">
             <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_DEMAND" :refresh="queryData" />
           </div>
         </a-row>
@@ -92,7 +92,7 @@
             <template v-else-if="column.dataIndex === 'supplierName'">{{ record.supplierName || '—' }}</template>
             <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
             <template v-else-if="column.dataIndex === 'action'">
-              <div class="smart-table-operate scm-table-actions">
+              <div class="xsy-table-operate scm-table-actions">
                 <a-button
                   v-if="Number(record.unallocatedQuantity ?? '0') > 0"
                   type="link"
@@ -107,7 +107,7 @@
           </template>
         </a-table>
 
-        <div class="smart-query-table-page">
+        <div class="xsy-query-table-page">
           <a-pagination
             show-less-items
             show-size-changer
@@ -171,7 +171,7 @@
 import {onMounted, reactive, ref} from 'vue';
 import {message, type FormInstance} from 'ant-design-vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';

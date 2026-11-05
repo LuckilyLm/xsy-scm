@@ -1,26 +1,26 @@
 <!-- 价格变更历史：协议价、分组价和时价等来源，可查看前后差异。 -->
 <template>
-  <a-form layout="inline" class="smart-query-form">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="来源" class="smart-query-form-item">
+  <a-form layout="inline" class="xsy-query-form">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="来源" class="xsy-query-form-item">
         <a-select v-model:value="query.source" allow-clear style="width: 150px" :options="sourceOptions" />
       </a-form-item>
-      <a-form-item label="客户" class="smart-query-form-item">
+      <a-form-item label="客户" class="xsy-query-form-item">
         <CustomerSelect v-model:value="query.customerId" width="180px" />
       </a-form-item>
-      <a-form-item label="商品规格" class="smart-query-form-item">
+      <a-form-item label="商品规格" class="xsy-query-form-item">
         <SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]" />
       </a-form-item>
-      <a-form-item label="变更类型" class="smart-query-form-item">
+      <a-form-item label="变更类型" class="xsy-query-form-item">
         <a-select v-model:value="query.operationType" allow-clear style="width: 110px" :options="operationOptions" />
       </a-form-item>
-      <a-form-item label="有效区间" class="smart-query-form-item">
+      <a-form-item label="有效区间" class="xsy-query-form-item">
         <a-range-picker v-model:value="effective" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]" />
       </a-form-item>
-      <a-form-item label="变更区间" class="smart-query-form-item">
+      <a-form-item label="变更区间" class="xsy-query-form-item">
         <a-range-picker v-model:value="operated" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button type="primary" @click="search" v-privilege="'scm:pricing:history:query'">查询</a-button>
       </a-form-item>
       <div class="scm-query-table-tools">
@@ -65,14 +65,14 @@
           <ScmStatusTag :tone="record.currentDeleted ? 'error' : 'neutral'" :label="record.currentDeleted ? '已删除' : '有效记录'" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="selected = record">变更详情</a-button>
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-quick-jumper
         show-less-items

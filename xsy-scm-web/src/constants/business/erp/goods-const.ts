@@ -3,9 +3,9 @@
  *
  */
 
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 
-export const GOODS_STATUS_ENUM: SmartEnum<number> = {
+export const GOODS_STATUS_ENUM: XsyEnum<number> = {
   APPOINTMENT: {
     value: 1,
     desc: '预约中',

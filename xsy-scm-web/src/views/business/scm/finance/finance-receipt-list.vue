@@ -1,11 +1,11 @@
 <template>
-  <a-alert v-if="customerOptionsError" type="warning" show-icon :message="customerOptionsError" class="smart-margin-bottom10">
+  <a-alert v-if="customerOptionsError" type="warning" show-icon :message="customerOptionsError" class="xsy-margin-bottom10">
     <template #action>
       <a-button size="small" @click="loadCustomerOptions">重试</a-button>
     </template>
   </a-alert>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
       <a-form-item label="收款日期">
         <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'收款开始日期'" />
         <span class="date-separator">至</span>
@@ -53,7 +53,7 @@
           v-aria-label="'待抵扣状态'"
         />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" v-privilege="PERM.RECEIPT_QUERY" @click="onSearch">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -67,8 +67,8 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-setting-block">
+    <a-row class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-setting-block">
         <a-button v-privilege="PERM.RECEIPT_ADD" type="primary" @click="openAdd">登记收款</a-button>
         <a-button v-privilege="PERM.RECEIPT_ADD" @click="openCod">货到付款收款</a-button>
         <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
@@ -120,7 +120,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'receivedAt'">{{ dateTimeText(text) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="showDetail(record)">明细</a-button>
             <a-button
               v-if="record.entryType === 'NORMAL'"
@@ -136,7 +136,7 @@
         </template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

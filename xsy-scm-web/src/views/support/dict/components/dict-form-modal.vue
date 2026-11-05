@@ -22,9 +22,9 @@
 <script setup lang="ts">
 import {ref, reactive} from 'vue';
 import {message} from 'ant-design-vue';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {dictApi} from '/@/api/support/dict-api';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 // emit
 const emit = defineEmits(['reloadList']);
@@ -63,7 +63,7 @@ function onSubmit() {
   formRef.value
     .validate()
     .then(async () => {
-      SmartLoading.show();
+      XsyLoading.show();
       try {
         if (form.dictId) {
           await dictApi.updateDict(form);
@@ -74,9 +74,9 @@ function onSubmit() {
         emit('reloadList');
         onClose();
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     })
     .catch((error) => {

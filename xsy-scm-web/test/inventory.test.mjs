@@ -55,7 +55,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
   const repo = fileURLToPath(new URL('../../', import.meta.url));
   const docPath = `${repo}/docs/status.md`;
   const webRoot = `${repo}/xsy-scm-web`;
-  const backendJavaRoot = `${repo}/xsy-scm-server/sa-admin/src/main/java`;
+  const backendJavaRoot = `${repo}/xsy-scm-server/xsy-admin/src/main/java`;
 
   const doc = readFileSync(docPath, 'utf8');
 

@@ -6,14 +6,14 @@
       type="warning"
       show-icon
       message="该供应商已停用，只能查看关联商品；启用后才能编辑。"
-      class="smart-margin-bottom10"
+      class="xsy-margin-bottom10"
     />
-    <a-alert v-else-if="loadState === 'error'" type="error" show-icon :message="error" class="smart-margin-bottom10">
+    <a-alert v-else-if="loadState === 'error'" type="error" show-icon :message="error" class="xsy-margin-bottom10">
       <template #action>
         <a-button size="small" @click="load">重新加载</a-button>
       </template>
     </a-alert>
-    <a-alert v-else-if="error" type="error" show-icon :message="error" class="smart-margin-bottom10" />
+    <a-alert v-else-if="error" type="error" show-icon :message="error" class="xsy-margin-bottom10" />
     <a-spin :spinning="loading">
       <SupplierSkuEditableTable v-model="drafts" :readonly="!editable || saving" :empty-text="emptyText" />
     </a-spin>

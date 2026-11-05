@@ -4,28 +4,28 @@
 -->
 <template>
   <!---------- 查询表单form begin ----------->
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form" v-privilege="'support:file:query'">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="文件夹类型" class="smart-query-form-item">
-          <SmartEnumSelect width="150px" v-model:value="queryForm.folderType" enumName="FILE_FOLDER_TYPE_ENUM" placeholder="文件夹类型" />
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form" v-privilege="'support:file:query'">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="文件夹类型" class="xsy-query-form-item">
+          <XsyEnumSelect width="150px" v-model:value="queryForm.folderType" enumName="FILE_FOLDER_TYPE_ENUM" placeholder="文件夹类型" />
         </a-form-item>
-        <a-form-item label="文件名" class="smart-query-form-item">
+        <a-form-item label="文件名" class="xsy-query-form-item">
           <a-input style="width: 150px" v-model:value="queryForm.fileName" placeholder="文件名" />
         </a-form-item>
-        <a-form-item label="文件Key" class="smart-query-form-item">
+        <a-form-item label="文件Key" class="xsy-query-form-item">
           <a-input style="width: 150px" v-model:value="queryForm.fileKey" placeholder="文件Key" />
         </a-form-item>
-        <a-form-item label="文件类型" class="smart-query-form-item">
+        <a-form-item label="文件类型" class="xsy-query-form-item">
           <a-input style="width: 150px" v-model:value="queryForm.fileType" placeholder="文件类型" />
         </a-form-item>
-        <a-form-item label="创建人" class="smart-query-form-item">
+        <a-form-item label="创建人" class="xsy-query-form-item">
           <a-input style="width: 150px" v-model:value="queryForm.creatorName" placeholder="创建人" />
         </a-form-item>
-        <a-form-item label="创建时间" class="smart-query-form-item">
+        <a-form-item label="创建时间" class="xsy-query-form-item">
           <a-range-picker v-model:value="queryForm.createTime" :presets="defaultTimeRanges" style="width: 220px" @change="onChangeCreateTime" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-button-group>
             <a-button type="primary" @click="queryData">
               <template #icon>
@@ -43,8 +43,8 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" @click="showUploadModal">
           <template #icon>
             <cloud-upload-outlined />
@@ -52,7 +52,7 @@
           上传文件
         </a-button>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :tableId="null" :refresh="queryData" />
       </div>
     </a-row>
@@ -77,13 +77,13 @@
     >
       <template #bodyCell="{text, record, column}">
         <template v-if="column.dataIndex === 'folderType'">
-          <span>{{ $smartEnumPlugin.getDescByValue('FILE_FOLDER_TYPE_ENUM', text) }}</span>
+          <span>{{ $xsyEnumPlugin.getDescByValue('FILE_FOLDER_TYPE_ENUM', text) }}</span>
         </template>
         <template v-if="column.dataIndex === 'creatorUserType'">
-          <span>{{ $smartEnumPlugin.getDescByValue('USER_TYPE_ENUM', text) }}</span>
+          <span>{{ $xsyEnumPlugin.getDescByValue('USER_TYPE_ENUM', text) }}</span>
         </template>
         <template v-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="xsy-table-operate">
             <a-button @click="view(record)" type="link">查看</a-button>
             <a-button @click="download(record)" type="link">下载</a-button>
           </div>
@@ -92,7 +92,7 @@
     </a-table>
     <!---------- 表格 end ----------->
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -125,11 +125,11 @@
 import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {onMounted, reactive, ref} from 'vue';
 import {fileApi} from '/@/api/support/file-api';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import FilePreviewModal from '/@/components/support/file-preview-modal/index.vue';
 import FileUpload from '/@/components/support/file-upload/index.vue';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
@@ -237,7 +237,7 @@ async function queryData() {
     tableData.value = queryResult.data.list;
     total.value = queryResult.data.total;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }
@@ -271,7 +271,7 @@ async function download(file) {
   try {
     await fileApi.downLoadFile(file.fileKey);
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 

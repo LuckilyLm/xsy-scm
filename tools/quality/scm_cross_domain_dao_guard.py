@@ -48,7 +48,7 @@ def load_allowlist(allowlist_path: Path = ALLOWLIST) -> dict[tuple[str, str], Ac
 
 def imported_accesses(root: Path = ROOT) -> dict[tuple[str, str], tuple[set[str], str]]:
     accesses: dict[tuple[str, str], tuple[set[str], str]] = {}
-    source_root = root / "xsy-scm-server" / "sa-admin" / "src" / "main" / "java" / "com" / "xsy" / "scm"
+    source_root = root / "xsy-scm-server" / "xsy-admin" / "src" / "main" / "java" / "com" / "xsy" / "scm"
     if not source_root.is_dir():
         raise OSError(f"SCM production source root is missing: {source_root}")
     source_files = sorted(source_root.rglob("*.java"))
@@ -94,7 +94,7 @@ def mapper_operations(target: str, root: Path = ROOT) -> dict[str, str]:
     """Return the SQL operation declared for each custom DAO method."""
     type_name = target.rsplit(".", 1)[-1]
     operations: dict[str, str] = {}
-    mapper_root = root / "xsy-scm-server" / "sa-admin" / "src" / "main" / "resources" / "mapper"
+    mapper_root = root / "xsy-scm-server" / "xsy-admin" / "src" / "main" / "resources" / "mapper"
     for mapper_file in mapper_root.rglob("*.xml"):
         source = mapper_file.read_text(encoding="utf-8")
         namespace = MAPPER_NAMESPACE.search(source)

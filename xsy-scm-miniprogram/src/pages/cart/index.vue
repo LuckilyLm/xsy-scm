@@ -94,7 +94,7 @@ import {onShow} from '@dcloudio/uni-app';
 import XsySkeleton from '@/components/common/xsy-skeleton.vue';
 import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
 import {mallCartApi} from '@/api/mall/cart-api';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_SECONDARY} from '@/constants/theme-color-const';
 import {useMallTheme} from '@/composables/use-mall-theme';
 import {displayMoney} from '@/utils/money-display';
@@ -142,7 +142,7 @@ async function load() {
     const response = await mallCartApi.getCart();
     apply(response.data);
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
     loading.value = false;
   }
@@ -176,7 +176,7 @@ async function refreshEstimate() {
     estimateState.value = 'idle';
   } catch (error) {
     if (seq !== estimateSeq) return;
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     estimateState.value = 'error';
   }
 }
@@ -236,7 +236,7 @@ async function mutate(action) {
     const response = await action();
     apply(response.data);
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     uni.showToast({title: error?.message || '操作失败', icon: 'none'});
   } finally {
     submitting.value = false;

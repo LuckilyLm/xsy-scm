@@ -1,0 +1,74 @@
+package com.xsy.scm.base.module.support.operatelog.core;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
+
+import java.util.regex.Pattern;
+
+/** 操作日志在写库前就必须脱敏密码、令牌等敏感字段，不能只依赖前端隐藏。 */
+final class OperateLogParamMask {
+    /**
+     * 与前端展示层遮罩保持同一份规则，避免两侧各判一套键名。
+     */
+    private static final Pattern SECRET_KEY = Pattern
+        .compile("(password|passwd|pwd|token|secret|credential|authorization|accesstoken|refreshtoken"
+            + "|sessiontoken|apikey|api_key)", Pattern.CASE_INSENSITIVE);
+
+    private static final String MASKED_VALUE = "******";
+
+    /**
+     * 解析不出结构时唯一允许写库的载荷：只留下「这里发生过脱敏失败」的记录，不含任何原文。
+     */
+    private static final String UNPARSEABLE_PAYLOAD = "[{\"operateLogParamMasked\":\"UNPARSEABLE_PAYLOAD\"}]";
+
+    private OperateLogParamMask() {
+    }
+
+    /**
+     * 遮蔽 JSON 文本里所有命中敏感键名的值；非 JSON（脏值 / 截断）原样返回，不额外造错误。
+     *
+     * <p>
+     * 看似 JSON 但解析失败时返回不含原文的占位载荷，而不是原文。
+     */
+    static String mask(String json) {
+        if (json == null || json.isEmpty() || (json.charAt(0) != '{' && json.charAt(0) != '[')) {
+            return json;
+        }
+        try {
+            Object node = JSON.parse(json, Feature.OrderedField);
+            if (!maskNode(node)) {
+                return json;
+            }
+            return JSON.toJSONString(node);
+        } catch (RuntimeException e) {
+            // 本方法在切面唯一的写库出口上：原文一旦写入数据库就永久留存，前端 operate-log-mask.ts 只能遮展示、遮不住数据库行，
+            // 也遮不住持日志读取权的人。所以这里不能沿用「留给第二层兜底」——与 FileKeyVoSerializer、
+            // StocktakeSnapshotSigner 同规则：去掉任何写出原始 value 的分支，宁可丢这条参数的可读性。
+            return UNPARSEABLE_PAYLOAD;
+        }
+    }
+
+    /**
+     * @return 是否真的替换过，用于避免对不含敏感键的日志重排 JSON
+     */
+    private static boolean maskNode(Object node) {
+        boolean masked = false;
+        if (node instanceof JSONArray array) {
+            for (Object item : array) {
+                masked |= maskNode(item);
+            }
+        } else if (node instanceof JSONObject object) {
+            for (String key : object.keySet()) {
+                if (SECRET_KEY.matcher(key).find() && object.get(key) != null) {
+                    object.put(key, MASKED_VALUE);
+                    masked = true;
+                } else {
+                    masked |= maskNode(object.get(key));
+                }
+            }
+        }
+        return masked;
+    }
+}

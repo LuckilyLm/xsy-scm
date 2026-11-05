@@ -1,0 +1,32 @@
+package com.xsy.scm.purchase.domain.form;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import jakarta.validation.constraints.Size;
+
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.purchase.constant.ScmPurchaseDemandStatusEnum;
+
+import java.time.LocalDate;
+
+import com.xsy.scm.base.common.domain.PageParam;
+
+/**
+ * 采购需求列表查询条件。
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class PurchaseDemandQueryForm extends PageParam {
+    @Size(max = 64, message = "销售订单号不能超过64个字符")
+    private String salesOrderNo;
+    private Long skuId;
+    private Long supplierId;
+    private Long warehouseId;
+    @ScmEnumValue(enumClass = ScmPurchaseDemandStatusEnum.class, message = "采购需求状态无效")
+    private String status;
+    /**
+     * 需求日期区间（含端点）；demand_date 取 source_confirmed_at 的北京时间日期。
+     */
+    private LocalDate demandDateFrom;
+    private LocalDate demandDateTo;
+}

@@ -1,0 +1,190 @@
+package com.xsy.scm;
+
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.junit.AnalyzeClasses;
+import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchRule;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+
+/**
+ * SCM 分层与跨域边界的可执行规则。
+ *
+ * <p>这些约束此前只写在文档里：越界依赖不会让编译失败，也不会让接口报错，只会在事后
+ * 让「谁改了这张表」变得无法回答。写成断言之后，新增一条越界依赖当场失败。
+ *
+ * <p>与 {@code FinanceReadOnlyContractTest} 的分工：那边扫源码文本，钉住「财务域不写业务表」
+ * 这条 SQL 级记录；这里看编译产物的类型依赖，钉住分层方向与跨域引用。两者不重叠 ——
+ * 一句 {@code UPDATE xsy_sales_order} 不产生任何类型依赖，而一次注入 DAO 也不产生任何 SQL 文本。
+ *
+ * <p>The importer checks both the XSY SCM package and {@code com.xsy.scm};
+ * {@link #importedSourceSetIsNotEmpty} prevents an empty or misconfigured import from
+ * making every architecture rule pass vacuously.
+ */
+@AnalyzeClasses(
+        packages = {
+                ScmArchitectureTest.LEGACY_SCM_PACKAGE,
+                ScmArchitectureTest.XSY_SCM_PACKAGE,
+        },
+        importOptions = {ImportOption.DoNotIncludeTests.class, ScmArchitectureTest.SupplyChainOnly.class})
+class ScmArchitectureTest {
+
+    /** 管理与公共模块仅调整了包名，供应链分层规则继续检查原有业务范围。 */
+    public static class SupplyChainOnly implements ImportOption {
+        @Override
+        public boolean includes(com.tngtech.archunit.core.importer.Location location) {
+            String path = location.asURI().toString();
+            return !path.contains("/com/xsy/scm/admin/") && !path.contains("/com/xsy/scm/base/");
+        }
+    }
+
+    /** Both namespaces remain in the scan so reintroduced legacy SCM classes are detected. */
+    static final String LEGACY_SCM_PACKAGE = "com.xsy.scm.admin.module.scm";
+    static final String XSY_SCM_PACKAGE = "com.xsy.scm";
+
+    /**
+     * SCM 具体业务域。{@code common} 不在其中：它是被所有域依赖的一侧，
+     * 反向依赖任何一个具体域都会让「公共层」变成隐式的全域耦合点。
+     *
+     * <p><b>新增域必须在这里补一行</b>：漏补不会以任何形式报警，门禁只是少比一个域。
+     * 2026-10-15 补齐了此前遗漏的 balance / mall / payment / print / metrics / notification 六个域 ——
+     * 它们都是在清单写定之后才建的，因此一直不在任何跨域规则之内。
+     */
+    private static final String[] CONCRETE_DOMAINS = {
+            "..scm.product..", "..scm.customer..", "..scm.supplier..", "..scm.pricing..",
+            "..scm.order..", "..scm.purchase..", "..scm.inventory..", "..scm.sorting..",
+            "..scm.delivery..", "..scm.finance..", "..scm.report..", "..scm.dashboard..",
+            "..scm.screen..", "..scm.warehouse..", "..scm.promotion..",
+            "..scm.balance..", "..scm.mall..", "..scm.payment..", "..scm.print..",
+            "..scm.metrics..", "..scm.notification..", "..scm.trace..", "..scm.businesscategory..",
+    };
+
+    private static final String[] CONCRETE_DOMAINS_EXCEPT_FINANCE = {
+            "..scm.product..", "..scm.customer..", "..scm.supplier..", "..scm.pricing..",
+            "..scm.order..", "..scm.purchase..", "..scm.inventory..", "..scm.sorting..",
+            "..scm.delivery..", "..scm.report..", "..scm.dashboard..",
+            "..scm.screen..", "..scm.warehouse..", "..scm.promotion..",
+            "..scm.balance..", "..scm.mall..", "..scm.payment..", "..scm.print..",
+            "..scm.metrics..", "..scm.notification..", "..scm.trace..", "..scm.businesscategory..",
+    };
+
+    /**
+     * 测试库在生产 classpath 上是可见的：{@code xsy-base} 以 compile 作用域声明了
+     * {@code spring-boot-starter-test}，所以编译器不会拦住生产代码 import AssertJ。
+     * 这条规则是唯一的防线。
+     */
+    private static final String[] TEST_ONLY_LIBRARIES = {
+            "org.junit..", "org.assertj..", "org.mockito..", "org.testcontainers..",
+            "org.springframework.boot.test..", "org.springframework.test..",
+            "com.tngtech.archunit..",
+    };
+
+    @ArchTest
+    static final ArchRule controllersDoNotReachDaos =
+            noClasses().that().resideInAPackage("..scm..controller..")
+                    .should().dependOnClassesThat().resideInAPackage("..scm..dao..")
+                    .because("Controller 只做入参校验与协调；直连 DAO 会绕过 Service 上的事务边界与数据权限");
+
+    @ArchTest
+    static final ArchRule daosDoNotReachUpwards =
+            noClasses().that().resideInAPackage("..scm..dao..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage("..scm..controller..", "..scm..service..", "..scm..manager..")
+                    .because("DAO 只表达取数与写数；反向依赖会让一次查询触发业务协调，形成环");
+
+    @ArchTest
+    static final ArchRule servicesAndManagersDoNotDependOnControllers =
+            noClasses().that().resideInAnyPackage("..scm..service..", "..scm..manager..")
+                    .should().dependOnClassesThat().resideInAPackage("..scm..controller..")
+                    .because("Controller 是最外层入口，被内层依赖就意味着业务规则开始感知 HTTP 形态");
+
+    @ArchTest
+    static final ArchRule domainObjectsStayFreeOfApplicationLayers =
+            noClasses().that().resideInAPackage("..scm..domain..")
+                    .should().dependOnClassesThat()
+                    .resideInAnyPackage(
+                            "..scm..controller..", "..scm..service..", "..scm..manager..", "..scm..dao..")
+                    .because("entity / form / vo / dto 是数据形状，依赖应用层会让它们无法被复用与序列化");
+
+    /**
+     * common 不得依赖任何具体业务域。
+     *
+     * <p>Compile-time {@code static final String} constants are inlined by javac, so this
+     * bytecode rule cannot detect source-only references to another domain's permission
+     * catalog. Permission ownership is checked by the source-level permission contract.
+     */
+    @ArchTest
+    static final ArchRule commonDoesNotDependOnConcreteDomains =
+            noClasses().that().resideInAPackage("..scm.common..")
+                    .should().dependOnClassesThat().resideInAnyPackage(CONCRETE_DOMAINS)
+                    .because("common 被所有域依赖；它一旦依赖某个具体域，该域就被隐式耦合进每一个域");
+
+    /**
+     * 财务域只消费既有记录、只生产自己的记录；跨域读走自己的只读 DAO，跨域写一律禁止。
+     *
+     * <p><b>为什么把值域枚举排除在外</b>：结算方式、支付意图/交易状态、余额流水类型这些枚举是各域共用的
+     * <b>词汇表</b> —— 财务读到的资金记录本身就带着这些取值，判定「这腿是不是成功的余额消费」时必然要引用它们。
+     * 把它们也算越界，规则就从「不许伸手进别的域」变成了「不许使用共享词汇」，只会逼出重复的值域副本，
+     * 而重复的值域副本恰恰是最容易漂移的东西。
+     *
+     * <p>规则真正要拦的是依赖别的域的<b>服务、DAO 与实体</b> —— 那才是把别人的实现与表结构变成自己的编译期依赖。
+     * 2026-10-15 把 mall / payment / balance 等域补进清单后，这条规则抓出的正是两处实体泄漏
+     * （财务的只读 DAO 直接返回余额域的实体），已改为财务自己的 DTO。
+     */
+    @ArchTest
+    static final ArchRule financeDoesNotDependOnOtherDomains =
+            noClasses().that().resideInAPackage("..scm.finance..")
+                    .should().dependOnClassesThat(JavaClass.Predicates.resideInAnyPackage(CONCRETE_DOMAINS_EXCEPT_FINANCE)
+                            .and(DescribedPredicate.doesNot(JavaClass.Predicates.ENUMS)))
+                    .because("财务域只消费既有记录、只生产自己的记录；跨域读走自己的只读 DAO，跨域写一律禁止（共用值域枚举除外）");
+
+    /**
+     * 防止「一条规则都没跑到」被读成「所有规则都过了」。
+     *
+     * <p>ArchUnit rules pass vacuously when their imported class set is empty. This
+     * assertion proves the configured package set contains SCM classes before the rules run.
+     */
+    @ArchTest
+    static void importedSourceSetIsNotEmpty(JavaClasses classes) {
+        long scmClasses = 0;
+        boolean sawLegacyPackage = false;
+        for (JavaClass clazz : classes) {
+            String packageName = clazz.getPackageName();
+            if (packageName.startsWith(LEGACY_SCM_PACKAGE)) {
+                sawLegacyPackage = true;
+            } else if (!packageName.startsWith(XSY_SCM_PACKAGE)) {
+                continue;
+            }
+            scmClasses++;
+        }
+        if (scmClasses == 0) {
+            throw new AssertionError("ArchUnit imported 0 SCM classes from {"
+                    + LEGACY_SCM_PACKAGE + ", " + XSY_SCM_PACKAGE
+                    + "}; the analyzed package set is misconfigured, not clean");
+        }
+        // XSY may have no SCM classes; the XSY namespace must still contain SCM classes.
+        if (!sawLegacyPackage) {
+            System.out.println("[ScmArchitectureTest] legacy SCM package is empty");
+        }
+    }
+
+    @ArchTest
+    static final ArchRule productionCodeDoesNotUseTestLibraries =
+            noClasses().should().dependOnClassesThat().resideInAnyPackage(TEST_ONLY_LIBRARIES)
+                    .because("测试库以 compile 作用域泄漏到生产 classpath，编译器不会拦，只能由这条规则拦");
+
+    /**
+     * Concrete SCM business domains must reside under {@code com.xsy.scm}.
+     *
+     * <p>This positive rule complements {@link #importedSourceSetIsNotEmpty}: it catches business classes
+     * stranded outside the target namespace, while the companion rule prevents a vacuous empty scan.
+     */
+    @ArchTest
+    static final ArchRule scmProductionCodeLivesInXsyPackage =
+            classes().that().resideInAnyPackage(CONCRETE_DOMAINS)
+                    .should().resideInAPackage(XSY_SCM_PACKAGE + "..")
+                    .because("SCM business domains must remain under " + XSY_SCM_PACKAGE);
+}

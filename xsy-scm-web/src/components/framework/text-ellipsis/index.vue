@@ -4,7 +4,7 @@
       <a-popover>
         <template #content>
           {{ text }}
-          <SmartCopyIcon :value="text" />
+          <XsyCopyIcon :value="text" />
         </template>
         <div>
           <slot>
@@ -24,7 +24,7 @@
 import {onMounted, ref, nextTick} from 'vue';
 import {Modal} from 'ant-design-vue';
 import {v4 as uuid} from 'uuid';
-import SmartCopyIcon from '/@/components/framework/smart-copy-icon/index.vue';
+import XsyCopyIcon from '/@/components/framework/xsy-copy-icon/index.vue';
 
 const props = defineProps({
   text: {

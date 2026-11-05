@@ -1,4 +1,4 @@
-import {getRequest} from '@/lib/smart-request';
+import {getRequest} from '@/lib/xsy-request';
 
 /** 商城单页：公告 / 服务条款 / 关于我们 / 售后规则，只读取已发布内容。 */
 export const mallDecorationApi = {

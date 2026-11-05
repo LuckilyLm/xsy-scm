@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Q1 pre-flight contract: are the quality gates ready for the package move?
 
-Q1 moves ``net.lab1024.sa.admin.module.scm.*`` to ``com.xsy.scm.*``. The failure
+Q1 moves ``com.xsy.scm.admin.module.scm.*`` to ``com.xsy.scm.*``. The failure
 mode that matters is not a gate being too strict - it is a gate silently stopping
 looking at the code. A scan rooted only at the old package reports zero findings
 after the move, a baseline ratchet whose identities all point at vanished paths
@@ -184,7 +184,7 @@ def check_guard_rejects_empty_source_set() -> Check:
     try:
         # 用一条两边都不存在的路径来制造空集。曾经这里用的是「只有新包」，
         # 但 Q1 迁到一半时新包已经有文件，那条断言就会在迁移中途假失败。
-        guard.SCM_PACKAGE_PATHS = (Path("net/lab1024/sa/admin/module/scm-quietly-renamed"),)
+        guard.SCM_PACKAGE_PATHS = (Path("com/xsy/scm/admin/module/scm-quietly-renamed"),)
         if guard.scm_main_sources():
             check.failures.append("the sentinel package unexpectedly resolved to sources")
         try:
@@ -210,7 +210,7 @@ def check_checkstyle_scans_both_packages() -> Check:
         check.failures.append(f"pattern misses the new package: {pattern}")
     if "src/main/java/**" in pattern or pattern.strip() == "**/*.java":
         check.failures.append(
-            f"pattern is a whole-source-tree catch-all and would pull SmartAdmin "
+            f"pattern is a whole-source-tree catch-all and would pull XSY "
             f"foundation debt into the SCM baseline: {pattern}"
         )
     return check
@@ -227,7 +227,7 @@ def check_archunit_analyzes_both_packages() -> Check:
     # 包名以常量形式声明（规则里的断言也要用它们），所以这里查的是「注解引用了两个常量
     # 且两个常量的值就是这两条包」，而不是在注解里找一个字面量。
     for constant, value in (
-        ("LEGACY_SCM_PACKAGE", "net.lab1024.sa.admin.module.scm"),
+        ("LEGACY_SCM_PACKAGE", "com.xsy.scm.admin.module.scm"),
         ("XSY_SCM_PACKAGE", "com.xsy.scm"),
     ):
         if constant not in block:
@@ -247,7 +247,7 @@ def check_archunit_finance_exception_removed() -> Check:
         check.failures.append("the historical Finance -> Order idempotency exception remains")
     if ".resideInAnyPackage(CONCRETE_DOMAINS_EXCEPT_FINANCE)" not in source:
         check.failures.append("the Finance rule does not reject dependencies on every other concrete domain")
-    finance_root = ROOT / "xsy-scm-server" / "sa-admin" / "src" / "main" / "java" / "com" / "xsy" / "scm" / "finance"
+    finance_root = ROOT / "xsy-scm-server" / "xsy-admin" / "src" / "main" / "java" / "com" / "xsy" / "scm" / "finance"
     for path in finance_root.rglob("*.java"):
         if "OrderIdempotencyService" in path.read_text(encoding="utf-8"):
             check.failures.append(f"Finance production code still references OrderIdempotencyService: {path}")
@@ -502,6 +502,9 @@ def scan_domain_file_set(source_root: Path, package_path: Path) -> dict[str, lis
         return grouped
     for path in sorted(root.rglob(f"*{SERVER_JAVA_SUFFIX}")):
         parts = path.relative_to(root).parts
+        # 管理和公共模块改了包名，原供应链迁移清单继续只比较业务文件。
+        if package_path == guard.NEW_SCM_PACKAGE_PATH and parts[0] in ("admin", "base"):
+            continue
         domain = parts[0] if len(parts) > 1 else ROOT_KEY
         grouped.setdefault(domain, []).append(Path(*parts[1:]).as_posix()
                                              if len(parts) > 1 else parts[0])
@@ -842,8 +845,8 @@ PROBE_PACKAGE_DIR = guard.MAIN_SOURCE_ROOT / guard.NEW_SCM_PACKAGE_PATH / "quali
 
 BAD_PROBE = """package com.xsy.scm.qualityprobe;
 
-import net.lab1024.sa.admin.module.scm.product.dao.*;
-import net.lab1024.sa.admin.module.scm.product.dao.ProductCategoryDao;
+import com.xsy.scm.admin.module.scm.product.dao.*;
+import com.xsy.scm.admin.module.scm.product.dao.ProductCategoryDao;
 
 /** 临时探针：故意含四类缺陷中的三类，证明新包被门禁看见，跑完即删。 */
 public class BadQualityProbe {
@@ -881,7 +884,7 @@ public final class GoodQualityProbe {
 # 且不进 controller/service/dao 任何一层，不会连带触发别的规则。
 LAYER_PROBE = """package com.xsy.scm.common.probe;
 
-import net.lab1024.sa.admin.module.scm.product.dao.ProductCategoryDao;
+import com.xsy.scm.admin.module.scm.product.dao.ProductCategoryDao;
 
 /** 临时探针：新包里的公共层依赖具体业务域，用于证明 ArchUnit 也在分析 com.xsy.scm。 */
 public class BadLayerProbe {
@@ -919,7 +922,7 @@ def run_architecture_probe() -> tuple[int, str]:
     probe.write_text(LAYER_PROBE, encoding="utf-8", newline="\n")
     try:
         result = subprocess.run(
-            [maven_executable(), "-B", "-pl", "sa-admin", "-am", "test",
+            [maven_executable(), "-B", "-pl", "xsy-admin", "-am", "test",
              "-Dtest=ScmArchitectureTest", "-DfailIfNoTests=false",
              "-Dsurefire.failIfNoSpecifiedTests=false"],
             cwd=guard.SERVER, capture_output=True, text=True, encoding="utf-8",
@@ -935,7 +938,7 @@ def run_architecture_probe() -> tuple[int, str]:
         # ArchUnit 读的是编译产物。只删源码会把 BadLayerProbe.class 留在 target/classes 里，
         # 下一次跑 ScmArchitectureTest 会因为这条陈旧 class 继续失败，看起来像规则不稳定。
         import shutil as _shutil
-        _shutil.rmtree(guard.SERVER / "sa-admin/target/classes/com", ignore_errors=True)
+        _shutil.rmtree(guard.SERVER / "xsy-admin/target/classes/com", ignore_errors=True)
 
 
 def new_main_file_count() -> int:

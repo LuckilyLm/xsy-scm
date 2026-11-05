@@ -1,7 +1,7 @@
 <template>
   <a-modal :open="open" :title="title" width="900px" :footer="null" destroy-on-close @cancel="close">
-    <a-form class="smart-query-form" layout="inline" @submit.prevent>
-      <a-row class="smart-query-form-row">
+    <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+      <a-row class="xsy-query-form-row">
         <a-form-item label="业务日期">
           <a-date-picker v-model:value="startDate" value-format="YYYY-MM-DD" placeholder="开始日期" />
           <span class="date-separator">至</span>
@@ -33,7 +33,7 @@
         </template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

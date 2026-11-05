@@ -32,7 +32,7 @@
           <IconSelect @updateIcon="selectIcon">
             <template #iconSelect>
               <a-input v-model:value="form.icon" :maxlength="100" placeholder="请输入菜单图标" style="width: 200px" />
-              <component :is="$antIcons[form.icon]" class="smart-margin-left15" style="font-size: 20px" />
+              <component :is="$antIcons[form.icon]" class="xsy-margin-left15" style="font-size: 20px" />
             </template>
           </IconSelect>
         </a-form-item>
@@ -143,8 +143,8 @@ import MenuTreeSelect from './menu-tree-select.vue';
 import {menuApi} from '/@/api/system/menu-api';
 import IconSelect from '/@/components/framework/icon-select/index.vue';
 import {MENU_DEFAULT_PARENT_ID, MENU_PERMS_TYPE_ENUM, MENU_TYPE_ENUM} from '/@/constants/system/menu-const';
-import {smartSentry} from '/@/lib/smart-sentry';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 
 // ----------------------- 以下是字段定义 emits props ------------------------
 // emit
@@ -271,7 +271,7 @@ const onSubmit = async (continueFlag) => {
     message.error('参数验证错误，请仔细填写表单数据!');
     return;
   }
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     let params = _.cloneDeep(form);
     // 若无父级ID 默认设置为0
@@ -291,9 +291,9 @@ const onSubmit = async (continueFlag) => {
     }
     emit('reloadList');
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 };
 

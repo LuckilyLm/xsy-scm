@@ -56,7 +56,7 @@ test.describe('scm-inventory', () => {
     return r.data;
   }
   function browse(page: Page, path: string) {
-    return page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), token).then(() => page.goto('/#' + path));
+    return page.addInitScript((v) => localStorage.setItem('xsy_user_token', v), token).then(() => page.goto('/#' + path));
   }
   async function search(page: Page) {
     await page.getByRole('button', {name: /^查\s*询$/}).click();
@@ -279,7 +279,7 @@ test.describe('scm-inventory', () => {
     // 断言刻意落在「404 页出现」而不是「侧边栏不含库存管理」：该账号连布局都没渲染，
     // `.ant-menu` 在 DOM 里根本不存在，而 Playwright 的 `not.toContainText` 要求元素先存在
     // —— 用后者会得到一个「元素找不到」的假失败，掩盖掉真正被验证的记录。
-    await page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), readToken);
+    await page.addInitScript((v) => localStorage.setItem('xsy_user_token', v), readToken);
     await page.goto('/#/inventory/inventory-balance-list');
     await expect(page.getByText('您访问的内容不存在')).toBeVisible();
     await expect(page.locator('#scm-inventory-balance-table')).toHaveCount(0);
@@ -349,7 +349,7 @@ test.describe('scm-inventory', () => {
 
   test('6 Q12 the balance page defaults the warehouse only when exactly one is enabled', async ({page}) => {
     const warehouses = await get('/scm/warehouse/list');
-    const select = () => page.locator('.smart-query-form .ant-select').first();
+    const select = () => page.locator('.xsy-query-form .ant-select').first();
     const selection = () => select().locator('.ant-select-selection-item');
 
     // 真实环境
@@ -541,7 +541,7 @@ test.describe('scm-inventory-lot', () => {
   }
 
   function browse(page: Page, path: string) {
-    return page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), token).then(() => page.goto('/#' + path));
+    return page.addInitScript((v) => localStorage.setItem('xsy_user_token', v), token).then(() => page.goto('/#' + path));
   }
 
   async function search(page: Page) {
@@ -985,7 +985,7 @@ test.describe('scm-inventory-write', () => {
     return r.data;
   }
   function browse(page: Page, path: string, overrideToken?: string) {
-    return page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), overrideToken ?? token).then(() => page.goto('/#' + path));
+    return page.addInitScript((v) => localStorage.setItem('xsy_user_token', v), overrideToken ?? token).then(() => page.goto('/#' + path));
   }
   async function search(page: Page) {
     await page.getByRole('button', {name: /^查\s*询$/}).click();
@@ -1510,7 +1510,7 @@ test.describe('scm-purchase', () => {
     return r.data;
   }
   function browse(page: Page, path: string) {
-    return page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), token).then(() => page.goto('/#' + path));
+    return page.addInitScript((v) => localStorage.setItem('xsy_user_token', v), token).then(() => page.goto('/#' + path));
   }
   const orderDetail = (id: string) => get('/scm/purchase/detail/' + id);
   const receiptDetail = (id: string) => get('/scm/purchase/receipt/detail/' + id);
@@ -2394,7 +2394,7 @@ test.describe('scm-stocktake-import', () => {
       // 导出绑定查询条件里的仓库：未选仓库时只给提示、不发请求，所以必须先在页面上真的选中。
       // WarehouseSelect 带 show-search；开发库里 E2E 仓库越积越多，下拉是虚拟列表只渲染首屏，
       // 直接按文本点会落在 DOM 之外。先输入名称过滤，再点过滤后的那一项。
-      const warehouseSelect = page.locator('.smart-query-form-item').filter({hasText: '仓库'}).first().locator('.ant-select');
+      const warehouseSelect = page.locator('.xsy-query-form-item').filter({hasText: '仓库'}).first().locator('.ant-select');
       await warehouseSelect.locator('.ant-select-selector').click();
       await warehouseSelect.locator('input').first().fill(warehouseName);
       const warehouseOption = page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({hasText: warehouseName}).first();

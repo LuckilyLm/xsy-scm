@@ -22,7 +22,7 @@ export type CreditPeriodUnit = 'DAY' | 'MONTH';
 
 export type EnableStatus = 'ENABLED' | 'DISABLED';
 
-/** SmartAdmin 统一响应信封（拦截器已解包，此处仅用于类型标注）。 */
+/** XSY 统一响应信封（拦截器已解包，此处仅用于类型标注）。 */
 export interface ScmResponse<T> {
   code: number;
   ok: boolean;

@@ -1,10 +1,10 @@
 /*
  * 响应与错误码常量
  *
- * 后端（SmartAdmin）统一信封：{ code, ok, msg, data, dataType }
+ * 后端（XSY）统一信封：{ code, ok, msg, data, dataType }
  * 成功是 code === 0；客户端不得另行定义成功码。
  *
- * 平台级错误码来自 sa-base 的 UserErrorCode / UnexpectedErrorCode，
+ * 平台级错误码来自 xsy-base 的 UserErrorCode / UnexpectedErrorCode，
  * 已在后端源码中逐一核对，可安全硬编码。
  */
 
@@ -12,8 +12,8 @@
 export const SUCCESS_CODE = 0;
 
 /**
- * 平台级错误码（sa-base/UserErrorCode，取值区间 30001–39999）
- * @see net.lab1024.sa.base.common.code.UserErrorCode
+ * 平台级错误码（xsy-base/UserErrorCode，取值区间 30001–39999）
+ * @see com.xsy.scm.base.common.code.UserErrorCode
  */
 export const PLATFORM_ERROR_CODE = {
   /** 参数错误 */

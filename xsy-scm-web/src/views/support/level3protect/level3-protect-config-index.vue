@@ -26,18 +26,18 @@
       :label-col="{span: 6}"
       :wrapper-col="{span: 18}"
       autocomplete="off"
-      class="smart-query-form"
+      class="xsy-query-form"
     >
       <a-form-item
         label="配置双因子登录模式"
-        class="smart-query-form-item"
+        class="xsy-query-form-item"
         extra="在用户登录时，需要同时提供用户名和密码以及其他形式的身份验证信息，例如短信验证码等"
       >
         <a-switch v-model:checked="form.twoFactorLoginEnabled" checked-children="开启 " un-checked-children="关闭 " />
       </a-form-item>
       <a-form-item
         label="最大连续登录失败次数"
-        class="smart-query-form-item"
+        class="xsy-query-form-item"
         extra="连续登录失败超过一定次数，则需要锁定；默认5次；0则不锁定；"
         name="loginFailMaxTimes"
       >
@@ -46,7 +46,7 @@
       <a-form-item
         name="loginFailLockMinutes"
         label="连续登录失败锁定分钟"
-        class="smart-query-form-item"
+        class="xsy-query-form-item"
         extra="连续登录失败锁定的时间；默认30分钟，0则不锁定"
       >
         <a-input-number :min="0" v-model:value="form.loginFailLockMinutes" placeholder="连续登录失败锁定时分钟" addon-after="分钟" />
@@ -54,14 +54,14 @@
       <a-form-item
         name="loginActiveTimeoutMinutes"
         label="登录后无操作自动退出的分钟"
-        class="smart-query-form-item"
+        class="xsy-query-form-item"
         extra="如：登录1小时没操作自动退出当前登录状态；默认30分钟"
       >
         <a-input-number :min="-1" v-model:value="form.loginActiveTimeoutMinutes" placeholder="登录后无操作自动退出的分钟" addon-after="分钟" />
       </a-form-item>
       <a-form-item
         label="开启密码复杂度"
-        class="smart-query-form-item"
+        class="xsy-query-form-item"
         extra="密码长度为8-20位且必须包含字母、数字、特殊符号（如：@#$%^&*()_+-=）等三种字符"
       >
         <a-switch v-model:checked="form.passwordComplexityEnabled" checked-children="开启 " un-checked-children="关闭 " />
@@ -69,7 +69,7 @@
       <a-form-item
         name="regularChangePasswordMonths"
         label="定期修改密码时间间隔"
-        class="smart-query-form-item"
+        class="xsy-query-form-item"
         extra="定期修改密码时间间隔，默认3个月"
       >
         <a-input-number :min="-1" :max="6" v-model:value="form.regularChangePasswordMonths" placeholder="定期修改密码时间间隔" addon-after="月" />
@@ -77,7 +77,7 @@
       <a-form-item
         name="regularChangePasswordNotAllowRepeatTimes"
         label="定期修改密码不允许重复次数"
-        class="smart-query-form-item"
+        class="xsy-query-form-item"
         extra="定期修改密码不允许重复次数，默认：3次以内密码不能相同"
       >
         <a-input-number
@@ -90,7 +90,7 @@
       </a-form-item>
       <a-form-item
         label="文件安全检测"
-        class="smart-query-form-item"
+        class="xsy-query-form-item"
         extra="对文件类型、恶意文件进行检测；（具体请看后端： SecurityFileService 类 checkFile 方法 ）"
       >
         <a-switch v-model:checked="form.fileDetectFlag" checked-children="开启 " un-checked-children="关闭 " />
@@ -98,7 +98,7 @@
       <a-form-item
         name="maxUploadFileSizeMb"
         label="上传文件大小限制"
-        class="smart-query-form-item"
+        class="xsy-query-form-item"
         extra="上传文件大小限制，默认 50 mb ( 0 表示不限制)"
       >
         <a-input-number :min="0" v-model:value="form.maxUploadFileSizeMb" placeholder="上传文件大小限制" addon-after="mb(兆)" />
@@ -116,8 +116,8 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue';
 import {level3ProtectApi} from '/@/api/support/level3-protect-api';
-import {SmartLoading} from '/@/components/framework/smart-loading/index';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading/index';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import {message, Modal} from 'ant-design-vue';
 
 // 三级等保的默认值
@@ -178,7 +178,7 @@ const rules = {
 
 //获取配置
 async function getConfig() {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     let res = await level3ProtectApi.getConfig();
     if (!res.data) {
@@ -196,9 +196,9 @@ async function getConfig() {
     form.maxUploadFileSizeMb = json.maxUploadFileSizeMb;
     form.fileDetectFlag = json.fileDetectFlag;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 
@@ -218,14 +218,14 @@ function onSubmit() {
 
 // 提交修改配置
 async function save() {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     let res = await level3ProtectApi.updateConfig(form);
     message.success(res.msg);
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

@@ -32,7 +32,7 @@
       <router-link v-privilege="'support:job:query'" to="/job/list">配置执行时间</router-link>
     </p>
 
-    <a-alert v-if="error" type="error" show-icon :message="error" class="smart-margin-bottom10">
+    <a-alert v-if="error" type="error" show-icon :message="error" class="xsy-margin-bottom10">
       <template #action><a-button @click="search">重试</a-button></template>
     </a-alert>
     <p v-if="report?.generatedAt" class="daily-meta">

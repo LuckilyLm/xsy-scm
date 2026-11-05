@@ -50,7 +50,7 @@
               }}</span>
             </div>
           </div>
-          <a-descriptions v-if="!isAccount && walletFunding" size="small" :column="1" class="smart-margin-top10">
+          <a-descriptions v-if="!isAccount && walletFunding" size="small" :column="1" class="xsy-margin-top10">
             <a-descriptions-item label="资金用途">已转钱包权益，通过余额支付结算订单</a-descriptions-item>
           </a-descriptions>
           <div v-if="overApplied" class="over-applied-row">

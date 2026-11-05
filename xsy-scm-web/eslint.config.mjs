@@ -2,7 +2,7 @@ import vue from 'eslint-plugin-vue';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 
-// ESLint 9 flat configuration for the SmartAdmin Vue/TypeScript workspace.
+// ESLint 9 flat configuration for the XSY Vue/TypeScript workspace.
 export default [
   {
     ignores: [

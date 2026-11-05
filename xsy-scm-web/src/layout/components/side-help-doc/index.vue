@@ -52,7 +52,7 @@ import FeedbackModal from './components/feedback-modal.vue';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
 import {feedbackApi} from '/@/api/support/feedback-api';
 import {HOME_PAGE_NAME} from '/@/constants/system/home-const';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 function hideHelpDoc() {
   useAppConfigStore().hideHelpDoc();
@@ -108,7 +108,7 @@ async function queryFeedbackList() {
     feedbackList = result.data.list;
     pages = Math.ceil(feedbackList.length / 2);
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 
@@ -126,7 +126,7 @@ async function queryHelpDocList(menuId) {
 watch(
   currentRoute,
   () => {
-    //SmartAdmin中 router的name 就是 后端存储menu的id
+    //XSY中 router的name 就是 后端存储menu的id
     let menuId = -1;
     try {
       if (currentRoute.name === HOME_PAGE_NAME) {
@@ -135,7 +135,7 @@ watch(
         menuId = _.toNumber(currentRoute.name);
       }
     } catch (e) {
-      smartSentry.captureError(e);
+      xsySentry.captureError(e);
     }
     if (menuId > -1) {
       queryHelpDocList(menuId);

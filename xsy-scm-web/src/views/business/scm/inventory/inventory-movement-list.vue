@@ -1,21 +1,21 @@
 <!-- 库存流水只读查询，按业务发生时间筛选；业务单号可跳转收货单。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="仓库" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="仓库" class="xsy-query-form-item">
         <WarehouseSelect v-model:value="queryForm.warehouseId" width="200px" />
       </a-form-item>
-      <a-form-item label="流水类型" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_INVENTORY_MOVEMENT_TYPE_ENUM" v-model:value="queryForm.movementType" width="140px" />
+      <a-form-item label="流水类型" class="xsy-query-form-item">
+        <XsyEnumSelect enum-name="SCM_INVENTORY_MOVEMENT_TYPE_ENUM" v-model:value="queryForm.movementType" width="140px" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <template #label>
           发生区间
           <ScmFieldHelp label="发生区间" text="筛选范围包含开始时间，不包含结束时间。需要查询某天全天时，请将结束时间设为次日零点。" />
         </template>
         <a-range-picker v-model:value="occurredRange" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:movement:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -80,7 +80,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer
@@ -102,7 +102,7 @@ import {useRouter} from 'vue-router';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {inventoryMovementApi} from '/@/api/business/scm/inventory-movement-api';

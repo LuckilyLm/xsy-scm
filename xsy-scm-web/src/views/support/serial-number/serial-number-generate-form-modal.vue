@@ -30,9 +30,9 @@
 import {message} from 'ant-design-vue';
 import {reactive, ref} from 'vue';
 import {serialNumberApi} from '/@/api/support/serial-number-api';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import _ from 'lodash';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 // emit
 const emit = defineEmits(['refresh']);
@@ -84,15 +84,15 @@ function onSubmit() {
   formRef.value
     .validate()
     .then(async () => {
-      SmartLoading.show();
+      XsyLoading.show();
       try {
         let res = await serialNumberApi.generate(form);
         message.success('生成成功');
         generateResult.value = _.join(res.data, ', ');
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     })
     .catch((error) => {

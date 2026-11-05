@@ -4,13 +4,13 @@
 -->
 <template>
   <div>
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="参数Key" class="smart-query-form-item">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="参数Key" class="xsy-query-form-item">
           <a-input style="width: 300px" v-model:value="queryForm.configKey" placeholder="请输入key" />
         </a-form-item>
 
-        <a-form-item class="smart-query-form-item smart-margin-left10">
+        <a-form-item class="xsy-query-form-item xsy-margin-left10">
           <a-button-group>
             <a-button type="primary" @click="onSearch" v-privilege="'support:config:query'">
               <template #icon>
@@ -26,7 +26,7 @@
             </a-button>
           </a-button-group>
         </a-form-item>
-        <div class="smart-query-table-actions">
+        <div class="xsy-query-table-actions">
           <a-button @click="toEditOrAdd()" v-privilege="'support:config:add'" type="primary">
             <template #icon>
               <PlusOutlined />
@@ -42,14 +42,14 @@
       <a-table size="small" :loading="tableLoading" bordered :dataSource="tableData" :columns="columns" rowKey="configId" :pagination="false">
         <template #bodyCell="{record, column}">
           <template v-if="column.dataIndex === 'action'">
-            <div class="smart-table-operate">
+            <div class="xsy-table-operate">
               <a-button @click="toEditOrAdd(record)" v-privilege="'support:config:update'" type="link">编辑</a-button>
             </div>
           </template>
         </template>
       </a-table>
 
-      <div class="smart-query-table-page">
+      <div class="xsy-query-table-page">
         <a-pagination
           showSizeChanger
           showQuickJumper
@@ -72,7 +72,7 @@ import {onMounted, reactive, ref} from 'vue';
 import {configApi} from '/@/api/support/config-api';
 import ConfigFormModal from './config-form-modal.vue';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 
@@ -154,7 +154,7 @@ async function ajaxQuery() {
     total.value = responseModel.data.total;
     tableData.value = list;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

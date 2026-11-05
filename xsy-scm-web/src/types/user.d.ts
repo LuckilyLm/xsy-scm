@@ -1,9 +1,3 @@
-/*
- * @LastEditTime: 2022-05-16 20:59:27
- * @LastEditors: LiHaiFan
- * @Description:
- * @FilePath: /typescript-ant-design-vue/@/types/user.d.ts
- */
 import {MenuVo} from '/@/api/system/menu/model/menu-vo';
 import {MenuTreeVo} from '@/api/system/login/login-model.ts';
 import {UserTagNav} from '/@/store/modules/model/UserTagNav';

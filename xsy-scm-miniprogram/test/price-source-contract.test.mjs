@@ -11,7 +11,7 @@ import {URL} from 'node:url';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
-const backendEnum = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/constant/ScmPriceSourceEnum.java');
+const backendEnum = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/pricing/constant/ScmPriceSourceEnum.java');
 const adapter = read('../src/api/mall/product-adapter.js');
 const display = read('../src/utils/product-display.js');
 const card = read('../src/components/business/product-card.vue');

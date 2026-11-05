@@ -1,49 +1,49 @@
 <!-- 经营概览：只读。库存金额是当前时点数据，不受日期区间限制。 -->
 <template>
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form" layout="inline" @submit.prevent>
-      <a-row class="smart-query-form-row">
-        <a-form-item label="确认日期" class="smart-query-form-item">
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="确认日期" class="xsy-query-form-item">
           <ReportDateRangePicker v-model:value="dateRange" />
         </a-form-item>
-        <a-form-item label="仓库" class="smart-query-form-item">
+        <a-form-item label="仓库" class="xsy-query-form-item">
           <WarehouseSelect v-model:value="filters.warehouseId" width="180px" />
         </a-form-item>
-        <a-form-item label="客户" class="smart-query-form-item">
+        <a-form-item label="客户" class="xsy-query-form-item">
           <CustomerSelect v-model:value="filters.customerId" width="200px" />
         </a-form-item>
-        <a-form-item label="销售员" class="smart-query-form-item">
+        <a-form-item label="销售员" class="xsy-query-form-item">
           <EmployeeSelect v-model:value="filters.sellerId" width="160px" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-button-group>
             <a-button type="primary" v-privilege="PERM.OVERVIEW_QUERY" @click="onSearch">查询</a-button>
             <a-button @click="resetQuery">重置</a-button>
           </a-button-group>
-          <a-button class="smart-margin-left10" @click="advanced = !advanced">
+          <a-button class="xsy-margin-left10" @click="advanced = !advanced">
             {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
           </a-button>
         </a-form-item>
       </a-row>
-      <a-row v-if="advanced" class="smart-query-form-row">
-        <a-form-item label="订单来源" class="smart-query-form-item">
-          <SmartEnumSelect v-model:value="filters.orderSource" enum-name="SCM_ORDER_SOURCE_ENUM" width="150px" />
+      <a-row v-if="advanced" class="xsy-query-form-row">
+        <a-form-item label="订单来源" class="xsy-query-form-item">
+          <XsyEnumSelect v-model:value="filters.orderSource" enum-name="SCM_ORDER_SOURCE_ENUM" width="150px" />
         </a-form-item>
-        <a-form-item label="商品分类" class="smart-query-form-item">
+        <a-form-item label="商品分类" class="xsy-query-form-item">
           <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
         </a-form-item>
-        <a-form-item label="商品关键字" class="smart-query-form-item">
+        <a-form-item label="商品关键字" class="xsy-query-form-item">
           <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
         </a-form-item>
       </a-row>
     </a-form>
-    <a-row data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
+    <a-row data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="dailyExport.exporting" @click="exportDaily"
           >导出</a-button
         >
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator
           v-model="columns"
           :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_OVERVIEW_DAILY"
@@ -78,9 +78,9 @@
     </section>
   </div>
 
-  <ReportLineChart class="smart-margin-top10" title="每日金额趋势" :x-axis="trendAxis" :series="trendSeries" />
+  <ReportLineChart class="xsy-margin-top10" title="每日金额趋势" :x-axis="trendAxis" :series="trendSeries" />
 
-  <a-card size="small" :bordered="false" class="smart-margin-top10">
+  <a-card size="small" :bordered="false" class="xsy-margin-top10">
     <LocalTable
       :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       :id="SCM_REPORT_TABLE_ID.OVERVIEW_DAILY"
@@ -142,7 +142,7 @@ import {useRoute, useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
 import {ExclamationCircleOutlined} from '@ant-design/icons-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';

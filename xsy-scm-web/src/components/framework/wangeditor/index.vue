@@ -22,7 +22,7 @@ import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
 import {fileApi} from '/@/api/support/file-api';
 import '@wangeditor-next/editor/dist/css/style.css';
 import {Editor, Toolbar} from '@wangeditor-next/editor-for-vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 // ----------------------- 以下是公用变量 emits props ----------------
 const editorHtml = ref();
@@ -52,7 +52,7 @@ let customUpload = {
       let data = res.data;
       insertFn(data.fileUrl);
     } catch (error) {
-      smartSentry.captureError(error);
+      xsySentry.captureError(error);
     }
   },
 };

@@ -24,8 +24,8 @@
 import {message} from 'ant-design-vue';
 import {reactive, ref} from 'vue';
 import {configApi} from '/@/api/support/config-api';
-import {smartSentry} from '/@/lib/smart-sentry';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 
 // emit
 const emit = defineEmits(['reloadList']);
@@ -66,7 +66,7 @@ function onSubmit() {
   formRef.value
     .validate()
     .then(async () => {
-      SmartLoading.show();
+      XsyLoading.show();
       try {
         if (form.configId) {
           await configApi.updateConfig(form);
@@ -77,9 +77,9 @@ function onSubmit() {
         emit('reloadList');
         onClose();
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     })
     .catch((error) => {

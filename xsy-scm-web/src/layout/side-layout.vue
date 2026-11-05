@@ -80,7 +80,7 @@
 
       <!-- footer 版权公司信息 -->
       <a-layout-footer class="layout-footer" v-show="footerFlag">
-        <smart-footer />
+        <xsy-footer />
       </a-layout-footer>
       <!--- 回到顶部 -->
       <a-back-top :target="backTopTarget" :visibilityHeight="80" />
@@ -107,10 +107,10 @@ import HeaderUserSpace from './components/header-user-space/index.vue';
 import MenuLocationBreadcrumb from './components/menu-location-breadcrumb/index.vue';
 import PageTag from './components/page-tag/index.vue';
 import SideMenu from './components/side-menu/index.vue';
-import SmartFooter from './components/smart-footer/index.vue';
-import {smartKeepAlive} from './components/smart-keep-alive';
+import XsyFooter from './components/xsy-footer/index.vue';
+import {xsyKeepAlive} from './components/xsy-keep-alive';
 import IframeIndex from '/@/components/framework/iframe/iframe-index.vue';
-import watermark from '../lib/smart-watermark';
+import watermark from '../lib/xsy-watermark';
 import {useUserStore} from '/@/store/modules/system/user';
 import SideHelpDoc from './components/side-help-doc/index.vue';
 import {useRouter} from 'vue-router';
@@ -227,7 +227,7 @@ window.addEventListener('resize', function () {
 });
 
 // ----------------------- keep-alive相关 -----------------------
-let {route, keepAliveIncludes, iframeNotKeepAlivePageFlag, keepAliveIframePages} = smartKeepAlive();
+let {route, keepAliveIncludes, iframeNotKeepAlivePageFlag, keepAliveIframePages} = xsyKeepAlive();
 
 watch(
   () => route.path,

@@ -61,7 +61,7 @@
 
   import { onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
   import { mallOrderApi } from '@/api/mall/order-api';
-  import { smartSentry } from '@/lib/smart-sentry';
+  import { xsySentry } from '@/lib/xsy-sentry';
   import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
   import { displayQuantity } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
@@ -133,7 +133,7 @@
       hasMore.value = nextPage < Number(page.pages || 0);
     } catch (failure) {
       if (seq !== loadSeq) return;
-      smartSentry.captureError(failure);
+      xsySentry.captureError(failure);
       error.value = failure?.message || '汇总加载失败';
       if (rows.value.length) uni.showToast({ title: error.value, icon: 'none' });
     } finally {

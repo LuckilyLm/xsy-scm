@@ -2,7 +2,7 @@
   <a-drawer v-model:open="showFlag" :width="800" title="消息内容" placement="right" :destroyOnClose="true">
     <a-descriptions bordered :column="2" size="small">
       <a-descriptions-item :labelStyle="{width: '80px'}" :span="1" label="类型"
-        >{{ $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', messageDetail.messageType) }}
+        >{{ $xsyEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', messageDetail.messageType) }}
       </a-descriptions-item>
       <a-descriptions-item :labelStyle="{width: '120px'}" :span="1" label="发送时间">{{ messageDetail.createTime }} </a-descriptions-item>
       <a-descriptions-item :labelStyle="{width: '80px'}" :span="2" label="标题">{{ messageDetail.title }} </a-descriptions-item>

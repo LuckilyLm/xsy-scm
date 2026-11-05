@@ -7,7 +7,7 @@
   <a-dropdown class="header-trigger" :get-popup-container="getPopupContainer">
     <div class="wrapper">
       <img class="avatar-image" :src="avatar" v-if="avatar" />
-      <a-avatar v-else style="margin: 0 5px" :size="20" id="smartAdminAvatar">
+      <a-avatar v-else style="margin: 0 5px" :size="20" id="xsyAvatar">
         {{ avatarName }}
       </a-avatar>
       <span class="name">{{ actualName }}</span>
@@ -32,7 +32,7 @@
 import {computed, ref, onMounted} from 'vue';
 import {loginApi} from '/@/api/system/login-api';
 import {useUserStore} from '/@/store/modules/system/user';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import HeaderResetPassword from './header-reset-password-modal/index.vue';
 import {useRouter} from 'vue-router';
 import {ACCOUNT_MENU} from '/@/views/system/account/account-menu';
@@ -45,7 +45,7 @@ async function onLogout() {
   try {
     await loginApi.logout();
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     useUserStore().logout();
     location.reload();
@@ -83,7 +83,7 @@ const actualName = computed(() => useUserStore().actualName);
 function updateAvatar() {
   if (useUserStore().actualName) {
     avatarName.value = useUserStore().actualName.substr(0, 1);
-    const avatar = document.getElementById('smartAdminAvatar');
+    const avatar = document.getElementById('xsyAvatar');
     if (avatar) {
       avatar.style.backgroundColor = AVATAR_BACKGROUND_COLOR_ARRAY[hashcode(avatarName.value) % 4];
     }

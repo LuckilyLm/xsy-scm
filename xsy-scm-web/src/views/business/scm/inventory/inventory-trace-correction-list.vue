@@ -1,7 +1,7 @@
 <!-- 包装码更正：申请后由他人审批，批准后包装码恢复可绑定。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
-    <a-row class="smart-query-form-row">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
+    <a-row class="xsy-query-form-row">
       <a-form-item label="状态">
         <a-select v-model:value="queryForm.status" :options="STATUS_OPTIONS" allow-clear placeholder="全部" style="width: 140px" />
       </a-form-item>
@@ -11,7 +11,7 @@
       <a-form-item label="批次号">
         <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-space>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:unit:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -27,9 +27,9 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block"></div>
-      <div class="smart-table-setting-block">
+    <a-row class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-operate-block"></div>
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRACE_CORRECTION" :refresh="queryData" />
       </div>
     </a-row>
@@ -57,7 +57,7 @@
           <ScmStatusTag :tone="STATUS_TONE[record.status] || 'neutral'" :label="STATUS_LABEL[record.status] || record.status" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <template v-if="record.status === 'PENDING'">
               <a-button type="link" size="small" @click="openDecision(record, 'approve')" v-privilege="'scm:inventory:unit:correct:approve'"
                 >批准</a-button
@@ -73,7 +73,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

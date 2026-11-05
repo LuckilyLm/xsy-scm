@@ -49,7 +49,7 @@
       </a-form-item>
       <a-form-item :label="$t('setting.menu.layout')">
         <a-radio-group @change="changeLayout" button-style="solid" v-model:value="formState.layout">
-          <a-radio-button v-for="item in $smartEnumPlugin.getValueDescList('LAYOUT_ENUM')" :key="item.value" :value="item.value">
+          <a-radio-button v-for="item in $xsyEnumPlugin.getValueDescList('LAYOUT_ENUM')" :key="item.value" :value="item.value">
             {{ item.desc }}
           </a-radio-button>
         </a-radio-group>

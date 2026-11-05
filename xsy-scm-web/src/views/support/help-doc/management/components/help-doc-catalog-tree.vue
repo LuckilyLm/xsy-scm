@@ -69,9 +69,9 @@ import _ from 'lodash';
 import {createVNode, onMounted} from 'vue';
 import HelpDocCatalogFormModal from './help-doc-catalog-form-modal.vue';
 import {helpDocCatalogApi} from '/@/api/support/help-doc-catalog-api';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import helpDocCatalogEmitter from '../help-doc-mitt';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const HELP_DOC_CATALOG_PARENT_ID = 0;
 
@@ -280,7 +280,7 @@ function deleteHelpDocCatalog(id) {
     okText: '删除',
     okType: 'danger',
     async onOk() {
-      SmartLoading.show();
+      XsyLoading.show();
       try {
         // 若删除的是当前的目录 先找到上级目录
         let selectedKey = null;
@@ -300,9 +300,9 @@ function deleteHelpDocCatalog(id) {
           selectTree(selectedKey);
         }
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     },
     cancelText: '取消',

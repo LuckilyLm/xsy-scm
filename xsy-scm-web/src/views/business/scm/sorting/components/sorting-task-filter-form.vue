@@ -1,6 +1,6 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="emit('search')">
-    <a-form-item label="关键词" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="emit('search')">
+    <a-form-item label="关键词" class="xsy-query-form-item">
       <a-input
         :value="keyword"
         placeholder="任务号 / 仓库 / 分拣员 / 订单号 / 商品 / 客户"
@@ -11,7 +11,7 @@
         @pressEnter="emit('search')"
       />
     </a-form-item>
-    <a-form-item label="状态" class="smart-query-form-item">
+    <a-form-item label="状态" class="xsy-query-form-item">
       <a-select
         :value="status"
         :options="statusOptions"
@@ -21,23 +21,23 @@
         @update:value="emit('update:status', $event)"
       />
     </a-form-item>
-    <a-form-item label="仓库" class="smart-query-form-item">
+    <a-form-item label="仓库" class="xsy-query-form-item">
       <WarehouseSelect :value="warehouseId" placeholder="全部仓库" width="200px" @update:value="emit('update:warehouseId', $event)" />
     </a-form-item>
     <!-- 有指派权的人才能看未指派队列和按人筛选 -->
     <template v-if="isQueueManager">
-      <a-form-item label="只看未指派" class="smart-query-form-item">
+      <a-form-item label="只看未指派" class="xsy-query-form-item">
         <a-switch :checked="unassignedOnly" @update:checked="emit('update:unassignedOnly', $event)" />
       </a-form-item>
-      <a-form-item label="受指派人" class="smart-query-form-item">
+      <a-form-item label="受指派人" class="xsy-query-form-item">
         <EmployeeSelect :value="assigneeId" placeholder="全部" width="180px" @update:value="emit('update:assigneeId', $event)" />
       </a-form-item>
     </template>
     <!-- 按建单时记录的值筛选，不随主档或配送线路变化 -->
-    <a-form-item label="送货时间" class="smart-query-form-item">
+    <a-form-item label="送货时间" class="xsy-query-form-item">
       <a-range-picker v-model:value="deliveryRangeModel" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 340px" />
     </a-form-item>
-    <a-form-item label="预配送波次" class="smart-query-form-item">
+    <a-form-item label="预配送波次" class="xsy-query-form-item">
       <a-input
         :value="deliveryWave"
         placeholder="波次"
@@ -47,10 +47,10 @@
         @pressEnter="emit('search')"
       />
     </a-form-item>
-    <a-form-item label="供应商" class="smart-query-form-item">
+    <a-form-item label="供应商" class="xsy-query-form-item">
       <SupplierSelect :value="supplierId" width="200px" placeholder="全部" @update:value="emit('update:supplierId', $event)" />
     </a-form-item>
-    <a-form-item class="smart-query-form-item scm-query-actions">
+    <a-form-item class="xsy-query-form-item scm-query-actions">
       <a-button-group>
         <a-button type="primary" v-privilege="'scm:sorting:task:query'" @click="emit('search')">查询</a-button>
         <a-button @click="emit('reset')">重置</a-button>

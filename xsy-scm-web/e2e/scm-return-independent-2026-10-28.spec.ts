@@ -110,9 +110,9 @@ test.describe('scm-return-independent', () => {
     expect(row!.orderId).toBeNull();
 
     // 页面同步：来源筛选 + 关键字收敛到这一单，避免被开发库里的历史退货干扰
-    await page.locator('.smart-query-form-item').filter({hasText: '来源'}).locator('.ant-select-selector').click();
+    await page.locator('.xsy-query-form-item').filter({hasText: '来源'}).locator('.ant-select-selector').click();
     await page.locator('.ant-select-dropdown:visible').getByText('独立退货', {exact: true}).click();
-    const keyword = page.locator('.smart-query-form-item').filter({hasText: '单号 / 客户'}).locator('input');
+    const keyword = page.locator('.xsy-query-form-item').filter({hasText: '单号 / 客户'}).locator('input');
     await keyword.fill(returnNo);
     await page.getByRole('button', {name: accessibleName('查询')}).click();
 
@@ -133,7 +133,7 @@ test.describe('scm-return-independent', () => {
 
   test('独立退货审批：批准数量按退货行提交，状态推进到已批准', async ({page}) => {
     await browse(page);
-    const keyword = page.locator('.smart-query-form-item').filter({hasText: '单号 / 客户'}).locator('input');
+    const keyword = page.locator('.xsy-query-form-item').filter({hasText: '单号 / 客户'}).locator('input');
     await keyword.fill(returnNo);
     await page.getByRole('button', {name: accessibleName('查询')}).click();
 

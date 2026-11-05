@@ -7,7 +7,7 @@
     "noImplicitAny": true,
     "types": ["node"],
     "paths": {
-      "/@/plugins/smart-enums-plugin": ["./e2e/types/smart-enums-plugin.d.ts"],
+      "/@/plugins/xsy-enums-plugin": ["./e2e/types/xsy-enums-plugin.d.ts"],
       "/@/*": ["./src/*"]
     }
   },

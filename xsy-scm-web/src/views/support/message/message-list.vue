@@ -1,28 +1,28 @@
 <template>
   <!---------- 查询表单form begin ----------->
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键词" class="smart-query-form-item">
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="关键词" class="xsy-query-form-item">
           <a-input style="width: 150px" v-model:value="queryForm.searchWord" placeholder="关键词" />
         </a-form-item>
-        <a-form-item label="类型" class="smart-query-form-item">
-          <smart-enum-select style="width: 150px" v-model:value="queryForm.messageType" placeholder="消息类型" enum-name="MESSAGE_TYPE_ENUM" />
+        <a-form-item label="类型" class="xsy-query-form-item">
+          <xsy-enum-select style="width: 150px" v-model:value="queryForm.messageType" placeholder="消息类型" enum-name="MESSAGE_TYPE_ENUM" />
         </a-form-item>
-        <a-form-item label="是否已读" class="smart-query-form-item">
-          <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.readFlag" />
+        <a-form-item label="是否已读" class="xsy-query-form-item">
+          <XsyEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.readFlag" />
         </a-form-item>
-        <a-form-item label="创建时间" class="smart-query-form-item">
+        <a-form-item label="创建时间" class="xsy-query-form-item">
           <a-range-picker v-model:value="queryForm.createTime" :presets="defaultTimeRanges" style="width: 200px" @change="onChangeCreateTime" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-button type="primary" @click="searchQuery">
             <template #icon>
               <SearchOutlined />
             </template>
             查询
           </a-button>
-          <a-button @click="resetQuery" class="smart-margin-left10">
+          <a-button @click="resetQuery" class="xsy-margin-left10">
             <template #icon>
               <ReloadOutlined />
             </template>
@@ -31,8 +31,8 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
         <a-button @click="showForm" type="primary">
           <template #icon>
             <PlusOutlined />
@@ -40,7 +40,7 @@
           发送消息
         </a-button>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.MAIL" :refresh="queryData" />
       </div>
     </a-row>
@@ -59,10 +59,10 @@
           {{ text ? '已读' : '未读' }}
         </template>
         <template v-if="column.dataIndex === 'messageType'">
-          {{ $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', text) }}
+          {{ $xsyEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', text) }}
         </template>
         <template v-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="xsy-table-operate">
             <a-button @click="onDelete(record)" danger type="link">删除</a-button>
           </div>
         </template>
@@ -70,7 +70,7 @@
     </a-table>
     <!---------- 表格 end ----------->
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -91,11 +91,11 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {messageApi} from '/@/api/support/message-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
-import {smartSentry} from '/@/lib/smart-sentry';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import MessageSendForm from './components/message-send-form.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -199,7 +199,7 @@ async function queryData() {
     tableData.value = queryResult.data.list;
     total.value = queryResult.data.total;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }
@@ -231,14 +231,14 @@ function onDelete(data) {
 
 async function requestDelete(data) {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     await messageApi.deleteMessage(data.messageId);
     message.success('删除成功');
     queryData();
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 </script>

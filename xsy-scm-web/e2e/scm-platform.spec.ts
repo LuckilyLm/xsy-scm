@@ -425,11 +425,11 @@ test.describe('mall-theme', () => {
   });
 });
 
-// ---------------------------------------------------------------- 来源：e2e/smartadmin-native.spec.ts
-test.describe('smartadmin-native', () => {
+// ---------------------------------------------------------------- 来源：e2e/xsy-system.spec.ts
+test.describe('xsy-system', () => {
   const test = pwTest;
   /*
-   * W5.5 SmartAdmin 原生功能 Playwright smoke
+   * W5.5 系统通用功能 Playwright smoke
    * =============================================================================
    * 覆盖范围：
    *   监控服务 / 定时任务 / 缓存 / 系统配置 / 字典 / 文件 /
@@ -484,13 +484,13 @@ test.describe('smartadmin-native', () => {
   // 前端把 18081 的请求直接打到 18080（axios baseURL = VITE_APP_API_URL）
   const API_ORIGIN = apiUrl;
 
-  /** SmartAdmin 登录：captcha 明文回吐 + SM4 传输加密。 */
+  /** XSY 登录：captcha 明文回吐 + SM4 传输加密。 */
   async function login(account: string) {
     const client = await request.newContext({baseURL: apiUrl});
     const captcha = (await (await client.get('/login/getCaptcha')).json()).data;
     const source = readFileSync('src/lib/encrypt.ts', 'utf8');
     const key = /const SM4_KEY = '([^']+)'/.exec(source)?.[1];
-    if (!key) throw new Error('SmartAdmin transport key not found');
+    if (!key) throw new Error('XSY transport key not found');
     const encrypted = Buffer.from(smCrypto.sm4.encrypt(password, Buffer.from(key).toString('hex'))).toString('base64');
     const result = await (
       await client.post('/login', {
@@ -503,7 +503,7 @@ test.describe('smartadmin-native', () => {
         },
       })
     ).json();
-    expect(result.code, 'SmartAdmin login succeeds').toBe(0);
+    expect(result.code, 'XSY login succeeds').toBe(0);
     await client.dispose();
     return result.data.token as string;
   }
@@ -530,7 +530,7 @@ test.describe('smartadmin-native', () => {
   });
 
   async function authenticate(page: Page) {
-    await page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), token);
+    await page.addInitScript((v) => localStorage.setItem('xsy_user_token', v), token);
   }
 
   /**
@@ -585,10 +585,10 @@ test.describe('smartadmin-native', () => {
   }
 
   // =============================================================================
-  // SmartAdmin 正式页面
+  // XSY 正式页面
   // =============================================================================
 
-  test('smartadmin native: 监控服务-心跳监控页面加载并成功查询', async ({page}) => {
+  test('xsy system: 监控服务-心跳监控页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/heart-beat/heart-beat-list',
       apiPath: '/support/heartBeat/query',
@@ -597,7 +597,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 定时任务页面加载并成功查询', async ({page}) => {
+  test('xsy system: 定时任务页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/job/list',
       apiPath: '/support/job/query',
@@ -606,7 +606,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 缓存管理页面加载并成功列举缓存名', async ({page}) => {
+  test('xsy system: 缓存管理页面加载并成功列举缓存名', async ({page}) => {
     await openNative(page, {
       path: '/support/cache/cache-list',
       apiPath: '/support/cache/names',
@@ -615,7 +615,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 系统配置页面加载并成功查询', async ({page}) => {
+  test('xsy system: 系统配置页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/config/config-list',
       apiPath: '/support/config/query',
@@ -624,7 +624,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 数据字典页面加载并成功查询', async ({page}) => {
+  test('xsy system: 数据字典页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/setting/dict',
       apiPath: '/support/dict/queryPage',
@@ -633,7 +633,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 文件管理页面加载并成功查询', async ({page}) => {
+  test('xsy system: 文件管理页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/file/file-list',
       apiPath: '/support/file/queryPage',
@@ -642,7 +642,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 登录登出记录页面加载并成功查询', async ({page}) => {
+  test('xsy system: 登录登出记录页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/login-log/login-log-list',
       apiPath: '/support/loginLog/page/query',
@@ -651,7 +651,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 用户操作记录页面加载并成功查询', async ({page}) => {
+  test('xsy system: 用户操作记录页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/operate-log/operate-log-list',
       apiPath: '/support/operateLog/page/query',
@@ -660,7 +660,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 文档中心页面加载并成功查询', async ({page}) => {
+  test('xsy system: 文档中心页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/help-doc/help-doc-manage-list',
       apiPath: '/support/helpDoc/query',
@@ -669,7 +669,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 网络安全-三级等保设置页面加载并成功读取配置', async ({page}) => {
+  test('xsy system: 网络安全-三级等保设置页面加载并成功读取配置', async ({page}) => {
     await openNative(page, {
       path: '/support/level3protect/level3-protect-config-index',
       apiPath: '/support/protect/level3protect/getConfig',
@@ -682,7 +682,7 @@ test.describe('smartadmin-native', () => {
   // 其余原生菜单（同一闭环规则，避免「菜单在但页打不开」漏网）
   // =============================================================================
 
-  test('smartadmin native: 单号管理页面加载并成功查询', async ({page}) => {
+  test('xsy system: 单号管理页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/serial-number/serial-number-list',
       apiPath: '/support/serialNumber/all',
@@ -691,7 +691,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 更新日志页面加载并成功查询', async ({page}) => {
+  test('xsy system: 更新日志页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/change-log/change-log-list',
       apiPath: '/support/changeLog/query',
@@ -700,7 +700,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 意见反馈页面加载并成功查询', async ({page}) => {
+  test('xsy system: 意见反馈页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/feedback/feedback-list',
       apiPath: '/support/feedback/query',
@@ -709,7 +709,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: Reload 页面加载并成功读取当前 tag', async ({page}) => {
+  test('xsy system: Reload 页面加载并成功读取当前 tag', async ({page}) => {
     await openNative(page, {
       path: '/hook',
       apiPath: '/support/reload/query',
@@ -718,7 +718,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 敏感数据脱敏页面加载', async ({page}) => {
+  test('xsy system: 敏感数据脱敏页面加载', async ({page}) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await authenticate(page);
@@ -732,7 +732,7 @@ test.describe('smartadmin-native', () => {
     expect(errors).toEqual([]);
   });
 
-  test('smartadmin native: 菜单管理页面加载并成功查询', async ({page}) => {
+  test('xsy system: 菜单管理页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/menu/list',
       apiPath: '/menu/query',

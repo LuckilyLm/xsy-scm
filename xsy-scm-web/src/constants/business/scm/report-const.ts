@@ -1,8 +1,8 @@
 /** 报表常量只维护权限和展示配置；订单、库存、采购类型复用原模块的枚举，避免复制出不一致的状态表。 */
-import type {SmartEnum} from '/@/types/smart-enum';
+import type {XsyEnum} from '/@/types/xsy-enum';
 
 /** 损耗分析只算盘亏和报损；盘盈、增益、销售出库都不计损耗成本。 */
-export const SCM_REPORT_LOSS_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_REPORT_LOSS_TYPE_ENUM: XsyEnum<string> = {
   STOCKTAKE_LOSS: {value: 'STOCKTAKE_LOSS', desc: '盘亏'},
   LOSS_REPORT: {value: 'LOSS_REPORT', desc: '报损'},
 };
@@ -62,6 +62,6 @@ export const SCM_REPORT_TABLE_ID = {
 
 export default {
   // 只导出枚举：`SCM_REPORT_TABLE_ID` / `SCM_REPORT_PERMISSION` 不是枚举，
-  // 混进 `constantsInfo` 会让 `$smartEnumPlugin.getValueDescList` 拿到非枚举对象。
+  // 混进 `constantsInfo` 会让 `$xsyEnumPlugin.getValueDescList` 拿到非枚举对象。
   SCM_REPORT_LOSS_TYPE_ENUM,
 };

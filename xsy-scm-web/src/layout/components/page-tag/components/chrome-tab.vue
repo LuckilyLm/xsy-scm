@@ -6,18 +6,18 @@
   <!-- 标签页，共两部分：1、标签 ；2、标签操作区 -->
   <a-row style="position: relative" v-show="pageTagFlag">
     <a-dropdown :trigger="['contextmenu']">
-      <div class="smart-page-tag">
+      <div class="xsy-page-tag">
         <a-tabs style="width: 100%" :tab-position="mode" v-model:activeKey="selectedKey" size="small" @tabClick="selectTab">
           <a-tab-pane v-for="item in tagNav" :key="item.menuName">
             <template #tab>
-              <span class="smart-page-tag-content">
-                <home-outlined style="font-size: 12px" v-if="item.menuName === HOME_PAGE_NAME" class="smart-page-tag-icon" />
-                <component class="smart-page-tag-icon" v-else :is="$antIcons[item.menuIcon]" />
-                <span class="smart-page-tag-title" :title="item.menuTitle">{{ item.menuTitle }}</span>
+              <span class="xsy-page-tag-content">
+                <home-outlined style="font-size: 12px" v-if="item.menuName === HOME_PAGE_NAME" class="xsy-page-tag-icon" />
+                <component class="xsy-page-tag-icon" v-else :is="$antIcons[item.menuIcon]" />
+                <span class="xsy-page-tag-title" :title="item.menuTitle">{{ item.menuTitle }}</span>
                 <button
                   v-if="item.menuName !== HOME_PAGE_NAME"
                   type="button"
-                  class="smart-page-tag-close"
+                  class="xsy-page-tag-close"
                   :aria-label="`关闭${item.menuTitle}`"
                   @click.stop="closeTag(item, false)"
                 >
@@ -38,8 +38,8 @@
 
     <a-dropdown>
       <!--标签页操作区-->
-      <div class="smart-page-tag-operate">
-        <div class="smart-page-tag-operate-icon">
+      <div class="xsy-page-tag-operate">
+        <div class="xsy-page-tag-operate-icon">
           <AppstoreOutlined />
         </div>
       </div>
@@ -139,39 +139,39 @@ const borderRadius = 8 + 'px';
 </script>
 
 <style scoped lang="less">
-@smart-page-tag-operate-width: 40px;
+@xsy-page-tag-operate-width: 40px;
 @color-primary: v-bind('token.colorPrimary');
 @color-primary-bg: v-bind('token.colorPrimaryBg');
 
-.smart-page-tag-operate {
-  width: @smart-page-tag-operate-width;
-  height: @smart-page-tag-operate-width;
+.xsy-page-tag-operate {
+  width: @xsy-page-tag-operate-width;
+  height: @xsy-page-tag-operate-width;
   font-size: 17px;
   text-align: center;
   vertical-align: middle;
-  line-height: @smart-page-tag-operate-width;
+  line-height: @xsy-page-tag-operate-width;
   padding-right: 10px;
   cursor: pointer;
 
-  .smart-page-tag-operate-icon {
+  .xsy-page-tag-operate-icon {
     width: 20px;
     height: 20px;
     transition: all 1s;
     transform-origin: 10px 20px;
   }
 
-  .smart-page-tag-operate-icon:hover {
+  .xsy-page-tag-operate-icon:hover {
     width: 20px;
     height: 20px;
     transform: rotate(360deg);
   }
 }
 
-.smart-page-tag-operate:hover {
+.xsy-page-tag-operate:hover {
   color: @color-primary;
 }
 
-.smart-page-tag {
+.xsy-page-tag {
   position: relative;
   box-sizing: border-box;
   display: flex;
@@ -182,9 +182,9 @@ const borderRadius = 8 + 'px';
   padding-right: 20px;
   padding-left: 20px;
   user-select: none;
-  width: calc(100% - @smart-page-tag-operate-width);
+  width: calc(100% - @xsy-page-tag-operate-width);
 
-  .smart-page-tag-close {
+  .xsy-page-tag-close {
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
@@ -237,7 +237,7 @@ const borderRadius = 8 + 'px';
     overflow: hidden;
   }
 
-  .smart-page-tag-content {
+  .xsy-page-tag-content {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -245,7 +245,7 @@ const borderRadius = 8 + 'px';
     min-width: 0;
     overflow: hidden;
 
-    .smart-page-tag-title {
+    .xsy-page-tag-title {
       flex: 1 1 auto;
       min-width: 0;
       overflow: hidden;
@@ -253,8 +253,8 @@ const borderRadius = 8 + 'px';
       text-overflow: ellipsis;
     }
 
-    .smart-page-tag-icon,
-    .smart-page-tag-close {
+    .xsy-page-tag-icon,
+    .xsy-page-tag-close {
       flex: 0 0 auto;
     }
 
@@ -270,7 +270,7 @@ const borderRadius = 8 + 'px';
       background: #eeeeee;
     }
 
-    .smart-page-tag-icon {
+    .xsy-page-tag-icon {
       margin-right: 5px;
     }
   }
@@ -312,7 +312,7 @@ const borderRadius = 8 + 'px';
       bottom: 0;
     }
 
-    .smart-page-tag-content {
+    .xsy-page-tag-content {
       &::before {
         content: '';
         position: absolute;
@@ -332,7 +332,7 @@ const borderRadius = 8 + 'px';
       }
     }
 
-    .smart-page-tag-close {
+    .xsy-page-tag-close {
       color: @color-primary;
     }
   }
@@ -370,7 +370,7 @@ const borderRadius = 8 + 'px';
         bottom: 0;
       }
 
-      .smart-page-tag-content {
+      .xsy-page-tag-content {
         color: @color-primary;
 
         &::before {
@@ -393,7 +393,7 @@ const borderRadius = 8 + 'px';
       }
     }
 
-    .smart-page-tag-close {
+    .xsy-page-tag-close {
       color: @color-primary;
     }
   }

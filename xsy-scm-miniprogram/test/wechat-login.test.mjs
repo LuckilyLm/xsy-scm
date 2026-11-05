@@ -32,7 +32,7 @@ function harness(login) {
         return login(form);
       },
     },
-    smartSentry: {captureError: (error) => calls.errors.push(error)},
+    xsySentry: {captureError: (error) => calls.errors.push(error)},
     uni: {
       showToast: ({title}) => calls.toasts.push(title),
       showLoading: () => calls.loading++,

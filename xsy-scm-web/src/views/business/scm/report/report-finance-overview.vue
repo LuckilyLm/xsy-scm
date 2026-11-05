@@ -1,17 +1,17 @@
 <template>
   <section class="report-finance-overview">
-    <a-form class="smart-query-form" layout="inline" @submit.prevent="queryAll">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="业务日期" class="smart-query-form-item">
+    <a-form class="xsy-query-form" layout="inline" @submit.prevent="queryAll">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="业务日期" class="xsy-query-form-item">
           <ReportDateRangePicker v-model:value="dateRange" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-button-group>
             <a-button type="primary" v-privilege="PERM.FINANCE_QUERY" @click="queryAll">查询</a-button>
             <a-button @click="resetQuery">重置</a-button>
           </a-button-group>
         </a-form-item>
-        <div class="smart-query-table-actions">
+        <div class="xsy-query-table-actions">
           <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exportingOverview" @click="exportOverview">导出概览</a-button>
         </div>
       </a-row>
@@ -22,22 +22,22 @@
       <template #action><a-button @click="loadOverview">重试</a-button></template>
     </a-alert>
 
-    <a-row :gutter="[12, 12]" class="smart-margin-top10">
+    <a-row :gutter="[12, 12]" class="xsy-margin-top10">
       <a-col v-for="card in kpiCards" :key="card.label" :xs="24" :sm="12" :lg="8">
         <ReportKpiCard :label="card.label" :value="card.value" />
       </a-col>
     </a-row>
 
-    <a-card size="small" :bordered="false" class="smart-margin-top10">
+    <a-card size="small" :bordered="false" class="xsy-margin-top10">
       <a-tabs v-model:active-key="activeTab" @change="onTabChange">
         <a-tab-pane key="receivable" tab="应收明细（期末）">
-          <a-row class="smart-table-btn-block">
-            <div class="smart-table-operate-block">
+          <a-row class="xsy-table-btn-block">
+            <div class="xsy-table-operate-block">
               <a-input v-model:value="keyword" allow-clear placeholder="应收单号 / 订单号 / 客户" @press-enter="searchDetails" />
               <a-button type="primary" v-privilege="PERM.FINANCE_QUERY" @click="searchDetails">查询</a-button>
               <a-button @click="clearKeyword">清除关键字</a-button>
             </div>
-            <div class="smart-table-setting-block">
+            <div class="xsy-table-setting-block">
               <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exportingReceivable" @click="exportReceivables">导出应收</a-button>
               <div class="finance-table-operator">
                 <TableOperator
@@ -119,7 +119,7 @@
               </dl>
             </a-card>
           </div>
-          <div class="smart-query-table-page">
+          <div class="xsy-query-table-page">
             <a-pagination
               show-less-items
               show-size-changer
@@ -135,13 +135,13 @@
         </a-tab-pane>
 
         <a-tab-pane key="payable" tab="应付明细（期末）">
-          <a-row class="smart-table-btn-block">
-            <div class="smart-table-operate-block">
+          <a-row class="xsy-table-btn-block">
+            <div class="xsy-table-operate-block">
               <a-input v-model:value="keyword" allow-clear placeholder="应付单号 / 采购单号 / 供应商" @press-enter="searchDetails" />
               <a-button type="primary" v-privilege="PERM.FINANCE_QUERY" @click="searchDetails">查询</a-button>
               <a-button @click="clearKeyword">清除关键字</a-button>
             </div>
-            <div class="smart-table-setting-block">
+            <div class="xsy-table-setting-block">
               <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exportingPayable" @click="exportPayables">导出应付</a-button>
               <div class="finance-table-operator">
                 <TableOperator v-model="payableColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_FINANCE_PAYABLE" :refresh="loadPayables" />
@@ -219,7 +219,7 @@
               </dl>
             </a-card>
           </div>
-          <div class="smart-query-table-page">
+          <div class="xsy-query-table-page">
             <a-pagination
               show-less-items
               show-size-changer
@@ -450,12 +450,12 @@ onUnmounted(() => window.removeEventListener('resize', updateViewportHeight));
 .report-error {
   margin: 10px 0;
 }
-.smart-table-operate-block {
+.xsy-table-operate-block {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.smart-table-operate-block :deep(.ant-input) {
+.xsy-table-operate-block :deep(.ant-input) {
   width: 260px;
 }
 .finance-detail-mobile-list {
@@ -510,11 +510,11 @@ onUnmounted(() => window.removeEventListener('resize', updateViewportHeight));
   font-weight: 600;
 }
 @media (max-width: 768px) {
-  .smart-table-operate-block {
+  .xsy-table-operate-block {
     align-items: stretch;
     flex-wrap: wrap;
   }
-  .smart-table-operate-block :deep(.ant-input) {
+  .xsy-table-operate-block :deep(.ant-input) {
     width: min(260px, 100%);
   }
   .finance-detail-table,

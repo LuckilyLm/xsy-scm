@@ -18,7 +18,7 @@
         <a-input style="width: 100%" v-model:value="form.updateVersion" placeholder="版本" />
       </a-form-item>
       <a-form-item label="更新类型" name="type">
-        <SmartEnumSelect width="100%" v-model:value="form.type" enumName="CHANGE_LOG_TYPE_ENUM" placeholder="更新类型" />
+        <XsyEnumSelect width="100%" v-model:value="form.type" enumName="CHANGE_LOG_TYPE_ENUM" placeholder="更新类型" />
       </a-form-item>
       <a-form-item label="发布人" name="publishAuthor">
         <a-input style="width: 100%" v-model:value="form.publishAuthor" placeholder="发布人" />
@@ -46,10 +46,10 @@
 import {reactive, ref, nextTick} from 'vue';
 import _ from 'lodash';
 import {message} from 'ant-design-vue';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {changeLogApi} from '/@/api/support/change-log-api';
-import {smartSentry} from '/@/lib/smart-sentry';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 
 // ------------------------ 事件 ------------------------
 
@@ -112,7 +112,7 @@ async function onSubmit() {
 
 // 新建、编辑API
 async function save() {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     if (form.changeLogId) {
       await changeLogApi.update(form);
@@ -123,9 +123,9 @@ async function save() {
     emits('reloadList');
     onClose();
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

@@ -176,7 +176,7 @@ test.describe('scm-finance-overview', () => {
     await page.goto('/#/report/report-finance-overview');
 
     const receivableList = page.locator('.ant-tabs-tabpane-active .finance-detail-mobile-list');
-    await expect(page.locator('#smartAdminMenu')).toHaveClass(/ant-layout-sider-zero-width/);
+    await expect(page.locator('#xsyMenu')).toHaveClass(/ant-layout-sider-zero-width/);
     await expect(page.locator('.layout-header-right .name')).toBeHidden();
     await expect(receivableList).toBeVisible();
     await expect(receivableList.locator('.finance-detail-mobile-card').first()).toContainText('应收单号');

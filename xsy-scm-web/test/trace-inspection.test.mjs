@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readSourceFileSync as readFileSync} from './helpers/source-reader.mjs';
 import {test} from 'node:test';
 import {
   SCM_TRACE_INSPECTION_STATUS_ENUM,
@@ -15,7 +15,7 @@ import {
 } from '../../xsy-scm-miniprogram/src/constants/trace-const.js';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
-const javaRoot = '../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/trace/constant/';
+const javaRoot = '../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/trace/constant/';
 
 test('inspection enum values and Chinese labels agree across Java, admin, mini program and database', () => {
   for (const [name, web, mini, column] of [
@@ -26,7 +26,7 @@ test('inspection enum values and Chinese labels agree across Java, admin, mini p
     const entries = [...source.matchAll(/\b([A-Z_]+)\("([^"]+)"\)/g)].map(([, value, desc]) => [value, {value, desc}]);
     assert.deepEqual(web, Object.fromEntries(entries));
     assert.deepEqual(web, mini);
-    const sql = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V176__scm_trace_inspection_report.sql');
+    const sql = read('../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V176__scm_trace_inspection_report.sql');
     const allowed = sql.match(new RegExp(column + ' IN \\(([^)]+)\\)'))?.[1];
     assert.ok(allowed, column + ' missing CHECK');
     assert.deepEqual([...allowed.matchAll(/'([^']+)'/g)].map((item) => item[1]).sort(), Object.keys(web).sort());

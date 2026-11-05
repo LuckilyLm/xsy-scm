@@ -1,14 +1,14 @@
 <!-- 打印模板：字段和版式由系统提供，不支持自定义脚本。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="单据类型" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="单据类型" class="xsy-query-form-item">
         <a-select v-model:value="queryForm.documentType" :options="typeOptions" style="width: 180px" placeholder="全部类型" />
       </a-form-item>
-      <a-form-item label="关键字" class="smart-query-form-item">
+      <a-form-item label="关键字" class="xsy-query-form-item">
         <a-input v-model:value="queryForm.keyword" placeholder="模板名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:print:template:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -22,15 +22,15 @@
       <a-button @click="queryData">重试</a-button>
     </template>
   </a-alert>
-  <a-alert v-if="documentTypesError" :message="documentTypesError" type="error" show-icon class="smart-margin-bottom10">
+  <a-alert v-if="documentTypesError" :message="documentTypesError" type="error" show-icon class="xsy-margin-bottom10">
     <template #action>
       <a-button @click="loadDocumentTypes">重新加载单据类型</a-button>
     </template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+    <a-row class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" v-privilege="'scm:print:template:add'" :disabled="!documentTypes.length" @click="openCreate">新建模板</a-button>
         <a-button v-privilege="'scm:print:template:update'" @click="bindingOpen = true">客户专属模板</a-button>
       </div>
@@ -55,7 +55,7 @@
           <ScmStatusTag :tone="record.enabledFlag ? 'success' : 'neutral'" :label="record.enabledFlag ? '启用' : '停用'" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:print:template:update'" @click="openEdit(record)">编辑</a-button>
             <!-- 低频动作收进「更多」；v-privilege 对菜单项不生效，权限在 rowActions 里裁剪 -->
             <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
@@ -64,7 +64,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

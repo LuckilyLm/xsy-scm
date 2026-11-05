@@ -55,7 +55,7 @@
 
   import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
-  import { smartSentry } from '@/lib/smart-sentry';
+  import { xsySentry } from '@/lib/xsy-sentry';
   import { formatDateTime } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
   import { MOVEMENT_FILTERS, movementTypeText } from '@/utils/funds-display';
@@ -120,7 +120,7 @@
       hasMore.value = nextPage < Number(page.pages || 0);
     } catch (failure) {
       if (seq !== requestSeq) return;
-      smartSentry.captureError(failure);
+      xsySentry.captureError(failure);
       error.value = failure?.message || '收支记录加载失败';
       if (rows.value.length) uni.showToast({ title: error.value, icon: 'none' });
     } finally {

@@ -1,6 +1,6 @@
-import type {SmartEnum} from '/@/types/smart-enum';
+import type {XsyEnum} from '/@/types/xsy-enum';
 
-export const SCM_ORDER_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_ORDER_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待确认'},
   CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
   DISPATCHED: {value: 'DISPATCHED', desc: '已发车'},
@@ -11,13 +11,13 @@ export const SCM_ORDER_STATUS_ENUM: SmartEnum<string> = {
 export function isConfirmedOrderStatus(status?: string): boolean {
   return status != null && ['CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION'].includes(status);
 }
-export const SCM_ORDER_SOURCE_ENUM: SmartEnum<string> = {
+export const SCM_ORDER_SOURCE_ENUM: XsyEnum<string> = {
   ADMIN: {value: 'ADMIN', desc: '后台录单'},
   MALL: {value: 'MALL', desc: '商城'},
   SUPPLEMENT: {value: 'SUPPLEMENT', desc: '补单'},
   IMPORT: {value: 'IMPORT', desc: 'Excel导入'},
 };
-export const SCM_ORDER_PRICE_SOURCE_ENUM: SmartEnum<string> = {
+export const SCM_ORDER_PRICE_SOURCE_ENUM: XsyEnum<string> = {
   AGREEMENT: {value: 'AGREEMENT', desc: '客户协议价'},
   CUSTOMER_GROUP: {value: 'CUSTOMER_GROUP', desc: '客户分组价'},
   TIME_PRICE: {value: 'TIME_PRICE', desc: '时价'},
@@ -25,17 +25,17 @@ export const SCM_ORDER_PRICE_SOURCE_ENUM: SmartEnum<string> = {
   LEGACY: {value: 'LEGACY', desc: '历史价格'},
   OVERRIDE: {value: 'OVERRIDE', desc: '人工改价'},
 };
-export const SCM_ORDER_RETURN_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_ORDER_RETURN_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待审核'},
   APPROVED: {value: 'APPROVED', desc: '已批准'},
   REJECTED: {value: 'REJECTED', desc: '已驳回'},
   CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };
-export const SCM_ORDER_REFUND_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_ORDER_REFUND_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '待退款'},
   COMPLETED: {value: 'COMPLETED', desc: '已完成'},
 };
-export const SCM_ORDER_OPERATION_ENUM: SmartEnum<string> = {
+export const SCM_ORDER_OPERATION_ENUM: XsyEnum<string> = {
   CREATE: {value: 'CREATE', desc: '创建'},
   UPDATE: {value: 'UPDATE', desc: '修改'},
   SUBMIT: {value: 'SUBMIT', desc: '提交'},

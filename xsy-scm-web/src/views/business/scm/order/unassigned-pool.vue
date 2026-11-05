@@ -1,13 +1,13 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="订单号 / 客户" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="订单号 / 客户" class="xsy-query-form-item">
         <a-input v-model:value="queryForm.keyword" placeholder="订单号或客户名称" allow-clear @pressEnter="search" />
       </a-form-item>
-      <a-form-item label="订单状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_ORDER_STATUS_ENUM" v-model:value="queryForm.status" width="140px" />
+      <a-form-item label="订单状态" class="xsy-query-form-item">
+        <XsyEnumSelect enum-name="SCM_ORDER_STATUS_ENUM" v-model:value="queryForm.status" width="140px" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="search">查询</a-button>
           <a-button @click="reset">重置</a-button>
@@ -44,14 +44,14 @@
           record.createdAt ? dayjs(record.createdAt).format('YYYY-MM-DD HH:mm') : '—'
         }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button v-if="canClaim" type="link" size="small" @click="claim(record)">接单</a-button>
             <a-button type="link" size="small" @click="openAssignment(record)">指派</a-button>
           </a-space>
         </template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer
@@ -89,7 +89,7 @@ import dayjs from 'dayjs';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {SCM_ORDER_STATUS_ENUM} from '/@/constants/business/scm/order-const';

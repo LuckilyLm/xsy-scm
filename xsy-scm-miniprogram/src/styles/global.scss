@@ -58,59 +58,59 @@ page {
 
 /* ============================ 工具类 ============================ */
 
-.smart-width-100 {
+.xsy-width-100 {
   width: 100%;
 }
 
-.smart-margin-top5 {
+.xsy-margin-top5 {
   margin-top: $space-1;
 }
-.smart-margin-top10 {
+.xsy-margin-top10 {
   margin-top: $space-2;
 }
-.smart-margin-top15 {
+.xsy-margin-top15 {
   margin-top: $space-3;
 }
-.smart-margin-top20 {
+.xsy-margin-top20 {
   margin-top: $space-4;
 }
-.smart-margin-top30 {
+.xsy-margin-top30 {
   margin-top: $space-6;
 }
-.smart-margin-top40 {
+.xsy-margin-top40 {
   margin-top: $space-8;
 }
 
-.smart-margin-bottom10 {
+.xsy-margin-bottom10 {
   margin-bottom: $space-2;
 }
-.smart-margin-bottom20 {
+.xsy-margin-bottom20 {
   margin-bottom: $space-4;
 }
 
-.smart-margin-left10 {
+.xsy-margin-left10 {
   margin-left: $space-2;
 }
-.smart-margin-right10 {
+.xsy-margin-right10 {
   margin-right: $space-2;
 }
 
 /* 文本省略 */
-.smart-ellipsis {
+.xsy-ellipsis {
   @include ellipsis(1);
 }
-.smart-ellipsis-2 {
+.xsy-ellipsis-2 {
   @include ellipsis(2);
 }
 
 /* 金额：等宽数字，避免跳动 */
-.smart-amount {
+.xsy-amount {
   font-variant-numeric: tabular-nums;
   font-weight: $font-weight-medium;
 }
 
 /* 卡片 */
-.smart-card {
+.xsy-card {
   @include card;
   margin: $space-3 $space-4;
 }

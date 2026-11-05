@@ -40,7 +40,8 @@ def history_state(rows: list, manifest: dict) -> str:
         raise ValueError('存在未知非版本历史，需先核对')
     upgraded = [row for row in versioned if version_key(row['version']) > version_key(VERSION)]
     if upgraded:
-        if [row['version'] for row in upgraded] != ['1001'] or versioned[-len(upgraded):] != upgraded:
+        if ([row['version'] for row in upgraded] not in (['1001'], ['1001', '1002'])
+                or versioned[-len(upgraded):] != upgraded):
             raise ValueError('存在尚未定义结构目标的增量历史')
         base = history_state([row for row in rows if row not in upgraded], manifest)
         if base not in ('modules', 'cutover'):

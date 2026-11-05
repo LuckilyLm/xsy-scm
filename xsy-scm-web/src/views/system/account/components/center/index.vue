@@ -25,7 +25,7 @@
               <a-input class="form-item" v-model:value.trim="form.actualName" placeholder="请输入员工名称" />
             </a-form-item>
             <a-form-item label="性别" name="gender">
-              <smart-enum-select class="form-item" v-model:value="form.gender" placeholder="请选择性别" enum-name="GENDER_ENUM" />
+              <xsy-enum-select class="form-item" v-model:value="form.gender" placeholder="请选择性别" enum-name="GENDER_ENUM" />
             </a-form-item>
             <a-form-item label="手机号码" name="phone">
               <a-input class="form-item" v-model:value.trim="form.phone" placeholder="请输入手机号码" />
@@ -75,13 +75,13 @@
 import {onMounted, reactive, ref} from 'vue';
 import {regular} from '/@/constants/regular-const';
 import DepartmentTreeSelect from '/@/components/system/department-tree-select/index.vue';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import {loginApi} from '/@/api/system/login-api';
 import {useUserStore} from '/@/store/modules/system/user';
 import {message} from 'ant-design-vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import {employeeApi} from '/@/api/system/employee-api';
-import {SmartLoading} from '/@/components/framework/smart-loading/index';
+import {XsyLoading} from '/@/components/framework/xsy-loading/index';
 import {fileApi} from '/@/api/support/file-api';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
 
@@ -147,7 +147,7 @@ async function getLoginInfo() {
     // 头像展示
     avatarUrl.value = data.avatar;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 
@@ -188,7 +188,7 @@ async function customRequest(options) {
     // 重新获取详情，刷新整体缓存
     await getLoginInfo();
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     updateAvatarLoading.value = false;
   }
@@ -196,16 +196,16 @@ async function customRequest(options) {
 
 // 更新员工信息
 async function updateEmployee() {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     await employeeApi.updateCenter(form);
     message.success('更新成功');
     // 重新获取详情，刷新整体缓存
     await getLoginInfo();
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

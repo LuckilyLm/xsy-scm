@@ -1,8 +1,3 @@
-/*
- * @Description:
- * @LastEditTime: 2021-08-26
- * @LastEditors:
- */
 /**
  * 不同环境下的配置信息
  */

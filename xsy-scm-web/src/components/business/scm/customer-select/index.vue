@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import type {CustomerOption, ScmId} from '/@/types/business/scm/customer';
 
 const props = withDefaults(
@@ -55,7 +55,7 @@ async function query() {
     const resp = await customerApi.optionList();
     customerList.value = resp.data ?? [];
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 

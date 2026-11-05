@@ -2,7 +2,7 @@
 <template>
   <a-drawer :open="visible" :title="title" :width="scmDrawerWidth('m')" :mask-closable="!saving" @close="requestClose">
     <a-spin :spinning="loading">
-      <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
+      <a-alert v-if="error" type="error" :message="error" show-icon class="xsy-margin-bottom10" />
       <a-form ref="formRef" :model="form" layout="vertical" class="app-drawer-form">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
@@ -30,7 +30,7 @@
             </a-col>
             <a-col :xs="24" :sm="12">
               <a-form-item label="客户状态" name="status">
-                <SmartEnumSelect v-if="canChangeStatus" v-model:value="form.status" enum-name="CUSTOMER_STATUS_ENUM" width="100%" />
+                <XsyEnumSelect v-if="canChangeStatus" v-model:value="form.status" enum-name="CUSTOMER_STATUS_ENUM" width="100%" />
                 <div v-else class="scm-form-readonly">{{ statusText }}</div>
               </a-form-item>
             </a-col>
@@ -71,7 +71,7 @@
             </a-col>
             <a-col :xs="24" :sm="12">
               <a-form-item label="结算方式" name="settleMode" :rules="[{required: true, message: '请选择结算方式'}]">
-                <SmartEnumSelect v-model:value="form.settleMode" enum-name="SETTLE_MODE_ENUM" width="100%" />
+                <XsyEnumSelect v-model:value="form.settleMode" enum-name="SETTLE_MODE_ENUM" width="100%" />
               </a-form-item>
             </a-col>
             <a-col v-if="form.settleMode === 'GROUP'" :xs="24" :sm="12">
@@ -166,7 +166,7 @@
             </a-col>
             <a-col :xs="24" :sm="12">
               <a-form-item label="账期类型" name="creditPeriodType">
-                <SmartEnumSelect v-model:value="creditPeriodTypeValue" enum-name="CREDIT_PERIOD_TYPE_ENUM" width="100%" placeholder="不设置账期" />
+                <XsyEnumSelect v-model:value="creditPeriodTypeValue" enum-name="CREDIT_PERIOD_TYPE_ENUM" width="100%" placeholder="不设置账期" />
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
@@ -201,7 +201,7 @@
               </a-col>
               <a-col :xs="24" :sm="12">
                 <a-form-item label="账期单位" name="creditPeriodUnit">
-                  <SmartEnumSelect v-model:value="creditPeriodUnitValue" enum-name="CREDIT_PERIOD_UNIT_ENUM" width="100%" />
+                  <XsyEnumSelect v-model:value="creditPeriodUnitValue" enum-name="CREDIT_PERIOD_UNIT_ENUM" width="100%" />
                 </a-form-item>
               </a-col>
               <a-col v-if="form.creditPeriodUnit === 'MONTH'" :xs="24" :sm="12">
@@ -248,7 +248,7 @@ import {customerPromotionApi} from '/@/api/business/scm/customer-promotion-api';
 import type {CreditPeriodType, CreditPeriodUnit, CustomerFormModel, ScmId} from '/@/types/business/scm/customer';
 import {CUSTOMER_STATUS_ENUM} from '/@/constants/business/scm/customer-const';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
 import type {AreaNode} from '/@/types/business/scm/area';
 import {areaColumnsOf, areaNodesOf} from '../../common/scm-area';

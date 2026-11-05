@@ -3,17 +3,17 @@
   *
 -->
 <template>
-  <a-form class="smart-query-form">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="关键字" class="smart-query-form-item">
+  <a-form class="xsy-query-form">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="关键字" class="xsy-query-form-item">
         <a-input style="width: 200px" v-model:value="queryForm.keywords" placeholder="标题、作者、来源、文号" />
       </a-form-item>
 
-      <a-form-item label="发布时间" class="smart-query-form-item">
+      <a-form-item label="发布时间" class="xsy-query-form-item">
         <a-range-picker v-model:value="publishDate" @change="publishDateChange" style="width: 220px" />
       </a-form-item>
 
-      <a-form-item class="smart-query-form-item smart-margin-left10">
+      <a-form-item class="xsy-query-form-item xsy-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
@@ -30,7 +30,7 @@
         </a-button-group>
       </a-form-item>
     </a-row>
-    <a-row class="smart-query-form-row" />
+    <a-row class="xsy-query-form-row" />
   </a-form>
 
   <a-card size="small" :bordered="false">
@@ -56,7 +56,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -78,7 +78,7 @@ import {onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import {noticeApi} from '/@/api/business/oa/notice-api';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const tableColumns = reactive([
   {
@@ -120,7 +120,7 @@ async function queryNoticeTypeList() {
     const result = await noticeApi.getAllNoticeTypeList();
     noticeTypeList.value = result.data;
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   }
 }
 
@@ -159,7 +159,7 @@ async function queryNoticeList() {
     tableData.value = result.data.list;
     total.value = result.data.total;
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   } finally {
     tableLoading.value = false;
   }

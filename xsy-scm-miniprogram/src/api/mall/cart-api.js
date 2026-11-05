@@ -8,7 +8,7 @@
  * - 失效 / 不可售 / 无价格的商品**保留在列表中**，由服务端 availability 标记原因；
  * - 所有写操作返回刷新后的整车，前端不做本地乐观合并。
  */
-import { deleteRequest, getRequest, postRequest, putRequest } from '@/lib/smart-request';
+import { deleteRequest, getRequest, postRequest, putRequest } from '@/lib/xsy-request';
 
 export const mallCartApi = {
   /** 购物车列表（含预估金额与可结算行数） */

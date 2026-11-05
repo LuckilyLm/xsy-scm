@@ -1,17 +1,17 @@
 <!-- 订单缺口预览只读，按已确认订单实际数量和指定仓库可用库存比较；不能在预览时自动生成采购需求。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="统计时间段" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="统计时间段" class="xsy-query-form-item">
         <a-range-picker v-model:value="range" value-format="YYYY-MM-DD" style="width: 380px" />
       </a-form-item>
-      <a-form-item label="仓库" class="smart-query-form-item">
+      <a-form-item label="仓库" class="xsy-query-form-item">
         <WarehouseSelect v-model:value="warehouseId" width="200px" placeholder="请选择仓库" />
       </a-form-item>
-      <a-form-item label="商品关键字" class="smart-query-form-item">
+      <a-form-item label="商品关键字" class="xsy-query-form-item">
         <a-input v-model:value="keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:demand:query'">查询缺口</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -57,7 +57,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

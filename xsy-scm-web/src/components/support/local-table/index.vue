@@ -1,12 +1,12 @@
 <!-- 完整数组专用：由表格先排序、筛选再分页，源数据保持完整。服务端分页列表继续使用 a-table。 -->
 <template>
-  <div class="smart-local-table">
+  <div class="xsy-local-table">
     <a-table size="small" bordered v-bind="$attrs" :data-source="dataSource" :pagination="pagination" @change="onTableChange">
       <template v-for="(_, name) in $slots" #[name]="scope">
         <slot :name="name" v-bind="scope || {}" />
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         :current="current"
         :page-size="pageSize"

@@ -6,33 +6,32 @@
   <a-card size="small" :bordered="false" :hoverable="true">
     <a-alert>
       <template v-slot:message>
-        <h4>Smart-Reload 心跳服务介绍：</h4>
+        <h4>配置刷新说明：</h4>
       </template>
       <template v-slot:description>
         <pre>
-简介：SmartReload是一个可以在不重启进程的情况下动态重新加载配置或者执行某些预先设置的代码。
+简介：无需重启服务，即可刷新已配置的缓存和运行参数。
 
 原理：
-- Java后端会在项目启动的时候开启一个Daemon线程，这个Daemon线程会每隔几秒轮询t_smart_item表的状态。
-- 如果【状态标识】与【上次状态标识】比较发生变化，会将参数传入SmartReload实现类，进行自定义操作。
+- 点击“执行”并填写对应参数后，系统会通知各服务处理。
+- 可通过“查看结果”核对各服务是否执行成功。
 用途：
-· 用于刷新内存中的缓存
-· 用于执行某些后门代码
-· 用于进行Java热加载（前提是类结构不发生变化）
-· 其他不能重启服务的应用
+· 刷新已注册的缓存
+· 重新加载已配置的运行参数
+· 查询执行结果并排查失败原因
 </pre
         >
       </template>
     </a-alert>
 
     <a-row justify="end">
-      <TableOperator class="smart-margin-bottom5 smart-margin-top5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.RELOAD" :refresh="ajaxQuery" />
+      <TableOperator class="xsy-margin-bottom5 xsy-margin-top5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.RELOAD" :refresh="ajaxQuery" />
     </a-row>
 
-    <LocalTable size="small" bordered class="smart-margin-top10" :dataSource="tableData" :loading="tableLoading" :columns="columns" rowKey="tag">
+    <LocalTable size="small" bordered class="xsy-margin-top10" :dataSource="tableData" :loading="tableLoading" :columns="columns" rowKey="tag">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="xsy-table-operate">
             <a-button @click="doReload(record.tag)" v-privilege="'support:reload:execute'" type="link">执行</a-button>
             <a-button @click="showResultList(record.tag)" v-privilege="'support:reload:result'" type="link">查看结果 </a-button>
           </div>
@@ -50,7 +49,7 @@ import {onMounted, ref} from 'vue';
 import DoReloadForm from './do-reload-form-modal.vue';
 import ReloadResultList from './reload-result-list.vue';
 import {reloadApi} from '/@/api/support/reload-api';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 
@@ -98,7 +97,7 @@ async function ajaxQuery() {
     let res = await reloadApi.queryList();
     tableData.value = res.data;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

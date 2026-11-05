@@ -3,9 +3,9 @@
  *
  */
 
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 
-export const CATEGORY_TYPE_ENUM: SmartEnum<number> = {
+export const CATEGORY_TYPE_ENUM: XsyEnum<number> = {
   GOODS: {
     value: 1,
     desc: '商品',

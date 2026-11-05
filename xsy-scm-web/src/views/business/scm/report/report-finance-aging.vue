@@ -1,5 +1,5 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="search">
     <a-form-item label="账款类型">
       <a-radio-group v-model:value="query.accountType" @change="changeAccount">
         <a-radio-button value="RECEIVABLE">客户账款到期情况</a-radio-button>
@@ -83,7 +83,7 @@
         <template v-else>{{ text ?? '—' }}</template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         v-model:current="query.pageNum"

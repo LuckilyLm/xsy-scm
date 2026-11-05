@@ -140,8 +140,8 @@ import {COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_PRIMARY} from '@/constants/theme-colo
 import {onLoad} from '@dcloudio/uni-app';
 import {mallCartApi} from '@/api/mall/cart-api';
 import {mallCatalogApi} from '@/api/mall';
-import {isApiError} from '@/lib/smart-request';
-import {smartSentry} from '@/lib/smart-sentry';
+import {isApiError} from '@/lib/xsy-request';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {useMallCart} from '@/composables/use-mall-cart';
 import {displayMoney} from '@/utils/money-display';
 import {PLATFORM_ERROR_CODE} from '@/constants/error-code-const';
@@ -292,7 +292,7 @@ async function loadProduct() {
   } catch (e) {
     // 「数据不存在」是预期的业务结果，已由页面空态表达，不再当作异常上报
     if (!isApiError(e, PLATFORM_ERROR_CODE.DATA_NOT_EXIST)) {
-      smartSentry.captureError(e);
+      xsySentry.captureError(e);
     }
     product.value = null;
   } finally {

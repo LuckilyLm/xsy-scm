@@ -3,7 +3,7 @@
 
 Purpose
 -------
-SmartAdmin upstream ships with a large pre-existing ``vue-tsc`` error surface.
+The system UI has pre-existing ``vue-tsc`` diagnostics tracked by this baseline.
 We must never make it worse, and SCM-owned code must stay at zero errors.
 
 This tool has two modes:

@@ -21,7 +21,7 @@
 
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
   import { mallPromotionApi } from '@/api/mall/promotion-api';
-  import { smartSentry } from '@/lib/smart-sentry';
+  import { xsySentry } from '@/lib/xsy-sentry';
   import { formatDateTime } from '@/utils/order-display';
 
   const { themeStyle } = useMallTheme();
@@ -41,7 +41,7 @@
     try {
       rows.value = (await mallPromotionApi.activities()).data || [];
     } catch (failure) {
-      smartSentry.captureError(failure);
+      xsySentry.captureError(failure);
       rows.value = [];
       error.value = failure?.message || '活动加载失败';
     } finally {

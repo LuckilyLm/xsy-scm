@@ -1,18 +1,18 @@
 <!-- 营销活动列表与编辑。规则用固定键值，切换类型时清空旧规则。 -->
 <template>
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form" layout="inline" @submit.prevent>
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键词" class="smart-query-form-item">
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="关键词" class="xsy-query-form-item">
           <a-input v-model:value="queryForm.keyword" placeholder="活动名称" allow-clear @pressEnter="onSearch" />
         </a-form-item>
-        <a-form-item label="类型" class="smart-query-form-item">
+        <a-form-item label="类型" class="xsy-query-form-item">
           <a-select v-model:value="queryForm.activityType" :options="typeOptions" allow-clear style="width: 140px" />
         </a-form-item>
-        <a-form-item label="状态" class="smart-query-form-item">
+        <a-form-item label="状态" class="xsy-query-form-item">
           <a-select v-model:value="queryForm.status" :options="statusOptions" allow-clear style="width: 140px" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-button-group>
             <a-button type="primary" @click="onSearch" v-privilege="'scm:promotion:activity:query'">查询</a-button>
             <a-button @click="resetQuery">重置</a-button>
@@ -20,8 +20,8 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" v-privilege="'scm:promotion:activity:edit'" @click="openCreate">新建活动</a-button>
       </div>
     </a-row>
@@ -56,7 +56,7 @@
           <ScmStatusTag :tone="statusTone(record.status)" :label="statusLabelOf(record.status)" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:promotion:activity:edit'" @click="openEdit(record)">编辑 </a-button>
             <a-button
               v-if="record.status !== 'ACTIVE'"
@@ -74,7 +74,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

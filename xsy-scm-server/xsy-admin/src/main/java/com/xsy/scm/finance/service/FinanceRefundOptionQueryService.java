@@ -1,0 +1,56 @@
+package com.xsy.scm.finance.service;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.finance.dao.FinancePaymentSourceDao;
+import com.xsy.scm.finance.domain.form.FinanceRefundOptionQueryForm;
+import com.xsy.scm.finance.domain.vo.FinanceRefundOptionVO;
+import com.xsy.scm.base.common.domain.PageResult;
+import com.xsy.scm.base.common.util.XsyPageUtil;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+
+/**
+ * 已完成但尚未付款的退款单选择器，只读，按所属销售员限定范围。
+ */
+@Service
+@RequiredArgsConstructor
+public class FinanceRefundOptionQueryService {
+
+    private final FinancePaymentSourceDao financePaymentSourceDao;
+    private final ScmDataScopeService dataScopeService;
+
+    @Transactional(readOnly = true)
+    public PageResult<FinanceRefundOptionVO> query(FinanceRefundOptionQueryForm form) {
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.getCustomerSellerScope().isEmpty()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
+        if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        if (form.getPageNum() == null || form.getPageNum() < 1) {
+            form.setPageNum(1L);
+        }
+        if (form.getPageSize() == null || form.getPageSize() < 1) {
+            form.setPageSize(20L);
+        }
+        if (form.getPageSize() > 100) {
+            form.setPageSize(100L);
+        }
+        if (form.getKeyword() != null) {
+            form.setKeyword(form.getKeyword().trim());
+        }
+        Page<?> page = XsyPageUtil.convert2PageQuery(form);
+        page.setOptimizeCountSql(false);
+        List<FinanceRefundOptionVO> rows = financePaymentSourceDao.selectCompletedRefundOptions(page, form, scope);
+        return XsyPageUtil.convert2PageResult(page, rows);
+    }
+}

@@ -18,7 +18,7 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
 
   const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
-  const backend = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/constant/ScmPriceSourceEnum.java');
+  const backend = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/pricing/constant/ScmPriceSourceEnum.java');
   const orderConst = read('../src/constants/business/scm/order-const.ts');
   const pricingConst = read('../src/constants/business/scm/pricing-const.ts');
   const display = read('../src/views/business/scm/pricing/pricing-display.ts');

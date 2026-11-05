@@ -3,18 +3,18 @@
   *
 -->
 <template>
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form" v-privilege="'support:helpDoc:query'">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键字" class="smart-query-form-item">
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form" v-privilege="'support:helpDoc:query'">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="关键字" class="xsy-query-form-item">
           <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="标题、作者" />
         </a-form-item>
 
-        <a-form-item label="创建时间" class="smart-query-form-item">
+        <a-form-item label="创建时间" class="xsy-query-form-item">
           <a-range-picker :presets="defaultTimeRanges" v-model:value="createDate" @change="createDateChange" style="width: 220px" />
         </a-form-item>
 
-        <a-form-item class="smart-query-form-item smart-margin-left10">
+        <a-form-item class="xsy-query-form-item xsy-margin-left10">
           <a-button-group>
             <a-button type="primary" @click="onSearch">
               <template #icon>
@@ -32,8 +32,8 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" @click="addOrUpdate()" v-privilege="'support:helpDoc:add'">
           <template #icon>
             <PlusOutlined />
@@ -41,7 +41,7 @@
           新建
         </a-button>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="tableColumns" :tableId="TABLE_ID_CONST.SUPPORT.HELP_DOC" :refresh="queryHelpDocList" />
       </div>
     </a-row>
@@ -63,7 +63,7 @@
           <router-link target="_blank" :to="{path: '/help-doc/detail', query: {helpDocId: record.helpDocId}}">{{ record.title }} </router-link>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="xsy-table-operate">
             <a-button type="link" @click="addOrUpdate(record.helpDocId)" v-privilege="'support:helpDoc:update'">编辑 </a-button>
             <a-button type="link" danger @click="onDelete(record.helpDocId)" v-privilege="'support:helpDoc:delete'"> 删除 </a-button>
           </div>
@@ -71,7 +71,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -97,7 +97,7 @@ import {onMounted, reactive, ref, watch} from 'vue';
 import HelpDocFormDrawer from './help-doc-form-drawer.vue';
 import {helpDocApi} from '/@/api/support/help-doc-api';
 import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -183,7 +183,7 @@ async function queryHelpDocList() {
     tableData.value = result.data.list;
     total.value = result.data.total;
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   } finally {
     tableLoading.value = false;
   }
@@ -249,7 +249,7 @@ async function deleteHelpDoc(helpDocId) {
     message.success('删除成功');
     queryHelpDocList();
   } catch (err) {
-    smartSentry.captureError(err);
+    xsySentry.captureError(err);
   } finally {
     tableLoading.value = false;
   }

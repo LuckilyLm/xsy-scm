@@ -9,7 +9,7 @@
       2、中间内容区域
       3、底部（一般是公司版权信息）
      -->
-  <a-layout class="help-doc-layout" id="smartAdminMain">
+  <a-layout class="help-doc-layout" id="xsyMain">
     <!-- 顶部头部信息 -->
     <a-layout-header class="layout-header">
       <a-row class="layout-header-title">
@@ -38,7 +38,7 @@
       </a-layout-sider>
 
       <!--中间内容-->
-      <a-layout-content id="smartAdminLayoutContent" class="help-doc-layout-content">
+      <a-layout-content id="xsyLayoutContent" class="help-doc-layout-content">
         <router-view v-slot="{Component}">
           <div :key="route.fullPath">
             <component :is="Component" />
@@ -46,7 +46,7 @@
         </router-view>
         <!-- footer 版权公司信息 -->
         <a-layout-footer class="layout-footer">
-          <SmartFooter />
+          <XsyFooter />
         </a-layout-footer>
       </a-layout-content>
     </a-layout>
@@ -59,15 +59,15 @@
 import _ from 'lodash';
 import {computed, onMounted, ref} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
-import {smartSentry} from '../lib/smart-sentry';
+import {xsySentry} from '../lib/xsy-sentry';
 import {useAppConfigStore} from '../store/modules/system/app-config';
-import SmartFooter from './components/smart-footer/index.vue';
+import XsyFooter from './components/xsy-footer/index.vue';
 import {helpDocApi} from '/@/api/support/help-doc-api';
 import {helpDocCatalogApi} from '/@/api/support/help-doc-catalog-api';
 import logoImg from '/@/assets/images/logo/xsy-logo-min-white.png';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {HOME_PAGE_NAME} from '/@/constants/system/home-const';
-import watermark from '../lib/smart-watermark';
+import watermark from '../lib/xsy-watermark';
 import {useUserStore} from '/@/store/modules/system/user';
 import HeaderAvatar from './components/header-user-space/header-avatar.vue';
 import {LAYOUT_ELEMENT_IDS} from '/@/layout/layout-const';
@@ -140,7 +140,7 @@ const HELP_DOC_CATALOG_PARENT_ID = 0;
 
 //查询帮助文档树形结构
 async function queryHelpDocTree() {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     let {data: catalogList} = await helpDocCatalogApi.getAll();
     let {data: helpDocList} = await helpDocApi.getAllHelpDocList();
@@ -171,9 +171,9 @@ async function queryHelpDocTree() {
     //更新展开节点
     updateExpandedKeys(route.query.helpDocId, helpDocList, catalogList);
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 
@@ -307,4 +307,4 @@ function buildHelpDocCatalogTree(data, parentId, helpDocMap) {
   justify-content: center;
 }
 </style>
-../lib/smart-watermark
+../lib/xsy-watermark

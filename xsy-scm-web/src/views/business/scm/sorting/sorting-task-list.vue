@@ -1,6 +1,6 @@
 <!-- 分拣列表用于记录已分拣数量，计划量保留任务创建时的数据；取消和重开必须填写原因。 -->
 <template>
-  <div class="smart-query-layout">
+  <div class="xsy-query-layout">
     <SortingTaskFilterForm
       :keyword="queryForm.keyword"
       :status="queryForm.status"
@@ -22,11 +22,11 @@
       @search="onSearch"
       @reset="resetQuery"
     />
-    <div data-toolbar-layout="query" class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
+    <div data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" v-privilege="'scm:sorting:task:add'" @click="openCreate">新建分拣任务</a-button>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_TASK" :refresh="queryData" />
       </div>
     </div>
@@ -72,7 +72,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 行内只放详情和一个当前下一步（未指派→指派，已指派→完成），其余收进「更多」 -->
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record.id)">详情</a-button>
             <a-button
               v-if="canAssignNext(record)"
@@ -97,7 +97,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

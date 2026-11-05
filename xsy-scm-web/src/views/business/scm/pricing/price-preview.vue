@@ -5,21 +5,21 @@
       价格试算
       <ScmFieldHelp label="价格试算" text="按客户、商品规格及指定时间查询适用价格；0 元也可能是有效价格。" />
     </template>
-    <a-form layout="inline" class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="客户" required class="smart-query-form-item">
+    <a-form layout="inline" class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="客户" required class="xsy-query-form-item">
           <CustomerSelect v-model:value="customerId" width="200px" />
         </a-form-item>
-        <a-form-item label="商品规格" required class="smart-query-form-item">
+        <a-form-item label="商品规格" required class="xsy-query-form-item">
           <SkuSelect v-model:value="skuIds" mode="multiple" width="280px" :disabled-statuses="[]" />
         </a-form-item>
-        <a-form-item label="价格生效时间" class="smart-query-form-item">
+        <a-form-item label="价格生效时间" class="xsy-query-form-item">
           <a-date-picker v-model:value="at" show-time value-format="YYYY-MM-DD HH:mm:ss" placeholder="当前时点" style="width: 200px" />
         </a-form-item>
-        <a-form-item label="配送仓" class="smart-query-form-item">
+        <a-form-item label="配送仓" class="xsy-query-form-item">
           <WarehouseSelect v-model:value="warehouseId" width="170px" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-space>
             <a-button type="primary" @click="resolve" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算</a-button>
             <a-button

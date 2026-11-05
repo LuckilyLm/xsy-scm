@@ -1,13 +1,13 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="单号" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="单号" class="xsy-query-form-item">
         <a-input v-model:value="queryForm.keyword" @pressEnter="onSearch" allow-clear />
       </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_ORDER_REFUND_STATUS_ENUM" v-model:value="queryForm.status" width="160px" />
+      <a-form-item label="状态" class="xsy-query-form-item">
+        <XsyEnumSelect enum-name="SCM_ORDER_REFUND_STATUS_ENUM" v-model:value="queryForm.status" width="160px" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:order:refund:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -52,7 +52,7 @@
           <span v-else>无余额返还记录</span>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate scm-table-actions">
+          <div class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:order:refund:complete'" v-if="record.status === 'PENDING'" @click="edit(record)"
               >登记退款完成
             </a-button>
@@ -68,7 +68,7 @@
         </template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer
@@ -118,7 +118,7 @@ import {useRoute} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderRefundApi as api} from '/@/api/business/scm/order-refund-api';
 import {SCM_ORDER_REFUND_STATUS_ENUM} from '/@/constants/business/scm/order-const';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import type {RefundRow, Query} from './order-types';

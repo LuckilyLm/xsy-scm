@@ -397,8 +397,8 @@ test.describe('scm-report', () => {
   }
 
   async function browse(page: Page, path: string) {
-    await page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), token);
-    // SmartAdmin builds its dynamic route table from the home-page login bootstrap.
+    await page.addInitScript((v) => localStorage.setItem('xsy_user_token', v), token);
+    // XSY builds its dynamic route table from the home-page login bootstrap.
     await page.goto('/#/home');
     await page.waitForLoadState('networkidle');
     await page.goto('/#' + path);
@@ -635,13 +635,13 @@ test.describe('scm-report', () => {
     await browse(page, '/report/report-sales-list');
     await expect(page.locator('#scm-report-sales-product-table tbody tr[data-row-key]').first()).toBeVisible();
     await page.getByRole('tab', {name: '按客户'}).click();
-    const customerFilter = page.locator('.smart-query-form-row').first().locator('.ant-select').first();
+    const customerFilter = page.locator('.xsy-query-form-row').first().locator('.ant-select').first();
     await customerFilter.click();
     await customerFilter.locator('input').fill(name);
     const customerOption = page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({hasText: name}).first();
     await expect(customerOption).toBeVisible();
     await customerOption.click();
-    await page.locator('.smart-query-form .ant-btn-primary').first().click();
+    await page.locator('.xsy-query-form .ant-btn-primary').first().click();
     await expect(page.locator('#scm-report-sales-customer-table tbody tr[data-row-key]').filter({hasText: name})).toBeVisible();
     await page.getByRole('tab', {name: '订单明细', exact: true}).click();
     await expect(page.locator('#scm-report-sales-item-table tbody tr[data-row-key]').first()).toBeVisible();
@@ -702,7 +702,7 @@ test.describe('scm-report', () => {
     const table = page.locator('#scm-report-purchase-price-trend-table');
     await expect(table).toBeVisible();
     // 完整数组表格分页展示，逐页核对全部业务行，防止只验第一页掩盖截断或重复。
-    const localTable = page.locator('.smart-local-table').filter({has: table});
+    const localTable = page.locator('.xsy-local-table').filter({has: table});
     await expect(localTable.locator('.ant-pagination-total-text')).toHaveText(`共${rows.length}条`);
     const renderedKeys: string[] = [];
     for (let offset = 0; offset < rows.length; offset += 20) {

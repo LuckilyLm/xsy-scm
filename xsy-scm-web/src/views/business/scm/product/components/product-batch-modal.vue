@@ -1,12 +1,12 @@
 <!-- 批量维护：状态、分类、标签三种命令共用一个弹窗。 -->
 <template>
   <a-modal v-model:open="visible" :title="TITLES[command]" :confirm-loading="saving" :width="620" @ok="submit" @cancel="visible = false">
-    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
+    <a-alert v-if="error" type="error" :message="error" show-icon class="xsy-margin-bottom10" />
     <a-alert
       v-if="failures.length"
       type="warning"
       show-icon
-      class="smart-margin-bottom10"
+      class="xsy-margin-bottom10"
       :message="`本次未做任何修改：${failures.length} 个商品未通过校验`"
     >
       <template #description>
@@ -54,14 +54,7 @@ import {message} from 'ant-design-vue';
 import type {FormInstance} from 'ant-design-vue';
 import {productApi} from '/@/api/business/scm/product-api';
 import {SHELF_STATUS_ENUM, TAG_MODE_ENUM} from '/@/constants/business/scm/product-const';
-import type {
-  ProductBatchItem,
-  ProductBatchResult,
-  ProductCategory,
-  ProductId,
-  ShelfStatus,
-  TagMode,
-} from '/@/types/business/scm/product';
+import type {ProductBatchItem, ProductBatchResult, ProductCategory, ProductId, ShelfStatus, TagMode} from '/@/types/business/scm/product';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
 import {notifyFormInvalid} from '/@/views/business/scm/common/scm-form-feedback';
 

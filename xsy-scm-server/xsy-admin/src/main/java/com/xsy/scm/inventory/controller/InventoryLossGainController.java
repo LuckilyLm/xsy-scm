@@ -1,0 +1,109 @@
+package com.xsy.scm.inventory.controller;
+
+import com.xsy.scm.inventory.permission.InventoryPermission;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.inventory.domain.form.InventoryLossGainAddForm;
+import com.xsy.scm.inventory.domain.form.InventoryLossGainAuditForm;
+import com.xsy.scm.inventory.domain.form.InventoryLossGainQueryForm;
+import com.xsy.scm.inventory.domain.vo.InventoryLossGainVO;
+import com.xsy.scm.inventory.service.InventoryLossGainQueryService;
+import com.xsy.scm.inventory.service.InventoryLossGainService;
+import com.xsy.scm.base.common.domain.PageResult;
+import com.xsy.scm.base.common.domain.ResponseDTO;
+import com.xsy.scm.base.module.support.operatelog.annotation.OperateLog;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * 库存报损报溢的新建、修改、审批、驳回分开授权。只有待审核可修改；审批后才产生实际库存变化，不能绕过审核。
+ */
+@RestController
+@RequestMapping("/scm/inventory/loss-gain")
+@Tag(name = "SCM 库存报损报溢单")
+@RequiredArgsConstructor
+public class InventoryLossGainController {
+
+    private final InventoryLossGainService inventoryLossGainService;
+
+    private final InventoryLossGainQueryService inventoryLossGainQueryService;
+
+    @PostMapping("/query")
+    @SaCheckPermission(InventoryPermission.LOSS_GAIN_QUERY)
+    public ResponseDTO<PageResult<InventoryLossGainVO>> query(@Valid @RequestBody InventoryLossGainQueryForm form) {
+        return ResponseDTO.ok(inventoryLossGainQueryService.queryPage(form));
+    }
+
+    @GetMapping("/detail/{id}")
+    @SaCheckPermission(InventoryPermission.LOSS_GAIN_QUERY)
+    public ResponseDTO<InventoryLossGainVO> detail(@PathVariable("id") Long lossGainId) {
+        return ResponseDTO.ok(inventoryLossGainQueryService.detail(lossGainId));
+    }
+
+    /**
+     * 新建报损报溢单（创建即待审核），返回新单 id。
+     */
+    @PostMapping("/create")
+    @SaCheckPermission(InventoryPermission.LOSS_GAIN_ADD)
+    @OperateLog
+    public ResponseDTO<Long> create(@Valid @RequestBody InventoryLossGainAddForm form) {
+        return ResponseDTO.ok(inventoryLossGainService.create(form));
+    }
+
+    /**
+     * 改待审核单据（仅 PENDING）。
+     */
+    @PostMapping("/update/{id}")
+    @SaCheckPermission(InventoryPermission.LOSS_GAIN_UPDATE)
+    @OperateLog
+    public ResponseDTO<String> update(@PathVariable("id") Long lossGainId,
+        @Valid @RequestBody InventoryLossGainAddForm form) {
+        inventoryLossGainService.update(lossGainId, form);
+        return ResponseDTO.ok();
+    }
+
+    /**
+     * 审批通过：写 {@code LOSS_REPORT} / {@code GAIN_REPORT} 流水并调整余额。
+     *
+     * <p>
+     * 这是本模块唯一会改变库存的端点，失败整单回滚，不存在「报一半」。请求体必须带上审批人看到的 {@code version}，否则若单据在审批期间被改过会以 40921 失败。
+     */
+    @PostMapping("/approve/{id}")
+    @SaCheckPermission(InventoryPermission.LOSS_GAIN_APPROVE)
+    @OperateLog
+    public ResponseDTO<String> approve(@PathVariable("id") Long lossGainId,
+        @Valid @RequestBody InventoryLossGainAuditForm form) {
+        inventoryLossGainService.approve(lossGainId, form);
+        return ResponseDTO.ok();
+    }
+
+    /**
+     * 驳回（不产生任何库存影响）；审核意见必填。
+     */
+    @PostMapping("/reject/{id}")
+    @SaCheckPermission(InventoryPermission.LOSS_GAIN_REJECT)
+    @OperateLog
+    public ResponseDTO<String> reject(@PathVariable("id") Long lossGainId,
+        @Valid @RequestBody InventoryLossGainAuditForm form) {
+        inventoryLossGainService.reject(lossGainId, form);
+        return ResponseDTO.ok();
+    }
+
+    /**
+     * 删除待审核单据（逻辑删）。已审核的单据不可删除。
+     */
+    @PostMapping("/delete/{id}")
+    @SaCheckPermission(InventoryPermission.LOSS_GAIN_DELETE)
+    @OperateLog
+    public ResponseDTO<String> delete(@PathVariable("id") Long lossGainId) {
+        inventoryLossGainService.delete(lossGainId);
+        return ResponseDTO.ok();
+    }
+}

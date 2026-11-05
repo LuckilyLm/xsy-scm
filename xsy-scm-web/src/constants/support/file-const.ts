@@ -3,9 +3,9 @@
  *
  */
 
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 // 文件上传类型
-export const FILE_FOLDER_TYPE_ENUM: SmartEnum<number> = {
+export const FILE_FOLDER_TYPE_ENUM: XsyEnum<number> = {
   COMMON: {
     value: 1,
     desc: '通用',

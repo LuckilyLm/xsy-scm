@@ -1,0 +1,296 @@
+package com.xsy.scm.device.service;
+
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmValueScope;
+import com.xsy.scm.device.constant.ScaleDeviceErrorCode;
+import com.xsy.scm.device.constant.ScaleDeviceStatusEnum;
+import com.xsy.scm.device.dao.ScaleDeviceDao;
+import com.xsy.scm.device.dao.ScaleDeviceSessionDao;
+import com.xsy.scm.device.domain.entity.ScaleDeviceEntity;
+import com.xsy.scm.device.domain.entity.ScaleDeviceSessionEntity;
+import com.xsy.scm.device.domain.form.ScaleActivateForm;
+import com.xsy.scm.device.domain.form.ScaleDeviceQueryForm;
+import com.xsy.scm.device.domain.form.ScaleDeviceRegisterForm;
+import com.xsy.scm.device.domain.form.ScaleHeartbeatForm;
+import com.xsy.scm.device.domain.form.ScaleOperatorSessionForm;
+import com.xsy.scm.device.domain.vo.ScaleDeviceConfigVO;
+import com.xsy.scm.device.domain.vo.ScaleDeviceCredentialVO;
+import com.xsy.scm.device.domain.vo.ScaleDeviceRegisterVO;
+import com.xsy.scm.device.domain.vo.ScaleDeviceSessionVO;
+import com.xsy.scm.device.domain.vo.ScaleDeviceVO;
+import com.xsy.scm.device.domain.vo.ScaleOperatorSessionVO;
+import com.xsy.scm.device.support.ScaleCredentialCodec;
+import com.xsy.scm.device.support.ScaleDeviceContext;
+import com.xsy.scm.device.support.ScaleDevicePrincipal;
+import com.xsy.scm.warehouse.service.WarehouseQueryService;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Objects;
+
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.admin.module.system.employee.domain.entity.EmployeeEntity;
+import com.xsy.scm.admin.module.system.employee.service.EmployeeService;
+import com.xsy.scm.base.common.domain.PageResult;
+import com.xsy.scm.base.common.util.XsyPageUtil;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 设备身份与员工授权的签发、校验与撤销。
+ *
+ * <p>
+ * 设备凭证与员工会话分开校验。业务请求两者都须通过；仅心跳和本机配置允许不建立员工身份。
+ *
+ * <p>
+ * 所有令牌只在签发时返回明文，库里只有摘要，因此拿到数据库也无法冒充设备或员工。
+ */
+@Service
+@RequiredArgsConstructor
+public class ScaleDeviceAuthService {
+
+    /** 配对码由现场手工输入，熵低于令牌，因此有效期要短。 */
+    private static final int PAIRING_VALID_MINUTES = 30;
+
+    /** 设备凭证有效期；到期前需重新激活，不能靠续期绕过撤销。 */
+    private static final int CREDENTIAL_VALID_DAYS = 30;
+
+    /** 后台只回看最近若干条会话：更早的登录记录没有现场价值，翻页反而把「当前谁在用」淹没。 */
+    private static final int RECENT_SESSION_LIMIT = 50;
+
+    private final ScaleDeviceDao scaleDeviceDao;
+
+    private final ScmDataScopeService dataScopeService;
+
+    private final ScaleDeviceSessionDao scaleDeviceSessionDao;
+
+    private final WarehouseQueryService warehouseQueryService;
+
+    private final EmployeeService employeeService;
+
+    /** 后台登记设备并生成一次性配对码。仓库经正式查询服务校验，管理员只能登记自己有数据范围的仓库。 */
+    @Transactional(rollbackFor = Exception.class)
+    public ScaleDeviceRegisterVO register(ScaleDeviceRegisterForm form) {
+        warehouseQueryService.detail(form.getWarehouseId());
+        String deviceCode = form.getDeviceCode().trim();
+        if (scaleDeviceDao.selectByDeviceCode(deviceCode) != null) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_ALREADY_REGISTERED);
+        }
+        String pairingCode = ScaleCredentialCodec.newPairingCode();
+        OffsetDateTime now = OffsetDateTime.now();
+        ScaleDeviceEntity device = new ScaleDeviceEntity();
+        device.setDeviceCode(deviceCode);
+        device.setDeviceName(trimToNull(form.getDeviceName()));
+        device.setDeviceModel(trimToNull(form.getDeviceModel()));
+        device.setWarehouseId(form.getWarehouseId());
+        device.setStationCode(trimToNull(form.getStationCode()));
+        device.setStatus(ScaleDeviceStatusEnum.PENDING_ACTIVATION.name());
+        device.setPairingCodeHash(ScaleCredentialCodec.digest(pairingCode));
+        device.setPairingExpiresAt(now.plusMinutes(PAIRING_VALID_MINUTES));
+        device.setCreatedBy(ScmOperator.current());
+        device.setUpdatedBy(ScmOperator.current());
+        scaleDeviceDao.insert(device);
+        return new ScaleDeviceRegisterVO(device.getId(), deviceCode, pairingCode, device.getPairingExpiresAt());
+    }
+
+    /**
+     * 设备台账。按绑定仓库的数据范围收窄：未授权仓库的设备不出现在列表里，而不是出现了再拒绝。
+     */
+    @Transactional(readOnly = true)
+    public PageResult<ScaleDeviceVO> query(ScaleDeviceQueryForm form) {
+        ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
+        if (scope.isEmpty()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
+        var page = XsyPageUtil.convert2PageQuery(form);
+        return XsyPageUtil.convert2PageResult(page, scaleDeviceDao.queryPage(page, form, scope));
+    }
+
+    /** 某台秤最近的员工授权会话；设备不在授权仓库内时按无权限回答。 */
+    @Transactional(readOnly = true)
+    public List<ScaleDeviceSessionVO> sessions(Long deviceId) {
+        ScaleDeviceEntity device = requireScopedDevice(deviceId);
+        return scaleDeviceSessionDao.selectRecent(device.getId(), RECENT_SESSION_LIMIT);
+    }
+
+    /**
+     * 后台结束一条会话：秤端下次请求即失效，不需要在设备上操作。
+     *
+     * <p>
+     * 只结束未结束的会话，已结束的保留原结束原因，不覆盖历史。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void endSession(Long deviceId, Long sessionId) {
+        requireScopedDevice(deviceId);
+        if (scaleDeviceSessionDao.endSession(deviceId, sessionId, "后台手动结束", OffsetDateTime.now()) != 1) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_INVALID);
+        }
+    }
+
+    /** 为设备上的员工签发操作会话。同一设备可以有多位员工先后登录，各自一条会话记录。 */
+    @Transactional(rollbackFor = Exception.class)
+    public ScaleOperatorSessionVO issueOperatorSession(Long deviceId, ScaleOperatorSessionForm form) {
+        ScaleDeviceEntity device = scaleDeviceDao.selectById(deviceId);
+        if (device == null || ScaleDeviceStatusEnum.REVOKED.name().equals(device.getStatus())) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_FOUND);
+        }
+        // 签发会话等于把该仓的分拣写权限交给现场员工，必须先确认调用者对该仓有数据范围
+        warehouseQueryService.detail(device.getWarehouseId());
+        EmployeeEntity employee = employeeService.getById(form.getEmployeeId());
+        if (employee == null || Boolean.TRUE.equals(employee.getDisabledFlag())) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_INVALID);
+        }
+        String sessionToken = ScaleCredentialCodec.newToken();
+        OffsetDateTime now = OffsetDateTime.now();
+        ScaleDeviceSessionEntity session = new ScaleDeviceSessionEntity();
+        session.setDeviceId(deviceId);
+        session.setEmployeeId(form.getEmployeeId());
+        session.setSessionTokenHash(ScaleCredentialCodec.digest(sessionToken));
+        session.setIssuedAt(now);
+        session.setExpiresAt(now.plusMinutes(form.getValidMinutes()));
+        session.setCreatedBy(ScmOperator.current());
+        scaleDeviceSessionDao.insert(session);
+        return new ScaleOperatorSessionVO(sessionToken, session.getExpiresAt(), form.getEmployeeId());
+    }
+
+    /** 撤销绑定：设备不能再领取任务或上报读数，该设备上仍在有效期内的员工会话同时结束；历史读数与打印记录保留。 */
+    @Transactional(rollbackFor = Exception.class)
+    public void revoke(Long deviceId) {
+        ScaleDeviceEntity device = scaleDeviceDao.lockById(deviceId);
+        if (device == null) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_FOUND);
+        }
+        warehouseQueryService.detail(device.getWarehouseId());
+        if (ScaleDeviceStatusEnum.REVOKED.name().equals(device.getStatus())) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_ACTIVE);
+        }
+        if (scaleDeviceDao.markRevoked(deviceId, ScmOperator.current()) != 1) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_ACTIVE);
+        }
+        scaleDeviceSessionDao.endActiveSessions(deviceId, "设备已撤销", OffsetDateTime.now());
+    }
+
+    /** 用配对码换取设备凭证。配对码一次性：并发或重放激活只能成功一次。 */
+    @Transactional(rollbackFor = Exception.class)
+    public ScaleDeviceCredentialVO activate(ScaleActivateForm form) {
+        ScaleDeviceEntity device = scaleDeviceDao.selectByDeviceCode(form.getDeviceCode().trim());
+        if (device == null) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_FOUND);
+        }
+        if (!ScaleDeviceStatusEnum.PENDING_ACTIVATION.name().equals(device.getStatus())) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_ACTIVE);
+        }
+        String accessToken = ScaleCredentialCodec.newToken();
+        OffsetDateTime expiresAt = OffsetDateTime.now().plusDays(CREDENTIAL_VALID_DAYS);
+        int affected = scaleDeviceDao.activate(device.getId(), ScaleCredentialCodec.digest(form.getPairingCode()),
+            ScaleCredentialCodec.digest(accessToken), expiresAt, trimToNull(form.getProtocolVersion()),
+            trimToNull(form.getAgentVersion()));
+        if (affected != 1) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.PAIRING_CODE_INVALID);
+        }
+        return new ScaleDeviceCredentialVO(accessToken, expiresAt);
+    }
+
+    /** 心跳只更新观测字段：能证明设备在线，不能证明云端没有遗漏事件，因此不作为对账依据。 */
+    @Transactional(rollbackFor = Exception.class)
+    public void heartbeat(ScaleHeartbeatForm form) {
+        ScaleDevicePrincipal principal = ScaleDeviceContext.require();
+        scaleDeviceDao.heartbeat(principal.deviceId(), trimToNull(form.getAgentVersion()),
+            trimToNull(form.getProtocolType()), form.getScaleConnected(), form.getPrinterConnected(),
+            form.getQueueDepth(), form.getLastWeightAt());
+    }
+
+    /** 读取设备自身配置。只返回本设备的绑定信息，不含其他设备或其他仓库。 */
+    @Transactional(readOnly = true)
+    public ScaleDeviceConfigVO config() {
+        ScaleDevicePrincipal principal = ScaleDeviceContext.require();
+        ScaleDeviceEntity device = scaleDeviceDao.selectById(principal.deviceId());
+        if (device == null) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_FOUND);
+        }
+        ScaleDeviceConfigVO vo = new ScaleDeviceConfigVO();
+        vo.setDeviceCode(device.getDeviceCode());
+        vo.setWarehouseId(device.getWarehouseId());
+        vo.setStationCode(device.getStationCode());
+        vo.setStatus(device.getStatus());
+        vo.setProtocolType(device.getProtocolType());
+        vo.setAgentVersion(device.getAgentVersion());
+        vo.setCredentialExpiresAt(device.getCredentialExpiresAt());
+        return vo;
+    }
+
+    /**
+     * 解析一次设备请求的双重身份，供设备拦截器调用。
+     *
+     * <p>
+     * 员工会话必须由本设备签发：同一员工在另一台秤上登录不能直接拿到本机权限，否则一台被借用的设备就能继承别处签发的授权。
+     */
+    @Transactional(readOnly = true)
+    public ScaleDevicePrincipal authenticate(String credentialToken, String operatorSessionToken) {
+        ScaleDeviceEntity device = requireDeviceCredential(credentialToken);
+        OffsetDateTime now = OffsetDateTime.now();
+        if (isBlank(operatorSessionToken)) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_INVALID);
+        }
+        ScaleDeviceSessionEntity session = scaleDeviceSessionDao
+            .selectByTokenHash(ScaleCredentialCodec.digest(operatorSessionToken));
+        if (session == null || session.getEndedAt() != null || !session.getExpiresAt().isAfter(now)) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_INVALID);
+        }
+        if (!Objects.equals(session.getDeviceId(), device.getId())) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_DEVICE_MISMATCH);
+        }
+        return new ScaleDevicePrincipal(device.getId(), device.getDeviceCode(), device.getWarehouseId(),
+            session.getId(), session.getEmployeeId(), session.getExpiresAt());
+    }
+
+    /** 心跳和本机配置不代表员工业务操作，不建立员工身份。 */
+    @Transactional(readOnly = true)
+    public ScaleDevicePrincipal authenticateDevice(String credentialToken) {
+        ScaleDeviceEntity device = requireDeviceCredential(credentialToken);
+        return new ScaleDevicePrincipal(device.getId(), device.getDeviceCode(), device.getWarehouseId(), null, null,
+            null);
+    }
+
+    private ScaleDeviceEntity requireDeviceCredential(String credentialToken) {
+        if (isBlank(credentialToken)) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_UNAUTHORIZED);
+        }
+        ScaleDeviceEntity device = scaleDeviceDao.selectByCredentialHash(ScaleCredentialCodec.digest(credentialToken));
+        if (device == null) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_UNAUTHORIZED);
+        }
+        if (!ScaleDeviceStatusEnum.ACTIVE.name().equals(device.getStatus())) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_ACTIVE);
+        }
+        OffsetDateTime now = OffsetDateTime.now();
+        if (device.getCredentialExpiresAt() == null || !device.getCredentialExpiresAt().isAfter(now)) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_UNAUTHORIZED);
+        }
+        return device;
+    }
+
+    /** 设备必须真实存在且所在仓库在调用者范围内；两者都不满足时不区分回答，避免用设备 id 探测授权。 */
+    private ScaleDeviceEntity requireScopedDevice(Long deviceId) {
+        ScaleDeviceEntity device = scaleDeviceDao.selectById(deviceId);
+        if (device == null) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_NOT_FOUND);
+        }
+        warehouseQueryService.detail(device.getWarehouseId());
+        return device;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+}

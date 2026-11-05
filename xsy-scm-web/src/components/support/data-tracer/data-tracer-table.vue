@@ -9,7 +9,7 @@
         <div>{{ index + 1 }}</div>
       </template>
       <template v-if="column.dataIndex === 'userName'">
-        <div>{{ record.userName }} ({{ $smartEnumPlugin.getDescByValue('USER_TYPE_ENUM', record.userType) }})</div>
+        <div>{{ record.userName }} ({{ $xsyEnumPlugin.getDescByValue('USER_TYPE_ENUM', record.userType) }})</div>
       </template>
       <template v-if="column.dataIndex === 'userAgent'">
         <div>{{ record.browser }} / {{ record.os }} / {{ record.device }}</div>

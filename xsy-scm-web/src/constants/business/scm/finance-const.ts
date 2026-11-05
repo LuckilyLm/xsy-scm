@@ -1,5 +1,5 @@
 /** 权限码与后端枚举、受保护端点权限一致。 */
-import type {SmartEnum} from '/@/types/smart-enum';
+import type {XsyEnum} from '/@/types/xsy-enum';
 
 export const SCM_FINANCE_PERMISSION = {
   EXPENSE_QUERY: 'scm:finance:expense:query',
@@ -28,13 +28,13 @@ export const SCM_FINANCE_PERMISSION = {
   EXPORT: 'scm:finance:export',
 } as const;
 
-export const SCM_FINANCE_ENTRY_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_ENTRY_TYPE_ENUM: XsyEnum<string> = {
   NORMAL: {value: 'NORMAL', desc: '原始记录'},
   RED: {value: 'RED', desc: '扣减记录'},
   REVERSE: {value: 'REVERSE', desc: '撤销记录'},
 };
 
-export const SCM_FINANCE_SETTLE_STATE_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_SETTLE_STATE_ENUM: XsyEnum<string> = {
   OPEN: {value: 'OPEN', desc: '未结清'},
   PARTIAL: {value: 'PARTIAL', desc: '部分结清'},
   SETTLED: {value: 'SETTLED', desc: '已结清'},
@@ -46,7 +46,7 @@ export const SCM_FINANCE_SETTLE_STATE_ENUM: SmartEnum<string> = {
  * 数据库用 CHECK 约束固定取值，新增动作要两边同时改；
  * 展示层不许再直接把 `operationType` 原样印到表格里（曾出现 GENERATE / RED_GENERATE 直出）。
  */
-export const SCM_FINANCE_OPERATION_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_OPERATION_TYPE_ENUM: XsyEnum<string> = {
   GENERATE: {value: 'GENERATE', desc: '生成'},
   RED_GENERATE: {value: 'RED_GENERATE', desc: '登记扣减'},
   RECEIVE: {value: 'RECEIVE', desc: '收款登记'},
@@ -63,7 +63,7 @@ export const SCM_FINANCE_OPERATION_TYPE_ENUM: SmartEnum<string> = {
 };
 
 /** 付款方式（与后端 `ScmFinancePaymentMethodEnum` 逐字对应）。 */
-export const SCM_FINANCE_PAYMENT_METHOD_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_PAYMENT_METHOD_ENUM: XsyEnum<string> = {
   CASH: {value: 'CASH', desc: '现金'},
   BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
   OTHER: {value: 'OTHER', desc: '其他'},
@@ -76,7 +76,7 @@ export const SCM_FINANCE_PAYMENT_METHOD_ENUM: SmartEnum<string> = {
  * 没有 COD —— 它是结算时机，不是收款渠道。
  * 也没有 BALANCE —— 余额消费没有资金进入，不算收款。
  */
-export const SCM_FINANCE_RECEIPT_METHOD_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_RECEIPT_METHOD_ENUM: XsyEnum<string> = {
   CASH: {value: 'CASH', desc: '现金'},
   BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
   ONLINE_PAYMENT: {value: 'ONLINE_PAYMENT', desc: '在线支付'},
@@ -89,25 +89,25 @@ export const SCM_FINANCE_RECEIPT_METHOD_ENUM: SmartEnum<string> = {
  * 与付款方式刻意分开：`ONLINE_PAYMENT` 只对客户退款放行（后端 CHECK 按对手方分组），
  * 放进供应商付款的选项里会造出「前端能选、后端必然失败」。
  */
-export const SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM: XsyEnum<string> = {
   CASH: {value: 'CASH', desc: '现金'},
   BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
   ONLINE_PAYMENT: {value: 'ONLINE_PAYMENT', desc: '在线支付'},
   OTHER: {value: 'OTHER', desc: '其他'},
 };
 
-export const SCM_FINANCE_COUNTERPARTY_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_COUNTERPARTY_TYPE_ENUM: XsyEnum<string> = {
   CUSTOMER: {value: 'CUSTOMER', desc: '客户'},
   SUPPLIER: {value: 'SUPPLIER', desc: '供应商'},
 };
 
-export const SCM_FINANCE_SOURCE_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_SOURCE_TYPE_ENUM: XsyEnum<string> = {
   RECEIPT: {value: 'RECEIPT', desc: '收款'},
   PAYMENT: {value: 'PAYMENT', desc: '付款'},
 };
 
 /** 应收/应付明细行的来源单据类型：明细行只带来源主键，展示时要换成这层业务含义。 */
-export const SCM_FINANCE_ITEM_SOURCE_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_ITEM_SOURCE_TYPE_ENUM: XsyEnum<string> = {
   INVENTORY_OUTBOUND_ITEM: {value: 'INVENTORY_OUTBOUND_ITEM', desc: '库存出库明细'},
   ORDER_RETURN_ITEM: {value: 'ORDER_RETURN_ITEM', desc: '销售退货明细'},
   PURCHASE_ACCOUNT: {value: 'PURCHASE_ACCOUNT', desc: '采购确认'},
@@ -117,7 +117,7 @@ export const SCM_FINANCE_ITEM_SOURCE_TYPE_ENUM: SmartEnum<string> = {
   MANUAL: {value: 'MANUAL', desc: '手工登记'},
 };
 
-export const SCM_FINANCE_BUSINESS_TYPE_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_BUSINESS_TYPE_ENUM: XsyEnum<string> = {
   RECEIVABLE: {value: 'RECEIVABLE', desc: '应收'},
   PAYABLE: {value: 'PAYABLE', desc: '应付'},
   RECEIPT: {value: 'RECEIPT', desc: '收款'},
@@ -128,13 +128,13 @@ export const SCM_FINANCE_BUSINESS_TYPE_ENUM: SmartEnum<string> = {
 };
 
 /** 过账单据的有效状态（由作废记录推导，前端只读）。 */
-export const SCM_FINANCE_POSTING_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_POSTING_STATUS_ENUM: XsyEnum<string> = {
   NORMAL: {value: 'NORMAL', desc: '有效'},
   VOIDED: {value: 'VOIDED', desc: '已作废'},
 };
 
 /** 过账单据的返款状态（与后端 `ScmFinancePostingRefundStatusEnum` 逐字对应）。 */
-export const SCM_FINANCE_POSTING_REFUND_STATUS_ENUM: SmartEnum<string> = {
+export const SCM_FINANCE_POSTING_REFUND_STATUS_ENUM: XsyEnum<string> = {
   PENDING: {value: 'PENDING', desc: '未返款'},
   PARTIAL: {value: 'PARTIAL', desc: '部分返款'},
   REFUNDED: {value: 'REFUNDED', desc: '已返款'},

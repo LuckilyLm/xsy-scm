@@ -2,7 +2,7 @@
  * 枚举、图标、工具类
  *
  */
-import {SmartEnumPlugin} from '/@/types/smart-enum';
+import {XsyEnumPlugin} from '/@/types/xsy-enum';
 import * as lodash from 'lodash';
 
 declare module '*.vue' {
@@ -15,7 +15,7 @@ declare module '*.vue' {
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {
     // 常量插件
-    $smartEnumPlugin: SmartEnumPlugin;
+    $xsyEnumPlugin: XsyEnumPlugin;
     // 常量图标
     $antIcons: Object;
     // lodash工具类

@@ -1,7 +1,5 @@
 /*
  * @Description: 表格id
- * @LastEditTime: 2022-08-21
- * @LastEditors:
  */
 
 //system系统功能表格初始化id

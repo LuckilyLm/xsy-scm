@@ -1,7 +1,7 @@
 <template>
   <a-modal v-model:open="visible" title="负库存月度留存" :width="1160" :footer="null" @cancel="listRequestId++">
-    <a-form class="smart-query-form" layout="inline" :model="filters" @submit.prevent="search">
-      <a-row class="smart-query-form-row">
+    <a-form class="xsy-query-form" layout="inline" :model="filters" @submit.prevent="search">
+      <a-row class="xsy-query-form-row">
         <a-form-item label="月份"
           ><a-date-picker v-model:value="filters.month" picker="month" value-format="YYYY-MM" :allow-clear="false"
         /></a-form-item>
@@ -41,7 +41,7 @@
         >
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-quick-jumper
         show-less-items

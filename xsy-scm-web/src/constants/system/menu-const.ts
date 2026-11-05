@@ -3,9 +3,9 @@
  *
  */
 
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 
-export const MENU_TYPE_ENUM: SmartEnum<number> = {
+export const MENU_TYPE_ENUM: XsyEnum<number> = {
   CATALOG: {
     value: 1,
     desc: '目录',
@@ -23,7 +23,7 @@ export const MENU_TYPE_ENUM: SmartEnum<number> = {
 /**
  * 权限类型
  */
-export const MENU_PERMS_TYPE_ENUM: SmartEnum<number> = {
+export const MENU_PERMS_TYPE_ENUM: XsyEnum<number> = {
   SA_TOKEN: {
     value: 1,
     desc: 'Sa-Token模式',

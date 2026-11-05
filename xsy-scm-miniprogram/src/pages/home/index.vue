@@ -191,7 +191,7 @@ import {useSystemLayout} from '@/composables/use-system-layout';
 import {useMallTheme} from '@/composables/use-mall-theme';
 import {useMallStorefront} from '@/composables/use-mall-storefront';
 import {useMallCart} from '@/composables/use-mall-cart';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {formatDate} from '@/utils/order-display';
 import {categoryIcon} from '@/utils/category-icon';
 import {COLOR_TEXT_TERTIARY} from '@/constants/theme-color-const';
@@ -246,7 +246,7 @@ async function loadLocation() {
     }
     locationText.value = [chosen.cityName, chosen.districtName].filter(Boolean).join('') || chosen.detailAddress || '选择收货地址';
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   }
 }
 function goAddress() {
@@ -309,7 +309,7 @@ async function loadCategoryRail() {
     // 只用正式可见树的一级分类，素材包里的其它大类不自动变成业务入口。
     categoryRail.value = (response.data || []).slice(0, 14);
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   }
 }
 const pageNum = ref(0);
@@ -338,7 +338,7 @@ async function loadProducts(reset = false) {
     total.value = page.total || 0;
     pageNum.value += 1;
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
     loading.value = false;
   }
@@ -351,7 +351,7 @@ async function loadFrequent() {
     // 后端 /scm/mall/catalog/frequent 返回商品数组，不是分页包装
     frequentProducts.value = response.data || [];
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   }
 }
 
@@ -365,7 +365,7 @@ async function loadMarketing() {
     activities.value = (await mallPromotionApi.activities()).data || [];
     newProducts.value = (await mallPromotionApi.newProducts()).data || [];
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   }
 }
 
@@ -383,7 +383,7 @@ async function loadHomeLayout() {
   } catch (error) {
     if (request !== homeRequest || userStore.customerId !== customerId) return;
     homeLayout.value = null;
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   }
   // 营销装修不替代客户商品区，轮播发布后常购和新品仍读取正式数据。
   await Promise.all([loadFrequent(), loadMarketing()]);
@@ -429,7 +429,7 @@ async function loadHomePopup() {
     popup.value = data;
     popupVisible.value = true;
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   }
 }
 

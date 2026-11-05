@@ -10,7 +10,7 @@ import lodash from 'lodash';
 import JsonViewer from 'vue3-json-viewer';
 import 'vue3-json-viewer/dist/index.css';
 import App from './App.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import {loginApi} from '/@/api/system/login-api';
 import constantsInfo from '/@/constants/index';
 import {privilegeDirective} from '/@/directives/privilege';
@@ -18,7 +18,7 @@ import {ariaLabelDirective} from '/@/directives/aria-label';
 import i18n from '/@/i18n/index';
 import privilegePlugin from '/@/plugins/privilege-plugin';
 import dictPlugin from '/@/plugins/dict-plugin';
-import smartEnumPlugin from '/@/plugins/smart-enums-plugin';
+import xsyEnumPlugin from '/@/plugins/xsy-enums-plugin';
 import {buildRoutes, router} from '/@/router';
 import {store} from '/@/store';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -63,22 +63,14 @@ async function getLoginInfo() {
     useUserStore().setUserLoginInfo(res.data);
   } catch (e) {
     message.error(e.data ? e.data.msg : e.message);
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
     initVue();
   }
 }
 
 async function initVue() {
   let vueApp = createApp(App);
-  let app = vueApp
-    .use(router)
-    .use(store)
-    .use(i18n)
-    .use(Antd)
-    .use(smartEnumPlugin, constantsInfo)
-    .use(privilegePlugin)
-    .use(dictPlugin)
-    .use(JsonViewer);
+  let app = vueApp.use(router).use(store).use(i18n).use(Antd).use(xsyEnumPlugin, constantsInfo).use(privilegePlugin).use(dictPlugin).use(JsonViewer);
   //注入权限
   app.directive('privilege', {
     mounted(el, binding) {

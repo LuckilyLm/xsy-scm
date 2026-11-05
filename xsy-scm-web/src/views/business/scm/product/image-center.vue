@@ -30,7 +30,7 @@
               </template>
             </template>
           </a-table>
-          <div class="smart-query-table-page">
+          <div class="xsy-query-table-page">
             <a-pagination
               :current="pickPage"
               :page-size="pickPageSize"

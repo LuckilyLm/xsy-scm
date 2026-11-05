@@ -19,7 +19,7 @@ import {
   mallThemeGradients,
 } from '@/constants/theme-color-const';
 import {mallHomeApi} from '@/api/mall/home-api';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {applyNativeTheme} from '@/utils/theme-native';
 
 let inFlight = null;
@@ -80,7 +80,7 @@ export const useMallThemeStore = defineStore('mall-theme', {
           if (request !== this.requestSeq) {
             return;
           }
-          smartSentry.captureError(error);
+          xsySentry.captureError(error);
           this.applyTheme({releaseId: null, themeCode: MALL_THEME_DEFAULT_CODE, palette: null});
         }
       })();

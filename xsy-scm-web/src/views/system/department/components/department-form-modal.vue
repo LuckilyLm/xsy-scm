@@ -26,8 +26,8 @@ import {nextTick, reactive, ref} from 'vue';
 import {departmentApi} from '/@/api/system/department-api';
 import DepartmentTreeSelect from '/@/components/system/department-tree-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 
 // ----------------------- 对外暴漏 ---------------------
 
@@ -119,21 +119,21 @@ async function handleOk() {
 // ----------------------- form 表单  ajax 操作 ---------------------
 //添加部门ajax请求
 async function addDepartment() {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     await departmentApi.addDepartment(formState);
     emits('refresh');
     closeModal();
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 
 //更新部门ajax请求
 async function updateDepartment() {
-  SmartLoading.show();
+  XsyLoading.show();
   try {
     if (formState.parentId == formState.departmentId) {
       message.warning('上级菜单不能为自己');
@@ -143,9 +143,9 @@ async function updateDepartment() {
     emits('refresh');
     closeModal();
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 </script>

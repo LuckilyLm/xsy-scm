@@ -13,8 +13,8 @@
 
 - 支持国密SM、AES加密算法。前端修改:/lib/encrypt.js文件，后端：启动 ApiEncryptServiceAesImpl 或者 ApiEncryptServiceSmImpl
 - 前端请看：/lib/encrypt.js、/lib/axios.js  /api/support/api-encrypt/api-encrypt-api.js 等文件
-- 后端请看：@ApiEncrypt 和 @ApiDecrypt 注解，具体请看 sa-common项目中的 net.lab1024.sa.common.module.support.apiencrypt 包
-- demo请看：前端：/views/support/api-encrypt 目录，后端 请看：sa-admin项目的：net.lab1024.sa.admin.module.system.support.AdminApiEncryptController
+- 后端请看：@ApiEncrypt 和 @ApiDecrypt 注解，具体请看 sa-common项目中的 com.xsy.scm.base.module.support.apiencrypt 包
+- demo请看：前端：/views/support/api-encrypt 目录，后端 请看：xsy-admin项目的：com.xsy.scm.admin.module.system.support.AdminApiEncryptController
 </pre
       >
     </template>
@@ -27,25 +27,25 @@
   <br />
   <!---------- 请求参数加密 begin ----------->
   <a-card title="一、请求加密 Demo">
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="姓名" class="smart-query-form-item">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="姓名" class="xsy-query-form-item">
           <a-input v-model:value="requestEncryptForm.name" placeholder="姓名" />
         </a-form-item>
-        <a-form-item label="年龄" class="smart-query-form-item">
+        <a-form-item label="年龄" class="xsy-query-form-item">
           <a-input-number v-model:value="requestEncryptForm.age" placeholder="年龄" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-button type="primary" @click="testRequestEncrypt"> 测试：请求加密</a-button>
         </a-form-item>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="requestEncryptFormStr">请求参数：{{ requestEncryptFormStr }}</div>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="requestEncryptFormEncryptStr">请求参数加密：{{ requestEncryptFormEncryptStr }}</div>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="requestEncryptResponse">返回结果（不加密）：{{ requestEncryptResponse }}</div>
       </a-row>
     </a-form>
@@ -54,25 +54,25 @@
   <br />
   <!---------- 返回结果解密 begin ----------->
   <a-card title="二、返回加密 Demo">
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="姓名" class="smart-query-form-item">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="姓名" class="xsy-query-form-item">
           <a-input v-model:value="responseEncryptForm.name" placeholder="姓名" />
         </a-form-item>
-        <a-form-item label="年龄" class="smart-query-form-item">
+        <a-form-item label="年龄" class="xsy-query-form-item">
           <a-input-number v-model:value="responseEncryptForm.age" placeholder="年龄" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-button type="primary" @click="testResponseEncrypt"> 测试：返回加密</a-button>
         </a-form-item>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="responseEncryptFormStr">请求参数： {{ responseEncryptFormStr }}</div>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="responseEncryptStr">返回结果：{{ responseEncryptStr }}</div>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="responseStr">返回结果 解密：{{ responseStr }}</div>
       </a-row>
     </a-form>
@@ -82,28 +82,28 @@
   <br />
   <!---------- 请求和返回都加密 begin ----------->
   <a-card title="三、请求和返回都加密 Demo">
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="姓名" class="smart-query-form-item">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="姓名" class="xsy-query-form-item">
           <a-input v-model:value="form.name" placeholder="姓名" />
         </a-form-item>
-        <a-form-item label="年龄" class="smart-query-form-item">
+        <a-form-item label="年龄" class="xsy-query-form-item">
           <a-input-number v-model:value="form.age" placeholder="年龄" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-button type="primary" @click="testBoth"> 测试：请求和返回都加密</a-button>
         </a-form-item>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="formStr">请求参数： {{ formStr }}</div>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="formEncryptStr">请求参数加密： {{ formEncryptStr }}</div>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="responseEncrypt">返回结果：{{ responseEncrypt }}</div>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="responseDecryptStr">返回结果 解密：{{ responseDecryptStr }}</div>
       </a-row>
     </a-form>
@@ -113,22 +113,22 @@
   <br />
   <!---------- 测试数组 begin ----------->
   <a-card title="四、测试数组 Demo">
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item class="smart-query-form-item">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item class="xsy-query-form-item">
           <a-button type="primary" @click="testArray"> 测试：数组加解密</a-button>
         </a-form-item>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="arrayFormStr">请求参数： {{ arrayFormStr }}</div>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="arrayFormEncryptStr">请求参数加密： {{ arrayFormEncryptStr }}</div>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="arrayFormResponseEncrypt">返回结果：{{ arrayFormResponseEncrypt }}</div>
       </a-row>
-      <a-row class="smart-query-form-row">
+      <a-row class="xsy-query-form-row">
         <div v-if="arrayFormResponseDecryptStr">返回结果 解密：{{ arrayFormResponseDecryptStr }}</div>
       </a-row>
     </a-form>

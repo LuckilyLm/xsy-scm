@@ -11,7 +11,7 @@
       <ReportKpiCard :label="card.label" :value="card.value" :warning="card.warning" />
     </a-col>
   </a-row>
-  <a-row :gutter="[12, 12]" class="smart-margin-top10">
+  <a-row :gutter="[12, 12]" class="xsy-margin-top10">
     <a-col :xs="24" :lg="12">
       <ReportPieChart title="损耗类型金额占比" :slices="lossPieSlices" />
     </a-col>
@@ -19,18 +19,18 @@
       <ReportLineChart title="已知损耗成本按日趋势（缺失值断线）" :x-axis="lossTrendAxis" :series="lossTrendSeries" empty-text="暂无按日损耗趋势" />
     </a-col>
   </a-row>
-  <a-card size="small" :bordered="false" class="smart-margin-top10">
-    <a-row data-toolbar-layout="single" class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
+  <a-card size="small" :bordered="false" class="xsy-margin-top10">
+    <a-row data-toolbar-layout="single" class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" class="scm-export-btn" v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')"
           >导出</a-button
         >
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_LOSS" :refresh="refresh" />
       </div>
     </a-row>
-    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+    <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
       <template #action>
         <a-button @click="refresh">重试</a-button>
       </template>
@@ -66,7 +66,7 @@
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         :disabled="exporting"

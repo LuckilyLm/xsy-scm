@@ -1,10 +1,10 @@
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 
 /**
  * job 常量
  * @type {{CRON: {value: number, desc: string}, FIXED_DELAY: {value: number, desc: string}}}
  */
-export const TRIGGER_TYPE_ENUM: SmartEnum<string> = {
+export const TRIGGER_TYPE_ENUM: XsyEnum<string> = {
   CRON: {
     value: 'cron',
     desc: 'cron表达式',

@@ -1,6 +1,6 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" :model="filters" @submit.prevent="search">
-    <a-row class="smart-query-form-row">
+  <a-form class="xsy-query-form" layout="inline" :model="filters" @submit.prevent="search">
+    <a-row class="xsy-query-form-row">
       <a-form-item label="月份"
         ><a-date-picker v-model:value="filters.month" picker="month" value-format="YYYY-MM" :allow-clear="false"
       /></a-form-item>
@@ -25,7 +25,7 @@
     >
   </a-row>
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block" justify="space-between">
+    <a-row class="xsy-table-btn-block" justify="space-between">
       <a-space>
         <a-button v-if="canAdd" type="primary" @click="openAdd">登记成本费用</a-button>
         <a-button v-if="canAdd" @click="openBatch">批量登记</a-button>
@@ -67,7 +67,7 @@
         <span v-else class="scm-money">{{ moneyText(record[column.dataIndex]) }}</span>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-quick-jumper
         show-less-items
@@ -222,7 +222,7 @@
         <template v-else>{{ record[column.dataIndex] || '—' }}</template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-quick-jumper
         show-less-items

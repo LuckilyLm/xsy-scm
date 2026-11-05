@@ -68,7 +68,7 @@ function pageHarness(fetchPage) {
     mallDecorationApi: {page: fetchPage},
     MALL_ERROR_CODE: {INVALID_PAGE: 41405},
     useMallTheme: () => ({}),
-    smartSentry: {captureError() {}},
+    xsySentry: {captureError() {}},
     uni: {setNavigationBarTitle: ({title}) => titles.push(title)},
   });
   const script = read('../src/pages-sub/page/index.vue').match(/<script setup>([\s\S]*?)<\/script>/)[1];

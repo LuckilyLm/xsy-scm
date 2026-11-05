@@ -240,7 +240,7 @@
             <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
           </template>
         </a-table>
-        <div v-if="!orders.error.value" class="smart-query-table-page">
+        <div v-if="!orders.error.value" class="xsy-query-table-page">
           <a-pagination
             show-quick-jumper
             show-less-items
@@ -258,10 +258,10 @@
 
       <!-- 常购商品 -->
       <a-tab-pane key="frequent" tab="常购商品">
-        <a-space class="smart-margin-bottom10" :size="12">
+        <a-space class="xsy-margin-bottom10" :size="12">
           <span>统计窗口</span>
           <a-segmented v-model:value="freqDays" :options="freqDayOptions" @change="onFreqDaysChange" />
-          <span class="smart-font-size12 smart-color-gray">按商品规格＋单位分组，数量为订购量（非实重／结算量），不跨单位求和</span>
+          <span class="xsy-font-size12 xsy-color-gray">按商品规格＋单位分组，数量为订购量（非实重／结算量），不跨单位求和</span>
         </a-space>
         <a-alert v-if="frequent.error.value" :message="frequent.error.value" type="error" show-icon>
           <template #action>
@@ -322,7 +322,7 @@
             <template v-else-if="column.dataIndex === 'effectivePeriod'">{{ effectivePeriodText(record) }}</template>
           </template>
         </a-table>
-        <div v-if="!agreement.error.value" class="smart-query-table-page">
+        <div v-if="!agreement.error.value" class="xsy-query-table-page">
           <a-pagination
             show-quick-jumper
             show-less-items
@@ -371,7 +371,7 @@
               <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
             </template>
           </a-table>
-          <div class="smart-query-table-page">
+          <div class="xsy-query-table-page">
             <a-pagination
               show-quick-jumper
               show-less-items

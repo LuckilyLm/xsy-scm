@@ -3,26 +3,26 @@
 -->
 <template>
   <div>
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键字" class="smart-query-form-item">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="关键字" class="xsy-query-form-item">
           <a-input style="width: 200px" v-model:value="queryForm.searchWord" placeholder="请输入关键字" :maxlength="30" />
         </a-form-item>
-        <a-form-item label="触发类型" class="smart-query-form-item">
+        <a-form-item label="触发类型" class="xsy-query-form-item">
           <a-select style="width: 155px" v-model:value="queryForm.triggerType" placeholder="请选择触发类型" allowClear>
-            <a-select-option v-for="item in $smartEnumPlugin.getValueDescList('TRIGGER_TYPE_ENUM')" :key="item.value" :value="item.value">
+            <a-select-option v-for="item in $xsyEnumPlugin.getValueDescList('TRIGGER_TYPE_ENUM')" :key="item.value" :value="item.value">
               {{ item.desc }}
             </a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item label="状态" class="smart-query-form-item">
+        <a-form-item label="状态" class="xsy-query-form-item">
           <a-select style="width: 150px" v-model:value="queryForm.enabledFlag" placeholder="请选择状态" allowClear>
             <a-select-option :key="1"> 开启</a-select-option>
             <a-select-option :key="0"> 停止</a-select-option>
           </a-select>
         </a-form-item>
 
-        <a-form-item class="smart-query-form-item smart-margin-left10">
+        <a-form-item class="xsy-query-form-item xsy-margin-left10">
           <a-button-group>
             <a-button type="primary" @click="onSearch" v-privilege="'support:job:query'">
               <template #icon>
@@ -42,8 +42,8 @@
     </a-form>
 
     <a-flex align="end" vertical>
-      <div class="smart-table-setting-block smart-margin-bottom10">
-        <TableOperator class="smart-margin-bottom5 pull-right" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.JOB" :refresh="queryJobList" />
+      <div class="xsy-table-setting-block xsy-margin-bottom10">
+        <TableOperator class="xsy-margin-bottom5 pull-right" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.JOB" :refresh="queryJobList" />
       </div>
     </a-flex>
 
@@ -100,14 +100,14 @@
           />
         </template>
         <template v-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="xsy-table-operate">
             <a-button v-privilege="'support:job:log:query'" @click="openJobLogModal(record.jobId, record.jobName)" type="link">记录 </a-button>
           </div>
         </template>
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -131,7 +131,7 @@ import {tableColumnsWidth} from '/@/components/support/table-operator/table-widt
 import {onMounted, reactive, ref} from 'vue';
 import {jobApi} from '/@/api/support/job-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import {TRIGGER_TYPE_ENUM} from '/@/constants/support/job-const';
 import JobLogListModal from './job-log-list-modal.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const.js';
@@ -263,7 +263,7 @@ async function queryJobList() {
     total.value = responseModel.data.total;
     tableData.value = list;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }
@@ -277,7 +277,7 @@ async function queryJobInfo(jobId) {
     let res = await jobApi.queryJobInfo(jobId);
     return res.data;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 

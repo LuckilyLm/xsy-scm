@@ -11,15 +11,15 @@
       <ReportKpiCard :label="card.label" :value="card.value" :sub="card.sub" :warning="card.warning" :tone="card.tone" current-point />
     </a-col>
   </a-row>
-  <a-card size="small" :bordered="false" class="smart-margin-top10">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
+  <a-card size="small" :bordered="false" class="xsy-margin-top10">
+    <a-row class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-operate-block">
         <a-button v-if="canViewCost" @click="historyModal?.open()">月度留存</a-button>
         <a-button type="primary" class="scm-export-btn" v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')"
           >导出</a-button
         >
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator
           v-model="columns"
           :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_NEGATIVE_STOCK"
@@ -28,7 +28,7 @@
         />
       </div>
     </a-row>
-    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+    <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
       <template #action>
         <a-button @click="refresh">重试</a-button>
       </template>
@@ -61,7 +61,7 @@
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         :disabled="exporting"

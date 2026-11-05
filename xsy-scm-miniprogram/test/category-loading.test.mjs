@@ -17,7 +17,7 @@ function harness() {
     productError: {value: ''},
     PAGE_SIZE: 10,
     mallCatalogApi: {getProducts: (query) => new Promise((resolve, reject) => calls.push({query, resolve, reject}))},
-    smartSentry: {captureError() {}},
+    xsySentry: {captureError() {}},
   });
   vm.runInContext(`let productRequest = 0;\n${source.slice(start, end)}\nglobalThis.load = loadProducts;`, context);
   return {state: context, calls};

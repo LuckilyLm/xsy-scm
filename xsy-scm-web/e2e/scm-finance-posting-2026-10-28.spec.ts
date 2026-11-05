@@ -99,7 +99,7 @@ test.describe('scm-finance-posting', () => {
     });
     expect((receivables.list as Row[]).length).toBe(0);
 
-    const keyword = page.locator('.smart-query-form .ant-form-item').filter({hasText: '单号 / 客户'}).locator('input');
+    const keyword = page.locator('.xsy-query-form .ant-form-item').filter({hasText: '单号 / 客户'}).locator('input');
     await keyword.fill(String(row.postingNo));
     await page.getByRole('button', {name: accessibleName('查询')}).click();
     const tableRow = page.locator('#scm-finance-posting-table tbody tr').filter({hasText: String(row.postingNo)});
@@ -118,7 +118,7 @@ test.describe('scm-finance-posting', () => {
       customerId: Number(customerId),
     });
     const row = (listed.list as Row[])[0];
-    const keyword = page.locator('.smart-query-form .ant-form-item').filter({hasText: '单号 / 客户'}).locator('input');
+    const keyword = page.locator('.xsy-query-form .ant-form-item').filter({hasText: '单号 / 客户'}).locator('input');
     await keyword.fill(String(row.postingNo));
     await page.getByRole('button', {name: accessibleName('查询')}).click();
     const tableRow = page.locator('#scm-finance-posting-table tbody tr').filter({hasText: String(row.postingNo)});

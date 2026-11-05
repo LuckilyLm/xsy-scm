@@ -28,12 +28,12 @@
 </template>
 <script setup lang="ts">
 import {reactive, ref} from 'vue';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {feedbackApi} from '/@/api/support/feedback-api';
 import {message} from 'ant-design-vue';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
 import Upload from '/@/components/support/file-upload/index.vue';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 defineExpose({
   show,
@@ -59,7 +59,7 @@ const form = reactive({...formDefault});
 
 async function submit() {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     if (!form.feedbackContent) {
       message.warn('请填写具体内容');
       return;
@@ -68,9 +68,9 @@ async function submit() {
     message.success('提交成功');
     hide();
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

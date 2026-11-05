@@ -8,8 +8,8 @@
     @ok="apply"
     @cancel="close"
   >
-    <p class="smart-margin-bottom10">对已选 {{ ids.length }} 张订单操作</p>
-    <a-form layout="vertical" class="smart-margin-top10">
+    <p class="xsy-margin-bottom10">对已选 {{ ids.length }} 张订单操作</p>
+    <a-form layout="vertical" class="xsy-margin-top10">
       <a-form-item label="选择标签" required>
         <a-select
           v-model:value="tagId"
@@ -28,7 +28,7 @@
       <a-select v-model:value="color" :options="colorOptions" style="width: 125px" />
       <a-button :disabled="!name.trim()" :loading="creating" @click="create">创建标签</a-button>
     </a-space>
-    <a-alert v-if="error" type="error" show-icon class="smart-margin-top10" :message="error" />
+    <a-alert v-if="error" type="error" show-icon class="xsy-margin-top10" :message="error" />
   </a-modal>
 </template>
 

@@ -41,7 +41,7 @@ import {computed, reactive, ref} from 'vue';
 import {mallAuthApi} from '@/api/mall';
 import {useUserStore} from '@/store/modules/system/user';
 import {useMallTheme} from '@/composables/use-mall-theme';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 
 const {themeStyle} = useMallTheme();
 
@@ -71,7 +71,7 @@ async function save() {
     uni.showToast({title: '密码已修改，请重新登录', icon: 'none'});
     setTimeout(() => uni.reLaunch({url: '/pages/login/login'}), 700);
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
     saving.value = false;
   }

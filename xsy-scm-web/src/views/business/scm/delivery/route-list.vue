@@ -1,7 +1,7 @@
 <template>
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
-      <a-row class="smart-query-form-row">
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form" layout="inline" @submit.prevent="search">
+      <a-row class="xsy-query-form-row">
         <a-form-item label="配送日期">
           <a-date-picker v-model:value="query.deliveryDate" value-format="YYYY-MM-DD" />
         </a-form-item>
@@ -38,7 +38,7 @@
         <a-form-item label="省市区">
           <AreaCascader v-model:value="area" type="province_city_district" @change="changeArea" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-space>
             <a-button type="primary" @click="search" v-privilege="'scm:delivery:route:query'">查询 </a-button>
             <a-button @click="reset">重置</a-button>
@@ -46,7 +46,7 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <div data-toolbar-layout="query" class="smart-table-btn-block">
+    <div data-toolbar-layout="query" class="xsy-table-btn-block">
       <a-button type="primary" v-privilege="'scm:delivery:route:add'" @click="formDrawer?.open()">新建线路</a-button>
     </div>
   </div>
@@ -89,7 +89,7 @@
         <template v-else-if="column.dataIndex === 'driverNameSnapshot'">{{ record.driverNameSnapshot || '未分配' }} </template>
         <template v-else-if="column.dataIndex === 'vehicleNoSnapshot'">{{ record.vehicleNoSnapshot || '未分配' }} </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record.id, 'base')">详情</a-button>
             <a-button type="link" size="small" @click="openDetail(record.id, 'map')">路线</a-button>
             <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
@@ -97,7 +97,7 @@
         </template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         v-model:current="query.pageNum"
@@ -388,7 +388,7 @@ onMounted(loadOptions);
   min-width: 140px;
 }
 
-.smart-query-form {
+.xsy-query-form {
   gap: 12px 0;
 }
 

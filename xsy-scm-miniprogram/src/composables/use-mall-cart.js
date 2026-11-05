@@ -5,7 +5,7 @@
  * 不做本地乐观写入：购物车以服务端返回的整车商品信息为准（跨端一致）。
  */
 import {mallCartApi} from '@/api/mall/cart-api';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 
 export function useMallCart() {
   /**
@@ -27,7 +27,7 @@ export function useMallCart() {
       uni.showToast({title: replaceQuantity ? '购物车数量已更新' : count ? `已加入购物车（可结算 ${count} 项）` : '已加入购物车', icon: 'none'});
       return true;
     } catch (error) {
-      smartSentry.captureError(error);
+      xsySentry.captureError(error);
       uni.showToast({title: error?.message || '加入购物车失败', icon: 'none'});
       return false;
     }

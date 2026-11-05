@@ -6,7 +6,8 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync, existsSync} from 'node:fs';
+import {readSourceFileSync as readFileSync} from './helpers/source-reader.mjs';
+import {existsSync} from 'node:fs';
 
 // ---------------------------------------------------------------- 来源：finance-contract.test.mjs
 {
@@ -173,7 +174,7 @@ import {readFileSync, existsSync} from 'node:fs';
 
   test('页面菜单迁移只在五个组件存在后发布正确路径并授予正式财务角色', () => {
     const migration = readFileSync(
-      new URL('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V71__scm_finance_pages.sql', import.meta.url),
+      new URL('../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V71__scm_finance_pages.sql', import.meta.url),
       'utf8'
     );
     const paths = [
@@ -338,7 +339,7 @@ import {readFileSync, existsSync} from 'node:fs';
 
   test('系统信息使用四类财务单据的真实表头审计列', () => {
     const section = drawer.slice(drawer.indexOf('<h3>系统信息</h3>'), drawer.indexOf('</section>', drawer.indexOf('<h3>系统信息</h3>')));
-    const root = '../../xsy-scm-server/sa-admin/src/main/';
+    const root = '../../xsy-scm-server/xsy-admin/src/main/';
     // 公共审计字段在 FinanceLedgerVO 里，应收 / 应付 VO 继承它，按实际可读字段校验。
     const ledgerModel = code(`${root}java/com/xsy/scm/finance/domain/vo/FinanceLedgerVO.java`);
     for (const [vo, dao, alias] of [
@@ -424,7 +425,7 @@ import {readFileSync, existsSync} from 'node:fs';
 
   test('外部账单菜单与权限迁移只授超管与正式财务岗位', () => {
     const migration = readFileSync(
-      new URL('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V208__scm_finance_posting_permission.sql', import.meta.url),
+      new URL('../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V208__scm_finance_posting_permission.sql', import.meta.url),
       'utf8'
     );
     assert.ok(migration.includes('/business/scm/finance/finance-posting-list.vue'));

@@ -38,7 +38,7 @@ import {message} from 'ant-design-vue';
 import _ from 'lodash';
 import {inject, onMounted, ref, watch} from 'vue';
 import {roleApi} from '/@/api/system/role-api';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const props = defineProps({
   value: Number,
@@ -102,7 +102,7 @@ async function updateDataScope() {
     message.success('保存成功');
     getDataScope();
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 </script>

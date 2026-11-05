@@ -34,7 +34,7 @@
         <a-input v-model:value.trim="form.email" :maxlength="100" placeholder="请输入邮箱" />
       </a-form-item>
       <a-form-item label="性别" name="gender">
-        <smart-enum-select style="width: 100%" v-model:value="form.gender" placeholder="请选择性别" enum-name="GENDER_ENUM" />
+        <xsy-enum-select style="width: 100%" v-model:value="form.gender" placeholder="请选择性别" enum-name="GENDER_ENUM" />
       </a-form-item>
       <a-form-item label="状态" name="disabledFlag">
         <a-select v-model:value="form.disabledFlag" placeholder="请选择状态">
@@ -63,11 +63,11 @@ import {nextTick, reactive, ref} from 'vue';
 import {employeeApi} from '/@/api/system/employee-api';
 import {roleApi} from '/@/api/system/role-api';
 import DepartmentTreeSelect from '/@/components/system/department-tree-select/index.vue';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import {GENDER_ENUM} from '/@/constants/common-const';
 import {regular} from '/@/constants/regular-const';
-import {SmartLoading} from '/@/components/framework/smart-loading';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
 // ----------------------- 以下是字段定义 emits props ---------------------
 const departmentTreeSelect = ref();
 // emit
@@ -170,7 +170,7 @@ async function onSubmit(keepAdding) {
     message.error('参数验证错误，请仔细填写表单数据!');
     return;
   }
-  SmartLoading.show();
+  XsyLoading.show();
   if (form.employeeId) {
     await updateEmployee(keepAdding);
   } else {
@@ -190,9 +190,9 @@ async function addEmployee(keepAdding) {
     }
     emit('refresh');
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 
@@ -207,9 +207,9 @@ async function updateEmployee(keepAdding) {
     }
     emit('refresh');
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

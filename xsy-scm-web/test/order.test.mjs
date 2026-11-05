@@ -6,7 +6,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readSourceFileSync as readFileSync} from './helpers/source-reader.mjs';
 import {createRequire} from 'node:module';
 import {transformSync} from 'esbuild';
 import {
@@ -268,11 +268,11 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 // ---------------------------------------------------------------- 来源：order-tag-contract.test.mjs
 {
   const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
-  const sql = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V145__scm_order_tags.sql');
-  const singleTagMigration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V241__scm_order_single_tag.sql');
-  const mapper = read('../../xsy-scm-server/sa-admin/src/main/resources/mapper/scm/order/SalesOrderMapper.xml');
-  const service = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderTagService.java');
-  const readService = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderQueryService.java');
+  const sql = read('../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V145__scm_order_tags.sql');
+  const singleTagMigration = read('../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V241__scm_order_single_tag.sql');
+  const mapper = read('../../xsy-scm-server/xsy-admin/src/main/resources/mapper/scm/order/SalesOrderMapper.xml');
+  const service = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/order/service/OrderTagService.java');
+  const readService = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/order/service/SalesOrderQueryService.java');
   const api = read('../src/api/business/scm/order-tag-api.ts');
   const list = read('../src/views/business/scm/order/order-list.vue');
   const modal = read('../src/views/business/scm/order/components/order-tag-modal.vue');
@@ -759,7 +759,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     const block = source.match(/SCM_ORDER_STATUS_ENUM[^{]*\{([\s\S]*?)\n\};/)[1];
     const front = [...block.matchAll(/^\s+([A-Z_]+):/gm)].map((m) => m[1]);
     const java = readFileSync(
-      new URL('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderStatusEnum.java', import.meta.url),
+      new URL('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderStatusEnum.java', import.meta.url),
       'utf8'
     );
     const back = [...java.matchAll(/^\s+([A-Z_]+)\("/gm)].map((m) => m[1]);
@@ -772,7 +772,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     const block = ts.match(/SCM_ORDER_OPERATION_ENUM[^{]*\{([\s\S]*?)\n\};/)[1];
     const front = [...block.matchAll(/^\s+([A-Z_]+):/gm)].map((m) => m[1]);
     const java = readFileSync(
-      new URL('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java', import.meta.url),
+      new URL('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java', import.meta.url),
       'utf8'
     );
     const back = [...java.match(/enum ScmOrderOperationTypeEnum \{([^}]*)\}/)[1].matchAll(/([A-Z_]+)\("/g)].map((m) => m[1]);
@@ -818,11 +818,11 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     const api = read('../src/api/business/scm/order-api.ts');
     assert.match(api, /lock: .*postRequest<Order>\('\/scm\/order\/lock'/);
     assert.match(api, /unlock: .*postRequest<Order>\('\/scm\/order\/unlock'/);
-    const sql = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V184__scm_sales_order_lock.sql');
+    const sql = read('../../xsy-scm-server/xsy-admin/src/main/resources/db/migration/V184__scm_sales_order_lock.sql');
     for (const code of ['scm:order:lock', 'scm:order:unlock', 'scm:order:edit-after-dispatch', 'scm:order:edit-locked']) {
       assert.ok(sql.includes(code), `迁移缺少权限码 ${code}`);
     }
-    const controller = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/SalesOrderController.java');
+    const controller = read('../../xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/order/controller/SalesOrderController.java');
     assert.match(controller, /@PostMapping\("\/lock"\)\s*@SaCheckPermission\(OrderPermission\.LOCK\)/);
     assert.match(controller, /@PostMapping\("\/unlock"\)\s*@SaCheckPermission\(OrderPermission\.UNLOCK\)/);
   });

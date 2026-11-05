@@ -75,7 +75,7 @@ import XsyEmpty from '@/components/common/xsy-empty.vue';
 import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
 import {LOAD_MORE_TEXT} from '@/constants/load-more-const';
 import {mallOrderApi} from '@/api/mall/order-api';
-import {smartSentry} from '@/lib/smart-sentry';
+import {xsySentry} from '@/lib/xsy-sentry';
 import {COLOR_TEXT_PLACEHOLDER} from '@/constants/theme-color-const';
 import {useMallTheme} from '@/composables/use-mall-theme';
 
@@ -141,7 +141,7 @@ async function load(reset) {
     hasMore.value = nextPage < Number(page.pages || 0);
   } catch (error) {
     if (seq !== loadSeq) return;
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     uni.showToast({title: error?.message || '订单加载失败', icon: 'none'});
   } finally {
     if (seq === loadSeq) loading.value = false;
@@ -187,7 +187,7 @@ async function doCancel(order, reason) {
     uni.showToast({title: '订单已取消', icon: 'none'});
     load(true);
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     uni.showToast({title: error?.message || '取消失败，请稍后重试', icon: 'none'});
   }
 }
@@ -212,7 +212,7 @@ async function reorder(order) {
     });
     setTimeout(() => uni.switchTab({url: '/pages/cart/index'}), 700);
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
     uni.showToast({title: error?.message || '加入购物车失败', icon: 'none'});
   }
 }

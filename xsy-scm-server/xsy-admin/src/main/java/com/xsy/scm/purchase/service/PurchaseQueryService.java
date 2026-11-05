@@ -1,0 +1,512 @@
+package com.xsy.scm.purchase.service;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.purchase.dao.PurchaseDemandAllocationDao;
+import com.xsy.scm.purchase.dao.PurchaseDemandDao;
+import com.xsy.scm.purchase.dao.PurchaseOperationLogDao;
+import com.xsy.scm.purchase.dao.PurchaseOrderDao;
+import com.xsy.scm.purchase.dao.PurchaseAccountDao;
+import com.xsy.scm.purchase.dao.PurchaseOrderItemDao;
+import com.xsy.scm.purchase.dao.PurchaseReceiptDao;
+import com.xsy.scm.purchase.dao.PurchaseReceiptItemDao;
+import com.xsy.scm.purchase.domain.entity.PurchaseDemandAllocationEntity;
+import com.xsy.scm.purchase.domain.entity.PurchaseDemandEntity;
+import com.xsy.scm.purchase.domain.entity.PurchaseOrderEntity;
+import com.xsy.scm.purchase.domain.entity.PurchaseOrderItemEntity;
+import com.xsy.scm.purchase.domain.entity.PurchaseReceiptEntity;
+import com.xsy.scm.purchase.domain.entity.PurchaseReceiptItemEntity;
+import com.xsy.scm.purchase.domain.form.PurchaseDemandQueryForm;
+import com.xsy.scm.purchase.domain.form.PurchaseDemandSummaryPreviewForm;
+import com.xsy.scm.purchase.domain.form.PurchaseOrderQueryForm;
+import com.xsy.scm.purchase.domain.form.PurchaseReceiptItemWorkbenchQueryForm;
+import com.xsy.scm.purchase.domain.form.PurchaseReceiptQueryForm;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseDemandSummaryVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseDemandVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseOperationLogVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderAllocationVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderItemVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
+import com.xsy.scm.purchase.manager.PurchaseReceiptQuantityCalculator;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmValueScope;
+import com.xsy.scm.base.common.domain.PageResult;
+import com.xsy.scm.base.common.util.XsyPageUtil;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_NOT_FOUND;
+import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_NOT_FOUND;
+import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_NOT_FOUND;
+
+/**
+ * 提供采购单、需求和收货记录的只读查询。列表和详情按采购员权限过滤，汇总按仓库权限过滤。 收货剩余量和超收量统一使用 PurchaseReceiptQuantityCalculator 计算。
+ */
+@Service
+@RequiredArgsConstructor
+public class PurchaseQueryService {
+
+    private final PurchaseDemandDao purchaseDemandDao;
+
+    private final PurchaseDemandAllocationDao purchaseDemandAllocationDao;
+
+    private final PurchaseOrderDao purchaseOrderDao;
+    private final PurchaseAccountDao purchaseAccountDao;
+
+    private final PurchaseOrderItemDao purchaseOrderItemDao;
+
+    private final PurchaseReceiptDao purchaseReceiptDao;
+
+    private final PurchaseReceiptItemDao purchaseReceiptItemDao;
+
+    private final PurchaseOperationLogDao purchaseOperationLogDao;
+
+    private final ScmDataScopeService dataScopeService;
+
+    private final com.xsy.scm.trace.support.TraceLotContract traceLotContract;
+
+    private final com.xsy.scm.warehouse.service.WarehouseService warehouseService;
+
+    /**
+     * 需求列表：按当前调用者的采购员范围收窄。表单里没有采购员筛选项，因此不存在「用户筛选放大范围」的入口。
+     */
+    @Transactional(readOnly = true)
+    public PageResult<PurchaseDemandVO> demandQuery(PurchaseDemandQueryForm form) {
+        ScmValueScope purchaserScope = dataScopeService.resolve().getPurchaserScope();
+        if (purchaserScope.isEmpty()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
+        var page = XsyPageUtil.convert2PageQuery(form);
+        return XsyPageUtil.convert2PageResult(page, purchaseDemandDao.query(page, form, purchaserScope));
+    }
+
+    /**
+     * 按已确认订单实际数量和指定仓库可用库存计算缺口，只读不生成需求。仓库必须明确指定且在授权范围内；无权查看时返回空结果，不当作零库存。
+     */
+    @Transactional(readOnly = true)
+    public PageResult<PurchaseDemandSummaryVO> summaryPreview(PurchaseDemandSummaryPreviewForm form) {
+        if (!form.getStartAt().isBefore(form.getEndAt())) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        ScmValueScope warehouseScope = dataScopeService.resolve().getWarehouseScope();
+        if (!warehouseScope.allows(form.getWarehouseId())) {
+            return ScmDataScopeService.emptyPage(form);
+        }
+        var page = XsyPageUtil.convert2PageQuery(form);
+        page.setOptimizeCountSql(false);
+        return XsyPageUtil.convert2PageResult(page, purchaseDemandDao.summaryPreview(page, form, warehouseScope));
+    }
+
+    /**
+     * 按预览相同的范围和条件读出全部分组行，用于生成批次。
+     */
+    @Transactional(readOnly = true)
+    public List<PurchaseDemandSummaryVO> summaryPreviewAll(PurchaseDemandSummaryPreviewForm form, int maximumRows) {
+        ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
+        if (scope.isEmpty() || !scope.allows(form.getWarehouseId())) {
+            return List.of();
+        }
+        List<PurchaseDemandSummaryVO> rows = new ArrayList<>();
+        long pageNumber = 1;
+        while (true) {
+            Page<PurchaseDemandSummaryVO> page = new Page<>(pageNumber, 100);
+            page.setOptimizeCountSql(false);
+            List<PurchaseDemandSummaryVO> pageRows = purchaseDemandDao.summaryPreview(page, form, scope);
+            if (page.getTotal() > maximumRows) {
+                throw new ScmBusinessException(
+                    com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_BATCH_TOO_LARGE);
+            }
+            rows.addAll(pageRows);
+            if (rows.size() >= page.getTotal() || pageRows.isEmpty()) {
+                return rows;
+            }
+            pageNumber++;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public PurchaseDemandVO demandDetail(Long demandId) {
+        return demandDetail(demandId, dataScopeService.resolve().getPurchaserScope());
+    }
+
+    /**
+     * 需求详情，按给定采购员范围判定可见性；越界抛 30005。
+     */
+    @Transactional(readOnly = true)
+    public PurchaseDemandVO demandDetail(Long demandId, ScmValueScope purchaserScope) {
+        PurchaseDemandVO vo = purchaseDemandDao.detail(demandId);
+        if (vo == null) {
+            throw new ScmBusinessException(PURCHASE_DEMAND_NOT_FOUND);
+        }
+        if (!purchaserScope.isAll()) {
+            // 详情查询结果与列表同源、刻意不带 purchaser_id（列表按范围整行过滤，不需要展示归属列），
+            // 因此归属从实体行按主键读一次；selectById 不参与范围过滤，只是取归属值。
+            PurchaseDemandEntity row = purchaseDemandDao.selectById(demandId);
+            requirePurchaserVisible(purchaserScope, row == null ? null : row.getPurchaserId());
+        }
+        return vo;
+    }
+
+    /**
+     * 命令侧查询结果：不做读取范围判定（见类说明）。
+     */
+    @Transactional(readOnly = true)
+    public PurchaseDemandVO demandDetailForCommand(Long demandId) {
+        return demandDetail(demandId, ScmValueScope.all());
+    }
+
+    /**
+     * 采购员维度的可见性判定：范围外的单据按「没有权限」处理，而不是伪装成「不存在」。未分配（{@code purchaser_id IS NULL}）只有 {@link ScmValueScope#all()} 才可见。
+     */
+    private static void requirePurchaserVisible(ScmValueScope purchaserScope, Long ownerEmployeeId) {
+        if (!purchaserScope.allows(ownerEmployeeId)) {
+            throw new ScmDataScopeException();
+        }
+    }
+
+    /**
+     * 采购单的采购员归属；单据不存在或已软删时返回 {@code null}（按未分配处理，只有全量范围可见）。
+     */
+    private Long orderPurchaserId(Long orderId) {
+        PurchaseOrderEntity order = orderId == null ? null : purchaseOrderDao.selectById(orderId);
+        return order == null ? null : order.getPurchaserId();
+    }
+
+    /**
+     * 采购单列表：先按调用者范围，再与表单的 {@code purchaserId} 取交集（用户筛选只能缩小授权范围，不能放大）。
+     */
+    @Transactional(readOnly = true)
+    public PageResult<PurchaseOrderVO> orderQuery(PurchaseOrderQueryForm form) {
+        ScmValueScope purchaserScope = dataScopeService.resolve().getPurchaserScope().narrow(form.getPurchaserId());
+        if (purchaserScope.isEmpty()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
+        var page = XsyPageUtil.convert2PageQuery(form);
+        return XsyPageUtil.convert2PageResult(page, purchaseOrderDao.query(page, form, purchaserScope));
+    }
+
+    /**
+     * 详情 = 单头 + 全部行（含每行分配）+ 单级分配平铺 + 全量日志。
+     */
+    @Transactional(readOnly = true)
+    public PurchaseOrderVO orderDetail(Long purchaseOrderId) {
+        return orderDetail(purchaseOrderId, dataScopeService.resolve().getPurchaserScope());
+    }
+
+    /**
+     * 采购单详情，按给定采购员范围判定可见性；越界抛 30005。
+     */
+    @Transactional(readOnly = true)
+    public PurchaseOrderVO orderDetail(Long purchaseOrderId, ScmValueScope purchaserScope) {
+        PurchaseOrderVO vo = purchaseOrderDao.detail(purchaseOrderId);
+        if (vo == null) {
+            throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
+        }
+        requirePurchaserVisible(purchaserScope, vo.getPurchaserId());
+        // 归属已在本方法判定过，子读不再重复取父行
+        List<PurchaseOrderItemVO> items = orderItems(purchaseOrderId, ScmValueScope.all());
+        vo.setItems(items);
+        if (vo.getAccountId() != null && dataScopeService.resolve().isCostVisible()
+            && dataScopeService.resolve().getWarehouseScope().allows(vo.getWarehouseId())) {
+            var account = purchaseAccountDao.byOrder(purchaseOrderId);
+            account.setItems(purchaseAccountDao.items(account.getId()));
+            vo.setAccount(account);
+        }
+        // 单级平铺：前端「分配明细」区直接消费，不需要自己扁平化 items[].allocations[]
+        vo.setAllocations(items.stream().flatMap(item -> item.getAllocations().stream()).toList());
+        vo.setLogs(orderLogs(purchaseOrderId, ScmValueScope.all()));
+        return vo;
+    }
+
+    /**
+     * 命令侧查询结果：不做读取范围判定（见类说明）。
+     */
+    @Transactional(readOnly = true)
+    public PurchaseOrderVO orderDetailForCommand(Long purchaseOrderId) {
+        return orderDetail(purchaseOrderId, ScmValueScope.all());
+    }
+
+    /**
+     * 采购单行（含每行的分配集合，每行 N 条分配）。
+     *
+     * <p>
+     * 它是独立端点 {@code GET /scm/purchase/item/{orderId}} 的实现，因此与详情同样受范围约束：只挡详情、放行行清单等于把别人单据的价格与数量照样端出去。
+     */
+    @Transactional(readOnly = true)
+    public List<PurchaseOrderItemVO> orderItems(Long orderId) {
+        return orderItems(orderId, dataScopeService.resolve().getPurchaserScope());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PurchaseOrderItemVO> orderItems(Long orderId, ScmValueScope purchaserScope) {
+        if (!purchaserScope.isAll()) {
+            requirePurchaserVisible(purchaserScope, orderPurchaserId(orderId));
+        }
+        List<PurchaseOrderItemEntity> rows = purchaseOrderItemDao.listByOrderId(orderId);
+        return itemVos(rows);
+    }
+
+    /**
+     * 操作日志：审计数据不越过业务单据的归属范围（权限码另有 {@code scm:purchase:log:query}）。
+     */
+    @Transactional(readOnly = true)
+    public List<PurchaseOperationLogVO> orderLogs(Long orderId) {
+        return orderLogs(orderId, dataScopeService.resolve().getPurchaserScope());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PurchaseOperationLogVO> orderLogs(Long orderId, ScmValueScope purchaserScope) {
+        if (!purchaserScope.isAll()) {
+            requirePurchaserVisible(purchaserScope, orderPurchaserId(orderId));
+        }
+        return purchaseOperationLogDao.listByOrderId(orderId);
+    }
+
+    /**
+     * 收货单列表：采购员维度按父采购单继承（表上没有采购员列），谓词见 {@code PurchaseReceiptDao.xml} 的 EXISTS 半连。 仓库维度由库存/仓库侧的规则负责，这里不重复实现。
+     */
+    @Transactional(readOnly = true)
+    public PageResult<PurchaseReceiptVO> receiptQuery(PurchaseReceiptQueryForm form) {
+        ScmValueScope purchaserScope = dataScopeService.resolve().getPurchaserScope();
+        if (purchaserScope.isEmpty()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
+        var page = XsyPageUtil.convert2PageQuery(form);
+        return XsyPageUtil.convert2PageResult(page, purchaseReceiptDao.query(page, form, purchaserScope));
+    }
+
+    @Transactional(readOnly = true)
+    public PurchaseReceiptVO receiptDetail(Long receiptId) {
+        return receiptDetail(receiptId, dataScopeService.resolve().getPurchaserScope());
+    }
+
+    /**
+     * 收货单详情，按父采购单的采购员范围判定可见性；越界抛 30005。
+     */
+    @Transactional(readOnly = true)
+    public PurchaseReceiptVO receiptDetail(Long receiptId, ScmValueScope purchaserScope) {
+        PurchaseReceiptVO vo = purchaseReceiptDao.detail(receiptId);
+        if (vo == null) {
+            throw new ScmBusinessException(PURCHASE_RECEIPT_NOT_FOUND);
+        }
+        if (!purchaserScope.isAll()) {
+            requirePurchaserVisible(purchaserScope, orderPurchaserId(vo.getPurchaseOrderId()));
+        }
+        // 归属已按父单判定过，明细不再重复取父行
+        vo.setItems(receiptItems(receiptId, ScmValueScope.all()));
+        // 批次开关随详情下发：确认弹窗据此决定是否要求登记批次（仓库不存在时按未启用处理）
+        vo.setWarehouseLotTrackingEnabled(vo.getWarehouseId() != null
+            && Boolean.TRUE.equals(warehouseService.require(vo.getWarehouseId()).getLotTrackingEnabled()));
+        return vo;
+    }
+
+    /**
+     * 命令侧查询结果：收货的创建 / 确认 / 入库回的是自己刚写的单据，且父单归属不该让一次合法的收货确认回滚（见类说明）。
+     */
+    @Transactional(readOnly = true)
+    public PurchaseReceiptVO receiptDetailForCommand(Long receiptId) {
+        return receiptDetail(receiptId, ScmValueScope.all());
+    }
+
+    /**
+     * 一次性装配整张收货单的批次，避免按行查询；未启用批次的仓库自然得到空列表。
+     */
+    @Transactional(readOnly = true)
+    private void attachLots(List<PurchaseReceiptItemVO> items) {
+        if (items.isEmpty()) {
+            return;
+        }
+        Map<Long,
+            List<com.xsy.scm.trace.domain.vo.TraceLotVO.ReceiptItemLot>> grouped = traceLotContract
+                .listByReceiptItemIds(items.stream().map(PurchaseReceiptItemVO::getId).toList()).stream().collect(
+                    Collectors.groupingBy(com.xsy.scm.trace.domain.vo.TraceLotVO.ReceiptItemLot::getReceiptItemId));
+        items.forEach(item -> item.setLots(grouped.getOrDefault(item.getId(), List.of())));
+    }
+
+    /**
+     * 收货明细：独立端点 {@code GET /scm/purchase/receipt/item/{receiptId}}，与详情同样受范围约束。
+     */
+    public List<PurchaseReceiptItemVO> receiptItems(Long receiptId) {
+        return receiptItems(receiptId, dataScopeService.resolve().getPurchaserScope());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PurchaseReceiptItemVO> receiptItems(Long receiptId, ScmValueScope purchaserScope) {
+        if (!purchaserScope.isAll()) {
+            // 收货明细挂在收货单上，归属仍按父采购单判定（与列表的 EXISTS 同一规则）
+            PurchaseReceiptEntity receipt = purchaseReceiptDao.selectById(receiptId);
+            Long parentOrderId = receipt == null ? null : receipt.getPurchaseOrderId();
+            requirePurchaserVisible(purchaserScope, orderPurchaserId(parentOrderId));
+        }
+        List<PurchaseReceiptItemVO> items = purchaseReceiptItemDao.listByReceiptId(receiptId).stream()
+            .map(PurchaseQueryService::receiptItemVo).toList();
+        attachLots(items);
+        attachPricePending(items);
+        return items;
+    }
+
+    /**
+     * 一次查出本次收货行里哪些采购行还在待定价；确认收货会确定并保存库存成本，页面必须提前拦住。
+     */
+    private void attachPricePending(List<PurchaseReceiptItemVO> items) {
+        List<Long> orderItemIds = items.stream().map(PurchaseReceiptItemVO::getPurchaseOrderItemId)
+            .filter(Objects::nonNull).distinct().toList();
+        Set<Long> pending = orderItemIds.isEmpty()
+            ? Set.of()
+            : Set.copyOf(purchaseOrderItemDao.pendingPriceItemIds(orderItemIds));
+        items.forEach(item -> item.setPricePending(pending.contains(item.getPurchaseOrderItemId())));
+    }
+
+    /**
+     * 按商品规格与采购单位汇总待收货数据，只读不改收货和库存。数据先按授权仓库过滤，再分组计算；聚合分页按分组数量统计。
+     */
+    @Transactional(readOnly = true)
+    public PageResult<PurchaseReceiptItemWorkbenchVO> receiptItemWorkbench(PurchaseReceiptItemWorkbenchQueryForm form) {
+        if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        ScmValueScope warehouseScope = dataScopeService.resolve().getWarehouseScope();
+        if (warehouseScope.isEmpty()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
+        var page = XsyPageUtil.convert2PageQuery(form);
+        page.setOptimizeCountSql(false);
+        return XsyPageUtil.convert2PageResult(page, purchaseOrderItemDao.workbench(page, form, warehouseScope));
+    }
+
+    /**
+     * 批量装配采购单行 VO。列名与 VO 字段名故意保持不同，显式映射，不用 BeanUtils 猜。
+     *
+     * <p>
+     * 一次取全部行的 allocation，再按 {@code purchaseOrderItemId} 分组 —— 避免逐行查库（N+1）。
+     */
+    public List<PurchaseOrderItemVO> itemVos(List<PurchaseOrderItemEntity> rows) {
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+        List<Long> itemIds = rows.stream().map(PurchaseOrderItemEntity::getId).toList();
+        List<
+            PurchaseDemandAllocationEntity> allocations = purchaseDemandAllocationDao.listActiveByOrderItemIds(itemIds);
+        Map<Long, PurchaseDemandEntity> demands = demandMap(allocations);
+
+        Map<Long, List<PurchaseOrderAllocationVO>> byItem = new LinkedHashMap<>();
+        for (PurchaseDemandAllocationEntity allocation : allocations) {
+            byItem.computeIfAbsent(allocation.getPurchaseOrderItemId(), key -> new ArrayList<>())
+                .add(allocationVo(allocation, demands.get(allocation.getPurchaseDemandId())));
+        }
+
+        return rows.stream()
+            .sorted(Comparator
+                .comparing(PurchaseOrderItemEntity::getSortOrder, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(PurchaseOrderItemEntity::getId))
+            .map(row -> itemVo(row, byItem.getOrDefault(row.getId(), List.of()))).toList();
+    }
+
+    private static PurchaseOrderItemVO itemVo(PurchaseOrderItemEntity row,
+        List<PurchaseOrderAllocationVO> allocations) {
+        PurchaseOrderItemVO vo = new PurchaseOrderItemVO();
+        vo.setId(row.getId());
+        vo.setSkuId(row.getSkuId());
+        vo.setSpuCode(row.getSpuCodeSnapshot());
+        vo.setProductName(row.getProductNameSnapshot());
+        vo.setSkuCode(row.getSkuCodeSnapshot());
+        vo.setSkuName(row.getSkuNameSnapshot());
+        vo.setSpecValues(row.getSpecValuesSnapshot());
+        vo.setPurchaseUnit(row.getPurchaseUnitSnapshot());
+        vo.setProductType(row.getProductTypeSnapshot());
+        vo.setPlannedQuantity(row.getPlannedQuantity());
+        vo.setReceivedQuantity(row.getReceivedQuantity());
+        // 与 DB 的 ck_purchase_receipt_item_reconciliation 用同一个纯函数
+        vo.setRemainingQuantity(
+            PurchaseReceiptQuantityCalculator.remaining(row.getPlannedQuantity(), row.getReceivedQuantity()));
+        vo.setOverReceiptQuantity(
+            PurchaseReceiptQuantityCalculator.overReceipt(row.getPlannedQuantity(), row.getReceivedQuantity()));
+        vo.setPurchasePrice(row.getPurchasePrice());
+        vo.setLineAmount(row.getLineAmount());
+        vo.setPricePending(Boolean.TRUE.equals(row.getPricePending()));
+        vo.setPriceWindowStartedAt(row.getPriceWindowStartedAt());
+        vo.setPriceFilledAt(row.getPriceFilledAt());
+        vo.setSortOrder(row.getSortOrder());
+        vo.setVersion(row.getVersion());
+        vo.setAllocations(allocations);
+        return vo;
+    }
+
+    /**
+     * 分配 VO。
+     *
+     * <p>
+     * {@code demandUnit} / {@code demandVersion} / {@code demandStatus} 取自需求当前值（不是分配行上的旧数据）：
+     * 它们回答「这条分配现在挂在一个什么状态的需求上」，旧数据表达不了「需求已补齐」。 {@code quantity} 取分配行自己的数量（一条分配一个数量）。
+     */
+    private static PurchaseOrderAllocationVO allocationVo(PurchaseDemandAllocationEntity row,
+        PurchaseDemandEntity demand) {
+        PurchaseOrderAllocationVO vo = new PurchaseOrderAllocationVO();
+        vo.setAllocationId(row.getId());
+        vo.setDemandId(row.getPurchaseDemandId());
+        vo.setSalesOrderId(row.getSalesOrderId());
+        vo.setSalesOrderItemId(row.getSalesOrderItemId());
+        vo.setSkuId(row.getSkuId());
+        vo.setQuantity(row.getAllocatedQuantity());
+        if (demand != null) {
+            vo.setSalesOrderNo(demand.getSalesOrderNoSnapshot());
+            vo.setDemandUnit(demand.getDemandUnitSnapshot());
+            vo.setDemandVersion(demand.getVersion());
+            vo.setDemandStatus(demand.getStatus());
+        }
+        return vo;
+    }
+
+    private Map<Long, PurchaseDemandEntity> demandMap(List<PurchaseDemandAllocationEntity> allocations) {
+        List<Long> demandIds = allocations.stream().map(PurchaseDemandAllocationEntity::getPurchaseDemandId)
+            .filter(Objects::nonNull).distinct().toList();
+        if (demandIds.isEmpty()) {
+            return Map.of();
+        }
+        return purchaseDemandDao.selectBatchIds(demandIds).stream()
+            .collect(Collectors.toMap(PurchaseDemandEntity::getId, demand -> demand, (a, b) -> a));
+    }
+
+    private static PurchaseReceiptItemVO receiptItemVo(PurchaseReceiptItemEntity row) {
+        PurchaseReceiptItemVO vo = new PurchaseReceiptItemVO();
+        vo.setId(row.getId());
+        vo.setPurchaseOrderItemId(row.getPurchaseOrderItemId());
+        vo.setSkuId(row.getSkuId());
+        vo.setSkuCode(row.getSkuCodeSnapshot());
+        vo.setSkuName(row.getSkuNameSnapshot());
+        vo.setSpecValues(row.getSpecValuesSnapshot());
+        vo.setPurchaseUnit(row.getPurchaseUnitSnapshot());
+        vo.setProductType(row.getProductTypeSnapshot());
+        vo.setPlannedQuantity(row.getPlannedQuantity());
+        vo.setReceivedQuantity(row.getReceivedQuantity());
+        vo.setCumulativeReceivedQuantity(row.getCumulativeReceivedQuantity());
+        vo.setRemainingQuantity(row.getRemainingQuantity());
+        vo.setOverReceiptQuantity(row.getOverReceiptQuantity());
+        vo.setReceiptDifference(row.getReceiptDifference());
+        // 标品为 null（不是 0.0000）：实重三字段同时有值或同时为空
+        vo.setActualWeight(row.getActualWeight());
+        vo.setWeightUnit(row.getWeightUnit());
+        vo.setWeighingSource(row.getWeighingSource());
+        vo.setCorrectionReason(row.getCorrectionReason());
+        vo.setVersion(row.getVersion());
+        return vo;
+    }
+}

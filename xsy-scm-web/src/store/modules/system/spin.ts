@@ -1,6 +1,6 @@
 /* 全局 loading */
 import {defineStore} from 'pinia';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 export const useSpinStore = defineStore({
   id: 'spin',
@@ -18,7 +18,7 @@ export const useSpinStore = defineStore({
           spins.style.zIndex = '999';
         }
       } catch (error) {
-        smartSentry.captureError('Spin hide操作失败:', error);
+        xsySentry.captureError('Spin hide操作失败:', error);
       }
     },
     show() {
@@ -30,7 +30,7 @@ export const useSpinStore = defineStore({
           spins.style.zIndex = '1001';
         }
       } catch (error) {
-        smartSentry.captureError('Spin hide操作失败:', error);
+        xsySentry.captureError('Spin hide操作失败:', error);
       }
     },
   },

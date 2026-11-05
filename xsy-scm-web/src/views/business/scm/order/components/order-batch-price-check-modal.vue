@@ -1,6 +1,6 @@
 <template>
   <a-modal :open="visible" title="待确认订单批量核价" :width="1120" :footer="null" @cancel="close">
-    <a-space class="smart-margin-bottom10" wrap>
+    <a-space class="xsy-margin-bottom10" wrap>
       <span>已选 {{ entries.length }} 单，最多 8 单</span>
       <a-button size="small" :loading="loading" @click="reload">重新核价</a-button>
       <a-button size="small" @click="close">关闭</a-button>
@@ -46,7 +46,7 @@
                 </span>
               </template>
             </a-table>
-            <a-space class="smart-margin-top10">
+            <a-space class="xsy-margin-top10">
               <a-button
                 v-if="canUpdate"
                 type="primary"

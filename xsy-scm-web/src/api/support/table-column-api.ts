@@ -1,8 +1,6 @@
 /*
  * @Description:表格自定义列
  * @version:
- * @LastEditors:
- * @LastEditTime: 2022-08-21
  */
 import {postRequest, getRequest} from '/@/lib/axios';
 

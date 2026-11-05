@@ -624,7 +624,7 @@ test.describe('scm-order', () => {
     return r.data;
   }
   async function browse(page: Page, path = '/order/order-list') {
-    await page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), token);
+    await page.addInitScript((v) => localStorage.setItem('xsy_user_token', v), token);
     await page.goto('/#' + path);
   }
   /**
@@ -1267,7 +1267,7 @@ test.describe('scm-wave8-log-context', () => {
     const client = await request.newContext({baseURL: apiUrl});
     const captcha = (await (await client.get('/login/getCaptcha')).json()).data;
     const key = /const SM4_KEY = '([^']+)'/.exec(readFileSync('src/lib/encrypt.ts', 'utf8'))?.[1];
-    if (!key) throw new Error('SmartAdmin transport key not found');
+    if (!key) throw new Error('XSY transport key not found');
     const encrypted = Buffer.from(smCrypto.sm4.encrypt(password, Buffer.from(key).toString('hex'))).toString('base64');
     const result = await (
       await client.post('/login', {
@@ -1280,7 +1280,7 @@ test.describe('scm-wave8-log-context', () => {
   }
 
   function authenticate(page: Page, token: string) {
-    return page.addInitScript((t) => localStorage.setItem('smart_admin_user_token', t), token);
+    return page.addInitScript((t) => localStorage.setItem('xsy_user_token', t), token);
   }
 
   /** 日志分页请求的载荷：上下文是否真的下钻，只能看发出去的字节。 */

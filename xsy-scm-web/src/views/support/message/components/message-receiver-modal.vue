@@ -1,11 +1,11 @@
 <template>
   <a-modal v-model:open="visible" title="推送人" width="1100px" ok-text="确定" cancel-text="取消" @ok="onSubmit" @cancel="onClose" :zIndex="9999">
-    <a-form class="smart-query-form">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键词搜索" class="smart-query-form-item">
+    <a-form class="xsy-query-form">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="关键词搜索" class="xsy-query-form-item">
           <a-input v-model:value="queryParam.searchWord" :style="{width: '250px'}" placeholder="请输入姓名" @change="selectSearchWord" />
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-button type="primary" @click="searchQuery">
             <template #icon>
               <SearchOutlined />
@@ -13,7 +13,7 @@
             查询
           </a-button>
         </a-form-item>
-        <a-form-item class="smart-query-form-item">
+        <a-form-item class="xsy-query-form-item">
           <a-button @click="searchReset">
             <template #icon>
               <ReloadOutlined />
@@ -37,7 +37,7 @@
       }"
     >
     </a-table>
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         showSizeChanger
         showQuickJumper
@@ -57,8 +57,8 @@
 <script setup lang="ts">
 import {reactive, ref} from 'vue';
 import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
-import {smartSentry} from '/@/lib/smart-sentry';
-import {SmartLoading} from '/@/components/framework/smart-loading';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {employeeApi} from '/@/api/system/employee-api';
 // ---------------查询条件----------------
 const queryParamState = {
@@ -118,7 +118,7 @@ async function queryList() {
     total.value = res.data.total;
     tableData.value = list;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }
@@ -147,9 +147,9 @@ function onSubmit() {
   try {
     onClose();
   } catch (error) {
-    smartSentry.captureError(error);
+    xsySentry.captureError(error);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

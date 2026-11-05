@@ -1,0 +1,211 @@
+/* XSY 独有样式 */
+
+/* 宽度 */
+.xsy-width-100 {
+  width: 100%;
+}
+
+/* 左间距 */
+.xsy-margin-left5 {
+  margin-left: 5px;
+}
+
+.xsy-margin-left10 {
+  margin-left: 10px;
+}
+
+.xsy-margin-left15 {
+  margin-left: 15px;
+}
+
+.xsy-margin-left20 {
+  margin-left: 20px;
+}
+
+/* 右间距 */
+.xsy-margin-right5 {
+  margin-right: 5px;
+}
+
+.xsy-margin-right10 {
+  margin-right: 10px;
+}
+
+.xsy-margin-right15 {
+  margin-right: 15px;
+}
+
+.xsy-margin-right20 {
+  margin-right: 20px;
+}
+
+/* 上间距 */
+.xsy-margin-top5 {
+  margin-top: 5px;
+}
+
+.xsy-margin-top10 {
+  margin-top: 10px;
+}
+
+/* 下间距 */
+.xsy-margin-bottom5 {
+  margin-bottom: 5px;
+}
+
+.xsy-margin-bottom10 {
+  margin-bottom: 10px;
+}
+
+/* 查询表格样式 */
+
+.xsy-table-operate {
+  .ant-btn {
+    padding: 0 3px !important;
+    height: auto;
+  }
+}
+
+.xsy-table-column-operate {
+  float: right;
+}
+
+.xsy-query-form-row:not(:first-child) {
+  margin-top: 8px;
+}
+
+/* 查询栏间距：行距 8 / 列距 12 / 上下留白 10，由 gap 和 padding 表达 */
+.xsy-query-form.ant-form-inline {
+  /* 换行时两行之间由 row-gap 提供，不再靠 item 的上下 margin 撑开 */
+  gap: 8px 12px;
+  padding: 10px;
+  align-items: center;
+}
+
+/* inline 表单是 flex，强制每个查询行独占一行 */
+.xsy-query-form.ant-form-inline > .xsy-query-form-row {
+  flex: 1 0 100%;
+}
+
+/* 行内筛选栏的行：间距交给 gap */
+.xsy-query-form.ant-form-inline .xsy-query-form-row {
+  gap: 8px 12px;
+  align-items: center;
+}
+
+/* item 不带 margin，间距由 gap / padding 决定 */
+.xsy-query-form.ant-form-inline .ant-form-item {
+  margin: 0;
+}
+
+/* 按钮组垫到控件基线高度 28px，避免与输入框错行 */
+.xsy-query-form.ant-form-inline .ant-form-item-control-input-content {
+  min-height: 28px;
+}
+
+/* 非 inline 的框架筛选表单继续按类命中；删除后这些页面会掉回 antd 默认间距 */
+.xsy-query-form-row .xsy-query-form-item {
+  margin-right: 8px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.xsy-query-table-page {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+
+  .ant-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 0;
+  }
+}
+
+.xsy-table-btn-block {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+
+  .xsy-table-operate-block {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .xsy-table-setting-block {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-left: auto;
+  }
+
+  .xsy-table-operate-block > .ant-btn,
+  .xsy-table-setting-block > .ant-btn {
+    margin-inline: 0;
+  }
+}
+
+.xsy-table-setting-block > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 单一表格操作与查询区共行，两个区域独立保留权限和表单提交边界。 */
+.xsy-query-layout {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.xsy-query-layout > .xsy-query-form {
+  flex: 1 1 640px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.xsy-table-btn-block[data-toolbar-layout] {
+  justify-content: flex-end;
+
+  .xsy-table-setting-block {
+    margin-left: 0;
+  }
+}
+
+.xsy-query-layout > .xsy-table-btn-block[data-toolbar-layout='query'] {
+  flex: 0 0 auto;
+  margin: 0 0 0 auto;
+}
+
+.xsy-query-layout > .xsy-table-btn-block[data-toolbar-layout='query']:empty {
+  display: none;
+}
+
+.xsy-query-table-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.xsy-query-table-actions > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ant-table-wrapper .ant-table-pagination {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}

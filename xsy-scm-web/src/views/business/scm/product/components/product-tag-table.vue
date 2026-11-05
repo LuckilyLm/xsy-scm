@@ -1,25 +1,25 @@
 <!-- 商品标签：已被引用的只能停用，历史商品仍保留展示。 -->
 <template>
-  <div class="smart-query-layout">
-    <a-form class="smart-query-form" layout="inline">
-      <a-row class="smart-query-form-row">
-        <a-form-item label="关键字" class="smart-query-form-item"
+  <div class="xsy-query-layout">
+    <a-form class="xsy-query-form" layout="inline">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="关键字" class="xsy-query-form-item"
           ><a-input v-model:value="query.keyword" allow-clear placeholder="标签名称" style="width: 200px"
         /></a-form-item>
-        <a-form-item label="状态" class="smart-query-form-item"
+        <a-form-item label="状态" class="xsy-query-form-item"
           ><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px"
         /></a-form-item>
-        <a-form-item class="smart-query-form-item"
+        <a-form-item class="xsy-query-form-item"
           ><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item
         >
       </a-row>
     </a-form>
-    <a-row data-toolbar-layout="query" class="smart-table-btn-block">
+    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
       <a-button v-privilege="'scm:product:tag:add'" type="primary" @click="modal?.open()">新增标签</a-button>
     </a-row>
   </div>
 
-  <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10">
+  <a-alert v-if="error" type="error" :message="error" show-icon class="xsy-margin-bottom10">
     <template #action>
       <a-button size="small" @click="load">重新加载</a-button>
     </template>
@@ -38,7 +38,7 @@
         {{ enumLabel(ENABLE_STATUS_ENUM, record.status) }}
       </a-tag>
       <span v-else-if="column.dataIndex === 'productCount'" class="scm-quantity">{{ record.productCount }}</span>
-      <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate">
+      <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="xsy-table-operate">
         <a-button v-privilege="'scm:product:tag:update'" type="link" size="small" @click="modal?.open(record)">编辑 </a-button>
         <a-tooltip v-if="record.productCount > 0" title="仍有商品挂着此标签，只能停用；停用后不再出现在可选标签里，历史绑定保留">
           <a-button v-privilege="'scm:product:tag:delete'" type="link" size="small" disabled>删除</a-button>

@@ -2,7 +2,7 @@
 import {defineStore} from 'pinia';
 import {appDefaultConfig} from '/@/config/app-config';
 import localStorageKeyConst from '/@/constants/local-storage-key-const';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import {AppConfig} from '/@/types/config';
 import {localRead} from '/@/utils/local-util';
 
@@ -57,7 +57,7 @@ if (appConfigStr) {
       language = appDefaultConfig.language;
     }
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 

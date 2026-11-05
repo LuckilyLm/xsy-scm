@@ -1,0 +1,86 @@
+package com.xsy.scm.report.controller;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
+import com.xsy.scm.report.constant.ScmReportPermission;
+import com.xsy.scm.print.constant.ScmStatementFactType;
+import com.xsy.scm.report.domain.form.ScmCustomerStatementForm;
+import com.xsy.scm.report.domain.vo.ScmCustomerStatementVO;
+import com.xsy.scm.report.service.ScmCustomerStatementService;
+import com.xsy.scm.common.excel.ScmExcel;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.base.common.domain.ResponseDTO;
+import com.xsy.scm.base.module.support.operatelog.annotation.OperateLog;
+
+@RestController
+@RequestMapping("/scm/report/customer/statement")
+@RequiredArgsConstructor
+public class ScmCustomerStatementController {
+    private static final List<String> TITLES = List.of("对账版本", "结算方", "统计范围", "生成时间", "期初日", "截止日", "期初待收金额", "新增应收",
+        "应收扣减", "有效抵扣金额", "有效抹零金额", "期末待收金额", "本期有效收款", "期末未分配资金", "本期有效退款", "事件时间", "类型", "单号", "关联单号", "原客户", "应收变动",
+        "收款变动", "账款抵扣变动", "退款变动", "外部账单金额", "剩余待收金额");
+    private final ScmCustomerStatementService statementService;
+
+    @PostMapping("/freeze")
+    @SaCheckPermission(
+        value = {ScmReportPermission.CUSTOMER_STATEMENT_QUERY, ScmReportPermission.CUSTOMER_STATEMENT_FREEZE},
+        mode = SaMode.AND)
+    @OperateLog
+    public ResponseDTO<ScmCustomerStatementVO> freeze(@Valid @RequestBody ScmCustomerStatementForm form) {
+        return ResponseDTO.ok(statementService.freeze(form));
+    }
+
+    @GetMapping("/history")
+    @SaCheckPermission(ScmReportPermission.CUSTOMER_STATEMENT_QUERY)
+    public ResponseDTO<List<ScmCustomerStatementVO>> history(@RequestParam Long settlementCustomerId) {
+        return ResponseDTO.ok(statementService.history(settlementCustomerId));
+    }
+
+    @GetMapping("/{id}")
+    @SaCheckPermission(ScmReportPermission.CUSTOMER_STATEMENT_QUERY)
+    public ResponseDTO<ScmCustomerStatementVO> detail(@PathVariable Long id) {
+        return ResponseDTO.ok(statementService.detail(id));
+    }
+
+    @PostMapping("/{id}/export")
+    @SaCheckPermission(value = {ScmReportPermission.CUSTOMER_STATEMENT_QUERY, ScmReportPermission.EXPORT},
+        mode = SaMode.AND)
+    @OperateLog
+    public void export(@PathVariable Long id, HttpServletResponse response) throws IOException {
+        ScmCustomerStatementVO version = statementService.detail(id);
+        List<List<Object>> rows = version.getItems().stream()
+            .map(item -> ScmExcel.row(TITLES, version.getId(), version.getSettlementCustomerName(),
+                version.getPartialScope() ? "部分授权范围，非完整集团对账" : "完整结算方范围", version.getGeneratedAt(),
+                version.getStartDate(), version.getEndDate(), version.getOpeningReceivable(),
+                version.getReceivableIncrease(), version.getReceivableRed(), version.getWriteOffNet(),
+                version.getWaiverNet(), version.getClosingReceivable(), version.getReceiptNet(),
+                version.getClosingUnallocated(), version.getRefundNet(), item.getEventAt(),
+                ScmStatementFactType.labelOf(item.getFactType()), item.getDocumentNo(), item.getRelatedNo(),
+                item.getCustomerName(), item.getReceivableDelta(), item.getReceiptDelta(), item.getWriteOffDelta(),
+                item.getRefundDelta(), item.getPostingAmount(), item.getReceivableBalance()))
+            .toList();
+        if (rows.isEmpty()) {
+            rows = List.of(ScmExcel.row(TITLES, version.getId(), version.getSettlementCustomerName(),
+                version.getPartialScope() ? "部分授权范围，非完整集团对账" : "完整结算方范围", version.getGeneratedAt(),
+                version.getStartDate(), version.getEndDate(), version.getOpeningReceivable(),
+                version.getReceivableIncrease(), version.getReceivableRed(), version.getWriteOffNet(),
+                version.getWaiverNet(), version.getClosingReceivable(), version.getReceiptNet(),
+                version.getClosingUnallocated(), version.getRefundNet(), null, null, null, null, null, null, null, null,
+                null, null, null));
+        }
+        ScmExcel.write(response, "客户对账单-" + id + ".xlsx", "对账明细", TITLES, rows);
+    }
+}

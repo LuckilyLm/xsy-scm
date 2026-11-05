@@ -13,8 +13,8 @@ import {computed} from 'vue';
 import Password from '/@/views/system/account/components/password/index.vue';
 import {useUserStore} from '/@/store/modules/system/user';
 import {loginApi} from '/@/api/system/login-api';
-import {smartSentry} from '/@/lib/smart-sentry';
-import {SmartLoading} from '/@/components/framework/smart-loading/index';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading/index';
 
 /**
  * 修改密码弹窗
@@ -28,15 +28,15 @@ const visible = computed(() => {
  */
 async function refresh() {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     //获取登录用户信息
     const res = await loginApi.getLoginInfo();
     //更新用户信息到pinia
     useUserStore().setUserLoginInfo(res.data);
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 </script>

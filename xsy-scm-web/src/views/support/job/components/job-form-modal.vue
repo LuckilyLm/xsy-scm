@@ -41,7 +41,7 @@
           <a-textarea
             :auto-size="{minRows: 2, maxRows: 4}"
             v-model:value="updateForm.jobClass"
-            placeholder="示例：net.lab1024.sa.base.module.support.job.sample.SmartJobSample1"
+            placeholder="示例：com.xsy.scm.base.module.support.job.sample.XsyJobSample1"
             :maxlength="200"
             :showCount="true"
           />
@@ -123,8 +123,8 @@
 import {message} from 'ant-design-vue';
 import {reactive, ref} from 'vue';
 import {jobApi} from '/@/api/support/job-api';
-import {smartSentry} from '/@/lib/smart-sentry';
-import {SmartLoading} from '/@/components/framework/smart-loading/index';
+import {xsySentry} from '/@/lib/xsy-sentry';
+import {XsyLoading} from '/@/components/framework/xsy-loading/index';
 import {TRIGGER_TYPE_ENUM} from '/@/constants/support/job-const';
 import FormNote from '/@/components/framework/form-note/index.vue';
 
@@ -196,7 +196,7 @@ async function confirmUpdateJob() {
       }
 
       try {
-        SmartLoading.show();
+        XsyLoading.show();
         if (isAdd.value) {
           await jobApi.addJob(updateForm);
           message.success('添加成功');
@@ -207,9 +207,9 @@ async function confirmUpdateJob() {
         closeUpdateModal();
         emit('reloadList');
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     })
     .catch((error) => {
@@ -249,15 +249,15 @@ async function confirmExecuteJob() {
     };
     await jobApi.executeJob(executeParam);
     // loading 延迟后再提示刷新
-    SmartLoading.show();
+    XsyLoading.show();
     await new Promise((resolve) => setTimeout(resolve, 2000));
     message.success('执行成功');
     closeExecuteModal();
     emit('reloadList');
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 

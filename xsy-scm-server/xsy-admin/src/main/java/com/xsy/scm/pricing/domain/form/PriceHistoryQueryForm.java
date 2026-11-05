@@ -1,0 +1,22 @@
+package com.xsy.scm.pricing.domain.form;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.time.OffsetDateTime;
+
+import com.xsy.scm.base.common.domain.PageParam;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class PriceHistoryQueryForm extends PageParam {
+    private String source;
+    private Long customerId;
+    private Long groupId;
+    private Long skuId;
+    private String operationType;
+    private OffsetDateTime effectiveFrom;
+    private OffsetDateTime effectiveTo;
+    private OffsetDateTime operatedFrom;
+    private OffsetDateTime operatedTo;
+}

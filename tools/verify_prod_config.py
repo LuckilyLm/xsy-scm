@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG = ROOT / "xsy-scm-server" / "sa-base" / "src" / "main" / "resources" / "prod" / "sa-base.yaml"
+CONFIG = ROOT / "xsy-scm-server" / "xsy-base" / "src" / "main" / "resources" / "prod" / "xsy-base.yaml"
 
 FORBIDDEN = (
     "lab1024@163.com",

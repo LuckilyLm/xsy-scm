@@ -2,7 +2,7 @@
 /verify.sh text eol=lf
 /deploy/minio/bootstrap.sh text eol=lf
 # SCM Java 质量门禁使用 LF；Windows 检出也应与 Spotless 的换行规则一致。
-/xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/**/*.java text eol=lf
+/xsy-scm-server/xsy-admin/src/main/java/com/xsy/scm/**/*.java text eol=lf
 # 前端源码、E2E 与单测统一 LF，避免 Windows 检出后 Prettier 的 endOfLine=lf 反复失败。
 *.ts text eol=lf
 *.tsx text eol=lf
@@ -17,12 +17,12 @@
 # 避免不同平台的换行差异改变迁移文件字节。
 #
 # 通过 text eol=lf 固定迁移 SQL 的检出换行；新增或修改迁移时不要通过换行转换重写既有 SQL。
-/xsy-scm-server/sa-admin/src/main/resources/db/migration/*.sql text eol=lf
-/xsy-scm-server/sa-admin/src/main/resources/db/migration/V3__sa_system_login_support_and_seed.sql text eol=crlf
-/xsy-scm-server/sa-admin/src/main/resources/db/migration/V6__scm_product.sql text eol=crlf
-/xsy-scm-server/sa-admin/src/main/resources/db/migration/V7__scm_product_permissions.sql text eol=crlf
-/xsy-scm-server/sa-admin/src/main/resources/db/migration/V10__scm_pricing.sql text eol=crlf
-/xsy-scm-server/sa-admin/src/main/resources/db/migration/V11__scm_pricing_permissions.sql text eol=crlf
-/xsy-scm-server/sa-admin/src/main/resources/db/migration/V13__scm_sales_order.sql text eol=crlf
-/xsy-scm-server/sa-admin/src/main/resources/db/migration/V14__scm_sales_order_permissions.sql text eol=crlf
-/xsy-scm-server/sa-admin/src/main/resources/db/migration/V18__scm_menu_icons.sql text eol=crlf
+/xsy-scm-server/xsy-admin/src/main/resources/db/migration/*.sql text eol=lf
+/xsy-scm-server/xsy-admin/src/main/resources/db/migration/V3__sa_system_login_support_and_seed.sql text eol=crlf
+/xsy-scm-server/xsy-admin/src/main/resources/db/migration/V6__scm_product.sql text eol=crlf
+/xsy-scm-server/xsy-admin/src/main/resources/db/migration/V7__scm_product_permissions.sql text eol=crlf
+/xsy-scm-server/xsy-admin/src/main/resources/db/migration/V10__scm_pricing.sql text eol=crlf
+/xsy-scm-server/xsy-admin/src/main/resources/db/migration/V11__scm_pricing_permissions.sql text eol=crlf
+/xsy-scm-server/xsy-admin/src/main/resources/db/migration/V13__scm_sales_order.sql text eol=crlf
+/xsy-scm-server/xsy-admin/src/main/resources/db/migration/V14__scm_sales_order_permissions.sql text eol=crlf
+/xsy-scm-server/xsy-admin/src/main/resources/db/migration/V18__scm_menu_icons.sql text eol=crlf

@@ -3,7 +3,7 @@
   *
 -->
 <template>
-  <div id="smartAdminPageTag" class="page-tag-div">
+  <div id="xsyPageTag" class="page-tag-div">
     <DefaultTab v-if="pageTagStyle === PAGE_TAG_ENUM.DEFAULT.value" />
     <AntdTab v-if="pageTagStyle === PAGE_TAG_ENUM.ANTD.value" />
     <ChromeTab v-if="pageTagStyle === PAGE_TAG_ENUM.CHROME.value" />

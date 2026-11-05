@@ -1,4 +1,4 @@
-import { getRequest } from '@/lib/smart-request';
+import { getRequest } from '@/lib/xsy-request';
 
 /** 地点搜索与逆地理编码由服务端调用高德，Web Service Key 不进入客户端。 */
 export const mallMapApi = {

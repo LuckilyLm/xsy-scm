@@ -17,14 +17,14 @@
 }
 
 /* 筛选条不再是一张独立白卡：控件浮在页底上，和下方数据面拉开一层关系 */
-.scm-module .admin-layout .smart-query-form {
+.scm-module .admin-layout .xsy-query-form {
   background: transparent;
   padding: 0 0 2px;
   margin-bottom: 14px;
 }
 
 /* 行距只由 flex 的 row-gap 提供；框架默认再给第二行 margin-top:8px，会叠成 16px */
-.scm-module .admin-layout .smart-query-form .smart-query-form-row:not(:first-child) {
+.scm-module .admin-layout .xsy-query-form .xsy-query-form-row:not(:first-child) {
   margin-top: 0;
 }
 
@@ -35,18 +35,18 @@
   border-right: 1px solid var(--scm-line);
 }
 
-.scm-module .admin-layout .ant-menu-light.smart-menu,
+.scm-module .admin-layout .ant-menu-light.xsy-menu,
 .scm-module .admin-layout .ant-menu-light .ant-menu-sub {
   background: transparent;
 }
 
-.scm-module .admin-layout .ant-menu-light:not(.smart-menu--side) .ant-menu-item,
-.scm-module .admin-layout .ant-menu-light:not(.smart-menu--side) .ant-menu-submenu-title {
+.scm-module .admin-layout .ant-menu-light:not(.xsy-menu--side) .ant-menu-item,
+.scm-module .admin-layout .ant-menu-light:not(.xsy-menu--side) .ant-menu-submenu-title {
   font-size: 13px;
   font-weight: 400;
 }
 
-.scm-module .admin-layout .ant-menu-light:not(.smart-menu--side) .ant-menu-item {
+.scm-module .admin-layout .ant-menu-light:not(.xsy-menu--side) .ant-menu-item {
   position: relative;
   border-radius: 6px;
   transition:
@@ -55,7 +55,7 @@
 }
 
 /* 当前页左侧 3px 绿轨：不用整块深色底，菜单看起来仍是文字列表 */
-.scm-module .admin-layout .ant-menu-light:not(.smart-menu--side) .ant-menu-item-selected::before {
+.scm-module .admin-layout .ant-menu-light:not(.xsy-menu--side) .ant-menu-item-selected::before {
   content: '';
   position: absolute;
   left: 0;
@@ -66,17 +66,17 @@
   background: var(--scm-primary);
 }
 
-.scm-module .admin-layout .ant-menu-light:not(.smart-menu--side) .ant-menu-item-selected {
+.scm-module .admin-layout .ant-menu-light:not(.xsy-menu--side) .ant-menu-item-selected {
   color: var(--scm-primary);
   font-weight: 500;
 }
 
-.scm-module .admin-layout .ant-menu-light:not(.smart-menu--side) .ant-menu-submenu-selected > .ant-menu-submenu-title {
+.scm-module .admin-layout .ant-menu-light:not(.xsy-menu--side) .ant-menu-submenu-selected > .ant-menu-submenu-title {
   color: var(--scm-primary);
 }
 
-.scm-module .admin-layout .ant-menu-light:not(.smart-menu--side) .ant-menu-item:hover,
-.scm-module .admin-layout .ant-menu-light:not(.smart-menu--side) .ant-menu-submenu-title:hover {
+.scm-module .admin-layout .ant-menu-light:not(.xsy-menu--side) .ant-menu-item:hover,
+.scm-module .admin-layout .ant-menu-light:not(.xsy-menu--side) .ant-menu-submenu-title:hover {
   background: var(--scm-fill);
 }
 

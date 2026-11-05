@@ -5,7 +5,8 @@
 ## 项目范围
 
 - V2 正式项目位于 `xsy-scm-server/`、`xsy-scm-web/` 与 `xsy-scm-miniprogram/`；管理后台采用 Vue 3 + TypeScript，微信小程序采用 uni-app + Vue 3。
-- SmartAdmin 是登录、认证、用户、员工、部门、角色、菜单、权限、数据权限、日志、字典、文件、统一异常和后台 Layout 的正式底座。SCM 只实现供应链业务，不复制这些通用能力。
+- 系统管理与公共模块提供登录、认证、用户、员工、部门、角色、菜单、权限、数据权限、日志、字典、文件、统一异常和后台布局；供应链业务复用这些能力。
+- 后端模块为xsy-admin和xsy-base，所有正式Java包以com.xsy.scm为根，系统管理放在admin，通用能力放在base，其余业务目录保持清楚的职责边界。
 - `xsy-scm-miniprogram/` 是给用户使用的微信小程序，只承载用户端身份与页面；后续员工端使用独立工作区，不与小程序权限和路由混用。
 - `xsy-scale-agent/` 是独立的 Windows 秤端与触屏工作台源码；正式分拣、库存与财务记录仍以 V2 服务端为准。平台设备接口 `/scm/device/scale/v1`（V171/V172）已接入；真实电子秤、打印机与现场标定仍须单独联调验收，不能将本地演练结果当作平台验收。
 - 旧 Taro/React 小程序已从工作树移除，历史代码仅由 Git 追溯。不要迁移旧 `auth` / `system` 实现，也不要机械复制旧代码或把 React 翻译成 Vue。
@@ -60,12 +61,12 @@
 - Service 承担事务内的操作顺序、状态转换、策略和 DAO 协作。超过 400 行时审查职责，但按业务职责决定是否拆分，不按行数机械拆类。
 - 权限注解使用领域 Permission Catalog；新增表单校验需提供可读 message；业务状态、类型和来源使用现有 Enum，避免重复枚举和 magic string。
 - 依赖字段名称应表达完整业务语义；禁止 wildcard import 和重复包装 JDK / Spring / Apache 工具类。
-- Java 格式统一由 `mvn -pl sa-admin spotless:apply` 维护，配置为 `tools/quality/eclipse-formatter.xml`（4 空格、120 列、续行 4 空格、LF）；不要另建一套格式或手工规避 `spotless:check`。
+- Java 格式统一由 `mvn -pl xsy-admin spotless:apply` 维护，配置为 `tools/quality/eclipse-formatter.xml`（4 空格、120 列、续行 4 空格、LF）；不要另建一套格式或手工规避 `spotless:check`。
 - 注释解释当前代码中无法直接看出的约束，不记录代码是怎么被开发出来的；能从类名、方法名、参数名、类型和代码流程直接读出来的信息，不要再用 Javadoc 翻译一遍（如字段名翻译式 `@param`）。不写阶段编号、测试统计、提交过程或过期计划；跨域长期规则放入 `docs/decisions.md`，源码只保留必要说明。
 
 ## 业务不变量
 
-- SCM 数据范围集中解析并显式传到 DAO；范围维度相交、不相互替代。范围为空时拒绝访问；用户输入的仓库或归属筛选只能进一步收窄授权范围。SCM 不使用 SmartAdmin `@DataScope`。
+- SCM 数据范围集中解析并显式传到 DAO；范围维度相交、不相互替代。范围为空时拒绝访问；用户输入的仓库或归属筛选只能进一步收窄授权范围。SCM 不使用 XSY `@DataScope`。
 - 附件由通用 `support/file` 层维护对象关系；服务端 URL 解析统一经过 `FileService` 与访问策略。新上传统一公开，存量私有文件按原授权读取；商品图片只绑定 `public/image/` 文件。
 - 库存流水是追加记录，不做 UPDATE / DELETE；余额按 `(warehouse_id, sku_id)` 锁定一个记账单位，单位不一致时拒绝整笔操作。
 - 分拣不修改订购量或库存；已确认、未发车的非标行可按正式称重接受结果同步实际数量与结算额。配送发车原子地产生销售出库，库存变更只经过库存域命令；签收不撤销出库。

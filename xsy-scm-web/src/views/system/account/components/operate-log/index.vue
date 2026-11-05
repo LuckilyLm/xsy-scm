@@ -3,13 +3,13 @@
   *
 -->
 <template>
-  <a-form class="smart-query-form">
-    <a-row class="smart-query-form-row">
-      <a-form-item label="请求时间" class="smart-query-form-item">
+  <a-form class="xsy-query-form">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="请求时间" class="xsy-query-form-item">
         <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange" style="width: 240px" />
       </a-form-item>
 
-      <a-form-item label="快速筛选" class="smart-query-form-item">
+      <a-form-item label="快速筛选" class="xsy-query-form-item">
         <a-radio-group v-model:value="queryForm.successFlag" @change="onSearch">
           <a-radio-button :value="undefined">全部</a-radio-button>
           <a-radio-button :value="true">成功</a-radio-button>
@@ -17,7 +17,7 @@
         </a-radio-group>
       </a-form-item>
 
-      <a-form-item class="smart-query-form-item smart-margin-left10">
+      <a-form-item class="xsy-query-form-item xsy-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="ajaxQuery">
             <template #icon>
@@ -45,14 +45,14 @@
         <div>{{ record.browser }} / {{ record.os }} / {{ record.device }}</div>
       </template>
       <template v-if="column.dataIndex === 'action'">
-        <div class="smart-table-operate">
+        <div class="xsy-table-operate">
           <a-button @click="showDetail(record.operateLogId)" type="link">详情</a-button>
         </div>
       </template>
     </template>
   </a-table>
 
-  <div class="smart-query-table-page">
+  <div class="xsy-query-table-page">
     <a-pagination
       showSizeChanger
       showQuickJumper
@@ -76,7 +76,7 @@ import {operateLogApi} from '/@/api/support/operate-log-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
 import uaparser from 'ua-parser-js';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const columns = ref([
   {
@@ -174,7 +174,7 @@ async function ajaxQuery() {
     total.value = responseModel.data.total;
     tableData.value = list;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
     tableLoading.value = false;
   }

@@ -1,38 +1,38 @@
 <!-- 库存分析：流水、损耗、库存价值和收发存。成本字段按权限显示。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
       <!-- 当前库存价值 / 负库存损耗都是当前时点数据，这里不显示日期筛选；请求也不带日期 -->
-      <a-form-item v-if="activeTab !== 'value' && activeTab !== 'negative'" label="发生日期" class="smart-query-form-item">
+      <a-form-item v-if="activeTab !== 'value' && activeTab !== 'negative'" label="发生日期" class="xsy-query-form-item">
         <ReportDateRangePicker v-model:value="dateRange" />
       </a-form-item>
-      <a-form-item v-else :label="activeTab === 'value' ? '库存价值' : '负库存'" class="smart-query-form-item">
+      <a-form-item v-else :label="activeTab === 'value' ? '库存价值' : '负库存'" class="xsy-query-form-item">
         <a-tag color="blue">当前时点，与查询区间无关</a-tag>
       </a-form-item>
-      <a-form-item label="仓库" class="smart-query-form-item">
+      <a-form-item label="仓库" class="xsy-query-form-item">
         <WarehouseSelect v-model:value="filters.warehouseId" width="180px" />
       </a-form-item>
-      <a-form-item label="关键字" class="smart-query-form-item">
+      <a-form-item label="关键字" class="xsy-query-form-item">
         <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" v-privilege="PERM.INVENTORY_QUERY" @click="onSearch">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
-        <a-button class="smart-margin-left10" @click="advanced = !advanced">
+        <a-button class="xsy-margin-left10" @click="advanced = !advanced">
           {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
         </a-button>
       </a-form-item>
     </a-row>
-    <a-row v-if="advanced" class="smart-query-form-row">
-      <a-form-item label="流水类型" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.movementType" enum-name="SCM_INVENTORY_MOVEMENT_TYPE_ENUM" width="150px" />
+    <a-row v-if="advanced" class="xsy-query-form-row">
+      <a-form-item label="流水类型" class="xsy-query-form-item">
+        <XsyEnumSelect v-model:value="filters.movementType" enum-name="SCM_INVENTORY_MOVEMENT_TYPE_ENUM" width="150px" />
       </a-form-item>
-      <a-form-item label="来源单据类型" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.sourceDocumentType" enum-name="SCM_INVENTORY_SOURCE_TYPE_ENUM" width="180px" />
+      <a-form-item label="来源单据类型" class="xsy-query-form-item">
+        <XsyEnumSelect v-model:value="filters.sourceDocumentType" enum-name="SCM_INVENTORY_SOURCE_TYPE_ENUM" width="180px" />
       </a-form-item>
-      <a-form-item label="商品规格" class="smart-query-form-item">
+      <a-form-item label="商品规格" class="xsy-query-form-item">
         <SkuSelect v-model:value="filters.skuId" width="240px" />
       </a-form-item>
     </a-row>
@@ -44,16 +44,16 @@
     </template>
   </a-alert>
 
-  <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
+  <a-tabs v-model:activeKey="activeTab" class="xsy-margin-top10" @change="onTabChange">
     <a-tab-pane key="movement" tab="库存流水">
       <a-card size="small" :bordered="false">
-        <a-row data-toolbar-layout="single" class="smart-table-btn-block scm-table-toolbar">
-          <div class="smart-table-operate-block">
+        <a-row data-toolbar-layout="single" class="xsy-table-btn-block scm-table-toolbar">
+          <div class="xsy-table-operate-block">
             <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="movementExport.exporting" @click="exportMovement"
               >导出</a-button
             >
           </div>
-          <div class="smart-table-setting-block">
+          <div class="xsy-table-setting-block">
             <TableOperator
               v-model="movementColumns"
               :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_MOVEMENT"
@@ -62,7 +62,7 @@
             />
           </div>
         </a-row>
-        <a-alert v-if="movement.error" :message="movement.error" type="error" show-icon class="smart-margin-bottom10">
+        <a-alert v-if="movement.error" :message="movement.error" type="error" show-icon class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadMovement">重试</a-button>
           </template>
@@ -112,7 +112,7 @@
             <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
           </template>
         </a-table>
-        <div class="smart-query-table-page">
+        <div class="xsy-query-table-page">
           <a-pagination
             show-less-items
             show-size-changer
@@ -152,18 +152,18 @@
           <ReportKpiCard :label="card.label" :value="card.value" :sub="card.sub" current-point />
         </a-col>
       </a-row>
-      <a-card size="small" :bordered="false" :class="hasValueSummary ? 'smart-margin-top10' : ''">
-        <a-row data-toolbar-layout="single" class="smart-table-btn-block scm-table-toolbar">
-          <div class="smart-table-operate-block">
+      <a-card size="small" :bordered="false" :class="hasValueSummary ? 'xsy-margin-top10' : ''">
+        <a-row data-toolbar-layout="single" class="xsy-table-btn-block scm-table-toolbar">
+          <div class="xsy-table-operate-block">
             <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="valueExport.exporting" @click="exportValue"
               >导出</a-button
             >
           </div>
-          <div class="smart-table-setting-block">
+          <div class="xsy-table-setting-block">
             <TableOperator v-model="valueColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_VALUE" :refresh="loadValue" />
           </div>
         </a-row>
-        <a-alert v-if="value.error" :message="value.error" type="error" show-icon class="smart-margin-bottom10">
+        <a-alert v-if="value.error" :message="value.error" type="error" show-icon class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadValue">重试</a-button>
           </template>
@@ -199,7 +199,7 @@
             <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
           </template>
         </a-table>
-        <div class="smart-query-table-page">
+        <div class="xsy-query-table-page">
           <a-pagination
             show-less-items
             show-size-changer
@@ -235,13 +235,13 @@
 
     <a-tab-pane key="flow" tab="收发存（数量版）">
       <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block scm-table-toolbar">
-          <div class="smart-table-operate-block"></div>
-          <div class="smart-table-setting-block">
+        <a-row class="xsy-table-btn-block scm-table-toolbar">
+          <div class="xsy-table-operate-block"></div>
+          <div class="xsy-table-setting-block">
             <TableOperator v-model="flowColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_FLOW_SUMMARY" :refresh="loadFlow" />
           </div>
         </a-row>
-        <a-alert v-if="flow.error" :message="flow.error" type="error" show-icon class="smart-margin-bottom10">
+        <a-alert v-if="flow.error" :message="flow.error" type="error" show-icon class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadFlow">重试</a-button>
           </template>
@@ -265,7 +265,7 @@
             <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
           </template>
         </a-table>
-        <div class="smart-query-table-page">
+        <div class="xsy-query-table-page">
           <a-pagination
             show-less-items
             show-size-changer
@@ -289,7 +289,7 @@ import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';

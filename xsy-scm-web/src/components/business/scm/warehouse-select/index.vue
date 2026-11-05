@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, watch} from 'vue';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 import type {Warehouse} from '/@/views/business/scm/purchase/purchase-types';
 
 const props = withDefaults(
@@ -50,7 +50,7 @@ async function query() {
     fetched.value = resp.data ?? [];
   } catch (e) {
     // 无权限时静默降级，仓库筛选不该让整页失败
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   }
 }
 

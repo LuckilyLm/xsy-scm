@@ -1,20 +1,20 @@
 <!-- 库存调拨单：待发货 → 在途 → 已收货。在途货物不在任何仓库余额中，全仓总库存会暂时减少。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="调拨单号" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="调拨单号" class="xsy-query-form-item">
         <a-input v-model:value="queryForm.transferNo" placeholder="调拨单号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item label="源仓" class="smart-query-form-item">
+      <a-form-item label="源仓" class="xsy-query-form-item">
         <WarehouseSelect v-model:value="queryForm.fromWarehouseId" :options="warehouses" width="190px" />
       </a-form-item>
-      <a-form-item label="目标仓" class="smart-query-form-item">
+      <a-form-item label="目标仓" class="xsy-query-form-item">
         <WarehouseSelect v-model:value="queryForm.toWarehouseId" :options="warehouses" width="190px" />
       </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
+      <a-form-item label="状态" class="xsy-query-form-item">
         <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 130px" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:transfer:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -30,14 +30,14 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+    <a-row class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:transfer:add'"> 新建调拨单 </a-button>
         <a-tooltip title="在途商品已从源仓扣减、目标仓尚未增加，不在任何仓库的余额里；目标仓收货后落地。">
           <a-button style="margin-left: 8px" @click="openInTransit" v-privilege="'scm:inventory:transfer:query'"> 在途库存 </a-button>
         </a-tooltip>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRANSFER" :refresh="queryData" />
       </div>
     </a-row>
@@ -72,7 +72,7 @@
         <template v-else-if="column.dataIndex === 'receivedBy'">{{ record.receivedBy || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 详情和当前可执行的推进动作常驻，其他操作收进“更多” -->
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button v-if="record.status === 'PENDING'" type="link" size="small" @click="onShip(record)" v-privilege="'scm:inventory:transfer:ship'">
               发出
@@ -93,7 +93,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer

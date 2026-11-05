@@ -3,9 +3,9 @@
  *
  */
 
-import {SmartEnum} from '/@/types/smart-enum';
+import {XsyEnum} from '/@/types/xsy-enum';
 
-export const LAYOUT_ENUM: SmartEnum<string> = {
+export const LAYOUT_ENUM: XsyEnum<string> = {
   SIDE: {
     value: 'side',
     desc: '传统',
@@ -24,7 +24,7 @@ export const LAYOUT_ENUM: SmartEnum<string> = {
   },
 };
 
-export const PAGE_TAG_ENUM: SmartEnum<string> = {
+export const PAGE_TAG_ENUM: XsyEnum<string> = {
   DEFAULT: {
     value: 'default',
     desc: '默认',

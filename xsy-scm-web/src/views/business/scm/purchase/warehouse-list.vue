@@ -1,14 +1,14 @@
 <!-- 仓库列表。启用/停用是独立操作；省市区编码用于统计，地址用于收货和展示。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="仓库名称" class="smart-query-form-item">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="仓库名称" class="xsy-query-form-item">
         <a-input v-model:value="queryForm.name" placeholder="仓库名称" allow-clear v-aria-label="'仓库名称'" @pressEnter="onSearch" />
       </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_WAREHOUSE_STATUS_ENUM" v-model:value="queryForm.status" width="140px" v-aria-label="'仓库状态'" />
+      <a-form-item label="状态" class="xsy-query-form-item">
+        <XsyEnumSelect enum-name="SCM_WAREHOUSE_STATUS_ENUM" v-model:value="queryForm.status" width="140px" v-aria-label="'仓库状态'" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
+      <a-form-item class="xsy-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:warehouse:query'">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
@@ -24,13 +24,13 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+    <a-row class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
         <a-button type="primary" v-privilege="'scm:warehouse:add'" @click="open()">新建仓库</a-button>
         <a-button v-privilege="'scm:warehouse:scope:update'" @click="scopeModal?.open()">授权维护</a-button>
         <a-button v-privilege="'scm:warehouse:query'" @click="districtModal?.open()">商城配送区县</a-button>
       </div>
-      <div class="smart-table-setting-block">
+      <div class="xsy-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_WAREHOUSE" :refresh="queryData" />
       </div>
     </a-row>
@@ -74,7 +74,7 @@
         <template v-else-if="column.dataIndex === 'remark'">{{ record.remark || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 启用/停用走状态列的开关，这里只留编辑与授权 -->
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
+          <a-space :size="0" class="xsy-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:warehouse:update'" @click="open(record)">编辑</a-button>
             <a-button type="link" size="small" v-privilege="'scm:warehouse:scope:query'" @click="scopeModal?.openEmployees(record.id, record.name)">
               授权员工
@@ -84,7 +84,7 @@
       </template>
     </a-table>
 
-    <div class="smart-query-table-page">
+    <div class="xsy-query-table-page">
       <a-pagination
         show-less-items
         show-size-changer
@@ -149,7 +149,7 @@ import {CheckCircleOutlined, ExclamationCircleOutlined} from '@ant-design/icons-
 import {computed, nextTick, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
-import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
 import type {AreaNode} from '/@/types/business/scm/area';
 import TableOperator from '/@/components/support/table-operator/index.vue';

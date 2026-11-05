@@ -118,7 +118,7 @@
 
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
-  import { smartSentry } from '@/lib/smart-sentry';
+  import { xsySentry } from '@/lib/xsy-sentry';
   import { displayQuantity, formatDateTime } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
   import { afterSaleStatusLevel, afterSaleStatusText, allocationStatusText, refundMethodText } from '@/utils/after-sale-display';
@@ -146,7 +146,7 @@
       const response = await mallAfterSaleApi.getDetail(returnId.value);
       record.value = response.data || null;
     } catch (error) {
-      smartSentry.captureError(error);
+      xsySentry.captureError(error);
       uni.showToast({ title: error?.message || '售后单加载失败', icon: 'none' });
     } finally {
       loading.value = false;
@@ -170,7 +170,7 @@
       uni.showToast({ title: '售后申请已撤销', icon: 'none' });
       load();
     } catch (error) {
-      smartSentry.captureError(error);
+      xsySentry.captureError(error);
       uni.showToast({ title: error?.message || '撤销失败，请稍后重试', icon: 'none' });
     }
   }

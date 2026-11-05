@@ -347,10 +347,10 @@ test.describe('scm-delivery', () => {
     // 而不是「它恰好排在第一页」。
     // 司机编码在服务端 trim + toUpperCase，关键字查询用的是区分大小写的 LIKE
     const driverCodeUpper = driverCode.toUpperCase();
-    await page.locator('.smart-query-form input').first().fill(driverCodeUpper);
+    await page.locator('.xsy-query-form input').first().fill(driverCodeUpper);
     // 关键字框不绑 Enter，必须点查询按钮
     await page
-      .locator('.smart-query-form')
+      .locator('.xsy-query-form')
       .getByRole('button', {name: /^查\s*询$/})
       .click();
     await expect(
@@ -1416,7 +1416,7 @@ test.describe('scm-delivery-print', () => {
 
     // 切到「按客户」：状态与订单范围两个筛选同时生效，未勾选时按状态范围提交
     await pane.getByText('按客户', {exact: true}).click();
-    const selects = pane.locator('.smart-table-btn-block .ant-select');
+    const selects = pane.locator('.xsy-table-btn-block .ant-select');
     await expect(selects).toHaveCount(2);
     await expect(record).toBeDisabled();
     await selects.first().locator('.ant-select-selector').click();
@@ -1546,7 +1546,7 @@ test.describe('scm-sorting', () => {
    * 断的是「筛出来唯一一行」，不是「它恰好排在第一页」。
    */
   async function filterTaskRow(page: Page) {
-    const keyword = page.locator('.smart-query-form input').first();
+    const keyword = page.locator('.xsy-query-form input').first();
     await keyword.fill(taskNo);
     await keyword.press('Enter');
     await expect(page.locator('.ant-table-tbody tr').filter({hasText: taskNo})).toHaveCount(1);
@@ -1877,7 +1877,7 @@ test.describe('scm-sorting', () => {
     const beforeMovements = await movementTotal();
     authenticate(page, sorterToken);
     await page.goto('/#/sorting/tasks');
-    const keyword = page.locator('.smart-query-form input').first();
+    const keyword = page.locator('.xsy-query-form input').first();
     await keyword.fill(String(created.task.taskNo));
     await keyword.press('Enter');
     const row = page.locator('.ant-table-tbody tr').filter({hasText: String(created.task.taskNo)});

@@ -20,9 +20,9 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
-import {SmartLoading} from '/@/components/framework/smart-loading/index';
+import {XsyLoading} from '/@/components/framework/xsy-loading/index';
 import {employeeApi} from '/@/api/system/employee-api';
-import {smartSentry} from '/@/lib/smart-sentry';
+import {xsySentry} from '/@/lib/xsy-sentry';
 
 const emits = defineEmits(['onSuccess']);
 
@@ -38,14 +38,14 @@ const passwordComplexityEnabledFlag = ref(false);
 
 async function getPasswordComplexityEnabled() {
   try {
-    SmartLoading.show();
+    XsyLoading.show();
     let res = await employeeApi.getPasswordComplexityEnabled();
     passwordComplexityEnabledFlag.value = res.data;
     tips.value = passwordComplexityEnabledFlag.value ? passwordComplexityEnabledTips : passwordTips;
   } catch (e) {
-    smartSentry.captureError(e);
+    xsySentry.captureError(e);
   } finally {
-    SmartLoading.hide();
+    XsyLoading.hide();
   }
 }
 
@@ -88,7 +88,7 @@ async function onSubmit() {
         message.error('新密码与确认密码不一致');
         return;
       }
-      SmartLoading.show();
+      XsyLoading.show();
       try {
         await employeeApi.updateEmployeePassword(form);
         message.success('修改成功');
@@ -99,9 +99,9 @@ async function onSubmit() {
 
         emits('onSuccess');
       } catch (error) {
-        smartSentry.captureError(error);
+        xsySentry.captureError(error);
       } finally {
-        SmartLoading.hide();
+        XsyLoading.hide();
       }
     })
     .catch((error) => {
