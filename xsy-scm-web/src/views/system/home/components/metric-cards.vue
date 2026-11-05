@@ -34,7 +34,7 @@
           <div class="home-kpi__body">
             <div class="home-kpi__text">
               <span class="home-kpi__label">{{ row.label }}</span>
-              <div class="home-kpi__value">
+              <div class="home-kpi__value" :title="`${row.money ? '¥ ' : ''}${row.text}`">
                 <span v-if="row.money" class="home-kpi__prefix">¥</span>
                 <span class="home-kpi__number">{{ row.text }}</span>
               </div>
@@ -101,7 +101,6 @@ defineExpose({load});
     grid-template-columns: minmax(0, 320px);
   }
 
-  /* 断点按单卡最小可用宽度定，5 列在 1280px 以上即可排下 */
   @media (max-width: 1279px) {
     grid-template-columns: repeat(var(--kpi-compact-columns), minmax(0, 1fr));
 
@@ -130,9 +129,10 @@ defineExpose({load});
   position: relative;
   min-width: 0;
   border: 1px solid var(--scm-border);
-  border-radius: 14px;
+  border-radius: var(--home-card-radius, 14px);
   cursor: pointer;
-  background: var(--scm-bg-container);
+  background: linear-gradient(120deg, var(--scm-bg-container) 58%, color-mix(in srgb, var(--kpi-accent) 5%, var(--scm-bg-container)));
+  box-shadow: var(--home-card-shadow, 0 3px 12px rgba(15, 44, 32, 0.05));
   overflow: hidden;
   transition:
     transform 0.18s ease,
@@ -140,83 +140,88 @@ defineExpose({load});
     border-color 0.18s ease;
 
   &:hover {
-    border-color: var(--kpi-accent);
-    box-shadow: 0 8px 20px rgba(15, 44, 32, 0.09);
+    border-color: color-mix(in srgb, var(--kpi-accent) 38%, var(--scm-border));
+    box-shadow: var(--home-card-hover-shadow, 0 8px 20px rgba(15, 44, 32, 0.09));
     transform: translateY(-2px);
   }
 
   &:focus-visible {
     outline: 2px solid var(--scm-primary);
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
 
   :deep(.ant-card-body) {
     position: relative;
     display: flex;
     align-items: center;
-    /* 左边多留 4px 给色条让位 */
-    padding: 16px 18px 16px 22px;
+    min-height: 112px;
+    padding: 20px 18px 20px 22px;
   }
 }
 
-/* 左侧色条：一眼区分五张卡，同时保持卡片本身仍是白底 */
 .home-kpi__accent {
   position: absolute;
   inset: 0 auto 0 0;
-  width: 4px;
+  width: 3px;
   border-radius: 0 3px 3px 0;
   background: var(--kpi-accent);
   opacity: 0.85;
 }
 
-/* 左文字块 + 右图标块：两端对齐，卡片宽度被真正用满 */
 .home-kpi .home-kpi__body {
-  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  width: 100%;
   min-width: 0;
+  gap: 12px;
 }
 
 .home-kpi .home-kpi__text {
   display: flex;
   flex-direction: column;
-  gap: 6px;
   min-width: 0;
+  gap: 8px;
 }
 
 .home-kpi .home-kpi__visual {
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: 0 0 56px;
   align-items: center;
   justify-content: center;
-  width: 60px;
-  height: 60px;
-  border-radius: 18px;
-  background: var(--kpi-accent-soft);
+  width: 56px;
+  height: 56px;
+  border: 1px solid color-mix(in srgb, var(--kpi-accent) 12%, transparent);
+  border-radius: 16px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--kpi-accent) 6%, var(--scm-bg-container)),
+    color-mix(in srgb, var(--kpi-accent) 13%, var(--scm-bg-container))
+  );
   color: var(--kpi-accent);
 }
 
 .home-kpi .home-kpi__label {
+  overflow: hidden;
+  color: var(--scm-text-secondary);
   font-size: 13px;
   font-weight: 500;
-  color: var(--scm-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
+  line-height: 1.5;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .home-kpi .home-kpi__value {
   display: flex;
   align-items: baseline;
+  min-width: 0;
   gap: 3px;
   font-weight: 700;
-  line-height: 1.1;
-  flex-wrap: wrap;
+  line-height: 1.15;
 }
 
 .home-kpi .home-kpi__prefix {
+  flex-shrink: 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--kpi-accent);
@@ -224,19 +229,46 @@ defineExpose({load});
 
 .home-kpi .home-kpi__number {
   min-width: 0;
-  /* 5 列时单卡只有 ~185px：长金额靠字号自适应缩小，不在数字中间换行，也不撑高卡片 */
-  font-size: clamp(22px, 1.6vw, 34px);
-  white-space: nowrap;
-  letter-spacing: -0.5px;
+  overflow: hidden;
+  color: var(--kpi-accent);
+  font-size: clamp(22px, 1.7vw, 32px);
   font-variant-numeric: tabular-nums;
-  color: var(--scm-text);
+  letter-spacing: -0.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* 数值统一取卡片的主题色；库存预警的 tone 只影响左侧色条 */
-.home-kpi.tone-primary .home-kpi__number,
-.home-kpi.tone-ok .home-kpi__number,
-.home-kpi.tone-warn .home-kpi__number,
-.home-kpi.tone-danger .home-kpi__number {
-  color: var(--kpi-accent);
+/* 没有库存预警时保持中性，红色只用于实际需要处理的预警。 */
+.home-kpi.tone-ok {
+  background: var(--scm-bg-container);
+
+  .home-kpi__accent {
+    background: var(--scm-text-disabled);
+  }
+
+  .home-kpi__number,
+  .home-kpi__prefix {
+    color: var(--scm-text);
+  }
+
+  .home-kpi__visual {
+    border-color: var(--scm-border);
+    color: var(--scm-text-tertiary);
+    background: var(--scm-fill);
+  }
+
+  &:hover {
+    border-color: var(--scm-border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-kpi {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
 }
 </style>

@@ -55,26 +55,26 @@ const dayInfo = computed(() => {
 <style lang="less" scoped>
 .home-welcome {
   position: relative;
+  height: 160px;
   min-height: 148px;
   border: 1px solid var(--scm-border);
-  border-radius: 14px;
-  background-color: #e9f8f0;
+  border-radius: var(--home-card-radius, 14px);
+  background-color: var(--scm-primary-bg);
   background-repeat: no-repeat;
   background-position: right 68%;
   background-size: cover;
+  box-shadow: var(--home-card-shadow, 0 3px 12px rgba(15, 44, 32, 0.05));
   overflow: hidden;
 
-  /* 左实右透：文字永远压在接近不透明的底色上，插画只在右侧露出 */
   &::before {
     position: absolute;
     inset: 0;
     background: linear-gradient(
-      94deg,
-      rgba(244, 255, 250, 0.98) 0%,
-      rgba(244, 255, 250, 0.95) 34%,
-      rgba(244, 255, 250, 0.72) 52%,
-      rgba(244, 255, 250, 0.18) 74%,
-      rgba(244, 255, 250, 0) 100%
+      96deg,
+      color-mix(in srgb, var(--scm-bg-container) 90%, var(--scm-primary-bg)) 0%,
+      color-mix(in srgb, var(--scm-bg-container) 78%, transparent) 38%,
+      color-mix(in srgb, var(--scm-primary-bg) 46%, transparent) 62%,
+      transparent 86%
     );
     content: '';
     pointer-events: none;
@@ -83,51 +83,67 @@ const dayInfo = computed(() => {
   :deep(.ant-card-body) {
     position: relative;
     z-index: 1;
-    padding: 24px;
+    display: flex;
+    align-items: center;
+    height: 100%;
     min-height: 148px;
-    display: flex;
-    align-items: center;
+    padding: 24px 28px;
   }
+}
 
-  .home-welcome__row {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
+.home-welcome__row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
 
-  .home-welcome__text {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-    max-width: 620px;
-  }
+.home-welcome__text {
+  min-width: 0;
+  width: min(64%, 620px);
+}
 
-  .home-welcome__copy {
-    min-width: 0;
-  }
+.home-welcome__copy {
+  min-width: 0;
+}
 
-  .home-welcome__title {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 600;
-    line-height: 1.25;
-    color: var(--scm-text);
-  }
+.home-welcome__title {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--scm-text);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.2px;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
 
-  .home-welcome__meta {
-    margin: 6px 0 0;
-    font-size: 13px;
-    color: var(--scm-text-secondary);
-  }
+.home-welcome__meta {
+  margin: 10px 0 0;
+  overflow: hidden;
+  color: var(--scm-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-  @media (max-width: 767px) {
+@media (max-width: 767px) {
+  .home-welcome {
+    height: auto;
     min-height: 212px;
     background-position: 68% center;
 
     &::before {
-      background: linear-gradient(180deg, rgba(244, 255, 250, 0.98) 0%, rgba(244, 255, 250, 0.94) 56%, rgba(244, 255, 250, 0.6) 100%);
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--scm-bg-container) 94%, var(--scm-primary-bg)) 0%,
+        color-mix(in srgb, var(--scm-bg-container) 88%, transparent) 56%,
+        color-mix(in srgb, var(--scm-bg-container) 62%, transparent) 100%
+      );
     }
 
     :deep(.ant-card-body) {
@@ -135,10 +151,19 @@ const dayInfo = computed(() => {
       align-items: flex-start;
       padding: 20px;
     }
+  }
 
-    .home-welcome__title {
-      font-size: 20px;
-    }
+  .home-welcome__text {
+    width: 100%;
+  }
+
+  .home-welcome__title {
+    font-size: 20px;
+  }
+
+  .home-welcome__meta {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
 </style>

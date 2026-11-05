@@ -1,5 +1,16 @@
 .home-workbench {
+  --home-card-radius: 14px;
+  --home-card-shadow: 0 3px 12px rgba(15, 44, 32, 0.05);
+  --home-card-hover-shadow: 0 8px 20px rgba(15, 44, 32, 0.09);
+
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 16px;
+  padding-bottom: 4px;
+  color: var(--scm-text);
+
+  > .ant-row > .ant-col {
+    min-width: 0;
+  }
 }

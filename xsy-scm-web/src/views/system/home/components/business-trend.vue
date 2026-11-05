@@ -2,14 +2,21 @@
 <template>
   <default-home-card icon-name="section-business-trend" title="经营趋势">
     <div class="home-trend__bar">
-      <a-radio-group v-if="metrics.length > 1" v-model:value="active" size="small" button-style="solid" @change="load">
+      <a-radio-group
+        class="home-trend__metric-switch"
+        v-if="metrics.length > 1"
+        v-model:value="active"
+        size="small"
+        button-style="solid"
+        @change="load"
+      >
         <a-radio-button v-for="metric in metrics" :key="metric" :value="metric">
           {{ TREND_META[metric].label }}
         </a-radio-button>
       </a-radio-group>
       <span v-else class="home-trend__only">{{ TREND_META[active].label }}</span>
 
-      <a-radio-group v-model:value="range" size="small" @change="load">
+      <a-radio-group class="home-trend__range-switch" v-model:value="range" size="small" @change="load">
         <a-radio-button v-for="item in TREND_RANGES" :key="item.value" :value="item.value">
           {{ item.label }}
         </a-radio-button>
@@ -71,15 +78,23 @@ const allZeroDescription = computed(() => {
   return `${period}${description[active.value]}`;
 });
 
+function chartColor(variable: string, fallback: string): string {
+  return chartEl.value ? getComputedStyle(chartEl.value).getPropertyValue(variable).trim() || fallback : fallback;
+}
+
 /** 金额轴按「万」缩写，否则七位数会把轴标签挤成两行。 */
 function valueAxis(splitLine: boolean, money: boolean) {
   return {
     type: 'value',
     axisLabel: {
-      color: REPORT_CHART_COLORS.axisText,
+      color: chartColor('--scm-text-secondary', REPORT_CHART_COLORS.axisText),
+      fontSize: 11,
       formatter: money ? (value: number) => formatCompact(value) : undefined,
     },
-    splitLine: {show: splitLine, lineStyle: {color: REPORT_CHART_COLORS.splitLine}},
+    axisLine: {show: false},
+    axisTick: {show: false},
+    splitNumber: 4,
+    splitLine: {show: splitLine, lineStyle: {color: chartColor('--scm-border', REPORT_CHART_COLORS.splitLine), type: 'dashed'}},
   };
 }
 
@@ -97,8 +112,9 @@ function seriesOf(index: number, trend: ScmDashboardTrend) {
     return {
       ...common,
       type: 'bar',
-      barMaxWidth: 22,
-      itemStyle: {color, borderRadius: [4, 4, 0, 0]},
+      barMaxWidth: 18,
+      itemStyle: {color, opacity: 0.88, borderRadius: [5, 5, 0, 0]},
+      emphasis: {itemStyle: {opacity: 1}},
     };
   }
   return {
@@ -106,8 +122,8 @@ function seriesOf(index: number, trend: ScmDashboardTrend) {
     type: 'line',
     smooth: true,
     symbol: 'circle',
-    symbolSize: 6,
-    lineStyle: {width: 2, color},
+    symbolSize: 5,
+    lineStyle: {width: 2.5, color},
     itemStyle: {color},
   };
 }
@@ -122,11 +138,26 @@ function render() {
   setOption({
     animation: false,
     color: [REPORT_CHART_COLORS.primary, REPORT_CHART_COLORS.secondary],
-    grid: {top: 44, right: meta.dualAxis ? 56 : 24, bottom: 28, left: 8, containLabel: true},
-    legend: {top: 4, left: 'center', icon: 'roundRect', textStyle: {color: REPORT_CHART_COLORS.axisText}},
+    grid: {top: 44, right: meta.dualAxis ? 40 : 12, bottom: 16, left: 4, containLabel: true},
+    legend: {
+      top: 0,
+      left: 4,
+      icon: 'roundRect',
+      itemWidth: 12,
+      itemHeight: 6,
+      itemGap: 20,
+      textStyle: {color: chartColor('--scm-text-secondary', REPORT_CHART_COLORS.axisText), fontSize: 12},
+    },
     tooltip: {
       trigger: 'axis',
-      axisPointer: {type: 'shadow'},
+      confine: true,
+      backgroundColor: chartColor('--scm-bg-container', '#ffffff'),
+      borderColor: chartColor('--scm-border', REPORT_CHART_COLORS.splitLine),
+      borderWidth: 1,
+      padding: [10, 14],
+      textStyle: {color: chartColor('--scm-text', '#1f2937'), fontSize: 12, lineHeight: 22},
+      extraCssText: 'border-radius:10px;box-shadow:0 6px 20px rgba(15,44,32,0.09);',
+      axisPointer: {type: 'shadow', shadowStyle: {color: 'rgba(15,158,99,0.04)'}},
       formatter: (params: unknown) => {
         const points = params as Array<{seriesIndex?: number; dataIndex?: number; axisValue?: string}>;
         if (!points.length) {
@@ -147,7 +178,8 @@ function render() {
       boundaryGap: true,
       data: trend.dates,
       axisTick: {show: false},
-      axisLabel: {color: REPORT_CHART_COLORS.axisText},
+      axisLine: {lineStyle: {color: chartColor('--scm-border', REPORT_CHART_COLORS.splitLine)}},
+      axisLabel: {color: chartColor('--scm-text-secondary', REPORT_CHART_COLORS.axisText), fontSize: 11, margin: 12},
     },
     yAxis: meta.dualAxis ? [valueAxis(true, money), valueAxis(false, false)] : [valueAxis(true, false)],
     series: [seriesOf(0, trend), seriesOf(1, trend)],
@@ -166,14 +198,69 @@ defineExpose({load});
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-width: 0;
+  min-height: 32px;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.home-trend__metric-switch,
+.home-trend__range-switch {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid var(--scm-border);
+  border-radius: 9px;
+  background: var(--scm-fill);
+
+  :deep(.ant-radio-button-wrapper) {
+    height: 28px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--scm-text-secondary);
+    font-size: 12px;
+    line-height: 28px;
+    white-space: nowrap;
+    transition:
+      color 0.18s ease,
+      background 0.18s ease,
+      box-shadow 0.18s ease;
+
+    &::before {
+      display: none;
+    }
+
+    &:hover {
+      color: var(--scm-primary);
+    }
+
+    &:focus-within {
+      outline: 2px solid var(--scm-primary);
+      outline-offset: 1px;
+    }
+  }
+
+  :deep(.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled)) {
+    color: var(--scm-primary);
+    font-weight: 600;
+    background: var(--scm-bg-container);
+    box-shadow: 0 1px 4px rgba(15, 44, 32, 0.08);
+  }
+}
+
+.home-trend__metric-switch {
+  :deep(.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled)) {
+    background: var(--scm-primary-bg);
+  }
 }
 
 .home-trend__only {
+  color: var(--scm-primary);
   font-size: 13px;
-  color: var(--scm-text-secondary);
+  font-weight: 600;
 }
 
 .home-trend__chart {
@@ -197,6 +284,20 @@ defineExpose({load});
   .home-trend__empty {
     height: 232px;
     min-height: 232px;
+  }
+
+  .home-trend__bar {
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-trend__metric-switch,
+  .home-trend__range-switch {
+    :deep(.ant-radio-button-wrapper) {
+      transition: none;
+    }
   }
 }
 </style>

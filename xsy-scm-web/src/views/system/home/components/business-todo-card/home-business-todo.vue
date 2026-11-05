@@ -84,83 +84,85 @@ defineExpose({load});
 
 <style lang="less" scoped>
 .home-todos {
+  display: flex;
+  flex-direction: column;
   min-height: 332px;
   max-height: 400px;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  scrollbar-width: thin;
 }
 
 .todo-row {
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 12px;
-  padding: 12px 10px;
+  padding: 12px;
+  border: 1px solid transparent;
   border-radius: 10px;
-  border-bottom: 1px solid var(--scm-border);
   color: var(--scm-text);
-  transition: background 0.16s ease;
-
-  &:last-child {
-    border-bottom: 0;
-  }
+  text-decoration: none;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
 
   &:hover {
-    background: var(--scm-fill);
-  }
-
-  &:hover .todo-row__count {
-    color: var(--scm-primary);
+    border-color: color-mix(in srgb, var(--scm-primary) 9%, transparent);
+    background: color-mix(in srgb, var(--scm-primary-bg) 45%, var(--scm-bg-container));
   }
 
   &:focus-visible {
     outline: 2px solid var(--scm-primary);
     outline-offset: -2px;
+    background: var(--scm-primary-bg);
   }
 }
 
-/* 圆形图标底：与右侧数字形成左右对称的视觉锚点 */
 .todo-row__visual {
   display: inline-flex;
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  flex: 0 0 44px;
   align-items: center;
   justify-content: center;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
 
   &.tone-ok {
-    background: #e7f8ef;
-    color: #0f9e63;
+    color: var(--scm-success);
+    background: color-mix(in srgb, var(--scm-success) 9%, var(--scm-bg-container));
   }
+
   &.tone-warn {
-    background: #fff5df;
-    color: #b66b08;
+    color: var(--scm-warning);
+    background: color-mix(in srgb, var(--scm-warning) 10%, var(--scm-bg-container));
   }
+
   &.tone-danger {
-    background: #ffeded;
-    color: #d94b4b;
+    color: var(--scm-error);
+    background: color-mix(in srgb, var(--scm-error-bg) 75%, var(--scm-bg-container));
   }
+
   &.tone-primary {
-    background: #eaf4ff;
-    color: #2b7fe0;
+    color: var(--scm-primary);
+    background: color-mix(in srgb, var(--scm-primary-bg) 75%, var(--scm-bg-container));
   }
 }
 
 .todo-row__copy {
   display: flex;
   flex: 1;
-  min-width: 0;
   flex-direction: column;
-  gap: 3px;
+  min-width: 0;
+  gap: 4px;
 }
 
 .todo-row__label {
   min-width: 0;
+  color: var(--scm-text);
   font-size: 14px;
   font-weight: 600;
-  color: var(--scm-text);
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
@@ -168,24 +170,41 @@ defineExpose({load});
   overflow: hidden;
   color: var(--scm-text-secondary);
   font-size: 12px;
+  line-height: 1.5;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .todo-row__count {
   flex: 0 0 auto;
-  align-self: center;
   min-width: 30px;
   text-align: right;
+  color: var(--scm-text-disabled);
   font-size: 24px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
-  color: var(--scm-text-disabled);
-  transition: color 0.16s ease;
 
   &.has-tasks {
-    color: var(--scm-error);
+    color: var(--scm-primary);
+  }
+}
+
+@media (max-width: 575px) {
+  .todo-row {
+    gap: 10px;
+    padding: 12px 8px;
+  }
+
+  .todo-row__hint {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-row {
+    transition: none;
   }
 }
 </style>
