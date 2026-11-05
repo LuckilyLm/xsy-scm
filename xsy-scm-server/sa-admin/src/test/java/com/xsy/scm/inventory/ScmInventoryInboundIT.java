@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 采购入库（{@code PURCHASE_IN}）的实时路径。
  *
- * <p><b>本类只覆盖「一笔入库是怎么落地的」</b>：同事务、多行、幂等重放、源身份防重、
+ * <p><b>本类只覆盖「一笔入库是怎么落地的」</b>：同事务、多行、重复请求返回原结果、源身份防重、
  * 单位一致累加、可用量探测、以及两个只读查询页的行为。真正的回滚原子性在
  * {@code ScmInventoryRollbackIT}、并发在 {@code ScmInventoryConcurrencyIT}，
  * 因为它们必须关掉测试的外层事务才能被真实观测。
@@ -71,7 +71,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         PurchaseReceiptVO confirmed = confirmReceipt(fx.receipt().getId(), "10.0000");
         assertThat(confirmed.getStatus()).isEqualTo("CONFIRMED");
 
-        // 余额：恰好一行、数量 = 本次有效数量、单位 = 采购单位快照
+        // 余额：恰好一行、数量 = 本次有效数量、单位 = 采购时的单位
         assertThat(balanceRowCount(warehouseId, skuId)).isEqualTo(1);
         InventoryBalanceEntity balance = balanceRow(warehouseId, skuId);
         assertThat(balance.getUnit()).isEqualTo(DEFAULT_PURCHASE_UNIT);
@@ -79,7 +79,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         // version 从 0 起，一次自增 = 1（纵深防御列确实在动）
         assertThat(balance.getVersion()).isEqualTo(1);
 
-        // 流水：恰好一条，四元组 + before/after 恒等式 + 成本快照
+        // 流水：恰好一条，四元组 + before/after 恒等式 + 当时保存的成本
         List<Map<String, Object>> movements = movementsOf(warehouseId, skuId);
         assertThat(movements).hasSize(1);
         Map<String, Object> movement = movements.getFirst();
@@ -166,13 +166,13 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("#4 confirm 幂等重放：同键同内容返回首次结果，流水仍只有 1 条")
+    @DisplayName("#4 confirm 重复请求返回原结果：同键同内容返回首次结果，流水仍只有 1 条")
     void confirmReplayDoesNotDoubleCountInventory() {
         Long warehouseId = seedWarehouseId();
         Long skuId = newOnShelfSku("IN4");
         W6Fixture fx = inboundFixture("IN4", skuId, "10.0000");
 
-        // 必须复用同一个 form 实例：幂等按「键 + 请求内容哈希」判定，
+        // 必须复用同一个 form 实例：防重复处理按「键 + 请求内容哈希」判定，
         // 重新读一次库拿到的 version 已经变了，会被判成「同键不同内容」(40990)。
         PurchaseReceiptVO current = reloadReceipt(fx.receipt().getId());
         PurchaseReceiptItemVO line = current.getItems().getFirst();
@@ -208,7 +208,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         confirmReceipt(fx.receipt().getId(), "5.0000");
         assertThat(movementCount(warehouseId, skuId)).isEqualTo(1);
 
-        // 命令侧：同一源事实再来一次 → 41002 fail-fast（不静默跳过，否则会出现
+        // 命令侧：同一源记录再来一次 → 41002 fail-fast（不静默跳过，否则会出现
         // 「接口返回成功但库存没动」这种最难排查的不一致）
         expectCode(() -> inventoryCommandService.postPurchaseInbound(
                 new PurchaseInventoryContract.InboundFact(
@@ -236,7 +236,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("#12 Q13 单位一致累加：同 (wh,sku) 两次同单位入库 → 余额累加、unit 不变、回放链正确")
+    @DisplayName("#12 Q13 单位一致累加：同 (wh,sku) 两次同单位入库 → 余额累加、unit 不变、历史记录查询链正确")
     void sameUnitInboundsAccumulateOnOneBalanceRow() {
         Long warehouseId = seedWarehouseId();
         Long skuId = newOnShelfSku("IN12");
@@ -253,7 +253,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         assertThat(balance.getQuantity()).isEqualByComparingTo("10.0000");
         assertThat(balance.getVersion()).isEqualTo(2);
 
-        // 回放链：第二条的 before = 第一条的 after（append-only 账本的核心恒等式）
+        // 历史记录查询链：第二条的 before = 第一条的 after（append-only 账本的核心恒等式）
         List<Map<String, Object>> movements = movementsOf(warehouseId, skuId);
         assertThat(movements).hasSize(2);
         assertThat((BigDecimal) movements.get(0).get("before_quantity")).isEqualByComparingTo("0.0000");
@@ -321,7 +321,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         assertThat(balance.getVersion()).isEqualTo(1);
 
         // --- 余额：skuCode 模糊命中；不存在的编码 → 空态（「没有库存」不是错误）---
-        // V147 起 SKU 编码由后端发号，模糊检索只能用落库编码，不能沿用造数时传入的字符串
+        // V147 起 SKU 编码由后端发号，模糊检索只能用写入数据库编码，不能沿用造数时传入的字符串
         String storedSkuCode = skuCodeOf(skuId);
         InventoryBalanceQueryForm fuzzy = new InventoryBalanceQueryForm();
         fuzzy.setPageNum(1L);
@@ -351,7 +351,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         sorted.setSortItemList(List.of(sortItem));
         expectCode(() -> inventoryBalanceQueryService.query(sorted), 40000);
 
-        // --- 流水：溯源字段（收货单号）+ 快照字段 ---
+        // --- 流水：溯源字段（收货单号）+ 保存当时资料的字段 ---
         PageResult<InventoryMovementVO> movementPage =
                 inventoryMovementQueryService.query(movementQuery(warehouseId, skuId));
         assertThat(movementPage.getList()).hasSize(1);
@@ -363,7 +363,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         assertThat(movement.getSourceDocumentType())
                 .isEqualTo(PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE);
         assertThat(movement.getUnitSnapshot()).isEqualTo(DEFAULT_PURCHASE_UNIT);
-        // unit_cost 是采购价派生的成本事实：无 scm:report:cost:query 时 VO 给 null 而不是 0，
+        // unit_cost 是采购价派生的成本记录：无 scm:report:cost:query 时 VO 给 null 而不是 0，
         // 账本本身不受影响，成本仍可从流水行读回（可见性收口在 VO 层，不动账本）。
         assertThat(movement.getUnitCost()).isNull();
         assertThat(inventoryMovementDao

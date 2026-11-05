@@ -23,15 +23,15 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * ADM-07 单据模板与打印中心的 PostgreSQL 契约校验。
+ * ADM-07 单据模板与打印中心的 PostgreSQL 约定校验。
  *
- * <p>守的是几条最容易被悄悄改破的约束：打印记录必须冻结当时的模板版本、业务模型与版面，
+ * <p>守的是几条最容易被悄悄改破的约束：打印记录必须保存当时的模板版本、业务模型与版面，
  * 所以「事后改模板」不能回头改写历史重印结果；重印必须重新判调用者此刻的权限，
  * 不能因为「这条记录是我以前打过的」就绕过查看权；打印与重印都不许动采购单本身的状态。
  *
  * <p>金额权限的剔除路径只有 {@code DELIVERY_NOTE} 挂了金额权限码
  * （{@code PURCHASE_ORDER} / {@code SORTING_TICKET} 的 moneyPermission 为 null），
- * 因此那条口径由配送侧用例覆盖，本类不重复造发货链路。
+ * 因此那条规则由配送侧用例覆盖，本类不重复造发货链路。
  */
 class ScmPrintCenterPgIT extends ScmW5PgITBase {
 
@@ -67,7 +67,7 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
         return submitOrder(order.getId()).getId();
     }
 
-    /** 幂等键带本用例前缀：类是共享库上的 PG IT，不能用全局唯一的固定键。 */
+    /** 防重复请求编号带本用例前缀：类是共享库上的 PG IT，不能用全局唯一的固定键。 */
     private String key(String tag) {
         return prefix + ":print:" + tag;
     }
@@ -85,7 +85,7 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("打印记录冻结模板版本与版面：事后改版不回写历史重印")
+    @DisplayName("打印记录保存模板版本与版面：事后改版不回写历史重印")
     void printFreezesTemplateVersionAndLayoutAgainstLaterEdits() {
         Long orderId = newSubmittedPurchaseOrder();
         Long templateId = templateService.requireDefault(PURCHASE_ORDER_TYPE).getId();
@@ -101,7 +101,7 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
         Integer frozenVersion = printed.getTemplateVersion();
         assertThat(frozenTitle).isNotBlank();
 
-        // 改版：只改标题与页脚（不动纸张，避免掺入与断言无关的版面口径）
+        // 改版：只改标题与页脚（不动纸张，避免掺入与断言无关的版面规则）
         ScmPrintTemplateForm update = new ScmPrintTemplateForm();
         var detail = templateService.detail(templateId);
         update.setId(detail.getId());
@@ -119,9 +119,9 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
         templateService.update(update);
 
         ScmPrintRenderVO reprint = printService.reprint(latestRecordId(orderId));
-        assertThat(reprint.getTitle()).as("重印必须用记录里冻结的版面，不能被新模板污染")
+        assertThat(reprint.getTitle()).as("重印必须用记录里保存的版面，不能被新模板污染")
                 .isEqualTo(frozenTitle).isNotEqualTo("采购单（已改版）");
-        assertThat(reprint.getFooterNote()).as("页脚同样取冻结快照")
+        assertThat(reprint.getFooterNote()).as("页脚同样取历史资料")
                 .isEqualTo(frozenFooter).isNotEqualTo("改版后的页脚说明");
         assertThat(reprint.getPaper()).isEqualTo(frozenPaper);
         assertThat(reprint.getTemplateVersion()).isEqualTo(frozenVersion);
@@ -168,7 +168,7 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("同一幂等键重试只落一条打印记录")
+    @DisplayName("同一防重复请求编号重试只落一条打印记录")
     void retryWithSameIdempotencyKeyDoesNotDuplicateRecord() {
         Long orderId = newSubmittedPurchaseOrder();
         ScmPrintActionForm action = new ScmPrintActionForm();
@@ -179,11 +179,11 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
         printService.print(PURCHASE_ORDER_TYPE, orderId, action, idempotencyKey);
 
         assertThat(recordCount(orderId))
-                .as("重试不能重复生成不该重复的业务事实")
+                .as("重试不能重复生成不该重复的业务记录")
                 .isEqualTo(1);
     }
 
-    /** 以默认模板为底本造一份合法表单：只改要改的字段，避免掺进与断言无关的版面口径。 */
+    /** 以默认模板为底本造一份合法表单：只改要改的字段，避免掺进与断言无关的版面规则。 */
     private ScmPrintTemplateForm templateForm(String code, String title) {
         var base = templateService.requireDefault(PURCHASE_ORDER_TYPE);
         var model = templateService.detail(base.getId()).getModel();

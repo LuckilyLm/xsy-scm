@@ -167,7 +167,7 @@ const quantity = ref(1);
 const {addToCart} = useMallCart();
 
 /*
- * 展示口径一律来自 @/utils/product-display，与 ProductCard 同源，
+ * 展示规则一律来自 @/utils/product-display，与 ProductCard 同源，
  * 避免「列表说有货、详情说缺货」这类不一致。
  */
 const priced = computed(() => hasPrice(product.value));
@@ -189,7 +189,7 @@ function onImageError() {
   imageFailed.value = true;
 }
 
-/** 起订量与步进来自服务端契约，客户端只按它约束步进，不自行设定业务规则 */
+/** 起订量与步进来自服务端约定，客户端只按它约束步进，不自行设定业务规则 */
 const minQty = computed(() => (Number(product.value?.minOrderQty) > 0 ? Number(product.value.minOrderQty) : 1));
 const stepQty = computed(() => (Number(product.value?.stepQty) > 0 ? Number(product.value.stepQty) : 1));
 

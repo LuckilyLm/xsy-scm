@@ -8,10 +8,10 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 称重记录，只追加：没有 {@code version} / {@code deleted}，也没有 {@code scale_precision}。
+ * 称重记录，只能新增：没有 {@code version} / {@code deleted}，也没有 {@code scale_precision}。
  *
  * <p>
- * 刻意只有 insert 与 select：审计记录不可修改、不可删除，缺少 update / delete 方法本身就是「只追加」的实现 （与 {@code xsy_purchase_operation_log} 同一规则）。
+ * 刻意只有 insert 与 select：审计记录不可修改、不可删除，缺少 update / delete 方法本身就是「只能新增」的实现 （与 {@code xsy_purchase_operation_log} 同一规则）。
  */
 @Mapper
 public interface ReceiptWeighingRecordDao extends BaseMapper<ReceiptWeighingRecordEntity> {

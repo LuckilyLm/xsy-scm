@@ -76,16 +76,16 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
- * 商城售后全链路（PG IT）：客户申请 → 配额守卫 → 后台审批与收货 → 退款完成 → 客户侧投影与审计。
+ * 商城售后全链路（PG IT）：客户申请 → 配额守卫 → 后台审批与收货 → 退款完成 → 客户侧查询结果与审计。
  *
  * <p>
  * 为什么必须跑真实库：可退数量上限（实数量减去在途申请）、退货成本取历史销售出库成本、
  * 库存回补与退款单的净额计算，全部由 SQL 谓词与事务边界决定；商城侧只是把正式退货单 / 退款单
- * 投影给客户，mock 掉任何一层都会把「客户看到什么」变成对桩的断言。
+ * 查询结果给客户，mock 掉任何一层都会把「客户看到什么」变成对桩的断言。
  *
  * <p>
  * <b>资金到账的分界</b>：{@code OrderRefundService.complete} 只把退款单置为 COMPLETED；
- * 真正的资金事实（渠道原路退回 / 退回余额）由资金分摊或旧钱包返还路径产生。三条资金路径在本类各有一个用例：
+ * 真正的资金记录（渠道原路退回 / 退回余额）由资金分摊或旧钱包返还路径产生。三条资金路径在本类各有一个用例：
  * 无支付（退款单已完成、资金未到，客户看到 REFUNDING）、纯余额支付（旧钱包路径同事务返还，客户看到 REFUNDED）、
  * 余额加在线混合支付（分摊逐条腿退回，两条腿都到账才转 REFUNDED）。分摊的算法与失败隔离由
  * {@code RefundFundingAllocatorTest}、{@code RefundFundingAllocationSavepointPgIT} 负责，本类不重复也不放宽它们。
@@ -214,7 +214,7 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
                 .as("售后申请与退款完成都必须在订单审计里留痕")
                 .contains("RETURN", "REFUND");
 
-        // 客户侧投影：正式事实派生展示分类，本夹具无支付 → 资金未到 → 退款处理中
+        // 客户侧查询结果：正式记录派生展示分类，本夹具无支付 → 资金未到 → 退款处理中
         MallAfterSaleVO finalView = mallAfterSaleView(fixture, approved.getReturnId());
         assertThat(finalView.getStatus()).isEqualTo("APPROVED");
         assertThat(finalView.getDisplayStatus())
@@ -324,7 +324,7 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
                 .isEqualTo(MallAfterSaleDisplayStatusEnum.REFUNDING.name());
         assertThat(financePaymentCount(refundId)).as("来源没有全部成功，不登记财务付款").isZero();
 
-        // 渠道退回成功：回调与恢复任务共用同一条落库路径
+        // 渠道退回成功：回调与恢复任务共用同一条写入数据库路径
         Long onlineAllocationId = allocationIdOf(refundId, "ONLINE");
         BigDecimal onlineAllocated = jdbc.queryForObject(
                 "SELECT allocated_amount FROM xsy_refund_funding_allocation WHERE id = ?", BigDecimal.class,
@@ -408,9 +408,9 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 同上，并允许在确认之前登记订单的支付事实。
+     * 同上，并允许在确认之前登记订单的支付记录。
      *
-     * <p>支付事实决定退款完成时走哪条资金路径：纯余额支付由旧钱包路径同事务原路返还，
+     * <p>支付记录决定退款完成时走哪条资金路径：纯余额支付由旧钱包路径同事务原路返还，
      * 混合资金才需要人工执行资金分摊。回调拿到订单与客户 id，因为支付意图要挂在订单上、金额取订单结算额。
      */
     private AfterSaleFixture confirmedMallOrderWithCost(String tag, java.util.function.BiConsumer<Long, Long> pay) {
@@ -436,7 +436,7 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
 
         asBackOffice();
         confirmOrder(orderId, "3.0000");
-        // 支付事实登记在确认之后：结算额要等实重录入才落定，而支付意图挂在已确认的订单上。
+        // 支付记录登记在确认之后：结算额要等实重录入才落定，而支付意图挂在已确认的订单上。
         pay.accept(orderId, customerId);
         Long orderItemId = confirmedSalesOrderItemId(orderId);
         confirmSalesOutbound(orderId, orderItemId, skuId, "3.0000");
@@ -447,9 +447,9 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 登记一笔「纯余额支付」的订单资金事实：钱包账户 + 余额支付意图 + 交易 + 余额消费流水。
+     * 登记一笔「纯余额支付」的订单资金记录：钱包账户 + 余额支付意图 + 交易 + 余额消费流水。
      *
-     * <p>三条事实缺一不可：意图与交易是订单资金的取数来源（{@code selectOrderFunding}），
+     * <p>三条记录缺一不可：意图与交易是订单资金的取数来源（{@code selectOrderFunding}），
      * 消费流水是钱包返还的本金依据（{@code BalanceRefundService} 按它的金额算可退上限）。
      * 金额取订单结算额，保证返还金额不超过本金。
      */
@@ -502,13 +502,13 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 登记一笔「余额 + 在线」混合支付的订单资金事实。
+     * 登记一笔「余额 + 在线」混合支付的订单资金记录。
      *
      * <p>混合资金是旧钱包整体返还明确让位的场景：{@code BalanceRefundService} 一旦发现还有在线来源就直接返回 null，
      * 所以退款完成不会自动返还任何一分钱，钱只能由资金分摊按原资金来源逐条腿退回。
      *
-     * <p>在线腿必须同时带上 Finance 收款事实：订单资金完整性校验要求在线来源有对应收款单，否则分摊连计划都冻结不出来。
-     * 收款单走财务域的正式登记入口，不直插表 —— 它的客户与结算主体快照由财务域自己解析。
+     * <p>在线腿必须同时带上 Finance 收款记录：订单资金完整性校验要求在线来源有对应收款单，否则分摊连计划都保存不出来。
+     * 收款单走财务域的正式登记入口，不直插表 —— 它的客户与结算主体保存的数据由财务域自己解析。
      */
     private void payByMixedFunding(Long orderId, Long customerId) {
         BigDecimal orderAmount = jdbc.queryForObject(

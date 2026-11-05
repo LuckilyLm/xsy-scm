@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 支付成功与正常签收共用编排；调用者必须在同一事务持有订单行锁。
+ * 支付成功与正常签收共用协调；调用者必须在同一事务持有订单行锁。
  */
 @Slf4j
 @Service

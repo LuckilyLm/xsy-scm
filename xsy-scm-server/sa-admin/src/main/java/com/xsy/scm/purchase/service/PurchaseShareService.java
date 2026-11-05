@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 采购单二维码分享。
  *
  * <p>
- * 分享链接本身就是凭证：令牌不透明、只存哈希、有有效期、可撤销，一张采购单同一时刻只有一条有效链接。 手机端回填只追加记录，不直接改写采购单——现场误填不能悄悄改掉已提交的单据。
+ * 分享链接本身就是凭证：令牌不透明、只存哈希、有有效期、可撤销，一张采购单同一时刻只有一条有效链接。 手机端回填只能新增记录，不直接改写采购单——现场误填不能悄悄改掉已提交的单据。
  */
 @Service
 @RequiredArgsConstructor
@@ -127,7 +127,7 @@ public class PurchaseShareService {
      * 回填单价与重量。
      *
      * <p>
-     * 只追加：同一行多次提交都会留下记录，界面展示最近一次。明细必须属于这张采购单， 否则一个令牌就能往别人的单子上写数。
+     * 只能新增：同一行多次提交都会留下记录，界面展示最近一次。明细必须属于这张采购单， 否则一个令牌就能往别人的单子上写数。
      */
     @Transactional(rollbackFor = Exception.class)
     public void submitFeedback(String token, PurchaseShareFeedbackForm form, String operatorIp) {

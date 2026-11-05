@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p><b>为什么要这一组用例</b>：{@code db0374ab} 把退款从「同步调渠道」改成「持久化退款意图 → 定时查单 →
  * 失败恢复 → 资金完成自动入账」，这条链的正确性全压在几个<b>只有真实数据库才能验证</b>的语义上：
  * 租约的单飞性（多实例不重复派发）、租约到期后的可恢复性（进程重启）、候选行的到期与入账筛选、
- * 恢复审计的追加与不可改、以及渠道实退与申请额不一致时「保留渠道事实、不生成财务付款」。
+ * 恢复审计的追加与不可改、以及渠道实退与申请额不一致时「保留渠道记录、不生成财务付款」。
  * 这些用 Mockito 都测不出来 —— mock 掉的就是被验证的那条 SQL。
  *
  * <p><b>为什么不测 {@code PaymentRefundRecoveryService.recover()} 本身</b>：它是
@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * <p><b>造数</b>：订单与客户走真实领域服务（{@code ScmW5PgITBase}），
  * 支付意图 / 交易 / 售后退款单 / 渠道退款行按表结构直接插 —— 它们不是本用例的被测对象，
- * 只是「恢复链能跑起来」的前置事实。
+ * 只是「恢复链能跑起来」的前置记录。
  */
 @DisplayName("退款恢复链的持久化语义（V125，PG IT）")
 class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
@@ -150,7 +150,7 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 恢复结果落库：退避、状态、审计
+    // 恢复结果写入数据库：退避、状态、审计
     // ------------------------------------------------------------------
 
     @Test
@@ -175,7 +175,7 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("恢复审计只追加、按时间倒序，且数据库层面拒绝改写与删除")
+    @DisplayName("恢复审计只能新增、按时间倒序，且数据库层面拒绝改写与删除")
     void recoveryAuditIsAppendOnly() {
         RefundFixture fixture = recoveryFixture("AUDIT", "30.0000", "PROCESSING");
 
@@ -201,7 +201,7 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("渠道实退与申请额不一致：保留渠道事实，但不生成财务付款")
+    @DisplayName("渠道实退与申请额不一致：保留渠道记录，但不生成财务付款")
     void amountMismatchKeepsChannelFactWithoutFinancePayment() {
         RefundFixture fixture = recoveryFixture("MISMATCH", "30.0000", "PROCESSING");
 
@@ -268,7 +268,7 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
         assertThatThrownBy(() -> paymentRefundService.applyOutcome(fixture.refundId(),
                 ScmPaymentProvider.Outcome.SUCCEEDED, "MOCK-REFUND-OTHER", new BigDecimal("29.0000"), null, null,
                 "IT-RECOVERY"))
-                .as("渠道退款号是幂等锚点，改掉它会让同一笔本地退款对上两笔渠道资金")
+                .as("渠道退款号是防重复处理锚点，改掉它会让同一笔本地退款对上两笔渠道资金")
                 .isInstanceOf(ScmBusinessException.class);
     }
 
@@ -290,7 +290,7 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
                 .isEqualTo("ORIGINAL_FUNDING");
         assertThat(financePaymentAmount(fixture.orderRefundId())).isEqualByComparingTo("30.0000");
 
-        // 重复推进（回调重放、恢复任务再次扫到）不得产生第二条付款事实。
+        // 重复推进（回调重放、恢复任务再次扫到）不得产生第二条付款记录。
         refundFundingCompletionService.complete(fixture.orderRefundId(), "IT-RECOVERY");
         assertThat(financePaymentCount(fixture.orderRefundId())).isEqualTo(1);
 
@@ -299,7 +299,7 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("分摊合计与应退额不一致时拒绝入账，不留下一个金额错误的付款事实")
+    @DisplayName("分摊合计与应退额不一致时拒绝入账，不留下一个金额错误的付款记录")
     void fundingCompletionRejectsAmountMismatch() {
         RefundFixture fixture = recoveryFixture("ALLOC-MISMATCH", "30.0000", "SUCCEEDED");
         insertSucceededOnlineAllocation(fixture, "29.0000");
@@ -340,7 +340,7 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * 一笔可被恢复链处理的退款及其上下游事实。
+     * 一笔可被恢复链处理的退款及其上下游记录。
      */
     private record RefundFixture(Long customerId, Long orderId, Long orderRefundId, Long transactionId,
                                  Long refundId) {
@@ -359,7 +359,7 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
         String orderNo = jdbc.queryForObject("SELECT order_no FROM xsy_sales_order WHERE id = ?", String.class,
                 orderId);
 
-        // 支付意图与交易：恢复链只读它们来定位渠道交易号，不校验其金额口径。
+        // 支付意图与交易：恢复链只读它们来定位渠道交易号，不校验其金额计算规则。
         Long intentId = jdbc.queryForObject("""
                 INSERT INTO xsy_payment_intent
                     (intent_no, customer_id, customer_name_snapshot, source_type, source_id, source_no_snapshot,
@@ -412,7 +412,7 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
     }
 
     /**
-     * 登记一条财务退款付款事实，用于构造「这笔成功退款已经入账、不该再被恢复」的行。
+     * 登记一条财务退款付款记录，用于构造「这笔成功退款已经入账、不该再被恢复」的行。
      */
     private void insertFinancePayment(RefundFixture fixture) {
         jdbc.update("""
@@ -426,7 +426,7 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
     }
 
     /**
-     * 造一条已成功的 ONLINE 资金分摊，以及它对应的渠道退款事实。
+     * 造一条已成功的 ONLINE 资金分摊，以及它对应的渠道退款记录。
      *
      * <p>先插 {@code PENDING} 再回填 {@code result_source_id}：成功态要求 {@code result_source_id} 非空，
      * 而它指向的渠道退款行又必须带上分摊 id（{@code source_id}），两边互相引用，只能分两步。

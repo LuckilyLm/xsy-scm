@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>覆盖三件在单测里验证不了的事：
  * <ol>
- *   <li><b>方向感知的快照约束</b> —— 出库流水必须满足 {@code after = before - quantity}，
+ *   <li><b>方向感知的已存数据约束</b> —— 出库流水必须满足 {@code after = before - quantity}，
  *       这是 V25 重建 {@code ck_inventory_movement_snap} 的直接原因；</li>
  *   <li><b>可用量门槛</b> —— 出库不能吃掉已预留的货，DB 的
  *       {@code ck_inventory_balance_available} 与服务层的 41011 双重把关；</li>
@@ -36,7 +36,7 @@ class ScmInventoryOutboundIT extends ScmW6PgITBase {
     private Long outboundWarehouseId;
 
     /**
-     * 负库存关闭的独立仓：这些用例守的是「没有货不能出」的守恒口径，
+     * 负库存关闭的独立仓：这些用例守的是「没有货不能出」的守恒规则，
      * 而种子仓 WH001 在 V186 起允许销售出库出负数量，借用它会把断言变成对开关的断言。
      */
     @Override
@@ -67,7 +67,7 @@ class ScmInventoryOutboundIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("出库扣减余额并写 SALES_OUT 流水，快照方向为减")
+    @DisplayName("出库扣减余额并写 SALES_OUT 流水，保存的数据方向为减")
     void outboundDecrementsBalanceAndWritesReverseSnapshot() {
         Object[] s = stocked("ob1", "10.0000");
         Long wh = (Long) s[0];
@@ -86,7 +86,7 @@ class ScmInventoryOutboundIT extends ScmW6PgITBase {
                 .toList();
         assertThat(salesOut).hasSize(1);
         java.util.Map<String, Object> row = salesOut.getFirst();
-        // 方向感知快照：出库是减，这正是 V25 必须重建 ck_inventory_movement_snap 的原因
+        // 方向感知保存的数据：出库是减，这正是 V25 必须重建 ck_inventory_movement_snap 的原因
         assertThat(new BigDecimal(String.valueOf(row.get("before_quantity")))).isEqualByComparingTo("10.0000");
         assertThat(new BigDecimal(String.valueOf(row.get("quantity")))).isEqualByComparingTo("3.0000");
         assertThat(new BigDecimal(String.valueOf(row.get("after_quantity")))).isEqualByComparingTo("7.0000");

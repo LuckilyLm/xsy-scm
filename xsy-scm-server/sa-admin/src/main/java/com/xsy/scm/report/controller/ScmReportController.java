@@ -561,7 +561,7 @@ public class ScmReportController {
     }
 
     /**
-     * 负库存损耗：查询时点快照，没有日期参数。金额列按成本权限在服务层抹除，导出同理。
+     * 负库存损耗：查询时的数据，没有日期参数。金额列按成本权限在服务层抹除，导出同理。
      */
     @PostMapping("/inventory/negative-stock/query")
     @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)

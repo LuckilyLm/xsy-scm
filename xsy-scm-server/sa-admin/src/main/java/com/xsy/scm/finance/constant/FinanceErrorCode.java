@@ -64,7 +64,7 @@ public enum FinanceErrorCode implements ScmErrorCode {
     REVERSE_BLOCKED_BY_WRITE_OFF(41142, "该单仍有有效抵扣，请先撤销相关账款抵扣"),
 
     /**
-     * 该事实已被反向过。{@code uk_finance_*_single_reverse} 是最终防线，本码让服务层在撞库级唯一索引之前给出可读错误。
+     * 该记录已被反向过。{@code uk_finance_*_single_reverse} 是最终防线，本码让服务层在撞库级唯一索引之前给出可读错误。
      */
     ALREADY_REVERSED(41143, "该单据已撤销，不能重复撤销"),
 
@@ -97,7 +97,7 @@ public enum FinanceErrorCode implements ScmErrorCode {
      */
     COD_COLLECTION_ORDER_NOT_APPLICABLE(41153, "该订单不是货到付款结算，或尚未签收生成应收，不能登记收款"),
     /**
-     * 同一货到付款收款命令已有来源事实。
+     * 同一货到付款收款命令已有来源记录。
      */
     COD_COLLECTION_ALREADY_REGISTERED(41154, "该笔货到付款收款已登记，不能重复登记"),
     COD_COLLECTION_PAYMENT_CONFLICT(41155, "该订单已有未结束或成功的支付请求，不能再登记货到付款收款"),
@@ -112,7 +112,7 @@ public enum FinanceErrorCode implements ScmErrorCode {
     AUTO_WRITE_OFF_NO_OPEN_TARGET(41164, "该收付款对方没有可按顺序抵扣的未结单据"),
 
     /**
-     * 抹零的核销行不能走通用「反向核销」：它还必须把抹零事实置为 REVERSED，否则状态与余额会不一致。
+     * 抹零的核销行不能走通用「反向核销」：它还必须把抹零记录置为 REVERSED，否则状态与余额会不一致。
      */
     WAIVER_REVERSE_VIA_WAIVER(41165, "抹零记录请使用“撤销抹零”操作"),
 

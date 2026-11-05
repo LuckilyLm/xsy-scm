@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 后续断言拿到的都是假失败。
  *
  * <p>
- * 受测员工只有 A 仓授权：B 仓的码必须查不到、回放不了、发不了码、作废不了 —— 包括「按码回放」这种
+ * 受测员工只有 A 仓授权：B 仓的码必须查不到、历史记录查询不了、发不了码、作废不了 —— 包括「按码历史记录查询」这种
  * 只要知道码就能读到客户信息的入口。
  */
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -143,7 +143,7 @@ class ScmTraceUnitScopeIT extends ScmW6PgITBase {
 
         asScopedEmployee();
 
-        // 回放：按码也读不到
+        // 历史记录查询：按码也读不到
         assertThatThrownBy(() -> traceUnitService.replay(codeB))
                 .isInstanceOf(ScmDataScopeException.class);
         // 列表：B 仓的码不出现在结果里
@@ -176,7 +176,7 @@ class ScmTraceUnitScopeIT extends ScmW6PgITBase {
                 .isEqualTo("ACTIVE");
     }
 
-    /** 取码值的投影，避免在断言里写 lambda 取字段。 */
+    /** 取码值的查询结果，避免在断言里写 lambda 取字段。 */
     private static final class TraceUnitVOUnitCode {
         private static String of(com.xsy.scm.trace.domain.vo.TraceUnitVO.Unit unit) {
             return unit.getUnitCode();

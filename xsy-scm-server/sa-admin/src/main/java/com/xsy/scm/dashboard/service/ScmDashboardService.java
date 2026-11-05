@@ -123,7 +123,7 @@ public class ScmDashboardService {
     }
 
     /**
-     * 卡片要求的那组聚合必须取过；取不到说明可见卡片与取数编排对不上，属于编码错误。
+     * 卡片要求的那组聚合必须取过；取不到说明可见卡片与取数协调对不上，属于编码错误。
      */
     private static <T> T require(T metrics, ScmDashboardCardEnum card) {
         if (metrics == null) {

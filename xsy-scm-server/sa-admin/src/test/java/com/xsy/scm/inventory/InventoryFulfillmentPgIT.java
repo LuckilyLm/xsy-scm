@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       （它是顺序问题的最直接暴露面，不是靠放宽 CHECK 换来通过）；</li>
  *   <li><b>少拣整条收口</b>：一条订单行终身只有一行预留（唯一索引谓词不含 status），
  *       差额只能由「预留量 − 出库流水量」现算，库里不留第二个数；</li>
- *   <li><b>跨仓预留是被释放、不是被消耗</b>：货没从那个仓走，归还方必须留下 RELEASED 事实；</li>
+ *   <li><b>跨仓预留是被释放、不是被消耗</b>：货没从那个仓走，归还方必须留下 RELEASED 记录；</li>
  *   <li><b>实发 0 不出库单</b>：整线全缺时没有实物离仓，返回的出库单 id 必须是 null；</li>
  *   <li><b>明细带订单行来源</b>：这是发车后禁止重开、以及 Finance 成本归属的唯一依据；</li>
  *   <li><b>一条线路一张出库单</b>：同一 routeId 重复出库必须在库里被拒（部分唯一索引）。</li>
@@ -227,7 +227,7 @@ class InventoryFulfillmentPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("入参缺订单行、数量为负、同一订单行出现两次一律拒绝，且不落任何库存事实")
+    @DisplayName("入参缺订单行、数量为负、同一订单行出现两次一律拒绝，且不落任何库存记录")
     void rejectsMalformedLines() {
         Long warehouseId = seedWarehouseId();
         Long skuId = newOnShelfSku("ff7");
@@ -261,7 +261,7 @@ class InventoryFulfillmentPgIT extends ScmW6PgITBase {
     /**
      * 真提交的用例要自己换来源单据 id：{@code (来源类型, 来源 id)} 上有出库单部分唯一索引，
      * 用固定的 9005 在同一个库上跑第二次就会被 41066「该来源单据已产生出库单」拒绝，
-     * 看起来像业务规则回归，其实只是测试自己撞了上次运行留下的行。与 {@code prefix} 同一口径。
+     * 看起来像业务规则回归，其实只是测试自己撞了上次运行留下的行。与 {@code prefix} 同一套规则。
      */
     private static final java.util.concurrent.atomic.AtomicLong ROUTE_ID_SEQ = new java.util.concurrent.atomic.AtomicLong(
             System.currentTimeMillis() % 1_000_000_000L);

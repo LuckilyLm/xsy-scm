@@ -24,8 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>本测试锁定三件事：
  * <ol>
- *   <li>{@link ScmFixedScale4Serializer} 的契约：null 保持 null，0 为 "0.0000"，两者严格可区分；</li>
- *   <li>该契约在真实 Jackson 序列化结果上成立（不是只看序列化器内部逻辑）；</li>
+ *   <li>{@link ScmFixedScale4Serializer} 的约定：null 保持 null，0 为 "0.0000"，两者严格可区分；</li>
+ *   <li>该约定在真实 Jackson 序列化结果上成立（不是只看序列化器内部逻辑）；</li>
  *   <li>SCM 包内不存在任何使用 {@code BigDecimalNullZeroSerializer} 的类或字段（防回归）。</li>
  * </ol>
  */
@@ -69,7 +69,7 @@ class ScmBigDecimalNullSemanticsTest {
     }
 
     // ------------------------------------------------------------------
-    // 1. 序列化器契约
+    // 1. 序列化器约定
     // ------------------------------------------------------------------
 
     @Test

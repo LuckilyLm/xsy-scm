@@ -38,7 +38,7 @@ public class ScmCustomerStatementService {
     private static final int MAX_FACTS = 10_000;
 
     /**
-     * 抹零事实类型，与 {@code ScmStatementFactType} 及对账 SQL 的 {@code fact_type} 取值一致。
+     * 抹零记录类型，与 {@code ScmStatementFactType} 及对账 SQL 的 {@code fact_type} 取值一致。
      *
      * <p>
      * 单列出来是因为抹零没有资金流入：它是应收减少，不是核销分配，不能并进 {@code writeOffNet}。
@@ -47,7 +47,7 @@ public class ScmCustomerStatementService {
     private static final String FACT_WAIVER_REVERSE = ScmStatementFactType.WAIVER_REVERSE.name();
 
     /**
-     * 与 SQL 的 {@code ORDER BY event_at, fact_type, fact_id} 同一顺序：过账行与财务事实合并后仍按时间轴排列。
+     * 与 SQL 的 {@code ORDER BY event_at, fact_type, fact_id} 同一顺序：过账行与财务记录合并后仍按时间轴排列。
      */
     private static final Comparator<ScmCustomerStatementItemVO> EVENT_ORDER = Comparator
         .comparing(ScmCustomerStatementItemVO::getEventAt).thenComparing(ScmCustomerStatementItemVO::getFactType)
@@ -166,7 +166,7 @@ public class ScmCustomerStatementService {
     }
 
     /**
-     * 打印专用读取：不要求当前员工是生成人，但必须仍能按当前数据范围看到这份对账单的全部源事实。
+     * 打印专用读取：不要求当前员工是生成人，但必须仍能按当前数据范围看到这份对账单的全部源记录。
      *
      * <p>
      * 普通详情接口仍只返回生成人自己的版本；这里放宽的只是「谁生成的」，不是「谁能看」。
@@ -210,7 +210,7 @@ public class ScmCustomerStatementService {
         form.setCustomerId(version.getCustomerId());
         form.setStartDate(version.getStartDate());
         form.setEndDate(version.getEndDate());
-        // 冻结时选择了过账行，就按同一口径重验它们；否则只看财务事实。
+        // 保存时选择了过账行，就按同一套规则重验它们；否则只看财务记录。
         form.setIncludePosting(version.getIncludePosting());
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         List<ScmCustomerStatementItemVO> now = loadFacts(form, range.endAt(), scope, version.getGeneratedAt());
@@ -224,10 +224,10 @@ public class ScmCustomerStatementService {
     }
 
     /**
-     * 财务事实 + 可选的过账行。
+     * 财务记录 + 可选的过账行。
      *
      * <p>
-     * 过账不是财务事实，单独取再合并：它的三个资金变动都是 0，只带一个过账金额， 因此不可能改变滚动余额或期末净应收。合并后仍按时间轴排， 对账单读起来是一条完整的时间线。
+     * 过账不是财务记录，单独取再合并：它的三个资金变动都是 0，只带一个过账金额， 因此不可能改变滚动余额或期末净应收。合并后仍按时间轴排， 对账单读起来是一条完整的时间线。
      */
     private List<ScmCustomerStatementItemVO> loadFacts(ScmCustomerStatementForm form, OffsetDateTime endAt,
         ScmDataScopeContext scope, OffsetDateTime asOfCreatedAt) {
@@ -250,7 +250,7 @@ public class ScmCustomerStatementService {
     }
 
     /**
-     * 从明细事实汇总抹零净额：抹零行的应收变动是负数，取反就是本期免掉的金额。
+     * 从明细记录汇总抹零净额：抹零行的应收变动是负数，取反就是本期免掉的金额。
      */
     private static BigDecimal waiverNet(List<ScmCustomerStatementItemVO> items) {
         if (items == null) {

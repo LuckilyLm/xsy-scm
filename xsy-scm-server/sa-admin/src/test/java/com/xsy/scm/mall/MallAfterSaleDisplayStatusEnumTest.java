@@ -6,7 +6,7 @@ import com.xsy.scm.mall.aftersale.constant.MallAfterSaleDisplayStatusEnum;
 import org.junit.jupiter.api.Test;
 
 /**
- * 售后展示分类按退货单与实际资金完成事实派生，未知状态不猜成「退款完成」。
+ * 售后展示分类按退货单与实际资金完成记录派生，未知状态不猜成「退款完成」。
  */
 class MallAfterSaleDisplayStatusEnumTest {
 

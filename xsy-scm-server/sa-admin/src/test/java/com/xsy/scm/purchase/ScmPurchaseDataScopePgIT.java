@@ -66,7 +66,7 @@ import static org.mockito.Mockito.mockStatic;
 /**
  * 采购域的行级数据范围、写入侧归属收口，以及报损报溢的「禁止自建自审」。
  *
- * <p>被测口径来自 {@code docs/decisions.md}「P0 基线收口裁决」第 7、8 条：
+ * <p>被测规则来自 {@code docs/decisions.md}「P0 基线收口裁决」第 7、8 条：
  * 普通采购员默认只看 {@code xsy_purchase_order.purchaser_id} / {@code xsy_purchase_demand.purchaser_id}
  * 等于本人的行；{@code purchaser_id IS NULL} 是「未分配」，普通采购员不可见、持全量范围者可见；
  * <b>新建时归属必须由服务端强制为当前员工</b> —— 没有这条写入侧收口，行级范围只是「藏起来」，
@@ -78,11 +78,11 @@ import static org.mockito.Mockito.mockStatic;
  * 覆盖基类的员工 1）与功能权限（{@code StpUtil.hasPermission}）。IT 线程里没有 Sa-Token 上下文，
  * 直接调 {@code StpUtil} 抛出的异常会被 {@code ScmDataScopeService#hasPermission} 吞成 false，
  * 因此按 {@code FileAccessGuardTest} 的既有做法用 {@code mockStatic(StpUtil.class)} 显式给权限；
- * 未点名的权限码取 Mockito 默认值 false，正好等于失败关闭。测试员工一律
+ * 未点名的权限码取 Mockito 默认值 false，正好等于校验失败时拒绝操作。测试员工一律
  * {@code administratorFlag=false}（裁决第 5 条：超管通过不构成权限证据）。
  * {@link #as} 不可嵌套：同一线程只能注册一次静态 mock。
  *
- * <p><b>越权读的断言口径</b>：只断到异常类型与 {@link UserErrorCode#NO_PERMISSION} 的语义。
+ * <p><b>越权读的断言规则</b>：只断到异常类型与 {@link UserErrorCode#NO_PERMISSION} 的语义。
  * HTTP 信封里的 30005 由底座统一出码，映射归属底座，不在本域内改。
  *
  * <p><b>两条聚合读（裁决第 8 条收口的最后两个洞）</b>：缺口预览与按商品收货工作台不按采购员收窄，
@@ -90,7 +90,7 @@ import static org.mockito.Mockito.mockStatic;
  * 重点是「范围外的量根本不进聚合」：同一 SKU 在两个仓各有一张单时，只授权一个仓的人拿到的计划 /
  * 已收 / 余额只是他自己那个仓的数字，另一仓的量既不出现在行里、也不被并进合计；一个授权仓都没有时
  * 得到空分页，而不是 {@code 0}（0 会被读成「这些仓没收过货」）。
- * {@code demand.generate} 是命令路径，其取数口径刻意继续传 {@code ScmValueScope.all()}，
+ * {@code demand.generate} 是命令路径，其取数规则刻意继续传 {@code ScmValueScope.all()}，
  * 所以这里同时取证「零仓库授权的调用者仍能生成需求」，防止把读侧收窄误接到写路径上。
  *
  * <p><b>单据夹具</b>：采购单与需求都走真实命令服务（{@code create} / {@code generate}），
@@ -159,7 +159,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("详情与行/日志子读同一口径：别人的单是数据范围越权，不存在仍是 40481")
+    @DisplayName("详情与行/日志子读同一套规则：别人的单是数据范围越权，不存在仍是 40481")
     void orderDetailAndSubReadsDenyOutOfScope() {
         loginAs(purchaserA);
         Purchasable goods = purchasable("OD");
@@ -215,7 +215,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
         PurchaseDemandEntity demandOfB = as(purchaserB, Set.of(),
                 () -> generateDemand(second.supplierId(), second.salesOrderId(), null));
 
-        // 表单里填的是别人的 id，落库的仍是调用者本人（伪造归属在写入侧就被挡掉）
+        // 表单里填的是别人的 id，写入数据库的仍是调用者本人（伪造归属在写入侧就被挡掉）
         assertThat(demandPurchaserId(demandOfA.getId())).isEqualTo(purchaserA);
         assertThat(demandPurchaserId(demandOfB.getId())).isEqualTo(purchaserB);
 
@@ -237,7 +237,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
     // ==================== 3. 收货单（表上没有采购员列） ====================
 
     @Test
-    @DisplayName("收货单按父采购单的采购员继承：列表与详情、明细同一口径")
+    @DisplayName("收货单按父采购单的采购员继承：列表与详情、明细同一套规则")
     void receiptFollowsParentOrderPurchaser() {
         loginAs(purchaserA);
         Purchasable goods = purchasable("RC");
@@ -300,7 +300,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
             PurchaseOrderAddForm form = orderForm(goods.supplierId(), seedWarehouseId(), goods.skuId(),
                     "4.0000", "6.2000");
             form.setPurchaserId(purchaserB);
-            // 替别人建的单，命令侧必须还能把自己刚写的单据投影回来（读取范围只约束查询端点）
+            // 替别人建的单，命令侧必须还能把自己刚写的单据查询结果回来（读取范围只约束查询端点）
             return purchaseOrderService.create(form, prefix + ":WS-A:po");
         });
 
@@ -369,7 +369,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
                         .isEqualTo(String.valueOf(purchaserB)));
     }
 
-    // ==================== 5. 共享主档与失败关闭 ====================
+    // ==================== 5. 共享主档与校验失败时拒绝操作 ====================
 
     @Test
     @DisplayName("供应商主档仍按采购团队共享读取：不为数据范围给 supplier 加归属")
@@ -401,7 +401,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
 
         assertThat(purchaseQueryService.receiptQuery(newForm(new PurchaseReceiptQueryForm())).getList()).isEmpty();
         assertThat(purchaseQueryService.demandQuery(newForm(new PurchaseDemandQueryForm())).getList()).isEmpty();
-        // 两条聚合读走的是同一条失败关闭取向：无身份 → 仓库范围为 none → 空分页，而不是全量
+        // 两条聚合读走的是同一条校验失败时拒绝操作取向：无身份 → 仓库范围为 none → 空分页，而不是全量
         assertThat(purchaseQueryService.summaryPreview(
                 summaryForm(seedWarehouseId(), OffsetDateTime.now().minusHours(1))).getList()).isEmpty();
         assertThat(purchaseQueryService.receiptItemWorkbench(workbenchForm(null)).getList()).isEmpty();
@@ -462,7 +462,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
         assertThat(otherRow.getOnHandQuantity()).isEqualByComparingTo("1.0000");
         assertThat(otherRow.getStockComparisonGap()).isEqualByComparingTo("2.0000");
 
-        // 持全量仓库范围者两个仓都能读，数字与各自仓一致（收窄没有改变任何口径）
+        // 持全量仓库范围者两个仓都能读，数字与各自仓一致（收窄没有改变任何规则）
         assertThat(as(seedOnly, Set.of(ScmDataScopeService.WAREHOUSE_ALL_PERM),
                 () -> summaryRow(goods.skuId(), otherWarehouse, goods.confirmedAt())
                         .getStockComparisonGap())).isEqualByComparingTo("2.0000");
@@ -515,7 +515,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
         loginAs(purchaserA);
         createSubmittedOrderAt(receivable, "PSNW", purchaserA, seedWarehouseId(), "4.0000");
 
-        // 事实都在库里（下面用全量范围读得到），空分页只能是范围的结果，不是「没有数据」
+        // 记录都在库里（下面用全量范围读得到），空分页只能是范围的结果，不是「没有数据」
         PageResult<PurchaseDemandSummaryVO> preview = as(noGrant, Set.of(),
                 () -> purchaseQueryService.summaryPreview(summaryForm(seedWarehouseId(), goods.confirmedAt())));
         assertThat(preview.getList()).isEmpty();
@@ -551,7 +551,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
             return purchaseDemandService.generate(form, prefix + ":gen:" + goods.salesOrderId());
         });
 
-        // 取数口径没有被新参数挡掉：来源行数 = 1、需求真落库
+        // 取数规则没有被新参数挡掉：来源行数 = 1、需求真写入数据库
         assertThat(result.getSourceLineCount()).as("listSourceItems 仍按全量来源行取数").isEqualTo(1);
         assertThat(result.getCreatedCount()).isEqualTo(1);
         PurchaseDemandEntity demand = demandOfSourceItem(goods.salesOrderItemId());
@@ -580,7 +580,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
         Long receiptId = as(caller, Set.of(), () -> createReceipt(orderId).getId());
 
         assertNoPermission(() -> as(caller, Set.of(), () -> confirmReceipt(receiptId, "4.0000")));
-        // 失败关闭必须真的什么都没写：状态仍 PENDING、目标仓既无余额行也无 PURCHASE_IN 流水
+        // 校验失败时拒绝操作必须真的什么都没写：状态仍 PENDING、目标仓既无余额行也无 PURCHASE_IN 流水
         assertThat(receiptStatus(receiptId)).isEqualTo("PENDING");
         assertThat(balanceRowCount(otherWarehouse, goods.skuId())).isZero();
         assertThat(movementCount(otherWarehouse, goods.skuId())).isZero();
@@ -774,7 +774,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 幂等键必须逐次不同：第一次被范围拒绝后 {@code claim} 记录已经落下，
+     * 防重复请求编号必须逐次不同：第一次被范围拒绝后 {@code claim} 记录已经落下，
      * 同键重放会让第二次（补齐授权的那次）读到「已提交但缺 result_data」的半成品记录而直接报错，
      * 测不到「授权补齐后放行」这件事本身。
      */
@@ -841,7 +841,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
 
     /**
      * 以某个员工 + 一组功能权限执行一段逻辑。权限由 {@code mockStatic(StpUtil.class)} 提供：
-     * 未点名的权限码取 Mockito 默认值 false，与生产上的失败关闭取向一致。<b>不可嵌套调用</b>。
+     * 未点名的权限码取 Mockito 默认值 false，与生产上的校验失败时拒绝操作取向一致。<b>不可嵌套调用</b>。
      */
     private <T> T as(Long employeeId, Set<String> permissions, Supplier<T> body) {
         loginAs(employeeId);
@@ -917,7 +917,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
 
     /**
      * 直插一行库存余额：缺口预览只<b>读</b>余额，不经收货入库链路，
-     * 因此「已知库存事实」这一夹具直接落表就是它要构造的东西（与 {@code PurchaseDemandSummaryPreviewIT} 同）。
+     * 因此「已知库存记录」这一夹具直接落表就是它要构造的东西（与 {@code PurchaseDemandSummaryPreviewIT} 同）。
      */
     private void seedBalance(Long warehouseId, Long skuId, String quantity) {
         jdbc.update("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, reserved_quantity, "

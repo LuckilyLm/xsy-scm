@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>三件事都值得单独钉，因为它们一旦漂移就是静默的：
  * 字典少一个市 → 那个市的气泡从此画不出来（接口不报错，图上就是没有）；
- * 坐标约束松一格 → 半套坐标落库，地图选点无从解释；
+ * 坐标约束松一格 → 半套坐标写入数据库，地图选点无从解释；
  * 解析规则放宽 → 把「长沙路」认成「长沙市」，地理数据被污染且没人知道哪些行是错的。
  *
  * <p>解析段不复制到测试里：直接从 classpath 读 V40 原文的 {@code -- Step 4} 之后整段执行，
@@ -30,7 +30,7 @@ class ScmGeoMigrationIT extends ScmBaselineMigrationPgITBase {
     private static final List<String> MASTER_TABLES = List.of("xsy_warehouse", "xsy_customer", "xsy_supplier");
 
     /**
-     * V42 只给这三张表加了 {@code ck_…_location_complete}：配送链路用到的是仓库、客户与订单地址快照。
+     * V42 只给这三张表加了 {@code ck_…_location_complete}：配送链路用到的是仓库、客户与订单下单时保存的地址。
      * supplier 没有这条聚合约束，V40 的细粒度五条是它唯一的地理守卫 —— 所以负向用例的可接受拒绝原因
      * 逐表不同，不能统一按「细粒度或聚合」两个名字判。
      */
@@ -69,7 +69,7 @@ class ScmGeoMigrationIT extends ScmBaselineMigrationPgITBase {
     }
 
     /**
-     * 钉住「市名在全国不唯一」这一事实。
+     * 钉住「市名在全国不唯一」这一记录。
      *
      * <p>V40 解析规则里「市名不唯一时必须同时命中省名」那条分支不是防御性冗余 ——
      * 种子数据里确实存在重名市。断言它只有重庆市，是为了让重名清单变化时立刻暴露：
@@ -111,7 +111,7 @@ class ScmGeoMigrationIT extends ScmBaselineMigrationPgITBase {
             assertRejectedBy("半套坐标", rejectReasons(table, "coordinate_pair"),
                     "UPDATE " + table + " SET longitude = 120.155078 WHERE id = ?", id);
 
-            // CRS 只能伴随坐标存在：标了 GCJ02 却没坐标，等于声明了一个无法验证的口径
+            // CRS 只能伴随坐标存在：标了 GCJ02 却没坐标，等于声明了一个无法验证的规则
             assertRejectedBy("带坐标系却没坐标", rejectReasons(table, "crs_with_coordinate"),
                     "UPDATE " + table + " SET geom_crs = 'GCJ02' WHERE id = ?", id);
 
@@ -193,7 +193,7 @@ class ScmGeoMigrationIT extends ScmBaselineMigrationPgITBase {
      * <p>用例包在事务里、结束回滚，所以可以在真实字典上重放整段 UPDATE 而不污染库。
      */
     @Test
-    @DisplayName("存量地址解析：只认完整市名、重名靠省名消歧、解析不出留 NULL、幂等不覆盖")
+    @DisplayName("存量地址解析：只认完整市名、重名靠省名消歧、解析不出留 NULL、防重复处理不覆盖")
     void conservativeAddressParseMatchesOnlyFullCityNames() {
         Long fullAddress = newCustomer();
         Long streetTrap = newCustomer();
@@ -218,7 +218,7 @@ class ScmGeoMigrationIT extends ScmBaselineMigrationPgITBase {
         assertThat(geoColumnsOf(provinceOnly)).containsExactly(220000, null, "吉林省", null);
         assertThat(geoColumnsOf(unparseable)).containsExactly(null, null, null, null);
 
-        // 幂等：解析段只碰 city_code IS NULL 的行，已人工归属的绝不覆写
+        // 防重复处理：解析段只碰 city_code IS NULL 的行，已人工归属的绝不覆写
         assertThat(jdbc.update("UPDATE xsy_customer SET province_code = 440000, city_code = 440100 WHERE id = ?",
                 unparseable)).isEqualTo(1);
         runConservativeParseSection();

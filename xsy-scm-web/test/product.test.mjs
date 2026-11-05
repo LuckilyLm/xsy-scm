@@ -1,5 +1,5 @@
 /**
- * 商品模块契约测试。
+ * 商品模块约定检查。
  *
  * 由 4 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -21,7 +21,7 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
 // ---------------------------------------------------------------- 来源：image-center-pick-columns-contract.test.mjs
 {
   /**
-   * 图片中心左侧商品选择区的列契约测试。
+   * 图片中心左侧商品选择区的列约定检查。
    *
    * 规划要求左侧「商品名称 + 商品编码 + 主图状态」各自成列：名称是主信息，
    * 编码是可核对的技术标识，两者不叠进同一个单元格（一格一值）。
@@ -87,7 +87,7 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
 // ---------------------------------------------------------------- 来源：product-config-tables-contract.test.mjs
 {
   /**
-   * 商品配置三张表（分类 / 计量单位 / 商品标签）的列与操作列契约测试。
+   * 商品配置三张表（分类 / 计量单位 / 商品标签）的列与操作列约定检查。
    *
    * 这三张表藏在 `product/components/` 下，「操作列居中」的批量改动
    * （commit ffa95370）只扫了页面级列表，漏掉了组件里的表，所以它们的操作列一直是
@@ -294,10 +294,7 @@ import {IMAGE_MIME_TYPES, imageFileError} from '../src/constants/business/scm/im
     assert.match(source, /if \(error\.value\) \{[\s\S]{0,160}message\.error\(error\.value\)/);
   });
   test('组合商品组成允许清空，并在清除前二次确认', () => {
-    const source = readFileSync(
-      new URL('../src/views/business/scm/product/components/product-bundle-editor.vue', import.meta.url),
-      'utf8'
-    );
+    const source = readFileSync(new URL('../src/views/business/scm/product/components/product-bundle-editor.vue', import.meta.url), 'utf8');
     assert.match(source, /Modal\.confirm/);
     assert.match(source, /清除组合商品组成/);
     assert.doesNotMatch(source, /!draft\.value\.length\s*\|\|/, '空组成不应再被当作无效输入');

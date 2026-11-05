@@ -578,7 +578,7 @@ async function submitCreate() {
       warehouseId: createForm.warehouseId,
       assigneeEmployeeId: createForm.assigneeEmployeeId ?? null,
       remark: createForm.remark?.trim() || null,
-      // 勾选行即订单行 id；重复提交由幂等键挡住，抢同一行由服务端唯一索引挡住
+      // 勾选行即订单行 id；重复提交由防重复请求编号挡住，抢同一行由服务端唯一索引挡住
       salesOrderItemIds: [...candidateSelected.value],
     });
     message.success(`分拣任务创建成功：${result.data.task.taskNo}`);

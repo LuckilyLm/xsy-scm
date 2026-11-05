@@ -139,7 +139,7 @@
         WHERE u.id = #{id}
     </select>
 
-    <!-- 持锁复核前清空本事务先前的只读结果，避免将缓存的“未绑定”当作最新事实。 -->
+    <!-- 持锁复核前清空本事务先前的只读结果，避免将缓存的“未绑定”当作最新记录。 -->
     <select id="lockById" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit" flushCache="true" useCache="false">
         SELECT u.id, u.unit_code AS unitCode, u.lot_id AS lotId, u.quantity, u.unit, u.status, u.created_at AS createdAt
         FROM xsy_trace_unit u
@@ -161,7 +161,7 @@
 
     <!--
       分拣任务行：绑定校验的客户/商品/实拣量来源；锁行以串行化同一行上的并发绑定。
-      实拣量是销售单位口径，绑定总量比较前必须按订单行冻结的换算折成库存记账量，因此一并取出冻结换算。
+      实拣量是销售单位规则，绑定总量比较前必须按订单行保存的换算折成库存记账量，因此一并取出保存换算。
     -->
     <select id="lockSortingItem" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$SortingItem" flushCache="true" useCache="false">
         SELECT i.task_id AS taskId, i.id AS itemId, i.sku_id AS skuId, i.sales_order_id AS salesOrderId,
@@ -268,7 +268,7 @@
 
     <!--
       不加锁版本：秤端选批次是只读动作，锁住分拣行会和并发的分拣写入互相等待。
-      列与 lockSortingItem 保持一致，避免两处口径分叉。
+      列与 lockSortingItem 保持一致，避免两处规则分叉。
     -->
     <select id="findSortingItem" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$SortingItem">
         SELECT i.task_id AS taskId, i.id AS itemId, i.sku_id AS skuId, i.sales_order_id AS salesOrderId,

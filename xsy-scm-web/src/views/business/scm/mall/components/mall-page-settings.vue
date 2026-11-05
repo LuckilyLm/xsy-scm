@@ -66,7 +66,7 @@ const loading = ref(false),
   dirty = ref(false),
   error = ref(''),
   previewOpen = ref(false);
-/** 空内容不允许发布，与服务端口径一致。 */
+/** 空内容不允许发布，与服务端规则一致。 */
 const saved = computed(() => hasContent(page.value.content));
 /** 编辑器回填时也会触发 onChange，回填期间不标记为未保存。 */
 const applying = ref(false);
@@ -128,7 +128,7 @@ async function save(): Promise<void> {
       apply(data);
       void message.success('草稿已保存');
     } else {
-      // 请求期间的输入没有写入服务端；只同步版本与已发布快照，保留编辑框里的新内容并继续标记未保存。
+      // 请求期间的输入没有写入服务端；只同步版本与发布时保存的内容，保留编辑框里的新内容并继续标记未保存。
       page.value = data;
       dirty.value = true;
       void message.warning('草稿已保存，保存期间的新修改尚未保存，请再次保存');

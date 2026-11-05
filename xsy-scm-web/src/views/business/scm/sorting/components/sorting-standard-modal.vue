@@ -118,7 +118,7 @@ async function submit() {
     emit('saved');
     emit('update:open', false);
   } catch (cause) {
-    // 网络结果不明时保留原选择，重试由 API 层沿用原幂等键；刷新预览后须重新选择。
+    // 网络结果不明时保留原选择，重试由 API 层沿用原防重复请求编号；刷新预览后须重新选择。
     error.value = `${sortingError(cause)}。可重试原操作；如数据已变化，请刷新预览后重新选择。`;
   } finally {
     saving.value = false;

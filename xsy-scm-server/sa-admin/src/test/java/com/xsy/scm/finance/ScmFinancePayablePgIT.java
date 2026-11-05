@@ -29,9 +29,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 收货确认 → 正常应付（PG IT）。
  *
- * <p>本类盯的是「财务事实由收货事实派生」这条口径本身，而不是采购域的收货规则（那些已由
+ * <p>本类盯的是「财务记录由收货记录派生」这条规则本身，而不是采购域的收货规则（那些已由
  * {@code PurchaseReceipt*IT} 覆盖）：金额必须 = 实际确认的有效量 × 采购行结算单价，
- * 时点必须 = {@code xsy_purchase_receipt.confirmed_at}，且两条入库模式下口径完全一致。
+ * 时点必须 = {@code xsy_purchase_receipt.confirmed_at}，且两条入库模式下规则完全一致。
  *
  * <p><b>为什么用真实 PostgreSQL</b>：{@code NUMERIC(18,4)} 的舍入、{@code ON CONFLICT} 与部分唯一
  * 索引谓词的逐字匹配、单头 {@code amount > 0} 与明细 {@code quantity > 0} 的 CHECK，
@@ -74,7 +74,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         form.setPurchaseOrderId(orderId);
         form.setReceiptMode(mode.name());
         form.setRemark("F1-2A IT 收货单 " + suffix);
-        // 幂等键必须逐张唯一：同一采购单的多张收货单是分次到货的正常业务，不限张数；
+        // 防重复请求编号必须逐张唯一：同一采购单的多张收货单是分次到货的正常业务，不限张数；
         // 复用同一个键会因为内容不同而得到 40990，那看起来像本类的断言错了。
         return purchaseReceiptService.create(form, prefix + ":receipt:" + orderId + ":" + suffix);
     }
@@ -198,14 +198,14 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         assertThat(longOf(payable, "source_id")).isEqualTo(receipt.getId());
         assertThat(longOf(payable, "purchase_order_id")).isEqualTo(receipt.getPurchaseOrderId());
         assertThat(longOf(payable, "supplier_id")).isEqualTo(receipt.getSupplierId());
-        // 供应商名取收货事实上的快照，不回读供应商主档（主档改名不会改历史账）
+        // 供应商名取收货记录上的已存数据，不回读供应商主档（主档改名不会改历史账）
         assertThat(payable.get("supplier_name_snapshot")).isEqualTo(receipt.getSupplierName());
         assertThat(decimalOf(payable, "amount")).isEqualByComparingTo("49.6000");
         assertThat(payable.get("reason")).isNull();
         assertThat(payable.get("original_payable_id")).isNull();
         assertThat(payable.get("deleted")).isEqualTo(false);
         assertThat(String.valueOf(payable.get("payable_no"))).matches("^XSY\\d{18,19}$");
-        // 应付时点 = 收货确认时刻（DIRECT 下也等于物理入库时刻，但口径取的是 confirmed_at）
+        // 应付时点 = 收货确认时刻（DIRECT 下也等于物理入库时刻，但规则取的是 confirmed_at）
         assertThat(timeOf(payable, "event_at").toInstant())
                 .isEqualTo(receiptConfirmedAt(receipt.getId()).toInstant());
 
@@ -226,7 +226,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         assertThat(decimalOf(line, "amount")).isEqualByComparingTo("49.6000");
         assertThat(line.get("deleted")).isEqualTo(false);
 
-        // 日志与应付同事务：GENERATE 没有「改前」，改后是单头快照，operator 是本次收货确认的人
+        // 日志与应付同事务：GENERATE 没有「改前」，改后是单头保存的数据，operator 是本次收货确认的人
         List<Map<String, Object>> logs = payableLogsOf(payableId);
         assertThat(logs).hasSize(1);
         Map<String, Object> log = logs.getFirst();
@@ -266,7 +266,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         Map<String, Object> payable = payableOf(receipt.getId());
         Long payableId = longOf(payable, "id");
         OffsetDateTime confirmedAt = receiptConfirmedAt(receipt.getId());
-        // 库存还没入账（putaway 仍 PENDING、无流水），应付已经成立 —— 应付只由收货事实派生，不等到货入库
+        // 库存还没入账（putaway 仍 PENDING、无流水），应付已经成立 —— 应付只由收货记录派生，不等到货入库
         assertThat(reloadReceipt(receipt.getId()).getPutawayStatus()).isEqualTo("PENDING");
         assertThat(movementCount(seedWarehouseId(), skuId)).isZero();
         assertThat(timeOf(payable, "event_at").toInstant()).isEqualTo(confirmedAt.toInstant());
@@ -288,7 +288,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("金额口径：3.3333 × 2.2222 = 7.40725926 → 7.4073（HALF_UP 到 4 位，不是截断）")
+    @DisplayName("金额计算规则：3.3333 × 2.2222 = 7.40725926 → 7.4073（HALF_UP 到 4 位，不是截断）")
     void itemAmountRoundsHalfUpAtScaleFour() {
         Long skuId = newOnShelfSku("FPC");
         PurchaseReceiptVO receipt = draftReceipt("FPC", skuId, "4.0000", "2.2222", ScmReceiptModeEnum.DIRECT);
@@ -323,7 +323,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // F. 少收：只按实际确认量形成，不产生任何差异事实
+    // F. 少收：只按实际确认量形成，不产生任何差异记录
     // ------------------------------------------------------------------
 
     @Test
@@ -349,7 +349,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // G. 整单 0 元：不产生 0 元财务事实
+    // G. 整单 0 元：不产生 0 元财务记录
     // ------------------------------------------------------------------
 
     @Test
@@ -359,7 +359,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         PurchaseReceiptVO receipt = draftReceipt("FPF", skuId, "5.0000", "0.0000", ScmReceiptModeEnum.DIRECT);
         PurchaseReceiptVO confirmed = confirmAllLines(receipt.getId(), "5.0000");
 
-        // 前置事实：收货本身成功了（跳过财务事实不是「整笔失败」的副作用）
+        // 前置记录：收货本身成功了（跳过财务记录不是「整笔失败」的副作用）
         assertThat(confirmed.getStatus()).isEqualTo("CONFIRMED");
         assertThat(movementCount(seedWarehouseId(), skuId)).isEqualTo(1);
 
@@ -420,7 +420,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         Map<String, Object> payable = payableOf(receipt.getId());
         assertThat(longOf(payable, "id")).as("重放不换单也不换号").isEqualTo(payableId);
         assertThat(payableItemsOf(payableId)).hasSize(1);
-        assertThat(payableLogsOf(payableId)).as("已生成不是新事实，不重复留痕").hasSize(1);
+        assertThat(payableLogsOf(payableId)).as("已生成不是新记录，不重复留痕").hasSize(1);
     }
 
     // ------------------------------------------------------------------

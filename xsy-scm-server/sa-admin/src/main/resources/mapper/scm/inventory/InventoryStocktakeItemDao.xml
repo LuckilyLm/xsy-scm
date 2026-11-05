@@ -9,8 +9,8 @@
     </resultMap>
 
     <!--
-      delta_quantity 是派生列（actual − book），只在 SQL 里算给前端看，不落库：
-      落库会与两个真值列失去同步。展示单位也一并取出，前端不必再查一次余额。
+      delta_quantity 是派生列（actual − book），只在 SQL 里算给前端看，不写入数据库：
+      写入数据库会与两个真值列失去同步。展示单位也一并取出，前端不必再查一次余额。
     -->
     <select id="listByStocktakeId" resultMap="itemVoMap">
         SELECT i.id, i.stocktake_id, i.sku_id, i.book_quantity, i.actual_quantity,
@@ -24,7 +24,7 @@
         ORDER BY i.id ASC
     </select>
 
-    <!-- 待确认单重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删口径一致） -->
+    <!-- 待确认单重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删规则一致） -->
     <update id="deleteByStocktakeId">
         UPDATE xsy_inventory_stocktake_item
         SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}

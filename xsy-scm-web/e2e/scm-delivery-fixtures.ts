@@ -3,7 +3,7 @@
 
   P1 分拣落地后，「已确认订单」不再自动等于「可配送候选」——候选要求订单每条有效明细行都被
   **已完成**的分拣任务覆盖（docs/decisions.md「P1 分拣管理裁决」第 11 条与补充第 18 条）。
-  因此配送用例不能再从共享的候选池里挑单：池子里留下的历史订单永远不会自己长出分拣事实。
+  因此配送用例不能再从共享的候选池里挑单：池子里留下的历史订单永远不会自己长出分拣记录。
 
   本模块把这条前置链一次做全：三级分类 → 非标品 SKU → 已定位客户 → 创建/提交/录实重/确认订单
   → 建分拣任务 → 逐行录入 → 完成任务。每一步都走真实命令接口，因为只有真实链路才能证明
@@ -68,7 +68,7 @@ export async function createSku(
       },
     ],
   });
-  // V147 起 SPU / SKU 编码由服务端发号：造数传入的字符串不落库，只能回读详情再按真实编码检索。
+  // V147 起 SPU / SKU 编码由服务端发号：造数传入的字符串不写入数据库，只能回读详情再按真实编码检索。
   const detail = await call<Row>(client, 'get', `/scm/product/detail/${spuId}`);
   const created = (detail.skuList ?? [])[0];
   if (!created) throw new Error(`商品 ${code} 创建后没有规格行`);
@@ -103,7 +103,7 @@ export async function createLocatedCustomer(client: APIRequestContext, runTag: s
     })
   );
   const created = await call<Row>(client, 'get', `/scm/customer/detail/${id}`);
-  // 客户编码由服务端生成（CUS + 至少 6 位全局序号）：打点一次，creation 契约变了要在这里红。
+  // 客户编码由服务端生成（CUS + 至少 6 位全局序号）：打点一次，creation 约定变了要在这里红。
   if (!/^CUS\d{6,}$/.test(String(created.customerCode))) {
     throw new Error(`客户编码不是服务端生成形态：${String(created.customerCode)}`);
   }
@@ -131,7 +131,7 @@ export async function createDeliveryReadyOrder(
     quantity?: string;
     /**
      * 少拣夹具用：把某条明细的实发量改成这个值并带上结果码与原因。
-     * 省略就是「全量正常」，与 P1 交付时的默认口径一致。
+     * 省略就是「全量正常」，与 P1 交付时的默认规则一致。
      */
     sortedQuantity?: string;
     sortedResult?: 'NORMAL' | 'SHORT' | 'OUT_OF_STOCK' | 'OVER';
@@ -170,7 +170,7 @@ export async function createDeliveryReadyOrder(
 
 /**
  * 把订单每条有效明细做到 COMPLETED。走真实分拣命令链而不是直接改状态：
- * 「按任务状态判定资格」这条口径本身也要被跑到。
+ * 「按任务状态判定资格」这条规则本身也要被跑到。
  */
 async function completeSorting(
   client: APIRequestContext,

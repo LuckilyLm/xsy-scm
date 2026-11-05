@@ -18,7 +18,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 「已发布的页面菜单，其 {@code component} 必须指向真实存在的 Vue 文件」——全仓契约。
+ * 「已发布的页面菜单，其 {@code component} 必须指向真实存在的 Vue 文件」——全仓约定。
  *
  * <p><b>为什么需要这条门禁</b>：{@code src/router/index.ts} 用
  * {@code route.component = modules[relativePath]} 解析动态菜单，而 {@code modules} 来自
@@ -28,20 +28,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 没有任何一处会报错。把菜单种子与前端文件放进同一条断言，才能在执行该集成测试时发现这种漂移。
  *
  * <p>{@code visible_flag = false} 不是解法：它只映射到 {@code meta.hideInMenu}，
- * 路由与 {@code component} 依然注册，深链依然落到空白页。因此本契约不接受
+ * 路由与 {@code component} 依然注册，深链依然落到空白页。因此本约定不接受
  * 「先种菜单、用 visible_flag 藏起来、页面以后再补」这种做法 ——
- * 页面菜单必须与它的 {@code .vue} 同一阶段落库。
+ * 页面菜单必须与它的 {@code .vue} 同一阶段写入数据库。
  *
- * <p><b>落库时机</b>：一次 migration 只发布它已经真实具备的能力。只有后端骨架（无 Controller）时
- * 既不种 action 权限，也不种页面菜单；action 权限随首个受保护 API 所在的迁移落库，
- * 页面菜单随页面实现落库。
+ * <p><b>写入数据库时机</b>：一次 migration 只发布它已经真实具备的能力。只有后端骨架（无 Controller）时
+ * 既不种 action 权限，也不种页面菜单；action 权限随首个受保护 API 所在的迁移写入数据库，
+ * 页面菜单随页面实现写入数据库。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
         "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
         "file.storage.local.upload-path=" + PgITPaths.DEFAULT_UPLOAD_PATH,
         "file.storage.local.url-prefix=http://127.0.0.1:18082",
         "logging.level.root=WARN"})
-@DisplayName("页面菜单 component 存在性契约（PG IT）")
+@DisplayName("页面菜单 component 存在性约定（PG IT）")
 class SmartAdminMenuComponentPgIT {
 
     @Autowired
@@ -108,7 +108,7 @@ class SmartAdminMenuComponentPgIT {
         assertThat(missing)
                 .as("已授权的页面菜单指向不存在的组件时，路由会注册成功但 component 为 undefined，"
                         + "用户点开是空白页且没有任何构建期/运行期报错。"
-                        + "请让页面菜单与它的 .vue 同一阶段落库，或用新增 migration 下线已废弃菜单")
+                        + "请让页面菜单与它的 .vue 同一阶段写入数据库，或用新增 migration 下线已废弃菜单")
                 .isEmpty();
     }
 

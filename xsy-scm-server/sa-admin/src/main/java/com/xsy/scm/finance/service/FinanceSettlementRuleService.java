@@ -14,7 +14,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/** 在追加财务事实前冻结账期，后续客户或供应商改档不影响历史应收应付。 */
+/** 在追加财务记录前保存账期，后续客户或供应商改档不影响历史应收应付。 */
 @Service
 @RequiredArgsConstructor
 public class FinanceSettlementRuleService {
@@ -23,7 +23,7 @@ public class FinanceSettlementRuleService {
     private final FinancePayableDao payableDao;
 
     /**
-     * 冻结正常应收的信用规则；独立红字无原单，关联红字由生成器继承原快照。
+     * 保存正常应收的信用规则；独立红字无原单，关联红字由生成器继承原来保存的资料。
      *
      * @param receivable
      *            非空、已设置结算主体与真实业务时间的正常应收；规则缺失时拒绝入账。
@@ -65,7 +65,7 @@ public class FinanceSettlementRuleService {
     }
 
     /**
-     * 正常应付读取当前供应商账期，红字始终继承原应付快照。
+     * 正常应付读取当前供应商账期，红字始终沿用原应付的账期和到期日。
      *
      * @param payable
      *            非空、已设置来源和业务时间的应付；红字原应付缺失时拒绝入账。

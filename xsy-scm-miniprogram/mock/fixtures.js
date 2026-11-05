@@ -1,8 +1,8 @@
 /*
- * Mock 契约层 · 假数据
+ * Mock 约定层 · 假数据
  *
- * ⚠️ 这些字段形状是**暂定契约**，依据：
- *   1. docs/reference/2026-09-22-遗留商城v1契约参考.md（v1 冻结的接口语义）
+ * ⚠️ 这些字段形状是**暂定约定**，依据：
+ *   1. docs/reference/2026-09-22-遗留商城v1约定参考.md（v1 保存的接口语义）
  *   2. V2 既有领域（product / pricing / customer / inventory 的真实枚举与字段习惯）
  *
  * 后端 `/scm/mall/**` 落地后，**只需核对字段名并调整本文件**，
@@ -79,7 +79,7 @@ export function findCategoryName(categoryId) {
  */
 
 /*
- * 商品目录（mock 契约层）
+ * 商品目录（mock 约定层）
  *
  * 商品名与图片**全部对齐业主提供的真实 SKU**（82 张白底图，已裁剪为 240×240 JPEG）。
  * 素材源目录：D:\Browser Download\xsy-data\测试图片\{蔬菜,水果,肉禽蛋类,水产,粮油,调味}
@@ -142,7 +142,7 @@ const PRODUCT_TABLE = [
   ['牛油果', '6个/盒', '盒', '进口水果', false, '29.90', 'AGREEMENT', 'AVAILABLE', 60, 'niuyouguo'],
   ['黑美人西瓜', '净重', '斤', '进口水果', true, '3.60', 'MARKET', 'AVAILABLE', 320, 'heimeirenxigua'],
   // 无客户价：用于验证「询价」状态（规划 §11.3 绝不显示 ¥0.00）
-  // 无客户价样本：price 必须为 null —— price 是「是否存在客户价」的单一事实，
+  // 无客户价样本：price 必须为 null —— price 是「是否存在客户价」的单一记录，
   // priceSource 只表达来源语义，不能变成第二套价格真相（否则会被渲染成 ¥9.80 + 加购）
   ['红心火龙果', '净重', '斤', '进口水果', true, null, 'UNPRICED', 'AVAILABLE', 70, 'hongxinhuolongguo'],
   ['紫葡萄', '净重', '斤', '进口水果', true, '14.50', 'AGREEMENT', 'AVAILABLE', 110, 'ziputao'],

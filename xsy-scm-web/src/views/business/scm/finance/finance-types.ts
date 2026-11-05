@@ -12,8 +12,7 @@ export interface CustomerExpenseAdd {
   commissionAmount: string;
   reason: string;
 }
-export interface CustomerExpenseBatchRow
-  extends Omit<CustomerExpenseAdd, 'customerId' | 'expenseMonth' | 'reason'> {
+export interface CustomerExpenseBatchRow extends Omit<CustomerExpenseAdd, 'customerId' | 'expenseMonth' | 'reason'> {
   customerId: FinanceId;
 }
 export interface CustomerExpenseBatchAdd {
@@ -413,7 +412,7 @@ export interface PostingQuery extends FinancePageQuery {
 /**
  * 过账特殊单据：财务对外的虚拟记账留痕。
  *
- * 不生成应收应付、不参与核销；`status` 由服务端按作废事实推导，前端只读。
+ * 不生成应收应付、不参与核销；`status` 由服务端按作废记录推导，前端只读。
  */
 export interface FinancePosting extends FinanceAuditFields {
   postingId: FinanceId;

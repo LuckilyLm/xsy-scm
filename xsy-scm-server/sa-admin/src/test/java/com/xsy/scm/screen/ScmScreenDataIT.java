@@ -30,8 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p><b>为什么不断言「空库返回零」</b>：本类的基类把用例包在一个事务里，但同一套件里
  * {@code Propagation.NOT_SUPPORTED} 的 IT（库存回滚 / 并发 / 调拨回滚）会把数据提交进库，
  * 因此「累计类指标为 0」只在特定执行顺序下成立 —— 那是一条依赖测试顺序的脆弱断言。
- * 这里断言的是真实成立的口径：
- * 字段非 null（契约是「返回零值而不是 null」）、非负、且今日量不超过累计量。
+ * 这里断言的是真实成立的规则：
+ * 字段非 null（约定是「返回零值而不是 null」）、非负、且今日量不超过累计量。
  */
 @DisplayName("B7 数据大屏聚合服务（PG IT）")
 class ScmScreenDataIT extends ScmW6PgITBase {
@@ -43,7 +43,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
     private InventoryWarningQueryService inventoryWarningQueryService;
 
     @Test
-    @DisplayName("经营数据：字段非 null、非负且口径自洽")
+    @DisplayName("经营数据：字段非 null、非负且规则自洽")
     void businessDataFieldsAreNonNullAndConsistent() {
         ScreenBusinessVO vo = screenDataService.getBusinessData();
 
@@ -61,7 +61,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
         assertThat(vo.getTopCustomers()).isNotNull();
         assertThat(vo.getTopProducts()).isNotNull();
 
-        // 口径自洽：今日量是累计量的子集，不可能超过
+        // 规则自洽：今日量是累计量的子集，不可能超过
         assertThat(vo.getTodayOrderCount()).isLessThanOrEqualTo(vo.getTotalOrderCount());
         assertThat(vo.getTodaySettlementAmount()).isLessThanOrEqualTo(vo.getTotalSettlementAmount());
         // 「今日成交客户」是客户总表的子集
@@ -70,7 +70,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("库存数据：字段非 null、非负且口径自洽")
+    @DisplayName("库存数据：字段非 null、非负且规则自洽")
     void inventoryDataFieldsAreNonNullAndConsistent() {
         ScreenInventoryVO vo = screenDataService.getInventoryData();
 
@@ -90,7 +90,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("采购数据：字段非 null、非负且口径自洽")
+    @DisplayName("采购数据：字段非 null、非负且规则自洽")
     void purchaseDataFieldsAreNonNullAndConsistent() {
         ScreenPurchaseVO vo = screenDataService.getPurchaseData();
 
@@ -129,7 +129,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
         // 交叉验证：大屏健康度与预警列表是同一条业务规则的两条实现路径
         // （Java 枚举 vs 列表 SQL 谓词）—— 一旦漂移，两边会对不上。
         //
-        // 注意两边口径并不完全重合，所以只能断言夹逼而不是相等：
+        // 注意两边规则并不完全重合，所以只能断言夹逼而不是相等：
         //   预警列表 FROM inventory_warning_threshold，只包含「配了阈值」的 (仓库,SKU)；
         //   健康度还包含「没配阈值但可用量 ≤ 0」的余额行（这些行列表里根本没有）。
         // 于是：
@@ -157,10 +157,10 @@ class ScmScreenDataIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("地理分布：省级上卷与市级气泡恒等，覆盖度自洽且与其它面板同口径")
+    @DisplayName("地理分布：省级上卷与市级气泡恒等，覆盖度自洽且与其它面板同规则")
     void geoDataRollupAndCoverageAreConsistent() {
         ScreenGeoVO geo = screenDataService.getGeoData();
-        // 契约是「空数组而不是 null」：前端直接把它喂给 ECharts 的 series.data
+        // 约定是「空数组而不是 null」：前端直接把它喂给 ECharts 的 series.data
         assertThat(geo.getCities()).isNotNull();
         assertThat(geo.getProvinces()).isNotNull();
         assertThat(geo.getCoverage()).isNotNull();
@@ -210,7 +210,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
         assertThat(cityCustomers).isLessThanOrEqualTo(coverage.getCustomerLocated());
         assertThat(citySuppliers).isLessThanOrEqualTo(coverage.getSupplierLocated());
         assertThat(cityWarehouses).isLessThanOrEqualTo(coverage.getWarehouseLocated());
-        // 跨面板口径：地理分布的分母与经营/库存面板的总数必须是同一件事，仓库同样只算启用仓
+        // 跨面板规则：地理分布的分母与经营/库存面板的总数必须是同一件事，仓库同样只算启用仓
         assertThat(coverage.getCustomerTotal()).isEqualTo(screenDataService.getBusinessData().getCustomerCount());
         assertThat(coverage.getSupplierTotal()).isEqualTo(screenDataService.getBusinessData().getSupplierCount());
         assertThat(coverage.getWarehouseTotal()).isEqualTo(screenDataService.getInventoryData().getWarehouseCount());
@@ -257,13 +257,13 @@ class ScmScreenDataIT extends ScmW6PgITBase {
         assertThat(hangzhou.getSupplierCount()).isEqualTo(supplierTotal);
         assertThat(hangzhou.getWarehouseCount()).isEqualTo(warehouseTotal);
         assertThat(guangzhou.getCustomerCount()).isEqualTo(1L);
-        // 无供应商 / 无仓库的档位必须是 0：契约里没有 null，前端直接拿它做气泡尺寸
+        // 无供应商 / 无仓库的档位必须是 0：约定里没有 null，前端直接拿它做气泡尺寸
         assertThat(guangzhou.getSupplierCount()).isZero();
         assertThat(guangzhou.getWarehouseCount()).isZero();
         assertThat(hangzhou.getCityName()).isEqualTo("杭州市");
         assertThat(guangzhou.getProvinceName()).isEqualTo("广东省");
 
-        // 省级上卷：省集与市集一致，数值来自同一批市级事实
+        // 省级上卷：省集与市集一致，数值来自同一批市级记录
         assertThat(geo.getProvinces()).extracting(ScreenGeoVO.ProvinceNode::getProvinceCode)
                 .containsExactlyInAnyOrder(330000, 440000);
         ScreenGeoVO.ProvinceNode zhejiang = provinceOf(geo, 330000);

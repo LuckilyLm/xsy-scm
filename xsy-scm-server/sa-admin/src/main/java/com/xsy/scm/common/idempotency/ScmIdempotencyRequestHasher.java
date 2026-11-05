@@ -34,7 +34,7 @@ public final class ScmIdempotencyRequestHasher {
             byte[] bytes = MessageDigest.getInstance("SHA-256").digest(canonicalJson.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(bytes);
         } catch (NoSuchAlgorithmException | JsonProcessingException exception) {
-            throw new IllegalStateException("无法计算幂等请求哈希", exception);
+            throw new IllegalStateException("无法计算防重复处理请求哈希", exception);
         }
     }
 

@@ -10,8 +10,8 @@
     </select>
 
     <!--
-      回看用的批次头：联仓库 / 供应商 / 员工取当前名称（快照里没有名称，
-      名称不是冻结对象——冻结的是数量口径与输入条件）。列走下划线→驼峰自动映射。
+      回看用的批次头：联仓库 / 供应商 / 员工取当前名称（保存的数据里没有名称，
+      名称不是保存对象——保存的是数量计算规则与输入条件）。列走下划线→驼峰自动映射。
     -->
     <select id="selectHeader" resultType="com.xsy.scm.purchase.domain.vo.PurchaseDemandCalculationBatchDetailVO">
         SELECT b.id AS batch_id, b.status, b.start_at, b.end_at, b.warehouse_id, w.name AS warehouse_name,

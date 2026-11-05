@@ -1,5 +1,5 @@
 /**
- * 采购模块契约测试。
+ * 采购模块约定检查。
  *
  * 由 6 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -48,7 +48,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
 // ---------------------------------------------------------------- 来源：purchase-list-contract.test.mjs
 {
   /**
-   * 采购需求、收货、日志、仓库的前端契约测试。
+   * 采购需求、收货、日志、仓库的前端约定检查。
    *
    * 这四个页面此前只做过「操作列居中」（commit ffa95370 是 8 文件 16 行的 align 改动），
    * 列精简与动作分组都没有做。本文件钉住三件容易回退的事：
@@ -174,7 +174,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
   const page = read('../src/views/business/scm/purchase/purchase-inquiry-list.vue');
   const batchDrawer = read('../src/views/business/scm/purchase/components/purchase-demand-batch-detail-drawer.vue');
 
-  test('询价与报价写请求复用采购幂等封装，确认需明确版本', () => {
+  test('询价与报价写请求复用采购防重复处理封装，确认需明确版本', () => {
     assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/create', data(?:, options)?\)/);
     assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/quote', data(?:, options)?\)/);
     assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/accept', data(?:, options)?\)/);
@@ -190,7 +190,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.match(page, /c\.existingInquiryId/);
   });
 
-  test('询价从冻结批次进入，当前报价与历史版本分别展示', () => {
+  test('询价从计算结果批次进入，当前报价与历史版本分别展示', () => {
     assert.match(batchDrawer, /\/purchase\/purchase-inquiry-list/);
     assert.match(page, /detail\.currentOffers/);
     assert.match(page, /:data-source="quoteHistory"/);
@@ -204,13 +204,13 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
 // ---------------------------------------------------------------- 来源：demand-summary-preview-contract.test.mjs
 {
   /**
-   * 订单汇总 / 库存缺口预览的前端契约测试。
+   * 订单汇总 / 库存缺口预览的前端约定检查。
    *
    * 保护这一「只读辅助决策」最容易被悄悄违背、且违背后不报错的几条线：
    * 1. 计算状态枚举与后端 `PurchaseDemandSummaryVO.calculationStatus` 逐字对齐（5 值），颜色映射全覆盖；
-   * 2. 预览端点走只读 `postRequest`（无幂等键），且不得复用/改写 `generate`；
+   * 2. 预览端点走只读 `postRequest`（无防重复请求编号），且不得复用/改写 `generate`；
    * 3. 前端绝不重算 `availableQuantity` / `shortageAgainstAvailable`，也不引入浮点 / Decimal 运算；
-   * 4. 在途采购是否抵扣缺口尚无结论，`openPurchaseQuantity` 不得出现在前端契约里。
+   * 4. 在途采购是否抵扣缺口尚无结论，`openPurchaseQuantity` 不得出现在前端约定里。
    */
 
   /** 读源码并剥掉注释 —— 门禁只针对代码，头注释里提到被剪枝的名字是合规的。 */
@@ -274,7 +274,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     const list = code('../src/views/business/scm/purchase/purchase-demand-list.vue');
     assert.match(list, /PurchaseDemandSummaryPreview/);
     assert.match(list, /a-tab-pane\s+key="preview"/);
-    // 既有需求列表的写入口仍在本页：ADM-05 之后是「冻结批次 → 从批次生成需求」，
+    // 既有需求列表的写入口仍在本页：ADM-05 之后是「计算结果批次 → 从批次生成需求」，
     // 直接 generate 端点保留给既有集成，UI 写入口是 batch:create（+ 逐行 allocate）。
     assert.match(list, /scm:purchase:demand:batch:create/);
     assert.match(list, /scm:purchase:demand:allocate/);
@@ -285,12 +285,12 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
 // ---------------------------------------------------------------- 来源：purchase-efficiency-contract.test.mjs
 {
   /**
-   * 采购效率（批量 / 导出 / 打印 / 按商品收货工作台）的前端契约测试。
+   * 采购效率（批量 / 导出 / 打印 / 按商品收货工作台）的前端约定检查。
    *
    * 保护这一批「不新增迁移、复用既有权限」的效率能力最容易被悄悄违背、且违背后不报错的线：
    * 1. 导出走只读 `postDownload('/scm/purchase/export')`，绝不落写接口；
    * 2. 批量少收关单 / 按商品工作台走只读 `postRequest`，且不得复用带 Idempotency-Key 的 `purchaseCommand`
-   *    （后端这两个端点都不接幂等头，误用会让契约与后端不一致）；
+   *    （后端这两个端点都不接防重复处理头，误用会让约定与后端不一致）；
    * 3. 按商品工作台只渲染后端逐行裁剪后聚合的四位定点字符串，前端绝不重算欠收 / 超收；
    * 4. 打印是纯客户端动作，`purchase-order-print.ts` 里不得出现任何网络 / 写调用；
    * 5. 导出列目录与后端 `PurchaseOrderExportSupport` 的 15 列逐字对齐（顺序敏感）。
@@ -307,11 +307,11 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
   test('采购单导出走只读 postDownload，不落任何写接口', () => {
     const api = code('../src/api/business/scm/purchase-order-api.ts');
     assert.match(api, /export:\s*\(data:\s*OrderExportPayload\)\s*=>\s*postDownload\('\/scm\/purchase\/export'/);
-    // 只读：导出自身不得使用命令式幂等封装
+    // 只读：导出自身不得使用命令式防重复处理封装
     assert.doesNotMatch(api, /export:[^\n]*purchaseCommand/);
   });
 
-  test('批量少收关单走只读 postRequest，不复用带幂等键的 purchaseCommand', () => {
+  test('批量少收关单走只读 postRequest，不复用带防重复请求编号的 purchaseCommand', () => {
     const api = code('../src/api/business/scm/purchase-order-api.ts');
     assert.match(
       api,
@@ -340,8 +340,8 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.doesNotMatch(src, /plannedQuantity\s*-\s*receivedQuantity/);
   });
 
-  test('采购单打印走 ADM-07 打印中心，且不会改写采购业务事实', () => {
-    // ADM-07 用服务端模板渲染（冻结模板版本 / 业务模型 / 版面）取代了早期的纯客户端打印工具，
+  test('采购单打印走 ADM-07 打印中心，且不会改写采购业务记录', () => {
+    // ADM-07 用服务端模板渲染（保存模板版本 / 业务模型 / 版面）取代了早期的纯客户端打印工具，
     // 因此这里守的是同一件事的另一面：打印入口不携带任何采购写操作。
     const list = code('../src/views/business/scm/purchase/purchase-order-list.vue');
     assert.match(list, /PrintDocumentModal/);
@@ -351,7 +351,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     const modal = code('../src/views/business/scm/print/print-document-modal.vue');
     assert.match(modal, /printApi\.preview\(/);
     assert.match(modal, /printApi\.print\(/);
-    // 打印与预览只经 print-api：不得出现采购命令（否则打印会改状态 / 重复生成业务事实）
+    // 打印与预览只经 print-api：不得出现采购命令（否则打印会改状态 / 重复生成业务记录）
     assert.doesNotMatch(modal, /purchaseOrderApi|purchaseCommand/);
 
     const api = code('../src/api/business/scm/print-api.ts');
@@ -403,7 +403,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
 // ---------------------------------------------------------------- 来源：purchase-contract.test.mjs
 {
   /**
-   * 采购域契约测试。
+   * 采购域约定检查。
    *
    * 保护定点数、分配集合、单位一致性、收货完整性等跨文件约束 ——
    * 这些是前端最容易悄悄违背、且违背后不会报错的几条：
@@ -520,7 +520,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     f.items[0].plannedQuantity = '0.0000';
     assert.match(validateOrder(f), /采购数量/);
     // 用户键入期间 antd 的 `precision` 不生效（见 purchase-form-model 的 typedFixed），
-    // 模型里就是裸数：这里断言「校验时机与提交口径一致」——
+    // 模型里就是裸数：这里断言「校验时机与提交规则一致」——
     // 形状合法的短小数按 4 位定点归一后放行，而 `payload` 归一出的正是同一个值。
     f.items[0].plannedQuantity = '1.00';
     assert.equal(validateOrder(f), undefined);
@@ -553,7 +553,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.match(validateOrder(f), /分配缺少采购需求/);
     f.items[0].allocations = [{demandId: '7', quantity: '0.0000', demandVersion: 0}];
     assert.match(validateOrder(f), /分配数量/);
-    // 分配数量同样按「输入框键入中的裸数」口径归一后再判定形状。
+    // 分配数量同样按「输入框键入中的裸数」规则归一后再判定形状。
     f.items[0].allocations = [{demandId: '7', quantity: '1.00', demandVersion: 0}];
     assert.equal(validateOrder(f), undefined);
     assert.equal(payload(f).items[0].allocations[0].quantity, '1.0000');

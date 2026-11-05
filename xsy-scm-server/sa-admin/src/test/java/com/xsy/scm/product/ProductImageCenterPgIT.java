@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.*;
  * 图片中心的真实库集成测试：验证写操作全部收敛到既有同步链路，
  * public/image/ 前缀与「每 SPU 至多一张主图」不被绕过。
  *
- * <p>V49 之后主图唯一事实只有 {@code is_primary}（由部分唯一索引在库里保证）；
+ * <p>V49 之后主图唯一记录只有 {@code is_primary}（由部分唯一索引在库里保证）；
  * {@code image_type} 只表达图集 / 详情图的内容角色，不随主图切换而变。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
@@ -129,7 +129,7 @@ class ProductImageCenterPgIT {
     void queryReturnsDerivedUrlWithoutPersistingIt() {
         Long spuId = newSpu();
         ProductImageCenterVO vo = service.query(spuId);
-        // V147 起 SPU 编码由后端发号，造数传入的字符串不再落库，只能与落库值比较
+        // V147 起 SPU 编码由后端发号，造数传入的字符串不再写入数据库，只能与写入数据库值比较
         assertThat(vo.getSpuCode()).isEqualTo(
                 jdbc.queryForObject("SELECT spu_code FROM xsy_product_spu WHERE id = ?", String.class, spuId));
         assertThat(vo.getImages()).hasSize(1);
@@ -196,7 +196,7 @@ class ProductImageCenterPgIT {
         var after = service.query(spuId);
         assertThat(after.getImages().get(1).getPrimaryFlag()).isTrue();
         assertThat(after.getImages().get(0).getPrimaryFlag()).isFalse();
-        // 降级后的旧主图仍是图集图：类型不随主图状态漂移，is_primary 是唯一主图事实
+        // 降级后的旧主图仍是图集图：类型不随主图状态漂移，is_primary 是唯一主图记录
         assertThat(jdbc.queryForObject("SELECT image_type FROM xsy_product_image WHERE id=?", String.class, second)).isEqualTo("GALLERY");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_product_image WHERE spu_id=? AND image_type='GALLERY' AND deleted=FALSE",
                 Integer.class, spuId)).isEqualTo(2);
@@ -308,7 +308,7 @@ class ProductImageCenterPgIT {
         Long image = imageIds(spuId).getFirst();
         // 详情图仍是合法取值（类型只表达内容角色，与 is_primary 无关）
         jdbc.update("UPDATE xsy_product_image SET image_type='DETAIL' WHERE id=?", image);
-        // 迁移后写回 PRIMARY 必须直接失败，否则会悄悄出现第二个「主图事实」
+        // 迁移后写回 PRIMARY 必须直接失败，否则会悄悄出现第二个「主图记录」
         assertThatThrownBy(() -> jdbc.update("UPDATE xsy_product_image SET image_type='PRIMARY' WHERE id=?", image))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
@@ -414,7 +414,7 @@ class ProductImageCenterPgIT {
         assertThat(typeOf(detail)).isEqualTo("DETAIL");
     }
 
-    /** 内容角色是库内事实，不接受表单申报：即使回写行谎称自己是图集图，同步链也必须按现值落库。 */
+    /** 内容角色是库内记录，不接受表单申报：即使回写行谎称自己是图集图，同步链也必须按现值写入数据库。 */
     @Test
     void syncIgnoresImageTypeClaimedByExistingRow() {
         Long spuId = newSpu();

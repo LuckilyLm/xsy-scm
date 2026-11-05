@@ -24,7 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * 收款自动 FIFO 核销。
  *
  * <p>顺序固定为账单日期、单据 id 升序；一次最多分配 100 个目标，剩余额留在收款上。
- * 自动核销仍写普通的 NORMAL 核销行，不另建一套事实表。
+ * 自动核销仍写普通的 NORMAL 核销行，不另建一套记录表。
  */
 class FinanceFifoWriteOffIT extends ScmW5PgITBase {
 
@@ -84,7 +84,7 @@ class FinanceFifoWriteOffIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("#2 同一幂等键重放不重复核销；金额分完后再次自动核销返回 41164")
+    @DisplayName("#2 同一防重复请求编号重放不重复核销；金额分完后再次自动核销返回 41164")
     void replayIsIdempotentAndExhaustedReceiptIsRejected() {
         Long customerId = newCustomer();
         normalReceivable(customerId, "40.0000", EVENT_AT.minusDays(3));

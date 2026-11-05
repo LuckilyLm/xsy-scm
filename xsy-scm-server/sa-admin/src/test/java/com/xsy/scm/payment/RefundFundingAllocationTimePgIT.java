@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p><b>夹具为什么直接插分摊行</b>：计划由 {@code freeze} 按订单资金来源生成，而真实的余额分摊只出现在
  * 「余额 + 在线」的混合资金订单上（纯余额订单在退款完成时就由旧钱包路径自动返还，混合资金才需要人工执行分摊）。
  * 造一张混合资金订单还要为在线那一腿补财务收款单，而那与被测对象无关 —— 本类钉的是余额腿写入
- * {@code occurred_at} 的口径，因此把「已冻结的余额分摊行」作为输入固定下来。
+ * {@code occurred_at} 的规则，因此把「已保存的余额分摊行」作为输入固定下来。
  */
 @DisplayName("余额分摊返还时间与失败提交（PG IT）")
 class RefundFundingAllocationTimePgIT extends ScmW5PgITBase {
@@ -81,7 +81,7 @@ class RefundFundingAllocationTimePgIT extends ScmW5PgITBase {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    @DisplayName("钱包账户不可用时，分摊失败与幂等结果仍能提交，不留余额返还流水")
+    @DisplayName("钱包账户不可用时，分摊失败与防重复处理结果仍能提交，不留余额返还流水")
     void failedBalanceAllocationPersistsItsFailureOutsideTheTestTransaction() {
         // 本用例会提交带唯一前缀的夹具，只能在授权的隔离 PostgreSQL 中执行。
         BalanceAllocationFixture fixture = completedRefundWithBalanceAllocation();
@@ -174,7 +174,7 @@ class RefundFundingAllocationTimePgIT extends ScmW5PgITBase {
                 settlementCustomerId, customerId, refundAmount, intentId, operator(), operator());
 
         // ck_order_refund_completion：COMPLETED 必须带 completed_at。
-        // return_id 无外键、只要求全表唯一；本用例 NOT_SUPPORTED，行会真实落库，
+        // return_id 无外键、只要求全表唯一；本用例 NOT_SUPPORTED，行会真实写入数据库，
         // 因此从退货 id 序列取值，避免假 return_id 与后续真实退货 id 撞唯一索引。
         Long orderRefundId = jdbc.queryForObject("""
                 INSERT INTO xsy_order_refund

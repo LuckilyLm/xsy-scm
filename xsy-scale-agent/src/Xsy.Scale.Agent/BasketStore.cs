@@ -3,7 +3,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Xsy.Scale.Agent;
 
-/// <summary>多筐事实及离线意图独立存放，未冻结的新契约不能落入旧单次上报队列。</summary>
+/// <summary>多筐记录及离线意图独立存放，未保存的新约定不能落入旧单次上报队列。</summary>
 internal sealed partial class StateStore
 {
     private void InitializeBaskets(SqliteConnection db)
@@ -46,10 +46,10 @@ internal sealed partial class StateStore
 
     /// <summary>保存一筐、上传命令及打印意图，任何一步失败均回滚。</summary>
     /// <param name="request">已经过员工/任务校验的完整采集请求；PrintRequested=false不建立打印任务，同操作必须保持原请求。</param>
-    /// <param name="create">新操作才调用的记录冻结函数，设备采样或明确标识的人工输入；抛错不落记录。</param>
+    /// <param name="create">新操作才调用的记录保存函数，设备采样或明确标识的人工输入；抛错不落记录。</param>
     /// <param name="ticketFactory">本筐要求打印且启用本地凭条时提供；null不建立打印任务。</param>
     /// <param name="requestHash">手工入口传完整请求摘要，覆盖重量和说明；null沿用设备请求摘要。</param>
-    /// <returns>新建或幂等复用的筐记录；状态明确等待正式扩展契约。</returns>
+    /// <returns>新建或防重复处理复用的筐记录；状态明确等待正式扩展约定。</returns>
     /// <exception cref="AgentFault">请求冲突、重复样本、明细已完成或上下文变化。</exception>
     internal BasketRecord RecordBasket(CaptureRequest request, Func<LocalEvent> create, Func<BasketRecord, LocalTicket>? ticketFactory = null,
         string? requestHash = null)
@@ -113,9 +113,9 @@ internal sealed partial class StateStore
         }
     }
 
-    /// <summary>冻结全部筐集合和本地完成意图，不修改平台正式数量或状态。</summary>
+    /// <summary>保存全部筐集合和本地完成意图，不修改平台正式数量或状态。</summary>
     /// <param name="request">非空完成请求；ManifestHash 必须匹配最新全量累计响应。</param>
-    /// <returns>已持久化的本地完成快照；同请求重试返回原始快照。</returns>
+    /// <returns>已持久化的本地完成记录；同请求重试返回原始记录。</returns>
     /// <exception cref="AgentFault">空集合、摘要变化、重复完成或上下文冲突。</exception>
     internal ItemCompletion CompleteBaskets(CompleteItemRequest request)
     {
@@ -160,9 +160,9 @@ internal sealed partial class StateStore
 
     /// <summary>查询完整范围累计，避免最近200条诊断记录截断造成少计。</summary>
     /// <param name="scope">非空且已校验的员工、作业和明细范围。</param>
-    /// <param name="item">当前缓存明细；平台数量只作为缓存快照返回。</param>
+    /// <param name="item">当前缓存明细；平台数量只作为缓存值返回。</param>
     /// <param name="authorizationExpired">当前缓存授权是否过期，只影响展示，不能用于扩大新操作权限。</param>
-    /// <returns>同一次数据库快照中的筐总数、十进制累计、摘要及本地完成状态。</returns>
+    /// <returns>同一次数据库读取结果中的筐总数、十进制累计、摘要及本地完成状态。</returns>
     internal BasketSummary SummarizeBaskets(BasketScope scope, TaskItem item, bool authorizationExpired)
     {
         using var db = Open(); using var transaction = db.BeginTransaction(deferred: true);

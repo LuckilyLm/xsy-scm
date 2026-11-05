@@ -267,7 +267,7 @@ public class PurchasePriceService {
         purchasePriceAdjustDao.insert(audit);
     }
 
-    /** 参考价按「商品规格 + 采购单位」配对，单位不同的历史价不能被当成同一口径。 */
+    /** 参考价按「商品规格 + 采购单位」配对，单位不同的历史价不能被当成同一套规则。 */
     private static String unitKey(Long skuId, String purchaseUnit) {
         return skuId + "|" + (purchaseUnit == null ? "" : purchaseUnit);
     }
@@ -293,7 +293,7 @@ public class PurchasePriceService {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
         purchaseOwnerResolver.requireVisible(order.getPurchaserId());
-        // 回放也要校验当前归属；已记账等可变状态留到回放之后判断。
+        // 返回原结果前也要校验当前归属；已记账等可变状态留到尝试返回原结果之后判断。
         return order;
     }
 

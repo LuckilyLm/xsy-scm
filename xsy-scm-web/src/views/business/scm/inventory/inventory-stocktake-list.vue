@@ -365,7 +365,7 @@ const formRules = {
   warehouseId: [{required: true, message: '请选择盘点仓库'}],
 };
 
-/** 编辑旧盘点单时用快照回显商品和规格，避免首屏之外的规格只显示数字 ID。 */
+/** 编辑旧盘点单时用保存的数据回显商品和规格，避免首屏之外的规格只显示数字 ID。 */
 function selectedSkuOptions(record: EditableItem) {
   if (record.skuId == null || !record.productName) return [];
   const spec = Object.values(record.specValues ?? {}).join('/') || record.skuName || '默认规格';

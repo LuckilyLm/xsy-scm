@@ -216,7 +216,7 @@ class MallAuthServiceTest {
         assertThatThrownBy(() -> service.login(form, "127.0.0.1"))
                 .isInstanceOfSatisfying(ScmBusinessException.class,
                         exception -> assertThat(exception.getErrorCode()).isEqualTo(MallErrorCode.LOGIN_FAILED));
-        // 失败计数必须落库（login 的 noRollbackFor 就是为这条），否则连续输错永远锁不上
+        // 失败计数必须写入数据库（login 的 noRollbackFor 就是为这条），否则连续输错永远锁不上
         verify(securityLogin).recordLoginFail(7L, UserTypeEnum.MALL_CUSTOMER, "13800000000", fail);
         verify(accounts, never()).recordLogin(any(), any());
     }

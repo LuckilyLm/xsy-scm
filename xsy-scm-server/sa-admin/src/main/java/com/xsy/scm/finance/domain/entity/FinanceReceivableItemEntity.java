@@ -36,7 +36,7 @@ public class FinanceReceivableItemEntity extends FinanceRecord {
     private String skuNameSnapshot;
 
     /**
-     * 单位名称快照；不做单位换算，也不跨单位求和。
+     * 单位当时的名称；不做单位换算，也不跨单位求和。
      */
     private String unitSnapshot;
 

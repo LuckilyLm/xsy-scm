@@ -32,7 +32,7 @@ internal sealed class HardwareTestTicketPrinter : ITicketPrinter
 internal static class WindowsTicketOutput
 {
     /// <summary>预检完整内容后提交一次打印，不回退其他打印机或修改全局纸型。</summary>
-    /// <param name="ticket">已由调用方核实模式的冻结凭条；队列为空或内容放不下时拒绝。</param>
+    /// <param name="ticket">已由调用方核实模式的保存凭条；队列为空或内容放不下时拒绝。</param>
     /// <returns>仅表示Windows接受，不证明物理出纸。</returns>
     /// <exception cref="AgentFault">驱动/版式拒绝，或执行后结果未知。</exception>
     internal static TicketOutput Submit(LocalTicket ticket)

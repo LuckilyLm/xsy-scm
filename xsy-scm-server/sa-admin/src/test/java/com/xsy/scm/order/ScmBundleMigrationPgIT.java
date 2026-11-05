@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 在隔离 PostgreSQL 18 + 真实 Flyway V140 上验证组合快照的不可变性与数据库约束。
+ * 在隔离 PostgreSQL 18 + 真实 Flyway V140 上验证组合保存的数据的不可修改的要求与数据库约束。
  * 每个测试在事务中回滚，不更改业务环境，也不依赖假的 H2 行为。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {

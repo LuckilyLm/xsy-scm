@@ -154,7 +154,7 @@ public class ScaleDeviceJobService {
         return toJobVO(task, lease, principal);
     }
 
-    /** 释放租约。没有有效租约时按幂等处理：秤端重试不会报错，也不影响其他设备的租约。 */
+    /** 释放租约。没有有效租约时按防重复处理处理：秤端重试不会报错，也不影响其他设备的租约。 */
     @Transactional(rollbackFor = Exception.class)
     public ScaleJobVO release(String jobId, ScaleJobActionForm form) {
         ScaleDevicePrincipal principal = ScaleDeviceContext.require();

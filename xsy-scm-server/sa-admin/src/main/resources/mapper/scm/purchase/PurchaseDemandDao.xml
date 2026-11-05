@@ -35,9 +35,9 @@
     <!--
       第 3 步：已确认订单 + 有实数量；确定性排序让重复 generate 可复现。
       仓库数据范围：来源行所在的 xsy_sales_order / xsy_sales_order_item 都没有仓库列，按仓库无从收窄
-      （与 ReportDao.xml 销售侧同一口径）。本次命令落哪个仓由表单显式给出，边界在
+      （与 ReportDao.xml 销售侧同一套规则）。本次命令落哪个仓由表单显式给出，边界在
       PurchaseWarehouseReferenceGuard 与后续收货/出库的仓库守卫上，不在这里重复实现。
-      scope 为 null 仍是调用方漏传，失败关闭返回 0 行，绝不静默读全量。
+      scope 为 null 仍是调用方漏传，校验失败时拒绝操作返回 0 行，绝不静默读全量。
     -->
     <select id="listSourceItems" resultMap="sourceItemMap">
         SELECT oi.id, oi.order_id, oi.spu_id, oi.sku_id, oi.spu_code_snapshot, oi.product_name_snapshot,
@@ -49,7 +49,7 @@
             AND o.deleted = FALSE
         WHERE o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
             AND oi.deleted = FALSE
-            <!-- 非标行允许还没称重：计划数量取 COALESCE(实发量, 订购量)，与 Java 侧 PlannedQuantity 同一口径 -->
+            <!-- 非标行允许还没称重：计划数量取 COALESCE(实发量, 订购量)，与 Java 侧 PlannedQuantity 同一套规则 -->
             AND COALESCE(oi.actual_quantity, oi.ordered_quantity) &gt; 0
             AND o.confirmed_at &gt;= #{startAt}
             AND o.confirmed_at &lt; #{endAt}
@@ -57,7 +57,7 @@
         ORDER BY oi.sku_id ASC, o.confirmed_at ASC, oi.id ASC
     </select>
 
-    <!-- 联 xsy_supplier / xsy_warehouse 取名称（快照之外还需要当前名称展示，两者语义不同） -->
+    <!-- 联 xsy_supplier / xsy_warehouse 取名称（保存的数据之外还需要当前名称展示，两者语义不同） -->
     <select id="query" resultMap="demandVoMap">
         SELECT d.id, d.sales_order_id, d.sales_order_no_snapshot, d.sales_order_item_id, d.calculation_batch_id,
             d.sku_id, d.sku_code_snapshot AS sku_code, d.sku_name_snapshot AS sku_name,
@@ -79,12 +79,12 @@
         <if test="query.supplierId != null">AND d.supplier_id = #{query.supplierId}</if>
         <if test="query.warehouseId != null">AND d.warehouse_id = #{query.warehouseId}</if>
         <if test="query.status != null and query.status != ''">AND d.status = #{query.status}</if>
-        <!-- 半开区间：与 demand_date 口径一致 -->
+        <!-- 半开区间：与 demand_date 规则一致 -->
         <if test="query.demandDateFrom != null">AND d.demand_date &gt;= #{query.demandDateFrom}</if>
         <if test="query.demandDateTo != null">AND d.demand_date &lt; #{query.demandDateTo}</if>
         <!--
           采购员数据范围（与 xsy_purchase_order 同一维度）：谓词落在驱动表 d 上，
-          供应商 / 仓库都是 N:1 左连，不放大行数；scope 为 null 按失败关闭。
+          供应商 / 仓库都是 N:1 左连，不放大行数；scope 为 null 按校验失败时拒绝操作。
         -->
         <if test="scope != null and scope.all == false">
             AND d.purchaser_id IN
@@ -97,7 +97,7 @@
     <!--
       订单汇总 / 库存缺口预览（只读聚合）。
 
-      取数口径 WHERE 与 listSourceItems 完全同源：已确认订单 + 计划数量 > 0 + 同一确认窗口，
+      取数规则 WHERE 与 listSourceItems 完全同源：已确认订单 + 计划数量 > 0 + 同一确认窗口，
       因此本预览看到的订单量与将来 generate 生成的需求数量一致（不改写需求语义）。
       计划数量 = COALESCE(实发量, 订购量)：非标行分拣时才称重，采购不能等称完再下单。
 
@@ -116,8 +116,8 @@
 
       负库存不作为额外需求叠加：账面余额为负（−100 斤）只说明历史欠账，不能把 −100 再算进本批
       30 斤的缺口里变成 130。因此「本批可用」先按 0 下限截断，缺口只从本批订单需求里算；
-      余额本身仍按原值展示，便于核对负库存。生成需求与预览共用这一口径。
-      selectedOrderReservedQuantity 只读既有预留事实 xsy_inventory_reservation（ACTIVE +
+      余额本身仍按原值展示，便于核对负库存。生成需求与预览共用这一规则。
+      selectedOrderReservedQuantity 只读既有预留记录 xsy_inventory_reservation（ACTIVE +
       SALES_ORDER_ITEM + 来源单落在同一确认窗口），不新造第二套预留记录。它按 oi.sku_id 相关，
       组内恒等，因此写成标量子查询而不是普通 LEFT JOIN —— 后者会让
       SUM(COALESCE(oi.actual_quantity, oi.ordered_quantity)) 随预留行数翻倍。
@@ -201,7 +201,7 @@
           写成 b.warehouse_id IN (...) 进左连 ON 是错的——那只会把余额打成 NULL，
           整页订单需求量照发，改的是一个数字而不是一组行。
           空授权清单由 Service 短路成空分页，不会把 IN () 送进数据库；
-          scope 为 null 是调用方漏传，按失败关闭返回 0 行。
+          scope 为 null 是调用方漏传，按校验失败时拒绝操作返回 0 行。
         -->
         <if test="scope != null and scope.all == false">
             AND #{query.warehouseId} IN

@@ -32,7 +32,7 @@ public class InventoryStocktakeImportResultVO {
     private int importedItems;
 
     /**
-     * 命中幂等重试：未重复建单，返回既有盘点单。
+     * 命中防重复处理重试：未重复建单，返回既有盘点单。
      */
     private boolean replayed;
 

@@ -5,7 +5,7 @@ import com.xsy.scm.purchase.domain.entity.PurchasePriceAdjustEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 采购价变更审计只追加：不提供 update / delete。
+ * 采购价变更审计只能新增：不提供 update / delete。
  */
 @Mapper
 public interface PurchasePriceAdjustDao extends BaseMapper<PurchasePriceAdjustEntity> {

@@ -1,4 +1,4 @@
-<!-- 优惠券：发放、领取和使用统计以服务端为准；券来源与让利投影的缺口见 docs/status.md B7。 -->
+<!-- 优惠券：发放、领取和使用统计以服务端为准；券来源与让利查询结果的缺口见 docs/status.md B7。 -->
 <template>
   <div class="smart-query-layout">
     <a-form class="smart-query-form" layout="inline" @submit.prevent>

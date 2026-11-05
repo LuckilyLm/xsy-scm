@@ -25,7 +25,7 @@ public class OrderReturnEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long orderId;
     /**
-     * ORDER = 关联原订单；INDEPENDENT = 独立退货，orderId 为空，客户与商品靠退货单自身快照。
+     * ORDER = 关联原订单；INDEPENDENT = 独立退货，orderId 为空，客户与商品靠退货单自身保存的数据。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String sourceType;

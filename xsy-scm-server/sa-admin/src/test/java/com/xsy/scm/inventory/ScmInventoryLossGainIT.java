@@ -31,8 +31,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <ol>
  *   <li><b>审批才动库存</b> —— 创建 / 改待审核不产生任何流水与余额变化，
  *       这是「审批」这个环节存在的全部意义；</li>
- *   <li><b>方向由单据类型决定</b> —— 报损写 {@code LOSS_REPORT} 且快照为减、
- *       报溢写 {@code GAIN_REPORT} 且快照为加，与六方向快照约束一致；</li>
+ *   <li><b>方向由单据类型决定</b> —— 报损写 {@code LOSS_REPORT} 且保存的数据为减、
+ *       报溢写 {@code GAIN_REPORT} 且保存的数据为加，与六方向保存的数据约束一致；</li>
  *   <li><b>报损的两条下限</b> —— 不得推成负数（41033）、不得吃掉预留（41034）；</li>
  *   <li><b>状态守卫</b> —— 已审核（通过 / 驳回）的单据不可再改 / 再删 / 再审；</li>
  *   <li><b>审批乐观锁</b> —— 审批人必须批准自己读到的内容（版本不符 → 40921）。</li>
@@ -182,20 +182,20 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         assertThat(row.get("movement_type")).isEqualTo("LOSS_REPORT");
         assertThat(row.get("source_document_type")).isEqualTo("LOSS_GAIN_ITEM");
         assertThat(decimal(row, "quantity")).isEqualByComparingTo("3.0000");
-        // 方向感知快照：报损是减
+        // 方向感知保存的数据：报损是减
         assertThat(decimal(row, "before_quantity")).isEqualByComparingTo("10.0000");
         assertThat(decimal(row, "after_quantity")).isEqualByComparingTo("7.0000");
         // 单位以余额记账单位为准，由服务端取
         assertThat(String.valueOf(row.get("unit_snapshot"))).isEqualTo(balanceRow(wh, sku).getUnit());
         // V34 起：出库方向的流水必须带成本，写的是出库那一刻的余额均价。
-        // 「报损没有成本依据」不是这里的口径：报损同样是出库，成本随数量一起离开仓库。
+        // 「报损没有成本依据」不是这里的规则：报损同样是出库，成本随数量一起离开仓库。
         // 移动加权平均的性质是「出库不改变均价」，所以事后再读余额拿到的仍是同一个值。
         assertThat(decimal(row, "unit_cost"))
                 .isEqualByComparingTo(balanceRow(wh, sku).getAvgCost());
     }
 
     @Test
-    @DisplayName("报溢：审批通过写 GAIN_REPORT 并累加余额，快照方向为加")
+    @DisplayName("报溢：审批通过写 GAIN_REPORT 并累加余额，保存的数据方向为加")
     void overflowAddsStockAtApproval() {
         Object[] s = stocked("lg2", "10.0000");
         Long wh = (Long) s[0];
@@ -403,7 +403,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 命令侧契约
+    // 命令侧约定
     // ------------------------------------------------------------------
 
     @Test

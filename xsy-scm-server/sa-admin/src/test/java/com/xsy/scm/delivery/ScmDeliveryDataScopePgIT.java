@@ -39,7 +39,7 @@ import static org.mockito.Mockito.mockStatic;
 /**
  * 配送数据范围的 PostgreSQL 集成测试（P0 基线收口裁决第 9 条）。
  *
- * <p>钉住的口径：
+ * <p>钉住的规则：
  * <ul>
  *   <li>调度 / 线路规划员与司机不是同一个角色：司机维度经 {@code xsy_delivery_driver.employee_id}
  *       反查，没有绑定就是<b>零条线路</b>，不是全部线路；</li>
@@ -50,7 +50,7 @@ import static org.mockito.Mockito.mockStatic;
  * </ul>
  *
  * <p>Sa-Token 在非 Web 请求线程里没有会话，功能点判定只能桩 {@code StpUtil.hasPermission}
- * （与 {@code FileAccessGuardTest} 同一做法）；不桩即按「无权限」处理，正是失败关闭的一侧。
+ * （与 {@code FileAccessGuardTest} 同一做法）；不桩即按「无权限」处理，正是校验失败时拒绝操作的一侧。
  */
 @DisplayName("配送数据范围（PG IT）")
 class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
@@ -124,7 +124,7 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
         return routeService.create(form);
     }
 
-    /** 一个地址与坐标齐备的客户：停靠点坐标来自下单时冻结的地址快照，故必须在下单前改客户地址。 */
+    /** 一个地址与坐标齐备的客户：停靠点坐标来自下单时保存的下单时保存的地址，故必须在下单前改客户地址。 */
     private Long newLocatedCustomer() {
         Long customerId = newCustomer();
         jdbc.update("UPDATE xsy_customer SET address=?,longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id = ?",
@@ -183,7 +183,7 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
         return rows.stream().map(DeliveryRouteVO::getId).toList();
     }
 
-    /** 只授予给定功能点，其余一律 false：与 {@code ScmDataScopeService} 的失败关闭取向一致。 */
+    /** 只授予给定功能点，其余一律 false：与 {@code ScmDataScopeService} 的校验失败时拒绝操作取向一致。 */
     private MockedStatic<StpUtil> grant(String... permissions) {
         var granted = List.of(permissions);
         var stp = mockStatic(StpUtil.class);
@@ -397,7 +397,7 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
                     .satisfies(row -> assertThat(row.getOrderAmount()).isNull());
             assertThat(routeQuery.customerView(route)).singleElement()
                     .satisfies(row -> assertThat(row.getTotalAmount()).isNull());
-            // 打印预览与正式生成里的金额同属一个口径，否则一条打印就绕过了字段级收口。
+            // 打印预览与正式生成里的金额同属一个规则，否则一条打印就绕过了字段级收口。
             var print = routeQuery.print(route);
             assertThat(print.getDetail().getRoute().getTotalAmount()).isNull();
             print.getItems().forEach(item -> assertThat(item.getOrderedLineAmount()).isNull());

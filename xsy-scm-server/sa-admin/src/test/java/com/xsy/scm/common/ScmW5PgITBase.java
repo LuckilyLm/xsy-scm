@@ -101,7 +101,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public abstract class ScmW5PgITBase {
 
     /**
-     * V15 迁移建立的默认仓库编码（单仓库口径）。
+     * V15 迁移建立的默认仓库编码（单仓库规则）。
      */
     public static final String SEED_WAREHOUSE_CODE = "WH001";
 
@@ -178,10 +178,10 @@ public abstract class ScmW5PgITBase {
     /**
      * 同一用例内造第几张销售订单。
      *
-     * <p><b>为什么必须逐张唯一</b>：{@code SalesOrderService} 按「幂等键 + 请求内容哈希」判定重放。
-     * 一个用例里造两张订单（例如「一个 SKU 要两个需求」）如果复用同一个幂等键，第二次会因为
-     * 内容不同而抛 40990「相同幂等键的请求内容不一致」—— 看起来像采购分配逻辑出错，
-     * 实际只是测试自己把幂等键写重了。
+     * <p><b>为什么必须逐张唯一</b>：{@code SalesOrderService} 按「防重复请求编号 + 请求内容哈希」判定重放。
+     * 一个用例里造两张订单（例如「一个 SKU 要两个需求」）如果复用同一个防重复请求编号，第二次会因为
+     * 内容不同而抛 40990「相同防重复请求编号的请求内容不一致」—— 看起来像采购分配逻辑出错，
+     * 实际只是测试自己把防重复请求编号写重了。
      */
     private int salesOrderSequence;
 
@@ -290,11 +290,11 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 本类夹具（需求 / 采购单 / 收货单 / 分拣任务）落库时使用的仓库。
+     * 本类夹具（需求 / 采购单 / 收货单 / 分拣任务）写入数据库时使用的仓库。
      *
      * <p>默认就是 V15 迁移建立的 {@code WH001}。这个可覆盖点存在的原因是：种子仓库被整个测试
      * 体系共享，任何一处给它新增一个 (warehouse, sku) 余额行，都会改变
-     * 「按整仓出快照」的那类夹具的输出规模。盘点 Excel 导入正是这样的夹具 —— 它的模板校验码
+     * 「按整仓出保存的数据」的那类夹具的输出规模。盘点 Excel 导入正是这样的夹具 —— 它的模板校验码
      * 要为仓库里每条活跃余额带上 skuCode / 单位 / 账面量，并被逐行写进模板单元格，
      * 而 POI 单元格有 32767 字符上限（见 {@code StocktakeSnapshotSigner#sign} 的压缩说明）。
      * 也就是说这条链路对「共享仓库里有多少别人留下的行」敏感，一旦行数被别的执行顺序改变，
@@ -462,12 +462,12 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 造一张已确认的销售订单（采购需求的唯一取数口径：{@code status = CONFIRMED} + {@code confirmed_at}）。
+     * 造一张已确认的销售订单（采购需求的唯一取数规则：{@code status = CONFIRMED} + {@code confirmed_at}）。
      *
      * <p>链路完全走订单命令：{@code create → submit → actualQuantity → confirm}。
      * 要造「确认了但还没称重」的非标订单，用 {@link #confirmedUnweighedSalesOrder}。
      *
-     * <p>幂等键带逐张递增的序号：同一用例造多张订单时必须各不相同，否则第二次会撞
+     * <p>防重复请求编号带逐张递增的序号：同一用例造多张订单时必须各不相同，否则第二次会撞
      * 订单域的「同键不同内容」判定（40990）。见 {@link #salesOrderSequence}。
      *
      * @return 该订单的 id（{@code xsy_sales_order.id}）
@@ -733,9 +733,9 @@ public abstract class ScmW5PgITBase {
     /**
      * 为采购单建一张待确认收货单（收货行由服务端按采购单的全部活动行自动生成）。
      *
-     * <p>幂等键固定为 {@code prefix + ":receipt:" + orderId}，因此同一个采购单只能调一次。
+     * <p>防重复请求编号固定为 {@code prefix + ":receipt:" + orderId}，因此同一个采购单只能调一次。
      * 若先调它并让 {@code create} 因业务原因抛错（例如已取消的采购单 → 40991），这次失败已经在本用例的
-     * 事务里插入了 claim 行；再用同一个键调第二次会命中「已提交的幂等记录缺少 result_data」。
+     * 事务里插入了 claim 行；再用同一个键调第二次会命中「已提交的防重复处理记录缺少 result_data」。
      * 那种场景要改用 {@link #createAnotherReceipt(Long, String)} 换键。
      */
     protected PurchaseReceiptVO createReceipt(Long orderId) {
@@ -750,7 +750,7 @@ public abstract class ScmW5PgITBase {
     /**
      * 同一采购单的第二张及后续收货单（分次到货是正常业务，不限制张数）。
      *
-     * <p>幂等键必须逐张唯一：{@code create} 的 scope 是 {@code PURCHASE_RECEIPT_CREATE:<采购单id>}，
+     * <p>防重复请求编号必须逐张唯一：{@code create} 的 scope 是 {@code PURCHASE_RECEIPT_CREATE:<采购单id>}，
      * 同键同内容会命中重放、拿回同一张单（这正是 {@link #createReceipt} 的行为）。
      */
     protected PurchaseReceiptVO createAnotherReceipt(Long orderId, String suffix) {
@@ -829,7 +829,7 @@ public abstract class ScmW5PgITBase {
         query.setPageSize(20L);
         var page = purchaseQueryService.receiptQuery(query);
         assertThat(page.getList()).as("采购单 %s 的收货单", orderId).hasSize(1);
-        // 列表投影不带明细，统一回成 detail 形状，免得调用方拿到 null items
+        // 列表查询结果不带明细，统一回成 detail 形状，免得调用方拿到 null items
         return purchaseQueryService.receiptDetail(page.getList().getFirst().getId());
     }
 
@@ -957,7 +957,7 @@ public abstract class ScmW5PgITBase {
      *
      * <p>{@code plannedQuantity} 同时用作销售订单的订购量与实数量，因此
      * {@code required_quantity == planned_quantity == 分配量} ——
-     * 这样「收满」就是「收到 planned」，断言不必在两套口径之间换算。
+     * 这样「收满」就是「收到 planned」，断言不必在两套规则之间换算。
      */
     protected record ReceiptFixture(Long skuId, Long supplierId, PurchaseDemandEntity demand,
                                     PurchaseOrderVO order, PurchaseReceiptVO receipt) {
@@ -1000,11 +1000,11 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 把订单做到「可进配送候选」：建一个分拣任务、逐行按快照量正常收口、完成任务。
+     * 把订单做到「可进配送候选」：建一个分拣任务、逐行按保存的数据量正常收口、完成任务。
      *
      * <p>这是线路类用例的前置条件：候选 = CONFIRMED ∧ 每条有效明细行都被 {@code COMPLETED}
      * 任务覆盖。走真实分拣命令服务而不是直插行 ——
-     * 直插正好绕过被验证的那条口径，会让「资格判定改没改」在 IT 里看不出来。
+     * 直插正好绕过被验证的那条规则，会让「资格判定改没改」在 IT 里看不出来。
      *
      * <p>任务派给当前登录人：分拣范围是「授权仓 ∩ 受指派人」，派给别人会让调用方
      * 读不到自己刚造出来的行。仓库取种子仓 —— 分拣仓库与线路仓库是两个独立维度，

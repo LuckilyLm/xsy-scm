@@ -43,7 +43,7 @@ import static org.mockito.Mockito.mockStatic;
 /**
  * 库存族的仓库数据范围（{@code xsy_employee_warehouse_scope} → Mapper 谓词）取证。
  *
- * <p>口径来自 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4、8 条，本类逐条钉住：
+ * <p>规则来自 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4、8 条，本类逐条钉住：
  * <ul>
  *   <li>仓库维度只认授权行，没有授权行就是<b>零行</b>，不存在「参数为空 = 全部」；</li>
  *   <li>无授权时得到的是<b>形状正常的空分页</b>（短路），而不是异常或全量；</li>
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.mockStatic;
  *   <li>调拨按「任一端授权即可见」，两端都不授权时详情按无权限回答；</li>
  *   <li>成本列无权时抹成 {@code null} 而不是 {@code 0}；</li>
  *   <li>授权行整体替换、活动组合由部分唯一索引挡住重复，回收后立即可见性消失
- *       —— 范围是<b>每次请求</b>解析的，不缓存在登录快照里。</li>
+ *       —— 范围是<b>每次请求</b>解析的，不缓存在登录保存的数据里。</li>
  * </ul>
  *
  * <p><b>身份与权限怎么造</b>：范围解析读两处外部状态 —— 登录员工（{@code SmartRequestUtil}）
@@ -280,7 +280,7 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
         authorize(keeper, pair.warehouseA());
         // 库里的真实成本非零：下面得到的 null 只能是「抹掉」的结果，不是数据缺失
         assertThat(balanceRow(pair.warehouseA(), pair.skuA()).getAvgCost())
-                .as("前置：均价事实确实存在").isEqualByComparingTo(EXPECTED_AVG_COST);
+                .as("前置：均价记录确实存在").isEqualByComparingTo(EXPECTED_AVG_COST);
 
         // 每次读之前清一级缓存：无权限的那次读会把返回的 VO 实例就地抹成 null，
         // 而同一事务里同一语句同一参数的第二次读会拿回同一批实例（生产上每请求一个
@@ -289,14 +289,14 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
         assertThat(hiddenBalance.getAvgCost()).as("无权时必须是 null：0 会被读成「这批货没有成本」").isNull();
         assertThat(hiddenBalance.getAmount()).isNull();
         assertThat(hiddenBalance.getQuantity())
-                .as("数量不是成本事实，权限收口不能顺手把它藏掉").isEqualByComparingTo(QUANTITY);
+                .as("数量不是成本记录，权限收口不能顺手把它藏掉").isEqualByComparingTo(QUANTITY);
         assertThat(hiddenBalance.getWarehouseId()).isEqualTo(pair.warehouseA());
 
         var hiddenMovement = costVisibleMovement(keeper, false);
         assertThat(hiddenMovement.getUnitCost()).isNull();
         assertThat(hiddenMovement.getQuantity()).isEqualByComparingTo(QUANTITY);
 
-        // 详情是同一条事实的另一个入口：只挡列表等于把成本留给详情页
+        // 详情是同一条记录的另一个入口：只挡列表等于把成本留给详情页
         var hiddenDetail = balanceDetail(keeper, hiddenBalance.getId(), false);
         assertThat(hiddenDetail.getAvgCost()).isNull();
         assertThat(hiddenDetail.getAmount()).isNull();
@@ -356,7 +356,7 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
         assertThat(visibleWarehouseIds(keeper)).containsExactly(pair.warehouseA());
         assertThat(activeScopeRowCount(keeper)).isEqualTo(1);
 
-        // 全部回收：数据没动，可见性必须归零（证明范围逐请求解析，不缓存在登录快照里）
+        // 全部回收：数据没动，可见性必须归零（证明范围逐请求解析，不缓存在登录保存的数据里）
         scopeMaintenance.update(scopeForm(keeper, List.of()));
         assertThat(activeScopeRowCount(keeper)).isZero();
         var emptied = balancesOf(keeper);
@@ -476,7 +476,7 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 查询请求与结果投影
+    // 查询请求与结果查询结果
     // ------------------------------------------------------------------
 
     private InventoryBalanceQueryForm balanceQuery(Long warehouseId) {
@@ -569,7 +569,7 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
 
     /**
      * 以某个非超管员工 + 一组功能权限执行一段逻辑。未点名的权限码取 Mockito 默认值 false，
-     * 与 {@code ScmDataScopeService} 的失败关闭取向一致。<b>不可嵌套调用。</b>
+     * 与 {@code ScmDataScopeService} 的校验失败时拒绝操作取向一致。<b>不可嵌套调用。</b>
      */
     private <T> T as(Long employeeId, Set<String> permissions, Supplier<T> body) {
         loginAs(employeeId);

@@ -75,7 +75,7 @@ class SmartAdminMapperPgValidationIT {
     private static final AtomicInteger SEQ = new AtomicInteger();
 
     /**
-     * 已知且已归档的失败（棘轮基线）。任何新增失败都会让本测试变红。
+     * 已知且已归档的失败（新增问题检查基线）。任何新增失败都会让本测试变红。
      *
      * <p>当前只剩 1 条：
      * <ul>
@@ -189,7 +189,7 @@ class SmartAdminMapperPgValidationIT {
                 .as("以下 mapper 语句无法被 PostgreSQL 解析（含 MySQL 残留标识符/函数）:\n%s",
                         String.join("\n", failures))
                 .isEmpty();
-        // 棘轮：已知失败集合不得扩大
+        // 新增问题检查：已知失败集合不得扩大
         assertThat(knownFailures).as("已知失败基线应恰好为 %s 条", KNOWN_FAILURES.size())
                 .hasSize(KNOWN_FAILURES.size());
         assertThat(validated).as("应至少校验到一批语句").isGreaterThan(100);
@@ -328,14 +328,14 @@ class SmartAdminMapperPgValidationIT {
         if (Wrapper.class.isAssignableFrom(rawType)) {
             return new QueryWrapper<>();
         }
-        // 数据范围值对象是不可变的（final 字段 + 静态工厂），通用 bean 递归填不出它的 ids。
+        // 数据范围值对象是不可修改的（final 字段 + 静态工厂），通用 bean 递归填不出它的 ids。
         // 于是所有把 scope 传进 <choose> 的 mapper 都会在 getBoundSql 抛错、整条被跳过，
         // 等价于让「按 SCM 数据范围收窄」的那段 SQL 永远不进 PostgreSQL 校验。
         // 这里用 of(...) 造一个非空、非全量范围，使 NOT IN <foreach> 分支真正渲染出来。
         if (rawType == com.xsy.scm.common.scope.ScmValueScope.class) {
             return com.xsy.scm.common.scope.ScmValueScope.of(java.util.List.of(1L));
         }
-        // SCM 数据范围上下文同样是不可变的（final 字段 + 只有全参构造器，且工厂方法不是 public）。
+        // SCM 数据范围上下文同样是不可修改的（final 字段 + 只有全参构造器，且工厂方法不是 public）。
         // 它是全部「按范围收窄」DAO 的入参：造不出来就会被 getBoundSql 抛错整条跳过，
         // 等于数据范围那段 SQL 从来没进过 PostgreSQL 校验。用非空、非全量范围把它造出来。
         if (rawType == com.xsy.scm.common.scope.ScmDataScopeContext.class) {

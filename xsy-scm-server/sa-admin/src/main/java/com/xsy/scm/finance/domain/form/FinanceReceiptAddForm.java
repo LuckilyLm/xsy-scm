@@ -43,9 +43,9 @@ public class FinanceReceiptAddForm {
     private OffsetDateTime receivedAt;
 
     /**
-     * 资金凭据号（银行流水号等），只是文本：允许为空、允许重复，既不参与幂等也不建唯一约束。NORMAL 收款是人工登记的资金记录，表里没有
+     * 资金凭据号（银行流水号等），只是文本：允许为空、允许重复，既不参与防重复处理也不建唯一约束。NORMAL 收款是人工登记的资金记录，表里没有
      * {@code source_type/source_id}，因此没有业务来源唯一索引：重复请求防护只有请求级 {@code Idempotency-Key} 一层，{@code uk_finance_receipt_no}
-     * 只是单据号唯一，不是业务幂等键。金额、凭据号、时点都相同的两笔真实收款，只要来自两条命令就都应当成立。
+     * 只是单据号唯一，不是业务防重复请求编号。金额、凭据号、时点都相同的两笔真实收款，只要来自两条命令就都应当成立。
      */
     @Size(max = 128, message = "资金凭据号长度不能超过128")
     private String externalReference;

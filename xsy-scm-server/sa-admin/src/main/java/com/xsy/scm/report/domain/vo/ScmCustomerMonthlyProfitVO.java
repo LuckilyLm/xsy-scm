@@ -25,7 +25,7 @@ public class ScmCustomerMonthlyProfitVO extends ScmFinanceProfitRowVO {
     private BigDecimal netProfit;
 
     /**
-     * 对账口径：外部对账金额 = 当月应收净额 + 有效过账金额。过账不生成应收，但对账单和发票包含它。
+     * 对账规则：外部对账金额 = 当月应收净额 + 有效过账金额。过账不生成应收，但对账单和发票包含它。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class)
     private BigDecimal statementAmount;

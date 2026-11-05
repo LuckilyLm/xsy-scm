@@ -116,7 +116,7 @@ public class FinanceWriteOffService {
         String scopeKey = FinanceConstant.WRITE_OFF_AUTO_SCOPE + ":" + sourceType + ":" + form.getSourceId();
         SourceFact source = lockSource(sourceType, form.getSourceId());
         requireNotReserved(sourceType, source);
-        // 幂等先于重新规划：重试时余额可能已经被第一次执行分完，不能再规划出空分配把重放变成报错
+        // 防重复处理先于重新规划：重试时余额可能已经被第一次执行分完，不能再规划出空分配把重放变成报错
         var claim = idempotencyService.claim(scopeKey, idempotencyKey, form);
         if (claim.replay()) {
             return idempotencyService.replay(claim, FinanceWriteOffAddResultVO.class);
@@ -249,7 +249,7 @@ public class FinanceWriteOffService {
             throw new ScmBusinessException(FinanceErrorCode.ALREADY_REVERSED);
         }
         if (ScmFinanceWriteOffSourceTypeEnum.WAIVER.name().equals(initial.getSourceType())) {
-            // 抹零反向还要把事实置为 REVERSED，只能走抹零接口，否则两边状态会不一致
+            // 抹零反向还要把记录置为 REVERSED，只能走抹零接口，否则两边状态会不一致
             throw new ScmBusinessException(FinanceErrorCode.WAIVER_REVERSE_VIA_WAIVER);
         }
         String reason = StringUtils.trimToNull(form.getReason());
@@ -339,7 +339,7 @@ public class FinanceWriteOffService {
     }
 
     /**
-     * 预览用的资金来源读取：与 {@link #lockSource} 同一可见性口径，但不加锁、不写库。
+     * 预览用的资金来源读取：与 {@link #lockSource} 同一可见性规则，但不加锁、不写库。
      */
     private SourceFact readSource(String sourceType, Long sourceId) {
         ScmDataScopeContext scope = dataScopeService.resolve();

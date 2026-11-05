@@ -4,10 +4,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 对账单来源事实类型的中文叫法。
+ * 对账单来源记录类型的中文叫法。
  *
  * <p>
- * 事实类型来自 {@code xsy_customer_statement_source.fact_type}，由财务各表汇总而来，没有统一枚举； 这里为对账导出和打印共用中文标签，未知类型原样输出，不猜测含义。
+ * 记录类型来自 {@code xsy_customer_statement_source.fact_type}，由财务各表汇总而来，没有统一枚举； 这里为对账导出和打印共用中文标签，未知类型原样输出，不猜测含义。
  */
 @Getter
 @RequiredArgsConstructor
@@ -50,7 +50,7 @@ public enum ScmStatementFactType {
     private final String desc;
 
     /**
-     * 按事实类型取中文标签；空值返回空字符串，未知类型保留原值。
+     * 按记录类型取中文标签；空值返回空字符串，未知类型保留原值。
      */
     public static String labelOf(String factType) {
         for (ScmStatementFactType type : values()) {

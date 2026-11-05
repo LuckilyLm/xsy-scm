@@ -26,7 +26,7 @@ public enum ScmFinanceCustomerRefundMethodEnum {
     ONLINE_PAYMENT("在线支付"),
 
     /**
-     * 混合资金按原来源返还后的聚合财务事实。
+     * 混合资金按原来源返还后的聚合财务记录。
      */
     ORIGINAL_FUNDING("原资金返还"),
 

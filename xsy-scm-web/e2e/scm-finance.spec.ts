@@ -86,7 +86,7 @@ test.describe('scm-finance-overview', () => {
     expect(bytes.subarray(0, 2).toString()).toBe('PK');
   }
 
-  test('Finance R0 六指标与期末明细和 Finance R1 事实一致，并导出 XLSX', async ({page}) => {
+  test('Finance R0 六指标与期末明细和 Finance R1 记录一致，并导出 XLSX', async ({page}) => {
     const facts = await createSignedOrder(harness, 'R0', [{quantity: '10.0000'}]);
     const returnFacts = await createApprovedReturn(harness, facts, '1.0000', 'R0-RETURN');
     expect(returnFacts.approved.status).toBe('APPROVED');
@@ -132,7 +132,7 @@ test.describe('scm-finance-overview', () => {
       const card = page.locator('.report-kpi').filter({hasText: label}).first();
       await expect(card.locator('.report-kpi-value')).toHaveText(kpiMoney(amount));
     }
-    // 「已核销」的口径说明属于常驻长句，已被文案契约清退；口径本身由上面的 KPI 断言覆盖。
+    // 「已核销」的规则说明属于常驻长句，已被文案约定清退；规则本身由上面的 KPI 断言覆盖。
     await captureDownload(page, '导出概览', '往来概览.xlsx');
 
     await page.getByPlaceholder('应收单号 / 订单号 / 客户').fill(facts.receivable.receivableNo);
@@ -600,7 +600,7 @@ test.describe('scm-finance-receivable-red', () => {
     await authenticate(page, harness.financeToken);
     await page.goto('/#/finance/receivables');
     const row = page.locator('#scm-finance-receivable-table tr').filter({hasText: facts.receivable.receivableNo}).first();
-    // 桌面表格用「超额核销」列（异常色）表达同一事实；「超额核销待处理」标签只在移动端布局与明细抽屉里
+    // 桌面表格用「超额核销」列（异常色）表达同一记录；「超额核销待处理」标签只在移动端布局与明细抽屉里
     await expect(row).toContainText('3.5000');
     await row.getByRole('button', {name: accessibleName('明细')}).click();
     const drawer = page.locator('.ant-drawer-open').filter({hasText: '应收明细'}).first();

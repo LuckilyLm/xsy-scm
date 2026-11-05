@@ -21,9 +21,9 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
     private JdbcTemplate jdbc;
 
     /**
-     * 冻结模块基线的目标版本；当前V1001结构另由ScmBackendRulesPgIT验证。
+     * 保存模块基线的目标版本；当前V1001结构另由ScmBackendRulesPgIT验证。
      *
-     * <p>这些断言验证已冻结模块的历史结构，不作为当前业务库仍存在触发器和CHECK的证明。
+     * <p>这些断言验证已保存模块的历史结构，不作为当前业务库仍存在触发器和CHECK的证明。
      */
     private static String targetVersion() {
         String override = System.getProperty("xsy.migration.expected-version");
@@ -138,7 +138,7 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
                         + "WHERE conname = 'ck_t_file_relation_biz_type'",
                 String.class);
         assertThat(bizTypeCheck).contains("PRODUCT_QUALIFICATION").contains("LOT_INSPECTION");
-        // 称重事件类型：补录与设备称重都要能落库
+        // 称重事件类型：补录与设备称重都要能写入数据库
         String eventCheck = jdbc.queryForObject(
                 "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'ck_trace_event_type'",
                 String.class);
@@ -280,7 +280,7 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
     }
 
     /**
-     * V151 起采购收货可登记批次：仓库开关、批次档案、收货行批次事实、批次子账（余额 + 只追加流水）。
+     * V151 起采购收货可登记批次：仓库开关、批次档案、收货行批次记录、批次子账（余额 + 只能新增流水）。
      * 批次是独立子账，总账唯一键不变。
      */
     @Test
@@ -306,7 +306,7 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
                 "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_inventory_lot_movement_append_only' "
                         + "AND NOT tgisinternal",
                 Integer.class);
-        assertThat(appendOnly).as("批次流水必须只追加").isEqualTo(1);
+        assertThat(appendOnly).as("批次流水必须只能新增").isEqualTo(1);
         Integer menus = jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id = 2100 AND menu_type = 2", Integer.class);
         assertThat(menus).as("批次库存页面应随迁移发布").isEqualTo(1);
@@ -317,7 +317,7 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
     }
 
     /**
-     * V152 起包装码（一物一码）：单元表 + 只追加事件表，码不透明且唯一。
+     * V152 起包装码（一物一码）：单元表 + 只能新增事件表，码不透明且唯一。
      */
     @Test
     void traceUnitSchemaExistsFromV152() {
@@ -336,14 +336,14 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
         Integer appendOnly = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_trace_event_append_only' AND NOT tgisinternal",
                 Integer.class);
-        assertThat(appendOnly).as("包装事件必须只追加").isEqualTo(1);
+        assertThat(appendOnly).as("包装事件必须只能新增").isEqualTo(1);
         Integer menus = jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 2110 AND 2112", Integer.class);
         assertThat(menus).as("包装码页面与两条权限应随迁移发布").isEqualTo(3);
     }
 
     /**
-     * V153 起包装码可绑到分拣任务行：一码一物、绑定只追加。
+     * V153 起包装码可绑到分拣任务行：一码一物、绑定只能新增。
      */
     @Test
     void traceUnitBindingSchemaExistsFromV153() {
@@ -355,7 +355,7 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
         assertColumn("xsy_trace_unit_binding", "sorting_task_item_id");
         assertColumn("xsy_trace_unit_binding", "customer_name_snapshot");
         // V157 起「一码一绑」改为「同一时刻只有一条有效绑定」：唯一约束被去掉，由触发器保证，
-        // 这样解绑后可以重新绑定。历史断言按目标版本分流，避免把已演进的约束当成永恒事实。
+        // 这样解绑后可以重新绑定。历史断言按目标版本分流，避免把已演进的约束当成永恒记录。
         Integer uniqueIndexes = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
                         + "AND indexname = 'uk_trace_unit_binding_unit'",
@@ -373,7 +373,7 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
                 "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_trace_unit_binding_append_only' "
                         + "AND NOT tgisinternal",
                 Integer.class);
-        assertThat(appendOnly).as("绑定事实必须只追加").isEqualTo(1);
+        assertThat(appendOnly).as("绑定记录必须只能新增").isEqualTo(1);
         Integer eventTypes = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_trace_event_type' "
                         + "AND pg_get_constraintdef(oid) LIKE '%BIND%'",
@@ -465,7 +465,7 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
     }
 
     /**
-     * V157 起更正流程：申请单 + 解绑事实，有效绑定唯一由触发器保证。
+     * V157 起更正流程：申请单 + 解绑记录，有效绑定唯一由触发器保证。
      */
     @Test
     void traceUnitCorrectionSchemaExistsFromV157() {
@@ -520,7 +520,7 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
     }
 
     /**
-     * V159 起采购单可二维码分享：令牌只存哈希、一单一条有效链接、回填只追加。
+     * V159 起采购单可二维码分享：令牌只存哈希、一单一条有效链接、回填只能新增。
      */
     @Test
     void purchaseShareSchemaExistsFromV159() {
@@ -540,14 +540,14 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
                 "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_purchase_share_feedback_append_only' "
                         + "AND NOT tgisinternal",
                 Integer.class);
-        assertThat(appendOnly).as("回填事实必须只追加").isEqualTo(1);
+        assertThat(appendOnly).as("回填记录必须只能新增").isEqualTo(1);
         Integer menus = jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 2118 AND 2119", Integer.class);
         assertThat(menus).as("分享与撤销权限应随迁移发布").isEqualTo(2);
     }
 
     /**
-     * V160 起客户可发推广二维码：一客一条有效码，扫码记录只追加。
+     * V160 起客户可发推广二维码：一客一条有效码，扫码记录只能新增。
      */
     @Test
     void customerPromotionSchemaExistsFromV160() {
@@ -566,7 +566,7 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
                 "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_customer_promotion_scan_append_only' "
                         + "AND NOT tgisinternal",
                 Integer.class);
-        assertThat(appendOnly).as("扫码记录必须只追加").isEqualTo(1);
+        assertThat(appendOnly).as("扫码记录必须只能新增").isEqualTo(1);
         Integer menus = jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id = 2120 "
                         + "AND api_perms = 'scm:customer:promotion:manage'", Integer.class);
@@ -665,7 +665,7 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
     }
 
     /**
-     * V166 起时价有独立审计表，且只追加。
+     * V166 起时价有独立审计表，且只能新增。
      */
     @Test
     void timePriceAuditExistsFromV166() {
@@ -679,7 +679,7 @@ class ScmMigrationTargetPgIT extends ScmBaselineMigrationPgITBase {
         Integer appendOnly = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_trigger WHERE tgname = '" + trigger + "' AND NOT tgisinternal",
                 Integer.class);
-        assertThat(appendOnly).as("审计日志必须只追加").isEqualTo(1);
+        assertThat(appendOnly).as("审计日志必须只能新增").isEqualTo(1);
     }
 
     /**

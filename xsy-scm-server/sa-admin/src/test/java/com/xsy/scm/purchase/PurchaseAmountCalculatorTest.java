@@ -15,9 +15,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 采购金额精度契约测试。
+ * 采购金额精度约定检查。
  *
- * <p>口径与 {@code OrderAmountCalculator} 一致：4 位定点、HALF_UP、null 传播。
+ * <p>规则与 {@code OrderAmountCalculator} 一致：4 位定点、HALF_UP、null 传播。
  * 这里锁死三件事：
  * <ol>
  *   <li>{@code null} 参与运算 → 结果仍为 {@code null}（不静默变 {@code 0.0000}）；</li>

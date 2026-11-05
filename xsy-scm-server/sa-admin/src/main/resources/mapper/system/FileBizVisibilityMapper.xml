@@ -3,7 +3,7 @@
 <mapper namespace="net.lab1024.sa.admin.module.system.support.FileBizVisibilityDao">
 
     <!--
-      公告可见性口径与公告列表一致：全部可见标记，或 t_notice_visible_range 命中
+      公告可见性规则与公告列表一致：全部可见标记，或 t_notice_visible_range 命中
       该员工本人（data_type=1）或其部门（data_type=2）。这里只做布尔判定，
       不复用公告分页查询，避免把展示字段与权限判定绑在一起。
 
@@ -39,7 +39,7 @@
           AND p.deleted = FALSE
     </select>
 
-    <!-- 批次事实只追加，没有软删除列：存在即活动 -->
+    <!-- 批次记录只能新增，没有软删除列：存在即活动 -->
     <select id="countTraceLot" resultType="int">
         SELECT count(*)
         FROM xsy_trace_lot l

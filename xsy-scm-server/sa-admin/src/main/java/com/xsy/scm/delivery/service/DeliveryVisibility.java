@@ -47,7 +47,7 @@ public final class DeliveryVisibility {
     }
 
     /**
-     * 线路详情的三个金额出口（线路合计、停靠点合计、订单金额快照）一次抹清。
+     * 线路详情的三个金额出口（线路合计、停靠点合计、订单当时保存的金额）一次抹清。
      */
     public DeliveryDetailVO detail(DeliveryDetailVO detail) {
         if (detail == null || amountVisible)

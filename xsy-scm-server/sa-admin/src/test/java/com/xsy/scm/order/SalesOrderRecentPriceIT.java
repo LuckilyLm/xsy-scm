@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 「最近已确认订单价」只读参考的真实 SQL 验证。
  *
- * <p>过滤口径（只取未删除 CONFIRMED 单，排除 PENDING / CANCELLED）、按 (客户, SKU) 收敛、
+ * <p>过滤规则（只取未删除 CONFIRMED 单，排除 PENDING / CANCELLED）、按 (客户, SKU) 收敛、
  * 订单分组的 limit 语义与 confirmed_at 倒序，都依赖 PostgreSQL 上的 JOIN / 状态 / 唯一索引，
  * MockMvc 只 mock 到 service 触不到 mapper，因此这里用真实库跑一遍。用例包在事务里结束回滚，不留数据。
  */
@@ -102,7 +102,7 @@ class SalesOrderRecentPriceIT extends ScmW3PgITBase {
         SalesOrderDetailVO first = confirmed(c, sku, "1");
         SalesOrderDetailVO second = confirmed(c, sku, "2");
 
-        // PENDING：已锁价但未确认，参考口径只认 CONFIRMED，必须排除而不是只排除 CANCELLED
+        // PENDING：已锁价但未确认，参考规则只认 CONFIRMED，必须排除而不是只排除 CANCELLED
         SalesOrderDetailVO pending = submitted(c, sku, "p");
         // CANCELLED：从 PENDING 取消得到（状态机禁止 CONFIRMED 取消），必须排除
         SalesOrderDetailVO pendingToCancel = submitted(c, sku, "x");

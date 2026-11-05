@@ -187,7 +187,7 @@ public class FinanceWaiverService {
     }
 
     /**
-     * 应收当前未结额：净额（金额 - 红字）减去核销净额，与核销、应收列表同一口径。
+     * 应收当前未结额：净额（金额 - 红字）减去核销净额，与核销、应收列表同一套规则。
      */
     private BigDecimal receivableBalance(FinanceReceivableTargetDto target) {
         BigDecimal netAmount = target.getAmount()

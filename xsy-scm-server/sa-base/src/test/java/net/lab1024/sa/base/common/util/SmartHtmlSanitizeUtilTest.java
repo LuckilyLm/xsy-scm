@@ -162,7 +162,7 @@ class SmartHtmlSanitizeUtilTest {
         }
 
         @Test
-        @DisplayName("清洗是幂等的：再清一次结果不变")
+        @DisplayName("清洗是防重复处理的：再清一次结果不变")
         void isIdempotent() {
             String once = SmartHtmlSanitizeUtil.clean(
                     "<p>正文</p><script>alert(1)</script><a href=\"javascript:x()\">链接</a>");

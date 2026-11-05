@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 收货数量与对账恒等式契约测试。
+ * 收货数量与对账恒等式约定检查。
  *
  * <p>本测试是超收容差与对账恒等式的单点防线：
  * <ul>
@@ -72,7 +72,7 @@ class PurchaseReceiptQuantityCalculatorTest {
     }
 
     @Test
-    @DisplayName("Q3a：解析口径是「trim + Integer.parseInt」——前导 + 与首尾空白被接受，这是有意为之的宽松")
+    @DisplayName("Q3a：解析规则是「trim + Integer.parseInt」——前导 + 与首尾空白被接受，这是有意为之的宽松")
     void toleranceParsingIsIntentionallyLenientAboutSignAndWhitespace() {
         // Integer.parseInt 接受前导 '+'，因此 "+10" 视为合法整数 10（不是非法值）
         assertThat(PurchaseReceiptQuantityCalculator.tolerance("+10")).isEqualTo(10);

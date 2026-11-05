@@ -1,4 +1,4 @@
-/** 本机契约只读投影，ID和冻结重量始终保持字符串。 */
+/** 本机约定查询结果，ID和保存重量始终保持字符串。 */
 export interface Item {taskItemId:string; productName:string; specName:string; saleUnit:string; plannedQuantity:string; sortedQuantity:string; productType:string; active:boolean; taskItemVersion:number; customerName?:string|null; orderNo?:string|null; skuId?:string|null; customerId?:string|null}
 export interface Job {taskId:string; taskNo:string; taskVersion:string; items:Item[]; jobId:string; jobVersion:string; expiresAt:string; claimedByDeviceCode:string|null}
 export interface TaskBatch {operatorSessionExpiresAt:string; tasks:Job[]}

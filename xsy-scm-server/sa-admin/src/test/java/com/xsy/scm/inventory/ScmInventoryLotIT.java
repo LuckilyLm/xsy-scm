@@ -105,7 +105,7 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
                 BigDecimal.class, lotWarehouseId, skuId);
         assertThat(movementSum).isEqualByComparingTo("10.0000");
 
-        // 收货行批次事实的数量之和等于本次收货量
+        // 收货行批次记录的数量之和等于本次收货量
         BigDecimal declared = jdbc.queryForObject(
                 "SELECT COALESCE(SUM(l.quantity), 0) FROM xsy_purchase_receipt_item_lot l "
                         + "JOIN xsy_purchase_receipt_item i ON i.id = l.purchase_receipt_item_id "
@@ -165,7 +165,7 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
      * 同一个用例里再发第二次命令会得到 40921 而不是被测的行为。
      */
     @Test
-    @DisplayName("#4 按批次发码：码不透明且唯一，回放能回到收货来源")
+    @DisplayName("#4 按批次发码：码不透明且唯一，历史记录查询能回到收货来源")
     void issueUnitsAndReplayToReceipt() {
         Long skuId = newOnShelfSku("UNIT1");
         W6Fixture fx = inboundFixture("UNIT1", skuId, "10.0000");
@@ -191,7 +191,7 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
                 Integer.class, lotId);
         assertThat(events).isEqualTo(3);
 
-        // 回放：单元 → 批次 → 收货来源
+        // 历史记录查询：单元 → 批次 → 收货来源
         var replay = traceUnitService.replay(codes.getFirst());
         assertThat(replay.getLot().getLotNo()).matches("^XSY\\d{18,19}$");
         assertThat(replay.getReceipt()).isNotNull();
@@ -225,7 +225,7 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("#6 分拣扫码绑定：一码一物，回放能回到客户与订单")
+    @DisplayName("#6 分拣扫码绑定：一码一物，历史记录查询能回到客户与订单")
     void bindUnitToSortingItemAndReplayToCustomer() {
         Long skuId = newOnShelfSku("BIND1");
         W6Fixture fx = inboundFixture("BIND1", skuId, "10.0000");
@@ -255,13 +255,13 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
         assertThat(binding.getCustomerName()).isNotBlank();
         assertThat(binding.getOrderNo()).isNotBlank();
 
-        // 绑定只追加：事件里有一条 BIND
+        // 绑定只能新增：事件里有一条 BIND
         Integer bindEvents = jdbc.queryForObject(
                 "SELECT count(*) FROM xsy_trace_event WHERE unit_id = ? AND event_type = 'BIND'",
                 Integer.class, units.getFirst().getId());
         assertThat(bindEvents).isEqualTo(1);
 
-        // 回放：码 → 客户
+        // 历史记录查询：码 → 客户
         var replay = traceUnitService.replay(units.getFirst().getUnitCode());
         assertThat(replay.getBinding()).isNotNull();
         assertThat(replay.getBinding().getCustomerName()).isEqualTo(binding.getCustomerName());
@@ -295,7 +295,7 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
         bind.setSortingTaskItemId(itemId);
         traceUnitService.bind(bind, "W9 IT");
 
-        // 一码一物：第二次绑定必须被拒，且不能留下第二条绑定事实
+        // 一码一物：第二次绑定必须被拒，且不能留下第二条绑定记录
         assertThatThrownBy(() -> traceUnitService.bind(bind, "W9 IT"))
                 .isInstanceOf(ScmBusinessException.class)
                 .satisfies(error -> assertThat(((ScmBusinessException) error).getErrorCode().getCode()).isEqualTo(41507));
@@ -415,7 +415,7 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
         var approved = traceCorrectionService.approve(decision, "W9 审批人");
         assertThat(approved.getStatus()).isEqualTo("APPROVED");
 
-        // 绑定失效：回放不再显示客户，但解绑事实与事件都留痕
+        // 绑定失效：历史记录查询不再显示客户，但解绑记录与事件都留痕
         assertThat(traceUnitService.replay(unitCode).getBinding()).isNull();
         Integer unbindEvents = jdbc.queryForObject(
                 "SELECT count(*) FROM xsy_trace_event WHERE event_type = 'UNBIND' AND remark = ?",

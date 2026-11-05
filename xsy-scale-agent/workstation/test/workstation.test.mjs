@@ -76,7 +76,7 @@ test('秤端任务、多筐、离线、打印尝试与触屏布局', {skip:!base
     const summary=await api('/basket-summary'+query);assert.equal(summary.basketCount,2);assert.equal(summary.completion.eventKeys.length,2);
     assert.equal(Number(summary.totalQuantity),9);assert.equal(summary.queueState,'WAITING_CONTRACT');
     const queue=await api('/basket-queue'+query);assert.equal(queue.length,3);assert(queue.every(v=>v.state==='WAITING_CONTRACT'));
-    note('完成商品冻结两筐，不再取重、不额外出票、真实同步状态保留待对接');
+    note('完成商品保存两筐，不再取重、不额外出票、真实同步状态保留待对接');
     await page.screenshot({path:path.join(output,'completed-offline.png'),fullPage:true,animations:'disabled'});
     await page.getByRole('link',{name:'称重记录',exact:true}).click();
     await expect(page.getByRole('button',{name:/补打$/}).first()).toBeEnabled();

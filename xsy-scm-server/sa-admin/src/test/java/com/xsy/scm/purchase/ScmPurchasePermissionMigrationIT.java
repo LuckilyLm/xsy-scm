@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 采购域权限种子（V16，2 例）。
  *
- * <p>V16 是只追加的迁移：25 条 {@code t_menu}（701–706 目录/页面 + 711–713 + 721–727 +
+ * <p>V16 是只能新增的迁移：25 条 {@code t_menu}（701–706 目录/页面 + 711–713 + 721–727 +
  * 731–735 + 741 + 751–753 权限点）全部授权给 {@code role_id = 1}，并把 {@code t_menu} 的序列推到 {@code max + 1}。
  *
  * <p>代码与菜单一致性那一例比 schema 那一例更重要：菜单种子写错只是「前端少一个按钮」，但
@@ -125,7 +125,7 @@ class ScmPurchasePermissionMigrationIT extends ScmW5PgITBase {
             }
         }
 
-        // 7（需求：原 4 条含缺口预览 + ADM-05 冻结批次的 create / generate / detail）
+        // 7（需求：原 4 条含缺口预览 + ADM-05 计算结果批次的 create / generate / detail）
         // + 18（采购单：14 条含单笔/批量少收关单与 reassign 改派归属，再加补价/改价/锁单/解锁 4 条）
         // + 10（收货，含 putaway）+ 7（仓库，含 enable/disable）= 42 个端点；
         // 采购草稿态下线（V221）移除 submit 端点后为 41。
@@ -133,7 +133,7 @@ class ScmPurchasePermissionMigrationIT extends ScmW5PgITBase {
         // 权限码去重后 24 个：3 + 9 + 6 + 5 + 1（缺口预览叠加 scm:inventory:balance:query，AND 模式）；
         // 改派只多出一个 scm:purchase:assign —— 它是「能把单据换成谁」的分配权，
         // 与 putaway / enable 一样是新增动作而非新维度，所以端点与权限码同步 +1
-        // 端点 35 → 38 带来 3 个新权限码（ADM-05 冻结批次 batch:create / batch:generate / batch:query），
+        // 端点 35 → 38 带来 3 个新权限码（ADM-05 计算结果批次 batch:create / batch:generate / batch:query），
         // 去重后 24 → 27。下面紧身的 containsAll(declared) 才是关键：
         // 只要有一个码没进 V16 种子，接口对所有人不可用，这条会直接点名。
         // 采购价后置与锁单再补 4 个：price:fill / price:adjust / lock / unlock，去重后 27 → 31；

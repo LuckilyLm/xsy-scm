@@ -4,6 +4,6 @@
 - `MallWechatService` 固定访问微信官方HTTPS接口，AppID与AppSecret仅从后端环境读取；手机号授权code与wx.login的code不同，不接受客户端自报手机号。核对微信返回的AppID、国家码与纯手机号。
 - stable_token经既有RedisService按环境及AppID缓存，提前60秒失效。仅明确访问令牌失效时刷新并重试一次取号；网络错误或授权code失效不重放，异常不得透传带凭据的URL或响应体。
 - 微信官方网关请求使用缓冲工厂发送明确Content-Length，不能回退为分块请求体；真实HTTP传输回归须同时覆盖取令牌与取手机号，模拟客户端响应不能发现此类传输问题。
-- 微信与密码使用不同Sa-Token登录身份，均携带账号版本。微信会话在请求及profile投影中免改密，账号原firstPasswordChange保持；密码会话仍受原守卫限制。后台停用、重置密码与实际改密后的版本失效对两种方式均生效。
-- Controller仅做验证与入口编排；认证和状态裁定在MallAuthService，微信访问在MallWechatService。真实授权依赖平台手机号能力与正确凭据，本地HTTP模拟测试不能作为真实微信验收。
+- 微信与密码使用不同Sa-Token登录身份，均携带账号版本。微信会话在请求及profile查询结果中免改密，账号原firstPasswordChange保持；密码会话仍受原守卫限制。后台停用、重置密码与实际改密后的版本失效对两种方式均生效。
+- Controller仅做验证与入口协调；认证和状态裁定在MallAuthService，微信访问在MallWechatService。真实授权依赖平台手机号能力与正确凭据，本地HTTP模拟测试不能作为真实微信验收。
 - 微信手机号code失效使用40098；40094保留给既有采购询价错误，不新增跨域错误码冲突。客户端按认证错误提示重新授权，不自动重放已消费code。

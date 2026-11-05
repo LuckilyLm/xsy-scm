@@ -157,10 +157,10 @@ public class InventoryReportVO {
     }
 
     /**
-     * 负库存损耗行：查询时点的余额快照（{@code quantity < 0}），不是历史月份回算。
+     * 负库存损耗行：查询时点的查询时的余额数据（{@code quantity < 0}），不是历史月份回算。
      *
      * <p>
-     * 负数量本身不是损耗事实，只是「卖出去了但没有入库成本」的缺口。真实损耗仍以报损单 / 盘亏流水为准， 本报表按月导出供负责人估算，不生成任何库存流水或报损单。
+     * 负数量本身不是损耗记录，只是「卖出去了但没有入库成本」的缺口。真实损耗仍以报损单 / 盘亏流水为准， 本报表按月导出供负责人估算，不生成任何库存流水或报损单。
      */
     @Data
     public static class NegativeStockRow {
@@ -196,7 +196,7 @@ public class InventoryReportVO {
         private Long zeroCostRowCount;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal totalEstimatedAmount;
-        /** 取数时点；负库存是当前状态，历史月份需要月度快照表才能回溯。 */
+        /** 取数时点；负库存是当前状态，历史月份需要月度历史资料表才能回溯。 */
         private OffsetDateTime snapshotAt;
     }
 

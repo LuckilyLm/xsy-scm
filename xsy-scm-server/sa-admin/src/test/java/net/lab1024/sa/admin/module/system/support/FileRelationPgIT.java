@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 文件关系的真实库验证：V52 的表结构事实、存量回填，以及守卫按关系放行。
+ * 文件关系的真实库验证：V52 的表结构记录、存量回填，以及守卫按关系放行。
  *
  * <p>单测能证明判定逻辑，证明不了「回填真的把历史附件的关系建出来了」。
  * 而读侧一旦改成按关系判定，漏回填就等于把历史附件集体变成不可读 —— 这是
@@ -41,7 +41,7 @@ class FileRelationPgIT extends ScmW3PgITBase {
     private final AtomicLong bizIdSeq = new AtomicLong(900000L);
 
     private RequestUser employee(long id) {
-        // RequestUser 是抽象契约，具体身份取底座员工请求对象（与 FileAccessGuardTest 同形）
+        // RequestUser 是抽象约定，具体身份取底座员工请求对象（与 FileAccessGuardTest 同形）
         RequestEmployee user = new RequestEmployee();
         user.setEmployeeId(id);
         user.setActualName("FA-2 IT");
@@ -69,7 +69,7 @@ class FileRelationPgIT extends ScmW3PgITBase {
     }
 
     @Test
-    @DisplayName("V52 的结构事实：白名单 CHECK、三元组部分唯一索引、双向查询索引都在")
+    @DisplayName("V52 的结构记录：白名单 CHECK、三元组部分唯一索引、双向查询索引都在")
     void migrationStructuralFactsArePresent() {
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_t_file_relation_biz_type'"
@@ -158,7 +158,7 @@ class FileRelationPgIT extends ScmW3PgITBase {
         assertThat(bound).containsExactlyInAnyOrder(
                 "private/notice/" + prefix + "-1.pdf", "private/notice/" + prefix + "-2.pdf");
 
-        // 重放必须幂等：迁移可失败重试是硬要求
+        // 重放必须防重复处理：迁移可失败重试是硬要求
         jdbc.execute("INSERT INTO t_file_relation (file_key, biz_type, biz_id)\n"
                 + "SELECT btrim(part), 'NOTICE', n.notice_id\n"
                 + "FROM t_notice n CROSS JOIN LATERAL regexp_split_to_table(n.attachment, ',') AS part\n"

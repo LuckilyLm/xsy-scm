@@ -52,7 +52,7 @@ public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity
      * 提交采购单时启动待定价行的价格窗口（只填尚未启动的行）。
      *
      * <p>
-     * 幂等重放或重复提交不会把窗口起点往后推：窗口必须有确定的起点，否则越提交越宽松。
+     * 重复请求返回原结果或重复提交不会把窗口起点往后推：窗口必须有确定的起点，否则越提交越宽松。
      */
     int startPriceWindow(@Param("purchaseOrderId") Long purchaseOrderId, @Param("startedAt") OffsetDateTime startedAt,
         @Param("operator") String operator);
@@ -95,7 +95,7 @@ public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity
         @Param("query") PurchaseReceiptItemWorkbenchQueryForm form, @Param("scope") ScmValueScope scope);
 
     /**
-     * 每个商品规格最近一条已提交采购行（只读）。采购员范围显式传入，{@code scope == null} 按失败关闭处理。
+     * 每个商品规格最近一条已提交采购行（只读）。采购员范围显式传入，{@code scope == null} 按校验失败时拒绝操作处理。
      */
     List<PurchaseLastPriceVO> latestPurchasePrices(@Param("skuIds") List<Long> skuIds,
         @Param("statuses") List<String> statuses, @Param("scope") ScmValueScope purchaserScope);

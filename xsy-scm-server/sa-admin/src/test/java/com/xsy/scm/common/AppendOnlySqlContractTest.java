@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** 事实表的自定义SQL也只能追加；避免新增映射方法绕过标准Mapper限制。 */
+/** 记录表的自定义SQL也只能追加；避免新增映射方法绕过标准Mapper限制。 */
 class AppendOnlySqlContractTest {
     private static final Set<String> FACTS = Set.of(
         "xsy_inventory_movement", "xsy_inventory_lot_movement", "xsy_price_operation_log",
@@ -49,12 +49,12 @@ class AppendOnlySqlContractTest {
                     var matches = mutation.matcher(sql);
                     while (matches.find()) {
                         String table = matches.group(1);
-                        assertThat(FACTS).as("%s 不得覆盖或删除事实表 %s", resource.getFilename(), table).doesNotContain(table);
+                        assertThat(FACTS).as("%s 不得覆盖或删除记录表 %s", resource.getFilename(), table).doesNotContain(table);
                         if (SNAPSHOTS.containsKey(table) && sql.contains("set")) {
                             String assignments = sql.substring(sql.indexOf("set") + 3).split("\\bwhere\\b", 2)[0];
                             for (String field : SNAPSHOTS.get(table)) {
                                 assertThat(Pattern.compile("\\b" + field + "\\s*=").matcher(assignments).find())
-                                    .as("%s 不得重写冻结字段 %s.%s", resource.getFilename(), table, field).isFalse();
+                                    .as("%s 不得重写保存字段 %s.%s", resource.getFilename(), table, field).isFalse();
                             }
                         }
                     }

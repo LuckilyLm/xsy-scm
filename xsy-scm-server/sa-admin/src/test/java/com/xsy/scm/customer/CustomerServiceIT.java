@@ -33,8 +33,8 @@ import static org.mockito.Mockito.mockStatic;
 /**
  * 客户写路径在真实 PostgreSQL 上的行为。
  *
- * <p>验证的都是「只有在数据库里才成立」的契约：服务端编码生成（PG sequence，{@code CUS######}）、
- * {@code NUMERIC(18,4)} 的定点数落库、{@code ck_customer_credit_period} 与 Validator 一致、
+ * <p>验证的都是「只有在数据库里才成立」的约定：服务端编码生成（PG sequence，{@code CUS######}）、
+ * {@code NUMERIC(18,4)} 的定点数写入数据库、{@code ck_customer_credit_period} 与 Validator 一致、
  * 以及状态机只能通过 {@code updateStatus} 前进。
  */
 @DisplayName("客户：写路径与状态机（PG IT）")
@@ -131,7 +131,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("新增/编辑表单可直接改状态：与其它字段同一事务落库")
+    @DisplayName("新增/编辑表单可直接改状态：与其它字段同一事务写入数据库")
     void formCanChangeStatusWithStatusPermission() {
         try (MockedStatic<StpUtil> permissions = mockStatic(StpUtil.class)) {
             permissions.when(() -> StpUtil.hasPermission(anyString())).thenReturn(true);
@@ -308,7 +308,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("账期三种合法形态都能落库，数值按 NUMERIC(18,4) 保真")
+    @DisplayName("账期三种合法形态都能写入数据库，数值按 NUMERIC(18,4) 保真")
     void creditPeriodThreeFormsPersist() {
         CustomerAddForm byAmount = form("A1");
         byAmount.setCreditPeriodType("BY_AMOUNT");

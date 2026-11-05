@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 抹零事实：对账时主动放弃的零头，冲减应收。
+ * 抹零记录：对账时主动放弃的零头，冲减应收。
  *
  * <p>
  * 金额本身不参与余额计算——真正的冲减是 {@code xsy_finance_write_off} 里 {@code source_type = 'WAIVER'} 的那一行，本表只负责证明「这几分钱是主动免掉的，不是漏收」。

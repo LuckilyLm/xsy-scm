@@ -1,7 +1,7 @@
 /*
- * 商城订单展示口径的唯一来源：展示分类文案、处理记录文案、状态语义档位。
+ * 商城订单展示规则的唯一来源：展示分类文案、处理记录文案、状态语义档位。
  *
- * 展示分类（displayStatus）由服务端按「正式订单状态 + 配送履约事实」派生，客户端**不重新推导**，
+ * 展示分类（displayStatus）由服务端按「正式订单状态 + 配送履约记录」派生，客户端**不重新推导**，
  * 只做文案与配色映射；level 是语义档位（warn / primary / ok / off），由各页面映射成自己的 BEM 类名，
  * 这样列表与详情不共享类名，样式仍各自独立。
  */
@@ -43,7 +43,7 @@ export function settlementMethodText(method) {
 /**
  * 待付金额 = 应付净额 − 已付，按四位小数定点做整数相减（不用浮点）。
  *
- * payableAmount 只在已确认订单由服务端下发（确认前实重未齐，应付没有权威口径）；未下发时返回 null，页面不显示资金行。
+ * payableAmount 只在已确认订单由服务端下发（确认前实重未齐，应付没有权威规则）；未下发时返回 null，页面不显示资金行。
  */
 export function dueAmount(order) {
   if (!order || order.payableAmount === null || order.payableAmount === undefined || order.payableAmount === '') {
@@ -82,14 +82,14 @@ export function operationText(operationType) {
  * 配送异常（拒收 / 破损 / 缺货争议等）。
  *
  * 展示分类暂时仍归入「已完成」——异常单必须有归属页签，否则客户在列表里找不到它；
- * 但是否应该单独出一个状态与页签，属产品口径，待第二阶段配送功能统一裁决。
+ * 但是否应该单独出一个状态与页签，属产品规则，待第二阶段配送功能统一裁决。
  * 在那之前至少不能只说「已完成」：列表打标、详情给横幅，把真实履约状态说清楚。
  */
 export function isAbnormalFulfillment(fulfillmentStatus) {
   return fulfillmentStatus === 'EXCEPTION';
 }
 
-/** 数量按四位小数定点做整数运算，去掉无意义的尾随零（与购物车、结算页同一口径） */
+/** 数量按四位小数定点做整数运算，去掉无意义的尾随零（与购物车、结算页同一套规则） */
 export function displayQuantity(quantity) {
   if (quantity === null || quantity === undefined || quantity === '') return '—';
   const scaled = Math.round(Number(quantity) * 10000);

@@ -86,7 +86,7 @@ public class PaymentRefundService {
      * 发起退款。
      *
      * <p>
-     * 重复请求靠业务幂等键回放首次结果，不是「发现已有就随便返回一个」：前者回答「这次请求的结果是什么」， 后者会在两次请求参数不同时给出一个看似成功的错误答案。
+     * 重复请求靠业务防重复请求编号返回首次处理结果，不是「发现已有就随便返回一个」：前者回答「这次请求的结果是什么」， 后者会在两次请求参数不同时给出一个看似成功的错误答案。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentRefundEntity create(PaymentRefundCreateForm form, String idempotencyKey) {
@@ -168,7 +168,7 @@ public class PaymentRefundService {
      * 把渠道的退款结果落到状态机上。
      *
      * <p>
-     * 发起时与回调时复用同一段判定：两处各写一份，迟早会出现「回调说成功、本地还停在处理中」。 受影响行数 != 1 说明这笔退款已被处理过（重复回调），直接返回，由幂等层回答「已处理」。
+     * 发起时与回调时复用同一段判定：两处各写一份，迟早会出现「回调说成功、本地还停在处理中」。 受影响行数 != 1 说明这笔退款已被处理过（重复回调），直接返回，由防重复处理层回答「已处理」。
      */
     @Transactional(rollbackFor = Exception.class)
     public void applyOutcome(Long refundId, ScmPaymentProvider.Outcome outcome, String providerRefundNo,

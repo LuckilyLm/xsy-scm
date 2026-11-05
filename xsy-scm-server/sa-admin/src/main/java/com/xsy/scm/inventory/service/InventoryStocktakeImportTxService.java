@@ -8,14 +8,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * 盘点导入在一个事务里完成幂等认领、锁定库存、验证库存版本、创建待确认单和幂等结果记录；任一失败整批回滚。
+ * 盘点导入在一个事务里完成防重复处理认领、锁定库存、验证库存版本、创建待确认单和防重复处理结果记录；任一失败整批回滚。
  */
 @Service
 @RequiredArgsConstructor
 public class InventoryStocktakeImportTxService {
 
     /**
-     * 一次提交的结果：新建盘点单 id + 是否命中幂等重试。
+     * 一次提交的结果：新建盘点单 id + 是否命中防重复处理重试。
      */
     public record CommitResult(Long stocktakeId, boolean replayed) {
     }

@@ -50,21 +50,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * 分拣任务状态机、幂等与占用、数据范围，以及交给配送资格的那一半口径。
+ * 分拣任务状态机、防重复处理与占用、数据范围，以及交给配送资格的那一半规则。
  *
  * <p>逐条对上的裁决（{@code docs/decisions.md}「分拣管理裁决」第 1–3、6、8、10、11、16–19 条与
  * 补充第 15、17、18 条）：
  * <ul>
- *   <li>计划量是冻结快照，<b>绝不回写</b>订单行的 {@code actual_quantity} 与结算金额（第 1、3 条）；</li>
+ *   <li>计划量是历史资料，<b>绝不回写</b>订单行的 {@code actual_quantity} 与结算金额（第 1、3 条）；</li>
  *   <li>分拣不写库存：余额、流水、出库单都不动（第 6 条）；</li>
- *   <li>重复生成不产生重复业务事实：同幂等键重放返回同一任务，抢同一订单行的另一张单被拒（第 2 条）；</li>
+ *   <li>重复生成不产生重复业务记录：同防重复请求编号重放返回同一任务，抢同一订单行的另一张单被拒（第 2 条）；</li>
  *   <li>完成必须全部活动明细都有结果（补充第 17 条）；重开保留已录内容（补充第 18 条）；</li>
  *   <li>范围 = 授权仓 ∩ 受指派人，未指派任务只对队列管理者可见（第 7 条与补充第 15 条）；</li>
  *   <li>打印只计次（第 8 条）；资格按「全部有效行被已完成任务覆盖」判定（第 11 条与补充第 18 条）。</li>
  * </ul>
  *
  * <p><b>身份与权限</b>：员工用裸 SQL 造且 {@code administrator_flag=false}（超管跑绿不算权限证据）；
- * 功能权限按既有做法用 {@code mockStatic(StpUtil)} 显式点名，未点名的取默认 false 即失败关闭；
+ * 功能权限按既有做法用 {@code mockStatic(StpUtil)} 显式点名，未点名的取默认 false 即校验失败时拒绝操作；
  * 仓库授权走行配置表 {@code xsy_employee_warehouse_scope}，因为「范围是配置值」本身就是被测对象。
  * {@link #as} 不可嵌套调用。
  */
@@ -128,11 +128,11 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 建单：快照、幂等与占用
+    // 建单：保存的数据、防重复处理与占用
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("建单冻结计划量并留快照；同幂等键重放不生成第二套事实")
+    @DisplayName("建单保存计划量并留保存的数据；同防重复请求编号重放不生成第二套记录")
     void createFreezesPlanSnapshotAndReplayIsIdempotent() {
         var order = order("c1", "10.0000");
         var form = createForm("c1", List.of(order.item()), sorterA);
@@ -295,7 +295,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         Integer jobVersion = task.getTask().getVersion();
         var completions = new ArrayList<SortingScaleCompleteForm>();
 
-        // 两个商品都先落筐，模拟同一份离线作业快照；首次完成不能让另一商品的记录失效。
+        // 两个商品都先落筐，模拟同一份离线作业保存的数据；首次完成不能让另一商品的记录失效。
         for (var line : task.getItems()) {
             String eventKey = key("basket-event-" + line.getId());
             var basket = new SortingScaleBasketForm();
@@ -561,7 +561,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     /**
      * break-glass：超管位绕过数据范围是 P0 基线收口裁决定下的不变量，「受指派人」这一维是直接比员工 id
      * 而不是范围值对象，因此必须同等放行 —— 否则同一个账号会「仓库看得见、人看不见」。
-     * 反过来它也不是权限证据：正向能力一律由上面的角色账号取证，这里只钉口径不放宽。
+     * 反过来它也不是权限证据：正向能力一律由上面的角色账号取证，这里只钉规则不放宽。
      */
     @Test
     @DisplayName("未指派任务对分拣员不可操作，但超管按 break-glass 可以代为处理")
@@ -587,7 +587,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("分次追加保留未确认状态，同键幂等、版本守卫和最终差额校验")
+    @DisplayName("分次追加保留未确认状态，同键防重复处理、版本守卫和最终差额校验")
     void partAppendRequiresExplicitFinalConfirmation() {
         var order = order("pt", "4.0000");
         var detail = as(lead, QUEUE_MANAGER,
@@ -697,7 +697,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 两个视角同一套事实、打印与资格
+    // 两个视角同一套记录、打印与资格
     // ------------------------------------------------------------------
 
     @Test
@@ -740,7 +740,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
                 () -> sorting.print(taskId, action(version, null), key("p2")));
 
         assertThat(first.getPrintCount()).isEqualTo(1);
-        assertThat(replay.getPrintCount()).as("同一幂等键重放只计一次").isEqualTo(1);
+        assertThat(replay.getPrintCount()).as("同一防重复请求编号重放只计一次").isEqualTo(1);
         assertThat(second.getPrintCount()).isEqualTo(2);
         assertThat(taskStatus(taskId)).isEqualTo("COMPLETED");
         assertThat(currentVersion(taskId)).as("打印不改版本，否则会把别人的编辑顶成假冲突").isEqualTo(version);
@@ -762,7 +762,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         var preview = as(sorterA, Set.of(PRINT_PERM), () -> queries.printPreview(taskId));
         assertThat(preview.getItems()).hasSize(1);
         assertThat(preview.getTaskNo()).matches("^XSY\\d{18,19}$");
-        assertThat(printCount(taskId)).as("预览不占用幂等键也不计次").isZero();
+        assertThat(printCount(taskId)).as("预览不占用防重复请求编号也不计次").isZero();
     }
 
     @Test
@@ -1027,7 +1027,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 把任务做到 COMPLETED：逐行按快照量正常收口，再带当前版本完成。
+     * 把任务做到 COMPLETED：逐行按保存的数据量正常收口，再带当前版本完成。
      */
     private void finish(Long taskId) {
         var detail = as(sorterA, SORTER, () -> queries.detail(taskId));
@@ -1187,7 +1187,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 幂等键逐次唯一：{@code claim} 按「操作人 + 作用域 + 键」定位，
+     * 防重复请求编号逐次唯一：{@code claim} 按「操作人 + 作用域 + 键」定位，
      * 复用常量会让同一用例里第二次调用被当成重放而不是新请求。
      */
     private String key(String tag) {

@@ -25,12 +25,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 采购需求生成。
  *
- * <p>覆盖三条契约：
+ * <p>覆盖三条约定：
  * <ul>
  *   <li><b>demand_date 派生</b>：{@code demand_date} = {@code source_confirmed_at} 在 Asia/Shanghai 下的日期，
  *       不是窗口起点（{@code date(startAt)}）；并由 V15 的 {@code ck_purchase_demand_date} 在库层复核；</li>
- *   <li><b>需求单位快照</b>：{@code demand_unit_snapshot} 来自 {@code xsy_sales_order_item.sale_unit_snapshot}（销售单位），
- *       与采购单位（{@code xsy_supplier_sku.purchase_unit}）是两个独立快照；</li>
+ *   <li><b>需求当时的单位</b>：{@code demand_unit_snapshot} 来自 {@code xsy_sales_order_item.sale_unit_snapshot}（销售单位），
+ *       与采购单位（{@code xsy_supplier_sku.purchase_unit}）是两个独立保存的数据；</li>
  *   <li><b>日志归属与重复汇总</b>：{@code DEMAND_GENERATE} 日志的两个 id 必须同时为空；
  *       同一来源行的重复汇总靠 {@code uk_purchase_demand_source_active} + {@code ON CONFLICT DO NOTHING} 收敛。</li>
  * </ul>
@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * （{@link #insertCompetitionConvergesToSingleActiveDemand}）——
  * 这两点正是并发汇总唯一会走到的分支。
  */
-@DisplayName("采购需求生成：来源快照 / Q6a / Q17 / 去重收敛（PG IT）")
+@DisplayName("采购需求生成：来源保存的数据 / Q6a / Q17 / 去重收敛（PG IT）")
 class PurchaseDemandServiceIT extends ScmW5PgITBase {
 
     private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
@@ -84,11 +84,11 @@ class PurchaseDemandServiceIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 1. 快照与来源口径
+    // 1. 保存的数据与来源规则
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("generate：来源已确认订单 → 需求快照齐全，需求量取实数量而不是订购量")
+    @DisplayName("generate：来源已确认订单 → 需求保存的数据齐全，需求量取实数量而不是订购量")
     void generateCreatesDemandFromConfirmedOrderWithSnapshots() {
         Fixture fixture = fixture("DG1", "5.0000", "3.2500");
         PurchaseDemandGenerateForm form = window(fixture);
@@ -154,7 +154,7 @@ class PurchaseDemandServiceIT extends ScmW5PgITBase {
         // 原订单确认时间原样保存，不被窗口起点污染
         assertThat(row.getSourceConfirmedAt().toInstant()).isEqualTo(fixture.confirmedAt().toInstant());
 
-        // 库层复核：V15 的 ck_purchase_demand_date 与 Java 侧派生口径必须逐行一致
+        // 库层复核：V15 的 ck_purchase_demand_date 与 Java 侧派生规则必须逐行一致
         Integer mismatched = jdbc.queryForObject(
                 "SELECT count(*) FROM xsy_purchase_demand "
                         + "WHERE demand_date <> (source_confirmed_at AT TIME ZONE 'Asia/Shanghai')::date",
@@ -185,7 +185,7 @@ class PurchaseDemandServiceIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 4. 重复汇总（幂等重放 + 去重）
+    // 4. 重复汇总（重复请求返回原结果 + 去重）
     // ------------------------------------------------------------------
 
     @Test
@@ -195,7 +195,7 @@ class PurchaseDemandServiceIT extends ScmW5PgITBase {
 
         PurchaseDemandService.GenerateResult first =
                 demandService.generate(window(fixture), prefix + ":g4a");
-        // 不同幂等键（不同请求身份）：走「已存在 → 跳过」分支，而不是重放
+        // 不同防重复请求编号（不同请求身份）：走「已存在 → 跳过」分支，而不是重放
         PurchaseDemandService.GenerateResult second =
                 demandService.generate(window(fixture), prefix + ":g4b");
 
@@ -284,7 +284,7 @@ class PurchaseDemandServiceIT extends ScmW5PgITBase {
         assertThat(log.get("purchase_order_id")).isNull();
         assertThat(log.get("purchase_receipt_id")).isNull();
         assertThat(log.get("operation_type")).isEqualTo("DEMAND_GENERATE");
-        // 操作者落的是 userType:employeeId（ScmOperator 的口径），不是员工姓名
+        // 操作者落的是 userType:employeeId（ScmOperator 的规则），不是员工姓名
         assertThat(log.get("operator")).isEqualTo(ScmOperator.current());
         assertThat(String.valueOf(log.get("after_data"))).contains("createdCount");
     }
@@ -318,7 +318,7 @@ class PurchaseDemandServiceIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("需求列表与详情：unallocatedQuantity = required − allocated，口径与列表一致")
+    @DisplayName("需求列表与详情：unallocatedQuantity = required − allocated，规则与列表一致")
     void demandQueryAndDetailExposeUnallocatedQuantity() {
         Fixture fixture = fixture("DG9", "7.0000", "5.0000");
         demandService.generate(window(fixture), prefix + ":g9");
@@ -340,7 +340,7 @@ class PurchaseDemandServiceIT extends ScmW5PgITBase {
         assertThat(detail.getProductType()).isEqualTo("NON_STANDARD");
         // 尚未分配：没有任何 allocation 行
         assertThat(purchaseDemandAllocationDao.listActiveByDemandIds(List.of(row.getId()))).isEmpty();
-        // 生成器的快照字段与详情投影必须逐字段同源（demandUnit 就是快照列）
+        // 生成器的保存当时资料的字段与详情查询结果必须逐字段同源（demandUnit 就是保存的数据列）
         assertThat(detail.getSpecValues())
                 .isEqualTo(PurchaseSnapshotFactory.copySpecValues(row.getSpecValuesSnapshot()));
     }

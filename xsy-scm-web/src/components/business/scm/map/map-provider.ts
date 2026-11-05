@@ -86,7 +86,7 @@ let loading: Promise<Sdk> | undefined;
 export const mapConfigured = () => Boolean(import.meta.env.VITE_AMAP_KEY);
 
 async function load(): Promise<Sdk> {
-  if (!mapConfigured()) throw new Error('地图尚未配置，可先手工填写经纬度并编排停靠顺序。');
+  if (!mapConfigured()) throw new Error('地图尚未配置，可先手工填写经纬度并协调停靠顺序。');
   if (globalMap.AMap) return globalMap.AMap;
   if (loading) return loading;
   loading = new Promise<Sdk>((resolve, reject) => {

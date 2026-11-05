@@ -23,7 +23,7 @@ public class PurchaseReceiptItemWorkbenchVO {
     private String purchaseUnit;
 
     /**
-     * STANDARD / NON_STANDARD，沿用采购行的商品类型快照。
+     * STANDARD / NON_STANDARD，沿用采购行保存的商品类型。
      */
     private String productType;
 

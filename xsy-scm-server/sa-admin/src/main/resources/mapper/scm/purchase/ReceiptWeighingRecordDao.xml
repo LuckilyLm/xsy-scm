@@ -3,8 +3,8 @@
 <mapper namespace="com.xsy.scm.purchase.dao.ReceiptWeighingRecordDao">
 
     <!--
-      只追加表：无 version / deleted / updated_* 列，因此没有 update / delete 语句。
-      缺少这些语句本身就是「审计事实不可篡改」的实现。
+      只能新增表：无 version / deleted / updated_* 列，因此没有 update / delete 语句。
+      缺少这些语句本身就是「审计记录不可篡改」的实现。
     -->
     <resultMap id="weighingRowMap" type="com.xsy.scm.purchase.domain.entity.ReceiptWeighingRecordEntity">
         <id column="id" property="id"/>

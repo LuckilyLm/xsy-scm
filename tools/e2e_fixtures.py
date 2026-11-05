@@ -13,7 +13,7 @@ patch_product_update_xlsx.py、fill_stocktake_template.py；它们服务于同�
     python tools/e2e_fixtures.py stocktake --in template.xlsx --out filled.xlsx [--delta 1]
 
 各节之间不共用列假设：账号只碰 t_employee / t_role / t_role_menu，报表只碰报表与采购单
-回填，三个 xlsx 分别对齐各自模板的列契约与受保护列。数据库操作仍要求显式
+回填，三个 xlsx 分别对齐各自模板的列约定与受保护列。数据库操作仍要求显式
 XSY_V2_PG_DB，且只按带 `_e2e_` 标记的 login_name 精确删除。
 """
 import argparse
@@ -46,7 +46,7 @@ from decimal import Decimal, InvalidOperation
 #   因此这里必须写**一样的摘要**，否则登录失败。
 #
 # 数据库：本机 docker Compose 的 Postgres 容器（默认 `xsy-scm-postgres-1`，127.0.0.1:15432），schema=xsy_v2；
-# **库名必须由 XSY_V2_PG_DB 显式给出**，不给即拒绝执行（默认值会把账号建到过期快照库，登录只报「登录名或密码错误」）。
+# **库名必须由 XSY_V2_PG_DB 显式给出**，不给即拒绝执行（默认值会把账号建到过期保存的数据库，登录只报「登录名或密码错误」）。
 # 可用环境变量覆盖：XSY_V2_PG_CONTAINER / XSY_V2_PG_DB（必填）/ XSY_V2_PG_SCHEMA / XSY_V2_PG_USER
 #
 # 安全约束：
@@ -494,7 +494,7 @@ def setup() -> None:
 # cleanup
 # ---------------------------------------------------------------------------
 def cleanup_quiet(name: str) -> None:
-    """删除指定 login_name 的临时员工及其角色关联（仅供 setup 幂等复用）。
+    """删除指定 login_name 的临时员工及其角色关联（仅供 setup 防重复处理复用）。
 
     双重保护：按 login_name 精确匹配 + 排除种子管理员行；
     不做任何前缀 / 通配删除。
@@ -697,7 +697,7 @@ UPDATE_ONLY_COLUMNS = ("SPU ID", "SPU版本", "SKU ID", "SKU版本")
 
 
 class InputError(Exception):
-    """调用方传参或输入文件不符合契约；主流程统一转成退出码 1。"""
+    """调用方传参或输入文件不符合约定；主流程统一转成退出码 1。"""
 
 
 def read_headers(sheet) -> dict:
@@ -893,17 +893,17 @@ def product_update_main() -> int:
     return 0
 
 # ===========================================================================
-# 盘点快照导入模板
+# 盘点表导入模板
 # ===========================================================================
-# 把盘点快照导入模板填成「可成功导入」的实盘件（仅供 E2E / 手工验收使用）。
+# 把盘点表导入模板填成「可成功导入」的实盘件（仅供 E2E / 手工验收使用）。
 #
 # 为什么需要：Wave 6 的浏览器验收要求真实跑一遍「导出模板 → 填实盘 → 导入建草稿」，
 # 而前端页面本身不解析 xlsx（导入是整文件上传给后端），所以“填好的文件”必须由测试侧生成。
 #
 # 做法与约束（对齐 `InventoryStocktakeImportService` 的读法）：
-#   · 只写「实盘数量」列（第 7 列），快照凭证 / SKU 编码 / 账面快照等受保护列**逐字节不动**——
+#   · 只写「实盘数量」列（第 7 列），资料校验凭证 / SKU 编码 / 导出时的账面数据等受保护列**逐字节不动**——
 #     凭证是 HMAC 签名的字符串单元格，重写它等于伪造来源集合；
-#   · 填的是「账面快照 + delta」，确保确认阶段真的产生盘盈/盘亏流水（漂移反例依赖这一点）；
+#   · 填的是「导出时的账面数据 + delta」，确保确认阶段真的产生盘盈/盘亏流水（漂移反例依赖这一点）；
 #   · 以字符串写入：后端正则 `[0-9]{1,14}(\\.[0-9]{1,4})?` 按文本校验，数值单元格会经
 #     `NumberToTextConverter` 转换，留成字符串可避免浮点尾巴；
 #   · 结果为负时夹到 0（实盘量不允许负数）。
@@ -914,7 +914,7 @@ def product_update_main() -> int:
 #     {"rows": 3, "actuals": {"SKU-A": "12.5", ...}}
 
 ACTUAL_COLUMN = 7      # 1-based，对应表头「实盘数量」
-BOOK_COLUMN = 6        # 1-based，对应表头「账面数量快照」
+BOOK_COLUMN = 6        # 1-based，对应表头「导出时账面数量」
 
 
 def stocktake_main() -> int:
@@ -949,7 +949,7 @@ def stocktake_main() -> int:
         try:
             value = Decimal(snapshot) + delta
         except InvalidOperation:
-            print(f"[fill-stocktake] 第 {row} 行账面快照不是数字: {snapshot!r}", file=sys.stderr)
+            print(f"[fill-stocktake] 第 {row} 行导出时的账面数据不是数字: {snapshot!r}", file=sys.stderr)
             return 2
         if value < 0:
             value = Decimal(0)

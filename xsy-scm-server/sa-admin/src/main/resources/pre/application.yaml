@@ -21,7 +21,7 @@ spring:
   profiles:
     active: '@profiles.active@'
 
-# 盘点快照导入凭证的签名密钥：缺失或沿用仓库内开发默认值时应用启动失败（见 StocktakeSnapshotSigner）
+# 盘点表导入凭证的签名密钥：缺失或沿用仓库内开发默认值时应用启动失败（见 StocktakeSnapshotSigner）
 scm:
   inventory:
     stocktake:

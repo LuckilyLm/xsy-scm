@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 录单参考的最近采购价：只读快照，不参与当前商品定价，也不写回订单。
+ * 录单参考的最近采购价：只读保存的数据，不参与当前商品定价，也不写回订单。
  */
 @Data
 public class OrderLastPurchasePriceVO {
@@ -17,7 +17,7 @@ public class OrderLastPurchasePriceVO {
     private Long skuId;
 
     /**
-     * 最近一张已提交采购单上的采购单价（采购单位口径）。
+     * 最近一张已提交采购单上的采购单价（采购单位规则）。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal purchasePrice;

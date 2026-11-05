@@ -1,5 +1,5 @@
 /**
- * 打印模块契约测试。
+ * 打印模块约定检查。
  *
  * 由 2 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -11,9 +11,9 @@ import {readFileSync} from 'node:fs';
 // ---------------------------------------------------------------- 来源：print-center-contract.test.mjs
 {
   /**
-   * 打印中心（模板配置 + 打印记录）的前端契约测试。
+   * 打印中心（模板配置 + 打印记录）的前端约定检查。
    *
-   * 只钉「违背之后页面照样能跑、但事实已经错了」的那一类：
+   * 只钉「违背之后页面照样能跑、但记录已经错了」的那一类：
    *
    * 1. 打印记录是审计凭据：必须能说清当初用的是哪一版模板，但模板编码 / 版本
    *    不该各占一列 —— 它们下沉为模板名的次要行。
@@ -97,7 +97,7 @@ import {readFileSync} from 'node:fs';
   const service = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/service/ScmPrintService.java');
   const migration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V146__scm_sales_order_print.sql');
 
-  test('复用打印中心的模板、快照与记录，不另建订单打印写接口', () => {
+  test('复用打印中心的模板、保存的数据与记录，不另建订单打印写接口', () => {
     assert.match(type, /'SALES_ORDER'/);
     assert.match(detail, /document-type="SALES_ORDER"/);
     assert.match(list, /document-type="SALES_ORDER"/);
@@ -107,7 +107,7 @@ import {readFileSync} from 'node:fs';
     assert.match(service, /scmIdempotencyService\.claim\(/);
   });
 
-  test('订单打印来源从正式订单查询获取，金额与行项目使用原订单快照', () => {
+  test('订单打印来源从正式订单查询获取，金额与行项目使用原当时的订单资料', () => {
     assert.match(provider, /return OrderPermission\.QUERY/);
     assert.match(provider, /orderQueryService\.detail\(businessId\)/);
     assert.match(provider, /getLockedUnitPrice\(\)/);
@@ -174,7 +174,7 @@ import {readFileSync} from 'node:fs';
     assert.match(migration, /STATEMENT_DEFAULT/);
   });
 
-  test('对账单打印读取冻结版本并按当前数据范围重验源事实', () => {
+  test('对账单打印读取保存后的版本并按当前数据范围重验源记录', () => {
     assert.match(statementProvider, /ScmReportPermission\.CUSTOMER_STATEMENT_QUERY/);
     assert.match(statementProvider, /statementService\.loadForPrint\(businessId\)/);
     assert.match(statementService, /public ScmCustomerStatementVO loadForPrint\(Long id\)/);

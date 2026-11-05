@@ -131,7 +131,7 @@ export interface PrintRenderColumn {
   numeric: boolean;
 }
 
-/** 一份已算好的打印版面；frozen=true 表示来自冻结打印记录，内容不再变化。 */
+/** 一份已算好的打印版面；frozen=true 表示来自保存打印记录，内容不再变化。 */
 export interface PrintRender {
   documentType: PrintDocumentType;
   businessId?: Id;

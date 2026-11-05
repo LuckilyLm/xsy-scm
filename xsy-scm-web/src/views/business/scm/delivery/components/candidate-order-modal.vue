@@ -111,7 +111,7 @@ const rows = ref<CandidateOrder[]>([]),
   area = ref<AreaNode[]>([]),
   timeRange = ref<[string, string]>();
 const route = ref<DeliveryRoute>();
-// 表单项的 name 必须能稳定读到同一个模型对象，不能每次渲染新建快照
+// 表单项的 name 必须能稳定读到同一个模型对象，不能每次渲染都新建表单对象
 const form = reactive({reason: ''});
 let generation = 0;
 const formRef = ref<FormInstance>();

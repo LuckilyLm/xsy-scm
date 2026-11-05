@@ -8,14 +8,14 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 正式非管理员角色矩阵的落库取证（V56 + V57 两个迁移建立的授权口径）。
+ * 正式非管理员角色矩阵的写入数据库取证（V56 + V57 两个迁移建立的授权规则）。
  *
- * <p>本类只回答一个问题：<b>库里的授权矩阵是否等于裁决写的口径</b>。运行时行为（越权读/写各自的
+ * <p>本类只回答一个问题：<b>库里的授权矩阵是否等于裁决写的规则</b>。运行时行为（越权读/写各自的
  * 表现）由 {@code ScmPurchaseDataScopePgIT}、{@code WarehouseDataScopePgIT}、
  * {@code ScmScreenDataScopePgIT} 与各域的范围 IT 取证，这里不重复断言；
  * 反过来，浏览器里「某个角色登录后看到什么」由 {@code e2e/scm-data-scope.spec.ts} 覆盖。
  *
- * <p>三条必须被钉住的口径：
+ * <p>三条必须被钉住的规则：
  * <ul>
  *   <li><b>库存数量权限 ≠ 库存成本权限</b>：采购员与仓管员都有余额查询权，都没有
  *       {@code scm:report:cost:query}；均价与账面金额因此在读侧被抹成 {@code null}。</li>

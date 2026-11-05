@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li><b>加权公式</b> —— {@code (旧量·旧均价 + 入量·入价) / 新量}，含不同单价的多笔入库；</li>
  *   <li><b>出库不改变均价</b> —— 这是移动加权平均的性质，也是「出库流水带成本」的前提；</li>
  *   <li><b>出库流水写当时的均价</b> —— V34 的核心语义变更（此前出库的 unit_cost 一律为 NULL）；</li>
- *   <li><b>不带来新成本事实的入库按现有均价入账</b> —— 盘盈 / 报溢只是把数量补上，
+ *   <li><b>不带来新成本记录的入库按现有均价入账</b> —— 盘盈 / 报溢只是把数量补上，
  *       均价不变。<b>调拨转入与规格转换转入不属于这一类</b>：它们按转出腿的成本加权，
  *       由 {@code ScmInventoryTransferIT} 与 {@code ScmInventoryConversionIT} 覆盖。</li>
  * </ol>
@@ -130,7 +130,7 @@ class ScmInventoryCostingIT extends ScmW6PgITBase {
                 .toList();
         assertThat(purchaseIn).hasSize(2);
         // 流水的 unit_cost 记的是该笔入库的实际单价，不是余额均价 ——
-        // 这是「期初均价取最近一次采购入库单价」这条回填口径能成立的前提。
+        // 这是「期初均价取最近一次采购入库单价」这条回填规则能成立的前提。
         assertThat(new BigDecimal(String.valueOf(purchaseIn.get(0).get("unit_cost"))))
                 .isEqualByComparingTo("6.0000");
         assertThat(new BigDecimal(String.valueOf(purchaseIn.get(1).get("unit_cost"))))

@@ -269,7 +269,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
                         .isZero();
         }
         assertThat(reserved(warehouseId, skuId))
-                .as("ck_inventory_balance_available 的口径：占用不得超过现有量")
+                .as("ck_inventory_balance_available 的规则：占用不得超过现有量")
                 .isLessThan(onHand(warehouseId, skuId));
     }
 
@@ -378,7 +378,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("预留与出库并发抢同一余额行：可用量口径唯一，6+6 抢 10 → 恰一成功、剩 4 可用")
+    @DisplayName("预留与出库并发抢同一余额行：可用量规则唯一，6+6 抢 10 → 恰一成功、剩 4 可用")
     void reserveAndOutboundShareOneAvailableQuantityGate() throws Exception {
         Object[] s = stocked("rc5", "10.0000");
         Long warehouseId = (Long) s[0];
@@ -399,7 +399,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
 
         long succeeded = outcomes.stream().filter(Outcome::success).count();
         assertThat(succeeded)
-                .as("占用与出库共用「可用量 = 现有量 − 预留量」一个口径：两者合计 12 > 10，只能成一个")
+                .as("占用与出库共用「可用量 = 现有量 − 预留量」一个规则：两者合计 12 > 10，只能成一个")
                 .isEqualTo(1);
         outcomes.stream().filter(outcome -> !outcome.success()).forEach(outcome ->
                 assertThat(SCM_ERROR_CODE.apply(outcome.error()))

@@ -98,13 +98,13 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>
  * 为什么必须跑真实库：可见性、客户价、订单归属、业务员范围这四件事全部由 SQL 谓词决定
  * （{@code xsy_customer.visibility_policy}、{@code PriceResolver} 的三级取价、 {@code seller_id IN (...)} 对
- * NULL 的排除），单测里 mock 掉任何一层都验证不到真正的口径。
+ * NULL 的排除），单测里 mock 掉任何一层都验证不到真正的规则。
  *
  * <p>
  * Sa-Token 在无 Web 上下文的测试里拿不到 token 容器，因此登录动作借 {@code mockStatic(StpUtil.class)} 吸收；
  * 被验证的是「账号状态 + 密码校验 + 临时密码守卫 + 客户可交易性」这条业务判定，不是令牌本身。
  * 静态 mock 同时让 {@code ScmDataScopeService.hasPermission} 返回 false，于是非超管员工的范围收敛成
- * 「本人」，这正是要验证的那条口径。
+ * 「本人」，这正是要验证的那条规则。
  */
 class MallOrderFlowPgIT extends ScmW5PgITBase {
 
@@ -142,7 +142,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
 
     private int customerSequence;
 
-    // 履约与退货夹具先走真实收货，后续预留、出库及原批次退回使用同一份库存事实。
+    // 履约与退货夹具先走真实收货，后续预留、出库及原批次退回使用同一份库存记录。
     @Override
     protected Long newOnShelfSku(String suffix) {
         Long skuId = super.newOnShelfSku(suffix);
@@ -247,7 +247,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
                         + "FROM xsy_sales_order_item WHERE id=?", itemId);
         assertThat(frozen.get("mall_stock_unit_snapshot")).isEqualTo("kg");
         assertThat((BigDecimal) frozen.get("mall_stock_units_per_sale_unit")).isEqualByComparingTo("10.0000");
-        // 当前正式业务口径是「确认后显式预留」，不是确认动作自动占库。
+        // 当前正式业务规则是「确认后显式预留」，不是确认动作自动占库。
         salesOrderService.reserveStock(orderId);
         assertThat(jdbc.queryForObject(
                 "SELECT reserved_quantity FROM xsy_inventory_balance WHERE warehouse_id=? AND sku_id=?",
@@ -414,25 +414,25 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         // 下单成功后，已下单规格从购物车移除
         assertThat(mallCartService.cart(customer).getItems()).isEmpty();
 
-        // 幂等：同一键重试拿回原订单，不重复建单
+        // 防重复处理：同一键重试拿回原订单，不重复建单
         assertThat(mallCheckoutService.submit(customer, submit, idempotencyKey).getOrderId())
                 .isEqualTo(submitted.getOrderId());
 
-        // 客户侧订单中心：展示分类由订单状态 + 履约事实派生
+        // 客户侧订单中心：展示分类由订单状态 + 履约记录派生
         MallOrderVO mine = mallOrderQueryService.detail(customer, submitted.getOrderId());
         assertThat(mine.getDisplayStatus()).isEqualTo(MallOrderDisplayStatusEnum.PENDING.name());
         assertThat(mine.getCancelable()).isTrue();
         assertThat(mallOrderQueryService.list(customer, orderQuery(MallOrderDisplayStatusEnum.PENDING.name()))
                 .getList()).extracting(MallOrderVO::getOrderId).contains(submitted.getOrderId());
 
-        // 订单归属取客户快照上的业务员
+        // 订单归属取当时的客户资料上的业务员
         Long sellerId = jdbc.queryForObject("SELECT seller_id FROM xsy_sales_order WHERE id = ?", Long.class,
                 submitted.getOrderId());
         assertThat(sellerId).isEqualTo(sellerEmployeeId);
 
         // 后台：全量范围的操作者能看到 MALL 来源订单
         //
-        // 先钉一条容易踩空的口径：商城身份不是员工，ScmDataScopeService.resolve() 对它返回 denied()，
+        // 先钉一条容易踩空的规则：商城身份不是员工，ScmDataScopeService.resolve() 对它返回 denied()，
         // 所以拿着商城身份查后台订单列表必然是空 —— 商城身份不会漏进后台范围。
         assertThat(mallOrderIdsVisibleToCurrentActor(customerId))
                 .as("商城客户身份不属于后台订单范围，后台列表必为空").isEmpty();
@@ -447,7 +447,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
             return null;
         });
 
-        // 后台确认后，客户侧展示分类跟着履约事实前进，且已确认订单不能再取消
+        // 后台确认后，客户侧展示分类跟着履约记录前进，且已确认订单不能再取消
         SmartRequestUtil.setRequestUser(customer);
         MallOrderVO confirmed = mallOrderQueryService.detail(customer, submitted.getOrderId());
         assertThat(confirmed.getStatus()).isEqualTo("CONFIRMED");
@@ -469,12 +469,12 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
     }
 
     /**
-     * 已知风险：订单业务员取自客户快照。客户未分配业务员时订单 {@code seller_id} 为空，
+     * 已知风险：订单业务员取自当时的客户资料。客户未分配业务员时订单 {@code seller_id} 为空，
      * 而普通业务员的范围是 {@code seller_id IN (本人)} —— {@code IN} 天然排除 NULL。
      *
      * <p>
-     * 本用例把这个口径钉下来：客户自己看得到自己的订单，全量范围的操作者看得到，
-     * 普通业务员看不到。若产品要求「未分配单人人可见」，就得改范围口径（而不是改这条测试）。
+     * 本用例把这个规则钉下来：客户自己看得到自己的订单，全量范围的操作者看得到，
+     * 普通业务员看不到。若产品要求「未分配单人人可见」，就得改范围规则（而不是改这条测试）。
      */
     @Test
     void mallOrderOfACustomerWithoutASellerIsInvisibleToOrdinaryEmployees() {
@@ -489,7 +489,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         var submitted = mallCheckoutService.submit(customer, submitForm(skuId, addressId, preview.getPriceFingerprint()),
                 prefix + ":mall:noseller");
 
-        // 根因：客户没有业务员，订单业务员快照跟着为空
+        // 根因：客户没有业务员，订单业务员保存的数据跟着为空
         assertThat(jdbc.queryForObject("SELECT seller_id FROM xsy_sales_order WHERE id = ?", Long.class,
                 submitted.getOrderId())).isNull();
 
@@ -530,11 +530,11 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
     }
 
     /**
-     * 配送进度：商城的配送详情与进度节点只读配送域事实，不自己推导。
+     * 配送进度：商城的配送详情与进度节点只读配送域记录，不自己推导。
      *
      * <p>
      * 线路的建线 / 定位 / 发车 / 签收正确性由配送域自己的 IT（{@code DeliveryDispatchPgIT}）覆盖，
-     * 本用例只验证商城这一侧的<b>只读投影</b>，因此线路与关联行用直插固定输入 —— 否则要把仓库坐标、入库、 分拣完成那一整套夹具复制过来，重复测别人已经测过的部分。
+     * 本用例只验证商城这一侧的<b>查询结果</b>，因此线路与关联行用直插固定输入 —— 否则要把仓库坐标、入库、 分拣完成那一整套夹具复制过来，重复测别人已经测过的部分。
      *
      * <p>
      * 直插之后必须 {@code evictMybatisCache()}：MyBatis 一级缓存与用例事务同生命周期， 否则会读到事务内的旧值，表现为「改了库但断言没变」。
@@ -580,7 +580,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         assertThat(line.getSettlementLineAmount()).as("结算金额按实重算").isEqualByComparingTo("1.4400");
         assertThat(confirmed.getSettlementTotalAmount()).isEqualByComparingTo("1.4400");
 
-        // 排车并已发车：线路信息与发车节点都来自配送事实
+        // 排车并已发车：线路信息与发车节点都来自配送记录
         Long routeId = insertDispatchedRoute("ok");
         insertActiveRouteOrder(routeId, orderId, customerId, submitted.getOrderNo(), "IN_TRANSIT");
         evictMybatisCache();
@@ -618,7 +618,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
     }
 
     /**
-     * 走一遍商城下单：加购 → 预览 → 提交，返回提交结果（含订单号，线路快照要用）。
+     * 走一遍商城下单：加购 → 预览 → 提交，返回提交结果（含订单号，线路保存的数据要用）。
      *
      * <p>
      * 自己先切回商城身份：{@code asEmployee(...)} 结束时会把请求上下文清空，之后直接调商城服务会以
@@ -634,7 +634,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 配送事实（直插固定输入，仅用于验证商城只读投影）
+    // 配送记录（直插固定输入，仅用于验证商城查询结果）
     // ------------------------------------------------------------------
 
     private Long insertDispatchedRoute(String suffix) {
@@ -662,7 +662,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
                 + " created_at, updated_at)"
                 + " VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, 0, FALSE, now(), now())",
                 routeId, stopId, orderId, customerId, orderNo, fulfillmentStatus);
-        // 订单当前状态是正式事实源，线路夹具须同步执行订单发车转换。
+        // 订单当前状态是正式依据，线路夹具须同步执行订单发车转换。
         assertThat(salesOrderDispatchService.markDispatched(orderId, java.time.OffsetDateTime.now(), "it")).isTrue();
     }
 

@@ -21,7 +21,7 @@ public class ScmCustomerStatementVO {
     private LocalDate startDate;
     private LocalDate endDate;
     private Boolean partialScope;
-    /** 生成时是否包含过账记录；只影响明细行，不影响任何余额口径。 */
+    /** 生成时是否包含过账记录；只影响明细行，不影响任何余额规则。 */
     private Boolean includePosting;
     private Long generatedByEmployeeId;
     private OffsetDateTime generatedAt;
@@ -37,7 +37,7 @@ public class ScmCustomerStatementVO {
      * 本期抹零净额：抹零没有资金流入，不能并进核销净额，否则「未分配资金」会被少算。
      *
      * <p>
-     * 不落表：对账单明细已经冻结，读时从明细事实汇总与冻结结果等价。
+     * 不落表：对账单明细已经保存，读时从明细记录汇总与保存结果等价。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal waiverNet;

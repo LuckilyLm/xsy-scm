@@ -219,7 +219,7 @@ public class PromotionDiscountService {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_NOT_FOUND);
         }
         if (ScmPromotionCouponInstanceStatusEnum.USED.name().equals(instance.getStatus())) {
-            // 幂等：签收重放（或并发下的重复触发）不该报错，券已经在这个订单上用掉了。
+            // 防重复处理：签收重放（或并发下的重复触发）不该报错，券已经在这个订单上用掉了。
             return;
         }
         if (promotionCouponInstanceDao.markUsed(instance.getId(), instance.getVersion(), salesOrderId,

@@ -17,7 +17,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * 让「谁改了这张表」变得无法回答。写成断言之后，新增一条越界依赖当场失败。
  *
  * <p>与 {@code FinanceReadOnlyContractTest} 的分工：那边扫源码文本，钉住「财务域不写业务表」
- * 这条 SQL 级事实；这里看编译产物的类型依赖，钉住分层方向与跨域引用。两者不重叠 ——
+ * 这条 SQL 级记录；这里看编译产物的类型依赖，钉住分层方向与跨域引用。两者不重叠 ——
  * 一句 {@code UPDATE xsy_sales_order} 不产生任何类型依赖，而一次注入 DAO 也不产生任何 SQL 文本。
  *
  * <p>The importer checks both the SmartAdmin SCM package and {@code com.xsy.scm};
@@ -77,14 +77,14 @@ class ScmArchitectureTest {
     static final ArchRule controllersDoNotReachDaos =
             noClasses().that().resideInAPackage("..scm..controller..")
                     .should().dependOnClassesThat().resideInAPackage("..scm..dao..")
-                    .because("Controller 只做入参校验与编排；直连 DAO 会绕过 Service 上的事务边界与数据权限");
+                    .because("Controller 只做入参校验与协调；直连 DAO 会绕过 Service 上的事务边界与数据权限");
 
     @ArchTest
     static final ArchRule daosDoNotReachUpwards =
             noClasses().that().resideInAPackage("..scm..dao..")
                     .should().dependOnClassesThat()
                     .resideInAnyPackage("..scm..controller..", "..scm..service..", "..scm..manager..")
-                    .because("DAO 只表达取数与写数；反向依赖会让一次查询触发业务编排，形成环");
+                    .because("DAO 只表达取数与写数；反向依赖会让一次查询触发业务协调，形成环");
 
     @ArchTest
     static final ArchRule servicesAndManagersDoNotDependOnControllers =
@@ -114,10 +114,10 @@ class ScmArchitectureTest {
                     .because("common 被所有域依赖；它一旦依赖某个具体域，该域就被隐式耦合进每一个域");
 
     /**
-     * 财务域只消费既有事实、只生产自己的事实；跨域读走自己的只读 DAO，跨域写一律禁止。
+     * 财务域只消费既有记录、只生产自己的记录；跨域读走自己的只读 DAO，跨域写一律禁止。
      *
      * <p><b>为什么把值域枚举排除在外</b>：结算方式、支付意图/交易状态、余额流水类型这些枚举是各域共用的
-     * <b>词汇表</b> —— 财务读到的资金事实本身就带着这些取值，判定「这腿是不是成功的余额消费」时必然要引用它们。
+     * <b>词汇表</b> —— 财务读到的资金记录本身就带着这些取值，判定「这腿是不是成功的余额消费」时必然要引用它们。
      * 把它们也算越界，规则就从「不许伸手进别的域」变成了「不许使用共享词汇」，只会逼出重复的值域副本，
      * 而重复的值域副本恰恰是最容易漂移的东西。
      *
@@ -130,7 +130,7 @@ class ScmArchitectureTest {
             noClasses().that().resideInAPackage("..scm.finance..")
                     .should().dependOnClassesThat(JavaClass.Predicates.resideInAnyPackage(CONCRETE_DOMAINS_EXCEPT_FINANCE)
                             .and(DescribedPredicate.doesNot(JavaClass.Predicates.ENUMS)))
-                    .because("财务域只消费既有事实、只生产自己的事实；跨域读走自己的只读 DAO，跨域写一律禁止（共用值域枚举除外）");
+                    .because("财务域只消费既有记录、只生产自己的记录；跨域读走自己的只读 DAO，跨域写一律禁止（共用值域枚举除外）");
 
     /**
      * 防止「一条规则都没跑到」被读成「所有规则都过了」。

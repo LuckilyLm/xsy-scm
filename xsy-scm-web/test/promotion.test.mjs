@@ -1,5 +1,5 @@
 /**
- * 营销模块契约测试。
+ * 营销模块约定检查。
  *
  * 由 1 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -12,9 +12,9 @@ import {rateToPercent, percentToRate} from '../src/views/business/scm/promotion/
 // ---------------------------------------------------------------- 来源：promotion-contract.test.mjs
 {
   /**
-   * 营销中心（活动 / 优惠券）前端契约单测。
+   * 营销中心（活动 / 优惠券）前端约定单测。
    *
-   * 只钉「违背之后页面照样能跑、但业务事实已经错了」的那一类：
+   * 只钉「违背之后页面照样能跑、但业务记录已经错了」的那一类：
    *
    * 1. 折扣率的展示换算无损：后端存 (0,1] 的比率（0.95），表单展示百分比（95）。
    *    百分比取 2 位小数即可覆盖 4 位比率的全部取值，因此往返 `rate → percent → rate`
@@ -22,7 +22,7 @@ import {rateToPercent, percentToRate} from '../src/views/business/scm/promotion/
    * 2. 规则是受控键值：切换活动类型必须清空规则，否则残留的键会被服务端当成未知键拒收（41324）。
    * 3. 空值不进规则载荷：多带一个当前类型用不上的键同样会被 41324 拒收。
    * 4. 编码下沉：活动编码 / 券编码作为名称的 secondary text，不再各占一列。
-   * 5. 门槛 0 是「无门槛」这个业务事实，不是缺值。
+   * 5. 门槛 0 是「无门槛」这个业务记录，不是缺值。
    *
    * 扫描前剥掉注释：这些文件里大量出现反例说明，不剥注释会把纪律文档本身判成违规。
    */
@@ -125,7 +125,7 @@ import {rateToPercent, percentToRate} from '../src/views/business/scm/promotion/
     assert.doesNotMatch(coupon, /column\.dataIndex === 'couponCode'/);
     // 券类型独立成列（原来只混在「优惠」文字里）
     assert.match(coupon, /title: '券类型', dataIndex: 'discountType'/);
-    // 门槛 0 = 无门槛，是业务事实而不是缺值
+    // 门槛 0 = 无门槛，是业务记录而不是缺值
     assert.match(coupon, /function isNoThreshold/);
     assert.match(coupon, /无门槛/);
     // 生效与失效时间各自成列

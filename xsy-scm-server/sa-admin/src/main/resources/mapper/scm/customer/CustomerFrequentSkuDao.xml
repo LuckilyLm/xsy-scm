@@ -3,14 +3,14 @@
 <mapper namespace="com.xsy.scm.customer.dao.CustomerFrequentSkuDao">
 
     <!--
-      客户「常购商品」只读聚合（不落副本，纯读订单事实）。
+      客户「常购商品」只读聚合（不落副本，纯读订单记录）。
       窗口：只取未删除的 CONFIRMED 单（排除 DRAFT / PENDING / CANCELLED）且 confirmed_at >= since
       （since 由 Service 按 Asia/Shanghai 日界算出），与状态白名单同源。
       分组键是 (sku_id, sale_unit_snapshot)：同 SKU 历史单位改变时分行，避免跨单位错误求和；
       order_count 用 COUNT(DISTINCT order_id)——受 (order_id,sku_id) 唯一索引保证同单同 SKU 只一行，不会重复计次。
       recent_unit_price 取该分组「最近一张已确认订单行」的 locked_unit_price（ROW_NUMBER 排序 confirmed_at DESC, order_id DESC），
       不从任意历史行任取、不相加、不求平均；缺失即为 null，不回退草稿价 / 当前价。
-      商品快照同样取自这一最新行（l.*），保证名称与价格同源。@TableLogic 在原生 SQL 不生效，故显式 deleted = FALSE。
+      当时的商品资料同样取自这一最新行（l.*），保证名称与价格同源。@TableLogic 在原生 SQL 不生效，故显式 deleted = FALSE。
     -->
     <select id="frequentSkus" resultType="com.xsy.scm.customer.domain.vo.CustomerFrequentSkuVO">
         WITH base AS(SELECT o.id AS order_id, o.confirmed_at AS confirmed_at, i.sku_id AS sku_id,

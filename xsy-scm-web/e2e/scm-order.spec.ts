@@ -142,7 +142,7 @@ test.describe('scm-data-scope', () => {
         },
       ],
     });
-    expect(confirmed.status, '初始库存必须由确认入库事实生成').toBe('CONFIRMED');
+    expect(confirmed.status, '初始库存必须由确认入库记录生成').toBe('CONFIRMED');
   }
 
   test.beforeAll(async () => {
@@ -161,7 +161,7 @@ test.describe('scm-data-scope', () => {
     };
     stocked.push(...(await collectStocked(enabled)));
     if (stocked.length === 0) {
-      // 第一条 (warehouse, SKU) 余额只能由真实入库建立；盘点不可替代采购收货事实。
+      // 第一条 (warehouse, SKU) 余额只能由真实入库建立；盘点不可替代采购收货记录。
       const skus = await ok<Row>(api, 'post', '/scm/product/sku/option-list', {keyword: '', limit: 10});
       // The initial receipt below sets actualWeight=null, so it must use a standard SKU.
       // The first option is not stable across seed sets and may be NON_STANDARD.
@@ -399,7 +399,7 @@ test.describe('scm-data-scope', () => {
     const afterFirst = await customerDetail(leadClient, customerId);
     await ok(leadClient, 'post', '/scm/customer/reassignSeller', {customerId, sellerId: lead, version: Number(afterFirst.version)});
     const denied = await envelope(clients.SCM_SALES, `/scm/customer/detail/${customerId}`, undefined, 'get');
-    expect(denied.code, '改派后原销售不应还能按 id 读到该客户（越界读取要失败关闭）').not.toBe(0);
+    expect(denied.code, '改派后原销售不应还能按 id 读到该客户（越界读取要校验失败时拒绝操作）').not.toBe(0);
     const stillVisible = await customerDetail(leadClient, customerId);
     expect(Number(stillVisible.sellerId), '主管应看到改派后的新归属').toBe(lead);
 
@@ -764,7 +764,7 @@ test.describe('scm-order', () => {
   test('2 nonstandard weight UI, reason and final settlement', async ({page}) => {
     const o = await post('/scm/order/create', draft());
     expect(o.items[0].actualQuantity).toBeNull();
-    // 负责人口径：允许先确认后称重，缺实重时按订购量估算，不再返回 40963。
+    // 负责人规则：允许先确认后称重，缺实重时按订购量估算，不再返回 40963。
     // 确认前弹的是 ADM-04 的「确认订单」业务弹窗（根类名 .ant-modal、按钮「确定」），
     // 不是 antd 的 Modal.confirm，所以 .ant-modal-confirm 永远等不到；
     // 标题里的「授信检查」已改成正文第一句「当前授信检查通过」，仍要断言授信影响可见。
@@ -913,7 +913,7 @@ test.describe('scm-order', () => {
     await browse(page);
     await page.getByRole('button', {name: '导入订单', exact: true}).click();
     const downloadPromise = page.waitForEvent('download');
-    // 模板为客户订单版式：一张纸一个收货单位，落库就是一张订单
+    // 模板为客户订单版式：一张纸一个收货单位，写入数据库就是一张订单
     await page.getByRole('button', {name: /下载\s*客户订单\s*模板/}).click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toBe('客户订单导入模板.xlsx');
@@ -1239,16 +1239,16 @@ test.describe('scm-wave8-log-context', () => {
     Wave 8 操作日志业务上下文 + 列表查询条件本地记忆 E2E。
 
     覆盖 §12.3 Wave 8 的四件事，并且**全部用真实非管理员登录**（只读角色 / 零权限角色），
-    避免「只有 SUPER_ADMIN 走过链路」这种验收口径：
+    避免「只有 SUPER_ADMIN 走过链路」这种验收规则：
       1. 操作日志页按业务类型与 ID 下钻（查询载荷按下钻而不是扫全表）——
          原先由「商品详情的操作日志入口」触发，该入口已按产品要求移除，
-         现在直接打开深链验证同一条口径；
+         现在直接打开深链验证同一条规则；
       2. 日志页刷新与「重置」都不丢业务上下文（重置只清普通筛选），返回行确实落在该对象上；
       3. 零权限账号按业务对象查询日志被服务端拒（30005）——前端隐藏按钮不是权限；
       4. 客户列表查询条件按登录人分别记忆：查询落键、刷新恢复、重置清除，且换人不共用同一键。
 
     来源：结构与登录链路照抄 `e2e/scm-customer.spec.ts`（复用同一账号脚本与 CJK 按钮处理）。
-    STRPOS 精确匹配口径、脏行退化、写库前脱敏已由后端 PgIT / 前端契约测试覆盖，本 spec 只补真实页面接线。
+    STRPOS 精确匹配规则、脏行退化、写库前脱敏已由后端 PgIT / 前端约定检查覆盖，本 spec 只补真实页面接线。
   */
 
   const apiUrl = process.env.W8_E2E_API_BASE || 'http://127.0.0.1:18080';
@@ -1343,14 +1343,14 @@ test.describe('scm-wave8-log-context', () => {
 
     await authenticate(page, readToken);
     // 商品详情的「操作日志」入口已按产品要求移除，因此这里直接验证深链本身：
-    // 只要日志页仍按 PRODUCT + businessId 精确下钻，入口挂在哪个页面都不改变这条口径。
+    // 只要日志页仍按 PRODUCT + businessId 精确下钻，入口挂在哪个页面都不改变这条规则。
     await page.goto(`/#/support/operate-log/operate-log-list?businessType=PRODUCT&businessId=${spuId}`);
     const payload = await queryPayload(page);
     expect(payload.businessType).toBe('PRODUCT');
     expect(payload.businessId, '业务 ID 必须以数值下钻，不能退化成文本筛选').toBe(Number(spuId));
     expect(page.url()).toContain('businessType=PRODUCT');
     expect(page.url()).toContain(`businessId=${spuId}`);
-    // 下钻视图必须自带口径说明：它不是该对象的全部历史。
+    // 下钻视图必须自带规则说明：它不是该对象的全部历史。
     await expect(page.getByText('正在按当前业务对象查看操作记录')).toBeVisible();
     expect(errors).toEqual([]);
   });

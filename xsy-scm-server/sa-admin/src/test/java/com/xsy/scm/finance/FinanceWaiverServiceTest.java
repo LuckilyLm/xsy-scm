@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
-@DisplayName("抹零：写成 WAIVER 核销行、金额不超未结、反向只追加")
+@DisplayName("抹零：写成 WAIVER 核销行、金额不超未结、反向只能新增")
 class FinanceWaiverServiceTest {
 
     private final FinanceWaiverDao waivers = mock(FinanceWaiverDao.class);
@@ -119,7 +119,7 @@ class FinanceWaiverServiceTest {
     }
 
     @Test
-    @DisplayName("抹零金额超过未结 0.30 时拒绝，不写任何事实")
+    @DisplayName("抹零金额超过未结 0.30 时拒绝，不写任何记录")
     void addExceedingOpenAmountRejected() {
         when(writeOffs.selectTargetWrittenOffAmount("RECEIVABLE", 50L)).thenReturn(new BigDecimal("100.2000"));
 

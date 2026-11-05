@@ -13,33 +13,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * bootstrap backfill（V19 的回填 SQL）的回放与对账。
+ * bootstrap backfill（V19 的回填 SQL）的历史记录查询与对账。
  *
  * <p><b>被测对象是 V19 里的原文 SQL</b>，不是测试里另抄的一份：基类
  * {@link ScmW6PgITBase#migrationSection} 从 classpath 上读迁移文件、按 {@code -- Step N}
  * 标记切段执行。抄一份 SQL 到测试里，抄错或漂移都会让「backfill 已验证」变成一句没有依据的话。
  *
  * <p>backfill 的每一条 INSERT 都以 {@code ON CONFLICT ... DO NOTHING} 收尾，
- * 所以在测试事务里重放它是安全的：语义与「迁移执行时」完全一致（幂等跳过已入库的源事实），
+ * 所以在测试事务里重放它是安全的：语义与「迁移执行时」完全一致（防重复处理跳过已入库的源记录），
  * 而所有写入都在用例结束时回滚。
  *
  * <p>需要「历史数据」的场景用两个动作构造：
  * <ol>
- *   <li>{@code overrideReceiptConfirmedAt} / {@code overrideReceiptItemUnit} —— 把收货事实改成
- *       实时路径永远产生不出来的形状（乱序的确认时刻、混单位的采购快照）；</li>
+ *   <li>{@code overrideReceiptConfirmedAt} / {@code overrideReceiptItemUnit} —— 把收货记录改成
+ *       实时路径永远产生不出来的形状（乱序的确认时刻、混单位的采购保存的数据）；</li>
  *   <li>{@code eraseMovementsFor} —— 把时钟拨回去：删掉实时路径已经写下的流水，
- *       让这些收货看起来「还没被任何路径入库过」，从而能观察 backfill 的回放结果。</li>
+ *       让这些收货看起来「还没被任何路径入库过」，从而能观察 backfill 的历史记录查询结果。</li>
  * </ol>
  * 这两个动作都是测试构造，不是产品能力（产品侧没有任何删除/改写流水的入口）。
  */
-@DisplayName("W6 backfill 回放与对账（PG IT）")
+@DisplayName("W6 backfill 历史记录查询与对账（PG IT）")
 class ScmInventoryBackfillIT extends ScmW6PgITBase {
 
     /**
      * 本 SKU 的已确认收货行里，没有对应流水的条数（V19 Step 4 第一条判据的范围内重算）。
      *
      * <p>按 SKU 收口而不是全库：V22 之后「已确认收货但未上架」是合法中间态，
-     * 那条判据在全库上不再成立，但它对 backfill 负责回放的那批 DIRECT 收货事实仍然成立。
+     * 那条判据在全库上不再成立，但它对 backfill 负责历史记录查询的那批 DIRECT 收货记录仍然成立。
      */
     private int confirmedLineWithoutMovementCount(Long skuId) {
         return jdbc.queryForObject(
@@ -54,11 +54,11 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 幂等与对账
+    // 防重复处理与对账
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("#8 backfill 幂等与对账：重复执行零增量，Σ流水 = Σ收货、Σ余额 = Σ流水")
+    @DisplayName("#8 backfill 防重复处理与对账：重复执行零增量，Σ流水 = Σ收货、Σ余额 = Σ流水")
     void backfillIsIdempotentAndReconciles() {
         Long warehouseId = seedWarehouseId();
         Long skuId = newOnShelfSku("BF8");
@@ -117,7 +117,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         assertThat(movementCount(warehouseId, skuId)).isEqualTo(2);
         assertThat(balanceRow(warehouseId, skuId).getQuantity()).isEqualByComparingTo("5.0000");
 
-        // 再跑一遍 backfill：新 confirm 的源事实已入库 → 零增量（三条路径互不重复入库）
+        // 再跑一遍 backfill：新 confirm 的源记录已入库 → 零增量（三条路径互不重复入库）
         runBackfillMovements();
         runBackfillBalances();
         assertLedgerBalanced(warehouseId, skuId);
@@ -127,11 +127,11 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 回放顺序：id 顺序 ≠ confirmed_at 顺序时按 confirmed_at
+    // 历史记录查询顺序：id 顺序 ≠ confirmed_at 顺序时按 confirmed_at
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("#10 回放顺序（Q5 修正）：id 顺序 ≠ confirmed_at 顺序时，按 confirmed_at 回放")
+    @DisplayName("#10 历史记录查询顺序（Q5 修正）：id 顺序 ≠ confirmed_at 顺序时，按 confirmed_at 历史记录查询")
     void backfillReplaysInConfirmedAtOrder() {
         Long warehouseId = seedWarehouseId();
         Long skuId = newOnShelfSku("BF10");
@@ -150,7 +150,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         overrideReceiptConfirmedAt(laterId.receipt().getId(), base);
         overrideReceiptConfirmedAt(earlierId.receipt().getId(), base.plusHours(1));
 
-        // 把时钟拨回去：删掉实时路径写的流水，让 backfill 重新回放这段历史
+        // 把时钟拨回去：删掉实时路径写的流水，让 backfill 重新历史记录查询这段历史
         eraseMovementsFor(warehouseId, skuId);
         runBackfillMovements();
 
@@ -171,7 +171,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         assertThat((BigDecimal) tail.get("before_quantity")).isEqualByComparingTo("4.0000");
         assertThat((BigDecimal) tail.get("after_quantity")).isEqualByComparingTo("10.0000");
 
-        // 末条 after = 余额；若按 item id 回放，首条会是 6.0000 而 before 仍是 0 → 上面会失败
+        // 末条 after = 余额；若按 item id 历史记录查询，首条会是 6.0000 而 before 仍是 0 → 上面会失败
         assertThat(balanceRow(warehouseId, skuId).getQuantity()).isEqualByComparingTo("10.0000");
         assertLedgerBalanced(warehouseId, skuId);
     }
@@ -220,11 +220,11 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // occurred_at / operator 取收货确认事实
+    // occurred_at / operator 取收货确认记录
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("#15 occurred_at / operator 取收货确认事实：实时与 backfill 同口径，不用 now() / ambient")
+    @DisplayName("#15 occurred_at / operator 取收货确认记录：实时与 backfill 同规则，不用 now() / ambient")
     void movementFactsComeFromTheReceiptConfirmation() {
         Long warehouseId = seedWarehouseId();
         Long skuId = newOnShelfSku("BF15");
@@ -245,7 +245,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         assertThat(live.get("created_by")).isEqualTo(operator);
 
         // --- 判别性验证：如果库存侧用 now() / ambient operator，下面两条一定会失败 ---
-        // 把收货确认事实改成一个历史时刻 + 一个哨兵操作者，再让 backfill 回放
+        // 把收货确认记录改成一个历史时刻 + 一个哨兵操作者，再让 backfill 历史记录查询
         OffsetDateTime historical = OffsetDateTime.parse("2020-03-15T08:30:00+08:00");
         overrideReceiptConfirmedAt(fx.receipt().getId(), historical);
         jdbc.update("UPDATE xsy_purchase_receipt SET operator = ? WHERE id = ?",
@@ -255,10 +255,10 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
 
         Map<String, Object> replayed = movementsOf(warehouseId, skuId).getFirst();
         assertThat(timestampOf(replayed.get("occurred_at")).toInstant())
-                .as("回放的 occurred_at 必须等于收货确认时刻（2020-03-15），而不是迁移执行时刻")
+                .as("历史记录查询的 occurred_at 必须等于收货确认时刻（2020-03-15），而不是迁移执行时刻")
                 .isEqualTo(historical.toInstant());
         assertThat(replayed.get("operator"))
-                .as("回放的 operator 必须等于收货单的操作者，而不是环境里的当前操作者")
+                .as("历史记录查询的 operator 必须等于收货单的操作者，而不是环境里的当前操作者")
                 .isEqualTo("sentinel-operator");
     }
 

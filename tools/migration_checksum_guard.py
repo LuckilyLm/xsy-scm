@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""已应用 Flyway 迁移的字节快照守卫。Exit 0 = 一致, 1 = 漂移。
+"""已应用 Flyway 迁移的文件内容校验工具。Exit 0 = 一致, 1 = 漂移。
 
 Flyway 的 validate 比较的是 `flyway_schema_history.checksum`，而该值只由文件字节决定，
 与 SQL 语义无关：把迁移重新排版（换行合并、缩进、缩进字符）就会改变它，
@@ -49,7 +49,7 @@ def version_key(version: str) -> tuple:
 
 
 def migration_label(version: str) -> str:
-    """展示Flyway标签；保留既有V快照数值键，B基线使用独立B前缀键。"""
+    """展示Flyway标签；保留既有V版本数值键，B基线使用独立B前缀键。"""
     return version if version.startswith("B") else f"V{version}"
 
 
@@ -82,15 +82,15 @@ def load_snapshot(path: Path, allow_missing: bool = False) -> dict:
     if not path.exists():
         if allow_missing:
             return {"algorithm": ALGORITHM, "migrations": {}}
-        raise ValueError(f"快照不存在：{path}；先用 `sync` 冻结当前已应用迁移")
+        raise ValueError(f"版本校验记录不存在：{path}；先用 `sync` 保存当前已应用迁移")
     snapshot = json.loads(path.read_text(encoding="utf-8"))
     if snapshot.get("algorithm") != ALGORITHM:
-        raise ValueError(f"快照算法标记为 {snapshot.get('algorithm')!r}，与当前 {ALGORITHM!r} 不符")
+        raise ValueError(f"版本校验记录算法标记为 {snapshot.get('algorithm')!r}，与当前 {ALGORITHM!r} 不符")
     return snapshot
 
 
 def compare(snapshot: dict, current: dict) -> dict:
-    """把快照与当前字节分成四类，供 check 判定、sync 复用。"""
+    """把版本校验记录与当前字节分成四类，供 check 判定、sync 复用。"""
     snap = snapshot["migrations"]
     drift, vanished, renamed, pending = [], [], [], []
     for version in sorted(snap, key=version_key):
@@ -127,14 +127,14 @@ def cmd_check(args) -> int:
         print("\n--- 已应用迁移的字节被改动 (blocking) ---")
         for version, name, was, now in result["drift"]:
             print(f"  {migration_label(version)} {name}: snapshot {was} -> current {now}")
-        print("  恢复原字节，不要改快照：格式化后的 SQL 语义没变但校验和变了，"
+        print("  恢复原字节，不要改版本校验记录：格式化后的 SQL 语义没变但校验和变了，"
               "真实库上的 flyway.validate() 会失败。")
 
     if result["vanished"]:
-        print("\n--- 快照里的版本号在文件里消失 (blocking) ---")
+        print("\n--- 版本校验记录里的版本号在文件里消失 (blocking) ---")
         for version in result["vanished"]:
             print(f"  {migration_label(version)} {snapshot['migrations'][version]['file']}")
-        print("  已应用的版本号不能改号或删文件；确需重排时按「保留已被真实库应用的版本号」处理并同步快照。")
+        print("  已应用的版本号不能改号或删文件；确需重排时按「保留已被真实库应用的版本号」处理并同步版本校验记录。")
 
     if result["renamed"]:
         print("\n--- 文件名变了而字节没变（通常无害）---")
@@ -142,9 +142,9 @@ def cmd_check(args) -> int:
             print(f"  {migration_label(version)}: {was} -> {now}")
 
     if result["pending"]:
-        print("\n--- 未入快照的新迁移 ---")
+        print("\n--- 未入版本校验记录的新迁移 ---")
         print("  " + ", ".join(migration_label(v) for v in result["pending"]))
-        print("  在真实库应用后用 `sync` 冻结；本状态不算失败。")
+        print("  在真实库应用后用 `sync` 保存；本状态不算失败。")
 
     ok = not result["drift"] and not result["vanished"]
     print("\nRESULT:", "PASS" if ok else "FAIL")
@@ -159,14 +159,14 @@ def cmd_sync(args) -> int:
 
     if result["drift"] and not args.force:
         print("=== Migration checksum guard ===")
-        print("拒绝写入：以下已冻结版本的字节与快照不一致，先恢复原文件再 sync。")
+        print("拒绝写入：以下已发布版本的文件内容与版本校验记录不一致，先恢复原文件再 sync。")
         for version, name, was, now in result["drift"]:
             print(f"  {migration_label(version)} {name}: snapshot {was} -> current {now}")
         print("\nRESULT: FAIL")
         return 1
     if result["vanished"] and not args.prune:
         print("=== Migration checksum guard ===")
-        print("拒绝写入：快照里的版本号在文件里不存在（"
+        print("拒绝写入：版本校验记录里的版本号在文件里不存在（"
               + ", ".join(migration_label(v) for v in result["vanished"])
               + "）。确认要丢弃这些条目时加 --prune。")
         print("\nRESULT: FAIL")
@@ -188,7 +188,7 @@ def cmd_sync(args) -> int:
     print("added        : " + (", ".join(migration_label(v) for v in sorted(added, key=version_key)) or "none"))
     if args.force and result["drift"]:
         print("OVERWRITTEN  : " + ", ".join(migration_label(v) for v, *_ in result["drift"])
-              + "  ← 用 --force 覆盖了已冻结校验和，必须能说明为什么旧字节不可能再出现在任何库里")
+              + "  ← 用 --force 覆盖了已保存已发布版本的校验和，必须能说明为什么旧字节不可能再出现在任何库里")
     print("\nRESULT: PASS")
     return 0
 
@@ -199,9 +199,9 @@ def main() -> int:
     parser.add_argument("--migration-dir", default=str(MIGRATION_DIR))
     parser.add_argument("--snapshot", default=str(SNAPSHOT_PATH))
     sub = parser.add_subparsers(dest="mode", required=True)
-    sub.add_parser("check", help="比对快照与当前迁移字节").set_defaults(func=cmd_check)
-    ps = sub.add_parser("sync", help="把新迁移的当前字节冻结进快照")
-    ps.add_argument("--force", action="store_true", help="覆盖已冻结版本的校验和")
+    sub.add_parser("check", help="比对版本校验记录与当前迁移字节").set_defaults(func=cmd_check)
+    ps = sub.add_parser("sync", help="把新迁移的当前字节保存进版本校验记录")
+    ps.add_argument("--force", action="store_true", help="覆盖已保存后的版本的校验和")
     ps.add_argument("--prune", action="store_true", help="删除文件里已不存在的版本条目")
     ps.set_defaults(func=cmd_sync)
     args = parser.parse_args()

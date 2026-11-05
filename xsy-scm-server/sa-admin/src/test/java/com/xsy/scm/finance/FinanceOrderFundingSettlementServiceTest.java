@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/** 订单资金自动分配的编排：加锁顺序、缺应收时的结论、以及既有处理结果不被覆盖。 */
+/** 订单资金自动分配的协调：加锁顺序、缺应收时的结论、以及既有处理结果不被覆盖。 */
 class FinanceOrderFundingSettlementServiceTest {
     private final FinanceReceivableDao receivables = mock(FinanceReceivableDao.class);
     private final FinanceReceiptDao receipts = mock(FinanceReceiptDao.class);

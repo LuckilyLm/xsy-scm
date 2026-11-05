@@ -156,7 +156,7 @@ class FinanceWriteOffAutoTest {
             .containsExactly(11L, 12L);
         assertThat(captured.getAllValues().stream().map(FinanceWriteOffEntity::getAmount).toList())
             .containsExactly(new BigDecimal("60.0000"), new BigDecimal("40.0000"));
-        // 幂等 scope 与手工核销分开，避免同一收款两个入口互相重放
+        // 防重复处理 scope 与手工核销分开，避免同一收款两个入口互相重放
         verify(idempotency).claim(eq("FINANCE_WRITE_OFF_AUTO:RECEIPT:9"), eq("key"), any());
     }
 

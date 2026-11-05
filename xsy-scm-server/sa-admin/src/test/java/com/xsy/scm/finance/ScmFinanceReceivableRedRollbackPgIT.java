@@ -168,7 +168,7 @@ class ScmFinanceReceivableRedRollbackPgIT extends ScmW6PgITBase {
         sign.setResult("SIGNED");
         routeService.sign(routeId, orderId, sign);
 
-        // 前置事实：正常应收已成立（红字要挂在它上面）
+        // 前置记录：正常应收已成立（红字要挂在它上面）
         Map<String, Object> normal = row(
                 "SELECT * FROM xsy_finance_receivable WHERE source_type = 'SALES_ORDER' AND source_id = ?", orderId);
         Long normalId = ((Number) normal.get("id")).longValue();
@@ -205,7 +205,7 @@ class ScmFinanceReceivableRedRollbackPgIT extends ScmW6PgITBase {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("退货行已挂在别的应收单上");
 
-            // 订单域回到批准前：状态、时点、批准量与金额、退款单、操作日志全部未落库
+            // 订单域回到批准前：状态、时点、批准量与金额、退款单、操作日志全部未写入数据库
             Map<String, Object> returnRow = row("SELECT * FROM xsy_order_return WHERE id = ?",
                     created.getReturnId());
             assertThat(returnRow.get("status")).isEqualTo("PENDING");
@@ -234,7 +234,7 @@ class ScmFinanceReceivableRedRollbackPgIT extends ScmW6PgITBase {
             assertThat(count("SELECT count(*) FROM xsy_finance_receivable_item WHERE receivable_id = ?", normalId))
                     .isEqualTo(1);
 
-            // 签收与出库事实不受影响
+            // 签收与出库记录不受影响
             assertThat(row("SELECT fulfillment_status FROM xsy_delivery_route_order WHERE route_id = ?"
                             + " AND order_id = ? AND deleted = FALSE", routeId, orderId)
                     .get("fulfillment_status")).isEqualTo("SIGNED");

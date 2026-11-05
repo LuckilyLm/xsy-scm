@@ -134,7 +134,7 @@ internal sealed partial class ScaleState(TimeProvider? timeProvider = null)
             WeightReading? selected = recent.FirstOrDefault(sample => sample.SampleId == sampleId);
             if (selected == null || selected.RawWeight != reading.RawWeight || selected.RawUnit != reading.RawUnit)
                 throw new AgentFault("SAMPLE_CHANGED", "重量已更新，请重新采集");
-            // 连续稳定帧可以有不同采样编号；重量变动或最新状态不稳定时仍拒绝旧快照。
+            // 连续稳定帧可以有不同采样编号；重量变动或最新状态不稳定时仍拒绝原来保存的资料。
             if (clock.GetUtcNow() - selected.CapturedAt > TimeSpan.FromSeconds(options.ReadingMaxAgeSeconds)
                 || clock.GetUtcNow() - reading.CapturedAt > TimeSpan.FromSeconds(options.ReadingMaxAgeSeconds))
                 throw new AgentFault("STALE_READING", "重量数据已过期");

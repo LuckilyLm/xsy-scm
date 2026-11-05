@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 商品图 key 搬运（V58）的库内事实取证。
+ * 商品图 key 搬运（V58）的库内记录取证。
  *
  * <p><b>为什么必须自己摆历史形态</b>：本环境的 {@code xsy_scm_b0} 与全部一次性 IT 库里，
  * 「活行且非 public 前缀」的 {@code xsy_product_image} 行数为 0 —— 搬运在真实库上是空操作，
@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 造真商品只会让这条迁移用例额外依赖商品聚合不变量。
  *
  * <p>软删行留在原地：CHECK 无法做成部分约束，V58 因此把 {@code deleted = TRUE} 写进约束，
- * 历史行的原 key 是搬运前的事实，改写它等于改审计。
+ * 历史行的原 key 是搬运前的记录，改写它等于改审计。
  */
 @DisplayName("FA-3 商品图 key 搬运（PG IT）")
 class ScmProductImageKeyMigrationPgIT extends ScmBaselineMigrationPgITBase {
@@ -63,7 +63,7 @@ class ScmProductImageKeyMigrationPgIT extends ScmBaselineMigrationPgITBase {
                 Integer.class)).as("活行里不再有任何非公开前缀的商品图").isZero();
         assertThat(jdbc.queryForObject("SELECT folder_type FROM t_file WHERE file_key = ?", Integer.class,
                 "public/image/" + tail("flat")))
-                .as("folder_type 必须与 key 前缀一起改，否则同一行里两种口径并存").isEqualTo(5);
+                .as("folder_type 必须与 key 前缀一起改，否则同一行里两种规则并存").isEqualTo(5);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM t_file WHERE file_key = ?", Integer.class,
                 "public/image/8f3d/notice/" + tail("nested"))).isEqualTo(1);
         assertThat(activeRelationCount(flat)).as("搬到公开前缀后关系行是死键，必须收回").isZero();

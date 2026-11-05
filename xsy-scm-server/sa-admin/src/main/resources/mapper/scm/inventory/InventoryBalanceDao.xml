@@ -104,7 +104,7 @@
 
     <!--
       展示字段实时联表（「余额是活状态，不是单据」）：
-      LEFT JOIN 且不带 deleted / status 谓词 —— 这是按不可变 id 做的展示解析，
+      LEFT JOIN 且不带 deleted / status 谓词 —— 这是按不可修改 id 做的展示解析，
       把「已下架 / 已软删 SKU」的历史余额整行藏起来比显示它更危险。
       排序写死在 SQL 里：客户端传入的 sortItemList 由 Service 显式拒绝（避免 join 列名歧义）。
     -->
@@ -114,7 +114,7 @@
           金额 = 数量 × 均价。必须显式 ROUND 到 2 位：
           NUMERIC(18,4) × NUMERIC(18,4) 在 PG 里得到 scale 8，而 BigDecimal 走
           ToStringSerializer 原样输出 → 前端会看到 112.00000000。
-          金额是给对账看的，2 位是财务口径；均价保留 4 位不动（它是计算基数）。
+          金额是给对账看的，2 位是财务规则；均价保留 4 位不动（它是计算基数）。
         -->
         ROUND(b.quantity * b.avg_cost, 2) AS amount, b.version, b.updated_at, w.warehouse_code,
             w.name AS warehouse_name, k.sku_code, k.spec_name AS sku_name, k.spec_values, p.name AS product_name
@@ -158,7 +158,7 @@
 
     <!--
       导出盘点模板：某仓库全部活动余额，联 SKU / 商品展示字段。不接客户端排序，
-      固定 b.sku_id 升序 —— 与凭证来源集合、确认阶段锁序同一口径，保证同一仓库两次导出
+      固定 b.sku_id 升序 —— 与凭证来源集合、确认阶段锁序同一套规则，保证同一仓库两次导出
       的行顺序稳定可复核。金额 / avg_cost 对模板无用，故不取。
     -->
     <select id="listActiveByWarehouse" resultMap="balanceVoMap">

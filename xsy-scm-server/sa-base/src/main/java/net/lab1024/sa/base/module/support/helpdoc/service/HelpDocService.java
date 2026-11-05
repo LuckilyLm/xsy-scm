@@ -61,7 +61,7 @@ public class HelpDocService {
     public ResponseDTO<String> add(HelpDocAddForm addForm) {
         HelpDocEntity helpDaoEntity = SmartBeanUtil.copy(addForm, HelpDocEntity.class);
         // 正文按不可信 HTML 处理：前端 v-html 直接注入 DOM，对所有可见者执行。
-        // 落库前统一走白名单清洗，存储侧不留可执行内容。
+        // 写入数据库前统一走白名单清洗，存储侧不留可执行内容。
         helpDaoEntity.setContentHtml(SmartHtmlSanitizeUtil.clean(helpDaoEntity.getContentHtml()));
         helpDaoManager.save(helpDaoEntity, addForm.getRelationList());
         // 私有附件的读取权由关系行决定：存了 fileKey 却不绑定，其他有权查看者永远读不到它
@@ -81,7 +81,7 @@ public class HelpDocService {
     public ResponseDTO<String> update(HelpDocUpdateForm updateForm) {
         // 更新
         HelpDocEntity helpDaoEntity = SmartBeanUtil.copy(updateForm, HelpDocEntity.class);
-        // 与新增同一口径：更新路径也必须清洗，否则「先建干净的、再改成带脚本的」就能绕过写入侧校验。
+        // 与新增同一套规则：更新路径也必须清洗，否则「先建干净的、再改成带脚本的」就能绕过写入侧校验。
         helpDaoEntity.setContentHtml(SmartHtmlSanitizeUtil.clean(helpDaoEntity.getContentHtml()));
         helpDaoManager.update(helpDaoEntity, updateForm.getRelationList());
         // 用 rebind 而不是 bind：更新可以删掉附件，被删掉的 key 必须同时失去授权

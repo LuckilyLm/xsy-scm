@@ -192,7 +192,7 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
 
         Long orderId = confirmedSalesOrder(newCustomer(), skuId, "2.0000", "2.0000");
         Long itemId = confirmedSalesOrderItemId(orderId);
-        // 先配置经订单确认冻结的快照事实；被测范围是正式库存出库与退货接收的单位闭环。
+        // 先配置经订单确认保存的已存数据记录；被测范围是正式库存出库与退货接收的单位闭环。
         jdbc.update("UPDATE xsy_sales_order_item SET mall_stock_unit_snapshot='kg',"
                 + " mall_stock_units_per_sale_unit=10.0000 WHERE id=?", itemId);
         evictMybatisCache();

@@ -21,7 +21,7 @@ public class ScmServiceValidationAspect {
     private final Validator validator;
 
     /**
-     * 在事务和业务写入前校验表单；领域事实对象仍由各领域命令校验。
+     * 在事务和业务写入前校验表单；领域记录对象仍由各领域命令校验。
      *
      * @param invocation
      *            非空的SCM服务调用；不修改参数和返回值，表单违规时抛出业务参数异常。

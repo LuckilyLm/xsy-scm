@@ -146,7 +146,7 @@
         <!--
           分拣覆盖门槛（P1 裁决第 11 条与补充第 18 条）：订单每条有效明细行都必须落在
           状态为 COMPLETED 的分拣任务里，少一行都不能进候选；任务被重开后立刻掉出候选。
-          与 DeliveryEligibilityPolicy#eligible 用的 unsortedItemCount 同一条口径。
+          与 DeliveryEligibilityPolicy#eligible 用的 unsortedItemCount 同一条规则。
         -->
         AND NOT EXISTS (SELECT 1 FROM xsy_sales_order_item i WHERE i.order_id = o.id AND i.deleted = FALSE AND
             NOT EXISTS (SELECT 1 FROM xsy_sorting_task_item si JOIN xsy_sorting_task t ON t.id = si.task_id WHERE
@@ -162,7 +162,7 @@
         WHERE order_id = #{id}
     </select>
 
-    <!-- 加入线路时按订单逐个查快照是 500 次往返；复用 candidateSource，口径不会与单查版漂移。 -->
+    <!-- 加入线路时按订单逐个查保存的数据是 500 次往返；复用 candidateSource，规则不会与单查版漂移。 -->
     <select id="candidateByIds" resultType="com.xsy.scm.delivery.domain.vo.DeliveryCandidateVO">
         SELECT *
         FROM (
@@ -241,7 +241,7 @@
                 AND c.geom_crs IS NOT NULL
         </if>
         <!--
-          候选订单是「还没上线路的销售订单」，而 xsy_sales_order 没有仓库列（单仓口径见错误码 41018），
+          候选订单是「还没上线路的销售订单」，而 xsy_sales_order 没有仓库列（单仓规则见错误码 41018），
           因此仓库维度在这里没有可拼的行级谓词：它由 Service 作为「调用者必须至少有一个授权仓」的
           前置条件生效。本语句仍保留缺省范围即恒假的守卫，防止未来出现绕过 Service 的直接调用。
         -->
@@ -290,7 +290,7 @@
             AND id IN <foreach collection="ids" item="id" open="(" close=")" separator=",">#{id}</foreach>
     </update>
 
-    <!-- 发车：整条线路的活动订单一起进在途。已 IN_TRANSIT 的行不重复推进（幂等重放走服务侧的回放分支） -->
+    <!-- 发车：整条线路的活动订单一起进在途。已 IN_TRANSIT 的行不重复推进（重复请求返回原结果走服务侧的历史记录查询分支） -->
     <update id="markInTransit">
         UPDATE xsy_delivery_route_order
         SET fulfillment_status = 'IN_TRANSIT', version = version + 1, updated_at = now(), updated_by = #{operator}

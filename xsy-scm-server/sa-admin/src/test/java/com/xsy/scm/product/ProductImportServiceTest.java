@@ -271,7 +271,7 @@ class ProductImportServiceTest {
     @Test
     void blankSaleUnitFallsBackToJin() throws Exception {
         when(productImportWriteService.writeAll(anyList())).thenReturn(List.of(5001L));
-        // 列下标 15 是 CREATE 模板里的「销售单位」；留空时按默认单位斤校验并落库
+        // 列下标 15 是 CREATE 模板里的「销售单位」；留空时按默认单位斤校验并写入数据库
         var result = productImportService.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(15).setCellValue("")),
                 ImportMode.CREATE);
         assertThat(result.getTotalErrors()).isZero();

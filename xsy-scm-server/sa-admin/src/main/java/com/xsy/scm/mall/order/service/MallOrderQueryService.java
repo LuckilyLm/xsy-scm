@@ -175,7 +175,7 @@ public class MallOrderQueryService {
                 log -> log.getOperationType() != null && CUSTOMER_VISIBLE_OPERATIONS.contains(log.getOperationType()))
             .map(this::timeline).toList());
         // 配送详情与进度只读配送域记录：线路 / 司机 / 车辆 / 发车 / 完成 + 订单级签收。
-        // 线路被移出或逻辑删除时不返回投影，页面按「暂无配送信息」处理。
+        // 线路被移出或逻辑删除时不返回查询结果，页面按「暂无配送信息」处理。
         DeliveryOrderProgressVO deliveryProgress = deliveryRouteOrderDao.selectProgressByOrderIds(List.of(orderId))
             .stream().findFirst().orElse(null);
         result.setDelivery(delivery(deliveryProgress));

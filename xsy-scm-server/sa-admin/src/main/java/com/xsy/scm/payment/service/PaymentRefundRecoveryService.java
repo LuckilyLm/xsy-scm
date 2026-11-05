@@ -83,7 +83,7 @@ public class PaymentRefundRecoveryService {
             }
             // 网络或写入异常不等于渠道拒绝：保留原退款号，下一次先查单，绝不另建退款。
             detail = exception.getClass().getSimpleName() + ": " + exception.getMessage();
-            log.warn("退款恢复未完成：refundId={}，保留原渠道幂等号", refundId, exception);
+            log.warn("退款恢复未完成：refundId={}，保留原渠道防重复处理号", refundId, exception);
         }
         recoveryStore.finish(refund, operator, reason, result, providerAmount, detail);
         notifyIfNeeded(refund, result);

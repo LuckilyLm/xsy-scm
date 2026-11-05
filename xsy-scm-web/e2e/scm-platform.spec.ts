@@ -269,7 +269,7 @@ test.describe('f0-file-storage', () => {
     /**
      * FA-2 之后「能看这条公告 ⇒ 能看它的附件」，前缀级放行已经删除。
      * 这里成对取证，缺一条都不算收口：
-     *   未绑定业务对象的私有附件，对不是上传者的员工必须拒（旧口径会因为 private/notice/ 前缀直接放行）；
+     *   未绑定业务对象的私有附件，对不是上传者的员工必须拒（旧规则会因为 private/notice/ 前缀直接放行）；
      *   绑定到全部可见公告之后，同一个员工必须能签出字节。
      */
     test('3 notice attachment follows the notice visibility, not the directory prefix', async () => {
@@ -383,7 +383,7 @@ test.describe('f0-file-storage', () => {
 
 // ---------------------------------------------------------------- 来源：e2e/mall-theme.spec.ts
 test.describe('mall-theme', () => {
-  // H5 浏览器契约使用受控主题响应；真实发布/回滚事实由 MallHomeLayoutPgIT 验证。
+  // H5 浏览器约定使用受控主题响应；真实发布/回滚记录由 MallHomeLayoutPgIT 验证。
   const mallUrl = process.env.SCM_MALL_H5_URL;
   test('商城主题跨页、刷新、直达及发布版本切换', async ({page}) => {
     test.skip(!mallUrl, '需要独立启动商城 H5 并设置 SCM_MALL_H5_URL');
@@ -436,7 +436,7 @@ test.describe('smartadmin-native', () => {
    *   登录日志 / 操作日志 / 文档中心 / 网络安全
    *   另加：心跳监控、单号管理、更新日志、意见反馈、Reload、数据脱敏、菜单管理
    *
-   * 断言口径（对齐工作单「不能只看菜单是否出现」）：
+   * 断言规则（对齐工作单「不能只看菜单是否出现」）：
    *   1. 页面能打开（URL 命中 + 不落到 404 页）；
    *   2. 页面无 JS 运行时错误（pageerror）；
    *   3. 关键查询接口返回 code = 0（在页面真实触发，不是直接打 API）；
@@ -679,7 +679,7 @@ test.describe('smartadmin-native', () => {
   });
 
   // =============================================================================
-  // 其余原生菜单（同一闭环口径，避免「菜单在但页打不开」漏网）
+  // 其余原生菜单（同一闭环规则，避免「菜单在但页打不开」漏网）
   // =============================================================================
 
   test('smartadmin native: 单号管理页面加载并成功查询', async ({page}) => {

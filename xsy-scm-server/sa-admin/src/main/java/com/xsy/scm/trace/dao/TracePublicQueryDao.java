@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Param;
  * 公开扫码查询审计。
  *
  * <p>
- * 只追加、不参与业务判定：写入失败不能影响扫码结果，服务层会吞掉异常。 SQL 见 mapper/scm/trace/TracePublicQueryDao.xml。
+ * 只能新增、不参与业务判定：写入失败不能影响扫码结果，服务层会吞掉异常。 SQL 见 mapper/scm/trace/TracePublicQueryDao.xml。
  */
 @Mapper
 public interface TracePublicQueryDao {

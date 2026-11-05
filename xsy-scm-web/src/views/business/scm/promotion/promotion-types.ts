@@ -147,7 +147,7 @@ export interface PromotionDiscountAllocation {
   discountAmount?: string | null;
 }
 
-/** 试算 / 冻结结果：三个金额分开返回。 */
+/** 试算 / 保存结果：三个金额分开返回。 */
 export interface PromotionDiscount {
   salesOrderId?: Id | null;
   customerId: Id;
@@ -173,7 +173,7 @@ export interface PromotionDiscount {
   activityRule?: PromotionRule | null;
 }
 
-/** 订单已冻结的优惠，只读。 */
+/** 订单已保存的优惠，只读。 */
 export interface OrderDiscount {
   salesOrderId?: Id | null;
   /** 主活动；叠加生效的其余活动见 activitySnapshot.applied。 */
@@ -224,7 +224,7 @@ export interface OrderDiscountAllocation {
   discountAmount?: string | null;
 }
 
-/** 满赠赠品权益，冻结后不可改。 */
+/** 满赠赠品权益，保存后不可改。 */
 export interface OrderGiftEntitlement {
   activityId?: Id;
   activityCode?: string | null;

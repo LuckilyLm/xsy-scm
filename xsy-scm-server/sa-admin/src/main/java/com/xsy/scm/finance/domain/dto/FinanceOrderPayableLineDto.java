@@ -16,7 +16,7 @@ public class FinanceOrderPayableLineDto {
     private Long salesOrderId;
 
     /**
-     * 订单行主键，与冻结优惠分摊上的 {@code orderItemId} 对齐。
+     * 订单行主键，与已确认优惠分摊上的 {@code orderItemId} 对齐。
      */
     private Long orderItemId;
 

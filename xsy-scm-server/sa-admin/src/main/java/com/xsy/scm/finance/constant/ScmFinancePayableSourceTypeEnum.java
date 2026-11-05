@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 收货确认生成正常应付，手工红字应付没有来源单据 ID。两类来源分别按唯一索引、金额校验及幂等键防重。
+ * 收货确认生成正常应付，手工红字应付没有来源单据 ID。两类来源分别按唯一索引、金额校验及防重复请求编号防重。
  */
 @Getter
 @RequiredArgsConstructor

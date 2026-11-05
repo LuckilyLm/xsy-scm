@@ -13,7 +13,7 @@ import lombok.Data;
  * 电子秤商品集合完成记录：一次人工确认对应的筐集合、总量与结果。
  *
  * <p>
- * {@code operationId} 是幂等键，重复提交返回原结果；{@code totalQuantity} 由服务端按筐重算，不用设备提交的合计。 这张表只记录「哪些筐被一起确认了」，正式分拣量仍写在任务明细上。
+ * {@code operationId} 是防重复请求编号，重复提交返回原结果；{@code totalQuantity} 由服务端按筐重算，不用设备提交的合计。 这张表只记录「哪些筐被一起确认了」，正式分拣量仍写在任务明细上。
  */
 @Data
 @TableName(value = "xsy_scale_item_completion")

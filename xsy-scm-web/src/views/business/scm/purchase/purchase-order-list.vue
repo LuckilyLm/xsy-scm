@@ -201,7 +201,7 @@ const detail = ref<InstanceType<typeof PurchaseOrderDetail>>();
 const shareModal = ref<InstanceType<typeof PurchaseShareModal>>();
 const feedbackDrawer = ref<InstanceType<typeof PurchaseFeedbackDrawer>>();
 
-/** 打印对话框：单张与批量共用，只传要打印的采购单 id（渲染与冻结都在服务端）。 */
+/** 打印对话框：单张与批量共用，只传要打印的采购单 id（渲染与保存都在服务端）。 */
 const printBatch = reactive({open: false, ids: [] as (string | number)[]});
 
 /** 改派采购归属，需要独立权限，带乐观锁。 */

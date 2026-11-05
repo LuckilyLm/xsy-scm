@@ -48,7 +48,7 @@ public class InventoryMovementEntity {
     private BigDecimal quantity;
 
     /**
-     * 确认时刻的采购单位快照（{@code purchase_unit_snapshot}）。
+     * 确认时刻的采购时的单位（{@code purchase_unit_snapshot}）。
      */
     private String unitSnapshot;
 

@@ -1,12 +1,12 @@
 # 本地工程工具
 
-- cutover_schema_baseline识别经过校验的V1001增量历史，只从冻结参照剔除明确的675CHECK、34触发器和31专用函数指纹；不能忽略其他结构差异或覆盖冻结参照。
+- cutover_schema_baseline识别经过校验的V1001增量历史，只从原始参照剔除明确的675CHECK、34触发器和31专用函数指纹；不能忽略其他结构差异或覆盖原始参照。
 
 - 沿用根目录验证授权与临时文件约定。工具默认入口与职责见README.md；静态检查不能冒充数据库或应用运行验收。
-- migration_checksum_guard保留已冻结V键与校验和；B基线使用独立前缀键，同号B/V不是冲突，同类重复版本必须拒绝。
+- migration_checksum_guard保留已保存V键与校验和；B基线使用独立前缀键，同号B/V不是冲突，同类重复版本必须拒绝。
 - migration_checksum_guard只扫描当前模块目录，按Flyway数值规则规范化版本（前导0与末尾0不能绕过重复检查）。旧V校验元数据在legacy_migration_manifest，不再要求退役SQL仍留在资源中。
-- build_install_baseline只检查24份模块SQL与完整性清单，使用标准库，不拼接或重放历史SQL。已使用的模块SQL冻结，后续追加V1001及更高增量。
+- build_install_baseline只检查24份模块SQL与完整性清单，使用标准库，不拼接或重放历史SQL。已使用的模块SQL不能修改，后续追加V1001及更高增量。
 - cutover_schema_baseline默认只读检查，显式apply才允许同事务保留旧历史并登记新基线；业务数据和序列位置不能重置。只接受完整已知V243/V244及完全匹配的最终结构，拒绝关闭校验或覆写已有历史备份。
 - schema_catalog统一生成结构签名，忽略owner、授权、业务行及序列当前位置；列位置按有效列顺序规范化，不能把历史DROP留下的物理attnum空洞当作结构差异。元数据摘要统一UTF-8/LF，避免Windows检出换行造成假差异。
 - PostgreSQL改列与新建会把无长度varchar常量数组转text[]表示为整体或逐项转换；签名仅归一这两种等价形式，必须保留字面量、顺序和类型长度。不得忽略CHECK/索引定义或重新用待验证库覆盖参考签名。
-- test_install_baseline覆盖模块完整性、篡改拒绝、旧历史校验与切换前提，保持verify.py编排，不能为通过预检删除业务约束。
+- test_install_baseline覆盖模块完整性、篡改拒绝、旧历史校验与切换前提，保持verify.py协调，不能为通过预检删除业务约束。

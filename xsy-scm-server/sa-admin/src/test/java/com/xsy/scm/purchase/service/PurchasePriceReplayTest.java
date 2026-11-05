@@ -28,7 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/** 采购改派后的回放也必须按当前归属授权，已记账不能阻断原命令的成功回放。 */
+/** 采购改派后，返回上次成功结果前仍要校验当前归属；已记账不能阻止合法重试返回原结果。 */
 @ExtendWith(MockitoExtension.class)
 class PurchasePriceReplayTest {
     @Mock

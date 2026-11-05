@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Wave 8 §10.2：切面写库前脱敏的口径测试（纯单测，不起 Spring）。
+ * Wave 8 §10.2：切面写库前脱敏的规则测试（纯单测，不起 Spring）。
  *
  * <p>重点不是「遮住了多少」，而是遮住敏感键的同时<b>不能</b>碰业务对象键：
  * 操作日志的商品 / 客户精确筛选直接对 {@code param} 文本做 STRPOS，
@@ -41,7 +41,7 @@ class OperateLogParamMaskTest {
     }
 
     @Test
-    @DisplayName("业务对象键与筛选口径不受影响")
+    @DisplayName("业务对象键与筛选规则不受影响")
     void keepsBusinessObjectKeysIntact() {
         String param = "[{\"spuId\":12,\"customerId\":345,\"routeId\":7}]";
 
@@ -70,8 +70,8 @@ class OperateLogParamMaskTest {
         assertThat(OperateLogParamMask.mask("")).isEmpty();
         assertThat(OperateLogParamMask.mask("plain text")).isEqualTo("plain text");
 
-        // 截断 / 脏 JSON：这是写库出口，返回原文等于把凭据明文永久落库，前端第二层遮不住数据库行。
-        // 与 FileKeyVoSerializer「不再有任何分支写出 value」同口径。
+        // 截断 / 脏 JSON：这是写库出口，返回原文等于把凭据明文永久写入数据库，前端第二层遮不住数据库行。
+        // 与 FileKeyVoSerializer「不再有任何分支写出 value」同规则。
         String truncated = "{\"password\":\"P@ssw0rd\"";
         assertThat(OperateLogParamMask.mask(truncated)).doesNotContain("P@ssw0rd").doesNotContain(truncated);
 

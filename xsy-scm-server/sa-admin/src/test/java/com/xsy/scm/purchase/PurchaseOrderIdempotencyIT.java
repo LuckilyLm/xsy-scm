@@ -17,21 +17,21 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 采购写命令幂等。
+ * 采购写命令防重复处理。
  *
  * <p>复用既有的 idempotency_record 表（不另建表），但遵守三条纪律：
  * <b>scope 拼操作者</b>、<b>claim 用 INSERT 竞争</b>、<b>complete 与业务写入同一事务</b>。
  *
  * <p><b>为什么「重放」必须返回首次结果而不是重新执行</b>：Idempotency-Key 是给
  * 「网络超时后客户端重试」用的。如果重放时重新执行一次，用户点一次「提交」而网络抖动，
- * 就会得到两张采购单 —— 这正是幂等键要防的事，所以断言的重点是
+ * 就会得到两张采购单 —— 这正是防重复请求编号要防的事，所以断言的重点是
  * <b>单据数量没有增加</b>，而不只是「两次返回同一个单号」。
  *
  * <p><b>为什么重放时必须复用同一个请求对象</b>：hash 是对请求体算的，而 demandVersion
  * 会在首次执行时被推进。若第二次重新构造请求（拿着新的需求版本），hash 就变了 ——
  * 那是另一个请求，会正确地得到 40990，而不是重放。
  */
-@DisplayName("采购写命令幂等：重放 / 冲突 / 键校验 / 操作者隔离（PG IT）")
+@DisplayName("采购写命令防重复处理：重放 / 冲突 / 键校验 / 操作者隔离（PG IT）")
 class PurchaseOrderIdempotencyIT extends ScmW5PgITBase {
 
     private int countActiveOrders(Long supplierId) {
@@ -122,7 +122,7 @@ class PurchaseOrderIdempotencyIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("幂等键：缺失 → 40084；超过 200 字符 → 40085")
+    @DisplayName("防重复请求编号：缺失 → 40084；超过 200 字符 → 40085")
     void blankAndOverlongKeyRejected() {
         Long skuId = newOnShelfSku("ID3");
         Long supplierId = newPurchasableSupplier("ID3", skuId);

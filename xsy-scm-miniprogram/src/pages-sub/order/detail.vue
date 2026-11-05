@@ -24,7 +24,7 @@
         <text class="od__sub">{{ order.address }}</text>
       </view>
 
-      <!-- 配送进度：节点与 done 都由服务端按正式事实给出，客户端不推导 -->
+      <!-- 配送进度：节点与 done 都由服务端按正式记录给出，客户端不推导 -->
       <view v-if="(order.progress || []).length" class="od-card">
         <view class="od-card__title">配送进度</view>
         <view v-for="(node, index) in order.progress" :key="node.code" class="od-step" :class="{'od-step--pending': !node.done}">
@@ -148,7 +148,7 @@
             {{ order.settlementTotalAmount ? `¥${displayMoney(order.settlementTotalAmount)}` : '待结算' }}
           </text>
         </view>
-        <!-- 资金投影只读服务端算出的应付净额与已付（确认前不下发，页面不显示资金行；客户端不算钱） -->
+        <!-- 资金查询结果只读服务端算出的应付净额与已付（确认前不下发，页面不显示资金行；客户端不算钱） -->
         <text class="od__sub">付款及结算由后台处理，如有疑问请联系业务员。</text>
         <view v-if="order.settlementMethod" class="od__row">
           <text class="od__row-label">后台结算约定</text>
@@ -308,7 +308,7 @@ function goAfterSaleDetail(returnId) {
   uni.navigateTo({url: `/pages-sub/after-sale/detail?returnId=${returnId}`});
 }
 
-/** 司机电话来自配送事实快照；点击直接拨号，方便客户在途沟通 */
+/** 司机电话来自配送记录保存的数据；点击直接拨号，方便客户在途沟通 */
 function callDriver() {
   const phone = order.value?.delivery?.driverPhone;
   if (!phone) return;
@@ -333,7 +333,7 @@ function cancelOrder() {
 
 async function doCancel(reason) {
   try {
-    // 幂等键与「订单 + 原因」绑定：网络重试复用同一个键，不会二次取消
+    // 防重复请求编号与「订单 + 原因」绑定：网络重试复用同一个键，不会二次取消
     const key = `cancel-${orderId.value}-${CANCEL_REASONS.indexOf(reason)}`;
     await mallOrderApi.cancel(orderId.value, reason, key);
     uni.showToast({title: '订单已取消', icon: 'none'});

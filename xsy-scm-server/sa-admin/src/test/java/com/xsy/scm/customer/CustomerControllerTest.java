@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 客户端点契约测试。
+ * 客户端点约定检查。
  *
  * <p>业务错误一律 HTTP 200 + {@code ResponseDTO.code}——
  * 前端 axios 拦截器只在 2xx 响应体上读 {@code code}/{@code msg}。

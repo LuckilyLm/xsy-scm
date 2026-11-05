@@ -11,7 +11,7 @@
     </select>
 
     <!--
-      幂等绑定：同一 (key, 类型, 对象) 重复保存不报错也不产生第二行。
+      防重复处理绑定：同一 (key, 类型, 对象) 重复保存不报错也不产生第二行。
       冲突目标逐字匹配部分唯一索引 uk_t_file_relation_active（含 WHERE 谓词），
       否则 PostgreSQL 会报 "there is no unique or exclusion constraint matching"。
     -->

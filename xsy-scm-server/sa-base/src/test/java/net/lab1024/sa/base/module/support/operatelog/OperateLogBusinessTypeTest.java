@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Wave 8 §10.1：详情接口领域归属识别口径测试。
+ * Wave 8 §10.1：详情接口领域归属识别规则测试。
  *
  * <p>识别结果直接决定要不要再要求领域读取权限，因此键名和 URL 段必须与
  * {@code OperateLogMapper.xml} 的结构化筛选一致；这里的反例用来防止有人把

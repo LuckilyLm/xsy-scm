@@ -30,7 +30,7 @@ public class BalanceRechargeCreateForm {
     @NotBlank(message = "支付渠道不能为空")
     private String provider;
 
-    /** 仅本地模拟渠道可指定回放剧本。 */
+    /** 仅本地模拟渠道可指定模拟支付结果。 */
     private String mockScenario;
 
     private String remark;

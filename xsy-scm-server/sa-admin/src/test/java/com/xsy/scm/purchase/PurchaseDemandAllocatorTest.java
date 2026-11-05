@@ -17,10 +17,10 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 采购需求分配规则契约测试。
+ * 采购需求分配规则约定检查。
  *
- * <p>单位一致性是本类存在的主要理由：需求单位（销售单位快照）与采购单位
- * （{@code xsy_supplier_sku.purchase_unit} 快照）是两个独立事实，不一致时必须
+ * <p>单位一致性是本类存在的主要理由：需求单位（下单时的销售单位）与采购单位
+ * （{@code xsy_supplier_sku.purchase_unit} 保存的数据）是两个独立记录，不一致时必须
  * 拒绝自动分配（40971），不允许把「100 kg」仅替换单位字符串变成「100 箱」。
  */
 class PurchaseDemandAllocatorTest {
@@ -146,7 +146,7 @@ class PurchaseDemandAllocatorTest {
     }
 
     @Test
-    @DisplayName("首次分配判定与供应商落库判定")
+    @DisplayName("首次分配判定与供应商写入数据库判定")
     void firstAllocationDetection() {
         assertThat(PurchaseDemandAllocator.isFirstAllocation(demand(null, 1L, null))).isTrue();
         assertThat(PurchaseDemandAllocator.isFirstAllocation(demand(null, 1L, "0.0000"))).isTrue();

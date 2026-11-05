@@ -11,16 +11,16 @@ internal interface IRawPrinter
     /// <param name="printerName">已配置的 Windows 队列名称；为空时不可用。</param>
     /// <returns>队列是否可以打开。</returns>
     bool IsAvailable(string printerName);
-    /// <summary>提交一份冻结的 RAW 内容；调用异常可能已出纸，禁止自动重打。</summary>
+    /// <summary>提交一份保存的 RAW 内容；调用异常可能已出纸，禁止自动重打。</summary>
     /// <param name="printerName">非空且经过现场确认的 Windows 队列名。</param>
     /// <param name="documentName">非空诊断名称，不得含凭证。</param>
-    /// <param name="bytes">非空、非 null 的已校验内容，份数由内容本身冻结。</param>
+    /// <param name="bytes">非空、非 null 的已校验内容，份数由内容本身保存。</param>
     /// <returns>Windows 打印作业编号，不表示物理完成。</returns>
     /// <exception cref="Exception">提交失败或结果未知，由调用方持久保存待核查。</exception>
     string Submit(string printerName, string documentName, byte[] bytes);
 }
 
-/// <summary>向已配置的 Windows 队列发送服务端冻结的打印指令，不执行任意下载程序。</summary>
+/// <summary>向已配置的 Windows 队列发送服务端保存的打印指令，不执行任意下载程序。</summary>
 internal sealed class WindowsRawPrinter : IRawPrinter
 {
     /// <summary>检查 Windows 队列能否打开，不表示物理设备在线或纸张已输出。</summary>
@@ -32,7 +32,7 @@ internal sealed class WindowsRawPrinter : IRawPrinter
         ClosePrinter(handle); return true;
     }
 
-    /// <summary>提交冻结指令；返回后台任务号，不能当作物理完成证明。</summary>
+    /// <summary>提交保存指令；返回后台任务号，不能当作物理完成证明。</summary>
     /// <param name="printerName">已验证的完整 Windows 队列名，不允许为空。</param>
     /// <param name="documentName">用于诊断的任务名称，不包含凭证。</param>
     /// <param name="bytes">摘要校验后的非空打印指令，不允许为 null。</param>

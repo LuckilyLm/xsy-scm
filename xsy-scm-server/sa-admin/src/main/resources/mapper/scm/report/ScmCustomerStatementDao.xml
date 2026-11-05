@@ -162,7 +162,7 @@
     </select>
 
     <!--
-      对账单可选的过账行。只读过账事实本身：未作废、按单据日期落在对账期间内。
+      对账单可选的过账行。只读过账记录本身：未作废、按单据日期落在对账期间内。
       三个资金变动列恒为 0 —— 过账不进应收、不参与核销，因此不会改变滚动余额。
     -->
     <select id="selectPostingEvents" resultType="com.xsy.scm.report.domain.vo.ScmCustomerStatementItemVO">
@@ -233,7 +233,7 @@
             AND generated_by_employee_id = #{employeeId}
     </select>
 
-    <!-- 打印读取冻结版本，不按生成人过滤；调用方随后按源事实重验当前数据范围。 -->
+    <!-- 打印读取保存后的版本，不按生成人过滤；调用方随后按源记录重验当前数据范围。 -->
     <select id="selectStatementById" resultType="com.xsy.scm.report.domain.vo.ScmCustomerStatementVO">
         SELECT *
         FROM xsy_customer_statement

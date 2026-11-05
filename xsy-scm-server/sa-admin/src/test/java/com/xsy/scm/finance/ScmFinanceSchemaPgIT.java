@@ -33,24 +33,24 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * V65 财务 schema 的契约：表 / 序列 / 列 / 约束 / 索引谓词的形状，以及财务菜单与权限的发布范围。
+ * V65 财务 schema 的约定：表 / 序列 / 列 / 约束 / 索引谓词的形状，以及财务菜单与权限的发布范围。
  *
  * <p>本类是 Finance 域唯一直接断言 schema 形状的地方，其余财务 IT 只断言行为。
  * schema 一旦被后续迁移悄悄改动，这里会先失败
  * （与 {@code ScmInventoryMigrationIT} / {@code ScmPurchaseMigrationIT} 同一分工）。
  *
- * <p><b>不生成业务事实</b>：本类不生成任何应收 / 应付，
- * 只验证「库会把不合法的事实挡在外面」，以及「没有越界发布菜单与权限」
+ * <p><b>不生成业务记录</b>：本类不生成任何应收 / 应付，
+ * 只验证「库会把不合法的记录挡在外面」，以及「没有越界发布菜单与权限」
  * （见 {@link #financePublishesOnlyImplementedCapabilities()}）。
  *
  * <p><b>不修改任何数据</b>：只读元数据 + 用 {@code expectSqlFailure}（SAVEPOINT 隔离）
  * 验证约束真的会拒绝坏数据。用例整体在一个事务里，结束回滚。
  */
-@DisplayName("Finance R1 迁移契约与阶段边界（PG IT）")
+@DisplayName("Finance R1 迁移约定与阶段边界（PG IT）")
 class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
 
     /**
-     * V65 建的 8 张财务表 + V194 的抹零表 + V207 的过账与过账作废事实。
+     * V65 建的 8 张财务表 + V194 的抹零表 + V207 的过账与过账作废记录。
      */
     private static final List<String> FINANCE_TABLES = List.of(
             "xsy_finance_receivable", "xsy_finance_receivable_item",
@@ -61,7 +61,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
             "xsy_finance_customer_expense", "xsy_finance_customer_expense_void", "xsy_finance_purchase_cost_entry");
 
     /**
-     * 带 {@code deleted} 列的事实表；{@code xsy_finance_operation_log} 不在其中 ——
+     * 带 {@code deleted} 列的记录表；{@code xsy_finance_operation_log} 不在其中 ——
      * 它连 {@code deleted} 列都没有，append-only 是结构性的。
      */
     private static final List<String> APPEND_ONLY_TABLES = List.of(
@@ -144,7 +144,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                 "SELECT sequencename FROM pg_sequences WHERE schemaname = current_schema()", String.class);
         assertThat(sequences).containsAll(FINANCE_SEQUENCES);
 
-        // 项目级口径：不建数据库外键，关系完整性由服务层 + CHECK + 唯一索引承担。
+        // 项目级规则：不建数据库外键，关系完整性由服务层 + CHECK + 唯一索引承担。
         Integer foreignKeys = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_constraint c JOIN pg_class t ON t.oid = c.conrelid "
                         + "WHERE c.contype = 'f' AND t.relname LIKE 'finance_%'", Integer.class);
@@ -154,9 +154,9 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("财务表不含状态列 / 余额列 / 账期列（Q15 Q17 Q20，全局不变量 6）")
     void noStateMachineOrDerivedColumns() {
-        // 落库的派生态一定会漂移；审批相关列不属于财务域。
-        // due_date 不在禁用之列：ADM-04 账期把它作为冻结事实落库（主档后来改账期不得重算旧应收），
-        // 它是账期规则的求值结果快照，不是可被回写的派生态。
+        // 写入数据库的派生态一定会漂移；审批相关列不属于财务域。
+        // due_date 不在禁用之列：ADM-04 账期把它作为保存记录写入数据库（主档后来改账期不得重算旧应收），
+        // 它是账期规则的求值当时的结果，不是可被回写的派生态。
         List<String> forbidden = new ArrayList<>(List.of(
                 "status", "settled_amount", "open_amount", "written_off_amount", "net_amount",
                 "approver", "approval_state", "currency", "tax_rate", "tax_amount"));
@@ -183,7 +183,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("事实表带 append-only CHECK，软删在库级被拒（设计稿 §0 第 7 条）")
+    @DisplayName("记录表带 append-only CHECK，软删在库级被拒（设计稿 §0 第 7 条）")
     void appendOnlyCheckRejectsSoftDelete() {
         for (String table : APPEND_ONLY_TABLES) {
             assertThat(constraintDef(table, "ck_" + constraintBase(table) + "_append_only"))
@@ -203,7 +203,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     void amountAndQuantityChecks() {
         long id = insertReceivable("AR", "SALES_ORDER", "NORMAL", null, null, new BigDecimal("100.0000"));
 
-        // 金额与数量恒正：0 元事实不允许存在，这是「不生成 0 元财务事实」的库级兜底。
+        // 金额与数量恒正：0 元记录不允许存在，这是「不生成 0 元财务记录」的库级兜底。
         expectSqlFailure("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, "
                         + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at) "
                         + "VALUES (?, 'SALES_ORDER', 900001, 900001, 900001, '客户', 900001, '客户', 'NORMAL', 0, now())",
@@ -218,7 +218,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                 id);
         expectSqlFailure("UPDATE xsy_finance_receivable SET version = -1 WHERE id = ?", id);
 
-        // 单价允许为 0（赠品口径），但明细金额因此为 0 时单头不会生成。
+        // 单价允许为 0（赠品规则），但明细金额因此为 0 时单头不会生成。
         jdbc.update("INSERT INTO xsy_finance_receivable_item (receivable_id, source_type, source_id, order_item_id, "
                         + "sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, amount) "
                         + "VALUES (?, 'INVENTORY_OUTBOUND_ITEM', 900003, 900001, 900001, '商品', 'kg', 1, 0, 0)",
@@ -289,7 +289,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                 .contains("PURCHASE_RECEIPT").contains("MANUAL").contains("source_id IS NULL");
 
         // 手工红字却带 source_id → 拒绝：那会让它落进来源唯一索引的谓词内，
-        // 与「手工事实没有外部业务行」的模型矛盾。
+        // 与「手工记录没有外部业务行」的模型矛盾。
         expectSqlFailure("INSERT INTO xsy_finance_payable (payable_no, source_type, source_id, purchase_order_id, "
                         + "supplier_id, supplier_name_snapshot, entry_type, original_payable_id, amount, event_at, "
                         + "reason) VALUES (?, 'MANUAL', 900009, 900001, 900001, '供应商', 'RED', 1, 10, now(), '录错')",
@@ -417,7 +417,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("来源唯一索引真的挡住重复财务事实")
+    @DisplayName("来源唯一索引真的挡住重复财务记录")
     void sourceUniqueIndexRejectsDuplicateFact() {
         long first = insertReceivable("AR", "SALES_ORDER", "NORMAL", null, null, new BigDecimal("100.0000"));
         Long sourceId = jdbc.queryForObject("SELECT source_id FROM xsy_finance_receivable WHERE id = ?",
@@ -456,7 +456,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("external_reference 刻意**不**唯一，且不作幂等键（设计稿 §3.2 修正）")
+    @DisplayName("external_reference 刻意**不**唯一，且不作防重复请求编号（设计稿 §3.2 修正）")
     void externalReferenceIsNotUnique() {
         // 银行流水号跨客户重复是真实存在的；把它当唯一键会让第二笔合法收款登不进去，
         // 因此这两条索引不能加 UNIQUE。
@@ -475,7 +475,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("手工红字应付不受来源唯一索引约束（source_id 为 NULL 落在谓词之外）")
     void manualRedPayableNotBlockedBySourceUniqueIndex() {
-        // 两张手工红字就是两个事实；超额由 41137 拦，请求级幂等键防重复提交。
+        // 两张手工红字就是两个记录；超额由 41137 拦，请求级防重复请求编号防重复提交。
         insertPayable("AP", "MANUAL", null, "RED", "录错单价");
         insertPayable("AP", "MANUAL", null, "RED", "录错数量");
         assertThat(jdbc.queryForObject(
@@ -491,7 +491,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @DisplayName("Java enum 与 DB CHECK 白名单逐值一致（Q21：enum + CHECK，不用 t_dict）")
     void enumValuesMatchDatabaseCheckWhitelist() {
         // 每个枚举都对应一条单列 CHECK，因此可以断言双向相等：
-        // 少一个值意味着 Java 侧能造出库里不接受的事实，多一个值意味着库里放行了
+        // 少一个值意味着 Java 侧能造出库里不接受的记录，多一个值意味着库里放行了
         // 一个 Java 侧无法表达（因而也无法在页面上解释）的取值。
         assertWhitelist("xsy_finance_receivable", "ck_finance_receivable_source_type",
                 ScmFinanceReceivableSourceTypeEnum.class);
@@ -701,7 +701,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "JOIN t_role r ON r.role_id = rm.role_id "
                         + "WHERE m.menu_id = 1521 AND r.role_code = 'SCM_FINANCE'", Integer.class))
-                .as("SCM_FINANCE 按 role_code 授权（V56 口径），不硬编码 role_id")
+                .as("SCM_FINANCE 按 role_code 授权（V56 规则），不硬编码 role_id")
                 .isEqualTo(1);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "

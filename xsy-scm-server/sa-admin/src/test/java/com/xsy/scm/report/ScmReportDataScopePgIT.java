@@ -63,7 +63,7 @@ import static org.mockito.Mockito.mockStatic;
 /**
  * 报表中心的仓库数据范围（真实 PostgreSQL IT）。
  *
- * <p>被测口径来自 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4、8、10 条，其中第 10 条是
+ * <p>被测规则来自 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4、8、10 条，其中第 10 条是
  * 本类存在的理由：<b>财务不等于代码里的全组织可见</b>，报表的页面查询与 Excel 导出必须用同一套
  * 数据范围 —— 能看 A/B 仓就只能导 A/B 仓，{@code scm:report:export} 只代表允许导出，绝不扩大查询范围。
  *
@@ -72,18 +72,18 @@ import static org.mockito.Mockito.mockStatic;
  * {@link #scopedAmountsAddUpToUnionScope()} 里那条恒等式：<b>两个互斥仓库范围的金额之和
  * 等于其并集范围的金额</b>。范围一旦落到维度 JOIN 上或聚合之后，恒等式立刻不成立。
  *
- * <p><b>夹具用两个本次新建的仓库</b>：新仓里除了本用例写入的事实不可能有别的行，范围金额才能按
- * 精确值断言，不必退化成「包含 / 不包含」。库存事实一律走真实命令链（采购单 → 收货确认）造，
- * 直插 {@code xsy_inventory_movement} 会绕过 append-only 账本的快照约束。
+ * <p><b>夹具用两个本次新建的仓库</b>：新仓里除了本用例写入的记录不可能有别的行，范围金额才能按
+ * 精确值断言，不必退化成「包含 / 不包含」。库存记录一律走真实命令链（采购单 → 收货确认）造，
+ * 直插 {@code xsy_inventory_movement} 会绕过 append-only 账本的已存数据约束。
  *
  * <p><b>身份与权限怎么造</b>：与 {@code ScmPurchaseDataScopePgIT} 同一套做法 —— 登录员工用
  * {@link SmartRequestUtil#setRequestUser}，功能权限用 {@code mockStatic(StpUtil.class)}（IT 线程里
- * 没有 Sa-Token 上下文，未点名的权限码取 Mockito 默认值 false，正好等于失败关闭）。
+ * 没有 Sa-Token 上下文，未点名的权限码取 Mockito 默认值 false，正好等于校验失败时拒绝操作）。
  * 测试员工一律 {@code administratorFlag=false}（裁决第 5 条：超管通过不构成权限证据）；
  * 超管那一例是对照组，用来证明范围收口没有改动 break-glass 语义。
  * {@link #as} 不可嵌套：同一线程只能注册一次静态 mock。基类的 {@code @AfterEach} 负责清登录态。
  */
-@DisplayName("P0-F 报表仓库数据范围与导出口径（PG IT）")
+@DisplayName("P0-F 报表仓库数据范围与导出规则（PG IT）")
 class ScmReportDataScopePgIT extends ScmW6PgITBase {
 
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
@@ -135,7 +135,7 @@ class ScmReportDataScopePgIT extends ScmW6PgITBase {
     private Long scopedToBoth;
     private Long withoutAnyWarehouse;
 
-    /** 一个仓库内的报表事实：两张已提交采购单，其中一张已入库、另一张待入库。 */
+    /** 一个仓库内的报表记录：两张已提交采购单，其中一张已入库、另一张待入库。 */
     private record WarehouseFacts(Long warehouseId, Long skuId, String skuCode, Long inboundOrderId,
                                  Long pendingOrderId, Long inboundReceiptId, Long pendingReceiptId) {
     }
@@ -237,7 +237,7 @@ class ScmReportDataScopePgIT extends ScmW6PgITBase {
     // ==================== 2. 聚合恒等：互斥的两半之和等于并集 ====================
 
     @Test
-    @DisplayName("聚合恒等：甲仓金额 + 乙仓金额 = 双仓授权金额，且逐日轴与指标卡同一口径")
+    @DisplayName("聚合恒等：甲仓金额 + 乙仓金额 = 双仓授权金额，且逐日轴与指标卡同一套规则")
     void scopedAmountsAddUpToUnionScope() {
         Set<String> cost = Set.of(ScmReportAccess.COST_QUERY_PERM);
         BigDecimal onlyA = as(scopedToA, cost, () -> purchaseReportService.overview(purchaseForm()))
@@ -323,7 +323,7 @@ class ScmReportDataScopePgIT extends ScmW6PgITBase {
 
         assertThat(withCost).contains(DIRECT_PRICE);
         assertThat(withoutCost).doesNotContain(DIRECT_PRICE)
-                .as("抹除只抹成本列，数量列仍是事实").contains(DIRECT_QUANTITY, factsA.skuCode());
+                .as("抹除只抹成本列，数量列仍是记录").contains(DIRECT_QUANTITY, factsA.skuCode());
         assertThat(as(scopedToA, Set.of(),
                 () -> inventoryReportService.movementList(inventoryForm()).getList().getFirst().getUnitCost()))
                 .isNull();
@@ -396,7 +396,7 @@ class ScmReportDataScopePgIT extends ScmW6PgITBase {
                 .as("工作簿仍能写出（表头在），但没有任何一行数据").contains("发生时间");
     }
 
-    // ==================== 5. 销售侧没有仓库事实，故不被仓库范围收窄 ====================
+    // ==================== 5. 销售侧没有仓库记录，故不被仓库范围收窄 ====================
 
     @Test
     @DisplayName("销售侧无仓库列：仓库范围为空的人也照常看到销售额，可见性只由页面权限承担")
@@ -412,7 +412,7 @@ class ScmReportDataScopePgIT extends ScmW6PgITBase {
 
         for (Long employeeId : List.of(scopedToA, withoutAnyWarehouse)) {
             assertThat(as(employeeId, Set.of(), () -> salesReportService.byCustomer(form).getList()))
-                    .as("员工 %s 只是没有仓库授权，销售事实本身没有仓库列", employeeId)
+                    .as("员工 %s 只是没有仓库授权，销售记录本身没有仓库列", employeeId)
                     .anySatisfy(row -> assertThat(row.getCustomerId()).isEqualTo(customerId));
         }
         assertThat(as(withoutAnyWarehouse, Set.of(), () -> salesReportService.itemList(form).getList())).hasSize(1);
@@ -443,7 +443,7 @@ class ScmReportDataScopePgIT extends ScmW6PgITBase {
                 .as("超管至少看到两个测试仓之和").isGreaterThanOrEqualTo(WAREHOUSE_PURCHASE_AMOUNT.multiply(
                         BigDecimal.valueOf(2)));
         assertThat(overview.getPurchaseInCostAmount()).isNull();
-        // 无 Sa-Token 上下文时成本失败关闭，与范围无关：证明两件事互不隐含
+        // 无 Sa-Token 上下文时成本校验失败时拒绝操作，与范围无关：证明两件事互不隐含
         assertThat(overview.getSubmittedAmount()).isNotNull();
     }
 
@@ -462,7 +462,7 @@ class ScmReportDataScopePgIT extends ScmW6PgITBase {
     // ==================== 夹具 ====================
 
     /**
-     * 在一个仓库里造齐报表要用的事实：一单 DIRECT 收货确认（产生 {@code PURCHASE_IN} 流水与余额），
+     * 在一个仓库里造齐报表要用的记录：一单 DIRECT 收货确认（产生 {@code PURCHASE_IN} 流水与余额），
      * 另加一单 {@code WAREHOUSE_CONFIRM} 收货确认（只挂待入库、不写库存），
      * 于是收货页有 2 行、入库页 1 行、待入库 1 行、流水与余额各 1 行。
      */
@@ -528,7 +528,7 @@ class ScmReportDataScopePgIT extends ScmW6PgITBase {
         SmartRequestUtil.setRequestUser(employee);
     }
 
-    /** 以某个员工 + 一组功能权限执行一段逻辑；未点名的权限码取 false（失败关闭）。不可嵌套。 */
+    /** 以某个员工 + 一组功能权限执行一段逻辑；未点名的权限码取 false（校验失败时拒绝操作）。不可嵌套。 */
     private <T> T as(Long employeeId, Set<String> permissions, Supplier<T> body) {
         loginAs(employeeId);
         try (MockedStatic<StpUtil> stp = mockStatic(StpUtil.class)) {

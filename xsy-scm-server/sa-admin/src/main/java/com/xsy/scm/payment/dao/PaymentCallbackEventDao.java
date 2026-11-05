@@ -14,14 +14,14 @@ import org.apache.ibatis.annotations.Param;
  * 回调事件读写。
  *
  * <p>
- * 幂等靠唯一索引，不靠先查后写：并发回调下「先 SELECT 再 INSERT」两边都会查到「不存在」，于是都去执行副作用。 这里用 {@code ON CONFLICT DO NOTHING} + 受影响行数判定：返回 0
+ * 防重复处理靠唯一索引，不靠先查后写：并发回调下「先 SELECT 再 INSERT」两边都会查到「不存在」，于是都去执行副作用。 这里用 {@code ON CONFLICT DO NOTHING} + 受影响行数判定：返回 0
  * 就是「这个事件已经有人写过了」，业务侧据此静默返回。
  */
 @Mapper
 public interface PaymentCallbackEventDao extends BaseMapper<PaymentCallbackEventEntity> {
 
     /**
-     * 写入事件；同一渠道事件已有待处理或已应用记录时返回 0。拒绝记录只留证，不占幂等键。
+     * 写入事件；同一渠道事件已有待处理或已应用记录时返回 0。拒绝记录只留证，不占防重复请求编号。
      *
      * @return 1 = 本次新写入；0 = 重复事件
      */

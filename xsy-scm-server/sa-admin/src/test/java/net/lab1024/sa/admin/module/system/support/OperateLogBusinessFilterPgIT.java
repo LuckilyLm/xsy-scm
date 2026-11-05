@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 与分页插件的「先过滤、后 count」，只有真实库才能验证，故用 IT 而非 mock。
  *
  * <p>每个用例用独立 {@link #OWNER} 作为 operate_user_id 隔离既有数据，并用 operate_user_name 当行标签：
- * 断言比对返回的标签集合，而不是自增主键，避免依赖发号顺序。事务回滚，不落库。
+ * 断言比对返回的标签集合，而不是自增主键，避免依赖发号顺序。事务回滚，不写入数据库。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
         "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,

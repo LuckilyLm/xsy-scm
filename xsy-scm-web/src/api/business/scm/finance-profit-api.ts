@@ -42,7 +42,7 @@ export interface CustomerMonthlyProfitRow extends FinanceProfitRow {
   commissionAmount: string;
   expenseAmount: string;
   netProfit: string | null;
-  /** 对账口径：外部对账金额 = 当月应收净额 + 有效过账金额。 */
+  /** 对账规则：外部对账金额 = 当月应收净额 + 有效过账金额。 */
   statementAmount: string;
   paidAmount: string;
   unpaidAmount: string;

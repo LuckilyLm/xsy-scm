@@ -92,7 +92,7 @@ public class InventoryReservationService {
         entity.setUpdatedBy(operator);
 
         if (inventoryReservationDao.insertOnConflictDoNothing(entity) != 1) {
-            // 同一来源行已有有效预留：视为幂等成功还是错误，由调用方决定。
+            // 同一来源行已有有效预留：视为防重复处理成功还是错误，由调用方决定。
             // 这里直接失败 —— 静默返回会让「订单重复确认」看起来成功。
             throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
         }

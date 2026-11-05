@@ -1,5 +1,5 @@
 /*
- * 商城售后展示口径的唯一来源：展示分类文案、退款方式与状态文案、预估金额运算。
+ * 商城售后展示规则的唯一来源：展示分类文案、退款方式与状态文案、预估金额运算。
  *
  * 展示分类（displayStatus）由服务端按「正式退货单状态 + 退款单状态」派生，客户端**不重新推导**，
  * 只做文案与配色映射；level 是语义档位（warn / primary / ok / off / danger），由各页面映射成自己的 BEM 类名。
@@ -81,7 +81,7 @@ export function sumAmounts(amounts) {
   return `${int}.${frac}`;
 }
 
-/** 申请数量合法性：大于 0、最多 4 位小数、不超过可申请上限（与服务端 OrderValidator 同口径的客户端预检） */
+/** 申请数量合法性：大于 0、最多 4 位小数、不超过可申请上限（与服务端 OrderValidator 同规则的客户端预检） */
 export function isValidApplyQuantity(quantity, max) {
   if (!/^\d+(\.\d{1,4})?$/.test(String(quantity))) return false;
   const value = Number(quantity);

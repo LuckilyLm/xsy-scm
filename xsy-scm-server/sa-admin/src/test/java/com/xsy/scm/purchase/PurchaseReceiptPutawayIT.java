@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>核心不变量：{@code xsy_purchase_receipt.status=CONFIRMED} 与「库存已入账」解耦。
  * <ul>
  *   <li>DIRECT：confirm 同事务完成 putaway（COMPLETED）+ PURCHASE_IN；</li>
- *   <li>WAREHOUSE_CONFIRM：confirm 只产生商业事实（PENDING、无流水、余额不变），
+ *   <li>WAREHOUSE_CONFIRM：confirm 只产生商业记录（PENDING、无流水、余额不变），
  *       putaway 才写 PURCHASE_IN，且 occurred_at = putaway_at；</li>
  *   <li>重复 / 越权 putaway：41008 拒绝，绝不重复入库（DB 唯一索引兜底）。</li>
  * </ul>
@@ -85,7 +85,7 @@ class PurchaseReceiptPutawayIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 2. WAREHOUSE_CONFIRM：confirm 只产生商业事实，不写库存
+    // 2. WAREHOUSE_CONFIRM：confirm 只产生商业记录，不写库存
     // ------------------------------------------------------------------
 
     @Test
@@ -161,7 +161,7 @@ class PurchaseReceiptPutawayIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 5. 历史 CONFIRMED 收货 → DIRECT / COMPLETED（迁移的事实映射）
+    // 5. 历史 CONFIRMED 收货 → DIRECT / COMPLETED（迁移的记录映射）
     // ------------------------------------------------------------------
 
     @Test

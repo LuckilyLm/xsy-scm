@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>与收款侧同一套三段证据，且<b>不依赖 {@code MockedStatic<StpUtil>}</b>：
  * <ol>
- *   <li>V67 把能力点种进 {@code t_menu}，并按 {@code role_code} 授给 SCM_FINANCE（配置事实）；</li>
+ *   <li>V67 把能力点种进 {@code t_menu}，并按 {@code role_code} 授给 SCM_FINANCE（配置记录）；</li>
  *   <li>真实登录用户的权限集合里出现 / 不出现这个串 —— 走 {@link LoginManager} 的
  *       {@code t_role → t_role_menu → t_menu.api_perms} 生产装配路径，即产品机制本身；</li>
  *   <li>Controller 上 {@code @SaCheckPermission} 声明的正是同一个串。</li>

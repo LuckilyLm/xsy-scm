@@ -25,9 +25,9 @@ import org.springframework.beans.factory.annotation.Autowired;
  * 商城结算方式可用性（真实 PostgreSQL）。
  *
  * <p>
- * 钉死两条此前被审查指出的口径：
+ * 钉死两条此前被审查指出的规则：
  * <ul>
- * <li><b>共享资金不可经结算页泄露</b>：集团共享结算下余额与授信金额一律不返回，与商城钱包 / 账期概览同口径；</li>
+ * <li><b>共享资金不可经结算页泄露</b>：集团共享结算下余额与授信金额一律不返回，与商城钱包 / 账期概览同规则；</li>
  * <li><b>账期可用性不是「有额度就可用」</b>：已用敞口、已确认未开应收订单、逾期与本次占用后是否超限都要参与判定，
  * 避免结算页允许选择、后台确认时又被拒。</li>
  * </ul>
@@ -45,7 +45,7 @@ class MallSettlementOptionsPgIT extends ScmW5PgITBase {
     void sharedSettlementNeverExposesGroupFunds() {
         Long group = groupCustomer(null);
         Long member = groupCustomer(group);
-        // 给集团配上大额授信与共享钱包余额：如果实现漏了口径，这里就会把 88888 / 66666 返给成员
+        // 给集团配上大额授信与共享钱包余额：如果实现漏了规则，这里就会把 88888 / 66666 返给成员
         jdbc.update("UPDATE xsy_customer SET credit_limit = ? WHERE id = ?", new BigDecimal("88888.0000"), group);
         Long account = wallet(group);
         movement(account, group, member, "CREDIT", "66666.0000");
@@ -89,7 +89,7 @@ class MallSettlementOptionsPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("账期可用性按正式授信口径：占用、超限与逾期都会让账期不可选")
+    @DisplayName("账期可用性按正式授信规则：占用、超限与逾期都会让账期不可选")
     void creditOptionFollowsExposureOverdueAndLimit() {
         Long customerId = newCustomer();
         Long skuId = newOnShelfSku("SETTLE-C");

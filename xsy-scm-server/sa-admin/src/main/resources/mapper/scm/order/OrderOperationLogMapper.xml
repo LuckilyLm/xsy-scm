@@ -47,7 +47,7 @@
             AND operation_type = #{query.operationType}
         </if>
         <!--
-          日志行没有单号，关键词落回父订单：单号/客户名称与订单列表同一口径。
+          日志行没有单号，关键词落回父订单：单号/客户名称与订单列表同一套规则。
           审计页若只能按操作类型过滤，跨订单混排下根本缩不到一张订单——开发库已经几百行。
         -->
         <if test="query.keyword != null and query.keyword != ''">

@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Xsy.Scale.Agent;
 
-/// <summary>单机后台上传和打印回执编排，不在恢复网络时替员工接受称重事件。</summary>
+/// <summary>单机后台上传和打印回执协调，不在恢复网络时替员工接受称重事件。</summary>
 internal sealed class SyncWorker(AgentOptions options, StateStore store, PlatformClient platform,
     ScaleState scale, IRawPrinter printer, PrintService prints, ILogger<SyncWorker> logger) : BackgroundService
 {

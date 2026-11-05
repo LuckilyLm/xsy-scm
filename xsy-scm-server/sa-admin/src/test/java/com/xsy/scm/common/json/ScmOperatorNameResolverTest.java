@@ -13,7 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * 操作人展示口径：页面上只出现人名或身份，任何 {@code userType:userId} 都不原样落地。
+ * 操作人展示规则：页面上只出现人名或身份，任何 {@code userType:userId} 都不原样落地。
  */
 class ScmOperatorNameResolverTest {
 

@@ -14,13 +14,13 @@ export function unitsMatch(raw:string|undefined,business:string|undefined):boole
 }
 
 /** 展示单位，保留公斤历史的物理含义。
- * @param unit 原始或冻结单位；空值显示破折号。
+ * @param unit 原始或保存单位；空值显示破折号。
  * @returns 市斤统一显示斤，其他单位原样返回。
  */
 export function unitLabel(unit:string|null|undefined):string {return isJin(unit)?'斤':unit||'—';}
 
 /** 展示录入来源，旧数据无字段时明确标记来源未记录。
- * @param source 冻结来源DEVICE/MANUAL；可空且不根据当前模式补造。
+ * @param source 保存来源DEVICE/MANUAL；可空且不根据当前模式补造。
  * @returns 中文来源标签。
  */
 export function sourceLabel(source:string|null|undefined):string {

@@ -1,5 +1,5 @@
 /**
- * 报表模块契约测试。
+ * 报表模块约定检查。
  *
  * 由 5 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -33,17 +33,17 @@ import {
 // ---------------------------------------------------------------- 来源：finance-report-contract.test.mjs
 {
   /**
-   * 报表中心的契约测试（源码扫描取向）。
+   * 报表中心的约定检查（源码扫描取向）。
    *
    * 这里守的是「只有跨文件同时成立才有意义」的不变量，靠肉眼验收发现不了：
    *
-   * 1. 接口清单与后端 `/scm/report` 的固定契约逐条对齐，且没有任何写端点
+   * 1. 接口清单与后端 `/scm/report` 的固定约定逐条对齐，且没有任何写端点
    *    （报表是只读的，一个多余的 create 就是第二个写入口）；
    * 2. 导出必须走 `postDownload`（文件名来自 `Content-Disposition`，前端不硬编码、不拼 Blob），
    *    并且导出请求体不带分页——带分页会让人以为导的是当前页；
    * 3. 权限码与后端逐字一致，查询按钮带权限、重置按钮不带；
    * 4. 成本列与「当前库存价值」Tab 受 `scm:report:cost:query` 控制；
-   * 5. 指标名就是口径名：出现「营业收入 / 应收 / 应付 / 毛利」这类没有事实支撑的命名即为缺陷；
+   * 5. 指标名就是规则名：出现「营业收入 / 应收 / 应付 / 毛利」这类没有记录支撑的命名即为缺陷；
    * 6. 「待入库」不提供入库写入口，只有回原收货单的链接；
    * 7. 金额与数量不在前端做数值运算（`Number(` / `toFixed` / `parseFloat` 不得出现在页面里），
    *    方向也不得有第二份 IN / OUT 清单；
@@ -120,7 +120,7 @@ import {
   });
 
   // ------------------------------------------------------------------
-  // 接口契约
+  // 接口约定
   // ------------------------------------------------------------------
 
   const CONTRACT_PATHS = [
@@ -170,7 +170,7 @@ import {
   ];
 
   test('后端约定的 43 个端点逐条存在，且都挂在 /scm/report 下', () => {
-    assert.equal(CONTRACT_PATHS.length, 43, '清单本身必须与后端报表契约同数');
+    assert.equal(CONTRACT_PATHS.length, 43, '清单本身必须与后端报表约定同数');
     assert.match(API, /const BASE = '\/scm\/report'/);
     for (const path of CONTRACT_PATHS) {
       assert.ok(API.includes('${BASE}' + path), `缺少端点 ${path}`);
@@ -213,7 +213,7 @@ import {
       '/sales/product/export',
       '/sales/seller/export',
     ]);
-    assert.equal(exportPaths.length, 22, '导出端点数与契约一致（概览 1 + 销售 6 + 采购 6 + 收货 2 + Finance 3 + 库存 4）');
+    assert.equal(exportPaths.length, 22, '导出端点数与约定一致（概览 1 + 销售 6 + 采购 6 + 收货 2 + Finance 3 + 库存 4）');
     assert.ok(!/new Blob|createObjectURL|\.xlsx'/.test(API), '文件名与下载由 postDownload 负责');
   });
 
@@ -252,9 +252,9 @@ import {
     for (const label of ['本期应收金额', '应收已抵扣', '期末待收', '本期应付金额', '应付已抵扣', '期末待付']) {
       assert.ok(FINANCE_PAGE.includes(label), `往来概览缺固定指标「${label}」`);
     }
-    // 这两条语义压进指标名，而不是另写一条口径说明：报表模块不常驻解释（见 CONTRIBUTING.md SCM 界面规范）。
-    assert.match(FINANCE_PAGE, /期末待收（含期初未结）/, '期末余额口径要说明不受起始日截断');
-    assert.match(FINANCE_PAGE, /期末待付（含期初未结）/, '期末余额口径要说明不受起始日截断');
+    // 这两条语义压进指标名，而不是另写一条规则说明：报表模块不常驻解释（见 CONTRIBUTING.md SCM 界面规范）。
+    assert.match(FINANCE_PAGE, /期末待收（含期初未结）/, '期末余额规则要说明不受起始日截断');
+    assert.match(FINANCE_PAGE, /期末待付（含期初未结）/, '期末余额规则要说明不受起始日截断');
     assert.match(FINANCE_PAGE, /应收已抵扣（非实收）/, '已抵扣不得让人读成现金收付');
     assert.match(FINANCE_PAGE, /应付已抵扣（非实付）/, '已抵扣不得让人读成现金收付');
     assert.match(FINANCE_PAGE, /v-privilege="PERM\.FINANCE_QUERY"/, '页面查询必须受报表查询权限控制');
@@ -324,7 +324,7 @@ import {
   });
 
   // ------------------------------------------------------------------
-  // 命名即口径
+  // 命名即规则
   // ------------------------------------------------------------------
 
   const REQUIRED_LABELS = [
@@ -347,7 +347,7 @@ import {
     }
   });
 
-  test('没有把无事实支撑的口径写进标签（title / label / tab）', () => {
+  test('没有把无记录支撑的规则写进标签（title / label / tab）', () => {
     const labels = [
       ...ALL_PAGES.matchAll(/title:\s*'([^']*)'/g),
       ...ALL_PAGES.matchAll(/label:\s*'([^']*)'/g),
@@ -358,7 +358,7 @@ import {
     assert.ok(labels.length > 80, '标签样本太少说明扫描方式失效');
     for (const forbidden of ['营业收入', '销售收入', '实收金额', '应收', '应付', '毛利', '资金流水', '已收款', '待收款']) {
       const hit = labels.filter((label) => label.includes(forbidden));
-      assert.deepEqual(hit, [], `标签里出现了无事实支撑的口径：${forbidden}`);
+      assert.deepEqual(hit, [], `标签里出现了无记录支撑的规则：${forbidden}`);
     }
   });
 
@@ -601,7 +601,7 @@ import {
   });
 
   test('日期区间不被共享筛选里的同名字段盖掉', () => {
-    // 页面类型上 shared 不含日期，但这条不变量值得钉住：口径不能由一个下拉决定
+    // 页面类型上 shared 不含日期，但这条不变量值得钉住：规则不能由一个下拉决定
     const query = buildReportQuery(['2026-09-01', '2026-09-30'], {startDate: '2020-01-01', endDate: '2020-01-02'});
     assert.deepEqual([query.startDate, query.endDate], ['2026-09-01', '2026-09-30']);
   });
@@ -658,7 +658,7 @@ import {
     assert.equal(textOrDash('1234.5600'), '1234.5600');
   });
 
-  test('计数三态：0 笔要显示 0，没有事实才显示 —', () => {
+  test('计数三态：0 笔要显示 0，没有记录才显示 —', () => {
     assert.equal(countText(0), '0');
     assert.equal(countText(null), '—');
     assert.equal(countText(undefined), '—');
@@ -691,7 +691,7 @@ import {
     assert.equal(filterCostColumns(columns, ['unitCost'], true), columns);
   });
 
-  test('布尔事实三态：未知不等于否', () => {
+  test('布尔记录三态：未知不等于否', () => {
     assert.equal(yesNoText(true), '是');
     assert.equal(yesNoText(false), '否');
     assert.equal(yesNoText(null), '—');
@@ -737,7 +737,7 @@ import {
 // ---------------------------------------------------------------- 来源：report-receipt-columns-contract.test.mjs
 {
   /**
-   * 报表中心——收货与入库页的列精简与数值样式契约测试。
+   * 报表中心——收货与入库页的列精简与数值样式约定检查。
    *
    * `report-receipt-list.vue` 是报表中心里唯一没被列对齐改动覆盖的页面
    * （那次改了 overview / purchase / sales / inventory 与九个 tab 组件），
@@ -748,7 +748,7 @@ import {
    * 1. 商品身份不做四列：`商品名称` + `商品规格` 两列足够；把 `商品编码` / `商品规格编码`
    *    也各占一列会让一行商品身份吃满 4 列 600px。规则是「编码默认隐藏，除非是对账 / 导出核验
    *    场景」——本页虽是核验场景，但同一份报表里沿用已对齐页面（如 sales-product-tab）
-   *    的两列写法才是一致的口径（导出走 Excel，不靠表格列）。
+   *    的两列写法才是一致的规则（导出走 Excel，不靠表格列）。
    * 2. 数值样式走公共类：`.scm-money` / `.scm-quantity` 是全局唯一的金额/数量样式，
    *    页面里再定义一个局部 `.num` 会造成「同一个数字在不同报表里字体不同」。
    *
@@ -893,7 +893,7 @@ import {
   });
 }
 
-// ---------------------------------------------------------------- 客户月利润对账口径
+// ---------------------------------------------------------------- 客户月利润对账规则
 {
   const page = readFileSync(new URL('../src/views/business/scm/report/report-customer-monthly-profit.vue', import.meta.url), 'utf8');
   const api = readFileSync(new URL('../src/api/business/scm/finance-profit-api.ts', import.meta.url), 'utf8');

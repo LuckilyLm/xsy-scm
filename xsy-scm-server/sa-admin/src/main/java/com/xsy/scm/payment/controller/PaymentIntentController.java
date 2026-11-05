@@ -39,7 +39,7 @@ public class PaymentIntentController {
     private final PaymentQueryService paymentQueryService;
 
     /**
-     * 创建支付意图必须携带幂等键，避免重试产生两笔渠道交易。支付金额允许分笔，但订单来源和客户身份由服务端查验。
+     * 创建支付意图必须携带防重复请求编号，避免重试产生两笔渠道交易。支付金额允许分笔，但订单来源和客户身份由服务端查验。
      */
     @PostMapping("/create")
     @SaCheckPermission(ScmPaymentPermission.INTENT_CREATE)

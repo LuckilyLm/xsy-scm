@@ -25,7 +25,7 @@ public class FinanceReceivableSourceLineDto {
     private String skuNameSnapshot;
 
     /**
-     * 单价所在单位的快照，取订单行的 {@code sale_unit_snapshot}：出库行的 {@code unit_snapshot} 由发车链路留空，而 {@code locked_unit_price}
+     * 单价所在单位的已存数据，取订单行的 {@code sale_unit_snapshot}：出库行的 {@code unit_snapshot} 由发车链路留空，而 {@code locked_unit_price}
      * 正是按订单行的销售单位计价的。
      */
     private String unitSnapshot;
@@ -36,7 +36,7 @@ public class FinanceReceivableSourceLineDto {
     private BigDecimal quantity;
 
     /**
-     * 冻结售价 {@code xsy_sales_order_item.locked_unit_price}，允许合法为 0（赠品 / 0 元单）。
+     * 确认时保存的售价 {@code xsy_sales_order_item.locked_unit_price}，允许合法为 0（赠品 / 0 元单）。
      */
     private BigDecimal unitPrice;
 

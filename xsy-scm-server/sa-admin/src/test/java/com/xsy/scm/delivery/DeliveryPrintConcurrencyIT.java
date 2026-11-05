@@ -40,8 +40,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 因此本类用 {@code Propagation.NOT_SUPPORTED}，让每次 Service 调用自开事务
  * （代价是造数提交到测试库，随机前缀隔离）。
  *
- * <p>两个用例分别锁住两条不变量：不同幂等键并发重打同一订单必须<b>精确 +2</b>
- * （线路锁把写串行化，不产生 Lost Update 也不死锁）；同一幂等键并发提交必须
+ * <p>两个用例分别锁住两条不变量：不同防重复请求编号并发重打同一订单必须<b>精确 +2</b>
+ * （线路锁把写串行化，不产生 Lost Update 也不死锁）；同一防重复请求编号并发提交必须
  * <b>只计一次</b>（后到者等先到事务出结果后走重放，而不是各计一次）。
  */
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -79,7 +79,7 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("不同幂等键并发重打同一订单：两次都成功且 print_count 精确 +2")
+    @DisplayName("不同防重复请求编号并发重打同一订单：两次都成功且 print_count 精确 +2")
     void concurrentReprintWithDifferentKeysIncrementsExactlyTwice() throws Exception {
         var ctx = plannedRoute();
         var outcomes = runConcurrently(
@@ -95,7 +95,7 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("同一幂等键并发重打：只计一次，后到者得到同一份重放结果")
+    @DisplayName("同一防重复请求编号并发重打：只计一次，后到者得到同一份重放结果")
     void concurrentReplayWithSameKeyCountsOnce() throws Exception {
         var ctx = plannedRoute();
         // 两个线程各自写入结果，必须用线程安全容器，否则会丢元素
@@ -119,8 +119,8 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
     private Ctx plannedRoute() {
         Long sku = newOnShelfSku("PRC");
         Long customer = newCustomer();
-        // 停靠点坐标来自订单冻结地址，缺失时按「客户地址 == 冻结地址」回落客户坐标，
-        // 故必须在下单前把地址写成基类 fixture 的冻结地址，否则坐标为空、规划失败。
+        // 停靠点坐标来自订单下单时保存的地址，缺失时按「客户地址 == 下单时保存的地址」回落客户坐标，
+        // 故必须在下单前把地址写成基类 fixture 的下单时保存的地址，否则坐标为空、规划失败。
         jdbc.update("UPDATE xsy_customer SET address='W5 IT 地址',longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id=?", customer);
         Long a = confirmedSalesOrder(customer, sku, "1.0000", "1.0000");
         Long b = confirmedSalesOrder(customer, sku, "2.0000", "2.0000");
@@ -185,7 +185,7 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
     }
 
     /**
-     * 子线程没有请求上下文，必须自带身份（{@code ScmOperator.current()} 与幂等 scope 都依赖它）。
+     * 子线程没有请求上下文，必须自带身份（{@code ScmOperator.current()} 与防重复处理 scope 都依赖它）。
      *
      * <p>{@code administratorFlag=true} 不是为了「测超管」，而是 {@code mockStatic} 只在创建它的线程生效，
      * 桩不到子线程里的 Sa-Token 判定；本类只测并发计次，线路读取以全范围上下文通过即可。

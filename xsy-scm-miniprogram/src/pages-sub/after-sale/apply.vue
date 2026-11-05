@@ -176,7 +176,7 @@ async function submit() {
   }
   submitting.value = true;
   try {
-    // 幂等键与「订单 + 明细 + 原因」绑定：网络重试复用同一个键，不会重复建单
+    // 防重复请求编号与「订单 + 明细 + 原因」绑定：网络重试复用同一个键，不会重复建单
     const payload = {orderId: orderId.value, reason: reason.value, items};
     const signature = JSON.stringify(payload);
     let key = requestKeys.get(signature);

@@ -15,7 +15,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 过账单据只追加与修改，不删除：登记错了走作废，作废是另一条事实。
+ * 过账单据只能新增与修改，不删除：登记错了走作废，作废是另一条记录。
  */
 @Mapper
 public interface FinancePostingDao extends BaseMapper<FinancePostingEntity> {
@@ -31,12 +31,12 @@ public interface FinancePostingDao extends BaseMapper<FinancePostingEntity> {
     FinancePostingEntity selectByIdForUpdate(@Param("postingId") Long postingId);
 
     /**
-     * 已作废事实；没有则返回 {@code null}。{@code posting_id} 唯一，最多一行。
+     * 已作废记录；没有则返回 {@code null}。{@code posting_id} 唯一，最多一行。
      */
     FinancePostingVoidEntity selectVoidByPostingId(@Param("postingId") Long postingId);
 
     /**
-     * 作废事实只允许出现一次；并发重复作废由唯一索引挡回，返回 0 由调用方转成业务错误。
+     * 作废记录只允许出现一次；并发重复作废由唯一索引挡回，返回 0 由调用方转成业务错误。
      */
     int insertVoidOnConflictDoNothing(FinancePostingVoidEntity entity);
 

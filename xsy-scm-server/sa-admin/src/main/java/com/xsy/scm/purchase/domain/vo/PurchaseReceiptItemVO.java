@@ -47,7 +47,7 @@ public class PurchaseReceiptItemVO {
      * 对应的采购行是否待定价。
      *
      * <p>
-     * 收货行本身不存价格，这里从采购行带来：确认收货会冻结库存成本，待定价行必须先在采购单补价， 确认弹窗据此提前拦住，不把用户留到提交后才看到错误。
+     * 收货行本身不存价格，这里从采购行带来：确认收货会确定并保存库存成本，待定价行必须先在采购单补价， 确认弹窗据此提前拦住，不把用户留到提交后才看到错误。
      */
     private Boolean pricePending;
     private Integer version;

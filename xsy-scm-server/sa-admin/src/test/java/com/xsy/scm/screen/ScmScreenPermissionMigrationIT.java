@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 数据大屏权限种子（V28）与代码一致性。
  *
- * <p>V28 是只追加的 data-only 迁移：900 目录 + 901 查询权限，全部授权给 role_id = 1，
+ * <p>V28 是只能新增的 data-only 迁移：900 目录 + 901 查询权限，全部授权给 role_id = 1，
  * 并推进 t_menu 序列。
  */
 @DisplayName("B7 数据大屏权限种子：V28 菜单 / 授权 / 代码一致性（PG IT）")

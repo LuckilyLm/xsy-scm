@@ -24,7 +24,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 结清状态派生口径（FIX-01，PG IT）。
+ * 结清状态派生规则（FIX-01，PG IT）。
  *
  * <p>被钉住的语义：完全红冲（净额为零）且无核销的单据是<b>已结清</b>而不是未结清——
  * 它没有任何待收 / 待付金额，判 OPEN 会让它永远挂在未结清列表里。

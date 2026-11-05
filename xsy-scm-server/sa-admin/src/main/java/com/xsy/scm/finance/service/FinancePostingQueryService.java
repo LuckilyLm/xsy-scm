@@ -27,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 过账列表、详情与导出；可见性按过账客户的归属业务员判定。
  *
  * <p>
- * 这就是现场口径里的「内部财务报表可单独筛选查看所有过账记录」：日期、客户、返款状态、有效状态 与单号关键字都在同一个查询里，导出的行与列表完全一致。
+ * 这就是现场规则里的「内部财务报表可单独筛选查看所有过账记录」：日期、客户、返款状态、有效状态 与单号关键字都在同一个查询里，导出的行与列表完全一致。
  */
 @Service
 @RequiredArgsConstructor

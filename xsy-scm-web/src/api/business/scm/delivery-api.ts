@@ -28,7 +28,7 @@ function call<T>(method: string, path: string, data?: unknown, options?: Request
   });
 }
 
-// 幂等命令通道：失败保留同一 UUID 供重试，成功即释放，内容变化后换新键。
+// 防重复处理命令通道：失败保留同一 UUID 供重试，成功即释放，内容变化后换新键。
 // 重复提交会造成计次虚增或重复扣库存。
 const idempotentKeys = new Map<string, string>();
 
@@ -49,7 +49,7 @@ async function idempotentCommand<T>(path: string, data: unknown): Promise<ScmRes
   return result;
 }
 
-/** 打印计次命令；端点与载荷不变，只改走幂等通道。 */
+/** 打印计次命令；端点与载荷不变，只改走防重复处理通道。 */
 function printCommand<T>(path: string, data: unknown): Promise<ScmResponse<T>> {
   return idempotentCommand<T>(path, data);
 }
@@ -67,7 +67,7 @@ export const deliveryApi = {
     }),
   /** 发车：PLANNED → DISPATCHED，同时按实发量生成出库单扣库存；outboundNo 为 null 表示实发 0，属于成功。 */
   dispatch: (id: Id, version: number) => idempotentCommand<DispatchResult>(`/routes/${id}/dispatch`, {version}),
-  /** 订单签收：IN_TRANSIT → SIGNED | EXCEPTION。不带幂等键，重复提交由行版本乐观锁拒绝。 */
+  /** 订单签收：IN_TRANSIT → SIGNED | EXCEPTION。不带防重复请求编号，重复提交由行版本乐观锁拒绝。 */
   sign: (id: Id, orderId: Id, form: SignPayload) => call<string>('post', `/routes/${id}/orders/${orderId}/sign`, form),
   /** 完成线路：DISPATCHED → COMPLETED；仍有订单未签收时服务端拒绝。 */
   complete: (id: Id, version: number) => call<string>('post', `/routes/${id}/complete`, {version}),

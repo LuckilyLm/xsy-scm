@@ -129,7 +129,7 @@ public class EnterpriseService {
         EnterpriseEntity updateEntity = SmartBeanUtil.copy(enterpriseDetail, EnterpriseEntity.class);
         SmartBeanUtil.copyProperties(updateVO, updateEntity);
         enterpriseDao.updateById(updateEntity);
-        // updateById 跳过 null 列，因此按实际落库值换绑：表单未提交该列时不能收回旧附件的读取权
+        // updateById 跳过 null 列，因此按实际写入数据库值换绑：表单未提交该列时不能收回旧附件的读取权
         rebindAttachments(enterpriseId,
                 updateEntity.getEnterpriseLogo() == null ? enterpriseDetail.getEnterpriseLogo() : updateEntity.getEnterpriseLogo(),
                 updateEntity.getBusinessLicense() == null ? enterpriseDetail.getBusinessLicense() : updateEntity.getBusinessLicense());

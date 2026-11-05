@@ -6,10 +6,10 @@ import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import com.xsy.scm.order.permission.OrderPermission;
 
 /**
- * 改单资格的唯一判定口径：前端按钮可不可点、写接口允不允许，都从这里出发，避免两边各写一套条件。
+ * 改单资格的唯一判定规则：前端按钮可不可点、写接口允不允许，都从这里出发，避免两边各写一套条件。
  *
  * <p>
- * 这里只回答「当前调用者能不能改这张单」；待确认订单是否已有资金/库存事实（{@code hasPriceFreezeBlockingFact}） 与优惠冻结这类需要查库的条件仍在写路径里判定，列表不做逐行查库。
+ * 这里只回答「当前调用者能不能改这张单」；待确认订单是否已有资金/库存记录（{@code hasPriceFreezeBlockingFact}） 与优惠保存这类需要查库的条件仍在写路径里判定，列表不做逐行查库。
  */
 public final class OrderEditPolicy {
     private OrderEditPolicy() {

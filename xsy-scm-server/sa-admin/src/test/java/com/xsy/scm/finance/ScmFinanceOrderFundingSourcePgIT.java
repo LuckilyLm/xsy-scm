@@ -78,7 +78,7 @@ class ScmFinanceOrderFundingSourcePgIT extends ScmW5PgITBase {
                 new BigDecimal(providerAmount));
     }
 
-    /** 与同目录 IT 相同的口径：订单主键由用例独占，避免共享开发库里别的订单把断言撑破。 */
+    /** 与同目录 IT 相同的规则：订单主键由用例独占，避免共享开发库里别的订单把断言撑破。 */
     private long uniqueNumber() {
         return 1_000_000_000L + Math.abs(UUID.randomUUID().getMostSignificantBits() % 8_000_000_000L);
     }

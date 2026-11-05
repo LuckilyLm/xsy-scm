@@ -42,7 +42,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("create：单号 / 快照 / 金额 / 分配 / 需求侧一次写全")
+    @DisplayName("create：单号 / 保存的数据 / 金额 / 分配 / 需求侧一次写全")
     void createPersistsOrderWithNumberSnapshotsAndTotalAmount() {
         Long skuId = newOnShelfSku("PO1");
         Long supplierId = newPurchasableSupplier("PO1", skuId);
@@ -56,7 +56,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         assertThat(order.getOrderNo()).matches("^XSY\\d{18,19}$");
         assertThat(order.getStatus()).isEqualTo("SUBMITTED");
 
-        // 供应商 / 仓库快照在创建时固化：历史永不回读主数据
+        // 供应商 / 仓库保存的数据在创建时保存：历史永不回读主数据
         assertThat(order.getSupplierId()).isEqualTo(supplierId);
         assertThat(order.getSupplierCode()).isNotBlank();
         assertThat(order.getSupplierName()).isNotBlank();
@@ -86,7 +86,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         assertThat(reloaded.getStatus()).isEqualTo("ALLOCATED");
         assertThat(reloaded.getSupplierId()).isEqualTo(supplierId);
 
-        // CREATE 日志：before 为空、after 是全量快照
+        // CREATE 日志：before 为空、after 是全量保存的数据
         List<PurchaseOperationLogVO> logs = purchaseQueryService.orderLogs(order.getId());
         assertThat(logs).hasSize(1);
         assertThat(logs.getFirst().getOperationType()).isEqualTo("CREATE");
@@ -200,7 +200,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         assertThat(afterUpdate.getAllocatedQuantity()).isEqualByComparingTo("2.0000");
         assertThat(afterUpdate.getStatus()).isEqualTo("PARTIALLY_ALLOCATED");
 
-        // UPDATE 日志：before / after 都是全量快照。
+        // UPDATE 日志：before / after 都是全量保存的数据。
         // 日志按 {@code created_at DESC, id DESC} 返回（与 order_operation_log 一致）→ 最新在前
         List<PurchaseOperationLogVO> logs = purchaseQueryService.orderLogs(order.getId());
         assertThat(logs).extracting(PurchaseOperationLogVO::getOperationType)
@@ -344,7 +344,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("delete：仅尚可编辑的单可删（已收货 → 40993），且删除本身幂等")
+    @DisplayName("delete：仅尚可编辑的单可删（已收货 → 40993），且删除本身防重复处理")
     void deleteOnlyAllowsEditableOrdersAndIsIdempotent() {
         Long skuId = newOnShelfSku("PO9");
         Long supplierId = newPurchasableSupplier("PO9", skuId);
@@ -361,7 +361,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
 
         assertThat(allocationsOf(draft.getId())).isEmpty();
         assertThat(reloadDemand(demand.getId()).getStatus()).isEqualTo("PENDING");
-        // 幂等：再删一次不报错
+        // 防重复处理：再删一次不报错
         purchaseOrderService.delete(delete);
 
         // 已进入收货流程：删除 → 40993

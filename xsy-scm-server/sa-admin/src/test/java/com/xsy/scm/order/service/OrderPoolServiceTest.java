@@ -61,11 +61,11 @@ import org.mockito.MockedStatic;
 
 /**
  * 未分配订单池的服务层不变量：权限闸门、准入条件、乐观锁与条件更新的分工、
- * 目标业务员可用性，以及幂等指纹对版本前进的稳定性。
+ * 目标业务员可用性，以及防重复处理指纹对版本前进的稳定性。
  *
  * <p>
  * 全部依赖都用 Mockito 替身，不启 Spring 上下文也不连库：这里要钉的是「哪些输入被拒绝、
- * 拒绝发生在哪一步、成功时写下了什么事实」，行锁与条件更新在数据库上的真实行为由集成测试负责。
+ * 拒绝发生在哪一步、成功时写下了什么记录」，行锁与条件更新在数据库上的真实行为由集成测试负责。
  */
 @DisplayName("未分配订单池：领取与指派的服务层规则")
 class OrderPoolServiceTest {
@@ -153,7 +153,7 @@ class OrderPoolServiceTest {
     }
 
     @Test
-    @DisplayName("解析不到登录员工时失败关闭")
+    @DisplayName("解析不到登录员工时校验失败时拒绝操作")
     void missingEmployeeIdentityFailsClosed() {
         var denied = mock(ScmDataScopeContext.class);
         when(denied.getEmployeeId()).thenReturn(null);
@@ -286,7 +286,7 @@ class OrderPoolServiceTest {
     // ---------------------------------------------------------------- 成功路径
 
     @Test
-    @DisplayName("指派成功后记录指派前后快照并回填幂等结果")
+    @DisplayName("指派成功后记录指派前后保存的数据并回填防重复处理结果")
     void successfulAssignmentRecordsSnapshotAndCompletesIdempotency() {
         SalesOrderEntity order = mallOrder(ORDER_ID, 3, null);
         SalesOrderEntity reloaded = mallOrder(ORDER_ID, 4, TARGET_SELLER);
@@ -308,10 +308,10 @@ class OrderPoolServiceTest {
                 eq(ORDER_ID), eq(after));
     }
 
-    // ---------------------------------------------------------------- 幂等
+    // ---------------------------------------------------------------- 防重复处理
 
     @Test
-    @DisplayName("重放命中幂等记录时直接返回原结果，不再锁定订单")
+    @DisplayName("重放命中防重复处理记录时直接返回原结果，不再锁定订单")
     void replayedAssignmentReturnsStoredResultWithoutLockingTheOrder() {
         SalesOrderVO stored = new SalesOrderVO();
         stored.setOrderId(ORDER_ID);
@@ -328,7 +328,7 @@ class OrderPoolServiceTest {
     }
 
     @Test
-    @DisplayName("幂等指纹只认订单与目标业务员，版本前进后重试仍然命中")
+    @DisplayName("防重复处理指纹只认订单与目标业务员，版本前进后重试仍然命中")
     void fingerprintIgnoresVersionSoRetriesStillReplay() {
         when(salesOrderDao.lock(ORDER_ID)).thenReturn(null);
         var captor = ArgumentCaptor.forClass(Object.class);
@@ -345,7 +345,7 @@ class OrderPoolServiceTest {
     }
 
     @Test
-    @DisplayName("换个订单或换个目标业务员都不能复用同一条幂等记录")
+    @DisplayName("换个订单或换个目标业务员都不能复用同一条防重复处理记录")
     void fingerprintSeparatesOrdersAndTargets() {
         when(salesOrderDao.lock(anyLong())).thenReturn(null);
         var captor = ArgumentCaptor.forClass(Object.class);
@@ -413,7 +413,7 @@ class OrderPoolServiceTest {
         when(queryService.order(reloaded)).thenReturn(after);
     }
 
-    /** 幂等指纹是服务内部构造的映射，断言前统一规整成字符串键的映射。 */
+    /** 防重复处理指纹是服务内部构造的映射，断言前统一规整成字符串键的映射。 */
     private static Map<String, Object> fingerprintOf(Object captured) {
         var normalized = new LinkedHashMap<String, Object>();
         ((Map<?, ?>) captured).forEach((key, value) -> normalized.put(String.valueOf(key), value));

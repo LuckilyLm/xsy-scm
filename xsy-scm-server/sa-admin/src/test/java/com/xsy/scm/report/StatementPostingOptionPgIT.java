@@ -32,7 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 /**
  * 对账单可选展示过账记录（D-1028-16）。
  *
- * <p>要钉住的是「可选中包含」这件事的边界：过账行进得了明细，但它不改变任何余额口径 ——
+ * <p>要钉住的是「可选中包含」这件事的边界：过账行进得了明细，但它不改变任何余额规则 ——
  * 期初、期末净应收与未分配资金在有/无过账行时完全相同。
  */
 class StatementPostingOptionPgIT extends ScmW5PgITBase {
@@ -44,7 +44,7 @@ class StatementPostingOptionPgIT extends ScmW5PgITBase {
     private FinancePostingService postingService;
 
     @Test
-    @DisplayName("#1 不勾选过账时不出现过账行；勾选后过账行进入明细但余额口径不变")
+    @DisplayName("#1 不勾选过账时不出现过账行；勾选后过账行进入明细但余额规则不变")
     void postingLinesDoNotChangeBalances() {
         Long customerId = newCustomer();
         insertReceipt(customerId, "50.0000");
@@ -64,7 +64,7 @@ class StatementPostingOptionPgIT extends ScmW5PgITBase {
         assertThat(factsOf(withPosting)).containsExactlyInAnyOrder("RECEIPT", "POSTING");
         assertThat(withPosting.getClosingReceivable()).isEqualByComparingTo("0.0000");
         assertThat(withPosting.getClosingUnallocated()).isEqualByComparingTo("50.0000");
-        // 过账行的余额列与资金变动列都停在原值：它不是财务事实
+        // 过账行的余额列与资金变动列都停在原值：它不是财务记录
         ScmCustomerStatementItemVO line = postingLine(withPosting);
         assertThat(line.getPostingAmount()).isEqualByComparingTo("30.0000");
         assertThat(line.getReceivableDelta()).isZero();
@@ -72,7 +72,7 @@ class StatementPostingOptionPgIT extends ScmW5PgITBase {
         assertThat(line.getWriteOffDelta()).isZero();
         assertThat(line.getRefundDelta()).isZero();
         assertThat(line.getReceivableBalance()).isZero();
-        // 过账金额真正落库，明细与打印都从冻结行读
+        // 过账金额真正写入数据库，明细与打印都从保存行读
         assertThat(jdbc.queryForObject(
             "SELECT posting_amount FROM xsy_customer_statement_item WHERE statement_id = ? AND fact_type = 'POSTING'",
             BigDecimal.class, withPosting.getId())).isEqualByComparingTo("30.0000");
@@ -99,7 +99,7 @@ class StatementPostingOptionPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("#3 冻结版本记住 includePosting，重新读取时口径一致")
+    @DisplayName("#3 保存后的版本记住 includePosting，重新读取时规则一致")
     void frozenVersionRemembersTheOption() {
         Long customerId = newCustomer();
         insertReceipt(customerId, "10.0000");
@@ -170,7 +170,7 @@ class StatementPostingOptionPgIT extends ScmW5PgITBase {
     }
 
     /**
-     * 造一笔未核销收款：对账单的 RECEIPT 事实不依赖订单，用它做最小的可对账底数。
+     * 造一笔未核销收款：对账单的 RECEIPT 记录不依赖订单，用它做最小的可对账底数。
      */
     private void insertReceipt(Long customerId, String amount) {
         String receivableNo = "RC-" + UUID.randomUUID().toString().substring(0, 12);

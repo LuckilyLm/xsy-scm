@@ -127,11 +127,11 @@ public class MallCheckoutService {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_IDEMPOTENCY_REQUIRED);
         }
         Map<Long, BigDecimal> quantities = normalize(form.getItems());
-        // 幂等指纹只绑稳定的客户请求（客户 / 地址 ID / 备注 / 期望配送时间 / 预选券 / 规格与数量），不含地址内容副本：
+        // 防重复处理指纹只绑稳定的客户请求（客户 / 地址 ID / 备注 / 期望配送时间 / 预选券 / 规格与数量），不含地址内容副本：
         // 地址会被同一客户的其他采购账号编辑，用副本算指纹会让「第一次已成功、重试时地址已改」认不出原订单。
         // 它只取请求里的地址 ID，因此不需要先把地址读出来。
         Map<String, Object> idempotencyRequest = idempotencyRequest(customer, form, quantities);
-        // 幂等预检必须排在所有「会被后续操作改变的前置校验」之前：
+        // 防重复处理预检必须排在所有「会被后续操作改变的前置校验」之前：
         // ① 排在价格校验前——第一次已下单成功但响应丢失时，重试遇变价会被误报成「价格已变化」；
         // ② 排在读地址前——重试期间地址可能已被同一客户的其他采购账号删除，
         // 先读地址会直接抛「地址不存在」，把一笔已经成功的订单藏起来。
@@ -284,7 +284,7 @@ public class MallCheckoutService {
     /**
      * 可结算行的预估金额合计（与预览 {@code estimatedAmount} 同一算法：只累计有客户价的行）。
      */
-    /** 商城的可结算口径：服务端可售、有正式报价（0 元视为未报价）、数量符合起订/递增规则。 */
+    /** 商城的可结算规则：服务端可售、有正式报价（0 元视为未报价）、数量符合起订/递增规则。 */
     private static boolean sellable(MallProductVO product, BigDecimal quantity) {
         return product != null && Boolean.TRUE.equals(product.getSellable()) && product.getUnitPrice() != null
             && product.getUnitPrice().signum() > 0 && MallQuantityPolicy.accepts(product, quantity);
@@ -341,7 +341,7 @@ public class MallCheckoutService {
         item.setUnitPrice(product.getUnitPrice());
         item.setPriceStatus(product.getPriceStatus());
         item.setPriceSource(product.getPriceSource());
-        // 0 元按「未报价」处理，和商品页、购物车的展示口径一致；不能当成免费商品结算。
+        // 0 元按「未报价」处理，和商品页、购物车的展示规则一致；不能当成免费商品结算。
         if (product.getUnitPrice() == null || product.getUnitPrice().signum() <= 0) {
             item.setAvailability(MallCartAvailabilityEnum.NO_PRICE.name());
             item.setUnavailableReason(ScmUnpricedReasonEnum.NO_PRICE_SOURCE.name());
@@ -365,7 +365,7 @@ public class MallCheckoutService {
     }
 
     /**
-     * 商城下单的幂等指纹只包含客户请求中稳定的字段，不用后来可能变化的地址或商品资料重新计算同一次请求。
+     * 商城下单的防重复处理指纹只包含客户请求中稳定的字段，不用后来可能变化的地址或商品资料重新计算同一次请求。
      */
     private static Map<String, Object> idempotencyRequest(RequestMallCustomer customer, MallOrderSubmitForm form,
         Map<Long, BigDecimal> quantities) {

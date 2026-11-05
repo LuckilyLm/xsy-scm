@@ -167,7 +167,7 @@ public class CustomerGroupService {
         if (!Objects.equals(entity.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        // 成员关系不是业务事实：删除分组时把客户移出分组，避免留下指向已删除分组的外键。
+        // 成员关系不是业务记录：删除分组时把客户移出分组，避免留下指向已删除分组的外键。
         customerDao.clearGroupMembers(entity.getId(), List.of(), ScmOperator.current());
         if (customerGroupDao.softDelete(entity.getId(), form.getVersion(), ScmOperator.current()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);

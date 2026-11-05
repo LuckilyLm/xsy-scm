@@ -16,7 +16,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/** 在无数据库触发器的条件下验证入账时点、账期快照和红字继承。 */
+/** 在无数据库触发器的条件下验证入账时点、当时保存的账期和红字继承。 */
 class FinanceSettlementRuleServiceTest {
     private final FinanceSettlementRuleDao rules = mock(FinanceSettlementRuleDao.class);
     private final FinancePayableDao payables = mock(FinancePayableDao.class);

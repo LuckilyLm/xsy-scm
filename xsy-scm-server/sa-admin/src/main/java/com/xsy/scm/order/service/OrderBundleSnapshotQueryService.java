@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 配送等履约模块只读取已确认订单保存的组合组成数据，不写快照表。
+ * 配送等履约模块只读取已确认订单保存的组合组成数据，不写历史资料表。
  */
 @Service
 @RequiredArgsConstructor

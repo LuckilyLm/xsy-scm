@@ -8,7 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * 展示名的单一事实源：导出等后端输出与前端文案共用这套口径。
+ * 展示名的单一依据：导出等后端输出与前端文案共用这套规则。
  *
  * <p>
  * 未知值必须原样返回而不是抛错——导出不能因为一条脏数据整份失败。

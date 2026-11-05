@@ -10,7 +10,7 @@ export class ApiError extends Error {
  * @param session 平台员工引用；默认空字符串，不发送员工头。
  * @param body 可序列化请求体；undefined发送GET，其他值发送POST。
  * @param extra 附加请求头，默认空对象；不用于传本机密钥。
- * @returns 成功响应投影；HTTP或网络失败抛ApiError，未知结果由调用方保留原请求。
+ * @returns 成功响应查询结果；HTTP或网络失败抛ApiError，未知结果由调用方保留原请求。
  */
 export async function api<T>(path:string, session='', body?:unknown, extra:Record<string,string>={}):Promise<T> {
   let response:Response;

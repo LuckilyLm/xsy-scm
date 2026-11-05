@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 电子秤读数：上报（设备）→ 查询（作业台）→ 接受 / 驳回（人工）。
  *
  * <p>
- * 上报与接受分开授权：上报只是把设备读数记下来，接受才写进分拣结果。 上报带 {@code eventKey} 幂等键，重复上报返回既有记录并置 {@code duplicated}，不报错。
+ * 上报与接受分开授权：上报只是把设备读数记下来，接受才写进分拣结果。 上报带 {@code eventKey} 防重复请求编号，重复上报返回既有记录并置 {@code duplicated}，不报错。
  */
 @RestController
 @RequestMapping("/scm/sorting/scale")

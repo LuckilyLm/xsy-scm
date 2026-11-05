@@ -106,7 +106,7 @@ internal static class ManualBasketTests
             using var cmd = db.CreateCommand();cmd.CommandText = "SELECT raw_frame FROM basket_records WHERE basket_number=2";
             Equal("", (string)cmd.ExecuteScalar()!);
         })),
-        ("手工重复请求幂等，改重改说明及跨来源复用编号均冲突", () => Run(() =>
+        ("手工重复请求防重复处理，改重改说明及跨来源复用编号均冲突", () => Run(() =>
         {
             var c = new Context(root); var request = c.Manual("8.55"); var first = c.Service.RecordManual(request, "operator");
             Equal(first, c.Service.RecordManual(request, "operator")); Equal(1, c.Summary().BasketCount);
@@ -174,7 +174,7 @@ internal static class ManualBasketTests
             c.Sql("DROP TRIGGER fail_manual_ticket;");
             Equal(1, c.Service.RecordManual(request, "operator").BasketNumber);
         })),
-        ("手输只接受斤任务，旧票未标来源保持原快照", () => Run(() =>
+        ("手输只接受斤任务，旧票未标来源保持原来保存的资料", () => Run(() =>
         {
             var c = new Context(root, "kg");
             Throws("MANUAL_UNIT_MISMATCH", () => c.Service.RecordManual(c.Manual("8.55"), "operator"));

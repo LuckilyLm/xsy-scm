@@ -40,7 +40,7 @@
         WHERE deleted = FALSE DO NOTHING
     </insert>
 
-    <!-- 一订单的正常应收最多一张（uk_finance_receivable_source_active 的同一口径）。 -->
+    <!-- 一订单的正常应收最多一张（uk_finance_receivable_source_active 的同一套规则）。 -->
     <select id="selectNormalByOrder" resultMap="receivableEntity">
         SELECT id, receivable_no, source_type, source_id, order_id, customer_id, settlement_customer_id,
             settlement_customer_name_snapshot, due_date, credit_rule_snapshot, customer_name_snapshot, entry_type,

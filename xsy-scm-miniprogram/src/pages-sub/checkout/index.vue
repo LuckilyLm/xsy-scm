@@ -172,7 +172,7 @@ const unavailableItems = ref([]);
 let previewSeq = 0;
 const today = shanghaiDate();
 
-/** 幂等键与内容绑定：内容不变时重试复用同一个键，内容变化才换新键 */
+/** 防重复请求编号与内容绑定：内容不变时重试复用同一个键，内容变化才换新键 */
 const idempotencyKey = ref('');
 let lastSignature = '';
 
@@ -365,7 +365,7 @@ function contentSignature() {
   });
 }
 
-/** 内容变化才换幂等键；网络重试复用旧键，避免生成重复订单 */
+/** 内容变化才换防重复请求编号；网络重试复用旧键，避免生成重复订单 */
 function syncIdempotencyKey() {
   const signature = contentSignature();
   if (signature !== lastSignature) {
@@ -442,8 +442,8 @@ async function submit() {
       idempotencyKey.value
     );
     const order = response.data || {};
-    // 成功页与结算栏保持同一口径：订货金额是订单事实，优惠与应付取自下单前最后一次成功试算，
-    // 成功页会标注「优惠以订单确认为准」，避免把试算值当成已冻结结果
+    // 成功页与结算栏保持同一套规则：订货金额是订单记录，优惠与应付取自下单前最后一次成功试算，
+    // 成功页会标注「优惠以订单确认为准」，避免把试算值当成已保存结果
     const discount = promotion.value?.discountAmount || '';
     const payable = promotion.value?.payableAmount || '';
     uni.redirectTo({

@@ -127,7 +127,7 @@ export const SCM_FINANCE_BUSINESS_TYPE_ENUM: SmartEnum<string> = {
   POSTING: {value: 'POSTING', desc: '外部账单'},
 };
 
-/** 过账单据的有效状态（由作废事实推导，前端只读）。 */
+/** 过账单据的有效状态（由作废记录推导，前端只读）。 */
 export const SCM_FINANCE_POSTING_STATUS_ENUM: SmartEnum<string> = {
   NORMAL: {value: 'NORMAL', desc: '有效'},
   VOIDED: {value: 'VOIDED', desc: '已作废'},

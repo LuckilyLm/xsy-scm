@@ -51,7 +51,7 @@ var cases = new (string Name, Func<Task> Run)[]
         Throws("UNKNOWN_UNIT", () => SoheFrameDecoder.ParseRs232(Encoding.ASCII.GetBytes("SN  4.850lb\r\n")));
         Throws("INVALID_FRAME", () => SoheFrameDecoder.ParseRs232(Encoding.ASCII.GetBytes("XX  4.850kg\r\n")));
     })),
-    ("符号占位与负重保留原始事实", () => Sync(() =>
+    ("符号占位与负重保留原始记录", () => Sync(() =>
     {
         Equal(12.5m, SoheFrameDecoder.ParseRs232(Encoding.ASCII.GetBytes("SN0 12.50kg\r\n")).RawWeight);
         Equal(-1.25m, SoheFrameDecoder.ParseRs232(Encoding.ASCII.GetBytes("WN- 1.250kg\r\n")).RawWeight);
@@ -70,7 +70,7 @@ var cases = new (string Name, Func<Task> Run)[]
         var state = new ScaleState(); state.Set(reading);
         Throws("WEIGHT_UNACCEPTABLE", () => state.Freeze(reading.SampleId, Options()));
     })),
-    ("失联立即取消旧快照", () => Sync(() =>
+    ("失联立即取消原来保存的资料", () => Sync(() =>
     {
         var state = new ScaleState(); var sample = Reading(); state.Set(sample); state.Fail("SCALE_DISCONNECTED");
         Throws("SCALE_UNAVAILABLE", () => state.Freeze(sample.SampleId, Options()));
@@ -219,7 +219,7 @@ var cases = new (string Name, Func<Task> Run)[]
         Equal("SERVER_PENDING", context.Store.Events().Single().State);
         Equal("9007199254740993", context.Store.Events().Single().EventId);
     }),
-    ("业务拒绝停止自动重试并保留事实", async () =>
+    ("业务拒绝停止自动重试并保留记录", async () =>
     {
         var context = Context(); var sample = Reading(); context.State.Set(sample); context.Capture.Capture(Request(sample));
         using var client = Client(context.Store, _ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Conflict)

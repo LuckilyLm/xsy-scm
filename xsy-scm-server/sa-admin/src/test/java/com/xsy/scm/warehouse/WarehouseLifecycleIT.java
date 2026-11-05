@@ -147,7 +147,7 @@ class WarehouseLifecycleIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("停用后：新需求/新采购单拒绝（40987），历史详情与选择器口径正确")
+    @DisplayName("停用后：新需求/新采购单拒绝（40987），历史详情与选择器规则正确")
     void disabledWarehouseRejectsNewReferencesButAllowsHistory() {
         Long w = newWarehouse("WL6");
         warehouseService.disable(statusForm(w));

@@ -89,7 +89,7 @@ public class ProductImportWorkbookSupport {
                 sheet.setColumnWidth(column, Math.min(28, Math.max(12, headers.get(column).length() * 3)) * 256);
             }
             applyEnumValidations(sheet, headers);
-            // 冻结表头与示例行：几千行数据往下翻时列名还在。
+            // 固定表头与示例行：几千行数据往下翻时列名还在。
             sheet.createFreezePane(0, 2);
             workbook.write(out);
             return out.toByteArray();

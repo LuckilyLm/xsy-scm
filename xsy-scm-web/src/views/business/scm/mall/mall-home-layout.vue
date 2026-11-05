@@ -600,7 +600,7 @@ const uploadImage: UploadProps['customRequest'] = async (options) => {
   }
 };
 
-/** 保存期间的编辑不会写进这次请求；用请求快照判断响应回来后是否还需要再保存。 */
+/** 保存期间的编辑不会写进这次请求；用本次请求内容判断响应回来后是否还需要再保存。 */
 function draftSignature(): string {
   return JSON.stringify({themeCode: themeCode.value, themeColor: themeColor.value, blocks: blocks.value});
 }
@@ -620,7 +620,7 @@ async function saveDraft(silent = false): Promise<boolean> {
       dirty.value = false;
       if (!silent) void message.success('已保存');
     } else {
-      // 服务端已保存的是请求快照，期间的新输入仍是未保存状态；不能清掉 dirty，否则会发布旧稿。
+      // 服务端已保存的是本次请求内容，期间的新输入仍是未保存状态；不能清掉 dirty，否则会发布旧稿。
       dirty.value = true;
       if (!silent) void message.warning('已保存，保存期间的新修改尚未保存，请再次保存');
     }

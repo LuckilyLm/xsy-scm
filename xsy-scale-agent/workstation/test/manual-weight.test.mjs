@@ -58,13 +58,13 @@ test('市斤实称与手输、触屏键盘、离线/断秤和未知结果恢复'
     await page.route('**/api/agent/manual-baskets',route=>route.abort('failed'),{times:1});await confirm.click();
     await expect(page.getByRole('button',{name:'重试原保存'})).toBeVisible();await page.reload();
     await expect(input).toHaveValue('14.25');await expect(input).toBeDisabled();
-    await page.getByRole('button',{name:'重试原保存'}).click();await count(5,524);note('请求未到服务端时刷新恢复冻结请求，同操作号重试只新增一次');
+    await page.getByRole('button',{name:'重试原保存'}).click();await count(5,524);note('请求未到服务端时刷新恢复保存请求，同操作号重试只新增一次');
     await expect.poll(async()=>(await api('/local-tickets'+q)).every(t=>t.state==='TEST_ONLY')).toBe(true);
     await page.getByRole('button',{name:'完成商品',exact:true}).click();const finishDialog=page.getByRole('dialog');await finishDialog.getByRole('combobox').click();await page.getByText('超出',{exact:true}).click();await finishDialog.getByRole('textbox').fill('含其他大秤手输重量');await finishDialog.getByRole('button',{name:'确认完成商品',exact:true}).click();
     await expect(page.getByText('本地已完成',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'手工录入净重',exact:true})).toBeDisabled();await count(5,524);
     const done=await api('/basket-summary'+q);assert.equal(done.completion.eventKeys.length,5);assert.equal(done.queueState,'WAITING_CONTRACT');
     await page.getByRole('link',{name:'称重记录',exact:true}).click();await expect(page.locator('td').getByText('手工录入',{exact:true})).toHaveCount(4);
-    await shot('manual-records-1024',1024);note('混合来源共用完成集合，来源和说明可追溯，正式同步仍等待契约');
+    await shot('manual-records-1024',1024);note('混合来源共用完成集合，来源和说明可追溯，正式同步仍等待约定');
     assert.deepEqual(errors,[]);assert.deepEqual(external,[]);await writeFile(path.join(output,'browser-results.json'),JSON.stringify({checks,errors,external,summary:done},null,2));
   }catch(e){await page.screenshot({path:path.join(output,'failure.png'),fullPage:true}).catch(()=>{});await writeFile(path.join(output,'failure.txt'),String(e)+'\n'+await page.locator('body').innerText());throw e;}
   finally{await browser.close();}

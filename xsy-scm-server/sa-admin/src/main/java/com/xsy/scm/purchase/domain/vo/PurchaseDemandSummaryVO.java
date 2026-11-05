@@ -26,7 +26,7 @@ public class PurchaseDemandSummaryVO {
     private String categoryName;
 
     /**
-     * 需求单位（订单销售单位快照，来自 {@code xsy_sales_order_item.sale_unit_snapshot}）。
+     * 需求单位（订单下单时的销售单位，来自 {@code xsy_sales_order_item.sale_unit_snapshot}）。
      */
     private String demandUnit;
 

@@ -260,7 +260,7 @@ class PaymentIntentBalanceTest {
         assertThat(receiptFact.getValue().providerAmount()).isEqualByComparingTo("100");
         assertThat(receiptFact.getValue().succeededAt()).isEqualTo(paidAt);
         assertThat(receiptFact.getValue().providerTransactionNo()).isEqualTo("WX20");
-        // 收款事实与钱包权益是两条事实：一个回答公司实收多少，一个回答形成了多少权益
+        // 收款记录与钱包权益是两条记录：一个回答公司实收多少，一个回答形成了多少权益
         verify(sink).rechargeFromPayment(9L, 2L, new BigDecimal("100.0000"), 20L, paidAt);
         verifyNoInteractions(consumptionProvider, consumption, settlements, sources);
     }

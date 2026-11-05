@@ -24,19 +24,19 @@ import java.time.ZoneId;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 经营指标的单一来源与确认口径（PG IT）。
+ * 经营指标的单一来源与确认规则（PG IT）。
  *
  * <p>钉住三件事，它们都不会报错、只会给出一个看起来正常的错数：
  * <ol>
  * <li>销售额按 {@code confirmed_at} 归属，不按 {@code created_at} —— 否则昨天创建今天确认的单会落到昨天。</li>
- * <li>今日 KPI 与趋势序列最后一点必须同口径 —— 大屏的环比正是拿这两者相减，口径不一致会算出无意义的百分比。</li>
+ * <li>今日 KPI 与趋势序列最后一点必须同规则 —— 大屏的环比正是拿这两者相减，规则不一致会算出无意义的百分比。</li>
  * <li>首页 / 大屏 / 报表对同一区间必须给出同一个数。</li>
  * </ol>
  *
- * <p><b>本类验的是口径，不是数据范围</b>，因此以超管身份执行，让夹具造的单必然落在统计窗口内；范围收窄由
+ * <p><b>本类验的是规则，不是数据范围</b>，因此以超管身份执行，让夹具造的单必然落在统计窗口内；范围收窄由
  * {@code ScmScreenDataScopePgIT} 负责。
  */
-@DisplayName("经营指标单一来源与确认口径（PG IT）")
+@DisplayName("经营指标单一来源与确认规则（PG IT）")
 class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
 
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
@@ -54,7 +54,7 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
     void loginAsAdministrator() {
         RequestEmployee employee = new RequestEmployee();
         employee.setEmployeeId(1L);
-        employee.setActualName("经营指标口径 IT");
+        employee.setActualName("经营指标规则 IT");
         employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
         employee.setAdministratorFlag(true);
         employee.setDepartmentId(1L);
@@ -103,7 +103,7 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("今日 KPI 与趋势序列最后一点同口径（大屏环比依赖这一点）")
+    @DisplayName("今日 KPI 与趋势序列最后一点同规则（大屏环比依赖这一点）")
     void todayKpiMatchesTrendLastPoint() {
         ScmDataScopeContext scope = dataScopeService.resolve();
         SalesMetrics sales = metricsService.todaySales(scope);

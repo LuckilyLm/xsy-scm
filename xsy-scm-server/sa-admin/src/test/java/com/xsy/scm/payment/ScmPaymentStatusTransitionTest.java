@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 支付意图与退款的状态转换表。
  *
  * <p>
- * 转换表本身就是契约：Service 只调 {@code canTransition}，不再各写一份 if。 表一旦恒假，所有意图创建都会停在
+ * 转换表本身就是约定：Service 只调 {@code canTransition}，不再各写一份 if。 表一旦恒假，所有意图创建都会停在
  * {@code PAYMENT_INTENT_STATE_INVALID}， 因此这里逐格钉住允许与不允许的转换。
  */
 class ScmPaymentStatusTransitionTest {
@@ -42,7 +42,7 @@ class ScmPaymentStatusTransitionTest {
         assertThat(ScmPaymentRefundStatusEnum.canTransition("CREATED", "NOPE")).isFalse();
     }
 
-    /** 终态不可回退：支付是外部事实，本地改状态改不掉客户已经付过的钱。 */
+    /** 终态不可回退：支付是外部记录，本地改状态改不掉客户已经付过的钱。 */
     @Test
     void terminalStatusesNeverTransitionAgain() {
         for (ScmPaymentIntentStatusEnum from : ScmPaymentIntentStatusEnum.values()) {

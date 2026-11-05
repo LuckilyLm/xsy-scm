@@ -123,7 +123,7 @@ class ProductPgIT {
         defaultUnit.setSpecName("默认单位");
         defaultUnit.setProductType("NON_STANDARD");
         defaultUnit.setStatus("ON_SHELF");
-        // 不设置 saleUnit：新建表单字段默认斤，服务端按这个值校验单位字典并落库
+        // 不设置 saleUnit：新建表单字段默认斤，服务端按这个值校验单位字典并写入数据库
         form.setSkuList(new ArrayList<>(List.of(defaultUnit)));
 
         Long id = service.add(form);
@@ -221,7 +221,7 @@ class ProductPgIT {
     void searchesEveryLegacyField() {
         Long id = service.add(product());
         var detail = query.detail(id);
-        // V147 起 SPU / SKU 编码由后端发号，按编码检索只能用落库值，不能沿用造数时传入的字符串
+        // V147 起 SPU / SKU 编码由后端发号，按编码检索只能用写入数据库值，不能沿用造数时传入的字符串
         List<String> keywords = List.of(
                 "",
                 detail.getSpuCode(),

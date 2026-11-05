@@ -26,10 +26,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * 账期授信占用的正式净额口径（PAY-02，真实 PostgreSQL）。
+ * 账期授信占用的正式净额规则（PAY-02，真实 PostgreSQL）。
  *
  * <p>
- * 钉住一条不变量：<b>授信占用的金额必须与最终开出的应收同口径</b> —— 实重 × 锁定价 − 冻结优惠的等比分摊。
+ * 钉住一条不变量：<b>授信占用的金额必须与最终开出的应收同规则</b> —— 实重 × 锁定价 − 已确认优惠的等比分摊。
  * 此前占用按订单的 {@code settlement_total_amount}（优惠前）加总，优惠越大占用越虚高，客户会被自己的优惠挡住：
  * 额度明明够付优惠后的钱，却因为「优惠前」超限而确认不了、下不了单。
  *
@@ -38,11 +38,11 @@ import org.springframework.beans.factory.annotation.Autowired;
  * （{@code status='CONFIRMED'} + {@code NOT EXISTS 应收}），金额由行级实重与 JSONB 优惠分摊算出。两者都在库里。
  *
  * <p>
- * <b>夹具为什么直插优惠事实</b>：冻结优惠的正式路径（领券 → 预览 → 下单 → 确认时冻结）由
- * {@code MallPromotionCheckoutPgIT} 覆盖；本类要测的是「优惠已经冻结之后，占用怎么算」，因此把
+ * <b>夹具为什么直插优惠记录</b>：已确认优惠的正式路径（领券 → 预览 → 下单 → 确认时保存）由
+ * {@code MallPromotionCheckoutPgIT} 覆盖；本类要测的是「优惠已经保存之后，占用怎么算」，因此把
  * {@code xsy_order_discount} 作为输入固定下来。
  */
-@DisplayName("账期授信占用的正式净额口径（PAY-02，PG IT）")
+@DisplayName("账期授信占用的正式净额规则（PAY-02，PG IT）")
 class MallCreditExposurePgIT extends ScmW5PgITBase {
 
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
@@ -51,7 +51,7 @@ class MallCreditExposurePgIT extends ScmW5PgITBase {
     private static final String ORDERED_QUANTITY = "3.0000";
     private static final String ACTUAL_QUANTITY = "2.0000";
 
-    /** 冻结优惠 0.5000 按下单金额 3.6000 等比分摊到实重金额 2.4000 上 = 0.3333，净额 2.0667。 */
+    /** 已确认优惠 0.5000 按下单金额 3.6000 等比分摊到实重金额 2.4000 上 = 0.3333，净额 2.0667。 */
     private static final String FROZEN_DISCOUNT = "0.5000";
     private static final BigDecimal GROSS_AMOUNT = new BigDecimal("2.4000");
     private static final BigDecimal NET_AMOUNT = new BigDecimal("2.0667");
@@ -149,7 +149,7 @@ class MallCreditExposurePgIT extends ScmW5PgITBase {
         jdbc.update("UPDATE xsy_customer SET credit_limit = ? WHERE id = ?", new BigDecimal("2.2000"), customerId);
         evictMybatisCache();
 
-        // 本单金额取小额，看的是「已占用之后还剩多少」；占用本身的口径在上一个用例里已钉住
+        // 本单金额取小额，看的是「已占用之后还剩多少」；占用本身的规则在上一个用例里已钉住
         BigDecimal newOrderAmount = new BigDecimal("0.1000");
         CustomerCreditCheckVO check = orderCreditService.checkSelfSettlement(customerId, newOrderAmount);
         assertThat(check.getConfirmedOrderAmount()).isEqualByComparingTo(NET_AMOUNT);
@@ -178,9 +178,9 @@ class MallCreditExposurePgIT extends ScmW5PgITBase {
     }
 
     /**
-     * 直接落一条冻结优惠事实（含行级等比分摊），模拟「确认命令已经冻结过优惠」。
+     * 直接落一条已确认优惠记录（含行级等比分摊），模拟「确认命令已经保存过优惠」。
      *
-     * <p>行基础金额取 {@code ordered_line_amount}（下单量 × 锁定价），与正式冻结路径同口径。
+     * <p>行基础金额取 {@code ordered_line_amount}（下单量 × 锁定价），与正式保存路径同规则。
      */
     private void freezeDiscount(Long orderId, String discountAmount) {
         jdbc.update("""

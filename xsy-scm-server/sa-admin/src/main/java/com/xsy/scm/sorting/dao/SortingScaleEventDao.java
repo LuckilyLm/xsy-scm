@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Param;
  * 电子秤事件读写。
  *
  * <p>
- * 只追加不删除，设备读数要能追溯。状态流转（待处理 → 已接受 / 已驳回）用 SQL 直接写， 因为每次还要同时记下处理人。
+ * 只能新增不删除，设备读数要能追溯。状态流转（待处理 → 已接受 / 已驳回）用 SQL 直接写， 因为每次还要同时记下处理人。
  */
 @Mapper
 public interface SortingScaleEventDao extends BaseMapper<SortingScaleEventEntity> {
@@ -35,7 +35,7 @@ public interface SortingScaleEventDao extends BaseMapper<SortingScaleEventEntity
     int markRejected(@Param("id") Long id, @Param("version") Integer version, @Param("reason") String reason,
         @Param("operator") String operator);
 
-    /** 按操作幂等号取筐记录；重试命中时返回原记录。 */
+    /** 按操作防重复处理号取筐记录；重试命中时返回原记录。 */
     SortingScaleEventEntity selectByOperationId(@Param("operationId") String operationId);
 
     /** 追加一筐；{@code event_key} 或 {@code operation_id} 冲突返回 0，调用方重查后判定重放还是换内容。 */

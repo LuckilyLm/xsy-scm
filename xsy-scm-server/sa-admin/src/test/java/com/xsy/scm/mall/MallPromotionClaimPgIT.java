@@ -37,7 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * 商城客户自助领券的并发与幂等（PG IT，无外层事务）。
+ * 商城客户自助领券的并发与防重复处理（PG IT，无外层事务）。
  *
  * <p>关外层事务的原因与 {@code DeliveryDispatchConcurrencyPgIT} 相同：把多个线程塞进同一个测试事务，
  * 它们共享同一条连接、互相排队，「并发」是假的。
@@ -46,11 +46,11 @@ import org.springframework.transaction.support.TransactionTemplate;
  * <ol>
  *   <li><b>并发领券不超上限</b>：每人限领与发放总量都在模板行锁内计数，同一模板并发领取串行，
  *       最终实例数恰好等于上限，不多一张；</li>
- *   <li><b>同一幂等键不重复领券</b>：领券幂等键带 {@code MALL_PROMOTION_COUPON_CLAIM:{customerId}}
+ *   <li><b>同一防重复请求编号不重复领券</b>：领券防重复请求编号带 {@code MALL_PROMOTION_COUPON_CLAIM:{customerId}}
  *       前缀，同一客户同一键重试拿回首次结果，不生成第二张券实例。</li>
  * </ol>
  */
-@DisplayName("商城领券并发与幂等（PG IT）")
+@DisplayName("商城领券并发与防重复处理（PG IT）")
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class MallPromotionClaimPgIT extends ScmW5PgITBase {
 
@@ -118,10 +118,10 @@ class MallPromotionClaimPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("同一幂等键重试拿回首次领券，不生成第二张实例")
+    @DisplayName("同一防重复请求编号重试拿回首次领券，不生成第二张实例")
     void sameIdempotencyKeyReturnsFirstClaim() {
         asAdmin();
-        Long couponId = claimableCoupon("幂等", null, null);
+        Long couponId = claimableCoupon("防重复处理", null, null);
         Long customerId = newCustomer();
         RequestMallCustomer customer = mallCustomer(customerId);
         String key = key("idem");
@@ -129,8 +129,8 @@ class MallPromotionClaimPgIT extends ScmW5PgITBase {
         Long first = mallPromotionService.claim(customer, couponId, key);
         Long replay = mallPromotionService.claim(customer, couponId, key);
 
-        assertThat(replay).as("同一幂等键重试必须拿回首次领取的券实例").isEqualTo(first);
-        assertThat(claimCount(couponId, customerId)).as("幂等重试不生成第二张券实例").isEqualTo(1);
+        assertThat(replay).as("同一防重复请求编号重试必须拿回首次领取的券实例").isEqualTo(first);
+        assertThat(claimCount(couponId, customerId)).as("防重复处理重试不生成第二张券实例").isEqualTo(1);
     }
 
     @Test

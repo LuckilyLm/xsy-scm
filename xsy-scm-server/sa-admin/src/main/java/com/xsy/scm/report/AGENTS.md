@@ -1,8 +1,8 @@
 # 报表域
 
-- 沿用根目录规则。Controller负责接口编排与文件输出，Service校验查询和权限，DAO/Mapper只读业务事实；不从报表修改订单、退货、资金或库存。
+- 沿用根目录规则。Controller负责接口协调与文件输出，Service校验查询和权限，DAO/Mapper只读业务记录；不从报表修改订单、退货、资金或库存。
 - 财务期末概览、应收明细和导出共用ScmFinanceReportDao.endingReceivableFrom：按截止时点计算客户/结算主体FIFO余额，完成分摊后再应用负责人和关键字，筛选不得重分配客户抵扣。
-- 客户和业务员销售报表的退款共用ReportDao.salesRefundFacts，日期轴为退款完成时间。订单来源与负责人跟随筛选；商品条件只匹配实际批准退回的行，净额沿用冻结优惠比例，舍入尾差在过滤前归集，避免一单多商品重复统计整笔退款。
-- 历史退款缺少退货行时，无商品条件仍保留整笔事实；商品条件下不按原单全部商品猜分摊。报表金额与成本未知时不得用零替代。
+- 客户和业务员销售报表的退款共用ReportDao.salesRefundFacts，日期轴为退款完成时间。订单来源与负责人跟随筛选；商品条件只匹配实际批准退回的行，净额沿用已确认优惠比例，舍入尾差在过滤前归集，避免一单多商品重复统计整笔退款。
+- 历史退款缺少退货行时，无商品条件仍保留整笔记录；商品条件下不按原单全部商品猜分摊。报表金额与成本未知时不得用零替代。
 - 回归入口包括ScmFinanceReportPgIT、ScmReportPgIT；它们需要隔离PostgreSQL测试库，不能在业务库上执行。源码用例不代表已完成运行验收。
 - 月利润的公共validate同时守卫外部账单读取；客户版Excel从同一已授权export结果生成，不直接另查财务表。CustomerMonthlyProfitStatementPgIT和ScmCustomerMonthlyExcelServiceTest覆盖金额、期间、缺成本与权限语义。

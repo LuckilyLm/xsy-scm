@@ -21,11 +21,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * 配送打印追踪的 PostgreSQL 校验：订单/客户双视角聚合、正式生成计次、幂等与并发累加、
+ * 配送打印追踪的 PostgreSQL 校验：订单/客户双视角聚合、正式生成计次、防重复处理与并发累加、
  * 版本 / 集合变化拒绝旧请求，以及「生成打印绝不扣库存、绝不推进状态」的负向断言。
  *
  * <p>只读视图按司机维度收口并按权限抹金额，本类的调用者因此需要「全部范围 + 全部功能点」；
- * 范围与金额口径由 {@code ScmDeliveryDataScopePgIT} 专门覆盖。
+ * 范围与金额计算规则由 {@code ScmDeliveryDataScopePgIT} 专门覆盖。
  */
 class DeliveryPrintTrackingIT extends ScmW5PgITBase {
     @Autowired
@@ -199,12 +199,12 @@ class DeliveryPrintTrackingIT extends ScmW5PgITBase {
         return ctx;
     }
 
-    /** 同样三张订单的线路，但停在待排线：用于验证移出订单后重新组单的聚合口径。 */
+    /** 同样三张订单的线路，但停在待排线：用于验证移出订单后重新组单的聚合规则。 */
     private Ctx draftRoute() {
         Long sku = newOnShelfSku("PRN");
         Long c1 = newCustomer();
         Long c2 = newCustomer();
-        // 停靠点坐标来自订单冻结地址；缺失时按「客户地址 == 冻结地址」回落到客户坐标，
+        // 停靠点坐标来自订单下单时保存的地址；缺失时按「客户地址 == 下单时保存的地址」回落到客户坐标，
         // 故 customer.address 必须等于基类 fixture 硬编码的订单地址，且坐标在下单前写入。
         jdbc.update("UPDATE xsy_customer SET address='W5 IT 地址',longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id IN (?,?)", c1, c2);
         Long a = confirmedSalesOrder(c1, sku, "1.0000", "1.0000");

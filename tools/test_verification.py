@@ -106,7 +106,7 @@ class MigrationChecksumGuardTest(unittest.TestCase):
             return func(*args)
 
     def temp_tree(self, directory):
-        """把真实迁移目录与快照复制进临时目录，返回 (dir, snapshot, args)。"""
+        """把真实迁移目录与保存的数据复制进临时目录，返回 (dir, snapshot, args)。"""
         root = Path(directory)
         migrations = root / "migration"
         migrations.mkdir()
@@ -156,7 +156,7 @@ class MigrationChecksumGuardTest(unittest.TestCase):
     def test_renumbering_an_applied_migration_fails_the_guard(self):
         with tempfile.TemporaryDirectory() as directory:
             migrations, _, args = self.temp_tree(directory)
-            # 字节没动，只把已冻结模块改到一个空闲号，历史记录仍会悬空。
+            # 字节没动，只把已保存模块改到一个空闲号，历史记录仍会悬空。
             # 目标号必须现算——写死 V44 之类会与后来落地的真实迁移撞号，
             # 届时守卫先抛「版本号重复」，本用例想验的改号路径根本走不到。
             taken = guard.scan_migrations(migrations)

@@ -216,7 +216,7 @@ class ScmFinanceReceivableRollbackPgIT extends ScmW6PgITBase {
                             + "                       WHERE source_type = 'SALES_ORDER' AND source_id = ?)",
                     Integer.class, chain.orderId())).as("应收未成立 → 不留生成日志").isZero();
 
-            // 库存事实与出库单不因财务失败被改动：本 SKU 的 SALES_OUT 还是发车时那一条
+            // 库存记录与出库单不因财务失败被改动：本 SKU 的 SALES_OUT 还是发车时那一条
             assertThat(jdbc.queryForObject(
                     "SELECT count(*) FROM xsy_inventory_movement WHERE movement_type = 'SALES_OUT'"
                             + " AND sku_id = ? AND deleted = FALSE", Integer.class, chain.skuId()))

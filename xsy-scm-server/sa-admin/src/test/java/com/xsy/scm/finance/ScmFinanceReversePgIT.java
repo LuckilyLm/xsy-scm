@@ -48,7 +48,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
     private FinancePaymentDao financePaymentDao;
 
     @Test
-    @DisplayName("收款反向追加事实、记录余额快照，重复同键请求重放首次结果")
+    @DisplayName("收款反向追加记录、记录查询时的余额数据，重复同键请求重放首次结果")
     void receiptReverseIsAppendOnlyAndIdempotent() throws Exception {
         Long customerId = newCustomer();
         FinanceReceiptVO original = addReceipt(customerId, "120.0000");
@@ -87,7 +87,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("已用核销额非零时拒绝反向，且不新增反向事实或日志")
+    @DisplayName("已用核销额非零时拒绝反向，且不新增反向记录或日志")
     void receiptReverseIsBlockedUntilWriteOffIsReversed() {
         Long customerId = newCustomer();
         FinanceReceiptVO original = addReceipt(customerId, "50.0000");
@@ -103,7 +103,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("不同幂等键重复反向同一收款时由唯一索引语义返回 41143")
+    @DisplayName("不同防重复请求编号重复反向同一收款时由唯一索引语义返回 41143")
     void receiptCannotBeReversedTwice() {
         FinanceReceiptVO original = addReceipt(newCustomer(), "25.0000");
         FinanceReceiptReverseForm form = receiptReverseForm(original.getReceiptId(), "单据重复");
@@ -128,7 +128,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("供应商付款可反向，原付款不变，反向付款保留对方快照")
+    @DisplayName("供应商付款可反向，原付款不变，反向付款保留对方保存的数据")
     void supplierPaymentCanBeReversedWithoutSupplierScope() {
         FinancePaymentVO original = addSupplierPayment(newSupplier("REVERSE-PAY"), "70.0000");
         Map<String, Object> originalBefore = paymentRow(original.getPaymentId());
@@ -192,7 +192,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("客户退款付款反向沿用 customerSellerScope，空范围失败关闭")
+    @DisplayName("客户退款付款反向沿用 customerSellerScope，范围为空时拒绝访问")
     void customerPaymentReverseFailsClosedWithoutSellerScope() {
         Long customerId = newCustomer();
         Long paymentId = insertRefundPayment(customerId);

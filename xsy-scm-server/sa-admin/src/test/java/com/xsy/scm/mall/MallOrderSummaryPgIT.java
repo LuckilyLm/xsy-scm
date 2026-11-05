@@ -17,11 +17,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * 商城「下单商品汇总」的聚合口径。
+ * 商城「下单商品汇总」的聚合规则。
  *
  * <p>
  * 订单行直接写入而不走结算下单：被测对象是对已持久化行的只读聚合，走一遍选品、地址与结算只会把商品和促销域的依赖拖进来，
- * 与聚合口径无关。写入的每一行都满足订单表的非空约束与状态取值。
+ * 与聚合规则无关。写入的每一行都满足订单表的非空约束与状态取值。
  */
 class MallOrderSummaryPgIT extends ScmW5PgITBase {
 

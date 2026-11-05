@@ -1,5 +1,5 @@
 /**
- * 配送模块契约测试。
+ * 配送模块约定检查。
  *
  * 由 3 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -18,12 +18,12 @@ import {
 // ---------------------------------------------------------------- 来源：delivery-l3-contract.test.mjs
 {
   /**
-   * P2（物流配送 L3：发车 / 订单级签收 / 完成线路）前端契约单测。
+   * P2（物流配送 L3：发车 / 订单级签收 / 完成线路）前端约定单测。
    *
-   * 只钉「违背之后页面照样能跑、但业务事实已经错了」的那一类：
+   * 只钉「违背之后页面照样能跑、但业务记录已经错了」的那一类：
    *
    * 1. 发车带 `Idempotency-Key`，签收与完成不带。发车重复提交会重复扣库存，后端为此专门做了
-   *    幂等回放；签收 / 完成的签名里没有这个头，多加会把「别人先签了」的版本冲突掩盖成一次成功。
+   *    重复请求返回原结果；签收 / 完成的签名里没有这个头，多加会把「别人先签了」的版本冲突掩盖成一次成功。
    * 2. 签收载荷用 `delivery_route_order` 的行版本，不是线路版本。用线路版本等于拿线路版本去
    *    覆盖别人对这一行的签收，同一条线路因此无法并发签收，而且会静默丢掉冲突信号。
    * 3. `outboundNo` 为 null 是成功：整条线路实发 0 时不存在出库单，把它当失败会让用户重复发车。
@@ -32,7 +32,7 @@ import {
    *    声明的集合内，该集合又必须是后端 `@SaCheckPermission` / V64 的子集。
    * 6. 配送状态与分配状态是两件事：行只按 `assignmentStatus === 'ACTIVE'` 筛，
    *    状态标签只按 `fulfillmentStatuses` 渲染，取值与 V63 的 CHECK 同集合。
-   * 7. 数量与金额不做前端算术，null 一律渲染 `—`（`0` 会被读成「实发 0」这个真实事实）。
+   * 7. 数量与金额不做前端算术，null 一律渲染 `—`（`0` 会被读成「实发 0」这个真实记录）。
    *
    * 扫描前剥掉注释：这些文件里大量出现「不冲减库存」「不代表发货确认」这类反例说明，
    * 不剥注释会把纪律文档本身判成违规。
@@ -65,7 +65,7 @@ import {
   const printPane = code(PRINT_PANEL);
   const fulfillmentPane = code(FULFILLMENT_PANEL);
 
-  /** 配送域后端契约里的功能码（V43 / V55 / V64 的 `t_menu.web_perms`，与 `@SaCheckPermission` 同源）。 */
+  /** 配送域后端约定里的功能码（V43 / V55 / V64 的 `t_menu.web_perms`，与 `@SaCheckPermission` 同源）。 */
   const CONTRACT_DELIVERY_PERMS = [
     'scm:delivery:route:query',
     'scm:delivery:route:add',
@@ -88,19 +88,19 @@ import {
     'scm:delivery:vehicle:edit',
   ];
 
-  /** 取 deliveryApi 里某个方法的整行源码（用于按方法判载荷口径，不按「附近若干字符」判）。 */
+  /** 取 deliveryApi 里某个方法的整行源码（用于按方法判载荷规则，不按「附近若干字符」判）。 */
   function apiLine(method) {
     const line = api.match(new RegExp(`^\\s*${method}: .*`, 'm'))?.[0];
     assert.ok(line, `deliveryApi 缺 ${method}()`);
     return line.trim();
   }
 
-  // ------------------------------------------------------------------ 幂等与载荷
+  // ------------------------------------------------------------------ 防重复处理与载荷
 
   test('发车是带 Idempotency-Key 的 POST；签收与完成只靠 version，绝不带该头', () => {
     assert.match(api, /'Idempotency-Key': key/);
     assert.match(api, /crypto\.randomUUID\(\)/);
-    // 键的释放只在成功之后：失败保留同一 UUID，重试才会回放原结果而不是再生成一张出库单。
+    // 键的释放只在成功之后：失败保留同一 UUID，重试才会历史记录查询原结果而不是再生成一张出库单。
     assert.match(api, /idempotentKeys\.delete\(signature\)/);
     assert.ok(api.indexOf('idempotentKeys.delete(signature)') > api.indexOf('const result = await request'), '必须在请求返回之后才释放键');
 
@@ -108,10 +108,10 @@ import {
       apiLine('dispatch'),
       'dispatch: (id: Id, version: number) => idempotentCommand<DispatchResult>(`/routes/${id}/dispatch`, {version}),'
     );
-    // 后端 `sign` / `complete` 的签名里没有 Idempotency-Key 参数：带上就是把乐观锁冲突回放成成功。
+    // 后端 `sign` / `complete` 的签名里没有 Idempotency-Key 参数：带上就是把乐观锁冲突历史记录查询成成功。
     for (const method of ['sign', 'complete']) {
       const line = apiLine(method);
-      assert.match(line, /=> call<string>\('post'/, `${method} 必须走普通 call()，不经过幂等通道`);
+      assert.match(line, /=> call<string>\('post'/, `${method} 必须走普通 call()，不经过防重复处理通道`);
       assert.ok(!/idempotent|Idempotency/i.test(line), `${method} 不得发送 Idempotency-Key`);
     }
     assert.match(apiLine('sign'), /`\/routes\/\$\{id\}\/orders\/\$\{orderId\}\/sign`/);
@@ -124,14 +124,14 @@ import {
     assert.match(submit, /version: target\.version/, '签收必须回传 delivery_route_order 自己的版本');
     assert.ok(!/version: route\.version/.test(submit), '拿线路版本签收等于用线路版本覆盖别人的行编辑');
     assert.match(submit, /deliveryApi\.sign\(route\.id, target\.orderId/);
-    // 异常无原因不发请求（后端 41118 同口径），且拦住的位置在发请求之前。
+    // 异常无原因不发请求（后端 41118 同规则），且拦住的位置在发请求之前。
     const guard = submit.search(/result === 'EXCEPTION' && !reason/);
     assert.ok(guard > -1, '缺 EXCEPTION 原因必填的前端校验');
     assert.ok(guard < submit.search(/deliveryApi\.sign\(/), '校验必须在发请求之前');
     // SIGNED 的原因可选，但不能把空白串当原因写进去（库里 CHECK 用 btrim 判空）。
     assert.match(submit, /reason: reason \|\| undefined/);
 
-    // 弹窗按结果分流：异常签收必须留下「不冲库存」这句口径，否则用户会以为拒收会自动回到库存。
+    // 弹窗按结果分流：异常签收必须留下「不冲库存」这句规则，否则用户会以为拒收会自动回到库存。
     const modal = view.match(/<a-modal\s+v-model:open="signVisible"[\s\S]*?<\/a-modal>/)?.[0];
     assert.ok(modal, '缺签收弹窗');
     assert.match(modal, /signForm\.result === 'EXCEPTION'[\s\S]*?不冲减/);
@@ -159,7 +159,7 @@ import {
     for (const forbidden of ['dispatch', 'complete', 'openSign', 'deliveryApi.sign', '发车', '签收', '完成线路', 'inventory-outbound']) {
       assert.ok(!printPane.includes(forbidden), `打印面板出现了 L3 动作 ${forbidden}`);
     }
-    // ADM-07 之后发货单版面交给打印中心渲染（`DELIVERY_NOTE` 模板 + 冻结版本/业务模型），
+    // ADM-07 之后发货单版面交给打印中心渲染（`DELIVERY_NOTE` 模板 + 保存后的版本/业务模型），
     // 所以这个面板不再自己调任何配送接口：一次命令都不许出现，比原来「只许 print()」更严。
     const printView = code(PRINT_VIEW);
     assert.match(printView, /document-type="DELIVERY_NOTE"/);
@@ -203,7 +203,7 @@ import {
     return {map, operateLog: operateLog[1]};
   }
 
-  test('配送视图出现的权限码全部来自单一来源，且该来源是后端契约的子集', () => {
+  test('配送视图出现的权限码全部来自单一来源，且该来源是后端约定的子集', () => {
     const {map: DELIVERY_PERM, operateLog: OPERATE_LOG_PERM} = declaredPerms();
     const declared = [...Object.values(DELIVERY_PERM), OPERATE_LOG_PERM];
     for (const perm of Object.values(DELIVERY_PERM)) {
@@ -311,13 +311,13 @@ import {
       assert.ok(!/parseFloat\(/.test(source), `${name} 不该把定点串转成浮点再算`);
       assert.ok(!/\.reduce\(|\+=/.test(source), `${name} 出现了前端聚合`);
     }
-    // 空单号 / 空签收时间 / 空原因都必须是 —；0 在这些列里是一个真实存在的事实，不能被当作空值复用。
+    // 空单号 / 空签收时间 / 空原因都必须是 —；0 在这些列里是一个真实存在的记录，不能被当作空值复用。
     assert.match(basePanel, />—（整条线路实发为 0，未生成出库单）</);
     assert.match(fulfillmentPane, /\{\{ datetime\(record\.signedAt\) \}\}/);
     assert.match(fulfillmentPane, /record\.signedBy \|\| '—'/);
     assert.match(fulfillmentPane, /record\.signReason \|\| '—'/);
     assert.ok(!/\|\| 0\b/.test(view), '空值不得回落成 0');
-    // 对齐口径（状态居中、操作居中；操作列固定右侧时表头与按钮同一中心线）。
+    // 对齐规则（状态居中、操作居中；操作列固定右侧时表头与按钮同一中心线）。
     assert.match(fulfillmentPane, /title: '配送状态', dataIndex: 'fulfillmentStatus', width: 110, align: 'center'/);
     assert.match(fulfillmentPane, /title: '操作', dataIndex: 'action', width: 160, align: 'center' as const/);
   });
@@ -334,7 +334,7 @@ import {
     const mounted = outbound.match(/onMounted\(async \(\) => \{[\s\S]*?\}\)/)?.[0];
     assert.ok(mounted, '缺 onMounted');
     assert.match(mounted, /applyDeepLink\(route\.query\)[\s\S]*?queryData\(\)/);
-    // 配送页只带走编号，不复制出库数量 / 金额口径。
+    // 配送页只带走编号，不复制出库数量 / 金额计算规则。
     assert.ok(!/inventory-outbound-list[^\n]*(quantity|amount)/.test(view));
   });
 
@@ -408,7 +408,7 @@ import {
 // ---------------------------------------------------------------- 来源：delivery-route-detail-contract.test.mjs
 {
   /*
-   * 配送线路详情页契约：地图里程语义、页签权限归一、返回列表带筛选。
+   * 配送线路详情页约定：地图里程语义、页签权限归一、返回列表带筛选。
    *
    * 这三处都是「错了也不报错」的行为，只能读源码钉住：缺定位时给出总里程会被读成整线统计；
    * 从 URL 改页签参数能绕过排线权限；返回按钮丢掉列表筛选会让用户重筛一遍。
@@ -474,7 +474,7 @@ import {
 // ---------------------------------------------------------------- 来源：delivery-print-contract.test.mjs
 {
   /**
-   * 配送打印追踪的前端契约测试。
+   * 配送打印追踪的前端约定检查。
    *
    * 守的是打印计次这条 L0-L2 增量里前端最容易悄悄违背、违背后又不报错的几条：
    * 1. 双视角只读查询走 GET，正式生成打印走带 Idempotency-Key 的 POST；
@@ -502,7 +502,7 @@ import {
     assert.match(api, /printCommand<PrintResult>\(`\/routes\/\$\{id\}\/print\/orders`/);
     assert.match(api, /printCommand<PrintResult>\(`\/routes\/\$\{id\}\/print\/customers`/);
     // 命令必须带 Idempotency-Key，失败保留同一 UUID、成功后换新键（与订单域一致）。
-    // P2 起打印与发车共用同一条幂等通道（`idempotentCommand`），端点与载荷本身没有变化。
+    // P2 起打印与发车共用同一条防重复处理通道（`idempotentCommand`），端点与载荷本身没有变化。
     assert.match(api, /'Idempotency-Key': key/);
     assert.match(api, /crypto\.randomUUID\(\)/);
     assert.match(api, /idempotentKeys\.delete\(signature\)/);
@@ -515,9 +515,9 @@ import {
 
   test('the delivery API still exposes no inventory write / GPS tracking endpoint', () => {
     // 本用例写于 L0–L2（当时连 dispatch / sign 都还不存在）。P2 L3 落地后，
-    // 发车 / 签收 / 完成三个端点成为事实，由 p2-delivery-l3-contract.test.mjs 正向钉住它们的载荷口径。
+    // 发车 / 签收 / 完成三个端点成为记录，由 p2-delivery-l3-contract.test.mjs 正向钉住它们的载荷规则。
     // 仍然成立、也仍然要害的那部分：配送域绝不自己写库存，也不接 GPS 轨迹 ——
-    // 出库单是发车在库存域内生成的事实，配送侧只读它返回的单号。
+    // 出库单是发车在库存域内生成的记录，配送侧只读它返回的单号。
     assert.doesNotMatch(api, /inventory|\bgps\b|track|sign-?off|departure|库存出库|轨迹/i);
     assert.ok(!/\/scm\/inventory|outboundApi|reservationApi/.test(api), '配送 API 不得直接触达库存域接口');
   });

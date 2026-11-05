@@ -40,7 +40,7 @@ public class FinanceCustomerExpenseController {
     }
 
     /**
-     * 同一月份多客户一次登记；整批一个幂等键，任一行失败全部回滚。
+     * 同一月份多客户一次登记；整批一个防重复请求编号，任一行失败全部回滚。
      */
     @PostMapping("/batch-add")
     @SaCheckPermission(FinancePermission.EXPENSE_ADD)

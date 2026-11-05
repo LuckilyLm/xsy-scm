@@ -39,7 +39,7 @@ public enum PaymentErrorCode implements ScmErrorCode {
     PAYMENT_RECONCILIATION_DUPLICATED(41350, "该渠道该业务日已完成对账"),
 
     /** 仅 MOCK 渠道可指定剧本；真实渠道带剧本一律拒收。 */
-    PAYMENT_MOCK_SCENARIO_INVALID(41351, "只有本地模拟渠道可以指定回放剧本"),
+    PAYMENT_MOCK_SCENARIO_INVALID(41351, "只有本地模拟渠道可以指定模拟支付结果"),
 
     /** 渠道回报金额与本地应付金额不一致：不自动改账，差异交由对账处理。 */
     PAYMENT_PROVIDER_AMOUNT_MISMATCH(41352, "渠道回报金额与本地应付金额不一致"),

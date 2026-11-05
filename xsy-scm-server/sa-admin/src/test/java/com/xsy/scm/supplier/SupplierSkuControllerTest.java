@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 商品-供应商关系端点契约测试。
+ * 商品-供应商关系端点约定检查。
  *
  * <p>重点锁定两件事：
  * <ol>

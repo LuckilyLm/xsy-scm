@@ -50,7 +50,7 @@ class PurchaseAllocationCancelRacePgIT extends ScmW5PgITBase {
         // 无外层事务 → 每次 DAO 调用都是新 session → 一级缓存天然为空
     }
 
-    /** 一次分配的请求体；{@code quantity} 用字符串，与 API 口径一致。 */
+    /** 一次分配的请求体；{@code quantity} 用字符串，与 API 规则一致。 */
     private PurchaseDemandAllocateForm allocateForm(PurchaseDemandEntity demand, Long orderItemId,
                                                     String quantity) {
         PurchaseDemandAllocateForm form = new PurchaseDemandAllocateForm();
@@ -170,7 +170,7 @@ class PurchaseAllocationCancelRacePgIT extends ScmW5PgITBase {
 
         PurchaseDemandEntity finalDemand = reloadDemand(demand.getId());
         assertThat(finalDemand.getAllocatedQuantity())
-                .as("需求 allocated_quantity 必须回落到 0：分配侧若要落库必然发生在取消之前，取消必然把它释放掉")
+                .as("需求 allocated_quantity 必须回落到 0：分配侧若要写入数据库必然发生在取消之前，取消必然把它释放掉")
                 .isEqualByComparingTo("0.0000");
         assertThat(finalDemand.getStatus())
                 .as("分配全部释放后需求退回 PENDING").isEqualTo("PENDING");
@@ -179,7 +179,7 @@ class PurchaseAllocationCancelRacePgIT extends ScmW5PgITBase {
     /**
      * 起一个线程：登录 → 到起跑线 → 等号令 → 跑 → 记异常。
      *
-     * <p>与 {@code ScmFinancePaymentRacePgIT} 同一套编排，保持仓库内并发用例一致。
+     * <p>与 {@code ScmFinancePaymentRacePgIT} 同一套协调，保持仓库内并发用例一致。
      */
     private void start(String name, Runnable body, AtomicReference<Throwable> failure,
                        CountDownLatch ready, CountDownLatch start, CountDownLatch done) {

@@ -65,7 +65,7 @@
         FROM xsy_inventory_stocktake s
         LEFT JOIN xsy_warehouse w ON w.id = s.warehouse_id
         WHERE s.deleted = FALSE
-        <!-- 仓库数据范围：盘点单是整仓口径，未授权仓的盘点存在性都不应暴露；scope 缺失时恒假。 -->
+        <!-- 仓库数据范围：盘点单是整仓规则，未授权仓的盘点存在性都不应暴露；scope 缺失时恒假。 -->
         <if test="scope != null and scope.all == false">
             AND s.warehouse_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>

@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 财务付款只追加不修改，退款付款以退款单来源唯一索引防重；反向付款无原业务来源 ID，不占用该索引。
+ * 财务付款只能新增不修改，退款付款以退款单来源唯一索引防重；反向付款无原业务来源 ID，不占用该索引。
  */
 @Mapper
 public interface FinancePaymentDao extends AppendOnlyMapper<FinancePaymentEntity> {

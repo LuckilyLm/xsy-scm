@@ -7,7 +7,7 @@
     <!--
       xsy_product_sku / xsy_product_spu 各联两次（源 s* / 目标 t*）：
       转换的语义天然是「从哪到哪」，只给一套 SKU 展示字段会让用户必须点进详情才能确认方向。
-      LEFT JOIN 且不带 deleted 谓词 —— 按不可变 id 做展示解析，把已下架 SKU 藏起来比显示它更危险。
+      LEFT JOIN 且不带 deleted 谓词 —— 按不可修改 id 做展示解析，把已下架 SKU 藏起来比显示它更危险。
     -->
     <select id="listByConversionId" resultMap="itemVoMap">
         SELECT i.id, i.conversion_id, i.source_sku_id, i.source_quantity, i.source_unit, i.target_sku_id,
@@ -24,7 +24,7 @@
         ORDER BY i.id ASC
     </select>
 
-    <!-- 待审核重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删口径一致） -->
+    <!-- 待审核重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删规则一致） -->
     <update id="deleteByConversionId">
         UPDATE xsy_inventory_conversion_item
         SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}

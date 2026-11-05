@@ -4,7 +4,7 @@ import com.xsy.scm.finance.domain.dto.FinanceCreditRuleDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-/** 只读客户与供应商账期，冻结结果由财务域保存。 */
+/** 只读客户与供应商账期，保存结果由财务域保存。 */
 @Mapper
 public interface FinanceSettlementRuleDao {
     /**

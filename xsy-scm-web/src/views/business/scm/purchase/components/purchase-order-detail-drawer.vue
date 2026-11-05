@@ -296,7 +296,7 @@ function canFill(item: OrderItem): boolean {
   return order.value?.accountId == null && Boolean(item.pricePending) && !order.value?.lockedFlag && windowOpen(item);
 }
 
-/** 改价只对「还没有确认收货」的行：确认后库存成本已冻结，改价会造成账实不符。 */
+/** 改价只对「还没有确认收货」的行：确认后库存成本已保存，改价会造成账实不符。 */
 function canAdjust(item: OrderItem): boolean {
   return order.value?.accountId == null && !item.pricePending && Number(item.receivedQuantity ?? '0') === 0;
 }

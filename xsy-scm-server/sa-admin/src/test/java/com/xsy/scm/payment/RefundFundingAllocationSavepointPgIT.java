@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>为什么要这一组用例</b>：{@code RefundFundingAllocationService.executeRows} 对每条来源单独捕获异常并把该行记为
  * {@code FAILED}，但余额返还与在线退款准备这两个子入口原先用 {@code MANDATORY} 参加外层事务。子调用一旦抛出异常，
- * 事务拦截器会把<b>整笔外层事务</b>标记为 rollback-only，外层随后写入的失败状态与幂等结果在提交时被一并丢弃，
+ * 事务拦截器会把<b>整笔外层事务</b>标记为 rollback-only，外层随后写入的失败状态与防重复处理结果在提交时被一并丢弃，
  * 表现为 {@code UnexpectedRollbackException}。改成 {@code NESTED}（同一连接的 JDBC 保存点）后，失败只回滚该来源自己的写入。
  *
  * <p>这两件事只有真实数据库能证明：保存点是连接级语义，而「整笔回滚」只在提交那一刻才暴露。
@@ -30,8 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 这条路径有真实写入，保存点回滚掉什么可以被逐行核对。
  *
  * <p><b>夹具为什么直接插分摊行</b>：计划由 {@code freeze} 按订单资金来源生成，而混合资金订单还要为在线腿补财务收款单。
- * 本类钉的是「单条来源失败时外层事务的边界」，把「已冻结的余额 + 在线分摊行」作为输入固定下来，
- * 不重复验证冻结与资金完整性校验（那两组另有覆盖）。
+ * 本类钉的是「单条来源失败时外层事务的边界」，把「已保存的余额 + 在线分摊行」作为输入固定下来，
+ * 不重复验证保存与资金完整性校验（那两组另有覆盖）。
  */
 @DisplayName("退款分摊单来源失败的保存点隔离与重试（PG IT）")
 class RefundFundingAllocationSavepointPgIT extends ScmW5PgITBase {
@@ -46,7 +46,7 @@ class RefundFundingAllocationSavepointPgIT extends ScmW5PgITBase {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     @DisplayName("在线来源取不到渠道实现时只回滚该来源的写入，余额腿与失败状态仍提交")
     void onlinePreparationFailureRollsBackOnlyItsOwnWrites() {
-        // WECHAT 已冻结契约但尚无实现：退款单能建出来，向渠道注册表取实现时抛「不支持的渠道」。
+        // WECHAT 已保存约定但尚无实现：退款单能建出来，向渠道注册表取实现时抛「不支持的渠道」。
         MixedFundingFixture fixture = completedRefundWithMixedFunding("WECHAT", "SUCCEEDED");
 
         RefundFundingExecuteForm form = new RefundFundingExecuteForm();
@@ -75,7 +75,7 @@ class RefundFundingAllocationSavepointPgIT extends ScmW5PgITBase {
 
         assertThat(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM xsy_idempotency_record"
                 + " WHERE idempotency_key = ? AND result_data IS NOT NULL)", Boolean.class, key))
-                .as("外层事务必须正常提交，失败状态与幂等结果都要落库")
+                .as("外层事务必须正常提交，失败状态与防重复处理结果都要写入数据库")
                 .isTrue();
         assertThat(financePaymentCount(fixture.orderRefundId()))
                 .as("来源没有全部成功，不登记财务付款")
@@ -223,7 +223,7 @@ class RefundFundingAllocationSavepointPgIT extends ScmW5PgITBase {
 
         // ck_order_refund_completion：COMPLETED 必须带 completed_at。
         // return_id 在本表没有外键，只被 uk_order_refund_return_active 约束为全表唯一；
-        // 本用例是 NOT_SUPPORTED、行会真实落库，所以必须从退货 id 序列取值 ——
+        // 本用例是 NOT_SUPPORTED、行会真实写入数据库，所以必须从退货 id 序列取值 ——
         // 用退款序列取值会让「假 return_id」落进真实退货 id 的取值区间，后续用例建出的
         // 真实退货迟早撞上这些历史行（ScmFinanceReceivableRedPgIT 就是这样失败的）。
         Long orderRefundId = jdbc.queryForObject("""

@@ -2,7 +2,7 @@
  * 2026-10-28 现场确认后的 P0 第一批：浏览器侧验收。
  *
  * 只覆盖「后台页面上能看见、点得到」的行为；取价、负库存、账款抵扣的账务结论已由 Pg IT 覆盖，
- * 这里不重复断言后端规则，避免同一口径写两遍。
+ * 这里不重复断言后端规则，避免同一套规则写两遍。
  */
 import {test, expect} from './scm-test-base';
 import {randomUUID} from 'node:crypto';
@@ -167,7 +167,7 @@ test.describe('scm-p0-customer-sheets', () => {
     await expect(preview).toContainText('17.5000');
 
     await modal.getByRole('button', {name: accessibleName('打印')}).click();
-    // 打印记录落库才算真的「打过」：无头浏览器没有打印对话框可断言
+    // 打印记录写入数据库才算真的「打过」：无头浏览器没有打印对话框可断言
     await expect
       .poll(
         async () => {

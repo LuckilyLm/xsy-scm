@@ -1,5 +1,5 @@
 /**
- * 客户模块契约测试。
+ * 客户模块约定检查。
  *
  * 由 5 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -19,7 +19,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
 // ---------------------------------------------------------------- 来源：customer-360-layout-contract.test.mjs
 {
   /**
-   * 客户 360° 版式契约单测（客户列表小幅优化 + 客户详情重构）。
+   * 客户 360° 版式约定单测（客户列表小幅优化 + 客户详情重构）。
    *
    * 本轮把详情页从「一长串 bordered descriptions」改成「页头上下文 + 经营概览 + 业务 Card」，
    * 并把列表里的金额、编码收口到统一 formatter 与 `.scm-mono`。
@@ -176,7 +176,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     assert.match(DETAIL_THEME, /\.scm-detail-read\s*\{[\s\S]*?max-width:\s*1360px/);
   });
 
-  test('客户资料与别名共六个 Tab，lazy 取数口径不变', () => {
+  test('客户资料与别名共六个 Tab，lazy 取数规则不变', () => {
     const keys = [...DETAIL.matchAll(/<a-tab-pane key="([^"]+)"/g)].map((m) => m[1]);
     assert.deepEqual(keys, ['base', 'orders', 'frequent', 'agreement', 'visibility', 'aliases']);
     assert.match(DETAIL, /key="aliases"/);
@@ -418,7 +418,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
 // ---------------------------------------------------------------- 来源：detail-pages-sections-contract.test.mjs
 {
   /**
-   * 客户 / 供应商 / 订单三个详情页的分区契约测试。
+   * 客户 / 供应商 / 订单三个详情页的分区约定检查。
    *
    * 三页原本都把「基本信息 + 账期 / 关联表」串成一长串 `a-descriptions` + `a-divider`，
    * 编码、时间与业务字段混在一起，没有分区锚点（核心业务信息优先、日志再次、系统信息最后）。
@@ -531,13 +531,13 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
 // ---------------------------------------------------------------- 来源：customer-360-contract.test.mjs
 {
   /**
-   * 客户 360° 上下文（customer-detail.vue 五 Tab）的前端契约测试。
+   * 客户 360° 上下文（customer-detail.vue 五 Tab）的前端约定检查。
    *
-   * 钉死这一波最容易被日后改动悄悄破坏、且破坏后不报错的前端边界（后端聚合与排除口径由
+   * 钉死这一波最容易被日后改动悄悄破坏、且破坏后不报错的前端边界（后端聚合与排除规则由
    * CustomerFrequentSkuIT 覆盖）：
    * 1. 常购商品走只读 GET 聚合（getRequest + days/limit），不是新建副本表也不是写命令；
    * 2. 五个上下文视图全部复用各领域既有查询接口（customer/order/pricing/visibility），
-   *    不引入第二份事实，也不在详情里落任何写操作；
+   *    不引入第二份记录，也不在详情里落任何写操作；
    * 3. 所有 Tab 锁定同一个 customerId（深链参数即唯一上下文）；
    * 4. 常购「数量」列语义是订购量而非结算 / 实重量、以 4 位小数字符串原样展示（不按金额格式化），
    *    且行按 SKU＋单位拆分、明确不跨单位求和；最近成交价缺失即空不兜底。
@@ -602,7 +602,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
 // ---------------------------------------------------------------- 来源：query-filter-memory.test.mjs
 {
   /**
-   * 列表查询条件「按用户 + 页面」本地记忆的前端契约测试。
+   * 列表查询条件「按用户 + 页面」本地记忆的前端约定检查。
    *
    * 钉死这一波最容易被日后改动悄悄破坏的边界：
    * 1. 存储键纯函数：不同 employeeId / 不同 pageKey 生成不同键，且带统一前缀（用户之间不串味）；
@@ -638,7 +638,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     const vue = code(LIST);
     assert.match(vue, /import \{useQueryFilterMemory\} from '\/@\/lib\/query-filter-memory';/);
     assert.match(vue, /const queryMemory = useQueryFilterMemory<CustomerQuery>\('scm:customer:list'\);/);
-    // 查询：先回到第 1 页再落偏好，落的是当前筛选快照
+    // 查询：先回到第 1 页再落偏好，落的是当前筛选保存的数据
     assert.match(vue, /function search\(\)\s*\{\s*filters\.pageNum = 1;\s*queryMemory\.save\(\{\.\.\.filters\}\);/);
     // 重置：清空偏好
     assert.match(vue, /function reset\(\)\s*\{[\s\S]*?queryMemory\.clear\(\);/);

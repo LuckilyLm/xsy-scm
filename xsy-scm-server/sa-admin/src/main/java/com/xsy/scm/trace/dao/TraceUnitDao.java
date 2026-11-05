@@ -14,7 +14,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 包装码与包装事件的读写。包装事件只追加；包装码可作废但不可删除、码不复用。SQL 见 mapper/scm/trace/TraceUnitDao.xml。
+ * 包装码与包装事件的读写。包装事件只能新增；包装码可作废但不可删除、码不复用。SQL 见 mapper/scm/trace/TraceUnitDao.xml。
  */
 @Mapper
 public interface TraceUnitDao {

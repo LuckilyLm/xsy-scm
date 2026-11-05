@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 付款命令的结果：只回本次记录本身，够支撑幂等重放与调用确认。
+ * 付款命令的结果：只回本次记录本身，够支撑重复请求返回原结果与调用确认。
  *
  * <p>
  * 刻意不含派生列（待核销余额、已用额、结清状态、核销行），那些由查询时计算。
@@ -25,7 +25,7 @@ public class FinancePaymentVO {
     private Long counterpartyId;
 
     /**
-     * 登记时冻结的对方名称快照，不是主档当前名。
+     * 登记时保存的对方当时的名称，不是主档当前名。
      */
     private String counterpartyName;
 

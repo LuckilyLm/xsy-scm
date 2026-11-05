@@ -5,7 +5,7 @@
         SELECT nextval(pg_get_serial_sequence('xsy_v2.xsy_customer', 'id'))
     </select>
 
-    <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式契约） -->
+    <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式约定） -->
     <sql id="customerColumns">
         c.id, c.version, c.visibility_policy, c.customer_code, c.name, c.business_category_id,
             c.customer_group_id,
@@ -23,7 +23,7 @@
         FROM xsy_customer c
         WHERE c.deleted = FALSE
         <!--
-          数据范围（裁决「P0 基线收口裁决」第 2、6 条）：scope 缺省即失败关闭。
+          数据范围（裁决「P0 基线收口裁决」第 2、6 条）：scope 缺省即校验失败时拒绝操作。
           scope.all 时不拼谓词，因此 seller_id IS NULL 的未分配客户只对持全量/分配权者可见。
         -->
         <if test="scope != null and scope.all == false">

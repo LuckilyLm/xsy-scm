@@ -100,7 +100,7 @@ export interface SortingTaskItem {
   specNameSnapshot?: string | null;
   saleUnitSnapshot: string;
   productTypeSnapshot?: SortingProductType | string | null;
-  /** 赠品行装的是赠品数量（冻结权益）。 */
+  /** 赠品行装的是赠品数量（确认时保存的权益）。 */
   plannedQuantitySnapshot: string | null;
   /** 赠品行恒为 null。 */
   sortedQuantity: string | null;
@@ -114,7 +114,7 @@ export interface SortingTaskItem {
   sourceType?: SortingItemSourceType | null;
 }
 
-/** 分次登记只追加记录；最终数量要单独确认，出库不读这些记录。 */
+/** 分次登记只能新增记录；最终数量要单独确认，出库不读这些记录。 */
 export interface SortingPartPayload {
   taskItemId: Id;
   version: number;

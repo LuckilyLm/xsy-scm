@@ -25,7 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 /**
  * 20:00 客户分拣单/送货单批量打印。
  *
- * <p>按配送日期取当日已确认订单，逐单独立成功或失败；同一批次键重试按单幂等，不重复生成打印记录。
+ * <p>按配送日期取当日已确认订单，逐单独立成功或失败；同一批次键重试按单防重复处理，不重复生成打印记录。
  */
 class ScmPrintBatchIT extends ScmW5PgITBase {
 
@@ -86,7 +86,7 @@ class ScmPrintBatchIT extends ScmW5PgITBase {
         int records = printRecords(firstOrder) + printRecords(secondOrder);
         assertThat(records).isEqualTo(2);
 
-        // 同一次点击的重试沿用同一个批量键，逐单命中幂等重放
+        // 同一次点击的重试沿用同一个批量键，逐单命中重复请求返回原结果
         scmPrintBatchService.print(form);
         assertThat(printRecords(firstOrder) + printRecords(secondOrder)).isEqualTo(records);
     }

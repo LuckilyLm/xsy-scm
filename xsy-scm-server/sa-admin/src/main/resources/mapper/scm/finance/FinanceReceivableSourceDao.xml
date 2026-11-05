@@ -20,7 +20,7 @@
 
     <!--
       财务域对配送 / 订单 / 库存表只读：本文件只有 SELECT。
-      读取一律显式写 deleted = FALSE，与 uk_finance_receivable_source_active 的谓词同口径；
+      读取一律显式写 deleted = FALSE，与 uk_finance_receivable_source_active 的谓词同规则；
       唯一例外是 JOIN 进来的 xsy_sales_order：它是这张应收的来源主体，主档被软删也不能让
       一次真实签收静默变成「什么都不生成」（漏账比多读一行危险），缺行时结果集为空、
       由服务侧的 null 判据失败并让签收回滚。
@@ -38,9 +38,9 @@
     </select>
 
     <!--
-      量取出库行、价取订单行（出库行没有价格列，订单行没有实发量列——两张表各持一半事实）。
+      量取出库行、价取订单行（出库行没有价格列，订单行没有实发量列——两张表各持一半记录）。
 
-      不加 assignment_status 条件：已登记为 SIGNED 这一事实不因分配行后续被移出线路而消失。
+      不加 assignment_status 条件：已登记为 SIGNED 这一记录不因分配行后续被移出线路而消失。
       订单行不加 deleted 过滤（与 FinancePayableSourceDao 同一条理由）：
       sales_order_item_id 是发车时按订单行解析好的引用，加了过滤只会把「少一行 = 少算一笔应收」
       变成静默漏账。单位取订单行的 sale_unit_snapshot：发车链路不写出库行的 unit_snapshot，
@@ -84,8 +84,8 @@
     </select>
 
     <!--
-      退货批准事实（单头）。reason 是建单时填写的退货原因，红字直接继承，
-      财务侧不另造原因、不现取 now()（第三批 D-2：红字是已成立业务事实的映射）。
+      退货批准记录（单头）。reason 是建单时填写的退货原因，红字直接继承，
+      财务侧不另造原因、不现取 now()（第三批 D-2：红字是已成立业务记录的映射）。
     -->
     <select id="selectApprovedReturn" resultType="com.xsy.scm.finance.domain.dto.FinanceReturnSourceDto">
         SELECT rt.id AS orderReturnId, rt.return_no AS returnNo, rt.order_id AS orderId, rt.approved_at AS approvedAt,
@@ -119,7 +119,7 @@
     </select>
 
     <!--
-      独立退货的红字行：商品三件套与金额全部取退货行快照，不回查订单明细。
+      独立退货的红字行：商品三件套与金额全部取退货当时的明细，不回查订单明细。
       ordered_line_amount 为空表示不承担订单优惠（独立退货没有订单优惠可反向）。
     -->
     <select id="selectApprovedIndependentReturnLines"
@@ -147,8 +147,8 @@
 
     <!--
       有效红字行：逐行跳过非正金额。金额原样取 approved_amount，
-      不在 SQL 里乘回来 —— 订单域已按 round(approved_quantity × locked_unit_price, 4) 落库。
-      商品三件套从来源订单行取（xsy_order_return_item 不存快照）。
+      不在 SQL 里乘回来 —— 订单域已按 round(approved_quantity × locked_unit_price, 4) 写入数据库。
+      商品三件套从来源订单行取（xsy_order_return_item 不存保存的数据）。
     -->
     <select id="selectApprovedReturnLines" resultType="com.xsy.scm.finance.domain.dto.FinanceReturnSourceLineDto">
         SELECT ri.id AS orderReturnItemId, ri.order_item_id AS orderItemId, oi.sku_id AS skuId,
@@ -165,9 +165,9 @@
     </select>
 
     <!--
-      订单确认时冻结的行级优惠分摊。allocations 是受控 JSON 数组
+      订单确认时保存的行级优惠分摊。allocations 是受控 JSON 数组
       [{orderItemId, baseAmount, discountAmount}]，这里摊平成「订单行 → 优惠额」；
-      没有冻结记录（订单无优惠）时返回空集，调用方按 0 优惠处理。
+      没有保存记录（订单无优惠）时返回空集，调用方按 0 优惠处理。
       刻意不在 SQL 里做等比折算：折算比例依赖「该行本次金额 / 下单金额」，
       是行级计算，放在 Service 里与正常、红字两条路径共用同一段代码。
     -->
@@ -179,7 +179,7 @@
         WHERE od.sales_order_id = #{salesOrderId}
     </select>
 
-    <!-- 与签收应收同一组列：量取实重、价取冻结售价；应付净额由同一段 discountShare 算出，不另起口径。 -->
+    <!-- 与签收应收同一组列：量取实重、价取确认时保存的售价；应付净额由同一段 discountShare 算出，不另起规则。 -->
     <select id="selectOrderPayableLines" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto">
         SELECT id AS orderItemId, actual_quantity AS actualQuantity, ordered_quantity AS orderedQuantity,
             locked_unit_price AS lockedUnitPrice, ordered_line_amount AS orderedLineAmount

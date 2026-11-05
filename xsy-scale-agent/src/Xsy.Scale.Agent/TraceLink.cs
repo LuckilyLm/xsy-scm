@@ -8,7 +8,7 @@ internal static class TraceLink
     /// <summary>替换唯一占位符并检查标签二维码容量；不访问网址或调用平台。</summary>
     /// <param name="template">空值/空白表示待配置；非空须是含一个{eventKey}的HTTPS链接模板。</param>
     /// <param name="eventKey">非空本地原始记录号，按URL组件编码；不得替换为平台正式unitCode。</param>
-    /// <returns>可冻结的完整链接；未配置时为null。</returns>
+    /// <returns>可保存的完整链接；未配置时为null。</returns>
     /// <exception cref="AgentFault">模板无效或无法在15.5mm二维码中保持至少0.30mm模块。</exception>
     internal static string? Build(string? template, string eventKey)
     {
@@ -31,7 +31,7 @@ internal static class TraceLink
     }
 
     /// <summary>按标准库生成含四模块静区的矩阵；超出短标签容量时明确拒绝。</summary>
-    /// <param name="url">非空已校验冻结链接；不允许自动缩网址或裁切。</param>
+    /// <param name="url">非空已校验保存链接；不允许自动缩网址或裁切。</param>
     /// <returns>调用方须释放的矩阵。</returns>
     /// <exception cref="AgentFault">二维码过密，不满足当前标签的模块尺寸。</exception>
     internal static QRCodeData Matrix(string url)

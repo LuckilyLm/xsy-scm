@@ -14,7 +14,7 @@ async function withData(promise, map) {
 /** 已启用分类树，空分类也保留；商品列表另按客户可见范围过滤。 */
 /**
  * 服务端分类节点用 name，页面统一读 categoryName（与商品卡片字段一致）。
- * 已经带 categoryName 的数据（mock 契约层、历史响应）保留原值，
+ * 已经带 categoryName 的数据（mock 约定层、历史响应）保留原值，
  * 否则整列分类名会变成空字符串，只剩图标。
  */
 function adaptCategory(node) {

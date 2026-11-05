@@ -59,7 +59,7 @@ export function dispose():void {active=false;controller?.abort();clearInterval(t
 
 /** 精确数量格式化；无值显示破折号，不把未知值补零。
  * @param value 十进制字符串或实时读数；null/undefined/空串/非法值显示破折号。
- * @returns 不舍入的十进制显示文字，不修改冻结重量。
+ * @returns 不舍入的十进制显示文字，不修改保存重量。
  */
 export function quantity(value:string|number|null|undefined):string {
   if (value === null || value === undefined || value === '') return '—';

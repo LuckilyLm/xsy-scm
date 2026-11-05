@@ -20,7 +20,7 @@ npm run dev
 - `src/views`：页面，SCM 业务页面在 `views/business/scm`
 - `src/components`：共享组件
 - `src/theme`：SCM 主题、表格与抽屉等公共样式
-- `test`：基于源码文本的契约单测（`node:test`）
+- `test`：基于源码文本的约定单测（`node:test`）
 - `e2e`：按业务模块合并的 Playwright 浏览器用例；`e2e-chains` 为跨模块黄金链
 
 ## 界面与表格
@@ -31,7 +31,7 @@ npm run dev
 
 - 格式统一由 Prettier 维护：`npm run format` 写入，`npm run format:check` 只检查。配置见 `.prettierrc.cjs`，替换配置前先确认 `format:check` 全量通过。
 - 默认不运行测试或构建；用户授权后按改动范围运行 `npm run lint`、`npm run typecheck`、`npm run typecheck:e2e`、`npm test`。`npm test` 使用 Node 内置测试运行器，不需要启动浏览器。
-- `test/` 下的契约用例通过正则读取源码，允许空白与换行随格式化变化；断言针对业务结构，不要用精确空白锁死实现。
+- `test/` 下的约定用例通过正则读取源码，允许空白与换行随格式化变化；断言针对业务结构，不要用精确空白锁死实现。
 
 ## 构建与 E2E
 

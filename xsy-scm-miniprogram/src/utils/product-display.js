@@ -1,5 +1,5 @@
 /*
- * 商品展示口径（列表卡片 / 详情页共用）
+ * 商品展示规则（列表卡片 / 详情页共用）
  *
  * 这里只做**展示映射**，不做任何业务判断或金额运算（规划 §18 同源原则 / §38.6）：
  * - 库存状态由服务端枚举映射为文案，客户端不自行推断「够不够」；
@@ -15,7 +15,7 @@ export const STOCK_STATUS = {
   AVAILABLE: 'AVAILABLE',
   INSUFFICIENT: 'INSUFFICIENT',
   OUT_OF_STOCK: 'OUT_OF_STOCK',
-  /** 商城尚未确定可售库存口径时服务端显式返回，页面如实显示「库存未知」 */
+  /** 商城尚未确定可售库存规则时服务端显式返回，页面如实显示「库存未知」 */
   UNKNOWN: 'UNKNOWN',
 };
 
@@ -110,7 +110,7 @@ export function nonStandardTip(product) {
  * 价格来源文案：服务端给 label 优先，其次按枚举翻译。
  *
  * 认不出的枚举一律不显示标签 —— 宁可少一个角标，也不要把 STANDARD 这类
- * 英文常量端给客户；新增来源时由 price-source-contract 契约测试拦下。
+ * 英文常量端给客户；新增来源时由 price-source-contract 约定检查拦下。
  */
 const PRICE_SOURCE_LABELS = {
   MARKET: '市场价',
@@ -132,7 +132,7 @@ export function priceSourceLabel(product) {
  * 价格来源语义档位：agreement / type / time / standard / unpriced。
  *
  * 与 stockLevel 同一套路：这里只给语义名，各组件自己映射成 BEM 类名与配色，
- * 避免把色值或类名写进展示口径层。时价是短期价格，单独成档以免和市场价混色。
+ * 避免把色值或类名写进展示规则层。时价是短期价格，单独成档以免和市场价混色。
  */
 export function priceSourceLevel(product) {
   const source = product && product.priceSource;

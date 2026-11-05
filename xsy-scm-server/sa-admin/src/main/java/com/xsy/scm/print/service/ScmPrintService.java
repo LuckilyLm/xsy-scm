@@ -148,7 +148,7 @@ public class ScmPrintService {
      * 正式打印：保存模板版本、模板内容与版面内容，并返回这份结果。
      *
      * <p>
-     * 要求幂等键：一次提交重试不该产生两条记录。同键重放直接返回首次的结果，拿到的是当时那张，而不是重新渲染的现在这张。
+     * 要求防重复请求编号：一次提交重试不该产生两条记录。同键重放直接返回首次的结果，拿到的是当时那张，而不是重新渲染的现在这张。
      */
     @Transactional(rollbackFor = Exception.class)
     public ScmPrintRenderVO print(String documentType, Long businessId, ScmPrintActionForm form, String key) {
@@ -190,7 +190,7 @@ public class ScmPrintService {
      * 历史重印：只读当时保存的内容。
      *
      * <p>
-     * 金额按当前调用者重新检查一遍权限：保存的内容里可能有原打印人有权限、当前人没权限的金额列， 直接回放等于用一条历史记录绕过金额权限。剔除时行里的值也一并删掉，只删列定义会把值留在行里。
+     * 金额按当前调用者重新检查一遍权限：保存的内容里可能有原打印人有权限、当前人没权限的金额列， 直接展示原内容等于用一条历史记录绕过金额权限。剔除时行里的值也一并删掉，只删列定义会把值留在行里。
      */
     @Transactional(readOnly = true)
     public ScmPrintRenderVO reprint(Long recordId) {

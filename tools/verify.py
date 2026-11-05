@@ -114,7 +114,7 @@ class Verification:
         `backend` / `e2e` 保持原样，本 scope 只新增、不改既有入口（§27 的硬约束）。
         ArchUnit 不在这里：它是 `*Test`，已随 `mvn test` 执行。
 
-        `frontend` 只覆盖前端自身的类型棘轮、lint、单测与构建。E2E 需要后端、
+        `frontend` 只覆盖前端自身的不允许新增类型错误的检查、lint、单测与构建。E2E 需要后端、
         Vite 与建号脚本等外部前置，把它绑进 `frontend` 会让任何没有这些服务的
         环境（例如只配置前端依赖的本地环境）必然以未覆盖退出。需要连跑时用 `all`，或显式
         再执行一次 `e2e`。

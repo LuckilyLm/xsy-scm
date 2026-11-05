@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 对账差异明细：只追加、只按父单读。
+ * 对账差异明细：只能新增、只按父单读。
  */
 @Mapper
 public interface PaymentReconciliationItemDao extends BaseMapper<PaymentReconciliationItemEntity> {

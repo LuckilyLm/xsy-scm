@@ -4,7 +4,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Xsy.Scale.Agent;
 
-/// <summary>本机持久事实及队列；上传与物理打印都在本地落盘之后执行。</summary>
+/// <summary>本机持久记录及队列；上传与物理打印都在本地落盘之后执行。</summary>
 internal sealed partial class StateStore
 {
     private readonly string connectionString;
@@ -108,7 +108,7 @@ internal sealed partial class StateStore
         return result.ToArray();
     }
 
-    // 旧单次队列也按同一明细的持久化顺序编号；不按重试次数或最近200条投影编号。
+    // 旧单次队列也按同一明细的持久化顺序编号；不按重试次数或最近200条查询结果编号。
     internal int LegacyBasketNumber(LocalEvent record)
     {
         using var db = Open(); using var command = db.CreateCommand();
@@ -224,7 +224,7 @@ internal sealed partial class StateStore
         row.IsDBNull(9) ? null : row.GetString(9));
 }
 
-/// <summary>人工采集只冻结设备事实，平台仍是员工授权和正式分拣结果的最终校验方。</summary>
+/// <summary>人工采集只保存设备记录，平台仍是员工授权和正式分拣结果的最终校验方。</summary>
 internal sealed class CaptureService(AgentOptions options, ScaleState state, StateStore store)
 {
     internal LocalEvent Capture(CaptureRequest request)
@@ -260,10 +260,10 @@ internal sealed class CaptureService(AgentOptions options, ScaleState state, Sta
         return target;
     }
 
-    /// <summary>冻结一笔真实采样但不写库，由调用方把事实和关联意图一起提交。</summary>
+    /// <summary>保存一笔真实采样但不写库，由调用方把记录和关联意图一起提交。</summary>
     /// <param name="request">已校验的非空采集请求；SampleId 必须引用当前有效采样。</param>
     /// <param name="target">与请求关联的有效平台明细，不允许为空；单位须相同或为市斤编码别名。</param>
-    /// <returns>尚未持久化的不可变采集事实。</returns>
+    /// <returns>尚未持久化的不可修改采集记录。</returns>
     /// <exception cref="AgentFault">样本失效、不稳、非净重或单位不符。</exception>
     internal LocalEvent CreateEvent(CaptureRequest request, TaskItem target)
     {

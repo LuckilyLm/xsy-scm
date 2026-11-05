@@ -149,7 +149,7 @@ public class DeliveryRouteController {
         return ResponseDTO.ok();
     }
 
-    // 发车会写库存记录，因此必须带 Idempotency-Key：重复请求回放原结果，不重复扣库存。
+    // 发车会写库存记录，因此必须带 Idempotency-Key：重复请求返回原结果，不重复扣库存。
     @PostMapping("/routes/{id}/dispatch")
     @SaCheckPermission(DeliveryPermission.ROUTE_DISPATCH)
     @OperateLog

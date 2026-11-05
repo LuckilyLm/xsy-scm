@@ -5,7 +5,7 @@ function guard(session) {
   return session ? null : fail(PLATFORM_ERROR_CODE.LOGIN_STATE_INVALID, '登录已失效，请重新登录');
 }
 
-// 本地 mock 只提供空账本，用于页面空态；不伪造充值、授信或应收资金事实。
+// 本地 mock 只提供空账本，用于页面空态；不伪造充值、授信或应收资金记录。
 export const fundsRoutes = [
   {
     method: 'GET',

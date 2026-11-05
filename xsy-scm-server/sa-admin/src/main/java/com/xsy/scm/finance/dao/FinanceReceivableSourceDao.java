@@ -64,7 +64,7 @@ public interface FinanceReceivableSourceDao {
     FinanceIndependentReturnSourceDto selectApprovedIndependentReturn(@Param("orderReturnId") Long orderReturnId);
 
     /**
-     * 独立退货的有效红字行，列与 {@link #selectApprovedReturnLines} 相同，但商品快照与订单元数据都来自退货行自身。
+     * 独立退货的有效红字行，列与 {@link #selectApprovedReturnLines} 相同，但当时的商品资料与订单元数据都来自退货行自身。
      */
     List<FinanceReturnSourceLineDto> selectApprovedIndependentReturnLines(@Param("orderReturnId") Long orderReturnId);
 
@@ -92,7 +92,7 @@ public interface FinanceReceivableSourceDao {
     List<FinanceOrderPayableLineDto> selectPayableLinesByOrders(@Param("salesOrderIds") Collection<Long> salesOrderIds);
 
     /**
-     * 多张订单的冻结优惠行分摊（批量），与 {@link #selectOrderDiscountLines(Long)} 同源同列。
+     * 多张订单的已确认优惠行分摊（批量），与 {@link #selectOrderDiscountLines(Long)} 同源同列。
      */
     List<FinanceOrderDiscountLineDto> selectDiscountLinesByOrders(
         @Param("salesOrderIds") Collection<Long> salesOrderIds);

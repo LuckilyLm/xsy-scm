@@ -47,7 +47,7 @@ public class Level3ProtectConfigService {
     private int loginFailLockSeconds = 1800;
 
     /**
-     * 最低活跃时间（单位：秒），超过此时间没有操作系统就会被冻结，默认-1 代表不限制，永不冻结; 默认 30分钟
+     * 最低活跃时间（单位：秒），超过此时间没有操作系统就会被保存，默认-1 代表不限制，永不保存; 默认 30分钟
      */
     private int loginActiveTimeoutSeconds = -1;
 
@@ -96,7 +96,7 @@ public class Level3ProtectConfigService {
     private ConfigService configService;
 
     /**
-     * 最低活跃时间（单位：秒），超过此时间没有操作系统就会被冻结，默认-1 代表不限制，永不冻结; 默认 30分钟
+     * 最低活跃时间（单位：秒），超过此时间没有操作系统就会被保存，默认-1 代表不限制，永不保存; 默认 30分钟
      */
     public int getLoginActiveTimeoutSeconds() {
         return loginActiveTimeoutSeconds > 0 ? loginActiveTimeoutSeconds : -1;

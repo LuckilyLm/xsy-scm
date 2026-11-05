@@ -24,13 +24,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 商品-供应商关系（{@code xsy_supplier_sku}）在真实 PostgreSQL 上的行为。
  *
  * <p>这是规则密度最高的一张表，因此 IT 覆盖它的全部 legacy 不变量：
- * 整表替换的差量语义、快照冻结、
+ * 整表替换的差量语义、保存的数据保存、
  * 以及<b>最容易被「顺手加个约束」破坏的那条</b>——同一供应商允许多条默认来源。
  *
  * <p>另外单独验证「清空后重新添加同一 SKU」不会撞 {@code uk_supplier_sku_active}，
  * 因为该索引是 partial（{@code WHERE deleted = FALSE}）——这是软删 + 唯一索引组合的经典坑。
  */
-@DisplayName("商品-供应商关系：整表替换与快照（PG IT）")
+@DisplayName("商品-供应商关系：整表替换与保存的数据（PG IT）")
 class SupplierSkuServiceIT extends ScmW2PgITBase {
 
     @Autowired
@@ -76,7 +76,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("首次写入冻结快照：供应商与商品在关联建立后被改名也不影响已存快照")
+    @DisplayName("首次写入历史资料：供应商与商品在关联建立后被改名也不影响已存保存的数据")
     void replaceFreezesSnapshots() {
         Long supplierId = supplier("a");
         Long skuId = newOnShelfSku("A1");
@@ -285,7 +285,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("金额与 JSONB 契约：4 位小数字符串、null 保持 null、规格快照可读")
+    @DisplayName("金额与 JSONB 约定：4 位小数字符串、null 保持 null、商品规格资料可读")
     void decimalAndJsonbContract() throws Exception {
         Long supplierId = supplier("m");
         Long skuId = newOnShelfSku("M1");

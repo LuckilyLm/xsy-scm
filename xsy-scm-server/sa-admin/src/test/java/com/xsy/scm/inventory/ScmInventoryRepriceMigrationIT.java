@@ -27,11 +27,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 的理由：抄一份会让「迁移已验证」变成一句没有依据的话）。
  *
  * <p>V37 修的是「调拨转入 / 转换转入把成本清零」留下的历史数据 —— 那两行余额数量正确、
- * {@code avg_cost} 为 0，成本事实只存在于配对的转出腿流水上。因此本测试的核心是
+ * {@code avg_cost} 为 0，成本记录只存在于配对的转出腿流水上。因此本测试的核心是
  * <b>先造出缺陷上线后的真实数据形状</b>：走完整业务链（收货 → 调拨 / 转换），
  * 再把余额行的均价改回 0（模拟修复前的代码写下的值），然后交给迁移重放。
- * 直接插一行假余额 + 假流水也能让迁移跑出数字，但那证明不了「重放口径」与
- * 「应用代码的记账口径」同源 —— 而这条同源性正是 V37 唯一值得测的地方。
+ * 直接插一行假余额 + 假流水也能让迁移跑出数字，但那证明不了「重放规则」与
+ * 「应用代码的记账规则」同源 —— 而这条同源性正是 V37 唯一值得测的地方。
  *
  * <p>另外三条判据（缺配对转出腿 / 账实不符必须响亮失败，盘盈不得凭空造价）走直插流水：
  * 流水是 append-only（V21 触发器），真实业务路径造不出这些形状，只有直接 INSERT 能。
@@ -101,7 +101,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
     /**
      * 把库里其它零成本行暂时移出 V37 的候选集合。
      *
-     * <p>V37 的候选是全库口径（{@code quantity > 0 AND avg_cost = 0}），而 IT 跑在共享开发库上，
+     * <p>V37 的候选是全库规则（{@code quantity > 0 AND avg_cost = 0}），而 IT 跑在共享开发库上，
      * 里面可能有与本次用例无关、本身账实就不平的零成本行 —— 那会让「V37 能不能修好我这行」
      * 变成「别人留下的破行能不能让我跑完」。只改均价一个字段，且全部在用例事务内，结束即回滚。
      */
@@ -198,7 +198,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
         assertThat(balanceRow(wh2, sku).getQuantity()).as("数量本来就对，重放不该动它")
                 .isEqualByComparingTo("4.0000");
 
-        // 幂等：派生值由账本唯一决定，重跑必须零变化（迁移可能在任何一次启动里被重放评估）。
+        // 防重复处理：派生值由账本唯一决定，重跑必须零变化（迁移可能在任何一次启动里被重放评估）。
         runV37();
         assertThat(avgCostOf(wh2, sku)).isEqualByComparingTo("6.2000");
 
@@ -227,7 +227,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("修复范围只有零均价：非零但口径偏差的行不动（那是 V34 登记的已知近似）")
+    @DisplayName("修复范围只有零均价：非零但规则偏差的行不动（那是 V34 登记的已知近似）")
     void nonZeroRowsAreLeftAlone() {
         Long wh1 = seedWarehouseId();
         Long wh2 = newWarehouse("V37C");
@@ -296,13 +296,13 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
         Long sku = newSkuOfType("v37f", "NON_STANDARD", "ON_SHELF");
         isolateCandidates(List.of(sku));
         insertZeroCostBalance(wh, sku, "5.0000");
-        // STOCKTAKE_GAIN 的 unit_cost 为 NULL：盘点补的是数量，不是采购价格事实。
+        // STOCKTAKE_GAIN 的 unit_cost 为 NULL：盘点补的是数量，不是采购价格记录。
         insertMovement(wh, sku, "STOCKTAKE_GAIN", "STOCKTAKE_ITEM",
                 sentinelItemId(), "5.0000", null);
 
         runV37();
 
-        assertThat(avgCostOf(wh, sku)).as("没有成本事实就仍是 0，不编一个价")
+        assertThat(avgCostOf(wh, sku)).as("没有成本记录就仍是 0，不编一个价")
                 .isEqualByComparingTo("0.0000");
     }
 
@@ -314,7 +314,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 契约
+    // 约定
     // ------------------------------------------------------------------
 
     @Test
@@ -332,7 +332,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("候选口径写在 SQL 里：quantity > 0 AND avg_cost = 0 两处都必须在")
+    @DisplayName("候选规则写在 SQL 里：quantity > 0 AND avg_cost = 0 两处都必须在")
     void candidateScopeIsTheZeroCostSymptom() {
         String step1 = migrationSection(V37, "-- Step 1", "-- Step 2");
         String step2 = migrationSql(V37).substring(migrationSql(V37).indexOf("-- Step 2"));

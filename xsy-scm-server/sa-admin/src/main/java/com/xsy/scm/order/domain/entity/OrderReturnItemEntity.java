@@ -25,7 +25,7 @@ public class OrderReturnItemEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long orderItemId;
     /**
-     * 退货商品与单位快照：原单退货与独立退货都写，避免列表/详情依赖订单明细。
+     * 退货商品与当时的单位：原单退货与独立退货都写，避免列表/详情依赖订单明细。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long skuId;

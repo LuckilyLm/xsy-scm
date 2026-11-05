@@ -5,7 +5,7 @@
 ## Docker Compose
 
 
-Docker Compose 一次启动 Vue3/Nginx、Java 21 后端、PostgreSQL 18、Redis、MinIO，并运行桶策略初始化。该编排用于受限测试与试用，不构成生产对象存储基线。
+Docker Compose 一次启动 Vue3/Nginx、Java 21 后端、PostgreSQL 18、Redis、MinIO，并运行桶策略初始化。该协调用于受限测试与试用，不构成生产对象存储基线。
 
 ```bash
 git clone https://github.com/LuckilyLm/xsy-scm.git
@@ -23,7 +23,7 @@ docker compose ps -a
 - `MINIO_PUBLIC_ENDPOINT` 必须是浏览器和 backend 容器都能访问的地址（如 `https://files.example.com`），不带末尾斜线；不能用 `minio:9000`、`localhost` 或 `127.0.0.1`。S3 Client 与 Presigner 共用该地址。
 - 本机试用若 MinIO 走 HTTP，`.env` 的 `MAVEN_PROFILE` 必须改为 `test`（或 `dev`）；`prod` profile 会强制对象存储的公开地址与签名地址都是 HTTPS，HTTP 端点会导致后端拒绝启动。
 - MinIO API 默认只绑定 `127.0.0.1`；直连时通过 `MINIO_BIND_ADDRESS` 指定内网网卡并用网络 ACL 限制来源，生产入口优先使用 HTTPS 反向代理或托管对象存储，不要默认绑定 `0.0.0.0`。
-- 其余必填项、盘点快照签名密钥和邮件占位配置见 [.env.example](../.env.example) 与 下文配置表。
+- 其余必填项、盘点时保存的数据签名密钥和邮件占位配置见 [.env.example](../.env.example) 与 下文配置表。
 
 | 服务 | 默认宿主机地址 | `.env` 配置 |
 | --- | --- | --- |
@@ -85,7 +85,7 @@ python tools/cutover_schema_baseline.py --apply --expected-database 业务库名
 
 结构核对包含当前列、类型、默认值、identity、约束、索引、函数、触发器、序列定义及说明，忽略业务行、序列当前位置、owner与授权。PostgreSQL可能将无长度varchar常量数组转text[]表示为整体转换或逐项转换，签名只归一这两种等价形式，保留具体值、顺序与类型长度。自建表/索引或实际结构不同会阻止切换，不能通过关闭校验、改checksum或repair绕过。工具不替代备份恢复；完成切换后回滚旧镜像仍需恢复对应备份与原迁移历史。
 
-切换完成后再构建并启动新版本。后续上线结构差异追加V1001及更高版本；已经使用的模块初始化SQL冻结。再次整理基线需另行明确版本边界与旧库切换，不能靠修改CREATE TABLE自动升级现有表。
+切换完成后再构建并启动新版本。后续上线结构差异追加V1001及更高版本；已经使用的模块初始化SQL不能修改。再次整理基线需另行明确版本边界与旧库切换，不能靠修改CREATE TABLE自动升级现有表。
 
 升级前备份 PostgreSQL 与 MinIO 数据，再执行：
 
@@ -107,12 +107,12 @@ PostgreSQL、Redis AOF、MinIO 和后端日志使用 named volume。普通 `dock
 
 | 环境变量 | 配置键 | 用途 | 缺失后果 |
 | --- | --- | --- | --- |
-| `SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET` | `scm.inventory.stocktake.snapshot.secret` | 盘点快照导入凭证的 HMAC-SHA256 签名密钥（`/scm/inventory/stocktake/import/template` 签发的实盘快照） | 应用启动期直接失败：`StocktakeSnapshotSigner` 在 `pre` / `prod` profile 下拒绝空值，也拒绝沿用代码仓库内公开可知的开发默认值 |
+| `SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET` | `scm.inventory.stocktake.snapshot.secret` | 盘点表导入凭证的 HMAC-SHA256 签名密钥（`/scm/inventory/stocktake/import/template` 签发的盘点时保存的数据） | 应用启动期直接失败：`StocktakeSnapshotSigner` 在 `pre` / `prod` profile 下拒绝空值，也拒绝沿用代码仓库内公开可知的开发默认值 |
 
 取值要求：高熵随机串（建议不少于 32 字节随机值），`pre` 与 `prod` 使用不同值，各环境独立保管。
-轮换该值只会让**尚未提交**的快照凭证失效（凭证有效期以分钟计），不影响已入库的盘点单。
+轮换该值只会让**尚未提交**的资料校验凭证失效（凭证有效期以分钟计），不影响已入库的盘点单。
 
-之所以按环境拒绝而不是靠注释提醒：静默退回公开密钥会让「快照与当前账面一致」这一校验变成可伪造的断言，
+之所以按环境拒绝而不是靠注释提醒：静默退回公开密钥会让「保存的数据与当前账面一致」这一校验变成可伪造的断言，
 盘点差异写库前的最后一道防线随之失效。
 
 ### 开发 / 测试

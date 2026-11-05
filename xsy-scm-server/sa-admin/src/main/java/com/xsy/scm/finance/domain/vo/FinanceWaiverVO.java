@@ -46,7 +46,7 @@ public class FinanceWaiverVO {
 
     private String reverseReason;
 
-    /** 冲减余额的那条核销行；对账时按核销口径解释，不另算一套余额。 */
+    /** 冲减余额的那条核销行；对账时按核销规则解释，不另算一套余额。 */
     private Long writeOffId;
 
     private String writeOffNo;

@@ -3,7 +3,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xsy.Scale.Agent;
 
-/// <summary>本地凭条的事务、幂等、恢复与隔离验证；不访问真实驱动。</summary>
+/// <summary>本地凭条的事务、防重复处理、恢复与隔离验证；不访问真实驱动。</summary>
 internal static class LocalTicketTests
 {
     /// <summary>返回隔离本地用例。</summary>
@@ -11,7 +11,7 @@ internal static class LocalTicketTests
     /// <returns>可独立运行的用例集合，失败抛异常。</returns>
     internal static (string Name, Func<Task> Run)[] Cases(string root) =>
     [
-        ("新票冻结溯源链接跨重启补打不采用后来配置", () => Run(() =>
+        ("新票保存溯源链接跨重启补打不采用后来配置", () => Run(() =>
         {
             var c = new Context(root);
             c.Policy.TraceUrlTemplate = "https://trace.example.invalid/t/{eventKey}";
@@ -35,7 +35,7 @@ internal static class LocalTicketTests
             var current = old with { SkuId = "9007199254740995", CustomerId = "9007199254740997" };
             Equal(current, WireJson.Decode<TaskItem>(WireJson.Encode(current)));
         })),
-        ("真实两位小数帧按原净重保存并冻结标签不按50克取整", () => Run(() =>
+        ("真实两位小数帧按原净重保存并保存标签不按50克取整", () => Run(() =>
         {
             foreach (string weight in new[] { "8.55", "8.84", "8.86", "1.01" })
             {
@@ -43,7 +43,7 @@ internal static class LocalTicketTests
                 var record = c.Record(); var ticket = c.Store.LocalTickets(c.Scope).Single();
                 Equal(weight, record.Measurement.RawValue); Equal(weight, record.Measurement.NetWeight);
                 Equal(weight, ticket.Snapshot.NetWeight); Equal("IDENTITY", record.Measurement.ConversionRule);
-                // 重启读取及标签实际渲染都使用冻结值，不能只验证页面按钮已放开。
+                // 重启读取及标签实际渲染都使用保存值，不能只验证页面按钮已放开。
                 var reopened = new StateStore(c.Store.DirectoryPath);
                 Equal(weight, reopened.LocalTickets(c.Scope).Single().Snapshot.NetWeight);
                 using var preview = TicketLayout.Preview(ticket);
@@ -60,7 +60,7 @@ internal static class LocalTicketTests
             Equal(0, c.Store.LocalTickets(c.Scope).Length);
             c.Sql("DROP TRIGGER refuse_ticket;"); c.Record(); Equal(1, c.Store.LocalTickets(c.Scope).Length);
         })),
-        ("同保存操作只生成一张冻结凭条", () => Run(() =>
+        ("同保存操作只生成一张保存凭条", () => Run(() =>
         {
             var c = new Context(root); var request = c.Request();
             var first = c.Baskets.Record(request, "operator"); var second = c.Baskets.Record(request, "operator");

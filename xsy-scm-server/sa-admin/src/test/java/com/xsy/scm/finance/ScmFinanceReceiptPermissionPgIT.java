@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p><b>要证明的是「产品权限真的发布了」，不是「mock 里通过了」。</b>
  * 因此三条断言分别覆盖发布链的三段，没有一条依赖 {@code MockedStatic<StpUtil>}：
  * <ol>
- *   <li>V66 把能力点种进了 {@code t_menu}，并按 {@code role_code} 授给 SCM_FINANCE（配置事实）；</li>
+ *   <li>V66 把能力点种进了 {@code t_menu}，并按 {@code role_code} 授给 SCM_FINANCE（配置记录）；</li>
  *   <li>真实登录用户的权限集合里出现 / 不出现这个串（{@link LoginManager} 走的就是
  *       {@code t_role → t_role_menu → t_menu.api_perms} 那条生产路径，是产品机制本身）；</li>
  *   <li>Controller 上的 {@code @SaCheckPermission} 声明的正是同一个串（防止权限串发布在库里、

@@ -51,12 +51,12 @@ public enum ScmFinanceOperationTypeEnum {
     PAYMENT_REVERSE("撤销付款记录"),
 
     /**
-     * 登记抹零（{@code scm:finance:waiver:add}）：冲减应收的减免事实，不是收款。
+     * 登记抹零（{@code scm:finance:waiver:add}）：冲减应收的减免记录，不是收款。
      */
     WAIVER_ADD("抹零登记"),
 
     /**
-     * 反向抹零（{@code scm:finance:waiver:reverse}）：追加反向核销行，抹零事实置为已反向。
+     * 反向抹零（{@code scm:finance:waiver:reverse}）：追加反向核销行，抹零记录置为已反向。
      */
     WAIVER_REVERSE("撤销抹零"),
 
@@ -71,7 +71,7 @@ public enum ScmFinanceOperationTypeEnum {
     POSTING_UPDATE("外部账单修改"),
 
     /**
-     * 作废过账（{@code scm:finance:posting:void}）：追加作废事实，原记录保留。
+     * 作废过账（{@code scm:finance:posting:void}）：追加作废记录，原记录保留。
      */
     POSTING_VOID("外部账单作废");
 

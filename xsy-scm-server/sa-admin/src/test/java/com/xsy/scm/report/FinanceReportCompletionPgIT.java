@@ -183,7 +183,7 @@ class FinanceReportCompletionPgIT extends ScmW6PgITBase {
         Long customer = newCustomer();
         Long sku = newOnShelfSku("MONTH-COST");
         Long order = confirmedSalesOrder(customer, sku, "1.0000", "1000.0000");
-        // 用不可变应收事实指定月内确认收入；不构造任何库存成本。
+        // 用不可修改应收记录指定月内确认收入；不构造任何库存成本。
         jdbc.update("INSERT INTO xsy_finance_receivable(receivable_no, source_type, source_id, order_id, customer_id,"
             + " customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at)"
             + " VALUES (?, 'SALES_ORDER', ?, ?, ?, '客户', ?, '客户', 'NORMAL', 1000, ?)",

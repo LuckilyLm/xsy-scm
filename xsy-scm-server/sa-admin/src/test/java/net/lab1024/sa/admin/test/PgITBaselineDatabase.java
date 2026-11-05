@@ -5,7 +5,7 @@ import java.sql.DriverManager;
 import org.flywaydb.core.Flyway;
 import org.springframework.test.context.DynamicPropertyRegistry;
 
-/** 冻结模块基线的独立测试库；历史DDL断言不连接执行后续迁移的业务回归库。 */
+/** 保存模块基线的独立测试库；历史DDL断言不连接执行后续迁移的业务回归库。 */
 public final class PgITBaselineDatabase {
     private static String baselineUrl;
 

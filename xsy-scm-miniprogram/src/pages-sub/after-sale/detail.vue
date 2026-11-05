@@ -16,7 +16,7 @@
         </text>
       </view>
 
-      <!-- 售后进度：节点与 done 都由服务端按正式事实给出，客户端不推导 -->
+      <!-- 售后进度：节点与 done 都由服务端按正式记录给出，客户端不推导 -->
       <view v-if="(record.progress || []).length" class="ad-card">
         <view class="ad-card__title">售后进度</view>
         <view v-for="(node, index) in record.progress" :key="node.code" class="ad-step" :class="{ 'ad-step--pending': !node.done }">
@@ -165,7 +165,7 @@
 
   async function doCancel() {
     try {
-      // 幂等键与售后单绑定：网络重试复用同一个键，不会重复撤销
+      // 防重复请求编号与售后单绑定：网络重试复用同一个键，不会重复撤销
       await mallAfterSaleApi.cancel(returnId.value, `aftersale-cancel-${returnId.value}`);
       uni.showToast({ title: '售后申请已撤销', icon: 'none' });
       load();

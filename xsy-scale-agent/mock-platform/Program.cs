@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-// 只在回环地址提供契约替身，不读取集团数据库，也不产生正式业务事实或打印任务。
+// 只在回环地址提供约定替身，不读取集团数据库，也不产生正式业务记录或打印任务。
 var builder = WebApplication.CreateBuilder(args);
 string listen = builder.Configuration["urls"] ?? "http://127.0.0.1:33601";
 if (listen.Split(';').Any(url => !Uri.TryCreate(url, UriKind.Absolute, out var uri) || !uri.IsLoopback || uri.Scheme != "http"))
@@ -127,7 +127,7 @@ if (fixture)
 }
 await app.RunAsync();
 
-// 只给自动验证使用的最小授权投影；字段包装仍需深圳正式接口冻结。
+// 只给自动验证使用的最小授权查询结果；字段包装仍需深圳正式接口保存。
 static object MockJob(string? claimedDevice, bool grouping) => new
 {
     taskId = "9007199254740993", taskNo = "MOCK-TASK", taskVersion = "0", jobId = "mock-job", jobVersion = "0",

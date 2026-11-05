@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 
-/** 标准Mapper的便捷、批量与软删入口都不能绕过追加事实约束。 */
+/** 标准Mapper的便捷、批量与软删入口都不能绕过追加记录约束。 */
 class AppendOnlyMapperTest {
     @Test
     @SuppressWarnings("unchecked")

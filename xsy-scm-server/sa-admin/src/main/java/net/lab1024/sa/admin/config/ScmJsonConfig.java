@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
 @Configuration
 public class ScmJsonConfig {
 
-    /** 补充 SCM 时间与金额的 JSON 序列化规则，保证前后端类型和时区口径一致。 */
+    /** 补充 SCM 时间与金额的 JSON 序列化规则，保证前后端类型和时区规则一致。 */
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer scmOffsetDateTimeCustomizer() {
         return builder -> builder

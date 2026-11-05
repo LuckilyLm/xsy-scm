@@ -28,8 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 所以本类的前置必须造两行：一行收齐、一行欠收。单行订单永远测不出这条规则。
  *
  * <p><b>少收关单不释放需求分配</b>。这与 {@code cancel} / {@code delete} 相反，是有意的 ——
- * 少收意味着「货已经到了一部分」，需求与采购的关联是既成事实；把分配撤掉会让
- * 「已收的货对应哪个客户需求」失去依据。冲销口径（多收/少收怎么结算）不在采购域的用例范围内。
+ * 少收意味着「货已经到了一部分」，需求与采购的关联是既成记录；把分配撤掉会让
+ * 「已收的货对应哪个客户需求」失去依据。冲销规则（多收/少收怎么结算）不在采购域的用例范围内。
  */
 @DisplayName("少收关单：混合收付状态 + 分配保留（PG IT）")
 class PurchaseReceiptShortCloseIT extends ScmW5PgITBase {
@@ -98,7 +98,7 @@ class PurchaseReceiptShortCloseIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("一行收齐 + 一行欠收 → shortClose 成功，状态 SHORT_CLOSED 且原因落库")
+    @DisplayName("一行收齐 + 一行欠收 → shortClose 成功，状态 SHORT_CLOSED 且原因写入数据库")
     void shortCloseAfterPartialReceiptOnMixedLines() {
         MixedFixture fx = mixed("SC1");
         assertThat(fx.order().getItems()).hasSize(2);

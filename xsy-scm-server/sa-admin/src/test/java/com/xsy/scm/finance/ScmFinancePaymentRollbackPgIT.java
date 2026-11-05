@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 付款登记的原子性（PG IT，无外层事务）。
  *
- * <p>付款是一条资金事实，幂等 claim 也在同一个事务里，因此任何一段失败都必须「整笔什么都不留」。
+ * <p>付款是一条资金记录，防重复处理 claim 也在同一个事务里，因此任何一段失败都必须「整笔什么都不留」。
  * 两个失败点各有取证价值：
  * <ul>
  *   <li><b>日志阶段失败</b> —— 留下付款而没有 {@code PAY} 日志，等于资金动作没有证据；</li>
@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * <p>用 {@code NOT_SUPPORTED} 让每次调用自开事务：外层测试事务包着看永远像「什么都没发生」，
  * 那不是回滚的证据。因为本类会<b>真实提交</b>付款，所有断言一律相对调用前的基线测量，
- * 不按全表零断言（那会把别的用例已提交的事实算成自己的泄漏）。
+ * 不按全表零断言（那会把别的用例已提交的记录算成自己的泄漏）。
  */
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @DisplayName("付款登记的事务原子性（F1-3B，PG IT，无外层事务）")
@@ -135,7 +135,7 @@ class ScmFinancePaymentRollbackPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("日志阶段失败：付款单、日志、幂等记录三者零残留")
+    @DisplayName("日志阶段失败：付款单、日志、防重复处理记录三者零残留")
     void operationLogFailureRollsBackTheWholePayment() {
         Long supplierId = supplier();
         String idempotencyKey = prefix + ":log-failure:" + UUID.randomUUID();
@@ -173,7 +173,7 @@ class ScmFinancePaymentRollbackPgIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // B. 同一退款二次付款：来源唯一索引冲突 → 原事实保持、失败侧零残留
+    // B. 同一退款二次付款：来源唯一索引冲突 → 原记录保持、失败侧零残留
     // ------------------------------------------------------------------
 
     @Test
@@ -204,6 +204,6 @@ class ScmFinancePaymentRollbackPgIT extends ScmW5PgITBase {
                 .as("既有框架的真实语义：claim 与业务写同事务，整笔回滚后即 0 行，"
                         + "因此同一把失败 key 可以重放而不是留下一个空结果占位").isZero();
         assertThat(count("SELECT count(*) FROM xsy_finance_payment WHERE id = ?", firstId))
-                .as("原付款一字未动，付款是 append-only 事实").isEqualTo(1);
+                .as("原付款一字未动，付款是 append-only 记录").isEqualTo(1);
     }
 }

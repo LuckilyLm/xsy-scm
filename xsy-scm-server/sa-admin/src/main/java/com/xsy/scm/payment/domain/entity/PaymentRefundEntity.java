@@ -54,7 +54,7 @@ public class PaymentRefundEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String providerRefundNo;
 
-    /** 仅 MOCK：回放剧本（成功 / 失败）。 */
+    /** 仅 MOCK：模拟支付结果（成功 / 失败）。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String mockScenario;
 

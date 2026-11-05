@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 订单级资金退款：先固定比例分摊，再逐来源幂等执行。
+ * 订单级资金退款：先固定比例分摊，再逐来源防重复处理执行。
  */
 @Slf4j
 @Service

@@ -56,11 +56,11 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 未分配订单池被真并发抢单时的收敛（PG IT，无外层事务）。
  *
- * <p>两个人各自发起一次领取或指派，幂等键只能防「同一个请求重发」，防不了「两个人同时点」。
+ * <p>两个人各自发起一次领取或指派，防重复请求编号只能防「同一个请求重发」，防不了「两个人同时点」。
  * 财务上「一张订单只能有一个负责人」必须由库来保证 —— 这里唯一的仲裁点是
  * {@code assignUnassignedMallOrder} 的条件更新（{@code version = ? AND seller_id IS NULL}）。
  *
- * <p>断言只看最终事实，不写死哪个线程先成功（那是在测调度器）：恰好一次指派、恰好一条
+ * <p>断言只看最终记录，不写死哪个线程先成功（那是在测调度器）：恰好一次指派、恰好一条
  * ASSIGN 审计、版本只前进一次，失败侧必须是可读的业务码（40973 已被指派 / 40921 版本冲突），
  * 不能是死锁、超时或裸唯一键异常。
  *
@@ -194,7 +194,7 @@ class OrderPoolAssignmentConcurrencyPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("同一幂等键并发重发：两侧都拿到同一张单，库里只有一次指派和一条审计")
+    @DisplayName("同一防重复请求编号并发重发：两侧都拿到同一张单，库里只有一次指派和一条审计")
     void concurrentRetryWithTheSameIdempotencyKeyReplaysInsteadOfAssigningTwice() throws Exception {
         PoolOrder order = unassignedMallOrder("retry");
         String sharedKey = key("shared");
@@ -247,7 +247,7 @@ class OrderPoolAssignmentConcurrencyPgIT extends ScmW5PgITBase {
     }
 
     /**
-     * 最终事实：负责人唯一、版本只前进一次、指派审计只有一条。
+     * 最终记录：负责人唯一、版本只前进一次、指派审计只有一条。
      *
      * @param expectedOwner 期望的负责人；传 {@code null} 表示只断言「恰好有一个人」
      */

@@ -33,7 +33,7 @@ public class ScmPrintBatchForm {
 
     private Long templateId;
 
-    /** 批量幂等前缀；同一次点击重试传同一个值，逐单复用稳定键。 */
+    /** 批量防重复处理前缀；同一次点击重试传同一个值，逐单复用稳定键。 */
     @Size(max = 64, message = "批量键不能超过64个字符")
     private String batchKey;
 }

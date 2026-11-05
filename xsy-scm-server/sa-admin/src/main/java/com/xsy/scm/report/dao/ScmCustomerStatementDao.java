@@ -21,7 +21,7 @@ public interface ScmCustomerStatementDao {
      * 对账单可选的过账行：只有过账金额，三个资金变动列一律为 0。
      *
      * <p>
-     * 读作独立查询而不是并进 {@code selectEvents} 的 UNION：过账不是财务事实， 混进同一条 SQL 会让人以为它也参与滚动余额的计算。合并与排序由服务层显式完成。
+     * 读作独立查询而不是并进 {@code selectEvents} 的 UNION：过账不是财务记录， 混进同一条 SQL 会让人以为它也参与滚动余额的计算。合并与排序由服务层显式完成。
      */
     List<ScmCustomerStatementItemVO> selectPostingEvents(@Param("query") ScmCustomerStatementForm query,
         @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmDataScopeContext scope,
@@ -40,7 +40,7 @@ public interface ScmCustomerStatementDao {
 
     ScmCustomerStatementVO selectStatement(@Param("id") Long id, @Param("employeeId") Long employeeId);
 
-    /** 打印专用：按 id 取冻结版本，不按生成人过滤；可见性由调用方按源事实重验。 */
+    /** 打印专用：按 id 取保存后的版本，不按生成人过滤；可见性由调用方按源记录重验。 */
     ScmCustomerStatementVO selectStatementById(@Param("id") Long id);
 
     List<ScmCustomerStatementVO> selectHistory(@Param("settlementCustomerId") Long settlementCustomerId,

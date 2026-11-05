@@ -26,7 +26,7 @@ public class PurchaseReceiptItemWorkbenchQueryForm extends PageParam {
     private String orderNo;
 
     /**
-     * 模糊匹配商品名 / SKU 编码 / SKU 名称快照。
+     * 模糊匹配商品名 / SKU 编码 / SKU 当时的名称。
      */
     @Size(max = 64, message = "搜索关键词不能超过64个字符")
     private String keyword;

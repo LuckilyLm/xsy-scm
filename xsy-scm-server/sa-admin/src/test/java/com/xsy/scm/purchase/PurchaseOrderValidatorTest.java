@@ -26,7 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * 采购单校验器契约测试（无 DB，Mockito）。
+ * 采购单校验器约定检查（无 DB，Mockito）。
  *
  * <p>覆盖两层：
  * <ul>

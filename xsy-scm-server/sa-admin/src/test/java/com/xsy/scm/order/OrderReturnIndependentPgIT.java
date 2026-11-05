@@ -121,7 +121,7 @@ class OrderReturnIndependentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("#3 客户级红字按客户先进先出抵减最早未结应收：账龄、核销、对账单口径一致")
+    @DisplayName("#3 客户级红字按客户先进先出抵减最早未结应收：账龄、核销、对账单规则一致")
     void customerLevelRedReducesAgingAndWriteOffFifo() {
         Long customerId = newCustomer();
         Long oldestOrder = confirmedSalesOrder(customerId, newOnShelfSku("IR3A"), "10", "10");

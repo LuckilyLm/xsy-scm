@@ -155,7 +155,7 @@ public class StocktakeSnapshotSigner {
             }
             return out.toByteArray();
         } catch (java.util.zip.DataFormatException exception) {
-            throw new IllegalStateException("无法解压盘点快照载荷", exception);
+            throw new IllegalStateException("无法解压盘点时保存的数据载荷", exception);
         } finally {
             inflater.end();
         }

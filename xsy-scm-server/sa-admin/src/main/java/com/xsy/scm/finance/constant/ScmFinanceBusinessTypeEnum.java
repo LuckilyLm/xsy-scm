@@ -40,7 +40,7 @@ public enum ScmFinanceBusinessTypeEnum {
     WRITE_OFF("账款抵扣"),
 
     /**
-     * 抹零事实（{@code xsy_finance_waiver}）。
+     * 抹零记录（{@code xsy_finance_waiver}）。
      */
     WAIVER("抹零"),
 

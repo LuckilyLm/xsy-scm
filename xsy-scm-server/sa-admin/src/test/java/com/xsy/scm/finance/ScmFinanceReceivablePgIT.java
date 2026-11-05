@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 签收 → 正常应收（PG IT）。
  *
- * <p>本类钉的是「应收事实由签收与出库两条既有事实派生」这一口径：
+ * <p>本类钉的是「应收记录由签收与出库两条既有记录派生」这一规则：
  * 时点必须逐值等于 {@code xsy_delivery_route_order.signed_at}（不是"接近"），
  * 数量只来自 {@code xsy_inventory_outbound_item.quantity}（不是下单量、不是订单结算量、
  * 不是分拣量），价格只来自 {@code xsy_sales_order_item.locked_unit_price}（不是库存成本）。
@@ -129,7 +129,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
      * 改 SKU 市场价，让订单在真实价格解析链路上拿到调用方要的单价。
      *
      * <p>不走订单手工改价：那会把 {@code locked_price_source} 变成 OVERRIDE，
-     * 而本类要证明的是「财务读的就是订单行那个冻结单价列」，与它来自哪个价格源无关。
+     * 而本类要证明的是「财务读的就是订单行那个保存单价列」，与它来自哪个价格源无关。
      */
     private void withMarketPrice(Long skuId, String marketPrice) {
         jdbc.update("UPDATE xsy_product_sku SET market_price = ? WHERE id = ?",
@@ -265,7 +265,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     /**
      * 本订单的出库行所产生的应收明细数。
      *
-     * <p>按来源作用域而不是全表计数：本仓库的 NOT_SUPPORTED 用例会留下已提交的事实，
+     * <p>按来源作用域而不是全表计数：本仓库的 NOT_SUPPORTED 用例会留下已提交的记录，
      * 「全库只有 N 行」这类断言会随执行顺序忽绿忽红。
      */
     private int receivableItemsOfOrder(Long orderId) {
@@ -316,7 +316,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("正常链路：签收生成一张 NORMAL 应收，单头与明细字段全部来自既有事实")
+    @DisplayName("正常链路：签收生成一张 NORMAL 应收，单头与明细字段全部来自既有记录")
     void signGeneratesNormalReceivableWithHeaderAndItems() {
         Chain chain = sortedAndPlanned("FRA", "10.0000", "3.5000", "10.0000");
         dispatch(chain.routeId());
@@ -358,7 +358,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // B / C. 时点与签收人是同一个数据库事实
+    // B / C. 时点与签收人是同一个数据库记录
     // ------------------------------------------------------------------
 
     @Test
@@ -389,7 +389,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
                 assignment, receivableId))
                 .as("日志操作人必须与 signed_by 一致")
                 .isTrue();
-        // 明细的身份列同样取签收人，不另立第二个操作人事实
+        // 明细的身份列同样取签收人，不另立第二个操作人记录
         assertThat(sameAs("i.created_by = ro.signed_by"
                         + " FROM xsy_finance_receivable_item i JOIN xsy_delivery_route_order ro ON ro.id = ?"
                         + " WHERE i.receivable_id = ?",
@@ -404,14 +404,14 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("少拣：下单 10、实发 7 → 应收数量必须 7；订单量与分拣量都不是应收数量事实")
+    @DisplayName("少拣：下单 10、实发 7 → 应收数量必须 7；订单量与分拣量都不是应收数量记录")
     void receivableQuantityIsTheOutboundQuantityNotOrderOrSortingQuantity() {
         Chain chain = sortedAndPlanned("FRD", "10.0000", "3.5000", "7.0000");
         dispatch(chain.routeId());
         sign(chain.routeId(), chain.orderId(), "SIGNED", null);
 
         Long orderItemId = confirmedSalesOrderItemId(chain.orderId());
-        // 前置事实：下单量仍是 10；分拣称重已把订单实发量回写成 7（称多少、结多少），
+        // 前置记录：下单量仍是 10；分拣称重已把订单实发量回写成 7（称多少、结多少），
         // 分拣行也是 7。应收量与这三者都无关，只取出库行。
         assertThat(jdbc.queryForObject(
                 "SELECT ordered_quantity FROM xsy_sales_order_item WHERE id = ?", BigDecimal.class, orderItemId))
@@ -433,7 +433,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // E. 售价唯一来源是订单行冻结单价
+    // E. 售价唯一来源是订单行保存单价
     // ------------------------------------------------------------------
 
     @Test
@@ -452,7 +452,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
                         + " JOIN xsy_sales_order_item oi ON oi.id = i.order_item_id"
                         + " WHERE r.source_id = ? AND i.order_item_id = ?",
                 chain.orderId(), orderItemId))
-                .as("单价必须逐值等于订单行冻结售价")
+                .as("单价必须逐值等于订单行确认时保存的售价")
                 .isTrue();
         assertThat(decimalOf(line, "unit_price")).isEqualByComparingTo("8.1234");
         assertThat(decimalOf(line, "amount")).isEqualByComparingTo("81.2340");
@@ -525,7 +525,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("EXCEPTION 签收：无应收、无明细、无日志；SALES_OUT 事实一字未改")
+    @DisplayName("EXCEPTION 签收：无应收、无明细、无日志；SALES_OUT 记录一字未改")
     void exceptionSignGeneratesNoReceivable() {
         Chain chain = sortedAndPlanned("FRH", "10.0000", "3.5000", "10.0000");
         dispatch(chain.routeId());
@@ -564,7 +564,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("SIGNED 且无有效出库行：签收成功、财务跳过，不造空单头也不造 0 元事实")
+    @DisplayName("SIGNED 且无有效出库行：签收成功、财务跳过，不造空单头也不造 0 元记录")
     void signedWithoutOutboundLinesSkipsFinanceSuccessfully() {
         Chain chain = sortedAndPlanned("FRI", "10.0000", "3.5000", "10.0000");
         dispatch(chain.routeId());
@@ -581,7 +581,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         sign(chain.routeId(), chain.orderId(), "SIGNED", null);
 
         assertThat(fulfillmentOf(assignmentId(chain.routeId(), chain.orderId())))
-                .as("跳过财务事实不是签收失败的副作用").isEqualTo("SIGNED");
+                .as("跳过财务记录不是签收失败的副作用").isEqualTo("SIGNED");
         assertThat(receivablesOfOrder(chain.orderId())).isZero();
         assertThat(receivableItemsOfOrder(chain.orderId()))
                 .as("本订单的出库行没有产生任何应收明细").isZero();
@@ -606,7 +606,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         sign(chain.routeId(), chain.orderId(), "SIGNED", null);
 
         assertThat(fulfillmentOf(assignmentId(chain.routeId(), chain.orderId()))).isEqualTo("SIGNED");
-        assertThat(receivablesOfOrder(chain.orderId())).as("0 元事实不生成（Q8 同纪律）").isZero();
+        assertThat(receivablesOfOrder(chain.orderId())).as("0 元记录不生成（Q8 同纪律）").isZero();
         assertThat(receivableItemsOfOrder(chain.orderId())).isZero();
     }
 
@@ -629,7 +629,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         Map<String, Object> receivable = receivableOf(chain.orderId());
         assertThat(longOf(receivable, "id")).as("重放不换单也不换号").isEqualTo(receivableId);
         assertThat(receivableItemsOf(receivableId)).hasSize(1);
-        assertThat(receivableLogsOf(receivableId)).as("已生成不是新事实，不重复留痕").hasSize(1);
+        assertThat(receivableLogsOf(receivableId)).as("已生成不是新记录，不重复留痕").hasSize(1);
     }
 
     // ------------------------------------------------------------------

@@ -52,7 +52,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 记录客户收款。错误收款要新增反向记录，不修改原记录。人工收款和核销分开处理；货到付款收款与对应应收核销在同一事务。 幂等沿用统一服务，外部凭据号只用于查账，不用于防重。
+ * 记录客户收款。错误收款要新增反向记录，不修改原记录。人工收款和核销分开处理；货到付款收款与对应应收核销在同一事务。 防重复处理沿用统一服务，外部凭据号只用于查账，不用于防重。
  */
 @Service
 @RequiredArgsConstructor
@@ -74,15 +74,15 @@ public class FinanceReceiptService {
      * 登记一笔 {@code NORMAL} 收款。
      *
      * <p>
-     * 整条链必须同事务：幂等 claim、收款记录、操作日志、幂等 complete 要么一起成，要么一起不成。留下「收款已保存、日志没落」 或「claim 已占、结果为空」都是不可接受的半成品——前者是记录链断裂，后者会让同一
-     * key 的后续重放读到空结果。
+     * 整条链必须同事务：防重复处理 claim、收款记录、操作日志、防重复处理 complete 要么一起成，要么一起不成。留下「收款已保存、日志没落」 或「claim
+     * 已占、结果为空」都是不可接受的半成品——前者是记录链断裂，后者会让同一 key 的后续重放读到空结果。
      *
      * <p>
      * 范围判定在读到客户之后立刻做，且拒绝方式与「客户不存在」共用 {@link ScmDataScopeException}（对外 30005）：
      * 能分辨「存在但无权」就等于把主键探测变成了一个可用信号，因此有权与无权的客户查询返回相同结果。
      *
      * @param idempotencyKey
-     *            请求级幂等键；同键同内容重放首次结果，同键异内容按既有语义报冲突
+     *            请求级防重复请求编号；同键同内容重放首次结果，同键异内容按既有语义报冲突
      */
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptVO add(FinanceReceiptAddForm form, String idempotencyKey) {
@@ -139,7 +139,7 @@ public class FinanceReceiptService {
     }
 
     /**
-     * 货到付款只有在订单签收并生成正常应收后才能登记收款。实收多少记多少，核销不能超过未结余额；同一幂等键重试不得重复收款。
+     * 货到付款只有在订单签收并生成正常应收后才能登记收款。实收多少记多少，核销不能超过未结余额；同一防重复请求编号重试不得重复收款。
      */
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptVO collectCod(FinanceCodCollectionForm form, String idempotencyKey) {
@@ -280,7 +280,7 @@ public class FinanceReceiptService {
      * </ol>
      *
      * <p>
-     * 幂等两层：这里先按来源键查一次（常见的重复回调），数据库上的 {@code uk_finance_receipt_source_active} 是并发下真正的仲裁者。 第二层刻意不吞异常：事务里吞掉唯一键冲突会让
+     * 防重复处理两层：这里先按来源键查一次（常见的重复回调），数据库上的 {@code uk_finance_receipt_source_active} 是并发下真正的仲裁者。 第二层刻意不吞异常：事务里吞掉唯一键冲突会让
      * PostgreSQL 的整个事务进入失败状态，反而更危险；让冲突冒出来，渠道重试时前置查询就能命中已有记录。
      *
      * @return 已存在的或新登记的收款记录
@@ -415,7 +415,7 @@ public class FinanceReceiptService {
 
         BigDecimal amount = ScmDecimalStrings.parseScale4Required(form.getAmount());
         if (amount.signum() <= 0) {
-            // 0 元收款不是有效收款：数据库层 CHECK (amount > 0) 是第二层，这里先给出可解释的 40000。
+            // 0 元收款不是有效收款：后端必须在写入前拒绝，并返回明确的 40000。
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
         // 客户域只读接口先验证当前结算关系；结算主体仍取自 FinanceCounterpartySourceDao，财务域不重算或替换。

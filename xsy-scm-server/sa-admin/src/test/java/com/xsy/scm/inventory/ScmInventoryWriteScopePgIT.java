@@ -54,7 +54,7 @@ import static org.mockito.Mockito.mockStatic;
  *
  * <p>读侧的收口（{@code ScmInventoryDataScopePgIT}）只解决「看不见」；本类钉的是另一件事：
  * 只被授权甲仓的仓管，即使手里有 {@code scm:inventory:*:confirm} 这类功能权限，
- * 也不能对乙仓<b>写下</b>任何库存事实。覆盖的命令：出库（建 / 改 / 确认 / 取消 / 删）、
+ * 也不能对乙仓<b>写下</b>任何库存记录。覆盖的命令：出库（建 / 改 / 确认 / 取消 / 删）、
  * 盘点（建 / 改 / 确认 / 取消 / 删 / 导入）、报损报溢（建 / 审 / 驳 / 删）、
  * 规格转换（建 / 审 / 驳 / 删）、调拨（建 / 改 / 发出 / 收货 / 取消 / 删）、
  * 预留释放、预警阈值配置（建 / 改 / 删）、收货单上架。
@@ -332,11 +332,11 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
         assertThat(statusOf("xsy_inventory_stocktake", foreignDoc)).isEqualTo(PENDING);
         assertThat(movementTypes(foreign)).as("盘盈/盘亏都没写进乙仓").containsExactly("PURCHASE_IN");
         assertThat(quantityOf(foreign)).isEqualByComparingTo(STOCKED);
-        assertThat(bookQuantityOfFirstItem(foreignDoc)).as("失败的改单没换掉账面量快照")
+        assertThat(bookQuantityOfFirstItem(foreignDoc)).as("失败的改单没换掉账面量保存的数据")
                 .isEqualByComparingTo(STOCKED);
 
         Long ownDoc = as(keeper, Set.of(), () -> stocktakeService.create(stocktakeForm(mine, "12.0000")));
-        assertThat(bookQuantityOfFirstItem(ownDoc)).as("授权仓的快照与改单照常").isEqualByComparingTo(STOCKED);
+        assertThat(bookQuantityOfFirstItem(ownDoc)).as("授权仓的已存数据与改单照常").isEqualByComparingTo(STOCKED);
         asRun(keeper, () -> stocktakeService.confirm(ownDoc));
         assertThat(statusOf("xsy_inventory_stocktake", ownDoc)).isEqualTo("CONFIRMED");
         assertThat(movementTypes(mine)).containsExactly("PURCHASE_IN", "STOCKTAKE_GAIN");
@@ -734,13 +734,13 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
         return form;
     }
 
-    /** 幂等键逐次唯一：本用例要证的是「这一次调用被拒」，不是命中上一次的幂等重放。 */
+    /** 防重复请求编号逐次唯一：本用例要证的是「这一次调用被拒」，不是命中上一次的重复请求返回原结果。 */
     private String putawayKey() {
         return prefix + ":wscope:putaway:" + UUID.randomUUID();
     }
 
     // ------------------------------------------------------------------
-    // 库内事实读取（一律走 jdbc：拒绝之后还要读，不能让一级缓存给出旧值）
+    // 库内记录读取（一律走 jdbc：拒绝之后还要读，不能让一级缓存给出旧值）
     // ------------------------------------------------------------------
 
     private BigDecimal quantityOf(StockedLike stocked) {
@@ -798,7 +798,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
                 + documentColumn + " = ? ORDER BY id LIMIT 1", BigDecimal.class, documentId);
     }
 
-    /** 盘点单首行的账面量快照：改草稿会重新快照，失败的改单不该换掉它。 */
+    /** 盘点单首行的账面量保存的数据：改草稿会重新保存的数据，失败的改单不该换掉它。 */
     private BigDecimal bookQuantityOfFirstItem(Long stocktakeId) {
         return jdbc.queryForObject("SELECT book_quantity FROM xsy_inventory_stocktake_item"
                         + " WHERE deleted = FALSE AND stocktake_id = ? ORDER BY id LIMIT 1",

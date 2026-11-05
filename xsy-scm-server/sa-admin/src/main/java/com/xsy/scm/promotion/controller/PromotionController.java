@@ -121,7 +121,7 @@ public class PromotionController {
      * 发券：给某客户发 N 张可用券。
      *
      * <p>
-     * 需要 {@code Idempotency-Key}（缺失 → 40069）：重试回放首次结果，不重复发券； 客户归属与数据范围在服务端重新判定。
+     * 需要 {@code Idempotency-Key}（缺失 → 40069）：重试返回首次处理结果，不重复发券； 客户归属与数据范围在服务端重新判定。
      */
     @PostMapping("/coupon/issue")
     @SaCheckPermission(PromotionPermission.COUPON_ISSUE)

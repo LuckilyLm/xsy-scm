@@ -18,7 +18,7 @@
 
   本配置不使构建失败（maven-checkstyle-plugin failOnViolation=false）：
   它只产出 target/checkstyle-result.xml，由 quality_guard.py 按
-  「新增为 0、baseline 只降不升」的棘轮判定。
+  「新增为 0、baseline 只降不升」的新增问题检查判定。
 -->
 <module name="Checker">
     <property name="charset" value="UTF-8"/>

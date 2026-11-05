@@ -1,5 +1,5 @@
 /*
- * Mock 契约层 · 购物车
+ * Mock 约定层 · 购物车
  *
  * 与后端 /scm/mall/cart/** 同构：服务端购物车、数量为字符串定点、失效行保留并带 availability。
  * 仅用于开发环境（VITE_APP_USE_MOCK=true）；关闭后走真实后端。

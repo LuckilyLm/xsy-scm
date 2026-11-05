@@ -41,7 +41,7 @@
         </foreach>
     </select>
 
-    <!-- 待出库单重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删口径一致） -->
+    <!-- 待出库单重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删规则一致） -->
     <update id="deleteByOutboundId">
         UPDATE xsy_inventory_outbound_item
         SET deleted = TRUE, version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}

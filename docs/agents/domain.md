@@ -5,7 +5,7 @@
 ## 探索前先读这些
 
 - 仓库根目录的 **`GLOSSARY.md`**（由 `/domain-modeling` 按需创建；不存在时跳过）。
-- **[docs/decisions.md](../decisions.md)**：本仓库唯一有效的决策事实源。业务、架构与权限不变量都在这里，按主题分节维护。
+- **[docs/decisions.md](../decisions.md)**：本仓库唯一有效的决策依据。业务、架构与权限不变量都在这里，按主题分节维护。
 - **[AGENTS.md](../../AGENTS.md)**：协作硬约束，其中「用户界面用词」一节是已生效的术语规则（SPU → 商品、SKU → 商品规格等）。
 
 上述文件不存在时**静默跳过**：不要提示缺失，也不要主动建议先创建。
@@ -27,7 +27,7 @@
 ├── GLOSSARY.md               ← 术语表，按需创建
 ├── AGENTS.md                 ← 协作规则（含用户界面用词）
 ├── docs/
-│   ├── decisions.md          ← 决策事实源（替代 ADR）
+│   ├── decisions.md          ← 决策依据（替代 ADR）
 │   ├── status.md             ← 交付状态与验证证据
 │   └── agents/               ← 本目录：技能配置
 └── xsy-scm-server/ xsy-scm-web/ xsy-scm-miniprogram/ xsy-scale-agent/
@@ -45,4 +45,4 @@
 
 输出与 `docs/decisions.md` 的既有条目矛盾时，明确标出来，而不是悄悄覆盖：
 
-> _与 decisions.md 的「库存流水是追加事实」冲突，但值得重开讨论，因为……_
+> _与 decisions.md 的「库存流水是追加记录」冲突，但值得重开讨论，因为……_

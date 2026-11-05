@@ -63,7 +63,7 @@ test('after-sale center exposes apply, list and detail pages', () => {
 
 test('after-sale apply submits items and reason with an idempotency key', () => {
   const page = read('../src/pages-sub/after-sale/apply.vue');
-  // 幂等键与「订单 + 明细 + 原因」绑定，重复提交不重复建单
+  // 防重复请求编号与「订单 + 明细 + 原因」绑定，重复提交不重复建单
   assert.match(page, /const payload = \{\s*orderId: orderId\.value,\s*reason: reason\.value,\s*items\s*\};/);
   assert.match(page, /mallAfterSaleApi\.apply\(payload, key\)/);
   assert.match(page, /aftersale-\$\{orderId\.value\}/);
@@ -98,7 +98,7 @@ test('after-sale detail renders server progress and the original-funding breakdo
   // 节点文案与 done 都由服务端给出，客户端只渲染
   assert.match(detail, /v-for="\(node, index\) in record\.progress"/);
   assert.match(detail, /:class="\{ 'ad-step--pending': !node\.done \}"/);
-  // 原路退回明细：方式与金额来自服务端分摊事实
+  // 原路退回明细：方式与金额来自服务端分摊记录
   assert.match(detail, /record\.refund\.allocations/);
   assert.match(detail, /refundMethodText\(allocation\.method\)/);
   assert.match(detail, /allocationStatusText\(allocation\.status\)/);
@@ -142,7 +142,7 @@ test('checkout submits a price fingerprint and an idempotency key', () => {
   const mock = read('../mock/routes/order.js');
   assert.match(request, /dispatchMock\(url, method, data, \{\s*header\s*\}\)/);
   assert.match(mock, /Idempotency-Key/);
-  // 提交必须回传服务端下发的指纹，并在提交前按备注等最新内容同步幂等键
+  // 提交必须回传服务端下发的指纹，并在提交前按备注等最新内容同步防重复请求编号
   assert.match(page, /priceFingerprint/);
   assert.match(page, /async function submit\(\)[\s\S]*syncIdempotencyKey\(\);[\s\S]*mallOrderApi\.submit/);
   // 变价必须让客户重新确认，不能静默重试
@@ -211,7 +211,7 @@ test('order actions only offer cancel when the server says it is cancelable', ()
 
 test('order list labels the amount as an estimate and drops stale tab responses', () => {
   const page = read('../src/pages/order/index.vue');
-  // orderedTotalAmount 是订货金额，不等于实付；接入真实支付事实前不得写成「实付金额」
+  // orderedTotalAmount 是订货金额，不等于实付；接入真实支付记录前不得写成「实付金额」
   // 标签在 d33dc21e 缩短为「预计金额」；关键意图是不写成「实付金额」
   assert.match(page, /预计金额/);
   assert.doesNotMatch(page, /实付金额/);
@@ -261,10 +261,10 @@ test('checkout only applies the latest preview response', () => {
 test('order detail renders the server-provided delivery progress', () => {
   const page = read('../src/pages-sub/order/detail.vue');
   const mock = read('../mock/routes/order.js');
-  // 节点文案与 done 都由服务端按正式事实给出，客户端只渲染，不自己推导进度
+  // 节点文案与 done 都由服务端按正式记录给出，客户端只渲染，不自己推导进度
   assert.match(page, /v-for="\(node, index\) in order\.progress"/);
   assert.match(page, /:class="\{\s*'od-step--pending': !node\.done\s*\}"/);
-  // 配送详情只读配送事实（线路 / 发车 / 司机），未排车时不编线路
+  // 配送详情只读配送记录（线路 / 发车 / 司机），未排车时不编线路
   assert.match(page, /order\.delivery\.routeName/);
   assert.match(page, /order\.delivery\.dispatchedAt/);
   assert.match(page, /后台尚未安排配送线路/);
@@ -456,7 +456,7 @@ test('order detail retains financial history without a payment action', () => {
 
 test('funds rows render server amounts and never a client-side guess', () => {
   const page = read('../src/pages-sub/order/detail.vue');
-  // 应付/已付/待付整组只在服务端下发 payableAmount 时出现；确认前没有应付口径就不显示
+  // 应付/已付/待付整组只在服务端下发 payableAmount 时出现；确认前没有应付规则就不显示
   assert.match(page, /v-if="order\.payableAmount"/);
   assert.match(page, /应付金额（优惠后）/);
   assert.match(page, /settlementMethodText\(order\.settlementMethod\)/);

@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>三件事必须被断言而不是靠人记得：
  * <ol>
- *   <li>{@code source_document_type} 的常量值与 purchase 侧冻结的
+ *   <li>{@code source_document_type} 的常量值与 purchase 侧保存的
  *       {@link PurchaseInventoryContract#SOURCE_DOCUMENT_TYPE} 逐字相等 ——
  *       库存域不 import purchase 的常量（领域原语不该依赖某一个来源域），
  *       所以两个常量的一致性只能靠断言强制；</li>
@@ -53,7 +53,7 @@ class ScmInventoryConstantTest {
      * <p>写成常量而不是从类反推：这个值同时被用来拼 classpath 资源路径
      * （见 {@link #discoverErrorCodeEnums()}），两处必须一致，
      * 而从 {@code ScmErrorCode.class.getPackageName()} 反推会引入「包名对了但基础目录不对」
-     * 的隐患 —— 本测试的立场是「包名是一个必须显式声明的契约」。
+     * 的隐患 —— 本测试的立场是「包名是一个必须显式声明的约定」。
      */
     private static final String SCM_PACKAGE = "com.xsy.scm";
 
@@ -62,7 +62,7 @@ class ScmInventoryConstantTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("source_document_type 常量与 W5 契约逐字一致（跨域常量靠断言强制）")
+    @DisplayName("source_document_type 常量与 W5 约定逐字一致（跨域常量靠断言强制）")
     void sourceDocumentTypeMatchesTheFrozenW5Contract() {
         assertThat(ScmInventorySourceDocumentTypeEnum.PURCHASE_RECEIPT_ITEM.name())
                 .isEqualTo(PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE)
@@ -94,7 +94,7 @@ class ScmInventoryConstantTest {
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("CONVERT_OUT_ITEM")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("CONVERT_IN_ITEM")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("DELIVERY_ROUTE")).isTrue();
-        // 赠品出库的源身份是冻结的赠品权益而不是出库单行：赠品不挂订单行，
+        // 赠品出库的源身份是保存的赠品权益而不是出库单行：赠品不挂订单行，
         // 防重锚点用 order_promotion_gift.id。
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("ORDER_PROMOTION_GIFT")).isTrue();
 
@@ -305,11 +305,11 @@ class ScmInventoryConstantTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("错误码：恰好 63 个、码值冻结、段内无重复")
+    @DisplayName("错误码：恰好 63 个、码值保存、段内无重复")
     void errorCodesAreFrozenAndUniqueWithinTheDomain() {
         assertThat(InventoryErrorCode.values()).hasSize(63);
 
-        // 以下 4 个码值冻结不变
+        // 以下 4 个码值保存不变
         assertThat(InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND.getCode()).isEqualTo(40486);
         assertThat(InventoryErrorCode.INVENTORY_UNIT_MISMATCH.getCode()).isEqualTo(41001);
         assertThat(InventoryErrorCode.INVENTORY_DUPLICATE_INBOUND.getCode()).isEqualTo(41002);
@@ -435,13 +435,13 @@ class ScmInventoryConstantTest {
     @Test
     @DisplayName("既有观察：40921 VERSION_CONFLICT 在多个域里被重复声明（W6 不复制这种写法）")
     void versionConflictIsDeliberatelyNotReplicatedByW6() {
-        // 扫描结果暴露了一个既有事实：ProductErrorCode / PurchaseErrorCode / ScmCommonErrorCode
+        // 扫描结果暴露了一个既有记录：ProductErrorCode / PurchaseErrorCode / ScmCommonErrorCode
         // 都各自声明了 40921「数据已被其他操作修改」。按 AGENTS 的稳定码纪律，
         // 「可复用的既有码不复制语义」—— 库存域因此直接复用 ScmCommonErrorCode.VERSION_CONFLICT
         // （见 InventoryCommandService），不新增自己的 40921。
         //
-        // 本用例把这个事实钉住：一旦有人给库存域也加一个 40921，上面的撞码门禁会失败，
-        // 本用例把这个事实钉住：库存域一旦也声明一个 40921，上面的撞码门禁就会失败。
+        // 本用例把这个记录钉住：一旦有人给库存域也加一个 40921，上面的撞码门禁会失败，
+        // 本用例把这个记录钉住：库存域一旦也声明一个 40921，上面的撞码门禁就会失败。
         // 既有三处重复的清理是独立的重构，不属于库存域。
         assertThat(InventoryErrorCode.values())
                 .extracting(InventoryErrorCode::getCode)

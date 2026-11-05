@@ -17,7 +17,7 @@ public final class MallRequestSupport {
     }
 
     /**
-     * 当前认证会话仍要求修改临时密码时，除改密与资料接口外一律拒绝。 微信手机号会话的豁免由服务端身份投影，不修改账号的初始密码状态。
+     * 当前认证会话仍要求修改临时密码时，除改密与资料接口外一律拒绝。 微信手机号会话的豁免由服务端身份查询结果，不修改账号的初始密码状态。
      */
     public static void requirePasswordChanged() {
         if (Boolean.TRUE.equals(current().getFirstPasswordChange())) {

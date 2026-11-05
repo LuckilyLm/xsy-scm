@@ -23,7 +23,7 @@ public abstract class ScmOrderPrintSourceProvider implements ScmPrintSourceProvi
         return orderQueryService.detail(businessId);
     }
 
-    /** 收货地址三列；订单独有的地址快照为空时整组不输出。 */
+    /** 收货地址三列；订单独有的下单时保存的地址为空时整组不输出。 */
     protected static void putAddress(Map<String, String> header, OrderAddressSnapshotVO address) {
         if (address == null) {
             return;

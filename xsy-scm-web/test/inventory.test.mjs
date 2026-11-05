@@ -1,5 +1,5 @@
 /**
- * 库存模块契约测试。
+ * 库存模块约定检查。
  *
  * 由 4 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -37,9 +37,9 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 // ---------------------------------------------------------------- 来源：backend-gap-inventory-contract.test.mjs
 {
   /**
-   * 前端后端字段缺口盘点的登记契约单测。
+   * 前端后端字段缺口盘点的登记约定单测。
    *
-   * `CONTRIBUTING.md` 要求 UI 不臆造后端尚未提供的业务事实，
+   * `CONTRIBUTING.md` 要求 UI 不臆造后端尚未提供的业务记录，
    * 后端字段重构不得与 UI 改动同提交。因此执行中遇到的后端字段不足，
    * 一律登记到 `docs/status.md`（编号 B1、B4、B5、B7），
    * 前端只做「不渲染该段 / 不臆造数值」。
@@ -131,9 +131,9 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     assert.match(doc, /不是缺口/);
   });
 
-  test('已关闭的旧 UI 口径项仍被记录，防止被机械清理', () => {
-    // 前端口径分歧随 `.num` 收口一并关闭，仍应留在项目状态中防止重复登记。
-    assert.match(doc, /已关闭的旧 UI 口径项/);
+  test('已关闭的旧 UI 规则项仍被记录，防止被机械清理', () => {
+    // 前端规则分歧随 `.num` 收口一并关闭，仍应留在项目状态中防止重复登记。
+    assert.match(doc, /已关闭的旧 UI 规则项/);
     assert.match(doc, /\.num/);
     assert.match(doc, /不再是后端缺口/);
   });
@@ -142,9 +142,9 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 // ---------------------------------------------------------------- 来源：inventory-contract.test.mjs
 {
   /**
-   * 库存域契约测试。
+   * 库存域约定检查。
    *
-   * 保护前端最容易悄悄违背、且违背后不会报错的几条契约：
+   * 保护前端最容易悄悄违背、且违背后不会报错的几条约定：
    * 1. 默认仓库：恰好 1 个启用仓库才默认带出，否则一个都不选 ——
    *    多仓下自动选一个会让用户误以为在看全部库存；
    * 2. 三态展示：`null` / `undefined` / 空串 → `—`，
@@ -155,7 +155,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
    *    `SALES_OUTBOUND_ITEM` / `SALES_ORDER_ITEM` / `STOCKTAKE_ITEM` / `LOSS_GAIN_ITEM`；
    * 5. 错误码有可执行文案：库存域全部码（含盘点 41019–41027、报损报溢 41028–41037）
    *    都必须在映射表里，且提示要说「下一步做什么」；
-   * 6. 盘点口径不被误读：确认后的账面不一定等于实盘数（差异施加到确认瞬间的账面量上），
+   * 6. 盘点规则不被误读：确认后的账面不一定等于实盘数（差异施加到确认瞬间的账面量上），
    *    页面必须写明，且新增表单不得提交账面量；
    * 7. 审批乐观锁：报损报溢的审批请求必须带上审批人看到的 `version`，
    *    且打开审批弹窗时不得重新拉取单据 —— 否则「审批人必须批准自己读到的内容」这条防线失效。
@@ -223,7 +223,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 
     assert.equal(quantityText('0.0000'), '0.0000');
     assert.equal(quantityText('10.0000'), '10.0000');
-    // 原样返回：后端已保证 4 位定点，前端不做二次格式化（否则会与后端口径分叉）
+    // 原样返回：后端已保证 4 位定点，前端不做二次格式化（否则会与后端规则分叉）
     assert.equal(quantityText('12345678901234.5678'), '12345678901234.5678');
   });
 
@@ -321,7 +321,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
   // ------------------------------------------------------------------
 
   test('money text uses two decimals and keeps missing distinct from zero', () => {
-    // 「没有这个事实」与「真的是零」不得合并 —— 与 quantityText 同一口径
+    // 「没有这个记录」与「真的是零」不得合并 —— 与 quantityText 同一套规则
     assert.equal(moneyText(null), '—');
     assert.equal(moneyText(undefined), '—');
     assert.equal(moneyText(''), '—');
@@ -549,7 +549,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     assert.match(inventoryError({code: 40921}), /刷新/);
     assert.match(inventoryError({code: 40000}), /请求参数/);
 
-    // 三种包裹形状都要认（与采购域同一口径）
+    // 三种包裹形状都要认（与采购域同一套规则）
     assert.match(inventoryError({data: {code: 41001}}), /不做自动换算/);
     assert.match(inventoryError({response: {data: {code: 41002}}}), /不能重复入库/);
 
@@ -602,14 +602,14 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
   });
 
   test('the stocktake page documents that delta is applied to the live book quantity', () => {
-    // 这里最容易让人误读的一条口径：确认后的账面不一定等于实盘数，
+    // 这里最容易让人误读的一条规则：确认后的账面不一定等于实盘数，
     // 因为「保存草稿 → 确认」之间发生的收货 / 出库会被保留（差异是施加到当前账面量上的）。
     // 页面上必须写明，否则用户会把正确行为当成 bug。
     const detail = code('../src/views/business/scm/inventory/components/inventory-stocktake-detail-drawer.vue');
     assert.match(detail, /差异按确认时的账面量计算/);
-    assert.doesNotMatch(detail, /快照/, '账面量的存储方式不写进界面');
+    assert.doesNotMatch(detail, /保存的数据/, '账面量的存储方式不写进界面');
 
-    // 明细里的账面量由服务端快照，前端不得提交它（否则盘点能凭空制造差异）
+    // 明细里的账面量由服务端保存的数据，前端不得提交它（否则盘点能凭空制造差异）
     const api = code('../src/api/business/scm/inventory-stocktake-api.ts');
     assert.match(api, /create:/);
     assert.match(api, /confirm:/);
@@ -801,7 +801,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
       assert.equal(item.value, key);
       assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
     }
-    // 状态是派生值，不落库：不得出现任何「已读 / 已忽略」这类需要持久化的状态
+    // 状态是派生值，不写入数据库：不得出现任何「已读 / 已忽略」这类需要持久化的状态
     assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_WARNING_STATUS_ENUM), /READ|ACK|IGNORED|DISMISSED/);
   });
 
@@ -823,7 +823,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     assert.match(page, /预留/);
 
     // 默认项必须是「仅异常」而不是「全部」—— 后端 status 为空时的语义就是只看异常，
-    // 标成「全部」会与事实不符（用户选了它却看不到正常项，会以为系统漏数据）。
+    // 标成「全部」会与记录不符（用户选了它却看不到正常项，会以为系统漏数据）。
     assert.match(page, /仅异常/);
     assert.doesNotMatch(page, /label: '全部'/);
   });
@@ -869,7 +869,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
   });
 
   // ------------------------------------------------------------------
-  // 预留 / 预警列表的展示契约
+  // 预留 / 预警列表的展示约定
   // ------------------------------------------------------------------
 
   test('the reservation page shows the source document number, never a raw technical id', () => {
@@ -1004,7 +1004,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
   });
 
   // ------------------------------------------------------------------
-  // 单据类页面（盘点 / 报损报溢 / 转换）的展示契约
+  // 单据类页面（盘点 / 报损报溢 / 转换）的展示约定
   // ------------------------------------------------------------------
 
   test('the three inventory document pages hide the technical timestamp and centre the action column', () => {
@@ -1228,11 +1228,11 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 // ---------------------------------------------------------------- 来源：stocktake-import-contract.test.mjs
 {
   /**
-   * 盘点效率（快照模板导出 / Excel 幂等导入 / 复制到新建）的前端契约测试。
+   * 盘点效率（保存的数据模板导出 / Excel 防重复处理导入 / 复制到新建）的前端约定检查。
    *
-   * 钉死这一波最容易被日后改动悄悄破坏、且破坏后不报错的前端边界（后端导入 / 签名 / 幂等由
+   * 钉死这一波最容易被日后改动悄悄破坏、且破坏后不报错的前端边界（后端导入 / 签名 / 防重复处理由
    * ScmStocktakeImportPgIT 覆盖）：
-   * 1. 快照模板走只读 getDownload，导入走带 Idempotency-Key 的 POST，两者都不是确认（不写库存）；
+   * 1. 保存的数据模板走只读 getDownload，导入走带 Idempotency-Key 的 POST，两者都不是确认（不写库存）；
    * 2. 模板与导入按钮都由独立权限 scm:inventory:stocktake:import 把关，不复用 add/update/confirm；
    * 3. 复制历史是纯前端：只读 detail + 余额 query，不引入后端「复制盘点」命令，也不自动落草稿；
    * 4. 导入成功只建草稿（回填实盘量留空、需重新清点），确认仍走既有 confirm 端点。
@@ -1249,11 +1249,11 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
   const API = '../src/api/business/scm/inventory-stocktake-api.ts';
   const LIST = '../src/views/business/scm/inventory/inventory-stocktake-list.vue';
 
-  test('快照模板走只读 getDownload，导入走带 Idempotency-Key 的 POST，均不触达 confirm（不写库存）', () => {
+  test('保存的数据模板走只读 getDownload，导入走带 Idempotency-Key 的 POST，均不触达 confirm（不写库存）', () => {
     const api = code(API);
     assert.match(api, /downloadImportTemplate:[\s\S]*?getDownload\('\/scm\/inventory\/stocktake\/import\/template'/);
     assert.match(api, /url:\s*'\/scm\/inventory\/stocktake\/import'[\s\S]*?method:\s*'post'[\s\S]*?'Idempotency-Key':\s*key/);
-    // 同一文件复用同一幂等键（WeakMap），换文件即新命令
+    // 同一文件复用同一防重复请求编号（WeakMap），换文件即新命令
     assert.match(api, /new WeakMap<File,\s*string>\(\)/);
     // 导入 / 模板端点绝不指向 /confirm —— 它们只建草稿
     assert.doesNotMatch(api, /stocktake\/import[^']*confirm/);

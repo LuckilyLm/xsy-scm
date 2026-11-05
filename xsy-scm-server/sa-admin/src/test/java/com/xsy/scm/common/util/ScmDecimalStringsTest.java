@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * SCM 定点数唯一解析规则的契约测试。
+ * SCM 定点数唯一解析规则的约定检查。
  *
  * <p>这些用例同时是「legacy 双重解析规则」缺陷（D13/D14）的回归门禁：任何放宽到接受数字、
  * 负数、超 4 位小数或科学计数法的改动都必须先让本测试失败。

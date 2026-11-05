@@ -4,7 +4,7 @@
   报表只读 SQL。
 
   全文件共同遵守的纪律：
-  1. 只读冻结事实（销售 settlement_* / 采购 purchase_price 与 line_amount /
+  1. 只读保存记录（销售 settlement_* / 采购 purchase_price 与 line_amount /
      流水 unit_cost / 余额 avg_cost），绝不调用定价解析或成本重算 —— 否则今天的规则
      一变，昨天的报表数字就跟着变。
   2. 时间条件只有 >= startAt AND < endAt 一种写法，区间由 ScmReportTimeRangeResolver 生成。
@@ -12,15 +12,15 @@
   4. 数量一律与单位同组返回；无法同单位合并的（多单位收货、跨单位入库）用文本表达，不给无量纲合计。
   5. 金额/数量的精度交给 NUMERIC 与 ScmFixedScale4Serializer，本文件不做 2 位收敛。
   6. scope 是调用者的仓库数据范围（ScmValueScope），由 Service 层显式下传，谓词一律落在
-     被聚合的事实表行上（xsy_purchase_order / xsy_purchase_receipt / xsy_inventory_movement /
+     被聚合的记录表行上（xsy_purchase_order / xsy_purchase_receipt / xsy_inventory_movement /
      xsy_inventory_balance），不落在维度表 JOIN 上、也不落在聚合之后 —— 报表里放错位置改的是
-     一个数字而不是一组行，事后看不出破绽。scope == null 恒假（失败关闭），scope.all 时
-     不拼任何谓词。销售侧事实（xsy_sales_order / xsy_sales_order_item / xsy_order_refund）
+     一个数字而不是一组行，事后看不出破绽。scope == null 恒假（校验失败时拒绝操作），scope.all 时
+     不拼任何谓词。销售侧记录（xsy_sales_order / xsy_sales_order_item / xsy_order_refund）
      没有仓库列，因此相关语句按仓库不收窄 —— 见 ScmSalesReportQueryForm 的类注释。
 -->
 <mapper namespace="com.xsy.scm.report.dao.ReportDao">
 
-    <!-- ============ 销售口径片段 ============ -->
+    <!-- ============ 销售规则片段 ============ -->
     <sql id="salesConfirmed">
         o.deleted = FALSE
             AND o.status IN ('CONFIRMED', 'DISPATCHED', 'SIGNED', 'EXCEPTION')
@@ -104,7 +104,7 @@
         </if>
     </sql>
 
-    <!-- ============ 采购口径片段：只认提交后的采购事实 ============ -->
+    <!-- ============ 采购规则片段：只认提交后的采购记录 ============ -->
     <sql id="purchaseStatus">
         o.deleted = FALSE
             AND o.status IN ('SUBMITTED', 'ACCOUNTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED')
@@ -119,7 +119,7 @@
       采购分析的共用谓词，同时承载仓库数据范围：五个消费方（purchaseByProduct /
       purchaseBySupplier / purchaseByPurchaser / purchaseItemList / purchasePriceTrend）
       都把 o 绑给 xsy_purchase_order、oi 绑给 xsy_purchase_order_item，新增消费方必须守住同一
-      别名契约，否则这里会收窄错表。范围落在采购单事实行上，与调用方的 warehouseId 筛选同级。
+      别名约定，否则这里会收窄错表。范围落在采购单记录行上，与调用方的 warehouseId 筛选同级。
     -->
     <sql id="purchaseFilters">
         <if test="query.supplierId != null">AND o.supplier_id = #{query.supplierId}</if>
@@ -174,7 +174,7 @@
     -->
     <!--
       经营概览：销售三件套 + 退款 + 采购提交 + 入库成本 + 库存价值。
-      销售与采购的口径（时间轴、状态、金额列）与首页 / 大屏同源，但范围策略不同：
+      销售与采购的规则（时间轴、状态、金额列）与首页 / 大屏同源，但范围策略不同：
       报表概览的销售不做归属收窄（xsy_sales_order 没有仓库列，可见性由页面权限承担），采购只按仓库收窄；
       大屏则按「归属 ∩ 仓库」收窄。这是两处刻意不同的可见性策略，不是漏判 ——
       要统一，必须整页一起改（byCustomer / byProduct / bySeller / bySupplier / byPurchaser 都要跟着动）。
@@ -285,7 +285,7 @@
 
     <!-- ============ 销售分析 ============ -->
     <!--
-      一行 = SKU × 销售单位快照。
+      一行 = SKU × 下单时的销售单位。
       排名用窗口函数：它在 LIMIT 之前算完，所以第 N 页看到的仍是全局排名。
       成交均价是「金额合计 / 数量合计」，不是各笔单价的算术平均；分母为 0 或全 NULL 时返回 NULL。
     -->
@@ -369,7 +369,7 @@
 
     <!--
       退款先按实际退货行和订单条件筛选，再按客户聚合，不能被原单其他商品放大。
-      客户编码/名称取主档当前值（分组键是 id，快照只服务明细行）。
+      客户编码/名称取主档当前值（分组键是 id，保存的数据只服务明细行）。
     -->
     <select id="salesByCustomer" resultType="com.xsy.scm.report.domain.vo.SalesReportVO$CustomerRow">
         WITH rf AS(SELECT customer_id, SUM(refund_amount) AS refund_amount
@@ -411,7 +411,7 @@
 
     <!--
       一行 = 订单的聚合（ord），因此按销售员合并退款时不会重复计退款：
-      rf 先按实际退款事实聚合到销售员。seller_id 为 NULL 用 IS NOT DISTINCT FROM 才能匹配上。
+      rf 先按实际退款记录聚合到销售员。seller_id 为 NULL 用 IS NOT DISTINCT FROM 才能匹配上。
     -->
     <select id="salesBySeller" resultType="com.xsy.scm.report.domain.vo.SalesReportVO$SellerRow">
         WITH ord AS(SELECT o.id, o.seller_id, o.customer_id, o.confirmed_at,
@@ -488,7 +488,7 @@
 
     <!--
       一行 = 一个订单（表头级）。退款按 order_id 独立聚合后关联，不经订单行 JOIN，
-      否则一单多行会把退款放大；退款只认窗口内 COMPLETED，与按客户 / 按销售员同口径。
+      否则一单多行会把退款放大；退款只认窗口内 COMPLETED，与按客户 / 按销售员同规则。
     -->
     <select id="salesOrderList" resultType="com.xsy.scm.report.domain.vo.SalesReportVO$OrderRow">
         WITH ord AS(SELECT o.id, o.order_no, o.confirmed_at, o.customer_code_snapshot, o.customer_name_snapshot,
@@ -570,7 +570,7 @@
         <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
         <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
         <if test="query.purchaserId != null">AND o2.purchaser_id = #{query.purchaserId}</if>
-        <!-- 范围取流水自身的仓库：入库流水落在哪个仓，就是哪个仓的库存事实。 -->
+        <!-- 范围取流水自身的仓库：入库流水落在哪个仓，就是哪个仓的库存记录。 -->
         <if test="scope != null and scope.all == false">
             AND m.warehouse_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
@@ -719,7 +719,7 @@
         ORDER BY po.order_amount DESC NULLS LAST, po.supplier_id
     </select>
 
-    <!-- 供应商 TOP 榜走「采购入库成本」而不是采购单金额：成本才是已发生的入库事实。 -->
+    <!-- 供应商 TOP 榜走「采购入库成本」而不是采购单金额：成本才是已发生的入库记录。 -->
     <select id="topPurchaseSupplierInbound" resultType="com.xsy.scm.report.domain.vo.SalesReportVO$TopItem">
         SELECT r.supplier_id AS id, MAX(r.supplier_name_snapshot) AS name,
             COALESCE(SUM(m.quantity * m.unit_cost), 0) AS amount
@@ -906,7 +906,7 @@
     </select>
 
     <!--
-      入库明细的事实源是 PURCHASE_IN 流水，不是收货单：
+      入库明细的依据是 PURCHASE_IN 流水，不是收货单：
       WAREHOUSE_CONFIRM 模式下「已确认收货但尚未入库」的行在这里天然不出现，
       这正是收货与入库必须分开的意义。成本缺失（unit_cost IS NULL）返回 null 并置 costMissing，
       绝不显示成 0。
@@ -1044,7 +1044,7 @@
             'CONVERT_IN_ITEM')
             AND src_conversion.id = m.source_document_id
         <!--
-          促销赠品出库：头级 source_document_id 记的是发车事实（配送线路），
+          促销赠品出库：头级 source_document_id 记的是发车记录（配送线路），
           因此这里显示线路编号回答「这趟车送的赠品」。防重锚点在 item 级（赠品权益 id），
           与「哪个活动赠了什么」的追溯走 xsy_order_promotion_gift，不在本报表展开。
         -->
@@ -1251,8 +1251,8 @@
     </select>
 
     <!--
-      负库存损耗：查询时点的余额快照，不按日期回算。范围谓词在列表与汇总之间共用本片段，
-      两个语句必须同口径，否则指标卡数出来的规格数和表里的行数对不上。
+      负库存损耗：查询时点的查询时的余额数据，不按日期回算。范围谓词在列表与汇总之间共用本片段，
+      两个语句必须同规则，否则指标卡数出来的规格数和表里的行数对不上。
     -->
     <sql id="negativeStockWhere">
         b.deleted = FALSE

@@ -1,5 +1,5 @@
 /**
- * 分拣模块契约测试。
+ * 分拣模块约定检查。
  *
  * 由 2 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -21,9 +21,9 @@ import {
 // ---------------------------------------------------------------- 来源：sorting-contract.test.mjs
 {
   /**
-   * P1（分拣管理）前端契约单测。
+   * P1（分拣管理）前端约定单测。
    *
-   * 这一波值得钉住的，都是「违背之后页面照样能跑、只是业务事实错了」的那一类：
+   * 这一波值得钉住的，都是「违背之后页面照样能跑、只是业务记录错了」的那一类：
    *
    * 1. 汇总页必须一个动作入口都没有（硬产品规则）。聚合行没有主键，在它上面下写命令
    *    要么产生未定义的拆回行为，要么把导航伪装成命令；
@@ -33,7 +33,7 @@ import {
    *    建单与登记打印还要带 `Idempotency-Key`，录入 / 完成 / 取消 / 重开不带（后端签名里没有，
    *    多加只会掩盖版本冲突）；
    * 4. 权限码只有一个来源。页面的 `v-privilege` 字面量必须全部落在 `sorting-const.ts`
-   *    声明的集合内，而该集合又必须与后端契约逐字相同 —— 两处都对，才不存在「按钮能点、接口 403」；
+   *    声明的集合内，而该集合又必须与后端约定逐字相同 —— 两处都对，才不存在「按钮能点、接口 403」；
    * 5. 数量不做前端算术：`Number(` / `toFixed(` / `parseFloat(` 不得出现在两页里，
    *    `null` 渲染成 `—` 而不是 `0`；
    * 6. 状态机的按钮出现条件与后端一致：取消限 WORKING、重开限 COMPLETED、
@@ -63,7 +63,7 @@ import {
   const taskList = code(TASK_LIST);
   const taskFilter = code(TASK_FILTER);
   const detailDrawer = code(DETAIL_DRAWER);
-  // 录入载荷、编辑权判定与提交入口已抽到组合式函数，页面只消费；契约要打在真正实现处。
+  // 录入载荷、编辑权判定与提交入口已抽到组合式函数，页面只消费；约定要打在真正实现处。
   const taskEntry = code(TASK_ENTRY);
   const summary = code(SUMMARY);
   const api = code(API);
@@ -79,7 +79,7 @@ import {
     assert.doesNotMatch(modal, /\.reduce\(/);
   });
 
-  /** 后端 P1 契约里的九个权限码（与 `@SaCheckPermission` / V61 的 `web_perms` 同源）。 */
+  /** 后端 P1 约定里的九个权限码（与 `@SaCheckPermission` / V61 的 `web_perms` 同源）。 */
   const CONTRACT_PERMS = [
     'scm:sorting:task:query',
     'scm:sorting:task:add',
@@ -143,7 +143,7 @@ import {
     assert.ok(!/version: (detail|task)\.value\.task\.version/.test(builder), '不得用任务版本代替行版本');
     assert.match(builder, /isDirty\(record\)/, '只提交脏行');
     assert.match(builder, /id: record\.id/);
-    // 分拣量按 4 位定点字符串提交（后端入参是 BigDecimal，但字符串保留录入口径）
+    // 分拣量按 4 位定点字符串提交（后端入参是 BigDecimal，但字符串保留录入规则）
     assert.match(builder, /sortedQuantity: quantity/);
     // 非 NORMAL 结果必须有原因，否则不发请求
     assert.match(builder, /draft\.result !== SCM_SORTING_RESULT_ENUM\.NORMAL\.value/);
@@ -155,7 +155,7 @@ import {
 
   // ------------------------------------------------------------------ 打印：预览 vs 计次
 
-  test('打印预览是只读 GET，登记计次才是带幂等键的 POST', () => {
+  test('打印预览是只读 GET，登记计次才是带防重复请求编号的 POST', () => {
     assert.match(api, /printPreview: \(id: Id\) => call<SortingPrint>\('get', `\/tasks\/\$\{id\}\/print`\)/);
     assert.match(api, /print: \(id: Id, form: SortingActionPayload\) => command<SortingPrintResult>\(`\/tasks\/\$\{id\}\/print`, form\)/);
     // 页面上预览与登记各走一条路，且预览函数里不许出现计次命令
@@ -168,23 +168,23 @@ import {
     assert.match(record, /version: printVersion\.value/);
   });
 
-  test('建单、分次追加与登记打印带幂等键，其余状态命令靠版本防重', () => {
+  test('建单、分次追加与登记打印带防重复请求编号，其余状态命令靠版本防重', () => {
     assert.match(api, /'Idempotency-Key': key/);
     assert.match(api, /crypto\.randomUUID\(\)/);
     assert.match(api, /idempotentKeys\.delete\(signature\)/);
     assert.match(api, /create: .*=> command<SortingTaskDetail>\('\/tasks', form\)/);
     assert.match(api, /appendPart: \(id: Id, payload: SortingPartPayload\) =>[\s\S]*?command<SortingPartRecord>\(`/);
-    // 其余命令的重复提交由行 / 任务乐观锁拦截，带幂等头只会把冲突掩盖成成功
+    // 其余命令的重复提交由行 / 任务乐观锁拦截，带防重复处理头只会把冲突掩盖成成功
     for (const path of ['assign', 'enter', 'complete', 'cancel', 'reopen']) {
-      assert.match(api, new RegExp(`${path}: [^\\n]*=> call<`), `${path} 不应走幂等 command()`);
+      assert.match(api, new RegExp(`${path}: [^\\n]*=> call<`), `${path} 不应走防重复处理 command()`);
     }
   });
 
   // ------------------------------------------------------------------ 权限
 
-  test('页面用到的 v-privilege 全部落在权限码集合内，且集合与后端契约逐字相同', () => {
+  test('页面用到的 v-privilege 全部落在权限码集合内，且集合与后端约定逐字相同', () => {
     const declared = Object.values(SCM_SORTING_PERMISSION).sort();
-    assert.deepEqual(declared, [...CONTRACT_PERMS].sort(), '权限码必须与后端契约一一对应，不多不少');
+    assert.deepEqual(declared, [...CONTRACT_PERMS].sort(), '权限码必须与后端约定一一对应，不多不少');
 
     /**
      * 页面上「用到权限码」的两种写法：
@@ -287,7 +287,7 @@ import {
     assert.match(assignAction, /label: '改派'/);
     assert.match(assignAction, /working && row\.assigneeEmployeeId != null && hasPermission\(SCM_SORTING_PERMISSION\.TASK_ASSIGN\)/);
     assert.match(taskList, /if \(key === 'assign'\)[\s\S]{0,80}openAction\('assign', row\)/);
-    // 取消与重开的原因是必填项（与后端 requireReason 同口径）
+    // 取消与重开的原因是必填项（与后端 requireReason 同规则）
     assert.match(taskList, /if \(actionMode\.value !== 'assign' && !reason\)/);
     // 编辑权 = 干活的状态 + 派给本人 + 明细编辑权，缺一即只读；三者同源于录入组合式函数
     assert.match(taskEntry, /isWorking\(detail\.value\.task\.status\)/);

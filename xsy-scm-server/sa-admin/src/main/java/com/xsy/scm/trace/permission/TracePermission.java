@@ -8,7 +8,7 @@ public final class TracePermission {
     private TracePermission() {
     }
 
-    /** 包装码列表与回放查询。 */
+    /** 包装码列表与历史记录查询。 */
     public static final String UNIT_QUERY = "scm:inventory:unit:query";
 
     /** 按批次发码。 */

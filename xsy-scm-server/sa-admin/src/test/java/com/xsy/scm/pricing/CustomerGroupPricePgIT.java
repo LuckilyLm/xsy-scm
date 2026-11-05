@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * 客户分组价的落库与取价链路。
+ * 客户分组价的写入数据库与取价链路。
  *
  * <p>分组价按「分组 + 商品 + 销售单位」落一条，组内同单位的不同规格共用这条价格；
  * 停用分组、删除分组都必须让价格立即失效，但审计记录与历史价继续可查。

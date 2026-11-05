@@ -65,7 +65,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 商城只提交订单；后台确认和支付继续验证实重金额、幂等、并发及资金事务。 */
+/** 商城只提交订单；后台确认和支付继续验证实重金额、防重复处理、并发及资金事务。 */
 @DisplayName("商城订货与后台余额结算（PG IT）")
 class MallWalletPaymentPgIT extends ScmW5PgITBase {
 
@@ -138,7 +138,7 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     private SalesOrderQueryService salesOrderQueryService;
 
     @Test
-    @DisplayName("后台支付：扣款额等于服务端算出的应付净额，钱包流水与资金事实同事务落库")
+    @DisplayName("后台支付：扣款额等于服务端算出的应付净额，钱包流水与资金记录同事务写入数据库")
     void walletPaymentDeductsExactlyTheServerComputedPayable() {
         WalletOrder fixture = mallOrder("happy", "10.0000", ScmSettlementMethodEnum.WALLET, true);
 
@@ -202,7 +202,7 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("同一幂等键重放返回已付订单，钱包不出现第二笔扣款")
+    @DisplayName("同一防重复请求编号重放返回已付订单，钱包不出现第二笔扣款")
     void replayingTheSameIdempotencyKeyNeverDeductsASecondTime() {
         WalletOrder fixture = mallOrder("replay", "10.0000", ScmSettlementMethodEnum.WALLET, true);
         String key = prefix + ":pay-replay";
@@ -221,7 +221,7 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    @DisplayName("余额不足：在写任何资金事实之前失败，订单仍是未付")
+    @DisplayName("余额不足：在写任何资金记录之前失败，订单仍是未付")
     void insufficientWalletBalanceFailsBeforeAnyFundingFact() {
         // 「整笔回滚」只在真提交时才暴露：测试外层事务会把失败行留在库里等着回滚，断言就没有意义。
         WalletOrder fixture = mallOrder("short", "10.0000", ScmSettlementMethodEnum.WALLET, true);
@@ -245,7 +245,7 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
         WalletOrder unconfirmed = mallOrder("pending", "10.0000", ScmSettlementMethodEnum.WALLET, false);
         assertThatThrownBy(() -> pay(unconfirmed, prefix + ":pay-pending"))
                 .isInstanceOfSatisfying(ScmBusinessException.class, failure -> assertThat(failure.getErrorCode())
-                        .as("确认前实重未齐，没有权威应付口径，也就没有可支付的金额")
+                        .as("确认前实重未齐，没有权威应付规则，也就没有可支付的金额")
                         .isEqualTo(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID));
         assertThat(walletMovementCount(unconfirmed.walletId(), "CONSUME")).isZero();
 
@@ -315,7 +315,7 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("小程序旧支付入口在待处理及已确认时均拒绝，不产生资金事实")
+    @DisplayName("小程序旧支付入口在待处理及已确认时均拒绝，不产生资金记录")
     void miniProgramPaymentIsDisabledForOwnOrders() {
         for (boolean confirmed : List.of(false, true)) {
             WalletOrder fixture = mallOrder("disabled-" + confirmed, "10.0000", ScmSettlementMethodEnum.WALLET, confirmed);
@@ -332,7 +332,7 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     // 夹具
     // ------------------------------------------------------------------
 
-    /** 新建客户默认「合作中」，这里保留幂等确认，防止夹具后续被改成其它初始状态。 */
+    /** 新建客户默认「合作中」，这里保留防重复处理确认，防止夹具后续被改成其它初始状态。 */
     private void cooperate(Long customerId) {
         var status = new com.xsy.scm.customer.domain.form.CustomerStatusForm();
         status.setCustomerId(customerId);

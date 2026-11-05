@@ -20,7 +20,7 @@ public class FileRelationService {
     private final FileRelationDao fileRelationDao;
 
     /**
-     * 幂等绑定：已存在的 (key, 类型, 对象) 不报错也不产生第二行。
+     * 防重复处理绑定：已存在的 (key, 类型, 对象) 不报错也不产生第二行。
      */
     @Transactional(rollbackFor = Exception.class)
     public void bind(FileRelationBizTypeEnum bizType, Long bizId, Collection<String> fileKeys) {
@@ -67,7 +67,7 @@ public class FileRelationService {
     /**
      * 拆分业务附件列的存储形态（逗号分隔的多 fileKey，与 {@code FileKeyVoSerializer} 读写一致）。
      *
-     * <p>口径只在这里定义一次：各写路径自行 split 会 trim 出不同的 key，
+     * <p>规则只在这里定义一次：各写路径自行 split 会 trim 出不同的 key，
      * 换绑时会把本应保留的关系行判成「不再引用」而静默收回读取权。
      *
      * @return 去空白、去重后的 key 列表；入参为 null 或空白时返回空列表

@@ -207,7 +207,7 @@ public class PurchaseDemandService {
         // 只判需求会留下侧门——用自己的采购单接住别人的需求，两边数字同时被改。
         purchaseOwnerResolver.requireVisible(demand.getPurchaserId());
 
-        // 需求单位（销售单位快照）必须等于采购单位（supplier_sku.purchase_unit 快照）
+        // 需求单位（下单时的销售单位）必须等于采购单位（supplier_sku.purchase_unit 保存的数据）
         PurchaseDemandAllocator.unitCompatible(demand.getDemandUnitSnapshot(), orderItem.getPurchaseUnitSnapshot());
         // 同一 SKU 才能挂
         PurchaseDemandAllocator.itemMatchesDemand(orderItem.getSkuId(), demand.getSkuId());

@@ -26,10 +26,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>覆盖四类断言：
  * <ol>
- *   <li>V6～V9由成功的增量或B快照覆盖，Flyway校验通过；</li>
+ *   <li>V6～V9由成功的增量或B保存的数据覆盖，Flyway校验通过；</li>
  *   <li>4 张表与 5 条关键 CHECK 约束存在；</li>
  *   <li><b>反陷阱</b>：{@code xsy_supplier_sku} 上不存在任何以 {@code is_default} 为键的唯一索引；</li>
- *   <li>菜单 / 权限点 / 角色授权 / 隐藏路由全部落库。</li>
+ *   <li>菜单 / 权限点 / 角色授权 / 隐藏路由全部写入数据库。</li>
  * </ol>
  */
 class ScmCustomerSupplierMigrationIT {

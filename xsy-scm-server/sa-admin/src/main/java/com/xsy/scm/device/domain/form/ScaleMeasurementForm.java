@@ -28,7 +28,7 @@ public class ScaleMeasurementForm {
     @Size(max = 160, message = "事件键最多 160 个字符")
     private String eventKey;
 
-    /** 一次人工操作的幂等号；重试必须复用，不能重新生成。 */
+    /** 一次人工操作的防重复处理号；重试必须复用，不能重新生成。 */
     @NotBlank(message = "操作编号不能为空")
     @Size(max = 160, message = "操作编号最多 160 个字符")
     private String operationId;

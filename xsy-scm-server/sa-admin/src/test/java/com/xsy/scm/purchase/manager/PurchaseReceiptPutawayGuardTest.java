@@ -30,7 +30,7 @@ class PurchaseReceiptPutawayGuardTest {
         // DIRECT 模式（确认即入库，不存在二次确认）
         assertThat(PurchaseReceiptPutawayGuard.putawayAllowed(
                 "CONFIRMED", "DIRECT", "PENDING")).isFalse();
-        // 已入库（幂等/状态冲突，不能重复入库）
+        // 已入库（防重复处理/状态冲突，不能重复入库）
         assertThat(PurchaseReceiptPutawayGuard.putawayAllowed(
                 "CONFIRMED", "WAREHOUSE_CONFIRM", "COMPLETED")).isFalse();
         assertThat(PurchaseReceiptPutawayGuard.putawayAllowed(

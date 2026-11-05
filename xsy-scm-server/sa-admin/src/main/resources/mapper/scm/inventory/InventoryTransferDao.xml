@@ -83,8 +83,8 @@
         LEFT JOIN xsy_warehouse tw ON tw.id = t.to_warehouse_id
         WHERE t.deleted = FALSE
         <!--
-          调拨的可见口径是「任一端授权即可见」：只授权源仓或只授权目标仓的人都需要看见这张单，
-          否则在途期间的单据对其中一方完全消失。发出/收货的动作口径不在此处（写路径另行判权限）。
+          调拨的可见规则是「任一端授权即可见」：只授权源仓或只授权目标仓的人都需要看见这张单，
+          否则在途期间的单据对其中一方完全消失。发出/收货的动作规则不在此处（写路径另行判权限）。
           scope 缺失时恒假。
         -->
         <if test="scope != null and scope.all == false">
@@ -131,7 +131,7 @@
         WHERE t.deleted = FALSE
             AND t.status = 'SHIPPED'
         <!--
-          在途口径与调拨列表一致：任一端授权即可见，否则对只授权目标仓的一方，
+          在途规则与调拨列表一致：任一端授权即可见，否则对只授权目标仓的一方，
           「货已在路上」这件事完全不可见，而它正是目标仓最需要知道的。scope 缺失时恒假。
         -->
         <if test="scope != null and scope.all == false">

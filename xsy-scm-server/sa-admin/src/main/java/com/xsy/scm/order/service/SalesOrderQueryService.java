@@ -142,7 +142,7 @@ public class SalesOrderQueryService {
     }
 
     /**
-     * 详情快照（刻意不限定范围）：写路径在同一事务里取操作日志的前后数据，读的是自己刚写下的行；数据范围只约束读接口。
+     * 用于操作日志的订单详情（刻意不限定范围）：写路径在同一事务里取操作日志的前后数据，读的是自己刚写下的行；数据范围只约束读接口。
      */
     public SalesOrderDetailVO detailSnapshot(Long orderId) {
         var salesOrder = salesOrderDao.selectById(orderId);
@@ -153,7 +153,7 @@ public class SalesOrderQueryService {
 
     private SalesOrderDetailVO detailSnapshot(SalesOrderEntity salesOrder) {
         var salesOrderDetailVO = new SalesOrderDetailVO();
-        // 详情按主键读取时不带列表查询的 EXISTS 列，这里补一次签收事实，保证编辑按钮与写接口结论一致。
+        // 详情按主键读取时不带列表查询的 EXISTS 列，这里补一次签收记录，保证编辑按钮与写接口结论一致。
         if (salesOrder.getSignedFlag() == null)
             salesOrder.setSignedFlag(salesOrderDao.hasSignedFact(salesOrder.getId()));
         BeanUtils.copyProperties(order(salesOrder), salesOrderDetailVO);
@@ -206,7 +206,7 @@ public class SalesOrderQueryService {
      * 某批商品规格的最近采购价（只读）：按采购员的授权范围取数，只供录单参考，不回算当前价格、不参与定价。
      *
      * <p>
-     * 采购范围为空时失败关闭，返回空结果而不是全量。成本可见性由接口权限注解保证。
+     * 采购范围为空时校验失败时拒绝操作，返回空结果而不是全量。成本可见性由接口权限注解保证。
      */
     public List<OrderLastPurchasePriceVO> lastPurchasePrices(List<Long> skuIds) {
         if (skuIds == null || skuIds.isEmpty())

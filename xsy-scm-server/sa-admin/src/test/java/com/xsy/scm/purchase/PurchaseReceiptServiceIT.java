@@ -30,9 +30,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * </ol>
  *
  * <p>新建的收货行对账量必须是初始态（{@code remaining = planned}、{@code difference = −planned}），
- * 这不是「零值」而是对账恒等式在 {@code cumulative = 0} 时的取值 —— 断言它同时锁住了初始口径。
+ * 这不是「零值」而是对账恒等式在 {@code cumulative = 0} 时的取值 —— 断言它同时锁住了初始规则。
  */
-@DisplayName("收货单生命周期：create / update / delete / 幂等（PG IT）")
+@DisplayName("收货单生命周期：create / update / delete / 防重复处理（PG IT）")
 class PurchaseReceiptServiceIT extends ScmW5PgITBase {
 
     /**
@@ -155,14 +155,14 @@ class PurchaseReceiptServiceIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("delete：仅待确认可删（确认后 → 40994），删除本身幂等")
+    @DisplayName("delete：仅待确认可删（确认后 → 40994），删除本身防重复处理")
     void deleteOnlyAllowsDraftAndIsIdempotent() {
         ReceiptFixture draftFixture = receiptFixture("RC5", "10.0000");
         Long draftId = draftFixture.receipt().getId();
 
         purchaseReceiptService.delete(receiptDeleteForm(draftId));
         expectCode(() -> reloadReceipt(draftId), 40483);
-        // 幂等：已删视为成功
+        // 防重复处理：已删视为成功
         purchaseReceiptService.delete(receiptDeleteForm(draftId));
 
         // 确认后不可删
@@ -173,11 +173,11 @@ class PurchaseReceiptServiceIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 6. create 幂等
+    // 6. create 防重复处理
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("create 幂等：同键同内容重放，不产生第二张收货单")
+    @DisplayName("create 防重复处理：同键同内容重放，不产生第二张收货单")
     void createIsIdempotentWithinOrderScope() {
         ReceiptFixture fx = receiptFixture("RC6", "10.0000");
 

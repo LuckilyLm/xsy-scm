@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.util.Locale;
 
 /**
- * 库存盘点支持创建、修改、确认和取消。查询、录单与确认分别授权，确认时必须核对库存快照和实际盘点数量。
+ * 库存盘点支持创建、修改、确认和取消。查询、录单与确认分别授权，确认时必须核对库存保存的数据和实际盘点数量。
  */
 @RestController
 @RequestMapping("/scm/inventory/stocktake")
@@ -92,7 +92,7 @@ public class InventoryStocktakeController {
      * 导入填好实盘量的 Excel → 新建待确认盘点单。
      *
      * <p>
-     * 只建待确认单，不改动库存；整批校验或快照核验任一不过即整批拒绝、不写入。 {@code Idempotency-Key} 让响应丢失后的同请求重试不产生第二张盘点单。
+     * 只建待确认单，不改动库存；整批校验或保存的数据核验任一不过即整批拒绝、不写入。 {@code Idempotency-Key} 让响应丢失后的同请求重试不产生第二张盘点单。
      */
     @PostMapping("/import")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_IMPORT)

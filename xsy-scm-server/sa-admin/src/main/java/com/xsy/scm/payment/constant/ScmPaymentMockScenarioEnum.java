@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 仅模拟渠道可以携带测试场景。模拟场景只控制渠道行为，不得绕过验签、幂等或状态机。
+ * 仅模拟渠道可以携带测试场景。模拟场景只控制渠道行为，不得绕过验签、防重复处理或状态机。
  */
 @Getter
 @RequiredArgsConstructor

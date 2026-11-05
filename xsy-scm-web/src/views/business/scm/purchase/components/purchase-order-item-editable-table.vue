@@ -202,7 +202,7 @@ function normalizeNumber(target: object, key: 'plannedQuantity' | 'purchasePrice
   }
 }
 
-/** 编辑旧采购单时用已保存商品/规格快照回显，避免显示数字 ID。 */
+/** 编辑旧采购单时用已保存商品/商品规格资料回显，避免显示数字 ID。 */
 function selectedSkuOptions(record: OrderItem) {
   if (record.skuId == null || !record.productName) return [];
   const spec = Object.values(record.specValues ?? {}).join('/') || '默认规格';

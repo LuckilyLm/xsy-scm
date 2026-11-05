@@ -1,5 +1,5 @@
 /*
- * Mock 契约层的空实现。
+ * Mock 约定层的空实现。
  *
  * 当 `VITE_APP_USE_MOCK !== 'true'` 时，vite.config.js 会把 `@/mock` 别名到本文件，
  * 从而保证假数据与 mock 路由**绝对不会进入构建产物**。

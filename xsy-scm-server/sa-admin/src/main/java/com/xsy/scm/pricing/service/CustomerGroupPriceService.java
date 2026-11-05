@@ -164,7 +164,7 @@ public class CustomerGroupPriceService {
         try {
             return objectMapper.writeValueAsString(fields);
         } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
-            throw new IllegalStateException("价格审计快照序列化失败", ex);
+            throw new IllegalStateException("价格审计保存的数据序列化失败", ex);
         }
     }
 

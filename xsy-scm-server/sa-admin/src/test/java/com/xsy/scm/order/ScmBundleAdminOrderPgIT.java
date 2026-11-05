@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** 后台明确选仓的真实订单录入 → 自动确认 → 组成价格快照，不按系统默认仓替代。 */
+/** 后台明确选仓的真实订单录入 → 自动确认 → 组成价格保存的数据，不按系统默认仓替代。 */
 class ScmBundleAdminOrderPgIT extends ScmW5PgITBase {
 
     @Autowired

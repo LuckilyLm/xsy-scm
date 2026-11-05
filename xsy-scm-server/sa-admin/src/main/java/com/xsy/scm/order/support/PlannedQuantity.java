@@ -6,11 +6,11 @@ import java.math.BigDecimal;
  * 计划数量：已称重取实发量，还没称重就取订购量。
  *
  * <p>
- * 非标行允许不填实重就确认（称重发生在分拣台），确认、授信、分拣排计划、采购需求这些「先按订单做计划」的环节都必须按同一口径取数： 有实发量用实发量，没有就用订购量。 各自再写一遍
+ * 非标行允许不填实重就确认（称重发生在分拣台），确认、授信、分拣排计划、采购需求这些「先按订单做计划」的环节都必须按同一套规则取数： 有实发量用实发量，没有就用订购量。 各自再写一遍
  * {@code actual != null ? actual : ordered} 迟早会漏一个，漏掉的那一处不是少算需求就是直接空指针。
  *
  * <p>
- * 这<b>不是</b>结算口径：结算金额仍以 {@code actual_quantity} 为准，称重后由 {@code OrderActualQuantitySyncService} 回写并重算。
+ * 这<b>不是</b>结算规则：结算金额仍以 {@code actual_quantity} 为准，称重后由 {@code OrderActualQuantitySyncService} 回写并重算。
  */
 public final class PlannedQuantity {
 

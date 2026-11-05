@@ -201,8 +201,8 @@ class MallHomeLayoutPgIT extends ScmW5PgITBase {
     }
 
     /**
-     * 商城首页投影要按「客户可选的配送仓」校验仓库；裸 newCustomer() 没有绑定仓也没有地址，
-     * 会让投影直接报 WAREHOUSE_UNAVAILABLE。这里把种子仓绑到客户上，不依赖环境里的地址数据。
+     * 商城首页查询结果要按「客户可选的配送仓」校验仓库；裸 newCustomer() 没有绑定仓也没有地址，
+     * 会让查询结果直接报 WAREHOUSE_UNAVAILABLE。这里把种子仓绑到客户上，不依赖环境里的地址数据。
      */
     private Long customerWithWarehouse() {
         Long customerId = newCustomer();

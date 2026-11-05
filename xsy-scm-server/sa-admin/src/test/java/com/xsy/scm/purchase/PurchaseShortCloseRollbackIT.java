@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 非法成员抛错后，前一个合法成员的写入仍留在未提交事务里，回读只能看到「写过了」，
  * 看不到最终是否回滚 —— 那条断言在这个边界下要么恒真、要么误测。本类用
  * {@code Propagation.NOT_SUPPORTED}：{@code batchShortClose} 的 {@code @Transactional} 成为真实边界，
- * 失败即整批回滚并落库，随后用 {@code JdbcTemplate} 的独立自动提交查询读到的就是回滚后的事实。
+ * 失败即整批回滚并写入数据库，随后用 {@code JdbcTemplate} 的独立自动提交查询读到的就是回滚后的记录。
  *
  * <p>批量按采购单 id 升序处理，两个用例都把先被写入的那张放在低位 id：
  * 状态机拒绝与乐观锁拒绝各一例，只要回滚漏掉一次，先写入的那张就会以

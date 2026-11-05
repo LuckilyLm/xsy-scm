@@ -110,7 +110,7 @@ public class OrderReturnService {
         var orderReturnResultVO = new OrderReturnVO();
         BeanUtils.copyProperties(orderReturnEntity, orderReturnResultVO);
         orderReturnResultVO.setReturnId(orderReturnEntity.getId());
-        // 客户名称用退货单自己的快照：独立退货没有订单可联，原单退货也不随订单改名变化。
+        // 客户名称用退货单自己的已存数据：独立退货没有订单可联，原单退货也不随订单改名变化。
         orderReturnResultVO.setCustomerName(orderReturnEntity.getCustomerNameSnapshot());
         if (orderReturnEntity.getOrderId() != null) {
             var order = salesOrderDao.selectById(orderReturnEntity.getOrderId());
@@ -159,7 +159,7 @@ public class OrderReturnService {
             returnItemVO.setReceivedQuantity(orderReturnReceiptItemDao.receivedQuantity(returnItem.getId()));
             returnItemVO.setReceiptAllocations(orderReturnReceiptItemDao.listByReturnItemId(returnItem.getId()).stream()
                 .map(this::receiptAllocation).toList());
-            // 商品与单位一律读退货行快照：独立退货没有订单明细可回查。
+            // 商品与单位一律读退货当时的明细：独立退货没有订单明细可回查。
             returnItemVO.setProductName(returnItem.getSkuNameSnapshot());
             returnItemVO.setUnit(returnItem.getSaleUnitSnapshot());
             return returnItemVO;
@@ -227,7 +227,7 @@ public class OrderReturnService {
         boolean enforceEmployeeScope) {
         var claim = orderIdempotencyService.claim("ORDER_RETURN_CREATE", key, orderReturnAddForm);
         if (claim.replay()) {
-            // 重放也要过范围：幂等 scope 含 operator，B 拿不到 A 的记录；
+            // 重放也要过范围：防重复处理 scope 含 operator，B 拿不到 A 的记录；
             // 但同一个人换了负责范围后重放旧键仍会绕过写命令内的校验。
             // 商城入口已由 MallAfterSaleService 按登录客户判过归属，不再套员工范围。
             if (enforceEmployeeScope) {
@@ -467,7 +467,7 @@ public class OrderReturnService {
             throw new ScmBusinessException(VERSION_CONFLICT);
         var result = detailSnapshot(orderReturnEntity.getId());
         if (ScmOrderReturnSourceEnum.INDEPENDENT.name().equals(orderReturnEntity.getSourceType())) {
-            // 独立退货没有原订单资金事实：只生成客户级红字，不生成退款单。
+            // 独立退货没有原订单资金记录：只生成客户级红字，不生成退款单。
             BigDecimal redAmount = financeReceivableService
                 .generateRedOnIndependentReturnApproved(orderReturnEntity.getId());
             recordLog(orderReturnEntity,

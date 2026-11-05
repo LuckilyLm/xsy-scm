@@ -19,12 +19,12 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * V19 的 schema 形状与库存域的契约装配。
+ * V19 的 schema 形状与库存域的约定装配。
  *
  * <p><b>本类取代了已删除的 {@code PurchaseInventoryContractAbsenceIT}</b>：
- * 该 IT 断言「容器里没有任何库存契约 Bean」，库存实现交付后该前提不再成立，因此改由
+ * 该 IT 断言「容器里没有任何库存约定 Bean」，库存实现交付后该前提不再成立，因此改由
  * {@link #exactlyOneInventoryContractBean()} 断言恰好一个真实实现 ——
- * 从「没有实现」到「只有一个正确实现」，这才是契约被兑现的证据。
+ * 从「没有实现」到「只有一个正确实现」，这才是约定被兑现的证据。
  * 占位实现 {@code NoOpPurchaseInventoryContract} 仍然保留但继续不注册，理由见其类注释。
  *
  * <p>本类是库存域唯一直接断言 schema 形状的地方（列 / 约束 / 索引 / 索引谓词），
@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p><b>V19/V20 是已应用迁移，内容不再变化</b>：本类不修改任何数据，只读元数据 + 用
  * {@code expectSqlFailure}（SAVEPOINT 隔离）验证约束真的会拒绝坏数据。
  */
-@DisplayName("W6 库存域迁移与契约装配（PG IT）")
+@DisplayName("W6 库存域迁移与约定装配（PG IT）")
 class ScmInventoryMigrationIT extends ScmBaselineMigrationPgITBase {
 
     private static final List<String> W6_TABLES = List.of("xsy_inventory_balance", "xsy_inventory_movement");
@@ -41,7 +41,7 @@ class ScmInventoryMigrationIT extends ScmBaselineMigrationPgITBase {
     /**
      * 除余额与流水之外的库存表清单。
      *
-     * <p>与 {@link #W6_TABLES} 分开列，是为了让「余额与流水两张核心表」这个事实不被后续新增稀释 ——
+     * <p>与 {@link #W6_TABLES} 分开列，是为了让「余额与流水两张核心表」这个记录不被后续新增稀释 ——
      * 一个列表越加越长就失去了「范围锁定」的作用。
      */
     private static final List<String> POST_W6_TABLES = List.of(
@@ -87,11 +87,11 @@ class ScmInventoryMigrationIT extends ScmBaselineMigrationPgITBase {
     }
 
     // ------------------------------------------------------------------
-    // DDL 契约
+    // DDL 约定
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("#11 DDL 契约：零外键、列形状、CHECK 生效、append-only 锁死、部分唯一索引谓词精确")
+    @DisplayName("#11 DDL 约定：零外键、列形状、CHECK 生效、append-only 锁死、部分唯一索引谓词精确")
     void ddlContract() {
         // --- 零外键：全库既有纪律，库存域不得引入第一个外键 ---
         assertThat(jdbc.queryForObject(
@@ -113,7 +113,7 @@ class ScmInventoryMigrationIT extends ScmBaselineMigrationPgITBase {
                 // V34 起余额表有 avg_cost：移动加权是顺序相关的，
                 // 且出库成本必须在出库那一刻确定，
                 // 事后从流水反推需要重放整条历史（而重放的前提正是出库流水都已带成本，鸡生蛋）。
-                // 加列是有意的范围扩张，成本事实仍由 movement 的 unit_cost 承载。
+                // 加列是有意的范围扩张，成本记录仍由 movement 的 unit_cost 承载。
                 .contains("avg_cost")
                 // 不允许悄悄出现的列：
                 // weight 属分拣域；warn_min / warn_max 不在余额表上（预警配置独立建表）；
@@ -145,7 +145,7 @@ class ScmInventoryMigrationIT extends ScmBaselineMigrationPgITBase {
         assertThat(movementIndex).containsIgnoringCase("source_document_item_id IS NOT NULL");
 
         // --- CHECK 定义（读约束定义，确认判据写在 DB 里而不是只写在服务层）---
-        // 快照约束必须是方向感知的：入库、出库、盘盈 / 盘亏、报损 / 报溢、转出 / 转入、
+        // 保存的数据约束必须是方向感知的：入库、出库、盘盈 / 盘亏、报损 / 报溢、转出 / 转入、
         // 转换出 / 转换入各自的分支都在同一条 CHECK 里，
         // 每个类型都必须落在自己的方向组里。
         assertThat(constraintDef("xsy_inventory_movement", "ck_inventory_movement_snap"))
@@ -210,19 +210,19 @@ class ScmInventoryMigrationIT extends ScmBaselineMigrationPgITBase {
         // movement_type 白名单：白名单之外一律拒绝。这里用 UNKNOWN_IN 这个
         // 明确不存在的名字 —— 真实类型已全部落地，再拿「未实现的业务类型」当反例
         // 会每落地一个就要改一次。
-        // 也不用已放行的类型当反例：那会因快照方向不符而失败，就不是在验证白名单了。
+        // 也不用已放行的类型当反例：那会因保存的数据方向不符而失败，就不是在验证白名单了。
         expectSqlFailure("INSERT INTO xsy_inventory_movement (warehouse_id, sku_id, movement_type, "
                 + "source_document_type, source_document_id, source_document_item_id, quantity, unit_snapshot, "
                 + "before_quantity, after_quantity, occurred_at, deleted) "
                 + "VALUES (1, 1, 'UNKNOWN_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 1, 'kg', 0, 1, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 3);
-        // 单位快照不能是空白
+        // 当时的单位不能是空白
         expectSqlFailure("INSERT INTO xsy_inventory_movement (warehouse_id, sku_id, movement_type, "
                 + "source_document_type, source_document_id, source_document_item_id, quantity, unit_snapshot, "
                 + "before_quantity, after_quantity, occurred_at, deleted) "
                 + "VALUES (1, 1, 'PURCHASE_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 1, '  ', 0, 1, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 4);
-        // 余额数量 >= 0：V186 把种子仓 WH001 设为允许负库存，这里另建一个普通仓验证守恒口径。
+        // 余额数量 >= 0：V186 把种子仓 WH001 设为允许负库存，这里另建一个普通仓验证守恒规则。
         Long strictWarehouseId = newWarehouse("守恒");
         expectSqlFailure("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, version, deleted) "
                 + "VALUES (?, 1, 'kg', -1, 0, FALSE)", strictWarehouseId);
@@ -362,7 +362,7 @@ class ScmInventoryMigrationIT extends ScmBaselineMigrationPgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * V32 的两条结构性事实。
+     * V32 的两条结构性记录。
      *
      * <p>第一条是阈值配置不在 {@code xsy_inventory_balance} 上。
      * 上面 {@link #ddlContract()} 里 {@code doesNotContain("warn_min", "warn_max")} 的断言与它互相印证：
@@ -416,14 +416,14 @@ class ScmInventoryMigrationIT extends ScmBaselineMigrationPgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 契约装配
+    // 约定装配
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("#17 契约装配：PurchaseInventoryContract 恰好 1 个 Bean（真实实现），NoOp 未注册")
+    @DisplayName("#17 约定装配：PurchaseInventoryContract 恰好 1 个 Bean（真实实现），NoOp 未注册")
     void exactlyOneInventoryContractBean() {
-        // 「容器里恰好一个库存契约 Bean」
-        // 是契约真正被兑现的充要条件。
+        // 「容器里恰好一个库存约定 Bean」
+        // 是约定真正被兑现的充要条件。
         Map<String, PurchaseInventoryContract> beans =
                 applicationContext.getBeansOfType(PurchaseInventoryContract.class);
         assertThat(beans).hasSize(1);

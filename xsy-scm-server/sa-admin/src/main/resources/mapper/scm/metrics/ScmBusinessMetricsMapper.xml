@@ -5,12 +5,12 @@
     <!--
       ================= 数据范围谓词 =================
       三条纪律与报表 / 库存族同源（docs/decisions.md「P0 基线收口裁决」第 2、4、8、16 条）：
-        * 谓词落在被聚合的事实行上，不落在维度 join 上，也不在聚合之后补 —— 先聚合再过滤
+        * 谓词落在被聚合的记录行上，不落在维度 join 上，也不在聚合之后补 —— 先聚合再过滤
           等于把授权外的量算进聚合值，事后 WHERE 改不回来。
         * scope == null 或该维度没有任何授权值 → AND FALSE。这里没有「参数为空即全部」。
         * scope.*.all 为真时不拼谓词，因此 seller_id IS NULL / purchaser_id IS NULL 的未分配行
           对该维度持全部范围者照常可见，对普通业务员天然不可见（IN 排除 NULL）。
-      趋势查询的各事实聚合独立应用范围谓词，不能只在日期轴上过滤。
+      趋势查询的各记录聚合独立应用范围谓词，不能只在日期轴上过滤。
 
       scopeC / scopeB / scopeW 与 screen 的 ScreenDataMapper 各存一份（那边的大屏专属聚合
       仍要用），两处内容必须逐字一致 —— scm-metrics-scope-fragment-contract 钉住了这一点。
@@ -45,7 +45,7 @@
         </choose>
     </sql>
 
-    <!-- 采购：归属维度与仓库维度同时成立，取交集（与收货确认同一条口径） -->
+    <!-- 采购：归属维度与仓库维度同时成立，取交集（与收货确认同一条规则） -->
     <sql id="scopePo">
         <choose>
             <when test="scope == null or scope.purchaserScope.empty or scope.warehouseScope.empty">AND FALSE</when>
@@ -158,7 +158,7 @@
 
     <!--
       销售指标的附加筛选（客户 / 业务员 / 订单来源）。报表概览的筛选表单用它，首页与大屏传空对象。
-      与范围谓词同一条纪律：落在被聚合的事实行上，不在聚合之后补。
+      与范围谓词同一条纪律：落在被聚合的记录行上，不在聚合之后补。
     -->
     <sql id="salesFilter">
         <if test="filter != null and filter.customerId != null">AND so.customer_id = #{filter.customerId}</if>
@@ -252,7 +252,7 @@
       商品排行按 SPU 归并，不是按 SKU。
       一个 SPU 下可以有多个 SKU（如「智利车厘子」有 5 斤装 / 10 斤装），
       按 sku_id 分组会让同一个商品名在榜单里出现两次（两条各带自己的金额），
-      看起来像数据重复。榜单的口径是「商品」，所以按 spu_id 合并金额。
+      看起来像数据重复。榜单的规则是「商品」，所以按 spu_id 合并金额。
       展示名用当前主数据名称；主数据缺失时显示对象编号，不丢失历史成交金额。
       范围谓词落在父单 so 上：明细行自己没有业务员列，归属只随父单走。
     -->
@@ -326,7 +326,7 @@
     </select>
 
     <!--
-      库存健康度判定输入：只取事实（可用量 + 上下限），不在这里分类。
+      库存健康度判定输入：只取记录（可用量 + 上下限），不在这里分类。
       分类只有 ScmInventoryWarningStatusEnum#evaluate 一处实现；
       若让 SQL 也算一份「正常/低于下限/高于上限」，首页与大屏就会和预警列表对不上。
       两个分支：
@@ -435,7 +435,7 @@
         <include refid="scopePo"/>
     </select>
 
-    <!-- 各指标只扫描所需事实；时间范围比较原始时间列，日期转换只用于分组。 -->
+    <!-- 各指标只扫描所需记录；时间范围比较原始时间列，日期转换只用于分组。 -->
     <sql id="trendQuery">
         WITH dates AS(SELECT d::date AS day FROM generate_series(#{startDate}::date, #{endDate}::date,
             INTERVAL '1 day') AS gs(d))

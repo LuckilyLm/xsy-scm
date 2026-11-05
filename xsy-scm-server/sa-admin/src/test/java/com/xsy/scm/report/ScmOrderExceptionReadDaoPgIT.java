@@ -15,7 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** 使用独立空库检查整个异常联合查询的列、类型和空授权失败关闭。 */
+/** 使用独立空库检查整个异常联合查询的列、类型和空授权校验失败时拒绝操作。 */
 @SpringBootTest(classes = AdminApplication.class, properties = {
         "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
         "file.storage.local.upload-path=" + PgITPaths.DEFAULT_UPLOAD_PATH,

@@ -16,7 +16,7 @@
         <a-button @click="load">重试</a-button>
       </template>
     </a-alert>
-    <!-- 收货确认会冻结库存成本：待定价行必须先回采购单补价，不能无价入库 -->
+    <!-- 收货确认会确定并保存库存成本：待定价行必须先回采购单补价，不能无价入库 -->
     <a-alert
       v-if="pendingLines.length"
       class="pending-alert"
@@ -147,7 +147,7 @@ const lotOpen = ref(false);
 const lotLineId = ref<Id>();
 const lotDraft = ref<ReceiptConfirmLot[]>([]);
 let requestId = 0;
-/** 待定价行：确认收货会冻结库存成本，这些行必须先补价。 */
+/** 待定价行：确认收货会确定并保存库存成本，这些行必须先补价。 */
 const pendingLines = computed(() => (receipt.value?.items ?? []).filter((item) => item.pricePending));
 
 const columns: TableColumnsType<ReceiptItem> = [

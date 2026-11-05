@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 客户余额只追加流水；写之前先锁账户行，再查重和重算可用余额。
+ * 客户余额只能新增流水；写之前先锁账户行，再查重和重算可用余额。
  */
 @Slf4j
 @Service

@@ -66,10 +66,10 @@ test.describe('adm-golden-chain-01', () => {
   test('2 收款 → 核销 → 应收未核销归零', async () => {
     const amount = String(facts.receivable.amount);
     receipt = await createReceipt(harness, facts.customerId, amount, 'GOLDEN01-R');
-    expect(receipt.receiptId !== undefined, '收款单未落库').toBe(true);
+    expect(receipt.receiptId !== undefined, '收款单未写入数据库').toBe(true);
     writeOff = await createWriteOff(harness, receipt.receiptId, [{targetId: facts.receivable.receivableId, amount}]);
     // /write-off/add 返回的是 {items: FinanceWriteOffVO[]}，核销号在 items[0] 上
-    expect(Array.isArray(writeOff.items) && writeOff.items.length, '核销单未落库').toBe(1);
+    expect(Array.isArray(writeOff.items) && writeOff.items.length, '核销单未写入数据库').toBe(1);
     expect(writeOff.items[0].writeOffId !== undefined, '核销明细未带回写核销号').toBe(true);
 
     const after = await call<Row>(harness.finance, 'get', `/scm/finance/receivable/${facts.receivable.receivableId}`);
@@ -104,7 +104,7 @@ test.describe('adm-golden-chain-01', () => {
     await page.screenshot({path: '../.runtime/golden01-receipts.png', fullPage: true});
   });
 
-  test('5 客户对账单：冻结后本期应收=核销、期末净应收归零', async ({page}) => {
+  test('5 客户对账单：保存后本期应收=核销、期末净应收归零', async ({page}) => {
     page.on('pageerror', (e) => consoleErrors.push(`statement: ${e.message}`));
     await authenticate(page, harness.financeToken);
     await page.goto('/#/report/report-customer-statement');
@@ -117,7 +117,7 @@ test.describe('adm-golden-chain-01', () => {
       startDate: range.startDate,
       endDate: range.endDate,
     });
-    expect(statement.id !== undefined, '对账单未冻结成功').toBe(true);
+    expect(statement.id !== undefined, '对账单未保存成功').toBe(true);
     // 闭环的会计证据：本期发生额、核销额、期末余额三者对得上
     expect(Number(statement.receivableIncrease), '对账单未计入本链应收').toBe(amount);
     expect(Number(statement.writeOffNet), '对账单核销净额与收款不符').toBe(amount);
@@ -125,7 +125,7 @@ test.describe('adm-golden-chain-01', () => {
     const history = await call<Row[]>(harness.finance, 'get', `/scm/report/customer/statement/history?settlementCustomerId=${facts.customerId}`);
     expect(
       (history as unknown as Row[]).some((r) => Number(r.id) === Number(statement.id)),
-      '冻结出的对账单不在历史里'
+      '保存出的对账单不在历史里'
     ).toBe(true);
     await page.screenshot({path: '../.runtime/golden01-statement.png', fullPage: true});
   });
@@ -210,7 +210,7 @@ test.describe('adm-golden-chain-02', () => {
   test('3 集团统一收款 → 以该收款核销子客户形成的应收', async () => {
     const amount = String(facts.receivable.amount);
     receipt = await createReceipt(harness, parentCustomerId, amount, 'GOLDEN02-R');
-    expect(receipt.receiptId !== undefined, '集团收款单未落库').toBe(true);
+    expect(receipt.receiptId !== undefined, '集团收款单未写入数据库').toBe(true);
 
     const writeOff = await createWriteOff(harness, receipt.receiptId, [{targetId: facts.receivable.receivableId, amount}]);
     expect((writeOff.items as Row[]).length, '集团收款未能核销子客户应收').toBe(1);
@@ -228,7 +228,7 @@ test.describe('adm-golden-chain-02', () => {
       startDate: range.startDate,
       endDate: range.endDate,
     });
-    expect(statement.id !== undefined, '集团对账单未能冻结').toBe(true);
+    expect(statement.id !== undefined, '集团对账单未能保存').toBe(true);
     expect(Number(statement.receivableIncrease), '集团对账单未计入子客户形成的应收').toBe(Number(facts.receivable.amount));
     expect(Number(statement.closingReceivable), '集团统一收款核销后期末应归零').toBe(0);
 
@@ -246,7 +246,7 @@ test.describe('adm-golden-chain-03', () => {
    * §15 E2E-03 黄金业务链（清单原文：订单 → 退货审批 → 实物接收 → SALES_RETURN_IN → RED → 退款 → 报表）
    *
    * 与 E2E-01 同理：一条 serial 链，后一步吃前一步的真实产物，
-   * 并在「退货回库」这一步同时验到库存事实（流水方向 + 余额增加）与财务事实（红字），
+   * 并在「退货回库」这一步同时验到库存记录（流水方向 + 余额增加）与财务记录（红字），
    * 因为 ADM-02 最容易出的错就是「退货只改财务、不回库」或「回库了但方向写反」。
    */
 
@@ -365,13 +365,13 @@ test.describe('adm-golden-chain-03', () => {
 // ---------------------------------------------------------------- 来源：e2e-chains/adm-golden-chain-04.spec.ts
 test.describe('adm-golden-chain-04', () => {
   /*
-   * §15 E2E-04 黄金业务链（清单原文：采购需求 → 净需求预览 → 冻结批次 → 生成需求 → 采购 → 收货 → 入库 → 应付 → 付款）
+   * §15 E2E-04 黄金业务链（清单原文：采购需求 → 净需求预览 → 计算结果批次 → 生成需求 → 采购 → 收货 → 入库 → 应付 → 付款）
    *
    * 本轮覆盖的是「采购 → 收货 → 入库 → 应付 → 付款」这段可自动化的实链，
-   * 并同时验**库存事实**（入库流水 + 余额增加）与**财务事实**（应付生成、付款核销后余额归零）——
+   * 并同时验**库存记录**（入库流水 + 余额增加）与**财务记录**（应付生成、付款核销后余额归零）——
    * 只验其中一边就会漏掉 ADM-04 最容易的错：收货了但没产生应付，或应付对了库存没动。
    *
-   * 未覆盖：净需求预览 / 冻结批次 / 生成需求 这三步属 ADM-05，
+   * 未覆盖：净需求预览 / 计算结果批次 / 生成需求 这三步属 ADM-05，
    * 其页面断言目前红在裁决项 17（D-34），故不在此链里重复立案。
    */
 
@@ -393,7 +393,7 @@ test.describe('adm-golden-chain-04', () => {
     if (harness) await harness.close();
   });
 
-  test('1 采购单 → 收货确认 → 产生库存入库事实', async () => {
+  test('1 采购单 → 收货确认 → 产生库存入库记录', async () => {
     // createPurchaseReceipt 每次都新建一个 SKU，所以它的期初余额必然是 0，
     // 收货确认后余额应精确等于本次收货量（不需要"前后差值"这种弱断言）。
     purchase = await createPurchaseReceipt(harness, 'GOLDEN04', PLANNED, RECEIVED);
@@ -445,7 +445,7 @@ test.describe('adm-golden-chain-04', () => {
       remark: `${harness.runTag} GOLDEN04`,
     });
     const paymentId = Number(payment.paymentId ?? payment.id);
-    expect(paymentId > 0, '付款单未落库').toBe(true);
+    expect(paymentId > 0, '付款单未写入数据库').toBe(true);
 
     await call(harness.finance, 'post', '/scm/finance/write-off/add', {
       sourceType: 'PAYMENT',
@@ -457,7 +457,7 @@ test.describe('adm-golden-chain-04', () => {
     expect(Number(main.openAmount), '全额付款核销后应付未付额应归零').toBe(0);
   });
 
-  test('4 采购收货与应付页面都体现这笔事实，且整链无浏览器异常', async ({page}) => {
+  test('4 采购收货与应付页面都体现这笔记录，且整链无浏览器异常', async ({page}) => {
     page.on('pageerror', (e) => consoleErrors.push(`page: ${e.message}`));
     await authenticate(page, harness.adminToken);
     await page.goto('/#/purchase/purchase-receipt-list');
@@ -477,15 +477,15 @@ test.describe('adm-golden-chain-04', () => {
 // ---------------------------------------------------------------- 来源：e2e-chains/adm-golden-chain-05.spec.ts
 test.describe('adm-golden-chain-05', () => {
   /*
-   * §15 E2E-05 黄金业务链（清单原文：活动/券 → 发券 → 订单确认冻结优惠 → 配送 → 签收核券 → 净应收 → 利润）
+   * §15 E2E-05 黄金业务链（清单原文：活动/券 → 发券 → 订单确认已确认优惠 → 配送 → 签收核券 → 净应收 → 利润）
    *
    * ADM-12 这条链的要害是「券什么时候真正生效、生效在哪个数上」：
-   *   确认订单时冻结优惠 → 应收必须按**净额**记；
+   *   确认订单时已确认优惠 → 应收必须按**净额**记；
    *   签收时核销券 → 券实例状态必须离开「可用」；
    *   全程不能出现「毛额记应收、净额记利润」这种两边不一致。
    * 所以每一步都同时盯 券实例状态 / 订单毛额 / 应收净额 三处。
    *
-   * 契约提醒（曾把测试自己的错当成产品缺陷）：券状态取值是 `ACTIVE` / `STOPPED`，不是 `ENABLED`；
+   * 约定提醒（曾把测试自己的错当成产品缺陷）：券状态取值是 `ACTIVE` / `STOPPED`，不是 `ENABLED`；
    * `PromotionCouponService.updateStatus` 对不认识的目标状态、以及「要激活但已经是 ACTIVE」都抛 41327，
    * 且 `version` 必须从 detail 带回。
    */
@@ -553,7 +553,7 @@ test.describe('adm-golden-chain-05', () => {
     expect(String(mine[0].status)).toBe('AVAILABLE');
   });
 
-  test('3 带券下单：确认冻结优惠，应收按净额记', async () => {
+  test('3 带券下单：确认已确认优惠，应收按净额记', async () => {
     const withCoupon = await createSignedOrder(
       harness,
       'GOLDEN05B',
@@ -562,7 +562,7 @@ test.describe('adm-golden-chain-05', () => {
       {couponInstanceId: instanceId}
     );
 
-    // 实测口径：应收的 amount 本身就已经是**扣券后的净额**（35 毛额 - 5 券 = 30），
+    // 实测规则：应收的 amount 本身就已经是**扣券后的净额**（35 毛额 - 5 券 = 30），
     // 所以「券生效」要拿订单结算金额与应收金额比，而不是在应收上再减一次券值。
     const settlement = Number(withCoupon.orderDetail.settlementTotalAmount);
     const gross = Number(withCoupon.receivable.amount);
@@ -594,13 +594,13 @@ test.describe('adm-golden-chain-05', () => {
 // ---------------------------------------------------------------- 来源：e2e-chains/adm-golden-chain-06.spec.ts
 test.describe('adm-golden-chain-06', () => {
   /*
-   * §15 E2E-06 黄金业务链（清单原文：满赠 → 冻结赠品 → 分拣/小票 → 发车赠品出库 → 赠品成本 → 利润）
+   * §15 E2E-06 黄金业务链（清单原文：满赠 → 保存赠品 → 分拣/小票 → 发车赠品出库 → 赠品成本 → 利润）
    *
    * 满赠最容易出错的两处：赠品被算进应收（客户没买的东西却挂了账），
    * 以及赠品随发车出库却没有对应的出库流水（库存与成本对不上）。
    * 所以这条链盯三件事：应收不含赠品、赠品有 `PROMOTION_GIFT_OUT` 流水、毛利页能出数。
    *
-   * 契约（曾把测试自己的错当成产品缺陷）：
+   * 约定（曾把测试自己的错当成产品缺陷）：
    *   `FULL_GIFT` 的 rule 只允许 `thresholdAmount` / `giftSkuId` / `giftQuantity` 三个键，
    *   多一个键 `PromotionRuleValidator.requireOnly` 就拒收；活动状态取值是 `ACTIVE` / `STOPPED`。
    *   赠品行**不复制成订单行**（`SortingTaskItemVO` 类说明）：它只以赠品权益的身份出现在
@@ -689,14 +689,14 @@ test.describe('adm-golden-chain-06', () => {
     expect(String(enabled.status), '满赠活动没能上线').toBe('ACTIVE');
   });
 
-  test('2 下单即冻结赠品权益，但应收里不含赠品', async () => {
+  test('2 下单即保存赠品权益，但应收里不含赠品', async () => {
     facts = await createSignedOrder(harness, 'GOLDEN06A', [{quantity: '10.0000', sortedQuantity: '10.0000', sortedResult: 'NORMAL'}]);
     const settlement = Number(facts.orderDetail.settlementTotalAmount);
     expect(settlement, `订单额低于满赠门槛 ${THRESHOLD}，本链夹具失效`).toBeGreaterThanOrEqual(Number(THRESHOLD));
 
     const gifts = (facts.orderDetail.gifts ?? []) as Row[];
     const mine = gifts.filter((gift) => Number(gift.skuId) === giftSkuId);
-    expect(mine.length, `满赠未冻结赠品权益，订单里的权益：${JSON.stringify(gifts)}`).toBe(1);
+    expect(mine.length, `满赠未保存赠品权益，订单里的权益：${JSON.stringify(gifts)}`).toBe(1);
     expect(Number(mine[0].quantity)).toBe(Number(GIFT_QTY));
     expect(Number(mine[0].activityId), '赠品权益没有回指到满赠活动').toBe(activityId);
 
@@ -719,7 +719,7 @@ test.describe('adm-golden-chain-06', () => {
     const out = ((movements.list ?? []) as Row[]).filter((m) => m.movementType === 'PROMOTION_GIFT_OUT');
     expect(out.length, '签收发车后赠品没有 PROMOTION_GIFT_OUT 流水').toBeGreaterThanOrEqual(1);
     const total = out.reduce((sum, m) => sum + Number(m.quantity), 0);
-    expect(total, `赠品出库合计 ${total} 应等于冻结的 ${GIFT_QTY}`).toBe(Number(GIFT_QTY));
+    expect(total, `赠品出库合计 ${total} 应等于保存的 ${GIFT_QTY}`).toBe(Number(GIFT_QTY));
     // 溯源锚点是赠品权益 id（不是订单行 id），成本按当时的移动加权均价记进流水。
     expect(String(out[0].sourceDocumentType), '赠品出库流水来源类型应指向赠品权益').toBe('ORDER_PROMOTION_GIFT');
     expect(Number(out[0].sourceDocumentItemId) > 0).toBe(true);
@@ -755,7 +755,7 @@ test.describe('adm-golden-chain-07', () => {
    *   它只能以 BALANCE 身份去核销应收。
    * 只验钱包不验 Receipt 数量，就测不出「重复计收」这个最危险的不变量破坏。
    *
-   * 关键契约：本链显式使用 `DELAYED` 模拟场景，把渠道确认与创建意图分成两步。
+   * 关键约定：本链显式使用 `DELAYED` 模拟场景，把渠道确认与创建意图分成两步。
    * `/scm/balance/recharge/create` 只建立待支付意图；验签成功的渠道成功回调在同一事务中
    * 派生 Finance Receipt 与钱包 CREDIT。缺省 `SUCCESS` 场景会在创建时同步走完这条成功链，
    * 不能用来验证「渠道确认前不得到账」。
@@ -924,7 +924,7 @@ test.describe('adm-golden-chain-08', () => {
    *   售后退货只**追加红字**，那张收款和那条核销必须原样还在（同一 writeOffId、entryType 仍是 NORMAL、
    *     reverseOfId 仍为空），并且系统来源的收款根本不允许人工冲正（41144），只能走支付退款流程。
    *
-   * 契约（读代码确认，别凭直觉）：
+   * 约定（读代码确认，别凭直觉）：
    *   `mockScenario` 缺省即 SUCCESS，`/scm/payment/intent/create` **同步**跑完整条财务链（Receipt + 自动核销），
    *   所以这里不需要再投渠道回调；渠道回调只在 DELAYED/EXPIRED 路径上才是必需的。
    *   `FinanceReceiptQueryVO` **没有** sourceType 字段，系统收款只能靠 `method === 'ONLINE_PAYMENT'`
@@ -1029,7 +1029,7 @@ test.describe('adm-golden-chain-08', () => {
     expect(Number(now.overAppliedAmount), 'overApplied 应等于实付减净应收').toBeCloseTo(Number(paid) - Number(facts.receivable.amount), 4);
   });
 
-  test('4 售后退货只追加红字，历史收款与核销原样保留', async () => {
+  test('4 售后退货只能新增红字，历史收款与核销原样保留', async () => {
     const redQty = '4.0000';
     const before = await writeOffRows();
     await createApprovedReturn(harness, facts, redQty, 'GOLDEN08');
@@ -1053,7 +1053,7 @@ test.describe('adm-golden-chain-08', () => {
     expect(Number(now.overAppliedAmount), '净应收下降后超额核销应当变大').toBeCloseTo(Number(paid) - Number(now.netAmount), 4);
   });
 
-  test('5 系统收款不允许人工冲正：41144 失败关闭', async () => {
+  test('5 系统收款不允许人工冲正：41144 校验失败时拒绝操作', async () => {
     const denied = await envelope(harness.finance, 'post', '/scm/finance/receipt/reverse', {
       receiptId: Number(onlineReceipt.receiptId),
       reason: `${harness.runTag} 试图人工冲正系统收款`,

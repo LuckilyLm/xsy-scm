@@ -27,7 +27,7 @@
     </select>
 
     <!--
-      配送进度投影：线路侧的线路/司机/车辆/发车/完成 + 订单级的履约状态与签收事实。
+      配送进度查询结果：线路侧的线路/司机/车辆/发车/完成 + 订单级的履约状态与签收记录。
       线路被逻辑删除时整行不返回（客户看到的是「暂无配送信息」，而不是半条线路）。
     -->
     <select id="selectProgressByOrderIds" resultType="com.xsy.scm.delivery.domain.vo.DeliveryOrderProgressVO">

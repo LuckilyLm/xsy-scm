@@ -3,7 +3,7 @@ package com.xsy.scm.common.scope;
 import lombok.Getter;
 
 /**
- * 当前登录员工的数据范围解析结果（不可变值对象）。
+ * 当前登录员工的数据范围解析结果（不可修改值对象）。
  *
  * <p>
  * 由 {@link ScmDataScopeService#resolve()} 集中产出，Service 层显式下传给 Mapper；不用底座的 {@code @DataScope} 插件，避免空范围被当成全量数据。

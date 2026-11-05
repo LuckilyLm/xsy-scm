@@ -100,7 +100,7 @@ class FinanceCodCollectionPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("客户后来改为集团结算，COD 收款仍沿用订单应收冻结的原结算主体")
+    @DisplayName("客户后来改为集团结算，COD 收款仍沿用订单应收保存的原结算主体")
     void collectionUsesFrozenCounterpartyAfterCustomerRelationshipChanges() {
         CodOrder order = signedCodOrder("frozen");
         Long newSettlementCustomerId = newCustomer();
@@ -163,14 +163,14 @@ class FinanceCodCollectionPgIT extends ScmW5PgITBase {
         // 失败后检查库中没有第二张收款单，需要真事务观察整笔回滚。
         CodOrder order = signedCodOrder("dup");
         String key = prefix + ":cod-dup";
-        // 幂等指纹包含请求内容，因此重放必须复用同一个表单对象，否则会被判成「同键异内容」
+        // 防重复处理指纹包含请求内容，因此重放必须复用同一个表单对象，否则会被判成「同键异内容」
         FinanceCodCollectionForm request = form(order, "2.4000", "CASH");
         FinanceReceiptVO first = financeReceiptService.collectCod(request, key);
 
         FinanceReceiptVO replayed = financeReceiptService.collectCod(request, key);
         assertThat(replayed.getReceiptId()).isEqualTo(first.getReceiptId());
 
-        // 换一个幂等键再收一次：分笔来源允许新请求，但已无应收余额，整笔回滚。
+        // 换一个防重复请求编号再收一次：分笔来源允许新请求，但已无应收余额，整笔回滚。
         assertThatThrownBy(() -> financeReceiptService.collectCod(request, prefix + ":cod-dup-again"))
                 .isInstanceOfSatisfying(ScmBusinessException.class, failure -> assertThat(failure.getErrorCode())
                         .isEqualTo(FinanceErrorCode.WRITE_OFF_AMOUNT_EXCEEDED));
@@ -207,7 +207,7 @@ class FinanceCodCollectionPgIT extends ScmW5PgITBase {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    @DisplayName("不同幂等键并发补收最后一笔欠款：恰有一笔落库，另一笔完整回滚")
+    @DisplayName("不同防重复请求编号并发补收最后一笔欠款：恰有一笔写入数据库，另一笔完整回滚")
     void concurrentInstallmentsCannotCollectTheLastRemainderTwice() throws Exception {
         CodOrder order = signedCodOrder("race");
         collect(order, "1.0000", "CASH", "race-first");
@@ -249,7 +249,7 @@ class FinanceCodCollectionPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("未签收、非 COD 与不存在的订单：都在写任何资金事实之前被拒")
+    @DisplayName("未签收、非 COD 与不存在的订单：都在写任何资金记录之前被拒")
     void unsignedNonCodAndMissingOrdersAreRejectedBeforeAnyFact() {
         // 约定为 COD 但还没有应收（未签收 / 拒收 / 异常签收）：没有可收的钱
         CodOrder unsigned = codOrder("unsigned", false);

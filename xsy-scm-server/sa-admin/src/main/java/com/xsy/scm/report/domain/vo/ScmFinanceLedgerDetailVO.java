@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
  * 应收应付截止日明细的公共金额列：原额、红字、净额、已核销、未结、超核销。
  *
  * <p>
- * 报表里两种账的余额口径必须一致，只有对手方与单据标识不同。
+ * 报表里两种账的余额规则必须一致，只有对手方与单据标识不同。
  */
 @Data
 public abstract class ScmFinanceLedgerDetailVO {

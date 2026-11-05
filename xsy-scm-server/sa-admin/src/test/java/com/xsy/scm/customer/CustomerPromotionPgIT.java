@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * 客户推广二维码：码的签发与失效、扫码只追加。
+ * 客户推广二维码：码的签发与失效、扫码只能新增。
  *
  * <p>
  * 码是公开入口，因此重点验证「什么时候不该再能用」：重新生成让旧码失效、撤销后立即不可用。
@@ -33,7 +33,7 @@ class CustomerPromotionPgIT extends ScmW5PgITBase {
                 "W9 IT agent");
         assertThat(landing.getCustomerName()).isNotBlank();
 
-        // 扫码只追加：一条记录，且能查到
+        // 扫码只能新增：一条记录，且能查到
         assertThat(customerPromotionService.scans(first.getId(), 20)).hasSize(1);
 
         CustomerPromotionVO second = customerPromotionService.create(customerId, "W9 IT");

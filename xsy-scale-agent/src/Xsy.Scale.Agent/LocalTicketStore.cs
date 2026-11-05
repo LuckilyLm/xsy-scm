@@ -5,7 +5,7 @@ namespace Xsy.Scale.Agent;
 /// <summary>本地凭条尝试追加保存，与平台printAttemptId和正式票据分开。</summary>
 internal sealed partial class StateStore
 {
-    /// <summary>演练首次标记前检查是否已有业务事实，拒绝把旧现场库当作演练库。</summary>
+    /// <summary>演练首次标记前检查是否已有业务记录，拒绝把旧现场库当作演练库。</summary>
     /// <returns>任一采集、打印或本筐表非空即为true。</returns>
     internal bool HasStoredFacts()
     {
@@ -50,7 +50,7 @@ internal sealed partial class StateStore
 
     /// <summary>查询当前员工范围的本地凭条尝试，不读取其他员工记录。</summary>
     /// <param name="scope">非空已通过员工可见性检查的范围。</param>
-    /// <returns>按追加顺序的全部尝试，状态由独立列覆盖冻结payload。</returns>
+    /// <returns>按追加顺序的全部尝试，状态由独立列覆盖保存payload。</returns>
     internal LocalTicket[] LocalTickets(BasketScope scope)
     {
         using var db = Open(); using var command = db.CreateCommand();
@@ -117,11 +117,11 @@ internal sealed partial class StateStore
     /// <summary>经员工再次明确授权补打，复用原始内容并追加新尝试，不改变筐或累计。</summary>
     /// <param name="scope">非空、当前员工有权操作的范围。</param>
     /// <param name="request">非空、操作号唯一且原因非空的补打请求。</param>
-    /// <param name="printerName">新尝试的打印队列；null沿用原队列，不改变冻结重量。</param>
+    /// <param name="printerName">新尝试的打印队列；null沿用原队列，不改变保存重量。</param>
     /// <param name="paperWidthMm">新纸宽；null沿用原值，调用方负责40至110mm校验。</param>
     /// <param name="paperHeightMm">新纸高；null沿用原值，调用方负责40至300mm校验。</param>
     /// <returns>同请求重试返回既有尝试；同编号改内容则拒绝。</returns>
-    /// <exception cref="AgentFault">没有原凭条、尚有未决执行、权限范围或幂等冲突。</exception>
+    /// <exception cref="AgentFault">没有原凭条、尚有未决执行、权限范围或防重复处理冲突。</exception>
     internal LocalTicket ReprintLocalTicket(BasketScope scope, ReprintRequest request,
         string? printerName = null, int? paperWidthMm = null, int? paperHeightMm = null)
     {

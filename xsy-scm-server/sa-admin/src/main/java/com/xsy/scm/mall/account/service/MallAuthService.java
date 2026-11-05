@@ -173,7 +173,7 @@ public class MallAuthService {
 
     public static String loginId(Long accountId, Integer version) {
         // 版本进入登录身份，避免 Sa-Token 复用旧令牌时把已失效的会话重新激活。
-        // 业务审计与幂等仍由 RequestMallCustomer 的账号 ID 生成，不随会话版本变化。
+        // 业务审计与防重复处理仍由 RequestMallCustomer 的账号 ID 生成，不随会话版本变化。
         return UserTypeEnum.MALL_CUSTOMER.getValue() + ":" + accountId + ":" + version;
     }
 

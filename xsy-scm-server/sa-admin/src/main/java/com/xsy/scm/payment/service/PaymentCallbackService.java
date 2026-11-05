@@ -52,7 +52,7 @@ public class PaymentCallbackService {
         ScmPaymentProvider provider = providerRegistry.require(providerCode);
         ScmPaymentProvider.Callback callback = provider.parseCallback(headers, rawBody);
 
-        // 1) 幂等锚点必须存在：没有渠道事件 id 就无从判定重复，宁可拒收也不冒「重复入账」的险
+        // 1) 防重复处理锚点必须存在：没有渠道事件 id 就无从判定重复，宁可拒收也不冒「重复入账」的险
         if (callback.providerEventId() == null || callback.providerEventId().isBlank()) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_CALLBACK_PAYLOAD_INVALID);
         }
@@ -70,7 +70,7 @@ public class PaymentCallbackService {
         event.setProcessStatus(ScmPaymentCallbackProcessStatusEnum.RECEIVED.name());
         event.setCreatedBy(operator);
 
-        // 2) 幂等：已存在则静默返回「重复事件」，不做任何状态转换
+        // 2) 防重复处理：已存在则静默返回「重复事件」，不做任何状态转换
         if (paymentCallbackEventDao.insertIgnoreDuplicate(event) != 1) {
             log.info("支付回调重复投递，已忽略：provider={} eventId={}", providerCode, callback.providerEventId());
             return paymentCallbackEventDao.selectClaimedByProviderEventId(providerCode, callback.providerEventId());

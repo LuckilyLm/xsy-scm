@@ -34,7 +34,7 @@
     </select>
 
     <!--
-      父订单与客户都按主键 LEFT JOIN，不放大分页行数；名称用退货单自己的快照。
+      父订单与客户都按主键 LEFT JOIN，不放大分页行数；名称用退货单自己的已存数据。
       可见性：原单退货跟随订单业务员，独立退货跟随客户负责业务员（D-1028-15）。
     -->
     <select id="query" resultType="com.xsy.scm.order.domain.vo.OrderReturnVO">

@@ -95,7 +95,7 @@ class AdminSettlementTermsPgIT extends ScmW5PgITBase {
                 .as("收款保留实际付款客户").isEqualTo(payer);
         jdbc.update("UPDATE xsy_customer SET settlement_customer_id=id WHERE id=?", payer);
         assertThat(jdbc.queryForObject("SELECT settlement_customer_id FROM xsy_finance_receipt WHERE id=?",Long.class,receipt))
-                .as("统一收款主体冻结为集团结算客户").isEqualTo(parent);
+                .as("统一收款主体保存为集团结算客户").isEqualTo(parent);
     }
 
     @Test void siblingCannotBeConfiguredAsSettlementCustomer() {

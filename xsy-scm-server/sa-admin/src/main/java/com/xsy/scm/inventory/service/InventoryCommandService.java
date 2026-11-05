@@ -90,7 +90,7 @@ public class InventoryCommandService {
     private final WarehouseService warehouseService;
 
     /**
-     * 追加采购入库流水并累加余额；数量必须为正且单位须与已有余额一致。来源行重复时抛错，不把重复记账当作幂等重放。
+     * 追加采购入库流水并累加余额；数量必须为正且单位须与已有余额一致。来源行重复时抛错，不把重复记账当作重复请求返回原结果。
      */
     public void postPurchaseInbound(PurchaseInventoryContract.InboundFact fact) {
         // 不自行开启事务，防止脱离收货确认后分步提交。
@@ -159,7 +159,7 @@ public class InventoryCommandService {
     }
 
     /**
-     * 采购入库的批次腿：先锁（或首建）批次余额，再追加只追加流水并累加数量。
+     * 采购入库的批次腿：先锁（或首建）批次余额，再追加只能新增流水并累加数量。
      */
     private void postLotInboundLeg(PurchaseInventoryContract.InboundFact fact,
         PurchaseInventoryContract.LotQuantity lot, String unit) {
@@ -185,7 +185,7 @@ public class InventoryCommandService {
     }
 
     /**
-     * 追加一条批次流水（只追加，禁止改写）。
+     * 追加一条批次流水（只能新增，禁止改写）。
      */
     private void appendLotMovement(Long warehouseId, Long skuId, Long lotId, String movementType,
         String sourceDocumentType, Long sourceDocumentId, Long sourceDocumentItemId, BigDecimal quantity, String unit,
@@ -361,7 +361,7 @@ public class InventoryCommandService {
         BigDecimal onHand = balance.getQuantity();
         BigDecimal reserved = balance.getReservedQuantity() == null ? BigDecimal.ZERO : balance.getReservedQuantity();
         BigDecimal available = onHand.subtract(reserved);
-        // 允许负库存的仓库不以账面余额拦截发货；其他订单的预留事实原样保留。
+        // 允许负库存的仓库不以账面余额拦截发货；其他订单的预留记录原样保留。
         if (available.compareTo(fact.quantity()) < 0 && !allowNegative) {
             throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
         }
@@ -757,7 +757,7 @@ public class InventoryCommandService {
 
         String unit = balance.getUnit();
 
-        // 持有行锁后再读账面量与预留量，避免并发下拿到过期快照。
+        // 持有行锁后再读账面量与预留量，避免并发下拿到过期保存的数据。
         BigDecimal live = balance.getQuantity();
         BigDecimal reserved = balance.getReservedQuantity() == null ? BigDecimal.ZERO : balance.getReservedQuantity();
 

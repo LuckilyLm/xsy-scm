@@ -12,7 +12,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 采购「已提交」口径的派生契约。新建即提交，不再有草稿状态。
+ * 采购「已提交」规则的派生约定。新建即提交，不再有草稿状态。
  *
  * <p>这份清单是首页、大屏、报表采购指标的唯一状态来源。两条规则必须成立：清单由<b>排除法</b>派生（新增状态默认算进来），
  * 且被排除的两个状态确实不该计入采购额。
@@ -45,7 +45,7 @@ class ScmPurchaseStatusEnumTest {
     @Test
     @DisplayName("「已提交后又被取消」只发生在一票未收的单上")
     void cancellationOnlyHappensBeforeAnyReceipt() {
-        // 这是「当前有效口径」成立的前提：取消会让历史采购额变小，但那些单从未产生收货，
+        // 这是「当前有效规则」成立的前提：取消会让历史采购额变小，但那些单从未产生收货，
         // 所以抹掉它们不会让「收了多少货」与「采购了多少」对不上。
         assertThat(PurchaseOrderStateMachine.canTransition("SUBMITTED", "CANCELLED")).isTrue();
         assertThat(PurchaseOrderStateMachine.canTransition("PARTIALLY_RECEIVED", "CANCELLED"))

@@ -87,7 +87,7 @@ public class FileAccessGuard {
         return byKey;
     }
 
-    /** key 是否落在存量私有目录白名单内；未知的 private/ 子目录仍然失败关闭。 */
+    /** key 是否落在存量私有目录白名单内；未知的 private/ 子目录仍然校验失败时拒绝操作。 */
     private boolean isManagedPrivate(String key) {
         return FileKeyPolicy.isValid(key) && !key.endsWith("/")
                 && FileFolderTypeEnum.LEGACY_PRIVATE_FOLDERS.stream().anyMatch(key::startsWith);

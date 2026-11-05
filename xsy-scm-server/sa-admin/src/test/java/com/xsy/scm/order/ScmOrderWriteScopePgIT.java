@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * SEC-01 / SEC-02 回归：订单族与退货族的<b>写命令入口</b>必须与读接口同口径地判归属。
+ * SEC-01 / SEC-02 回归：订单族与退货族的<b>写命令入口</b>必须与读接口同规则地判归属。
  *
  * <p>被测缺陷是一条「读收窄、写不设防」的错配：查询与详情早就按 {@code orderSellerScope}
  * 只给出本人负责的行，但 {@code update / actualQuantity / cancel / delete /
@@ -60,10 +60,10 @@ import static org.mockito.Mockito.mockStatic;
  *
  * <p><b>身份与权限怎么造</b>：沿用 {@code ScmOrderCustomerDataScopePgIT} 的既有做法 ——
  * {@code SmartRequestUtil} 覆盖登录员工，{@code mockStatic(StpUtil.class)} 显式给功能权限；
- * 未点名的权限码取 Mockito 默认 false，正好等于生产上的失败关闭。测试员工一律
+ * 未点名的权限码取 Mockito 默认 false，正好等于生产上的校验失败时拒绝操作。测试员工一律
  * {@code administrator_flag=false}，超管通过不构成权限证据。
  *
- * <p><b>幂等重放也要过范围</b>：{@code ScmIdempotencyService} 的 scope 形如
+ * <p><b>重复请求返回原结果也要过范围</b>：{@code ScmIdempotencyService} 的 scope 形如
  * {@code operator + ":" + scope}，操作员由 {@code ScmOperator.current()} 取
  * {@code userType:userId}，因此 A 与 B 的键在存储层就是两行 —— 跨人重放<b>结构上不可能</b>。
  * 但「同一个人换了负责范围后再重放同一个键」会直接命中 {@code replay} 分支并跳过写命令里的门禁，
@@ -163,7 +163,7 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
             salesOrderService.delete(versionForm(orderOfB, versionOf(orderOfB)));
             return null;
         }));
-        assertThat(deletedOf(orderOfB)).as("越权删除不得真的落库").isFalse();
+        assertThat(deletedOf(orderOfB)).as("越权删除不得真的写入数据库").isFalse();
         assertThat(statusOf(orderOfB)).isEqualTo("PENDING");
 
         // 负责人自己删：软删标记必须落地
@@ -196,7 +196,7 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
     // ==================== SEC-02：退货写命令 ====================
 
     @Test
-    @DisplayName("退货建单：替别人的订单建退货 30005，退货行不落库")
+    @DisplayName("退货建单：替别人的订单建退货 30005，退货行不写入数据库")
     void returnCreateRejectsForeignOrder() {
         Long customerOfB = createTradableCustomer("T1", sellerB);
         Long sku = newOnShelfSku("T1");
@@ -214,7 +214,7 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
     }
 
     @Test
-    @DisplayName("退货建单幂等重放：A 拿着 B 的订单号重放旧键仍然 30005")
+    @DisplayName("退货建单重复请求返回原结果：A 拿着 B 的订单号重放旧键仍然 30005")
     void returnCreateReplayDoesNotBypassScope() {
         Long customerOfB = createTradableCustomer("T2", sellerB);
         Long sku = newOnShelfSku("T2");
@@ -290,7 +290,7 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
     }
 
     @Test
-    @DisplayName("审批幂等重放：同一个人换了范围后重放旧键仍 30005（replay 前先 detail）")
+    @DisplayName("审批重复请求返回原结果：同一个人换了范围后重放旧键仍 30005（replay 前先 detail）")
     void returnApproveReplayDoesNotBypassScope() {
         Long customerOfB = createTradableCustomer("T6", sellerB);
         Long sku = newOnShelfSku("T6");
@@ -319,7 +319,7 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
         Long customerOfA = createTradableCustomer("N1", sellerA);
         String orderNo = prefix + "-N1";
         // 直接插一张 seller_id 为 null 的待确认单：模拟「归属被收回」的历史单。
-        // 用 delete 作为探针：它只需要订单行本身，不依赖地址快照或订单行，
+        // 用 delete 作为探针：它只需要订单行本身，不依赖下单时保存的地址或订单行，
         // 能把「范围判定」这一件事单独隔离出来。
         jdbc.update("INSERT INTO xsy_sales_order (order_no, customer_id, customer_code_snapshot,"
                         + " customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot,"
@@ -403,7 +403,7 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
         });
     }
 
-    /** 走真实建单服务造一张草稿，归属由客户快照强制为负责人。 */
+    /** 走真实建单服务造一张草稿，归属由当时的客户资料强制为负责人。 */
     private Long pendingOrder(Long customerId, Long skuId, Long ownerEmployeeId, String suffix) {
         return as(ownerEmployeeId, Set.of(), () -> salesOrderService.create(
                 orderForm(customerId, skuId, suffix), prefix + "-so").getOrderId());
@@ -421,7 +421,7 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
      *
      * <p>夹具用的 SKU 是 {@code NON_STANDARD}（基类固定），新建时系统不自动补实数量，
      * 而确认前每行都必须有正实数量 —— 所以这里先走一次真实 {@code actualQuantity}，
-     * 再确认。这两步都是被本类当作「前置事实」的既有主链，不是待测点。
+     * 再确认。这两步都是被本类当作「前置记录」的既有主链，不是待测点。
      */
     private void confirmOwn(Long orderId) {
         Long seller = jdbc.queryForObject("SELECT seller_id FROM xsy_sales_order WHERE id = ?", Long.class, orderId);

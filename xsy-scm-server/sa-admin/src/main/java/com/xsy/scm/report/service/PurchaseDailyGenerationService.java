@@ -31,7 +31,7 @@ public class PurchaseDailyGenerationService {
         if (reportDate == null || !reportDate.isBefore(LocalDate.now(ScmReportTimeRangeResolver.BUSINESS_ZONE))) {
             throw new IllegalArgumentException("只能生成北京时间今天之前的采购清单");
         }
-        // 日期唯一约束是跨实例幂等屏障，表头与全部明细同事务提交；失败不会留下半张清单。
+        // 日期唯一约束是跨实例防重复处理屏障，表头与全部明细同事务提交；失败不会留下半张清单。
         if (purchaseDailyReportDao.claimDate(reportDate) == 0) {
             return false;
         }

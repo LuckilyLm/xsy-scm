@@ -8,7 +8,7 @@
       （那边经营类指标仍要用），两处内容必须逐字一致 —— scm-metrics-scope-fragment-contract 钉住了这一点。
 
       三条纪律与报表 / 库存族同源（docs/decisions.md「P0 基线收口裁决」第 2、4、8、16 条）：
-        * 谓词落在被聚合的事实行上，不落在维度 join 上，也不在聚合之后补。
+        * 谓词落在被聚合的记录行上，不落在维度 join 上，也不在聚合之后补。
         * scope == null 或该维度没有任何授权值 → AND FALSE。这里没有「参数为空即全部」。
         * scope.*.all 为真时不拼谓词，因此 seller_id IS NULL 的未分配行对该维度持全部范围者照常可见，
           对普通业务员天然不可见（IN 排除 NULL）。
@@ -99,9 +99,9 @@
 
     <!--
       ================= 地理分布（地图 M1） =================
-      三段人口片段是唯一的口径来源：市级气泡与覆盖度里的「总数 / 已归属数」都从它们派生。
+      三段人口片段是唯一的规则来源：市级气泡与覆盖度里的「总数 / 已归属数」都从它们派生。
       如果各写一份 WHERE，覆盖度与气泡就会在两份 SQL 里各自漂移，而差异在图上看不出来。
-      located 只表示「解析出了市级归属」；仓库沿用大屏网络节点口径（仅启用仓），
+      located 只表示「解析出了市级归属」；仓库沿用大屏网络节点规则（仅启用仓），
       否则地图上少掉的停用仓会被算进「已归属」，让差额看起来像数据缺失。
       范围谓词同样只能写在这三段里：每段被气泡与覆盖度各 include 一次，写在外层就等于一个数字收范围、
       另一个不收，而这两组数字必须精确相等（ScmScreenDataIT 钉住了这一点）。
@@ -165,7 +165,7 @@
         ORDER BY customerCount DESC, cityCode
     </select>
 
-    <!-- 覆盖度：一次返回三张主档的「总数 / 已归属数」，与气泡共用上面三段口径。 -->
+    <!-- 覆盖度：一次返回三张主档的「总数 / 已归属数」，与气泡共用上面三段规则。 -->
     <select id="geoCoverage" resultType="com.xsy.scm.screen.domain.vo.ScreenGeoVO$Coverage">
         SELECT c.total AS customerTotal, c.located AS customerLocated, s.total AS supplierTotal,
             s.located AS supplierLocated, w.total AS warehouseTotal, w.located AS warehouseLocated

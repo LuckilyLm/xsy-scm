@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** 建议历史使用冻结快照，不把后来编辑的站点/地址/版本伪装成旧建议。 */
+/** 建议历史使用历史资料，不把后来编辑的站点/地址/版本伪装成旧建议。 */
 class DeliveryPlanSnapshotPolicyTest {
 
     @Test

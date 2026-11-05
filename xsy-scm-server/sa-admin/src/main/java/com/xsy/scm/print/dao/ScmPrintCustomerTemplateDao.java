@@ -31,7 +31,7 @@ public interface ScmPrintCustomerTemplateDao {
     /** 换绑模板；同一行乐观版本递增。 */
     int updateBinding(@Param("id") Long id, @Param("templateId") Long templateId, @Param("operator") String operator);
 
-    /** 解除绑定（软删）；没有有效绑定时返回 0，调用方按幂等处理。 */
+    /** 解除绑定（软删）；没有有效绑定时返回 0，调用方按防重复处理处理。 */
     int softDelete(@Param("customerId") Long customerId, @Param("documentType") String documentType,
         @Param("operator") String operator);
 }

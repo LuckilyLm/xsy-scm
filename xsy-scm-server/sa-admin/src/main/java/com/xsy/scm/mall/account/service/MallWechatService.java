@@ -26,9 +26,9 @@ public class MallWechatService {
      * @param redis
      *            既有环境隔离的缓存服务，不可为空
      * @param appId
-     *            当前小程序AppID，空值时快捷登录失败关闭
+     *            当前小程序AppID，空值时快捷登录校验失败时拒绝操作
      * @param appSecret
-     *            当前小程序服务端密钥，空值时快捷登录失败关闭
+     *            当前小程序服务端密钥，空值时快捷登录校验失败时拒绝操作
      */
     @Autowired
     public MallWechatService(RedisService redis, @Value("${XSY_WECHAT_APP_ID:}") String appId,

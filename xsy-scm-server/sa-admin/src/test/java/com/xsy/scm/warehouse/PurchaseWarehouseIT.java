@@ -37,7 +37,7 @@ class PurchaseWarehouseIT extends ScmW5PgITBase {
         assertThat(status).isEqualTo(ScmWarehouseStatusEnum.ENABLED.name());
         assertThat(warehouseService.enabled(id)).isTrue();
 
-        // G-03 单仓库口径：种子表达「系统仅维护一个启用仓库」
+        // G-03 单仓库规则：种子表达「系统仅维护一个启用仓库」
         assertThat(jdbc.queryForObject(
                 "SELECT COUNT(*) FROM xsy_warehouse WHERE warehouse_code = ? AND deleted = FALSE",
                 Long.class, SEED_WAREHOUSE_CODE)).isEqualTo(1L);

@@ -64,7 +64,7 @@ public class PurchaseReportVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal inboundCostAmount;
         private Integer inboundCostMissingCount;
-        /** 财务「确认采购」保存的实际采购数量；没有确认事实时为 0。 */
+        /** 财务「确认采购」保存的实际采购数量；没有确认记录时为 0。 */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal confirmedQuantity;
         /** 实采确认金额 = 实际数量 × 确认单价；不等同于采购订单金额或入库成本。 */

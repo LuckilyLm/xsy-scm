@@ -47,9 +47,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 退货批准 → 红字应收（PG IT）。
  *
- * <p>本类钉的是「红字是已成立退货事实的映射」这一条：
+ * <p>本类钉的是「红字是已成立退货记录的映射」这一条：
  * <ul>
- *   <li>红字金额一律采用订单域已落库的 {@code approved_amount}，财务不重算；</li>
+ *   <li>红字金额一律采用订单域已写入数据库的 {@code approved_amount}，财务不重算；</li>
  *   <li>红字<b>没有任何上限校验</b>：不扣既有核销额、不超过原正常应收、不抛 41137；</li>
  *   <li>「先退后签」在批准时成功跳过、在签收时补生成，且<b>只有一份红字算法</b>；</li>
  *   <li>重复触发（批准重放、签收补生成、生成器重放）都收敛到「一张退货一张红字」。</li>
@@ -199,7 +199,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     private Long issueFixedAmountCoupon(String tag, Long customerId, String discountAmount) {
         var coupon = new PromotionCouponForm();
         coupon.setCouponCode("RETURN-" + java.util.UUID.randomUUID());
-        coupon.setCouponName("退货金额口径 " + tag);
+        coupon.setCouponName("退货金额计算规则 " + tag);
         coupon.setDiscountType("AMOUNT");
         coupon.setDiscountValue(new BigDecimal(discountAmount));
         coupon.setMinOrderAmount(BigDecimal.ZERO);
@@ -435,7 +435,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("优惠退货：退款单金额按冻结优惠净额计算，与红字应收一致")
+    @DisplayName("优惠退货：退款单金额按已确认优惠净额计算，与红字应收一致")
     void refundAmountUsesTheFrozenOrderDiscount() {
         Chain chain = plannedWithFixedAmountCoupon("RDN", "1.0000", "100.0000", "1.0000", "10.0000");
         BigDecimal frozenDiscount = jdbc.queryForObject(
@@ -450,7 +450,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
                 returned.getReturnId());
 
         assertThat(returned.getApprovedAmount()).isEqualByComparingTo("100.0000");
-        assertThat(refundAmount).as("正常应收尚未生成时，退款单也按已冻结优惠折算净额")
+        assertThat(refundAmount).as("正常应收尚未生成时，退款单也按已已确认优惠折算净额")
                 .isEqualByComparingTo("90.0000");
         assertThat(redsOfOrder(chain.orderId())).as("先退后签时不生成孤立红字").isZero();
 
@@ -483,7 +483,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("先签后退：RED 挂原 NORMAL，对方与快照继承原应收，时点与原因继承退货事实")
+    @DisplayName("先签后退：RED 挂原 NORMAL，对方与保存的数据继承原应收，时点与原因继承退货记录")
     void returnApprovedAfterSignGeneratesRedReceivable() {
         Chain chain = planned("RDA", "10.0000", "3.5000", "10.0000");
         dispatch(chain.routeId());
@@ -513,7 +513,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
                 returned.getReturnId(), longOf(red, "id")))
                 .as("红字创建人必须是批准人本人（order_return.updated_by）").isTrue();
 
-        // 原正常应收一字未改：红字是追加的反向事实，不修改原记录
+        // 原正常应收一字未改：红字是追加的反向记录，不修改原记录
         assertThat(decimalOf(normalOf(chain.orderId()), "amount"))
                 .isEqualByComparingTo(decimalOf(normal, "amount"));
         assertThat(longOf(normalOf(chain.orderId()), "version")).isEqualTo(longOf(normal, "version"));
@@ -527,7 +527,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         assertThat(logs.getFirst().get("before_data")).isNull();
         assertThat(logs.getFirst().get("reason")).isEqualTo(red.get("reason"));
         // 操作人必须追溯到本次批准的人（order_return.updated_by），不是财务侧现取的请求身份。
-        // 谓词必须带 business_type：business_id 只在同一 business_type 内唯一（各事实表各有自己的
+        // 谓词必须带 business_type：business_id 只在同一 business_type 内唯一（各记录表各有自己的
         // id 序列），只按 business_id 查会把同号的 PAYABLE / RECEIPT 日志一起捞出来。
         assertThat(sameAs("l.operator = rt.updated_by FROM xsy_finance_operation_log l"
                         + " JOIN xsy_order_return rt ON rt.id = ?"
@@ -560,7 +560,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
                 chain.orderId()))
                 .as("没有正常应收时不得生成孤立红字").isZero();
         assertThat(count("SELECT count(*) FROM xsy_order_refund WHERE order_id = ?", chain.orderId()))
-                .as("退款单是订单域事实，照常两张").isEqualTo(2);
+                .as("退款单是订单域记录，照常两张").isEqualTo(2);
 
         dispatch(chain.routeId());
         sign(chain.routeId(), chain.orderId(), "SIGNED", null);
@@ -579,7 +579,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // F. 红字金额完全采用订单域已落库的 approved_amount（不重算）
+    // F. 红字金额完全采用订单域已写入数据库的 approved_amount（不重算）
     // ------------------------------------------------------------------
 
     @Test
@@ -595,7 +595,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
                 "SELECT id FROM xsy_order_return_item WHERE return_id = ?", Long.class, returned.getReturnId());
 
         // 判别性夹具：把 approved_amount 改成一个「与 quantity × price 不等」的合法值（CHECK 只要求 >= 0），
-        // 再删掉本次红字并重跑生成器。重算实现会得到 14.0000，采用落库值得到 9.9900。
+        // 再删掉本次红字并重跑生成器。重算实现会得到 14.0000，采用写入数据库值得到 9.9900。
         assertThat(jdbc.update("UPDATE xsy_order_return_item SET approved_amount = 9.9900 WHERE id = ?",
                 returnItemId)).isEqualTo(1);
         jdbc.update("DELETE FROM xsy_finance_operation_log WHERE business_type = 'RECEIVABLE' AND business_id = ?",
@@ -607,13 +607,13 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         financeReceivableService.generateRedOnReturnApproved(returned.getReturnId());
 
         Map<String, Object> line = itemsOf(longOf(redOf(returned.getReturnId()), "id")).getFirst();
-        assertThat(decimalOf(line, "amount")).as("必须取落库的 approved_amount，不是乘出来的 14.0000")
+        assertThat(decimalOf(line, "amount")).as("必须取写入数据库的 approved_amount，不是乘出来的 14.0000")
                 .isEqualByComparingTo("9.9900");
         assertThat(decimalOf(line, "quantity")).isEqualByComparingTo("4.0000");
         assertThat(decimalOf(line, "unit_price")).isEqualByComparingTo("3.5000");
         assertThat(sameAs("i.amount = ri.approved_amount FROM xsy_finance_receivable_item i"
                         + " JOIN xsy_order_return_item ri ON ri.id = i.source_id WHERE i.id = ?",
-                line.get("id"))).as("红字明细金额与订单域落库金额逐值相同").isTrue();
+                line.get("id"))).as("红字明细金额与订单域写入数据库金额逐值相同").isTrue();
     }
 
     // ------------------------------------------------------------------
@@ -672,7 +672,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         Map<String, Object> red = redOf(returned.getReturnId());
         assertThat(decimalOf(red, "amount")).as("已核销 100 不抵扣可生成额度（D-2）")
                 .isEqualByComparingTo("20.0000");
-        // 财务事实净额可直接用 SQL 读出，不经过读侧派生
+        // 财务记录净额可直接用 SQL 读出，不经过读侧派生
         assertThat(jdbc.queryForObject(
                 "SELECT sum(CASE WHEN entry_type = 'NORMAL' THEN amount ELSE -amount END)"
                         + " FROM xsy_finance_receivable WHERE order_id = ?", BigDecimal.class, chain.orderId()))
@@ -715,7 +715,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
                 "SELECT sum(CASE WHEN entry_type = 'NORMAL' THEN amount ELSE -amount END)"
                         + " FROM xsy_finance_receivable WHERE order_id = ?", BigDecimal.class, orderId))
                 .as("允许净应收为负（D-4），表达属 F1-5 读侧派生").isEqualByComparingTo("-20.0000");
-        // 订单域事实未被财务改动
+        // 订单域记录未被财务改动
         assertThat(jdbc.queryForObject(
                 "SELECT approved_amount FROM xsy_order_return WHERE id = ?", BigDecimal.class,
                 returned.getReturnId())).isEqualByComparingTo("50.0000");
@@ -766,7 +766,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
                 List.of("4.0000"), List.of("4.0000"));
         Long redId = longOf(redOf(returned.getReturnId()), "id");
 
-        // 构造「红字丢了」的状态（例如那条派生事务被回滚掉，而两个事实都还在）
+        // 构造「红字丢了」的状态（例如那条派生事务被回滚掉，而两个记录都还在）
         jdbc.update("DELETE FROM xsy_finance_operation_log WHERE business_type = 'RECEIVABLE' AND business_id = ?",
                 redId);
         jdbc.update("DELETE FROM xsy_finance_receivable_item WHERE receivable_id = ?", redId);

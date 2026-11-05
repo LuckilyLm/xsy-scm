@@ -39,7 +39,7 @@ public class FinancePurchaseCostAdjustmentService {
     public void generate(Long adjustmentId) {
         var source = sourceDao.find(adjustmentId);
         if (source == null) {
-            throw new IllegalStateException("采购价差事实不存在");
+            throw new IllegalStateException("采购价差记录不存在");
         }
         if (ScmPurchaseCostDirectionEnum.INCREASE.name().equals(source.getDirection())) {
             append(source, source.getAmount(), null);

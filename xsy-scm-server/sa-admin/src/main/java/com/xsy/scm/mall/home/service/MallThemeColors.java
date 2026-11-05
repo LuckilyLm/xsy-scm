@@ -33,7 +33,7 @@ public final class MallThemeColors {
         return color == null ? null : color.trim().toUpperCase(Locale.ROOT);
     }
 
-    /** 预设编码对应的主色；未知编码按默认绿色，和客户端回退口径一致。 */
+    /** 预设编码对应的主色；未知编码按默认绿色，和客户端回退规则一致。 */
     public static String baseColor(String themeCode) {
         // Map.of 不接受 null 键：getOrDefault(null, ...) 也会抛 NPE，历史发布记录的
         // theme_code 可能为空，先挡掉再查表。

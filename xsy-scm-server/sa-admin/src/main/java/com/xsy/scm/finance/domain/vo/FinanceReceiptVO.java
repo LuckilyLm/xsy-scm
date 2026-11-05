@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 收款命令的结果：只回本次记录本身，够支撑幂等重放与调用确认。
+ * 收款命令的结果：只回本次记录本身，够支撑重复请求返回原结果与调用确认。
  *
  * <p>
  * 刻意不含派生列（待核销余额、已核销额、结清状态），那些由查询时计算，放进 VO 容易被人当成存量字段使用。
@@ -23,7 +23,7 @@ public class FinanceReceiptVO {
     private Long customerId;
 
     /**
-     * 登记时冻结的客户名称快照，不是主档当前名。
+     * 登记时保存的当时的客户名称，不是主档当前名。
      */
     private String customerName;
     private Long settlementCustomerId;

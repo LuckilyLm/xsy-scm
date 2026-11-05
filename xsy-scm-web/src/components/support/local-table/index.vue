@@ -51,7 +51,7 @@ const pagination = computed(() => ({
   onChange: change,
 }));
 
-/** 原生筛选后的总数来自表格完整投影，不能使用当前页行数。 */
+/** 原生筛选后的总数来自表格完整查询结果，不能使用当前页行数。 */
 const onTableChange: NonNullable<TableProps['onChange']> = (page, filters, sorter, extra) => {
   filteredTotal.value = extra.currentDataSource.length;
   emit('change', page, filters, sorter, extra);

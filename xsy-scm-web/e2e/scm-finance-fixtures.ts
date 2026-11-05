@@ -246,7 +246,7 @@ export async function createSignedOrder(
   order = await call<Row>(harness.admin, 'post', '/scm/order/confirm', {
     orderId: orderDetail.orderId,
     version: orderDetail.version,
-    // 集团/独立结算链不传这个；活动券链要带 couponInstanceId 才能验「确认时冻结优惠」
+    // 集团/独立结算链不传这个；活动券链要带 couponInstanceId 才能验「确认时已确认优惠」
     ...(confirmExtras ?? {}),
   });
   orderDetail = await call<Row>(harness.admin, 'get', `/scm/order/detail/${order.orderId}`);

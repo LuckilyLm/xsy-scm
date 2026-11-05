@@ -157,7 +157,7 @@ public class PurchaseQueryService {
             throw new ScmBusinessException(PURCHASE_DEMAND_NOT_FOUND);
         }
         if (!purchaserScope.isAll()) {
-            // 详情投影与列表同源、刻意不带 purchaser_id（列表按范围整行过滤，不需要展示归属列），
+            // 详情查询结果与列表同源、刻意不带 purchaser_id（列表按范围整行过滤，不需要展示归属列），
             // 因此归属从实体行按主键读一次；selectById 不参与范围过滤，只是取归属值。
             PurchaseDemandEntity row = purchaseDemandDao.selectById(demandId);
             requirePurchaserVisible(purchaserScope, row == null ? null : row.getPurchaserId());
@@ -166,7 +166,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 命令侧投影：不做读取范围判定（见类说明）。
+     * 命令侧查询结果：不做读取范围判定（见类说明）。
      */
     @Transactional(readOnly = true)
     public PurchaseDemandVO demandDetailForCommand(Long demandId) {
@@ -237,7 +237,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 命令侧投影：不做读取范围判定（见类说明）。
+     * 命令侧查询结果：不做读取范围判定（见类说明）。
      */
     @Transactional(readOnly = true)
     public PurchaseOrderVO orderDetailForCommand(Long purchaseOrderId) {
@@ -319,7 +319,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 命令侧投影：收货的创建 / 确认 / 入库回的是自己刚写的单据，且父单归属不该让一次合法的收货确认回滚（见类说明）。
+     * 命令侧查询结果：收货的创建 / 确认 / 入库回的是自己刚写的单据，且父单归属不该让一次合法的收货确认回滚（见类说明）。
      */
     @Transactional(readOnly = true)
     public PurchaseReceiptVO receiptDetailForCommand(Long receiptId) {
@@ -364,7 +364,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 一次查出本次收货行里哪些采购行还在待定价；确认收货会冻结库存成本，页面必须提前拦住。
+     * 一次查出本次收货行里哪些采购行还在待定价；确认收货会确定并保存库存成本，页面必须提前拦住。
      */
     private void attachPricePending(List<PurchaseReceiptItemVO> items) {
         List<Long> orderItemIds = items.stream().map(PurchaseReceiptItemVO::getPurchaseOrderItemId)

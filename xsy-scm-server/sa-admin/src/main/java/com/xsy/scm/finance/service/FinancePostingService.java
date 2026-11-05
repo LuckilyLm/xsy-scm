@@ -43,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 这三件事都不写应收/应付、不写核销、不动余额：过账只是财务对外账目的留痕。 唯一会随它变化的是操作日志 —— 现场要求「所有操作需留痕」， 所以每次登记、修改、作废都按「过账 + id」追加一条，改前改后的内容都进日志。
  *
  * <p>
- * 加锁顺序与其它财务命令一致：先锁过账行，再写日志；作废另由 {@code uk_finance_posting_void_posting} 兜底，重复作废不会出现两条事实。
+ * 加锁顺序与其它财务命令一致：先锁过账行，再写日志；作废另由 {@code uk_finance_posting_void_posting} 兜底，重复作废不会出现两条记录。
  */
 @Service
 @RequiredArgsConstructor
@@ -56,7 +56,7 @@ public class FinancePostingService {
     private final ScmIdempotencyService idempotencyService;
 
     /**
-     * 登记过账：客户按注册快照保存，金额必须大于 0，税点与返款状态按白名单校验。
+     * 登记过账：保存登记时的客户资料，金额必须大于 0，税点与返款状态按白名单校验。
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePostingVO add(FinancePostingAddForm form, String idempotencyKey) {
@@ -128,7 +128,7 @@ public class FinancePostingService {
             return idempotencyService.replay(claim, FinancePostingVO.class);
         }
 
-        // 已成功的同键请求先回放；响应丢失后的重试仍携带首次提交的旧版本。
+        // 已成功的同编号请求先返回原结果；响应丢失后的重试仍携带首次提交的旧版本。
         requireVersion(posting, form.getVersion());
         if (financePostingDao.selectVoidByPostingId(posting.getId()) != null) {
             throw new ScmBusinessException(FinanceErrorCode.POSTING_ALREADY_VOIDED);
@@ -155,7 +155,7 @@ public class FinancePostingService {
     }
 
     /**
-     * 作废过账：追加一条作废事实，原记录保留；作废后不可修改、不可再次作废。
+     * 作废过账：追加一条作废记录，原记录保留；作废后不可修改、不可再次作废。
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePostingVO voidPosting(FinancePostingVoidForm form, String idempotencyKey) {
@@ -171,7 +171,7 @@ public class FinancePostingService {
             return idempotencyService.replay(claim, FinancePostingVO.class);
         }
 
-        // 同键重试返回原作废事实，新命令仍拒绝重复作废。
+        // 同键重试返回原作废记录，新命令仍拒绝重复作废。
         requireVersion(posting, form.getVersion());
         if (financePostingDao.selectVoidByPostingId(posting.getId()) != null) {
             throw new ScmBusinessException(FinanceErrorCode.POSTING_ALREADY_VOIDED);

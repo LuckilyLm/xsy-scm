@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** V139：只允许有权限的人手动重算待确认订单价格，冻结订单不可重算。 */
+/** V139：只允许有权限的人手动重算待确认订单价格，保存订单不可重算。 */
 class ScmAgreementRepricePgIT extends ScmW5PgITBase {
 
     @Test

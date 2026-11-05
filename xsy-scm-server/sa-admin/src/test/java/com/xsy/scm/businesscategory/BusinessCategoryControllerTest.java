@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 客户 / 供应商分类端点契约测试。
+ * 客户 / 供应商分类端点约定检查。
  */
 @WebMvcTest(BusinessCategoryController.class)
 @AutoConfigureMockMvc(addFilters = false)

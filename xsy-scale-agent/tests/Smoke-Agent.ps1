@@ -81,7 +81,7 @@ try {
     $null = Invoke-RestMethod -Uri ($agentUrl + '/api/agent/activate') -Method Post -Headers $headers `
         -ContentType 'application/json' -Body '{"pairingCode":"MOCK-PAIR"}'
     $tasks = Invoke-RestMethod -Uri ($agentUrl + '/api/agent/tasks') -Headers $headers
-    if ($tasks.cached -or $tasks.data.tasks[0].taskId -cne '9007199254740993') { throw '任务投影或长整数标识不正确' }
+    if ($tasks.cached -or $tasks.data.tasks[0].taskId -cne '9007199254740993') { throw '任务查询结果或长整数标识不正确' }
     $claimed = Invoke-RestMethod -Uri ($agentUrl + '/api/agent/jobs/mock-job/claim') -Method Post -Headers $headers
     if ($claimed.claimedByDeviceCode -cne 'MOCK-ONLY-SCALE') { throw '作业领取未更新设备上下文' }
     $status = Invoke-RestMethod -Uri ($agentUrl + '/api/agent/status') -Headers $headers
@@ -100,7 +100,7 @@ try {
     $basketQueue = Invoke-WebRequest -Uri ($agentUrl + '/api/agent/basket-queue' + $basketQuery) -Headers $headers -UseBasicParsing
     if ($summary.basketCount -ne 0 -or $summary.totalQuantity -ne '0' -or $summary.manifestHash.Length -ne 64 `
         -or $summary.locallyCompleted -or $basketPage.items.Count -ne 0 -or $basketQueue.Content.Trim() -ne '[]') {
-        throw '空多筐投影、分页或队列响应不正确'
+        throw '空多筐查询结果、分页或队列响应不正确'
     }
     $basketRejected = $false
     try {

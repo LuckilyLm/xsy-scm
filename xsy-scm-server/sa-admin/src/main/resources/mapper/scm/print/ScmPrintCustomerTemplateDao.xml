@@ -38,7 +38,7 @@
         WHERE b.deleted = FALSE
         <if test="documentType != null and documentType != ''">AND b.document_type = #{documentType}</if>
         <if test="customerId != null">AND b.customer_id = #{customerId}</if>
-        <!-- 客户归属范围落在驱动表 xsy_customer.seller_id 上；范围为空按失败关闭返回 0 行 -->
+        <!-- 客户归属范围落在驱动表 xsy_customer.seller_id 上；范围为空按校验失败时拒绝操作返回 0 行 -->
         <if test="scope == null">AND FALSE</if>
         <if test="scope != null and scope.all == false">
             AND c.seller_id IN

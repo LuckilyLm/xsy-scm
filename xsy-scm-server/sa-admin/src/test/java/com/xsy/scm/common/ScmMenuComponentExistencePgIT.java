@@ -13,9 +13,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 页面菜单必须指向真实存在的前端组件（PG IT）。
  *
- * <p><b>为什么要钉在库级契约上</b>：路由注册是 {@code route.component = modules[relativePath]}，
+ * <p><b>为什么要钉在库级约定上</b>：路由注册是 {@code route.component = modules[relativePath]}，
  * {@code relativePath} 取的是 {@code t_menu.component}；文件缺失时它静默变成 {@code undefined}，
- * 菜单点开是空白页，而构建、类型检查与后端测试全部照绿。这种失败只能在库级契约上拦住，
+ * 菜单点开是空白页，而构建、类型检查与后端测试全部照绿。这种失败只能在库级约定上拦住，
  * 写在文档里挡不住。
  *
  * <p>外链型菜单（{@code component} 是 http 地址，例如 swagger）不参与文件系统检查。
@@ -75,7 +75,7 @@ class ScmMenuComponentExistencePgIT extends ScmW2PgITBase {
                         + " ORDER BY parent_id, sort", String.class);
 
         // 菜单项不会为空图标留位：少一个图标，这一行的文字就比同级菜单左移一个图标位，
-        // 展开目录时一组里缺几个图标、行首也对不齐。图标名存在库里，前端契约扫不到，只能在这拦。
+        // 展开目录时一组里缺几个图标、行首也对不齐。图标名存在库里，前端约定扫不到，只能在这拦。
         assertThat(withoutIcon)
                 .as("以下菜单没有图标，侧边栏里会比同级菜单少一格、文字错位")
                 .isEmpty();

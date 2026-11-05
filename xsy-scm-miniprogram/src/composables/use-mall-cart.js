@@ -2,7 +2,7 @@
  * 加购动作的唯一实现点。
  *
  * 商品卡片与详情页都调它，避免两处各写一份「加购 + 提示」而出现行为漂移。
- * 不做本地乐观写入：购物车以服务端返回的整车快照为准（跨端一致）。
+ * 不做本地乐观写入：购物车以服务端返回的整车商品信息为准（跨端一致）。
  */
 import {mallCartApi} from '@/api/mall/cart-api';
 import {smartSentry} from '@/lib/smart-sentry';

@@ -30,8 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired;
  * 钉住三件在单测里证明不了的事：
  * <ol>
  *   <li><b>不进账</b> —— 登记、修改、作废都不写应收/应付/核销，客户余额与账龄完全不动；</li>
- *   <li><b>留痕</b> —— 每次动作按「过账 + id」追加财务日志，改前改后都进快照；</li>
- *   <li><b>作废是事实</b> —— 作废由独立行推导，必须写原因，且不可重复作废、作废后不可修改。</li>
+ *   <li><b>留痕</b> —— 每次动作按「过账 + id」追加财务日志，改前改后都进保存的数据；</li>
+ *   <li><b>作废是记录</b> —— 作废由独立行推导，必须写原因，且不可重复作废、作废后不可修改。</li>
  * </ol>
  */
 class FinancePostingIT extends ScmW5PgITBase {
@@ -90,7 +90,7 @@ class FinancePostingIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("#3 同一幂等键重复提交只登记一张过账单")
+    @DisplayName("#3 同一防重复请求编号重复提交只登记一张过账单")
     void addIsIdempotent() {
         Long customerId = newCustomer();
         String idempotencyKey = key("add-once");
@@ -103,7 +103,7 @@ class FinancePostingIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("#4 修改写前后快照；版本过期按 40921 拒绝")
+    @DisplayName("#4 修改写前后保存的数据；版本过期按 40921 拒绝")
     void updateWritesSnapshotAndRejectsStaleVersion() {
         Long customerId = newCustomer();
         FinancePostingVO created = postingService.add(addForm(customerId, "100.0000"), key("update-add"));
@@ -157,12 +157,12 @@ class FinancePostingIT extends ScmW5PgITBase {
         update.setAmount("70.0000");
         expectCode(() -> postingService.update(update, key("update-voided")), 41185);
 
-        // 作废是事实不是删除：过账行仍在，金额不被改写
+        // 作废是记录不是删除：过账行仍在，金额不被改写
         assertThat(amountOf(created.getPostingId())).isEqualByComparingTo("66.0000");
     }
 
     @Test
-    @DisplayName("修改响应丢失后同键重试返回原结果，后续作废也不破坏成功回放")
+    @DisplayName("修改响应丢失后同键重试返回原结果，后续作废也不影响返回原成功结果")
     void updateReplaysBeforeVersionAndVoidChecks() {
         var created = postingService.add(addForm(newCustomer(), "100.0000"), key("retry-create"));
         var form = updateForm(created);
@@ -181,7 +181,7 @@ class FinancePostingIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("作废同键重试返回原事实，新键重复作废仍拒绝")
+    @DisplayName("作废同键重试返回原记录，新键重复作废仍拒绝")
     void voidReplaysWithoutDuplicatingFactsOrLogs() {
         var created = postingService.add(addForm(newCustomer(), "80.0000"), key("void-retry-create"));
         var form = voidForm(created, "金额错误");

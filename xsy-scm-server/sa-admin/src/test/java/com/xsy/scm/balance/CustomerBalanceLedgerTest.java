@@ -232,7 +232,7 @@ class CustomerBalanceLedgerTest {
         // 充值的业务客户不是发起支付的客户：来源身份已经分叉
         when(recharges.selectByIdForUpdate(9L)).thenReturn(recharge(9L, 999L, 3L, "100"));
         assertSourceInvalid(() -> service.rechargeFromPayment(9L, 2L, new BigDecimal("100"), 20L, PAID_AT));
-        // 缺少创建时的钱包快照，不能猜测当前结算主体
+        // 缺少创建时的钱包保存的数据，不能猜测当前结算主体
         var withoutSnapshot = recharge(9L, 2L, 3L, "100");
         withoutSnapshot.setSettlementCustomerNameSnapshot(null);
         when(recharges.selectByIdForUpdate(9L)).thenReturn(withoutSnapshot);

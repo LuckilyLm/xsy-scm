@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 批次流水只追加。SQL 见 mapper/scm/inventory/InventoryLotMovementDao.xml。
+ * 批次流水只能新增。SQL 见 mapper/scm/inventory/InventoryLotMovementDao.xml。
  *
  * <p>
  * 数据库侧有语句级触发器兜底：任何 UPDATE / DELETE / TRUNCATE 都会直接报错，因此这里只提供插入。

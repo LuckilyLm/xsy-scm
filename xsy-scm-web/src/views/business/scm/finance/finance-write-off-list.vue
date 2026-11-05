@@ -143,7 +143,7 @@
               @click="openReverse(record)"
               >撤销抵扣</a-button
             >
-            <!-- 抹零必须走抹零接口撤销：它还要把抹零事实置为已撤销，和普通撤销抵扣不能共用一个动作 -->
+            <!-- 抹零必须走抹零接口撤销：它还要把抹零记录置为已撤销，和普通撤销抵扣不能共用一个动作 -->
             <a-button
               v-else-if="record.entryType === 'NORMAL' && !record.reversed && record.sourceType === 'WAIVER'"
               type="link"
@@ -602,7 +602,7 @@ async function submitReverse() {
 
 onMounted(queryData);
 
-/** 抹零反向走抹零接口：核销反向会把 WAIVER 当普通资金单拒绝，且抹零事实不会置为已反向。 */
+/** 抹零反向走抹零接口：核销反向会把 WAIVER 当普通资金单拒绝，且抹零记录不会置为已反向。 */
 function openWaiverReverse(row: FinanceWriteOff) {
   waiverReverseRow.value = row;
   waiverReverseReason.value = '';

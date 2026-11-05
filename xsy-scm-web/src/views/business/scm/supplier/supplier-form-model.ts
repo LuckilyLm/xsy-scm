@@ -11,7 +11,7 @@ export interface SkuDraft {
   id?: ScmId;
   version?: number;
   skuId?: ScmId;
-  /** 回显用：已有关联行的商品名称和规格快照，不提交。 */
+  /** 回显用：已有关联行的商品名称和商品规格资料，不提交。 */
   skuNameSnapshot?: string;
   specValuesSnapshot?: Record<string, string>;
   purchaseUnit: string;

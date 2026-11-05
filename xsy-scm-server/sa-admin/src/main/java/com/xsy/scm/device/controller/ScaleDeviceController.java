@@ -97,7 +97,7 @@ public class ScaleDeviceController {
         return ScaleDeviceResponse.ok(scaleDeviceJobService.claim(jobId, form));
     }
 
-    /** 释放作业租约。重复释放按幂等处理。 */
+    /** 释放作业租约。重复释放按防重复处理处理。 */
     @PostMapping("/jobs/{jobId}/release")
     public ScaleDeviceResponse<ScaleJobVO> release(@PathVariable("jobId") String jobId,
         @Valid @RequestBody ScaleJobActionForm form) {
@@ -142,7 +142,7 @@ public class ScaleDeviceController {
      * 为一筐称重结果发包装码。
      *
      * <p>
-     * 幂等靠 {@code weighingEventId}：同一筐重试返回同一枚码，不会在标签上出现两个身份。
+     * 防重复处理靠 {@code weighingEventId}：同一筐重试返回同一枚码，不会在标签上出现两个身份。
      */
     @PostMapping("/units/issue")
     public ScaleDeviceResponse<TraceScaleUnitVO> issueUnit(@Valid @RequestBody TraceScaleUnitIssueForm form) {

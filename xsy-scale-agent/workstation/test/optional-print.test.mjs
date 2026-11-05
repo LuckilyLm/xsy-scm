@@ -55,7 +55,7 @@ test('逐筐可选打印、原选择重试、手输与离线共用累计', {skip
     await expect(dialog.getByRole('button',{name:'记录上传并打印'})).toBeDisabled();await page.reload();
     await expect(input).toHaveValue('120.5');await expect(input).toBeDisabled();
     await dialog.getByRole('button',{name:'重试原保存'}).click();await count(4,134.55,1);
-    note('断网且断秤手输只上传，原打印选择跨刷新冻结且无新增票');
+    note('断网且断秤手输只上传，原打印选择跨刷新保存且无新增票');
     await page.getByRole('button',{name:'手工录入净重',exact:true}).click();await input.fill('2.5');
     await page.route('**/api/agent/manual-baskets',async route=>{await route.fetch();await route.abort('failed');},{times:1});
     await dialog.getByRole('button',{name:'记录上传',exact:true}).click();await count(5,137.05,1);

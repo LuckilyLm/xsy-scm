@@ -59,12 +59,12 @@ public class PurchaseDemandCalculationBatchDetailVO {
     private OffsetDateTime generatedAt;
 
     /**
-     * 冻结的 SKU 级解释行，结构同 {@code PurchaseDemandCalculationBatchVO#summary}。
+     * 保存的 SKU 级解释行，结构同 {@code PurchaseDemandCalculationBatchVO#summary}。
      */
     private List<Map<String, Object>> summary = new ArrayList<>();
 
     /**
-     * 冻结的逐行建议。
+     * 保存的逐行建议。
      */
     private List<PurchaseDemandCalculationBatchItemVO> items = new ArrayList<>();
 }

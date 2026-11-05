@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 销售退货入库事实。
+ * 销售退货入库记录。
  *
  * <p>
  * {@code sourceOutboundItemId} 是原销售出库单行：批次仓靠它把退货退回原批次，找不到时显式失败而不是猜批次。

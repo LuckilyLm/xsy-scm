@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>预览返回库存现有量与预留量，因此单靠采购需求查看权就是越权读取余额的旁路。
  * 这里的断言针对注解形状：两条权限 + {@code AND}。运行时拦截由底座 Sa-Token 过滤器承担，
- * 按「不复刻框架行为」的口径不在此重测 —— 也说明现状：仓库里没有任何用例实际发出过
+ * 按「不复刻框架行为」的规则不在此重测 —— 也说明现状：仓库里没有任何用例实际发出过
  * 无权限请求去验证 403（{@code ScmPurchasePermissionMigrationIT} 只核对代码声明的权限码
  * 是否存在于 {@code t_menu.api_perms}，那是代码与菜单不脱节的检查，不是运行时拦截）。
  */

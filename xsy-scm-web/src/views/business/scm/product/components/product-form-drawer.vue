@@ -238,7 +238,7 @@ const visible = ref(false),
   uploading = ref(false),
   error = ref(''),
   loadFailed = ref(false);
-/** 加载完成时的表单快照；用于关闭前判断是否有未保存修改。 */
+/** 加载完成时的表单原始内容；用于关闭前判断是否有未保存修改。 */
 const baseline = ref('');
 const tagPickerOpen = ref(false),
   tagKeyword = ref('');

@@ -77,7 +77,7 @@ public class FinanceCustomerExpenseService {
     }
 
     /**
-     * 批量登记同一月份的多客户费用。整批一个幂等键：任一行失败整批回滚，重试同键不会重复写入。
+     * 批量登记同一月份的多客户费用。整批一个防重复请求编号：任一行失败整批回滚，重试同键不会重复写入。
      */
     @Transactional(rollbackFor = Exception.class)
     public List<FinanceCustomerExpenseVO> addBatch(FinanceCustomerExpenseForm.BatchAdd form, String key) {

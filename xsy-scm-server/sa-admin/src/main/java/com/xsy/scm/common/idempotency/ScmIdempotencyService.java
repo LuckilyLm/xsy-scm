@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * 幂等命令共用的记录、重放与完成逻辑。
+ * 防重复处理命令共用的记录、重放与完成逻辑。
  */
 @Service
 @RequiredArgsConstructor
@@ -36,7 +36,7 @@ public class ScmIdempotencyService {
     public Claim claim(String scope, String key, Object request) {
         return claim(scope, key, request, ScmCommonErrorCode.IDEMPOTENCY_KEY_REQUIRED,
             ScmCommonErrorCode.IDEMPOTENCY_KEY_INVALID, ScmCommonErrorCode.IDEMPOTENCY_CONFLICT,
-            "已提交的幂等记录缺少 result_data（数据完整性异常）");
+            "已提交的防重复处理记录缺少 result_data（数据完整性异常）");
     }
 
     public Claim claim(String scope, String key, Object request, ScmErrorCode missingKeyError,
@@ -105,7 +105,7 @@ public class ScmIdempotencyService {
         row.setUpdatedAt(OffsetDateTime.now());
         row.setUpdatedBy(ScmOperator.current());
         if (idempotencyRecordDao.updateById(row) != 1) {
-            throw new IllegalStateException("幂等结果写入失败（影响行数不为 1）");
+            throw new IllegalStateException("防重复处理结果写入失败（影响行数不为 1）");
         }
     }
 }

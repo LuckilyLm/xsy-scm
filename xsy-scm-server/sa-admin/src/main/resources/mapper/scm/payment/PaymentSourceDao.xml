@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.payment.dao.PaymentSourceDao">
 
     <!--
-      只读外部事实。三张表分属订单域与财务域；这里只 SELECT，且只取校验所需的最小列 ——
+      只读外部记录。三张表分属订单域与财务域；这里只 SELECT，且只取校验所需的最小列 ——
       多取一列就等于把别域的表结构复制过来，对方改列时这里会静默读到 null。
     -->
     <select id="selectOrder" resultType="com.xsy.scm.payment.domain.dto.PaymentOrderFact">

@@ -54,7 +54,7 @@
     </update>
 
     <!--
-      只启动尚未启动的窗口：重复提交 / 幂等重放不能把起点往后推，
+      只启动尚未启动的窗口：重复提交 / 重复请求返回原结果不能把起点往后推，
       否则「提交满 7 天」会被一次次提交无限延后。
     -->
     <update id="startPriceWindow">
@@ -118,18 +118,18 @@
     <!--
       按商品收货工作台（只读聚合）：跨「可收货」采购单把同一 SKU 的计划 / 已收并排展示。
 
-      口径全部来自 xsy_purchase_order_item（收货回写的目标行），因此工作台汇总与底层收货单逐行求和恒等；
-      本视图不新增收货事实，确认收货仍走各收货单的既有端点。
+      规则全部来自 xsy_purchase_order_item（收货回写的目标行），因此工作台汇总与底层收货单逐行求和恒等；
+      本视图不新增收货记录，确认收货仍走各收货单的既有端点。
 
       采购单位进入分组键，同一 SKU 若用了不同单位会拆成多行，绝不跨单位相加。
       pending / over 逐行裁剪后再求和（不能用 Σ已收与 Σ计划相减，否则欠收行与超收行会互相抵消）。
       状态过滤固定为可收货的两态，不接收入参；排序固定「欠收降序 → SKU」，不接受客户端排序。
 
-      仓库数据范围（docs/decisions.md「P0 基线收口裁决」第 8 条）：谓词落在驱动事实行
+      仓库数据范围（docs/decisions.md「P0 基线收口裁决」第 8 条）：谓词落在驱动记录行
       xsy_purchase_order.warehouse_id 上，与 ReportDao.xml 的 purchaseFilters 同一位置。
       收货单的仓库在建单时从采购单继承（PurchaseSnapshotFactory.receipt），因此这一列就是
       已收量所属的那个仓；范围外的采购单整单不参与分组，聚合数字随行集收缩后重算，
-      不是「先按全量算完再把行藏掉」。scope 为 null 按失败关闭返回 0 行。
+      不是「先按全量算完再把行藏掉」。scope 为 null 按校验失败时拒绝操作返回 0 行。
     -->
     <select id="workbench" resultType="com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO">
         SELECT oi.sku_id, oi.sku_code_snapshot AS sku_code, oi.sku_name_snapshot AS sku_name,
@@ -167,7 +167,7 @@
     <!--
       每个商品规格最近一条已提交采购行（只读）。DISTINCT ON 先按 sku 分组，
       组内按提交时间倒序、行 id 倒序取第一条；状态清单由调用方按 ScmPurchaseStatusEnum.committed() 传入。
-      采购员范围显式下传：scope 为 null 是调用方漏传，按失败关闭返回 0 行，绝不退化成全量。
+      采购员范围显式下传：scope 为 null 是调用方漏传，按校验失败时拒绝操作返回 0 行，绝不退化成全量。
     -->
     <select id="latestPurchasePrices" resultType="com.xsy.scm.purchase.domain.vo.PurchaseLastPriceVO">
         SELECT DISTINCT ON (poi.sku_id)

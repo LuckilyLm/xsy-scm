@@ -144,7 +144,7 @@
         <EmployeeSelect v-model:value="sessionForm.employeeId" width="100%" />
       </a-form-item>
       <a-form-item label="有效时长（分钟）" required>
-        <!-- 口径收进悬停提示：录一次班次不需要常驻一行解释（常驻解释受棘轮约束） -->
+        <!-- 规则收进悬停提示：录一次班次不需要常驻一行解释（常驻解释受新增问题检查约束） -->
         <a-tooltip title="一个班次通常不超过 12 小时；到期后重新生成，不提供无限续期。">
           <a-input-number v-model:value="sessionForm.validMinutes" :min="5" :max="720" :step="5" style="width: 100%" />
         </a-tooltip>

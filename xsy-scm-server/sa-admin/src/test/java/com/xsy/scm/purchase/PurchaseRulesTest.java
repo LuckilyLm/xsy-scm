@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 采购规则契约测试（无 DB，纯函数）。
+ * 采购规则约定检查（无 DB，纯函数）。
  *
  * <p>覆盖状态机 6 状态的全部转换（合法与非法）以及权限判定。
  *

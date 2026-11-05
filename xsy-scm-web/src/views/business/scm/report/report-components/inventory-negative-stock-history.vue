@@ -14,7 +14,7 @@
         >
       </a-row>
     </a-form>
-    <p class="scm-note">留存保留实际取数时间，同月可多次保存。历史月份只查看已保存记录，不能用当前库存补录历史月末数据。</p>
+    <p class="scm-note">保存记录时保留实际取数时间，同月可多次保存。历史月份只查看已保存记录，不能用当前库存补录历史月末数据。</p>
     <a-alert v-if="error" type="error" show-icon :message="error"
       ><template #action><a-button @click="load">重试</a-button></template></a-alert
     >

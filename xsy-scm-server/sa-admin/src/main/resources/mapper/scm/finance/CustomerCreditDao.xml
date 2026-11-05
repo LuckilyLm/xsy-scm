@@ -33,8 +33,8 @@
     <!--
       占用金额按订单逐单折算，不在这条 SQL 里 SUM 金额：
       只预占 CREDIT 和历史空结算方式的订单；WALLET/COD 不在签收前占账期额度。
-      「实重 × 锁定价 − 冻结优惠等比分摊」必须与签收应收同一把尺子，而那段折算在 Java 里
-      （FinanceReceivableService.discountShare），SQL 再写一遍就是第二套口径。
+      「实重 × 锁定价 − 已确认优惠等比分摊」必须与签收应收同一把尺子，而那段折算在 Java 里
+      （FinanceReceivableService.discountShare），SQL 再写一遍就是第二套规则。
     -->
     <select id="selectConfirmedOrderIdsWithoutReceivable" resultType="java.lang.Long">
         SELECT o.id

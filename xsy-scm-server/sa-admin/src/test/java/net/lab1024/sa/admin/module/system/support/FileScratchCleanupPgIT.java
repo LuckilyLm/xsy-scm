@@ -62,7 +62,7 @@ class FileScratchCleanupPgIT extends ScmW3PgITBase {
             setCreateTime(createTime);
         }});
         FileVO stored = fileDao.getByFileKey(fileKey);
-        assertThat(stored).as("夹具未落库：%s", fileKey).isNotNull();
+        assertThat(stored).as("夹具未写入数据库：%s", fileKey).isNotNull();
         return stored.getFileId();
     }
 

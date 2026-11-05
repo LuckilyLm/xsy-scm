@@ -105,7 +105,7 @@ public class PurchaseReceiptService {
     private final ConfigService configService;
 
     /**
-     * 库存契约（接线）。运行时注入的是 {@code inventory.support.PurchaseInventoryContractImpl}；期间容器里没有该类型的 Bean，本字段是新增的唯一依赖。
+     * 库存约定（接线）。运行时注入的是 {@code inventory.support.PurchaseInventoryContractImpl}；期间容器里没有该类型的 Bean，本字段是新增的唯一依赖。
      */
     private final PurchaseInventoryContract purchaseInventoryContract;
 
@@ -351,7 +351,7 @@ public class PurchaseReceiptService {
             }
 
             if (actualWeight != null) {
-                // 只追加的审计记录（无 version / deleted / updated_*），与 {@code xsy_inventory_movement} 的规则一致
+                // 只能新增的审计记录（无 version / deleted / updated_*），与 {@code xsy_inventory_movement} 的规则一致
                 appendWeighingRecord(line.getId(), actualWeight, weightUnit, correctionReason);
             }
 
@@ -405,7 +405,7 @@ public class PurchaseReceiptService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
             ScmPurchaseOperationTypeEnum.RECEIPT_CONFIRM, order.getId(), receipt.getId(), null, before, after));
         // 库存入库 —— 与采购侧写入同事务。
-        // 位置固定：操作日志之后、幂等 complete 之前。幂等 complete 落在库存写入之后，
+        // 位置固定：操作日志之后、防重复处理 complete 之前。防重复处理 complete 落在库存写入之后，
         // 保证重放返回的结果就是库存已写入的成功结果。
         if (direct) {
             postInbound(order, receipt, inboundLines, receipt.getConfirmedAt(), receipt.getOperator());
@@ -424,7 +424,7 @@ public class PurchaseReceiptService {
     }
 
     /**
-     * 仅已确认且待入库的仓库二次确认收货单可以入库。先锁收货单，再按顺序锁余额；重复确认应拒绝或返回同一幂等结果， 不能二次生成入库流水。
+     * 仅已确认且待入库的仓库二次确认收货单可以入库。先锁收货单，再按顺序锁余额；重复确认应拒绝或返回同一防重复处理结果， 不能二次生成入库流水。
      */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseReceiptVO putaway(PurchaseReceiptPutawayForm form, String idempotencyKey) {
@@ -440,7 +440,7 @@ public class PurchaseReceiptService {
 
         PurchaseReceiptEntity receipt = lockReceipt(form.getId());
         // 上架是唯一写 PURCHASE_IN 的采购动作，因此只有它要判仓库授权：判据取收货行上的仓库，
-        // 不取请求参数（表单也没有仓库字段）。幂等认领已插入，但随本事务一起回滚，不留痕迹。
+        // 不取请求参数（表单也没有仓库字段）。防重复处理认领已插入，但随本事务一起回滚，不留痕迹。
         warehouseScopeGuard.require(receipt.getWarehouseId());
         version(receipt.getVersion(), form.getVersion());
         if (!PurchaseReceiptPutawayGuard.putawayAllowed(receipt.getStatus(), receipt.getReceiptMode(),
@@ -490,7 +490,7 @@ public class PurchaseReceiptService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
             ScmPurchaseOperationTypeEnum.RECEIPT_PUTAWAY, order.getId(), receipt.getId(), null, before, after));
 
-        // 位置固定：putaway 状态保存之后、幂等 complete 之前（与 confirm 同一规则）。
+        // 位置固定：putaway 状态保存之后、防重复处理 complete 之前（与 confirm 同一规则）。
         postInbound(order, receipt, inboundLines, now, operator);
 
         PurchaseReceiptVO result = purchaseQueryService.receiptDetailForCommand(receipt.getId());
@@ -503,7 +503,7 @@ public class PurchaseReceiptService {
     public void delete(PurchaseReceiptDeleteForm form) {
         PurchaseReceiptEntity receipt = purchaseReceiptDao.lock(form.getId());
         if (receipt == null) {
-            // 幂等：已删除视为成功（与单张删除一致）
+            // 防重复处理：已删除视为成功（与单张删除一致）
             return;
         }
         purchaseOwnerResolver.requireVisible(orderPurchaserId(receipt));
@@ -585,7 +585,7 @@ public class PurchaseReceiptService {
     }
 
     /**
-     * 一行入库事实的最小元组。
+     * 一行入库记录的最小元组。
      *
      * <p>
      * 刻意不在收货循环里直接装配 {@code InboundFact}：那时 {@code receipt} 还没保存成 CONFIRMED， {@code confirmedAt} / {@code operator} 仍是

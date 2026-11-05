@@ -9,7 +9,7 @@ import lombok.Data;
  * 自动核销的候选目标（只读）：按账单日期排序，带当前未结金额。
  *
  * <p>
- * 未结金额由「应收/应付净额 - 已核销净额」现算，不读缓存列；与 {@code FinanceWriteOffService#balance} 同一口径。
+ * 未结金额由「应收/应付净额 - 已核销净额」现算，不读缓存列；与 {@code FinanceWriteOffService#balance} 同一套规则。
  */
 @Data
 public class FinanceAutoWriteOffTargetDto {

@@ -14,7 +14,7 @@
       uk_inventory_movement_source_active 的列 + WHERE 谓词完全一致
       （该谓词里的 source_document_item_id IS NOT NULL 对 NOT NULL 列是冗余的，
        保留是为了与 预留 SQL 逐字匹配）。
-      返回 0 = 源身份已存在；实时路径视为数据异常（41002），backfill 视为幂等跳过。
+      返回 0 = 源身份已存在；实时路径视为数据异常（41002），backfill 视为防重复处理跳过。
     -->
     <insert id="insertOnConflictDoNothing" parameterType="com.xsy.scm.inventory.domain.entity.InventoryMovementEntity">
         INSERT INTO xsy_inventory_movement (warehouse_id, sku_id, movement_type, source_document_type,
@@ -96,7 +96,7 @@
         </if>
         <if test="query.sourceDocumentId != null">AND m.source_document_id = #{query.sourceDocumentId}</if>
         <!--
-          occurred_at 是业务发生时刻（= 收货确认时刻），不是写入时刻：backfill 回放的历史
+          occurred_at 是业务发生时刻（= 收货确认时刻），不是写入时刻：backfill 历史记录查询的历史
           收货必须能被「按业务时间」查到，用 created_at 过滤会让这部分数据完全查不到。
         -->
         <if test="query.occurredFrom != null">AND m.occurred_at &gt;= #{query.occurredFrom}</if>
@@ -105,9 +105,9 @@
     </select>
 
     <!--
-      按来源行读回唯一那条活动流水（调拨收货回读发出腿的成本事实）。
+      按来源行读回唯一那条活动流水（调拨收货回读发出腿的成本记录）。
       流水不可改删（DB 层有 append-only 触发器强制），所以「上一步用了什么成本」只能回读账本，
-      不在单据行上另存一份副本 —— 那会变成两处可各自漂移的同一事实。
+      不在单据行上另存一份副本 —— 那会变成两处可各自漂移的同一记录。
       deleted = FALSE 谓词与 uk_inventory_movement_source_active 逐字一致，走同一个索引。
     -->
     <select id="selectBySourceItem" resultType="com.xsy.scm.inventory.domain.entity.InventoryMovementEntity">

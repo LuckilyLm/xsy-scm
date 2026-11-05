@@ -16,7 +16,7 @@ import lombok.Data;
  * 货到付款收款确认请求。
  *
  * <p>
- * 只带订单、实收金额、资金形式、业务时点与凭据号：客户与冻结结算主体取订单的正常应收，核销目标也由该应收决定，客户端不能指定。
+ * 只带订单、实收金额、资金形式、业务时点与凭据号：客户与保存结算主体取订单的正常应收，核销目标也由该应收决定，客户端不能指定。
  */
 @Data
 public class FinanceCodCollectionForm {
@@ -52,7 +52,7 @@ public class FinanceCodCollectionForm {
     private OffsetDateTime receivedAt;
 
     /**
-     * 资金凭据号（银行流水号等），只作文本，不参与幂等。
+     * 资金凭据号（银行流水号等），只作文本，不参与防重复处理。
      */
     @Size(max = 128, message = "资金凭据号长度不能超过128")
     private String externalReference;

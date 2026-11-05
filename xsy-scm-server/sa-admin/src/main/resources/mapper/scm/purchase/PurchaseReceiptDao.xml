@@ -12,8 +12,8 @@
     </resultMap>
 
     <!--
-      供应商 / 仓库 / 采购单号一律取快照（收货单继承采购单）；
-      不联 xsy_supplier / xsy_warehouse 主数据，避免快照与主数据被混用。
+      供应商 / 仓库 / 采购单号一律取保存的数据（收货单继承采购单）；
+      不联 xsy_supplier / xsy_warehouse 主数据，避免保存的数据与主数据被混用。
     -->
     <select id="query" resultMap="receiptVoMap">
         SELECT r.id, r.receipt_no, r.purchase_order_id, r.purchase_order_no_snapshot AS purchase_order_no,
@@ -36,11 +36,11 @@
         <if test="query.receivedFrom != null">AND r.received_at &gt;= #{query.receivedFrom}</if>
         <if test="query.receivedTo != null">AND r.received_at &lt; #{query.receivedTo}</if>
         <!--
-          采购员数据范围：xsy_purchase_receipt 没有 purchaser 列（只快照供应商与仓库），
+          采购员数据范围：xsy_purchase_receipt 没有 purchaser 列（只保存的数据供应商与仓库），
           归属只能沿父采购单继承。这里用 EXISTS 半连而不是 JOIN：父单按主键命中，
           行数与分页 count 都不变，也不会把「一单多收货」的既有语义搅进来。
-          不加 po.deleted = FALSE —— 父单归档不改变「这条收货属于谁的采购」这个事实，
-          加进去等于顺手多造一条可见性规则。scope 为 null 时按失败关闭返回 0 行。
+          不加 po.deleted = FALSE —— 父单归档不改变「这条收货属于谁的采购」这个记录，
+          加进去等于顺手多造一条可见性规则。scope 为 null 时按校验失败时拒绝操作返回 0 行。
         -->
         <if test="scope != null and scope.all == false">
             AND EXISTS (SELECT 1 FROM xsy_purchase_order po WHERE po.id = r.purchase_order_id AND po.purchaser_id IN

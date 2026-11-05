@@ -34,7 +34,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** 非标品读数接受边界：设备不得替人工选择结果，单位必须与冻结销售单位一致。 */
+/** 非标品读数接受边界：设备不得替人工选择结果，单位必须与保存销售单位一致。 */
 @ExtendWith(MockitoExtension.class)
 class SortingScaleEventServiceTest {
 

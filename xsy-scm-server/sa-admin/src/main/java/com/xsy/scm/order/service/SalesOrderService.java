@@ -143,7 +143,7 @@ public class SalesOrderService {
         var claim = orderIdempotencyService.claim("ORDER_CREATE", key, salesOrderAddForm);
         if (claim.replay()) {
             var result = orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
-            // 重放也要按当前负责人范围放行：归属收窄后不能再凭旧幂等键拿到这单的详情
+            // 重放也要按当前负责人范围放行：归属收窄后不能再凭旧防重复请求编号拿到这单的详情
             salesOrderQueryService.detail(result.getOrderId());
             return result;
         }
@@ -172,7 +172,7 @@ public class SalesOrderService {
     }
 
     /**
-     * 商城仅创建并提交订货，统一等待后台确认；历史幂等请求仍返回原订单。库存与资金由后续正式命令处理。
+     * 商城仅创建并提交订货，统一等待后台确认；历史防重复处理请求仍返回原订单。库存与资金由后续正式命令处理。
      */
     @Transactional(rollbackFor = Exception.class)
     public MallOrderCreationResult createFromMall(SalesOrderAddForm salesOrderAddForm, Object idempotencyRequest,
@@ -197,7 +197,7 @@ public class SalesOrderService {
     }
 
     /**
-     * 商城取消的幂等指纹：只绑定订单与原因（客户身份已由幂等 scope 里的操作者体现）。
+     * 商城取消的防重复处理指纹：只绑定订单与原因（客户身份已由防重复处理 scope 里的操作者体现）。
      *
      * <p>
      * 用 {@link LinkedHashMap} 而不是 {@code Map.of}：后者迭代顺序不固定，序列化后的哈希会漂移，重启后就认不出同一个键。包内可见，便于直接验证指纹稳定性。
@@ -349,14 +349,14 @@ public class SalesOrderService {
             throw new ScmBusinessException(ORDER_LOCKED);
         if (dispatched && !ScmDataScopeService.hasPermission(OrderPermission.EDIT_AFTER_DISPATCH))
             throw new ScmBusinessException(ORDER_EDIT_AFTER_DISPATCH_FORBIDDEN);
-        // 待确认订单一旦有了支付、应收、预留、出库或分拣事实，改单会与这些事实脱节，必须失败关闭。
+        // 待确认订单一旦有了支付、应收、预留、出库或分拣记录，改单会与这些记录脱节，必须校验失败时拒绝操作。
         var pending = ScmOrderStatusEnum.PENDING.name().equals(salesOrder.getStatus());
         if (pending && salesOrderDao.hasPriceFreezeBlockingFact(salesOrder.getId()))
             throw new ScmBusinessException(ORDER_PENDING_EDIT_BLOCKED);
-        // 已确认订单：优惠在确认时已冻结并分摊到行，直接改金额会让分摊与单据对不上，只能取消重下或加单。
+        // 已确认订单：优惠在确认时已保存并分摊到行，直接改金额会让分摊与单据对不上，只能取消重下或加单。
         var confirmed = ScmOrderStatusEnum.isConfirmed(salesOrder.getStatus());
         // 签收后应收已按出库实发量生成，再改价格或数量会让送货单、订单结算额与账面应收三份数不一致。
-        // 差异只能走退货/红字更正，不能在这里悄悄覆盖；异常签收同样属于已交付事实。
+        // 差异只能走退货/红字更正，不能在这里悄悄覆盖；异常签收同样属于已交付记录。
         if (confirmed && salesOrderDao.hasSignedFact(salesOrder.getId()))
             throw new ScmBusinessException(ORDER_SIGNED_EDIT_BLOCKED);
         if (confirmed && promotionDiscountService.getByOrder(salesOrder.getId()) != null)
@@ -536,7 +536,7 @@ public class SalesOrderService {
         }
         var rows = salesOrderItemDao.list(orderId);
         var amount = OrderAmountCalculator.orderAmount(rows.stream().map(row -> {
-            // 未称重的非标行与确认口径一致：按订购量估算，称重后再以实际值结算
+            // 未称重的非标行与确认规则一致：按订购量估算，称重后再以实际值结算
             boolean weighed = row.getActualQuantity() != null && row.getActualQuantity().signum() > 0;
             if (!weighed && !ScmProductTypeEnum.NON_STANDARD.name().equals(row.getProductTypeSnapshot()))
                 throw new ScmBusinessException(ORDER_ACTUAL_QUANTITY_REQUIRED);
@@ -686,7 +686,7 @@ public class SalesOrderService {
     }
 
     private SalesOrderDetailVO cancel(OrderCancelForm orderCancelForm, String key, boolean enforceEmployeeScope) {
-        // 商城取消的幂等指纹只绑定订单与原因：version 是并发控制字段，执行成功后就会前进，
+        // 商城取消的防重复处理指纹只绑定订单与原因：version 是并发控制字段，执行成功后就会前进，
         // 算进指纹会让同一请求重试被判成内容不同。管理端保持原样（整表单参与指纹）。
         Object requestFingerprint = enforceEmployeeScope ? orderCancelForm : cancelFingerprint(orderCancelForm);
         var claim = orderIdempotencyService.claim("ORDER_CANCEL:" + orderCancelForm.getOrderId(), key,
@@ -726,7 +726,7 @@ public class SalesOrderService {
             return;
         requireOrderSellerScope(salesOrder);
         version(salesOrder.getVersion(), orderVersionForm.getVersion());
-        // 只有尚未确认、且没有资金或库存事实的订单可以删除；已有事实的订单必须走取消，不能抹掉痕迹。
+        // 只有尚未确认、且没有资金或库存记录的订单可以删除；已有记录的订单必须走取消，不能抹掉痕迹。
         if (!ScmOrderStatusEnum.PENDING.name().equals(salesOrder.getStatus())
             || salesOrderDao.hasPriceFreezeBlockingFact(salesOrder.getId())) {
             throw new ScmBusinessException(ORDER_DELETE_STATE_INVALID);
@@ -945,12 +945,12 @@ public class SalesOrderService {
             // 人工实数量必须带原因（ck_sales_order_item_actual_reason），改单表单不带它，从改前的行取回。
             row.setActualQuantityReason(previous.getActualQuantityReason());
         }
-        // 未称重的非标行继续按订购量暂计，与确认口径一致，编辑不能把既有结算额清空。
+        // 未称重的非标行继续按订购量暂计，与确认规则一致，编辑不能把既有结算额清空。
         row.setSettlementLineAmount(OrderAmountCalculator.lineAmount(
             PlannedQuantity.of(row.getActualQuantity(), row.getOrderedQuantity()), row.getLockedUnitPrice()));
     }
 
-    /** 已确认订单的结算合计：按实际数量 × 锁定单价逐行求和，与确认时的口径一致。 */
+    /** 已确认订单的结算合计：按实际数量 × 锁定单价逐行求和，与确认时的规则一致。 */
     private BigDecimal settlementTotal(List<SalesOrderItemEntity> rows) {
         return OrderAmountCalculator.orderAmount(
             rows.stream().map(SalesOrderItemEntity::getSettlementLineAmount).filter(Objects::nonNull).toList());

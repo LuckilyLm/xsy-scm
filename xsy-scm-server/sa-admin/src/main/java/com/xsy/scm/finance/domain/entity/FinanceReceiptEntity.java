@@ -73,7 +73,7 @@ public class FinanceReceiptEntity extends FinanceRecord {
     private String sourceType;
 
     /**
-     * 系统来源主键；支付交易取交易 id，分笔 COD 取幂等命令记录 id。
+     * 系统来源主键；支付交易取交易 id，分笔 COD 取防重复处理命令记录 id。
      */
     private Long sourceId;
 

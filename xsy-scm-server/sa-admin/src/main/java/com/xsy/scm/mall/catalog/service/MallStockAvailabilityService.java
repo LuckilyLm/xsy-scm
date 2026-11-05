@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 当前配送仓可售量只扣库存余额中的 reserved_quantity；没有单独的冻结列，不能重复扣减同一占用。
+ * 当前配送仓可售量只扣库存余额中的 reserved_quantity；没有单独的保存列，不能重复扣减同一占用。
  */
 @Service
 @RequiredArgsConstructor

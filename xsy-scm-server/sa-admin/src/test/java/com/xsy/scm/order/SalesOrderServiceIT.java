@@ -74,7 +74,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     }
 
     SalesOrderDetailVO confirmed(Long c, Long sku) {
-        // 键按次唯一：真提交的用例重跑时不能撞上上一次留下的幂等记录。
+        // 键按次唯一：真提交的用例重跑时不能撞上上一次留下的防重复处理记录。
         var o = orders.create(form(c, sku), prefix + "c-" + UUID.randomUUID());
         var a = new OrderActualQuantityForm();
         a.setOrderId(o.getOrderId());
@@ -107,7 +107,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         expectCode(() -> orders.update(u), 40921);
         jdbc.update("UPDATE xsy_product_sku SET market_price=2.5000 WHERE id=?", sku);
         session.clearCache();
-        // 行情变了不会静默改价：必须显式核价留痕——这正是设计口径。
+        // 行情变了不会静默改价：必须显式核价留痕——这正是设计规则。
         var reprice = new OrderRepriceForm();
         reprice.setOrderId(updated.getOrderId());
         reprice.setVersion(updated.getVersion());
@@ -273,7 +273,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
             assertThat(o.getItems()).filteredOn(item -> item.getSkuId().equals(standardSku)).singleElement()
                     .satisfies(item -> assertThat(item.getActualQuantity()).isEqualByComparingTo("2.0000"));
         });
-        // 同一文件 + 同一幂等键重放，不再产生第二张订单。
+        // 同一文件 + 同一防重复请求编号重放，不再产生第二张订单。
         assertThat(orderImports.importFile(mixedFile, prefix + "import", true).getOrders())
                 .extracting(SalesOrderDetailVO::getOrderId)
                 .containsExactlyElementsOf(mixed.getOrders().stream().map(SalesOrderDetailVO::getOrderId).toList());
@@ -580,7 +580,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         var c = customer();
         var sku = newOnShelfSku("CONCURRENT");
         var f = form(c, sku);
-        // 本用例真提交：键必须每次运行唯一，否则重跑会撞上上一次留下的幂等记录（请求指纹必然不同）。
+        // 本用例真提交：键必须每次运行唯一，否则重跑会撞上上一次留下的防重复处理记录（请求指纹必然不同）。
         var sameKey = prefix + "same-" + UUID.randomUUID();
         var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
         try {
@@ -695,7 +695,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     }
 
     @Test
-    @DisplayName("商品行备注落库并按行读回：修改能覆盖、清空能生效，不写进整单备注")
+    @DisplayName("商品行备注写入数据库并按行读回：修改能覆盖、清空能生效，不写进整单备注")
     void itemRemarkRoundTripsPerLine() {
         var c = customer();
         var f = form(c, newOnShelfSku("IREMARK"));

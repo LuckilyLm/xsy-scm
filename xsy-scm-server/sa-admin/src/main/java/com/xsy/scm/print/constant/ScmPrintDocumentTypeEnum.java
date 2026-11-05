@@ -112,7 +112,7 @@ public enum ScmPrintDocumentTypeEnum {
         List.of(), List.of()),
 
     /**
-     * 对账单读取已冻结的版本，不重新计算财务事实。金额单据本身可能只对财务角色开放， 因此金额列再按财务查看权限裁剪。
+     * 对账单读取已保存的版本，不重新计算财务记录。金额单据本身可能只对财务角色开放， 因此金额列再按财务查看权限裁剪。
      */
     STATEMENT("对账单", ScmReportPermission.FINANCE_QUERY,
         List.of(new ScmPrintField("settlementCustomerName", "结算方", false, false),

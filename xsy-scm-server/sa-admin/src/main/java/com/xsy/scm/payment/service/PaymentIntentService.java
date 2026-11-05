@@ -45,7 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 支付编排：外部渠道收款与内部余额消费共享意图和交易状态，成功副作用分别处理。
+ * 支付协调：外部渠道收款与内部余额消费共享意图和交易状态，成功副作用分别处理。
  */
 @Service
 @RequiredArgsConstructor
@@ -97,10 +97,10 @@ public class PaymentIntentService {
     }
 
     /**
-     * 商城客户支付入口：与后台共用同一条意图创建与资金编排，只跳过员工负责人范围（商城客户没有该范围）。
+     * 商城客户支付入口：与后台共用同一条意图创建与资金协调，只跳过员工负责人范围（商城客户没有该范围）。
      *
      * <p>
-     * 订单状态门槛、退款互斥、余额消费与幂等一律不变；归属由商城适配器在入口按登录客户判定， 金额同样由调用方（商城适配器按正式规则算出的待付额）显式给出，本入口仍不做金额推断。
+     * 订单状态门槛、退款互斥、余额消费与防重复处理一律不变；归属由商城适配器在入口按登录客户判定， 金额同样由调用方（商城适配器按正式规则算出的待付额）显式给出，本入口仍不做金额推断。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity createFromMall(PaymentIntentCreateForm form, String idempotencyKey) {
@@ -109,7 +109,7 @@ public class PaymentIntentService {
 
     private PaymentIntentEntity create(PaymentIntentCreateForm form, String idempotencyKey,
         boolean enforceEmployeeScope) {
-        // 幂等：收钱也要幂等。这里往下会真的调用 provider.createIntent()，
+        // 防重复处理：收钱也要防重复处理。这里往下会真的调用 provider.createIntent()，
         // 后台双击 / 网络重试 / 前端超时重试都会造出第二个意图与第二笔渠道交易。
         var claim = idempotencyService.claim(IDEMPOTENCY_SCOPE, idempotencyKey, form);
         PaymentOrderFact order = requireOrder(form, enforceEmployeeScope);
@@ -313,7 +313,7 @@ public class PaymentIntentService {
                 // 也不生成 Finance 收款、订单资金关联或余额权益。
                 // 金额一致时，无论是否首次都确保 Finance 收款记录存在：
                 // 「渠道已成功、本地事务当时失败」的场景靠下一次回调 / 对账重新驱动恢复，
-                // 恢复的入口就是这一句。注册本身按来源键幂等，重复调用不会多记一笔收款。
+                // 恢复的入口就是这一句。注册本身按来源键防重复处理，重复调用不会多记一笔收款。
                 if (amountMatchesIntent) {
                     registerFinanceReceipt(intentId, transactionId, operator);
                 }
@@ -363,7 +363,7 @@ public class PaymentIntentService {
      * 状态转换的唯一入口：先判状态机，再带「当前状态」做条件更新。
      *
      * <p>
-     * 受影响行数 != 1 说明有人先改了 —— 宁可报错也不覆盖，因为支付状态是外部结果的投影。
+     * 受影响行数 != 1 说明有人先改了 —— 宁可报错也不覆盖，因为支付状态是外部结果的查询结果。
      */
     @Transactional(rollbackFor = Exception.class)
     public void transition(Long intentId, ScmPaymentIntentStatusEnum from, ScmPaymentIntentStatusEnum to,

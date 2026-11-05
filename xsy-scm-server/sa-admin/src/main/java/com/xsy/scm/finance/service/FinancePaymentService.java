@@ -42,7 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 登记供应商付款和客户退款付款。客户付款必须关联退款单；退款付款只记录实际支出，不再次冲减应收。幂等沿用统一的 IdempotencyService，不另建机制。
+ * 登记供应商付款和客户退款付款。客户付款必须关联退款单；退款付款只记录实际支出，不再次冲减应收。防重复处理沿用统一的 IdempotencyService，不另建机制。
  */
 @Service
 @RequiredArgsConstructor
@@ -57,10 +57,10 @@ public class FinancePaymentService {
     private final ScmIdempotencyService idempotencyService;
 
     /**
-     * 登记付款，并在同一事务中完成幂等校验、付款写入和操作日志。客户退款来源先加锁，避免重复付款。
+     * 登记付款，并在同一事务中完成防重复处理校验、付款写入和操作日志。客户退款来源先加锁，避免重复付款。
      *
      * @param idempotencyKey
-     *            请求幂等键；重复请求返回首次结果，内容不同则报冲突。
+     *            请求防重复请求编号；重复请求返回首次结果，内容不同则报冲突。
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePaymentVO add(FinancePaymentAddForm form, String idempotencyKey) {
@@ -372,7 +372,7 @@ public class FinancePaymentService {
 
         payment.setCounterpartyId(refund.getCustomerId());
         // 名称取付款发生时客户主档并固定，绝不采用前端提交的任何名称；
-        // 也不回读订单快照 —— 付款的含义是「真实付款发生时的对方」。
+        // 也不回读当时的订单资料 —— 付款的含义是「真实付款发生时的对方」。
         payment.setCounterpartyNameSnapshot(customer.getCustomerName());
         payment.setSourceType(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name());
         payment.setSourceId(refund.getRefundId());
@@ -399,7 +399,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 金额形态与正负：与收款规则相同（严格字符串 + 4 位小数），数据库层 {@code CHECK (amount > 0)} 是第二层。
+     * 金额形态与正负：与收款规则相同（严格字符串 + 4 位小数），后端写入前必须拒绝非正金额。
      */
     private static BigDecimal amount(String raw) {
         BigDecimal amount = ScmDecimalStrings.parseScale4Required(raw);

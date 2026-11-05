@@ -123,7 +123,7 @@ test.describe('scm-customer', () => {
     customerIds.push(customerId);
     await expectDrawerClosed();
 
-    // 列表 VO 不含账期字段，必须回详情接口核对 —— 这是 W2 新增能力是否真落库的唯一证据。
+    // 列表 VO 不含账期字段，必须回详情接口核对 —— 这是 W2 新增能力是否真写入数据库的唯一证据。
     const detail = (await (await api.get(`/scm/customer/detail/${customerId}`)).json()).data;
     // 编码不再采信客户端提交值：真实编码只能从服务端回读（CUS + 至少 6 位全局序号）。
     const customerCode = String(detail.customerCode);
@@ -233,12 +233,12 @@ test.describe('scm-customer-360', () => {
    * 原先这组用例靠外部注入的一次性管理员令牌门控（缺令牌即整组 skip），
    * 于是「文件存在」被当成了「场景已验收」；现在它自建临时账号，真实跑在 dev 栈上。
    *
-   * 这一页的聚合口径（仅 CONFIRMED、按 SKU+单位分组、订购量非结算量、最近价不兜底）已在
+   * 这一页的聚合规则（仅 CONFIRMED、按 SKU+单位分组、订购量非结算量、最近价不兜底）已在
    * CustomerFrequentSkuIT 用真实 SQL 证明，因此 E2E 只验证**前端接线与权限边界**：
    * - 客户详情渲染出 5 个只读上下文 Tab；
    * - 切到「常购商品」确实以 **GET** 命中 `/frequent-skus` 且返回业务码 0（只读聚合，不是写命令）；
    * - 有客户查看权但**没有订单查看权**的账号，聚合端点必须被服务端整条拒（30005），
-   *   页面落到错误态而不是把历史成交价摊开 —— 取数源是订单事实，权限是 `AND` 而不是「有客户权就能看」；
+   *   页面落到错误态而不是把历史成交价摊开 —— 取数源是订单记录，权限是 `AND` 而不是「有客户权就能看」；
    * - 全程无 pageerror。
    */
 
@@ -676,7 +676,7 @@ test.describe('scm-product', () => {
     await expect(drawer.getByLabel('第 1 个商品规格的第 1 个规格值', {exact: true})).toHaveValue('大果');
     // 编辑态必须回显字典值，否则停用单位会让历史商品看不出原值
     await expect(selectBox(drawer.getByLabel('第 1 个商品规格的单位', {exact: true}))).toHaveText(/kg/);
-    // 负责人口径：销售侧金额两位小数，市场价输入四位会被收敛到 12.3500
+    // 负责人规则：销售侧金额两位小数，市场价输入四位会被收敛到 12.3500
     await drawer.getByLabel('第 1 个商品规格的市场价', {exact: true}).fill('12.3456');
     await drawer.getByLabel('将第 2 个商品规格设为默认商品规格').check();
     await button(drawer, '保存商品').click();
@@ -865,7 +865,7 @@ test.describe('scm-product', () => {
   });
 
   // PCO-2 商品运营入口：Excel 导入 / 导出按钮。用真实小 xlsx 字节只验证「选文件前禁止提交、
-  // 选后解禁」的结构契约，本用例刻意不点「开始导入」（无效字节必被后端拒，写库另有代价）；
+  // 选后解禁」的结构约定，本用例刻意不点「开始导入」（无效字节必被后端拒，写库另有代价）；
   // 真正以页面提交走完整链路的是文件末尾的 CREATE / UPDATE 往返两个用例。
   // 图片中心已改为侧边栏菜单入口，列表工具栏不再放这个按钮，其路由与功能由下方 image center 用例覆盖。
   test('PCO-2 excel entry: import modal gates submit until a file is chosen', async ({page}) => {
@@ -1106,7 +1106,7 @@ test.describe('scm-product', () => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     // 新增导入要求分类编码存在、ENABLED 且是三级分类：层级在逐行预校验就被拦下（与写入路径的
-    // ProductCategoryService.requireSelectableCategory 同口径），不再等到整批写库才收到 40011
+    // ProductCategoryService.requireSelectableCategory 同规则），不再等到整批写库才收到 40011
     const chainIds: (number | string)[] = [];
     let parentId: number | string | undefined;
     for (const name of [prefix + '导入一级', prefix + '导入二级', prefix + '导入三级']) {
@@ -1241,7 +1241,7 @@ test.describe('scm-product', () => {
 
       // 再加两行错行：一行给既存商品补个分类编码不存在的 SKU，另一行独立新建一个商品但只填到二级分类。
       // 二级分类那行刻意不并入同一 SPU，否则「同商品分类必须一致」会先炸出无关诊断，看不出层级校验。
-      // 整批必须 0 写入：既存商品不会多出第三个 SKU，二级分类的新商品也不会落库
+      // 整批必须 0 写入：既存商品不会多出第三个 SKU，二级分类的新商品也不会写入数据库
       const badPath = join(dir, 'create-bad.xlsx');
       expect(
         fill(badPath, [
@@ -1306,7 +1306,7 @@ test.describe('scm-supplier', () => {
    * - `supplier_sku` 是 **SKU 级**整表替换：提交后应存在的完整集合，而不是差量；
    * - **R12**：同一供应商允许同时存在多条 `defaultFlag = true` —— 通过 UI 勾两行默认并回查接口；
    * - **空数组 = 清空全部关联**（不是「无操作」）：删光行保存后接口必须返回 0 条；
-   * - 快照冻结：`skuNameSnapshot` 取自商品，不随商品改名漂移；
+   * - 保存的数据保存：`skuNameSnapshot` 取自商品，不随商品改名漂移；
    * - 供应商状态变更（停用 / 启用）走独立端点，且停用后不允许维护关联（40940）；
    * - 只读角色：接口 30005 + 「新增供应商」按钮不渲染。
    *
@@ -1485,7 +1485,7 @@ test.describe('scm-supplier', () => {
     const productId = await seedProduct(prefix);
     const productDetail = (await (await api.get(`/scm/product/detail/${productId}`)).json()).data;
     expect(productDetail.skuList).toHaveLength(2);
-    // V147 起规格编码由后端发号：造数传入的字符串不落库，交互与断言都只能用回读值。
+    // V147 起规格编码由后端发号：造数传入的字符串不写入数据库，交互与断言都只能用回读值。
     const skuCodeOfSpec = (spec: string) => String(productDetail.skuList.find((item: {specName: string}) => item.specName === spec).skuCode);
     const firstSkuCode = skuCodeOfSpec('规格1');
     const secondSkuCode = skuCodeOfSpec('规格2');
@@ -1543,11 +1543,11 @@ test.describe('scm-supplier', () => {
 
     const relations = (await (await api.get(`/scm/supplier/sku/list/${supplierId}`)).json()).data;
     expect(relations).toHaveLength(2);
-    // R12：两条同时为默认来源，这不是缺陷而是 legacy 事实。
+    // R12：两条同时为默认来源，这不是缺陷而是 legacy 记录。
     expect(relations.filter((item: {defaultFlag: boolean}) => item.defaultFlag)).toHaveLength(2);
     const first = relations.find((item: {purchaseUnit: string}) => item.purchaseUnit === 'kg');
     expect(first.referencePrice).toBe('3.5000');
-    // 快照冻结：取自商品，不随商品后续改名而漂移。
+    // 保存的数据保存：取自商品，不随商品后续改名而漂移。
     expect(first.skuNameSnapshot).toBe(prefix + '商品');
     expect(first.skuCodeSnapshot).toBe(firstSkuCode);
 
@@ -1557,11 +1557,11 @@ test.describe('scm-supplier', () => {
     row = await searchSupplier(page, supplierCode, prefix + '供应商甲');
     await expect(row.getByRole('button', {name: '2', exact: true})).toBeVisible();
 
-    // ------------------------------------------------- 深链详情：只读快照表
+    // ------------------------------------------------- 深链详情：只读历史资料表
     await button(row, prefix + '供应商甲').click();
     await expect(page).toHaveURL(new RegExp(`supplier-detail.*supplierId=${supplierId}`));
     await page.reload();
-    // 详情页只展示快照里的名称/规格；编码快照由上面接口断言保证，不进页面
+    // 详情页只展示保存的数据里的名称/规格；编码保存的数据由上面接口断言保证，不进页面
     await expect(page.getByText(prefix + '商品').first()).toBeVisible();
     await expect(page.getByText(secondSkuCode, {exact: true})).toHaveCount(0);
     await page.screenshot({path: '../.runtime/w2-supplier-detail.png', fullPage: true});

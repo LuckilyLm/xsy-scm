@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 更正申请与解绑记录。解绑只追加；申请走「待审批 → 批准/驳回」的单据状态机。 SQL 见 mapper/scm/trace/TraceCorrectionDao.xml。
+ * 更正申请与解绑记录。解绑只能新增；申请走「待审批 → 批准/驳回」的单据状态机。 SQL 见 mapper/scm/trace/TraceCorrectionDao.xml。
  */
 @Mapper
 public interface TraceCorrectionDao {

@@ -81,7 +81,7 @@ const props = defineProps({
 const emit = defineEmits(['click', 'add', 'inquiry']);
 
 /*
- * 库存文案 / 价格口径 / 按钮可用性统一来自 @/utils/product-display，
+ * 库存文案 / 价格计算规则 / 按钮可用性统一来自 @/utils/product-display，
  * 与详情页共用同一套规则，避免两处判断漂移。
  */
 const text = computed(() => stockText(props.product));

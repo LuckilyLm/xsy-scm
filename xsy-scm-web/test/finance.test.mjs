@@ -1,5 +1,5 @@
 /**
- * 财务模块契约测试。
+ * 财务模块约定检查。
  *
  * 由 2 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -153,7 +153,7 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.match(pageCode.writeOff, /source\.partyName[\s\S]*source\.availableAmount/);
   });
 
-  test('供应商与客户或供应商筛选提供名称搜索，退款付款从已完成退款选择器取事实', () => {
+  test('供应商与客户或供应商筛选提供名称搜索，退款付款从已完成退款选择器取记录', () => {
     assert.match(pageCode.payable, /label="供应商"[\s\S]*query\.supplierName/);
     assert.match(pageCode.payment, /label="客户或供应商"[\s\S]*query\.counterpartyName/);
     assert.match(pageCode.payment, /FinanceRefundPicker/);
@@ -189,7 +189,7 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.match(migration, /SELECT 1, m\.menu_id/);
   });
 
-  test('抵扣超额、负扣减后应收和撤销单据都用事实字段展示', () => {
+  test('抵扣超额、负扣减后应收和撤销单据都用记录字段展示', () => {
     assert.ok(allPages.includes('抵扣超额待处理'));
     assert.ok(code(`${VIEW_DIR}finance-detail-drawer.vue`).includes('header.netAmount'));
     assert.match(pageCode.receipt, /record\.entryType\s*===\s*'NORMAL'/);
@@ -197,7 +197,7 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.match(pageCode.writeOff, /record\.entryType\s*===\s*'NORMAL'/);
   });
 
-  // ------------------------------------------------------------------ 财务列表的展示契约
+  // ------------------------------------------------------------------ 财务列表的展示约定
 
   test('五张财务列表的操作列统一居中固定', () => {
     for (const [key, source] of Object.entries(pageCode)) {
@@ -207,7 +207,7 @@ import {readFileSync, existsSync} from 'node:fs';
 
   test('账款抵扣页把「资金」与「目标」的类型、单号各自成列', () => {
     // 只看主列表的列定义：抽屉里的分配子表另有自己的「待结算单号」，
-    // 那是登记抵扣时逐条录入的对象，不属于列表展示口径。
+    // 那是登记抵扣时逐条录入的对象，不属于列表展示规则。
     const mainColumns = pageCode.writeOff.match(/const columns = ref<TableColumnsType<FinanceWriteOff>>\(\[[\s\S]*?\n\]\);/)?.[0];
     assert.ok(mainColumns, '未取到账款抵扣页主列表的列定义');
     for (const want of ['收付款对象', '收付款类型', '收付款单号', '结算对象', '账单类型', '待结算单号']) {
@@ -218,7 +218,7 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.match(pageCode.writeOff, /column\.dataIndex\s*===\s*'targetType'[\s\S]{0,200}targetTypeText\(record\.targetType\)/);
     // 余额消费来自流水表，不在 SCM_FINANCE_SOURCE_TYPE_ENUM 里，必须单独补
     assert.match(pageCode.writeOff, /BALANCE_MOVEMENT: '余额消费'/);
-    // 撤销抵扣是追加撤销事实：danger 视觉 + 独立二次确认弹窗（不能与普通编辑同权重）
+    // 撤销抵扣是追加撤销记录：danger 视觉 + 独立二次确认弹窗（不能与普通编辑同权重）
     assert.match(pageCode.writeOff, /title="撤销抵扣"/);
     // 弹窗里要写清楚「这笔账款抵扣会作废、金额退回哪张单」，不能只放一个确认按钮
     assert.match(pageCode.writeOff, /账款抵扣记录将作废/);
@@ -244,7 +244,7 @@ import {readFileSync, existsSync} from 'node:fs';
     }
   });
 
-  test('余额类金额列按全站口径左对齐，金额样式只负责等宽数字与颜色', () => {
+  test('余额类金额列按全站规则左对齐，金额样式只负责等宽数字与颜色', () => {
     const REQUIRED = {
       payable: [
         ['剩余待付', 'openAmount'],
@@ -286,7 +286,7 @@ import {readFileSync, existsSync} from 'node:fs';
 // ---------------------------------------------------------------- 来源：finance-detail-drawer-contract.test.mjs
 {
   /**
-   * 财务详情抽屉七段分区的契约测试。
+   * 财务详情抽屉七段分区的约定检查。
    *
    * `finance-detail-drawer.vue` 统一分区为：
    *   1 单据概要 / 2 对象信息 / 3 金额组成 / 4 账款抵扣·退款·扣减记录关系 /
@@ -296,7 +296,7 @@ import {readFileSync, existsSync} from 'node:fs';
    * 改造前它只有 5 段，且金额与单号混在同一张 descriptions 里 —— 金额和 ID 视觉权重相同。
    * 本文件钉住三件事，防止被后续改动合并回去：
    *
-   * 1. 段标题存在且顺序正确：段名是用户找信息的唯一锚点，缺一段就等于丢掉一类事实。
+   * 1. 段标题存在且顺序正确：段名是用户找信息的唯一锚点，缺一段就等于丢掉一类记录。
    * 2. 金额组成用独立的高权重结构与 .scm-money：不能退回 descriptions 里的普通一行。
    * 3. 系统信息只显示单据表头实际审计列，不使用业务事件时间或操作日志替代。
    */
@@ -405,7 +405,7 @@ import {readFileSync, existsSync} from 'node:fs';
     }
   });
 
-  test('外部账单页把虚拟单据口径写在界面上，并明确不进应收应付', () => {
+  test('外部账单页把虚拟单据规则写在界面上，并明确不进应收应付', () => {
     assert.match(page, /不计入应收应付/);
     assert.match(page, /不参与账款抵扣/);
     // 税点只展示原值，不在前端算税额

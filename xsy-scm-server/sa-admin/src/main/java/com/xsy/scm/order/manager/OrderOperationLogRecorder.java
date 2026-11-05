@@ -33,7 +33,7 @@ public class OrderOperationLogRecorder {
     }
 
     /**
-     * 独立退货没有订单，日志主体记客户；订单日志与客户日志共用同一张表和同一套 jsonb 快照。
+     * 独立退货没有订单，日志主体记客户；订单日志与客户日志共用同一张表和同一套 jsonb 保存的数据。
      */
     public void recordForCustomer(Long customerId, ScmOrderOperationTypeEnum operation, String reason, Object before,
         Object after) {

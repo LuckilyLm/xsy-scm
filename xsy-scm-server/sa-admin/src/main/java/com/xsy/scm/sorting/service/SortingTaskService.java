@@ -97,7 +97,7 @@ public class SortingTaskService {
     private final com.xsy.scm.trace.service.TraceUnitService traceUnitService;
 
     /**
-     * 建单并指派。幂等键挡住「同一请求重发生成第二套数据」；不同请求抢同一订单行由部分唯一索引兜底，报可读的占用冲突。
+     * 建单并指派。防重复请求编号挡住「同一请求重发生成第二套数据」；不同请求抢同一订单行由部分唯一索引兜底，报可读的占用冲突。
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingTaskDetailVO create(SortingTaskCreateForm form, String key) {

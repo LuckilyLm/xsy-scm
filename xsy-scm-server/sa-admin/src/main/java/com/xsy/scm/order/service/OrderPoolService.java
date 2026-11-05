@@ -94,7 +94,7 @@ public class OrderPoolService {
         Map<String, Object> fingerprint = new LinkedHashMap<>();
         fingerprint.put("orderId", form.getOrderId());
         fingerprint.put("sellerId", form.getSellerId());
-        // 重试时版本可能已递增；幂等身份只绑定目标订单和目标业务员。
+        // 重试时版本可能已递增；防重复处理身份只绑定目标订单和目标业务员。
         var claim = idempotencyService.claim("ORDER_POOL_ASSIGN:" + form.getOrderId(), key, fingerprint);
         if (claim.replay()) {
             return idempotencyService.replay(claim, SalesOrderVO.class);

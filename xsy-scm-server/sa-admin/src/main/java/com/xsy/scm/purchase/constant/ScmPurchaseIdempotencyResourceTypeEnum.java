@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 采购幂等结果使用的资源类型。
+ * 采购防重复处理结果使用的资源类型。
  */
 @Getter
 @RequiredArgsConstructor

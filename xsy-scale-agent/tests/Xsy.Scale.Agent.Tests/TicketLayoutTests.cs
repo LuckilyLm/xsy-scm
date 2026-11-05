@@ -82,7 +82,7 @@ internal static class TicketLayoutTests
             var baskets = new BasketService(captures, store, options, policy);
             var service = new WorkstationService(options, policy, store, captures, baskets);
             service.ValidateMode(); service.ValidateMode();
-            if (store.Setting("workstation_mode") != "HARDWARE_TEST") throw new Exception("模式未冻结");
+            if (store.Setting("workstation_mode") != "HARDWARE_TEST") throw new Exception("模式未保存");
             policy.HardwareTest = false;
             Invalid(() => service.ValidateMode());
             policy.HardwareTest = true; policy.LocalTest = false;

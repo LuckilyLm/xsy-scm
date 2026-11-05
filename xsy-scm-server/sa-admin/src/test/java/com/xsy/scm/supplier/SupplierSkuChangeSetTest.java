@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 整表替换差量计算契约测试。
+ * 整表替换差量计算约定检查。
  *
  * <p>其中 {@link #keepsMultipleDefaultsWithoutInventingCardinalityPolicy()} 是 legacy 不变量 R12 的
  * <b>防回归门禁</b>：legacy 明确允许同一供应商存在多条默认来源，并禁止发明基数策略。

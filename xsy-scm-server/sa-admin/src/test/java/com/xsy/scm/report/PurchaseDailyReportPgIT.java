@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
-/** 复用真实 PostgreSQL 的事务回滚夹具，验证 SQL 聚合和持久快照口径。 */
+/** 复用真实 PostgreSQL 的事务回滚夹具，验证 SQL 聚合和持久保存的数据规则。 */
 class PurchaseDailyReportPgIT extends ScmW6PgITBase {
     private static final LocalDate REPORT_DATE = LocalDate.of(2000, 1, 17);
     private static final long SKU_ID = 987_654_321L;

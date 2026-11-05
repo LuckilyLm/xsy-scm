@@ -7,7 +7,7 @@ namespace Xsy.Scale.Agent;
 internal static class TicketLayout
 {
     /// <summary>生成203dpi标签预览，不访问打印机。</summary>
-    /// <param name="ticket">非空冻结凭条，纸张范围沿用工作台约束。</param>
+    /// <param name="ticket">非空保存凭条，纸张范围沿用工作台约束。</param>
     /// <returns>由调用方释放的位图，绘制失败时释放后抛出错误。</returns>
     /// <exception cref="AgentFault">纸张不合法或完整内容超出纸张。</exception>
     internal static Bitmap Preview(LocalTicket ticket)
@@ -29,7 +29,7 @@ internal static class TicketLayout
 
     /// <summary>先测量所有字段再绘制；60×40用紧凑模板，其他尺寸保留长凭条字段。</summary>
     /// <param name="graphics">调用方持有的非空绘图上下文，实际打印已补偿硬边距。</param>
-    /// <param name="ticket">非空冻结数据；未知皮重显示未知，补打仍使用原始记录。</param>
+    /// <param name="ticket">非空保存数据；未知皮重显示未知，补打仍使用原始记录。</param>
     /// <exception cref="AgentFault">任一字段或完整内容无法在纸内显示。</exception>
     internal static void Draw(Graphics graphics, LocalTicket ticket)
     {
@@ -80,12 +80,12 @@ internal static class TicketLayout
         foreach (var line in measured) graphics.DrawString(line.Text, line.Font, Brushes.Black, line.Bounds, format);
     }
 
-    // 来源缺失的旧快照不增加文字，保证历史补打版式保持不变。
+    // 来源缺失的原来保存的资料不增加文字，保证历史补打版式保持不变。
     private static string SourceSuffix(string? source) => source == "MANUAL" ? " · 手工录入" : source == "DEVICE" ? " · 电子秤" : "";
 
     /// <summary>新票为二维码独立保留静区；旧票仍由原模板渲染，不因升级改变补打。</summary>
     /// <param name="graphics">调用方提供的非空毫米绘图上下文。</param>
-    /// <param name="ticket">新模板冻结票；完整字段溢出时拒绝，不裁切。</param>
+    /// <param name="ticket">新模板已保存的票据；完整字段溢出时拒绝，不裁切。</param>
     /// <exception cref="AgentFault">纸张或完整内容不足、二维码过密。</exception>
     private static void DrawTrace(Graphics graphics, LocalTicket ticket)
     {

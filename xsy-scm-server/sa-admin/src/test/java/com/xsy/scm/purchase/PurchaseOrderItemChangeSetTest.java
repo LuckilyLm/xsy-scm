@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 采购单行级差量契约测试。
+ * 采购单行级差量约定检查。
  *
  * <p>行身份 = {@code (purchase_order_id, sku_id)}，由
  * {@code uk_purchase_order_item_order_sku_active} 强制（分配集合改造后仍保留）。
@@ -153,7 +153,7 @@ class PurchaseOrderItemChangeSetTest {
     }
 
     @Test
-    @DisplayName("删除已收货的行 → 40982（不能抹掉已发生的收货事实）")
+    @DisplayName("删除已收货的行 → 40982（不能抹掉已发生的收货记录）")
     void removingReceivedRowRejected() {
         PurchaseOrderItemEntity received = existing(7L, 100L, 0);
         received.setReceivedQuantity(new BigDecimal("5.0000"));

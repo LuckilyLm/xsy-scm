@@ -50,7 +50,7 @@ public class PurchaseDemandController {
     }
 
     /**
-     * 订单汇总 / 库存缺口预览（只读，不写业务表、不走幂等）。
+     * 订单汇总 / 库存缺口预览（只读，不写业务表、不走防重复处理）。
      *
      * <p>
      * 返回体含库存现有量与预留量，因此同时要求 {@code scm:purchase:demand:query} 与
@@ -83,7 +83,7 @@ public class PurchaseDemandController {
     }
 
     /**
-     * 批次回看（只读：不重算、不写业务表、不走幂等）。
+     * 批次回看（只读：不重算、不写业务表、不走防重复处理）。
      *
      * <p>
      * 返回体含该仓的库存与预留数字，因此与 {@code summary-preview} 一样同时要求 {@code scm:purchase:demand:batch:query} 与

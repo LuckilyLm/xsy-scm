@@ -51,7 +51,7 @@ public class BalanceRechargeService {
      * 发起充值：先保存充值记录，再创建支付意图。
      *
      * <p>
-     * 幂等键先占住：否则超时重试会先多出一条充值记录。同一个 {@code Idempotency-Key} 返回首次结果，换 key 再提就是新充值。
+     * 防重复请求编号先占住：否则超时重试会先多出一条充值记录。同一个 {@code Idempotency-Key} 返回首次结果，换 key 再提就是新充值。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity create(BalanceRechargeCreateForm form, String idempotencyKey) {

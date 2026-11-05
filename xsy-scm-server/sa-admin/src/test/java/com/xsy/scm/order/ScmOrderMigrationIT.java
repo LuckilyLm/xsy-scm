@@ -43,14 +43,14 @@ class ScmOrderMigrationIT extends ScmBaselineMigrationPgITBase {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM t_role_menu WHERE role_id=1 AND menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642)", Integer.class)).isEqualTo(22);
         assertThat(jdbc.queryForObject("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='ck_sales_order_source'", String.class)).contains("IMPORT");
         // 订单日志 DAO 只允许「追加 + 读」：listByOrderId 是商城订单时间线的只读入口，
-        // 一旦出现 update / delete 方法，日志就不再是不可改的事实，这里会立刻变红。
+        // 一旦出现 update / delete 方法，日志就不再是不可改的记录，这里会立刻变红。
         assertThat(com.xsy.scm.order.dao.OrderOperationLogDao.class.getMethods()).extracting(java.lang.reflect.Method::getName).containsExactlyInAnyOrder("insert", "query", "listByOrderId");
     }
 
     /**
      * V126 待分配订单池：菜单、权限发布、角色授权与候选查询的部分索引。
      *
-     * <p>这一版只新增对象、不回填历史订单，所以断言的是「新对象存在且口径正确」。
+     * <p>这一版只新增对象、不回填历史订单，所以断言的是「新对象存在且规则正确」。
      * 权限码必须与 {@code OrderPermission.ASSIGN} 一致：它硬编码在菜单迁移与 Java 常量两处，
      * 漏改任何一处都会让页面上的指派按钮点了 403。
      */

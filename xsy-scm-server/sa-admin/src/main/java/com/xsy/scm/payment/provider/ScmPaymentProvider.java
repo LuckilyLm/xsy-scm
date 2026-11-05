@@ -29,7 +29,7 @@ public interface ScmPaymentProvider {
     IntentResult createIntent(IntentRequest request);
 
     /**
-     * 同一 refundNo 必须幂等；超时或本地写入失败后仍使用原编号，不得重复出款。
+     * 同一 refundNo 必须防重复处理；超时或本地写入失败后仍使用原编号，不得重复出款。
      */
     RefundResult refund(RefundRequest request);
 
@@ -111,7 +111,7 @@ public interface ScmPaymentProvider {
      * 归一化后的回调。
      *
      * @param providerEventId
-     *            渠道事件 id —— 回调幂等的主锚点
+     *            渠道事件 id —— 回调防重复处理的主锚点
      * @param eventType
      *            归一化事件类型；类型不认识时为 {@code null}
      * @param rawEventType

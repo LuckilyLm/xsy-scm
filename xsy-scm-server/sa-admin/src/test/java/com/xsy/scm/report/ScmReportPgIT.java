@@ -52,27 +52,27 @@ import static org.mockito.Mockito.mockStatic;
  * <ol>
  *   <li>把 25 条报表 SQL <b>全部真跑一遍</b>：列名写错、GROUP BY 与 SELECT 不匹配、
  *       日期轴类型不一致这类问题只有 PostgreSQL 能发现，编译与静态检查看不见。</li>
- *   <li>钉住「只统计已成立事实」的口径：未确认订单 / 已取消采购单 / PENDING 退款
+ *   <li>钉住「只统计已成立记录」的规则：未确认订单 / 已取消采购单 / PENDING 退款
  *       一律不得进入报表，且一单多行不得把退款放大。</li>
  * </ol>
  *
  * <p><b>夹具用直接 INSERT 而不是领域服务</b>：报表只读，被测的是「状态与时间轴的组合」，
- * 用服务造一张 CONFIRMED 订单反而要把整条销售流程跑通，且会把口径测试与写流程耦合在一起。
+ * 用服务造一张 CONFIRMED 订单反而要把整条销售流程跑通，且会把规则测试与写流程耦合在一起。
  * 所有夹具都带随机后缀并靠基类事务回滚清理。
  *
  * <p><b>成本字段在 IT 里必然被抹除</b>：IT 没有 Sa-Token 登录上下文，
- * {@code ScmReportAccess#canViewCost()} 失败关闭返回 false，因此这里断言的是
+ * {@code ScmReportAccess#canViewCost()} 校验失败时拒绝操作返回 false，因此这里断言的是
  * 「无权限即不给成本」，而不是成本算法本身；成本金额的正确性由
  * {@code ScmInventory*IT} 与流水表的 {@code unit_cost} 直接证明。
  *
  * <p><b>本类跑在「不受仓库范围约束」的身份上</b>：基类的 {@code administratorFlag=true} 登录让
- * {@code ScmDataScopeService#resolve()} 返回全范围，因此这里的报表口径断言与仓库授权无关。
+ * {@code ScmDataScopeService#resolve()} 返回全范围，因此这里的报表规则断言与仓库授权无关。
  * 范围本身（谁能看到哪个仓）由 {@code ScmReportDataScopePgIT} 用
  * {@code administratorFlag=false} 的账号取证（裁决第 5 条：超管通过不算权限证据）。
  *
- * <p>读夹具一律先 {@code evictMybatisCache()}：本类的口径测试靠 jdbc 改状态后再读报表，
+ * <p>读夹具一律先 {@code evictMybatisCache()}：本类的规则测试靠 jdbc 改状态后再读报表，
  * 而同一测试事务内的 MyBatis 一级缓存会按「语句 + 参数」命中旧结果，不清缓存会把
- * 「更新未生效」误报成报表口径错。
+ * 「更新未生效」误报成报表规则错。
  */
 @DisplayName("Finance R0 报表中心（PG IT）")
 class ScmReportPgIT extends ScmW6PgITBase {
@@ -105,7 +105,7 @@ class ScmReportPgIT extends ScmW6PgITBase {
 
     private final String tag = "RPT" + UUID.randomUUID().toString().substring(0, 10).toUpperCase();
 
-    /** 覆盖近 30 天，既含夹具时间也含库中既有事实。 */
+    /** 覆盖近 30 天，既含夹具时间也含库中既有记录。 */
     private LocalDate end() {
         return LocalDate.now(BUSINESS_ZONE);
     }
@@ -245,7 +245,7 @@ class ScmReportPgIT extends ScmW6PgITBase {
         return form;
     }
 
-    // ==================== 2. 销售口径：只统计已确认订单 ====================
+    // ==================== 2. 销售规则：只统计已确认订单 ====================
 
     @Test
     @DisplayName("销售统计：PENDING 不计、CONFIRMED 计，且一单多行不放大退款")
@@ -318,7 +318,7 @@ class ScmReportPgIT extends ScmW6PgITBase {
         assertThat(second.getCumulativeSalesAmountSharePercent()).isEqualByComparingTo("100.0000");
     }
 
-    // ==================== 3. 采购口径：只统计提交后的采购事实 ====================
+    // ==================== 3. 采购规则：只统计提交后的采购记录 ====================
 
     @Test
     @DisplayName("采购统计：CANCELLED 不计，SUBMITTED 计入且业务日期按 submitted_at")
@@ -396,14 +396,14 @@ class ScmReportPgIT extends ScmW6PgITBase {
         }
     }
 
-    // ==================== 6. 成本字段失败关闭 ====================
+    // ==================== 6. 成本字段校验失败时拒绝操作 ====================
 
     @Test
     @DisplayName("无成本权限时流水与入库的成本字段为 null，不回落成 0")
     void costFieldsAreMaskedWhenPermissionAbsent() {
         Page<Object> page = new Page<>(1, 5);
         // 直连 DAO 时必须显式给范围：这里要的是「未抹除的原始映射」，与仓库范围无关，
-        // 因此传 all()，而不是留 null —— null 在 SQL 侧是恒假谓词（失败关闭）。
+        // 因此传 all()，而不是留 null —— null 在 SQL 侧是恒假谓词（校验失败时拒绝操作）。
         List<InventoryReportVO.MovementRow> rows = reportDao.movementList(page, at(start()),
                 at(end().plusDays(1)), List.of("PURCHASE_IN"), inventoryForm(), ScmValueScope.all());
         // 走 DAO 才能看到未抹除的原始映射；服务层在无登录上下文时必须给 null

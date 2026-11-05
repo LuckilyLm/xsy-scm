@@ -48,7 +48,7 @@ async function refresh(showLoading=true):Promise<void>{
     if(current!==generation)return;
     if(!summary.value&&total.basketCount>0)armed.value=false;
     summary.value=total;records.value=page.items;
-    // 刷新前响应丢失时，可从原操作号确认保存；不重新创造采集事实。
+    // 刷新前响应丢失时，可从原操作号确认保存；不重新创造采集记录。
     if(pending.value&&page.items.some(row=>row.operationId===pending.value?.operationId)){pending.value=null;localStorage.removeItem(storageKey.value);armed.value=false;}
     if(pendingManual.value&&page.items.some(row=>row.operationId===pendingManual.value?.operationId)){
       pendingManual.value=null;localStorage.removeItem(storageKey.value+':manual');manualOpen.value=false;manualWeight.value='';manualNote.value='';armed.value=false;

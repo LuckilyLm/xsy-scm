@@ -16,9 +16,9 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 财务域对业务域只读的静态契约。
+ * 财务域对业务域只读的静态约定。
  *
- * <p>既有跨域写都走显式契约（如 {@code PurchaseInventoryContract}），而财务域直接建只读 DAO
+ * <p>既有跨域写都走显式约定（如 {@code PurchaseInventoryContract}），而财务域直接建只读 DAO
  * 去读订单 / 退货 / 收货 / 出库 / 配送表。允许只读的代价是
  * 「不小心写了一句」没有任何编译期或运行期信号 —— 页面照常跑、接口照常返回成功，
  * 只有库存账或订单账在事后解释不了。因此把边界钉成一个静态扫描断言。
@@ -28,14 +28,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p><b>不是 Spring 测试</b>：只读源码文件，因此跑得比 IT 快得多，也不依赖数据库。
  */
-@DisplayName("财务域只读契约（静态扫描）")
+@DisplayName("财务域只读约定（静态扫描）")
 class FinanceReadOnlyContractTest {
 
     /**
      * 财务域不得写入的业务表，按前缀匹配：{@code xsy_sales_order*} / {@code xsy_order_return*} /
      * {@code xsy_order_refund} / {@code purchase_*} / {@code inventory_*} / {@code delivery_*}。
      *
-     * <p>{@code xsy_sorting_task} 也一并纳入：财务不消费分拣事实（应收数量只取出库量），
+     * <p>{@code xsy_sorting_task} 也一并纳入：财务不消费分拣记录（应收数量只取出库量），
      * 因此同样没有任何写它的理由。
      */
     private static final List<String> READ_ONLY_TABLE_PREFIXES = List.of(
@@ -43,7 +43,7 @@ class FinanceReadOnlyContractTest {
             "purchase_", "inventory_", "delivery_", "sorting_");
 
     /**
-     * 写语句关键字，不含 {@code SELECT}：财务域允许读这些表，这正是本契约的前提。
+     * 写语句关键字，不含 {@code SELECT}：财务域允许读这些表，这正是本约定的前提。
      */
     private static final Pattern WRITE_STATEMENT = Pattern.compile(
             "\\b(INSERT\\s+INTO|UPDATE|DELETE\\s+FROM|TRUNCATE(?:\\s+TABLE)?)\\s+"
@@ -95,7 +95,7 @@ class FinanceReadOnlyContractTest {
         }
 
         assertThat(violations)
-                .as("财务域对业务表只读；越界写语句会让库存账 / 订单账出现解释不了的事实")
+                .as("财务域对业务表只读；越界写语句会让库存账 / 订单账出现解释不了的记录")
                 .isEmpty();
     }
 

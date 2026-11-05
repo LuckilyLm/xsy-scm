@@ -34,14 +34,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * <ol>
  * <li>{@link #danglingSettlementSubjectStillReadsThePayerButRejectsANewReceipt()} ——
- * <b>收紧新事实</b>：付款客户声明的结算父客户已经被软删时，客户事实整行仍然读得到，但结算 id
+ * <b>收紧新记录</b>：付款客户声明的结算父客户已经被软删时，客户记录整行仍然读得到，但结算 id
  * 与名称成对落空，登记收款被拒绝且不产生任何收款。{@code xsy_finance_receipt} 的这两列都是
- * NOT NULL，写进历史就不可改，宁可拒绝也不能把付款客户自己的名字当结算主体快照。</li>
+ * NOT NULL，写进历史就不可改，宁可拒绝也不能把付款客户自己的名字当结算主体保存的数据。</li>
  * <li>{@link #historicalReceiptStaysReadableAfterTheSettlementParentIsDeletedLater()} ——
- * <b>不破坏旧事实</b>：收款落库之后结算父客户才被软删，只读查询面必须照常返回这张历史收款。
+ * <b>不破坏旧记录</b>：收款写入数据库之后结算父客户才被软删，只读查询面必须照常返回这张历史收款。
  * 若为了收紧写入把 JOIN 改成 INNER，声明过结算主体的付款客户会整行查不出来，
  * {@code detail} 的范围判定随即拿不到 seller_id 而报越权，把「主档后来变了」升级成
- * 「审计历史不可读」——那与财务域保存既有事实的定位相反。</li>
+ * 「审计历史不可读」——那与财务域保存既有记录的定位相反。</li>
  * </ol>
  *
  * <p>
@@ -137,7 +137,7 @@ class ScmFinanceReceiptSettlementPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("结算父客户已软删：付款客户整行仍可读、结算主体成对为空、新收款登记被拒且不落库")
+    @DisplayName("结算父客户已软删：付款客户整行仍可读、结算主体成对为空、新收款登记被拒且不写入数据库")
     void danglingSettlementSubjectStillReadsThePayerButRejectsANewReceipt() {
         Long parent = groupCustomer(null);
         Long child = groupCustomer(parent);
@@ -158,11 +158,11 @@ class ScmFinanceReceiptSettlementPgIT extends ScmW5PgITBase {
                 .isInstanceOfSatisfying(ScmBusinessException.class,
                         e -> assertThat(e.getErrorCode()).isEqualTo(ScmCommonErrorCode.VALIDATION_ERROR));
 
-        assertThat(countReceiptsOf(child)).as("拒绝就不能留下半张收款事实").isZero();
+        assertThat(countReceiptsOf(child)).as("拒绝就不能留下半张收款记录").isZero();
     }
 
     @Test
-    @DisplayName("收款登记之后再软删结算父客户：历史收款在列表与详情里都照常可读，快照不被改写")
+    @DisplayName("收款登记之后再软删结算父客户：历史收款在列表与详情里都照常可读，保存的数据不被改写")
     void historicalReceiptStaysReadableAfterTheSettlementParentIsDeletedLater() {
         Long parent = groupCustomer(null);
         Long child = groupCustomer(parent);
@@ -186,7 +186,7 @@ class ScmFinanceReceiptSettlementPgIT extends ScmW5PgITBase {
 
         var detail = financeReceiptQueries.detail(receipt.getReceiptId());
         assertThat(detail.getReceipt().getReceiptNo()).isEqualTo(receipt.getReceiptNo());
-        // 冻结的是登记当时的结算主体，主档后续变化不回写历史事实
+        // 保存的是登记当时的结算主体，主档后续变化不回写历史记录
         assertThat(detail.getReceipt().getSettlementCustomerId()).isEqualTo(parent);
     }
 

@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.sorting.dao.SortingQueryDao">
 
     <!--
-      分拣范围（裁决第 7 条与补充第 15 条）：授权仓 ∩ 可见指派人，两维取交集、失败关闭。
+      分拣范围（裁决第 7 条与补充第 15 条）：授权仓 ∩ 可见指派人，两维取交集、校验失败时拒绝操作。
       * scope 为 null 渲染 AND FALSE：漏传范围必须是「查不到」，不能是「查全部」。
       * 仓库维度只能来自 xsy_employee_warehouse_scope（或其显式放宽权限），没有授权行即无仓可看。
       * 持建单与指派权者（crossAssignee）跨指派人可见；否则恒等于派给本人。
@@ -67,8 +67,8 @@
         <if test="q.assigneeEmployeeId != null">AND t.assignee_employee_id = #{q.assigneeEmployeeId}</if>
         <if test="q.unassignedOnly != null and q.unassignedOnly">AND t.assignee_employee_id IS NULL</if>
         <!--
-          ADM-11 冻结维度筛选：送货时间 / 波次 / 供应商来源全部按建单时冻结的快照过滤，
-          不联订单或线路回查 —— 任务建出来之后，它的作业口径就不该跟着主档变。
+          ADM-11 保存维度筛选：送货时间 / 波次 / 供应商来源全部按建单时保存的已存数据过滤，
+          不联订单或线路回查 —— 任务建出来之后，它的作业规则就不该跟着主档变。
         -->
         <if test="q.deliveryTimeFrom != null">AND t.delivery_time_snapshot &gt;= #{q.deliveryTimeFrom}</if>
         <if test="q.deliveryTimeTo != null">AND t.delivery_time_snapshot &lt; #{q.deliveryTimeTo}</if>
@@ -110,7 +110,7 @@
       任务内各订单的满赠赠品权益（只读合并模型的第二类来源）。
       赠品不落 xsy_sorting_task_item：那张表强制挂订单行，虚造订单行会污染销售数量、商品排行、
       采购分析与客户购买历史。这里按「任务里出现的订单」现合并，任务取消后自然不再返回。
-      赠品行刻意不填 sorted_quantity / result：分拣只拣货，不写回赠品事实。
+      赠品行刻意不填 sorted_quantity / result：分拣只拣货，不写回赠品记录。
     -->
     <select id="giftItems" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskItemVO">
         WITH task_orders AS(SELECT i.sales_order_id, MAX(i.order_no_snapshot) AS order_no_snapshot,
@@ -168,7 +168,7 @@
     </select>
 
     <!--
-      客户视角逐条订单行；与按商品视角使用相同任务范围、状态及送货日期口径。
+      客户视角逐条订单行；与按商品视角使用相同任务范围、状态及送货日期规则。
       不跨单位汇总，不将只读视图当作分拣写命令；赠品另按原任务详情展示。
     -->
     <select id="customerLines" resultType="com.xsy.scm.sorting.domain.vo.SortingCustomerLineVO">

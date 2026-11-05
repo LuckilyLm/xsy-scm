@@ -45,7 +45,7 @@ import java.util.Map;
  * 应付域服务。
  *
  * <p>
- * 收货确认会在同一事务内生成正常应付；本服务读取采购事实，只写入财务应付记录与操作日志。
+ * 收货确认会在同一事务内生成正常应付；本服务读取采购记录，只写入财务应付记录与操作日志。
  */
 @Service
 @RequiredArgsConstructor
@@ -211,7 +211,7 @@ public class FinancePayableService {
      * {@code confirm} 后续库存写入失败时也没有回滚它的机会。
      *
      * <p>
-     * 不是用户命令，因此不使用 {@code Idempotency-Key}：防重复请求由 {@code confirm} 自身的幂等与「只有 DRAFT 可确认」的状态校验承担；
+     * 不是用户命令，因此不使用 {@code Idempotency-Key}：防重复请求由 {@code confirm} 自身的防重复处理与「只有 DRAFT 可确认」的状态校验承担；
      * 防重复数据由数据库来源唯一索引承担，命中即视为已生成并成功返回。
      *
      * <p>
@@ -238,7 +238,7 @@ public class FinancePayableService {
     public void generateOnPurchaseAccount(Long accountId) {
         var source = financePayableSourceDao.selectPurchaseAccount(accountId);
         if (source == null) {
-            throw new IllegalStateException("采购确认事实不存在: " + accountId);
+            throw new IllegalStateException("采购确认记录不存在: " + accountId);
         }
         generate(source, financePayableSourceDao.selectPurchaseAccountLines(accountId));
     }

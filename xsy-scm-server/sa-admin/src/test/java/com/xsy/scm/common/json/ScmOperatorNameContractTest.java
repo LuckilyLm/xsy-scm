@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 响应 VO 里「操作人字段」必须走人名序列化的静态契约。
+ * 响应 VO 里「操作人字段」必须走人名序列化的静态约定。
  *
  * <p>
  * 操作人在库里存的是 {@code userType:userId}（见 {@code ScmOperator.current()}），直接序列化出去就是
@@ -37,7 +37,7 @@ class ScmOperatorNameContractTest {
     private static final Pattern OPERATOR_FIELD = Pattern.compile(
             "^\\s*private String (operator|auditor|[a-z][a-zA-Z]*By);$");
 
-    /** 审计快照：操作人藏在 Map 的键上，走的是另一个序列化器。 */
+    /** 审计保存的数据：操作人藏在 Map 的键上，走的是另一个序列化器。 */
     private static final Pattern SNAPSHOT_FIELD = Pattern.compile(
             "^\\s*private Map<String, Object> (beforeData|afterData);$");
 

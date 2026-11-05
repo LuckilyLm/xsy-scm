@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.report.dao.ScmOrderExceptionReadDao">
 
-    <!-- 各来源事实共用筛选集合；当前状态由源表决定，不另存处置状态。 -->
+    <!-- 各来源记录共用筛选集合；当前状态由源表决定，不另存处置状态。 -->
     <sql id="facts">
         WITH exception_facts AS(SELECT CASE WHEN i.result = 'OUT_OF_STOCK' THEN 'SORTING_SHORTAGE' ELSE
             'SORTING_DIFFERENCE' END::text AS exception_type, t.id AS source_id, i.id AS source_row_id,

@@ -87,7 +87,7 @@ class DeliveryDispatchPgIT extends ScmW6PgITBase {
         assertThat(result.getShippedLineCount()).isEqualTo(1);
         assertThat(routeStatus(one.routeId())).isEqualTo("DISPATCHED");
         assertThat(jdbc.queryForObject("SELECT outbound_id FROM xsy_delivery_route WHERE id = ?", Long.class, one.routeId()))
-                .as("裁决第 3 条那条追溯链的起点必须真的落库").isEqualTo(result.getOutboundId());
+                .as("裁决第 3 条那条追溯链的起点必须真的写入数据库").isEqualTo(result.getOutboundId());
         assertThat(jdbc.queryForObject("SELECT dispatched_by FROM xsy_delivery_route WHERE id = ?", String.class, one.routeId()))
                 .as("发车时点必须成对留下操作人").isNotBlank();
         assertThat(fulfillmentStatus(one.routeId(), one.orderId())).isEqualTo("IN_TRANSIT");
@@ -99,7 +99,7 @@ class DeliveryDispatchPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("同一 Idempotency-Key 重发只回放一次结果，不重复扣库存")
+    @DisplayName("同一 Idempotency-Key 重发时返回原结果，不重复扣库存")
     void repeatedDispatchWithSameKeyReplaysOriginalResult() {
         Case one = plannedRouteWithOneSortedOrder("l3b", "4.0000");
         String key = key("dispatch-once");
@@ -344,7 +344,7 @@ class DeliveryDispatchPgIT extends ScmW6PgITBase {
         return routeService.create(form);
     }
 
-    /** 停靠点坐标来自下单时冻结的地址快照，所以地址必须在下单前写好。 */
+    /** 停靠点坐标来自下单时保存的下单时保存的地址，所以地址必须在下单前写好。 */
     private void attach(Long routeId, Long orderId) {
         var form = new DeliveryOrdersForm();
         form.setVersion(versionOf(routeId));
@@ -357,7 +357,7 @@ class DeliveryDispatchPgIT extends ScmW6PgITBase {
      * 补齐停靠点坐标，只为满足 L0–L2 的规划前置（点位齐全且同坐标系）。
      *
      * <p>这条前置本身由 {@code DeliveryRouteServiceIT#requireCompleteSameCrsLocationsAndRemoveEmptyStop}
-     * 专门验；本类关心的是发车之后发生什么，所以不重复走「客户地址 → 订单快照 → 停靠点」这条
+     * 专门验；本类关心的是发车之后发生什么，所以不重复走「客户地址 → 当时的订单资料 → 停靠点」这条
      * 坐标搬运链，直接给停靠点落坐标。
      */
     private void locateAllStops(Long routeId) {

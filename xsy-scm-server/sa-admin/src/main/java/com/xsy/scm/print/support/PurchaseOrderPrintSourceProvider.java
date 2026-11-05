@@ -56,7 +56,7 @@ public class PurchaseOrderPrintSourceProvider implements ScmPrintSourceProvider 
             Map<String, String> row = ScmPrintSource.row();
             row.put("productName", ScmPrintText.text(item.getProductName()));
             row.put("skuCode", ScmPrintText.text(item.getSkuCode()));
-            // 采购明细的快照名称是商品名，模板里的「规格」取规格值，不能印成商品名
+            // 采购明细的已存数据名称是商品名，模板里的「规格」取规格值，不能印成商品名
             row.put("skuName", specName(item));
             row.put("purchaseUnit", ScmPrintText.text(item.getPurchaseUnit()));
             row.put("plannedQuantity", ScmPrintText.fixed(item.getPlannedQuantity()));
@@ -73,7 +73,7 @@ public class PurchaseOrderPrintSourceProvider implements ScmPrintSourceProvider 
         return new ScmPrintSource(order.getOrderNo(), header, rows, totals);
     }
 
-    /** 规格取规格值（例如「散装」）；没有规格值时退回快照名称，避免打印空白。 */
+    /** 规格取规格值（例如「散装」）；没有规格值时使用已保存的商品名称，避免打印空白。 */
     private static String specName(PurchaseOrderItemVO item) {
         Map<String, Object> values = item.getSpecValues();
         if (values == null || values.isEmpty()) {

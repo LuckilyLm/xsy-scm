@@ -8,8 +8,8 @@
 
     <!--
       单位在业务表里按名称字符串记账，所以引用数按 name 匹配；
-      只统计仍在使用的主数据字段，订单/采购/库存的历史快照永不复核，不计入。
-      两处查询都用别名 d 引用 xsy_uom，保证列表与删除复核口径同源。
+      只统计仍在使用的主数据字段，订单/采购/库存的历史数据永不复核，不计入。
+      两处查询都用别名 d 引用 xsy_uom，保证列表与删除复核规则同源。
     -->
     <sql id="columns">
         d.id uom_id, d.version, d.uom_code, d.name, d.category, d.precision_scale, d.status, d.sort_order

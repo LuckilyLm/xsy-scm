@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * （与 {@code ScmInventoryRollbackIT} 同一取舍。）
  *
  * <p><b>本类会向开发库提交数据</b>（造数与 {@code seedWarehouseId} 之外的一切）。
- * 因此它必须自己收拾干净：调拨需要第二个仓库，而夹具的口径是「唯一启用仓库」，
+ * 因此它必须自己收拾干净：调拨需要第二个仓库，而夹具的规则是「唯一启用仓库」，
  * 多留一个启用仓库会让后续任何依赖 {@code defaultEnabledWarehouse} 的用例拿到 41018。
  * 所以在 {@link #cleanupWarehouses()} 里把本类建的仓库软删掉 —— 见下方注释。
  */
@@ -38,7 +38,7 @@ class ScmInventoryTransferRollbackIT extends ScmW6PgITBase {
     private InventoryTransferService transferService;
 
     /**
-     * 本类建过的仓库 id，用例结束后软删（否则会破坏「唯一启用仓库」的口径）。
+     * 本类建过的仓库 id，用例结束后软删（否则会破坏「唯一启用仓库」的规则）。
      */
     private final List<Long> createdWarehouses = new ArrayList<>();
 
@@ -51,7 +51,7 @@ class ScmInventoryTransferRollbackIT extends ScmW6PgITBase {
     void cleanupWarehouses() {
         for (Long warehouseId : createdWarehouses) {
             // 软删即可：warehouse 走 @TableLogic，all() / defaultEnabledWarehouse() 会自动过滤。
-            // 硬删会破坏「历史记录保留可查」的口径，也没有必要。
+            // 硬删会破坏「历史记录保留可查」的规则，也没有必要。
             jdbc.update("UPDATE xsy_warehouse SET deleted = TRUE, status = 'DISABLED' WHERE id = ?", warehouseId);
         }
         createdWarehouses.clear();

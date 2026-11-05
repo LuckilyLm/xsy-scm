@@ -35,7 +35,7 @@ public class MallAfterSaleService {
      * 客户申请售后。
      *
      * <p>
-     * 归属先判；订单状态门槛（仅已确认）、可退数量上限（实数量减去已在途申请）与幂等都在正式退货建单路径里， 商城入口不放宽任何一条。
+     * 归属先判；订单状态门槛（仅已确认）、可退数量上限（实数量减去已在途申请）与防重复处理都在正式退货建单路径里， 商城入口不放宽任何一条。
      */
     @Transactional(rollbackFor = Exception.class)
     public MallAfterSaleVO apply(RequestMallCustomer customer, MallAfterSaleApplyForm form, String idempotencyKey) {
@@ -57,7 +57,7 @@ public class MallAfterSaleService {
     @Transactional(rollbackFor = Exception.class)
     public MallAfterSaleVO cancel(RequestMallCustomer customer, Long returnId, String idempotencyKey) {
         OrderReturnEntity entity = afterSaleQueryService.requireOwnedReturn(customer, returnId);
-        // 已撤销时仍交给正式幂等记录判断：同键重试回放原结果，换键由正式状态机拒绝。
+        // 已撤销时仍交给正式防重复处理记录判断：同编号重试返回原结果，换键由正式状态机拒绝。
         if (!ScmOrderReturnStatusEnum.PENDING.name().equals(entity.getStatus())
             && !ScmOrderReturnStatusEnum.CANCELLED.name().equals(entity.getStatus())) {
             throw new ScmBusinessException(MallErrorCode.AFTERSALE_NOT_CANCELABLE);

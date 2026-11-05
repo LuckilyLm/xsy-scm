@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** 比例与四位小数尾差的纯算法契约；集成用例另验证数据库锁与幂等。 */
+/** 比例与四位小数尾差的纯算法约定；集成用例另验证数据库锁与防重复处理。 */
 class RefundFundingAllocatorTest {
     private final RefundFundingAllocator allocator = new RefundFundingAllocator();
 

@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mockStatic;
  *
  * <p>本类测组单 / 规划 / 打印的业务行为，不测数据范围，因此调用者要拿「全部范围 + 全部功能点」：
  * 只读接口按司机维度收口，未绑定司机的登录人（基类的 employeeId=1）会看到 0 条线路。
- * 范围口径本身由 {@code ScmDeliveryDataScopePgIT} 负责。
+ * 范围规则本身由 {@code ScmDeliveryDataScopePgIT} 负责。
  */
 class DeliveryRouteServiceIT extends ScmW5PgITBase {
     @Autowired
@@ -105,9 +105,9 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
             assertThat(item.getOrderedQuantity()).isNotNull();
         });
         // 出网明细不能带 SalesOrderItemEntity 的内部列（33 列里有 deleted/version/createdBy 审计列与
-        // draftPriceSourceId/lockedPriceSourceId/manualPriceReason 等价格口径字段）。
+        // draftPriceSourceId/lockedPriceSourceId/manualPriceReason 等价格计算规则字段）。
         var printedItems = objectMapper.writeValueAsString(items);
-        // 出网契约：金额为归一到 4 位的定点字符串。注意 JsonConfig 已全局把 BigDecimal 序列化成
+        // 出网约定：金额为归一到 4 位的定点字符串。注意 JsonConfig 已全局把 BigDecimal 序列化成
         // 字符串，所以这条校验的不是下面的注解，注解额外保证的是「补到 4 位」这层语义。
         assertThat(printedItems).as("定点金额必须是四位小数字符串")
                 .containsPattern("\"orderedQuantity\":\"\\d+\\.\\d{4}\"");

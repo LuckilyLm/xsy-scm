@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 已成功退款的累计口径（PAY-02，PG IT）。
+ * 已成功退款的累计规则（PAY-02，PG IT）。
  *
  * <p><b>缺陷</b>：{@code sumSucceededByTransaction} 原先 {@code SUM(amount)}，即按<b>申请额</b>
  * 累计。而退款服务允许渠道实退（{@code provider_amount}）与申请额不同（差异退款的正常情形），
@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>本类钉住累计按<b>渠道实退额</b>取数，并覆盖 {@code provider_amount} 缺失时的回退，
  * 避免该行被 {@code SUM} 静默丢成 0。
  */
-@DisplayName("已成功退款累计口径（PAY-02，PG IT）")
+@DisplayName("已成功退款累计规则（PAY-02，PG IT）")
 class PaymentRefundSumBasisPgIT extends ScmW5PgITBase {
 
     @Autowired
@@ -57,11 +57,11 @@ class PaymentRefundSumBasisPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("成功态缺少渠道实退额会被数据库拒绝：累计口径无需回退")
+    @DisplayName("成功态缺少渠道实退额会被数据库拒绝：累计规则无需回退")
     void succeededRefundWithoutProviderAmountIsRejectedBySchema() {
         long transactionId = insertTransaction();
         // ck_payment_refund_success_provider_amount（V101）：SUCCEEDED 必有 provider_amount。
-        // 正因如此，SUM(provider_amount) 不会因 NULL 丢掉任何成功行 —— 累计口径无需 COALESCE 回退。
+        // 正因如此，SUM(provider_amount) 不会因 NULL 丢掉任何成功行 —— 累计规则无需 COALESCE 回退。
         assertThatThrownBy(() -> insertRefund(transactionId, new BigDecimal("12.0000"), null, "SUCCEEDED"))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
@@ -73,7 +73,7 @@ class PaymentRefundSumBasisPgIT extends ScmW5PgITBase {
         assertThat(paymentRefundDao.sumSucceededByTransaction(transactionId)).isEqualByComparingTo("0");
     }
 
-    /** 造一条交易事实（append-only，仅作为退款的外键宿主）。 */
+    /** 造一条交易记录（append-only，仅作为退款的外键宿主）。 */
     private long insertTransaction() {
         String marker = UUID.randomUUID().toString().replace("-", "");
         // ck_payment_transaction_paid_pairing：SUCCEEDED 必须带 paid_at。
@@ -87,7 +87,7 @@ class PaymentRefundSumBasisPgIT extends ScmW5PgITBase {
                 java.time.OffsetDateTime.now());
     }
 
-    /** 直接插入退款事实行，绕开服务层以确保测的是 SQL 口径本身。 */
+    /** 直接插入退款记录行，绕开服务层以确保测的是 SQL 规则本身。 */
     private void insertRefund(long transactionId, BigDecimal amount, BigDecimal providerAmount, String status) {
         jdbc.update("""
                 INSERT INTO xsy_v2.xsy_payment_refund

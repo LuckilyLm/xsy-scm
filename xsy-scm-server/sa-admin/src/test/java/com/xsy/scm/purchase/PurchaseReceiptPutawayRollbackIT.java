@@ -48,7 +48,7 @@ class PurchaseReceiptPutawayRollbackIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("异单位 putaway 41001：putaway 状态、余额、流水、幂等记录零残留")
+    @DisplayName("异单位 putaway 41001：putaway 状态、余额、流水、防重复处理记录零残留")
     void unitMismatchRollsBackTheWholePutaway() {
         Long warehouseId = seedWarehouseId();
         Long skuId = newOnShelfSku("RB1");

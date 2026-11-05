@@ -25,7 +25,7 @@ public interface InventoryReservationDao extends BaseMapper<InventoryReservation
     /**
      * 并发安全的「首建预留」：同一来源行只会成功一次。
      *
-     * @return 1 = 本次插入成功；0 = 该来源行已有有效预留（调用方按业务决定是幂等还是报错）
+     * @return 1 = 本次插入成功；0 = 该来源行已有有效预留（调用方按业务决定是防重复处理还是报错）
      */
     int insertOnConflictDoNothing(InventoryReservationEntity entity);
 

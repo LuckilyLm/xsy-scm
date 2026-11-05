@@ -42,7 +42,7 @@ public class OrderReturnPriceService {
     }
 
     /**
-     * 批量读取商品档案，退货明细的商品名称、销售单位快照都以此为准。
+     * 批量读取商品档案，退货明细的商品名称、下单时的销售单位都以此为准。
      */
     public Map<Long, ProductSkuOptionVO> skus(List<Long> skuIds) {
         return productSkuOptionDao.selectByIds(skuIds).stream()

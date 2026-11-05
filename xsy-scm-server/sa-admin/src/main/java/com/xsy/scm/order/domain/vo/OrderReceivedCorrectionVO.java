@@ -14,7 +14,7 @@ public class OrderReceivedCorrectionVO {
     private Long id;
     private Long orderId;
     private Long orderItemId;
-    /** 明细行的商品与规格快照：页面不能拿 orderItemId 当「订单明细」展示。 */
+    /** 明细行的商品与商品规格资料：页面不能拿 orderItemId 当「订单明细」展示。 */
     private String productName;
     private String skuName;
     private String saleUnitSnapshot;

@@ -9,7 +9,7 @@ import type {
   StocktakeImportResult,
 } from '/@/views/business/scm/inventory/inventory-types';
 
-// 同一份 Excel 文件重试复用同一幂等键；换文件即新命令。失败保留键允许重试，成功后清除。
+// 同一份 Excel 文件重试复用同一防重复请求编号；换文件即新命令。失败保留键允许重试，成功后清除。
 const importKeys = new WeakMap<File, string>();
 
 async function importStocktake(file: File): Promise<ScmResponse<StocktakeImportResult>> {

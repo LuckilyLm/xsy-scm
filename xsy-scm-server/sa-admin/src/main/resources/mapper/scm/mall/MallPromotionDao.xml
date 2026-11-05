@@ -6,7 +6,7 @@
         <result column="rule" property="rule" typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
     </resultMap>
 
-    <!-- 进行中的活动：状态 + 时间窗口。互斥组取舍与优惠计算都在营销域，这里只做展示投影。 -->
+    <!-- 进行中的活动：状态 + 时间窗口。互斥组取舍与优惠计算都在营销域，这里只做展示查询结果。 -->
     <select id="listActiveActivities" resultMap="activityMap">
         SELECT id, activity_name AS activityName, activity_type AS activityType, valid_from AS validFrom,
             valid_to AS validTo, rule

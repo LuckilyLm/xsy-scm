@@ -163,7 +163,7 @@ export const reportInventoryApi = {
   flowSummaryQuery: (data: InventoryReportQuery, options?: RequestOptions) =>
     postRequest<ScmPage<InventoryFlowSummaryRow>>(`${BASE}/inventory/flow-summary/query`, data, options),
 
-  /** 负库存损耗：查询时点快照，没有日期参数。 */
+  /** 负库存损耗：查询时的数据，没有日期参数。 */
   negativeStockQuery: (data: InventoryNegativeStockQuery, options?: RequestOptions) =>
     postRequest<ScmPage<InventoryNegativeStockRow>>(`${BASE}/inventory/negative-stock/query`, data, options),
   negativeStockSummary: (data: InventoryNegativeStockQuery, options?: RequestOptions) =>

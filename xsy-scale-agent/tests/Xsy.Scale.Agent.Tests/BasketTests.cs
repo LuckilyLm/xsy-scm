@@ -69,7 +69,7 @@ internal static class BasketTests
             Equal(1, records.Select(r => r.EventKey).Distinct().Count());
             Equal(1, records.Select(r => r.PrintIntentId).Distinct().Count()); Equal(1, c.Summary().BasketCount);
         }),
-        ("离线队列及完成跨重启保留原事实和依赖", () => Run(() =>
+        ("离线队列及完成跨重启保留原记录和依赖", () => Run(() =>
         {
             var c = new Context(root); var first = c.Record(5m); c.Record(4m);
             var request = c.Completion(); var done = c.Service.Complete(request, "operator");

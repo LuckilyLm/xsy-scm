@@ -1,5 +1,5 @@
 /**
- * 界面与布局模块契约测试。
+ * 界面与布局模块约定检查。
  *
  * 由 13 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -140,7 +140,7 @@ import ts from 'typescript';
 // ---------------------------------------------------------------- 来源：action-column-centre-contract.test.mjs
 {
   /**
-   * 操作列的表格统一规范在全树成立的契约测试。
+   * 操作列的表格统一规范在全树成立的约定检查。
    *
    * 规则：操作列居中；普通场景 120～160px，少数复杂工作台可放宽到 180px。
    * 项目已先后用 `bb77b10e centre all table headers`、`ffa95370 centre the remaining action
@@ -289,7 +289,7 @@ import ts from 'typescript';
     }
   });
 
-  test('SCM 表格只固定右侧操作列，首屏字段不冻结', () => {
+  test('SCM 表格只固定右侧操作列，首屏字段不保存', () => {
     const offenders = [];
     for (const file of files) {
       const lines = file.source.split('\n');
@@ -464,9 +464,9 @@ import ts from 'typescript';
 // ---------------------------------------------------------------- 来源：scm-drawer-width-contract.test.mjs
 {
   /**
-   * SCM Drawer 宽度分级的契约单测。
+   * SCM Drawer 宽度分级的约定单测。
    *
-   * ## 为什么需要这份契约
+   * ## 为什么需要这份约定
    *
    * 迁移前 `views/business/scm` 的 34 个 `<a-drawer>` 里只有 4 个走公共分级，其余硬编码，
    * 取值散成 `620 / 760 / 860 / 900 / 920 / 1000 / 1080 / 1120 / 1180 / 1200 / 1240 /
@@ -647,7 +647,7 @@ import ts from 'typescript';
       [],
       `workspace 是受限特殊档，只允许分拣称重工作台 / 报表下钻 /\n` +
         `超宽业务数据阅读 / 多面板业务工作台四类（线路详情已页面化，不再占用本档）；\n` +
-        `新增用例要先更新 SCM UI 规范并同步本契约：\n${offenders.join('\n')}`
+        `新增用例要先更新 SCM UI 规范并同步本约定：\n${offenders.join('\n')}`
     );
   });
 
@@ -704,7 +704,7 @@ import ts from 'typescript';
   const reportController = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/controller/ScmReportController.java');
   const productController = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/controller/ProductExcelController.java');
 
-  test('导出只投影原权限查询，采购成本列仍受额外成本授权', () => {
+  test('导出只查询结果原权限查询，采购成本列仍受额外成本授权', () => {
     assert.match(reportController, /salesReportService\.orderList\(form\)/);
     assert.match(reportController, /purchaseReportService\.byProduct\(form\)/);
     assert.match(reportController, /StpUtil\.hasPermission\(ScmReportPermission\.COST_QUERY\)/);
@@ -898,11 +898,11 @@ import ts from 'typescript';
   test('列设置每个字段都能改列宽：输入写回 width，清空回落到页面默认', () => {
     // 2026-10-21 的网格改版把宽度输入框弄丢了，用户只能勾显隐：这里把能力钉回来
     assert.match(COLUMN_MODAL, /<a-input-number[\s\S]*?class="scm-column-grid__width"/);
-    // 参数类型可有可无（类型棘轮会用显式类型替换隐式 any）
+    // 参数类型可有可无（不允许新增类型错误的检查会用显式类型替换隐式 any）
     assert.match(COLUMN_MODAL, /@update:value="\(value(?::\s*[^)]+)?\) => changeWidth\(item, value\)"/);
     assert.match(COLUMN_MODAL, /function changeWidth\(item: ColumnGridItem/);
     assert.match(COLUMN_MODAL, /delete item\.width/);
-    // 保存时沿用既有契约：有 width 才写，清空即跟随页面默认
+    // 保存时沿用既有约定：有 width 才写，清空即跟随页面默认
     assert.match(COLUMN_MODAL, /if \(item\.width\) \{\s*column\.width = item\.width;/);
     // 宽度输入不能触发列的显隐切换
     assert.match(COLUMN_MODAL, /scm-column-grid__toggle/);
@@ -986,7 +986,7 @@ import ts from 'typescript';
 
   test('purchase demand and threshold pages keep rules at the action and validation point', () => {
     assert.match(PURCHASE_DEMAND, /生成采购需求/);
-    assert.doesNotMatch(PURCHASE_DEMAND, /按仓库\s*×\s*商品规格\s*×\s*单位冻结批次后生成需求/);
+    assert.doesNotMatch(PURCHASE_DEMAND, /按仓库\s*×\s*商品规格\s*×\s*单位计算结果批次后生成需求/);
     assert.doesNotMatch(THRESHOLD, /只有配置了阈值的仓库/);
     assert.match(THRESHOLD, /validator: validateAtLeastOneThreshold/);
     assert.match(THRESHOLD, /throw new Error\('预警下限和上限至少填写一个'\)/);
@@ -1048,7 +1048,7 @@ import ts from 'typescript';
 // ---------------------------------------------------------------- 来源：scm-map-driving-model.test.mjs
 {
   /**
-   * 配送道路算路的切段与汇总契约。
+   * 配送道路算路的切段与汇总约定。
    *
    * 高德驾车规划单次最多 16 个途经点，超过上限必须切段请求；段与段共享端点，
    * 距离与耗时按段累加。切段错了不会报错：只会少算一段路程或让折线断开，
@@ -1155,9 +1155,9 @@ import ts from 'typescript';
 // ---------------------------------------------------------------- 来源：scm-numeric-presentation-contract.test.mjs
 {
   /**
-   * SCM 数值与编号视觉口径的契约单测（Sprint F-B）。
+   * SCM 数值与编号视觉规则的约定单测（Sprint F-B）。
    *
-   * ## 为什么需要这份契约
+   * ## 为什么需要这份约定
    *
    * 项目里曾有 19 个页面各自定义 `.num { font-family: ui-monospace, … }`，
    * 共 55 处使用点。这些局部类把三种不同语义压成同一种视觉：
@@ -1166,18 +1166,18 @@ import ts from 'typescript';
    * - 数量（要纵向比大小）
    * - 单号 / 编码（要逐位抄录比对）
    *
-   * 结果是口径无法统一演进：改一处不影响其余 18 处，且 `theme/scm` 里根本没有对应的公共类。
+   * 结果是规则无法统一演进：改一处不影响其余 18 处，且 `theme/scm` 里根本没有对应的公共类。
    *
    * Sprint F-B 把这 55 处按字段语义迁到公共类，并删掉全部局部定义。本文件钉住这个结果，
-   * 防止「随手再写一个 .num」把口径重新打散。
+   * 防止「随手再写一个 .num」把规则重新打散。
    *
-   * ## 口径（CONTRIBUTING.md §SCM 界面规范）
+   * ## 规则（CONTRIBUTING.md §SCM 界面规范）
    *
    * - `.scm-money`    金额 / 单价 / 成本 —— 比例字体 + tabular-nums
    * - `.scm-quantity` 数量 / 百分比 / 统计数字 —— 比例字体 + tabular-nums
    * - `.scm-mono`     单号 / 编码 / 外部流水号 —— 等宽字体 + tabular-nums
    *
-   * 注意 `.scm-mono` 本轮只建立公共能力，标识字段的全项目接入是独立审计，不在本契约断言范围内。
+   * 注意 `.scm-mono` 本轮只建立公共能力，标识字段的全项目接入是独立审计，不在本约定断言范围内。
    */
 
   const SRC = fileURLToPath(new URL('../src/', import.meta.url));
@@ -1344,7 +1344,7 @@ import ts from 'typescript';
     );
   });
 
-  test('全仓库业务页面不得重新声明 .num（防止口径再次打散）', () => {
+  test('全仓库业务页面不得重新声明 .num（防止规则再次打散）', () => {
     const offenders = ALL_SRC_VUE.filter((file) => LOCAL_NUM_DEFINITION.test(stripComments(readFileSync(file, 'utf8'))));
     assert.deepEqual(
       offenders.map((file) => file.slice(SRC.length)),
@@ -1414,10 +1414,10 @@ import ts from 'typescript';
   /*
    * 刻意不断言「src 下只有 .scm-mono 用等宽字体」。
    *
-   * 除 `.num` 外，项目里还有若干与本次口径无关的等宽样式：
+   * 除 `.num` 外，项目里还有若干与本次规则无关的等宽样式：
    * `.scm-diff-key` / `.scm-diff-row-title`（变更对比的字段名）、`.log-time`（日志时间）、
    * `.report-kpi-value`（KPI 大字）。它们不是 `.num`，语义也未纳入 C1 的三类，
-   * 属后续「标识类字段全项目接入审计」的输入，不在本次数值口径统一的断言范围内。
+   * 属后续「标识类字段全项目接入审计」的输入，不在本次数值规则统一的断言范围内。
    */
 }
 
@@ -1545,7 +1545,7 @@ import ts from 'typescript';
   });
 
   test('销售侧金额用两位小数，采购侧价格保留四位', () => {
-    // 负责人口径：商城 / 销售金额按元展示两位；只有采购价格需要四位小数。
+    // 负责人规则：商城 / 销售金额按元展示两位；只有采购价格需要四位小数。
     const byName = new Map(files);
     const inputTag = (name, binding) => {
       const source = byName.get(name);
@@ -1558,7 +1558,7 @@ import ts from 'typescript';
       'pricing/time-price-list.vue': 'form.unitPrice',
       'pricing/components/agreement-price-form-drawer.vue': 'form.unitPriceInput',
       'product/components/product-sku-editable-table.vue': 'sku.marketPrice',
-      // 人工改价改为操作列弹窗录入，绑定的是弹窗内的草稿价，精度口径不变
+      // 人工改价改为操作列弹窗录入，绑定的是弹窗内的草稿价，精度规则不变
       'order/components/order-item-editable-table.vue': 'overridePrice',
       'promotion/promotion-activity-list.vue': 'rule.specialPrice',
       'promotion/promotion-coupon-list.vue': 'form.discountValueInput',
@@ -1656,7 +1656,7 @@ import ts from 'typescript';
   const shortSourceKeys = new Set(['sourcetype', 'ordersource', 'pricesource', 'lockedpricesource']);
 
   /**
-   * 全站列对齐口径（2026-10-18 起）：只有枚举、分类、操作列居中，其余一律左对齐。
+   * 全站列对齐规则（2026-10-18 起）：只有枚举、分类、操作列居中，其余一律左对齐。
    *
    * 金额、数量、日期等不再右对齐 —— 用户明确要求「除了枚举/分类/操作，其他都左对齐」，
    * 右对齐会让数字贴到单元格右边缘，与左侧标题轴线错位。
@@ -1775,7 +1775,7 @@ import ts from 'typescript';
 // ---------------------------------------------------------------- 来源：ui-foundation-contract.test.mjs
 {
   /**
-   * SCM UI foundation 的契约单测（主题变量 + 全局容器对齐）。
+   * SCM UI foundation 的约定单测（主题变量 + 全局容器对齐）。
    *
    * ## 主题变量
    *
@@ -1855,7 +1855,7 @@ import ts from 'typescript';
   // Drawer footer 对齐
   // ------------------------------------------------------------------
 
-  test('抽屉底部操作区统一右对齐，与弹窗口径一致', () => {
+  test('抽屉底部操作区统一右对齐，与弹窗规则一致', () => {
     const index = readFileSync(new URL(THEME_INDEX, import.meta.url), 'utf8');
     const footer = readFileSync(new URL(THEME_FOOTER, import.meta.url), 'utf8');
 
@@ -1898,11 +1898,11 @@ import ts from 'typescript';
 // ---------------------------------------------------------------- 来源：ui-shell-contract.test.mjs
 {
   /**
-   * 应用外壳（侧边栏 / 导航顺序）契约单测。
+   * 应用外壳（侧边栏 / 导航顺序）约定单测。
    *
    * 守的是三条「改错了不会报错、只会难看或静默失效」的线：
    *
-   * 1. 侧栏宽度有四个口径必须一致：默认值（`app-config.ts`）、设置控件允许的区间
+   * 1. 侧栏宽度有四个规则必须一致：默认值（`app-config.ts`）、设置控件允许的区间
    *    （`header-setting.vue`）、收起态栏宽（`side-layout.vue`）、收起态 logo 容器宽度
    *    （`side-menu/index.vue`）。默认值跑到区间外，用户一打开设置页就看不到自己当前的宽度；
    *    logo 容器与栏宽不等，收起后 logo 会偏。
@@ -1949,7 +1949,7 @@ import ts from 'typescript';
     return Number(match[1]);
   }
 
-  test('侧栏宽度四处口径一致，默认值落在设置控件允许的区间内', () => {
+  test('侧栏宽度四处规则一致，默认值落在设置控件允许的区间内', () => {
     const defaultWidth = num(appConfig, /sideMenuWidth:\s*(\d+)/, '默认侧栏宽度');
     // 必须先切出侧栏宽度这一个控件：同一页里还有圆角滑块，直接匹配 :min/:max 会取到它
     const sideMenuInput = setting.match(/<a-input-number[\s\S]{0,300}formState\.sideMenuWidth[\s\S]{0,300}?\/>/)?.[0];
@@ -2041,7 +2041,7 @@ import ts from 'typescript';
       '滑块应只在 hover 侧栏时显形'
     );
 
-    // top-expand 布局渲染的是同一个 `.side-menu`，同一个缺陷要同一口径修
+    // top-expand 布局渲染的是同一个 `.side-menu`，同一个缺陷要同一套规则修
     // （两个布局互斥挂载，所以不存在运行时冲突）
     const topExpand = code('../src/layout/top-expand-layout.vue');
     assert.match(

@@ -38,13 +38,13 @@ import static org.mockito.Mockito.mockStatic;
  * 但它是业务列表的<b>聚合视图</b>，一旦把入口授给某个岗位，没收窄的面板就是把全公司的成交额、
  * 库存量和采购额交给只被授权看自己那一块的人 —— 而且聚合值比明细更容易被误当成「已经授权过的数据」。
  *
- * <p>本类按面板各自的事实维度取证，一个维度都没有的（供应商、SKU）反过来钉住「不收窄是决定，
+ * <p>本类按面板各自的记录维度取证，一个维度都没有的（供应商、SKU）反过来钉住「不收窄是决定，
  * 不是漏判」：
  * <ul>
  *   <li>库存面板 —— 仓库维度。未授权仓必须整行消失，而不是以「0 库存」的节点继续画在地图上。</li>
  *   <li>经营面板 —— 业务员维度（{@code xsy_customer.seller_id} / {@code xsy_sales_order.seller_id}）。</li>
  *   <li>采购面板 —— 采购归属 ∩ 仓库：只给全量采购范围的人仍然只能看到自己那个仓的量，
- *       与收货确认那条交集口径同源（裁决第 16 条）。</li>
+ *       与收货确认那条交集规则同源（裁决第 16 条）。</li>
  *   <li>地理面板 —— 与经营面板同一份人口片段，所以两侧数字必须恒等；只收一边就是两份 SQL 各自漂移。</li>
  *   <li>趋势面板 —— 每条序列各归各的维度；没有任何授权时得到的是「一片 0」而不是全量曲线。</li>
  * </ul>
@@ -181,7 +181,7 @@ class ScmScreenDataScopePgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("地理面板与经营面板共用同一份人口口径：收窄后两组数字仍恒等")
+    @DisplayName("地理面板与经营面板共用同一份人口规则：收窄后两组数字仍恒等")
     void geoAndBusinessStayIdentical() {
         Long warehouse = newWarehouse("SGO");
         Long seller = scopedEmployee(warehouse);
@@ -277,7 +277,7 @@ class ScmScreenDataScopePgIT extends ScmW5PgITBase {
                 employeeId, warehouseId);
     }
 
-    /** 余额行是既成的库存事实，直接落表：大屏只读它，不经收货入库链路。 */
+    /** 余额行是既成的库存记录，直接落表：大屏只读它，不经收货入库链路。 */
     private void seedBalance(Long warehouseId, Long skuId, String quantity) {
         jdbc.update("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, reserved_quantity, "
                         + "avg_cost, version, deleted, created_at, updated_at, created_by, updated_by) "

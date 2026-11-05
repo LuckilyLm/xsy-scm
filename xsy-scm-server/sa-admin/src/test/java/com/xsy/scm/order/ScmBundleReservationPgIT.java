@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 隔离 PG 中真实落库的组合组成 SKU 库存预留。
+ * 隔离 PG 中真实写入数据库的组合组成 SKU 库存预留。
  * 测试库存余额仅作为夹具创建，预留动作必须走正式库存服务与 DAO。
  */
 class ScmBundleReservationPgIT extends ScmW3PgITBase {

@@ -1,4 +1,4 @@
-<!-- 包装码：一个码对应一个批次，由系统发号且不复用。页面提供发码、绑定和回放。 -->
+<!-- 包装码：一个码对应一个批次，由系统发号且不复用。页面提供发码、绑定和历史记录查询。 -->
 <template>
   <div class="smart-query-layout">
     <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
@@ -67,7 +67,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <a-button type="link" size="small" @click="openReplay(record)">回放</a-button>
+            <a-button type="link" size="small" @click="openReplay(record)">历史记录查询</a-button>
             <a-button type="link" size="small" @click="openBind(record)" v-privilege="'scm:inventory:unit:bind'">绑定分拣</a-button>
             <ScmActionMore :actions="moreActions(record)" @select="onMore(record, $event)" />
           </a-space>
@@ -181,7 +181,7 @@
     @printed="printOpen = false"
   />
 
-  <a-drawer :open="replayOpen" title="包装码回放" :width="scmDrawerWidth('m')" @close="replayOpen = false">
+  <a-drawer :open="replayOpen" title="包装码记录查询" :width="scmDrawerWidth('m')" @close="replayOpen = false">
     <a-spin :spinning="replayLoading">
       <a-alert v-if="replayError" :message="replayError" type="error" show-icon />
       <template v-if="replay">
@@ -479,7 +479,7 @@ async function submitIssue() {
   }
 }
 
-/** 打印和作废收进“更多”，常驻位置留给回放与绑定。 */
+/** 打印和作废收进“更多”，常驻位置留给历史记录查询与绑定。 */
 function moreActions(record: TraceUnit): ScmActionItem[] {
   return [
     {key: 'print', label: '打印标签', hidden: !hasPermission('scm:inventory:unit:query')},

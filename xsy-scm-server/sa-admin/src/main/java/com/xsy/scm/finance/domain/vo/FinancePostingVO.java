@@ -11,7 +11,7 @@ import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import lombok.Data;
 
 /**
- * 过账记录：登记内容 + 由作废事实推导出的有效状态。
+ * 过账记录：登记内容 + 由作废记录推导出的有效状态。
  *
  * <p>
  * 状态不落过账表：{@code VOIDED} 表示 {@code xsy_finance_posting_void} 有对应行， 作废人、时间与原因一并从这里带出。

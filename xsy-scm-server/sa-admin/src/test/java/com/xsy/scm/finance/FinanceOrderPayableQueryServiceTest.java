@@ -20,9 +20,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * 应付净额与签收应收必须是同一把尺子：实重 × 锁定价，再扣该订单行承担的冻结优惠分摊。
+ * 应付净额与签收应收必须是同一把尺子：实重 × 锁定价，再扣该订单行承担的已确认优惠分摊。
  */
-@DisplayName("商城余额支付与签收共用的应付净额口径")
+@DisplayName("商城余额支付与签收共用的应付净额规则")
 class FinanceOrderPayableQueryServiceTest {
     private static final Long ORDER_ID = 7L;
 
@@ -35,7 +35,7 @@ class FinanceOrderPayableQueryServiceTest {
 
     @Test
     void fullQuantityNetMatchesTheFrozenDiscount() {
-        // 10.0000 × 2.0000 = 20.0000，本行冻结优惠 5.0000 全额承担
+        // 10.0000 × 2.0000 = 20.0000，本行已确认优惠 5.0000 全额承担
         when(sourceDao.selectOrderPayableLines(ORDER_ID)).thenReturn(List.of(payableLine(1L, "10.0000", "2.0000",
                 "20.0000"), payableLine(2L, "5.0000", "2.0000", "10.0000")));
         when(sourceDao.selectOrderDiscountLines(ORDER_ID)).thenReturn(List.of(discountLine(1L, "5.0000")));
@@ -105,7 +105,7 @@ class FinanceOrderPayableQueryServiceTest {
         when(receiptDao.sumCodCollectedByOrder(ORDER_ID)).thenReturn(new BigDecimal("2.4000"));
         when(receiptDao.sumManualCollectedByOrder(ORDER_ID)).thenReturn(new BigDecimal("1.4000"));
 
-        assertThat(service.paidAmountOf(ORDER_ID)).as("支付事实口径不含 COD 收款").isEqualByComparingTo("8.0000");
+        assertThat(service.paidAmountOf(ORDER_ID)).as("支付记录规则不含 COD 收款").isEqualByComparingTo("8.0000");
         assertThat(service.receivedAmountOf(ORDER_ID)).as("历史人工补收也计入该订单实收").isEqualByComparingTo("11.8000");
     }
 

@@ -522,7 +522,7 @@ public class ProductImportService {
         required(result, rowNumber, key, "商品规格状态", row.getSkuStatus());
         required(result, rowNumber, key, "默认商品规格", row.getDefaultFlag());
         validateSharedCells(row, categoryMap, tagMap, result, false, unitMap);
-        // 未填销售单位时按默认单位落库；显式填写的单位已由共用校验检查，空值在这里检查默认单位。
+        // 未填销售单位时按默认单位写入数据库；显式填写的单位已由共用校验检查，空值在这里检查默认单位。
         if (trim(row.getSaleUnit()) == null)
             requireUsableUnit(result, row, unitMap, DEFAULT_SALE_UNIT);
     }
@@ -614,7 +614,7 @@ public class ProductImportService {
     }
 
     /**
-     * Excel 的销售单位为空时按默认单位落库；显式值保持原样交给字典校验。
+     * Excel 的销售单位为空时按默认单位写入数据库；显式值保持原样交给字典校验。
      */
     private static String saleUnitOf(ProductImportRow row) {
         var unit = trim(row.getSaleUnit());

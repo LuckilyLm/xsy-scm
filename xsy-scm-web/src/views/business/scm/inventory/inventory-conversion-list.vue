@@ -429,7 +429,7 @@ const formRules = {
   convertType: [{required: true, message: '请选择转换类型'}],
 };
 
-/** 编辑旧单据时用已保存快照回显，避免首屏之外的规格只显示数字 ID。 */
+/** 编辑旧单据时用已保存当时的数据回显，避免首屏之外的规格只显示数字 ID。 */
 function selectedSkuOptions(skuId?: string | number, productName?: string, skuName?: string) {
   if (skuId == null || !productName) return [];
   return [{skuId, productName, specName: skuName || '默认规格'}];

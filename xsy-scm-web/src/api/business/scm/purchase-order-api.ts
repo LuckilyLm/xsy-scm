@@ -18,7 +18,7 @@ import type {
   OrderVersionPayload,
 } from '/@/views/business/scm/purchase/purchase-types';
 
-/** 幂等命令：失败保留原 UUID 供重试，成功或载荷变化后换新键。需求 / 收货 API 从这里复用。 */
+/** 防重复处理命令：失败保留原 UUID 供重试，成功或载荷变化后换新键。需求 / 收货 API 从这里复用。 */
 const keys = new Map<string, string>();
 
 export async function purchaseCommand<T>(path: string, data: unknown, options?: RequestOptions): Promise<ScmResponse<T>> {

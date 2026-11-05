@@ -59,7 +59,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
     private FinanceWriteOffQueryService financeWriteOffQueryService;
 
     @Test
-    @DisplayName("一笔收款分配给多张应收，幂等重放不重复生成事实")
+    @DisplayName("一笔收款分配给多张应收，重复请求返回原结果不重复生成记录")
     void oneReceiptCanBeAppliedToManyReceivables() {
         Long customerId = newCustomer();
         FinanceReceiptVO receipt = addReceipt(customerId, "100.0000");
@@ -205,7 +205,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("反向核销追加等额 REVERSE 行，更新派生余额且同一事实只能反向一次")
+    @DisplayName("反向核销追加等额 REVERSE 行，更新派生余额且同一记录只能反向一次")
     void reverseWriteOffAppendsOppositeFact() {
         Long customerId = newCustomer();
         FinanceReceiptVO receipt = addReceipt(customerId, "100.0000");
@@ -236,7 +236,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("核销目标的数据范围失败关闭")
+    @DisplayName("核销目标的数据范围校验失败时拒绝操作")
     void targetScopeIsEnforced() {
         Long customerId = newCustomer();
         FinanceReceiptVO receipt = addReceipt(customerId, "50.0000");
@@ -286,7 +286,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("手工红字额度不扣除既有核销额，超额核销继续作为派生事实表达")
+    @DisplayName("手工红字额度不扣除既有核销额，超额核销继续作为派生记录表达")
     void manualRedCapDoesNotSubtractExistingWriteOffs() {
         Long supplierId = newSupplier("WO-RED-OVER-APPLIED");
         Long originalId = normalPayable(supplierId, "100.0000");
@@ -307,7 +307,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("手工红字应付按 purchaserScope 失败关闭")
+    @DisplayName("手工红字应付按 purchaserScope 校验失败时拒绝操作")
     void manualRedPayableRequiresPurchaserScope() {
         Long originalId = normalPayable(newSupplier("WO-RED-SCOPE"), "100.0000");
         setEmployeeWithoutScope();

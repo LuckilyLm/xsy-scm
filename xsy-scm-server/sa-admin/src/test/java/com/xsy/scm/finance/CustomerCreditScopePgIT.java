@@ -25,7 +25,7 @@ class CustomerCreditScopePgIT extends ScmW5PgITBase {
         confirmedSalesOrder(customerId, skuId, "2.0000", "2.0000");
         Long sellerId = customerService.require(customerId).getSellerId();
 
-        // 范围不含该订单的负责人：可见性为 false，调用方据此失败关闭，不会拿残缺敞口做授信裁定
+        // 范围不含该订单的负责人：可见性为 false，调用方据此校验失败时拒绝操作，不会拿残缺敞口做授信裁定
         var outsideScope = exposureQueryService.summarize(customerId, ScmValueScope.of(List.of(Long.MAX_VALUE)));
         assertThat(outsideScope.getExposureVisible()).isFalse();
         assertThat(outsideScope.getConfirmedOrderAmount())

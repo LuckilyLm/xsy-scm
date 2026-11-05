@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 订单命令的兼容封装；通用幂等逻辑在 common 层。
+ * 订单命令的兼容封装；通用防重复处理逻辑在 common 层。
  */
 @Service
 @RequiredArgsConstructor

@@ -19,7 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * 负库存出库与损耗报表。
  *
  * <p>负库存只对开启开关的仓库生效，已有预留不会阻断发货；关闭开关前必须先把负余额补平。
- * 报表是查询时点快照，只读余额和流水，不生成报损单。
+ * 报表是查询时的数据，只读余额和流水，不生成报损单。
  */
 class InventoryNegativeStockIT extends ScmW6PgITBase {
 
@@ -42,7 +42,7 @@ class InventoryNegativeStockIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("#1 开启开关后可以出到负库存，流水快照与报表同步为负")
+    @DisplayName("#1 开启开关后可以出到负库存，流水保存的数据与报表同步为负")
     void outboundBelowZeroIsAllowedAndReported() {
         Long skuId = newSkuOfType("NS1", "NON_STANDARD", "ON_SHELF");
         W6Fixture fixture = inboundFixture("NS1", skuId, "2.0000");

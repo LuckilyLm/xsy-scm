@@ -35,7 +35,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/** 充值发起：先落充值事实、再让支付域去收钱，且范围与金额都失败关闭。 */
+/** 充值发起：先落充值记录、再让支付域去收钱，且范围与金额都校验失败时拒绝操作。 */
 class BalanceRechargeServiceTest {
     private final CustomerBalanceRechargeDao recharges = mock(CustomerBalanceRechargeDao.class);
     private final CustomerBalanceService balances = mock(CustomerBalanceService.class);
@@ -96,7 +96,7 @@ class BalanceRechargeServiceTest {
         assertThat(fact.getValue().amount()).isEqualByComparingTo("100");
         assertThat(fact.getValue().provider()).isEqualTo("MOCK");
         assertThat(fact.getValue().mockScenario()).isEqualTo("SUCCESS");
-        // 充值事实必须先落库：意图回放不能凭空造出一笔没有事实支撑的收款
+        // 充值记录必须先写入数据库：意图历史记录查询不能凭空造出一笔没有记录支撑的收款
         var sequence = inOrder(idempotency, recharges, paymentIntents);
         sequence.verify(idempotency).claim(eq("BALANCE_RECHARGE_CREATE"), eq("key"), any());
         sequence.verify(recharges).insert(any(CustomerBalanceRechargeEntity.class));

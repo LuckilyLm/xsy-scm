@@ -44,7 +44,7 @@ public class OrderRecentPriceVO {
     private BigDecimal orderedQuantity;
 
     /**
-     * 成交单价 = 历史订单行的 {@code locked_unit_price}（确认时锁定的结算单价快照）。
+     * 成交单价 = 历史订单行的 {@code locked_unit_price}（确认时保存的结算单价）。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal unitPrice;
@@ -55,7 +55,7 @@ public class OrderRecentPriceVO {
     private String priceSource;
 
     /**
-     * 单位快照：历史订单行的销售单位。与当前 SKU 销售单位不同时，前端只做「不可直接比较」提示，不自动换算。
+     * 当时的单位：历史订单行的销售单位。与当前 SKU 销售单位不同时，前端只做「不可直接比较」提示，不自动换算。
      */
     private String saleUnit;
 }

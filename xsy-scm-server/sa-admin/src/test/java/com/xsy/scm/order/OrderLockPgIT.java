@@ -39,7 +39,7 @@ import static org.mockito.Mockito.mockStatic;
  * 锁单与发车后改单：锁是「改单要额外授权」的开关，不是新的订单状态。
  *
  * <p>
- * IT 线程没有 Sa-Token 上下文，{@code ScmDataScopeService#hasPermission} 会把权限判成 false（失败关闭）； 需要放行的用例按
+ * IT 线程没有 Sa-Token 上下文，{@code ScmDataScopeService#hasPermission} 会把权限判成 false（校验失败时拒绝操作）； 需要放行的用例按
  * {@code ScmOrderCustomerDataScopePgIT} 的既有做法用 {@code mockStatic(StpUtil.class)} 显式给权限。
  */
 @DisplayName("订单锁单与发车后改单（PG IT）")
@@ -131,7 +131,7 @@ class OrderLockPgIT extends ScmW3PgITBase {
         return f;
     }
 
-    /** 以显式权限执行一段逻辑：未点名的权限码取 Mockito 默认值 false，与生产的失败关闭一致。 */
+    /** 以显式权限执行一段逻辑：未点名的权限码取 Mockito 默认值 false，与生产的校验失败时拒绝操作一致。 */
     private <T> T as(String permission, Supplier<T> body) {
         try (MockedStatic<StpUtil> stp = mockStatic(StpUtil.class)) {
             stp.when(() -> StpUtil.hasPermission(permission)).thenReturn(true);
@@ -164,7 +164,7 @@ class OrderLockPgIT extends ScmW3PgITBase {
     }
 
     @Test
-    @DisplayName("已有分拣事实时不能用旧明细 ID 替换商品")
+    @DisplayName("已有分拣记录时不能用旧明细 ID 替换商品")
     void sortedSkuCannotBeReplacedThroughAnExistingItemId() {
         var c = customer();
         var originalSku = newOnShelfSku("SORTED_OLD");
@@ -282,7 +282,7 @@ class OrderLockPgIT extends ScmW3PgITBase {
         order.setVersion(order.getVersion() + 1);
 
         assertThat(salesOrderDao.hasSignedFact(order.getOrderId())).isTrue();
-        // 发车后改单权限也不能覆盖签收事实：应收已按出库量生成，纸面与账面的差异必须走红字。
+        // 发车后改单权限也不能覆盖签收记录：应收已按出库量生成，纸面与账面的差异必须走红字。
         as(OrderPermission.EDIT_AFTER_DISPATCH, () -> {
             expectCode(() -> orders.update(updateOf(form(c, sku), order, "3.0000")), 41217);
             return null;

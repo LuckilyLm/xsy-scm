@@ -127,7 +127,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         assertThat(decimal(out, "quantity")).isEqualByComparingTo("4.0000");
         assertThat(decimal(out, "before_quantity")).isEqualByComparingTo("10.0000");
         assertThat(decimal(out, "after_quantity")).isEqualByComparingTo("6.0000");
-        // 调拨转出按源仓当时的均价记成本（出库不改变均价），V34 起的移动加权口径。
+        // 调拨转出按源仓当时的均价记成本（出库不改变均价），V34 起的移动加权规则。
         // 这条流水同时是收货时的转入成本基准 —— 见 transferInCost 的回读。
         assertThat(decimal(out, "unit_cost"))
                 .isEqualByComparingTo(balanceRow(wh1, sku).getAvgCost());
@@ -144,7 +144,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         assertThat(decimal(in, "quantity")).isEqualByComparingTo("4.0000");
         assertThat(decimal(in, "before_quantity")).isEqualByComparingTo("0.0000");
         assertThat(decimal(in, "after_quantity")).isEqualByComparingTo("4.0000");
-        // 单位快照 = 源仓记账单位，目标仓新建行时用的就是它
+        // 当时的单位 = 源仓记账单位，目标仓新建行时用的就是它
         assertThat(String.valueOf(in.get("unit_snapshot"))).isEqualTo(balanceRow(wh1, sku).getUnit());
 
         // 成本守恒：转入腿带的是转出腿的成本，不是目标行当时的 0 均价。
@@ -445,7 +445,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 命令侧契约
+    // 命令侧约定
     // ------------------------------------------------------------------
 
     @Test

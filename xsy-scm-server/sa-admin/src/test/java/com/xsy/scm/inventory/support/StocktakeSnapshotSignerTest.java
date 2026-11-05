@@ -11,13 +11,13 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 盘点快照签名密钥的环境门禁。
+ * 盘点时保存的数据签名密钥的环境门禁。
  *
- * <p>密钥保护的正是「快照未被篡改」这一件事：生产沿用仓库里的公开默认值等于没有签名，
+ * <p>密钥保护的正是「保存的数据未被篡改」这一件事：生产沿用仓库里的公开默认值等于没有签名，
  * 因此必须在<b>启动</b>时失败，而不是等到有人伪造凭证才被发现。
  * 这里只构造对象，不加载 Spring 上下文 —— 判定完全在构造函数内。
  */
-@DisplayName("盘点快照密钥：非生产可用默认值，pre/prod 缺失或沿用默认值即启动失败")
+@DisplayName("盘点时保存的数据密钥：非生产可用默认值，pre/prod 缺失或沿用默认值即启动失败")
 class StocktakeSnapshotSignerTest {
 
     /** 生产应当显式配置的私有密钥（任意非默认高熵值）。 */

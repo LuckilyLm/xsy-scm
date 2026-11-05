@@ -630,7 +630,7 @@ function exportValue() {
   void valueExport.run(() => reportInventoryApi.valueExport(exportQuery()));
 }
 
-/** 负库存是时点快照，没有区间上限可超，不需要日期守卫。 */
+/** 负库存是查询时的数据，没有区间上限可超，不需要日期守卫。 */
 function exportNegative() {
   void negativeExport.run(() => reportInventoryApi.negativeStockExport(negativeQuery({pageNum: 1, pageSize: 20})));
 }

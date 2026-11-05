@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 /**
- * 幂等命令的公共持久化记录。
+ * 防重复处理命令的公共持久化记录。
  */
 @Data
 @TableName(value = "xsy_idempotency_record", autoResultMap = true)

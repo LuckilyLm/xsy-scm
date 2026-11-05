@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 回调事件落库与结论回填（FIX-09，PG IT）。
+ * 回调事件写入数据库与结论回填（FIX-09，PG IT）。
  *
  * <p><b>缺陷</b>：{@code insertIgnoreDuplicate} 的 mapper 漏了 {@code useGeneratedKeys}，
  * 插入后 {@code entity.getId()} 恒为 null；{@code PaymentCallbackService} 靠这个 id 调
@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>本类钉住两件事：① 插入必须回填主键；② 有了主键之后，APPLIED / REJECTED 两条分支都能落地。
  * {@code ON CONFLICT DO NOTHING} 分支由 Service 用受影响行数提前 return，不依赖 id，此处一并钉住。
  */
-@DisplayName("回调事件落库与结论回填（FIX-09，PG IT）")
+@DisplayName("回调事件写入数据库与结论回填（FIX-09，PG IT）")
 class PaymentCallbackEventPersistPgIT extends ScmW5PgITBase {
 
     @Autowired
@@ -74,7 +74,7 @@ class PaymentCallbackEventPersistPgIT extends ScmW5PgITBase {
                 event.getProviderEventId());
         assertThat(reloaded.getProcessStatus()).isEqualTo("REJECTED");
         assertThat(reloaded.getRejectReason()).isEqualTo("验签失败：签名不匹配");
-        assertThat(reloaded.getSignatureVerified()).as("未通过验签的事实本身也要留证").isFalse();
+        assertThat(reloaded.getSignatureVerified()).as("未通过验签的记录本身也要留证").isFalse();
         assertThat(reloaded.getProcessedAt()).isNotNull();
     }
 
@@ -84,7 +84,7 @@ class PaymentCallbackEventPersistPgIT extends ScmW5PgITBase {
         PaymentCallbackEventEntity first = newEvent("DUP-CASE");
         assertThat(paymentCallbackEventDao.insertIgnoreDuplicate(first)).isEqualTo(1);
 
-        // 幂等锚点是 (provider, provider_event_id)：第二个实体必须复用同一个事件 id，才谈得上「重复投递」
+        // 防重复处理锚点是 (provider, provider_event_id)：第二个实体必须复用同一个事件 id，才谈得上「重复投递」
         PaymentCallbackEventEntity duplicate = newEvent("DUP-CASE");
         duplicate.setProviderEventId(first.getProviderEventId());
         assertThat(paymentCallbackEventDao.insertIgnoreDuplicate(duplicate))

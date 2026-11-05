@@ -8,7 +8,7 @@ $reportRoot = Join-Path $outputRoot ((Get-Date -Format 'yyyyMMddHHmmss') + '-' +
 New-Item -ItemType Directory -Path $reportRoot -Force | Out-Null
 $issues = @()
 try {
-    # 不导出密钥、Token或DPAPI数据库，只通过现有只读接口收集本次测试事实。
+    # 不导出密钥、Token或DPAPI数据库，只通过现有只读接口收集本次测试记录。
     $key = (Get-Content -LiteralPath (Join-Path $StateDirectory 'agent/local-api-key.txt') -Raw).Trim()
     $headers = @{'X-Agent-Key'=$key; 'X-Operator-Session'='MOCK-OPERATOR'}
     $boot = Invoke-RestMethod -Uri ($owner.agentUrl + '/api/agent/workstation') -Headers $headers -TimeoutSec 5

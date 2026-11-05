@@ -90,7 +90,7 @@ test('page editor uploads to the public image folder and never trusts unsaved dr
   assert.match(page, /publishPage/);
   // 预览必须使用同一次发布的标题，不能拿当前草稿标题拼已发布正文
   assert.match(page, /page\.publishedTitle \|\| page\.title/);
-  // 保存期间继续编辑时，不能把新输入覆盖成服务端旧快照，也不能误清未保存标记
+  // 保存期间继续编辑时，不能把新输入覆盖成服务端原来保存的资料，也不能误清未保存标记
   assert.match(page, /const snapshot = \{title: title\.value, content: content\.value\}/);
   assert.match(page, /保存期间的新修改尚未保存/);
 });

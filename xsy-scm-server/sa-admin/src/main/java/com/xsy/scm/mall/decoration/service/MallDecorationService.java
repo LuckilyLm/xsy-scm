@@ -103,7 +103,7 @@ public class MallDecorationService {
     /**
      * 匿名读取店铺展示资料，保存后即可生效，不要求客户身份或后台数据范围。
      *
-     * @return 仅含名称和链接的公开投影；未配置时使用默认名称，链接为空
+     * @return 仅含名称和链接的公开查询结果；未配置时使用默认名称，链接为空
      */
     @Transactional(readOnly = true)
     public MallStorefrontVO storefront() {

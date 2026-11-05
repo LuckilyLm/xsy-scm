@@ -26,7 +26,7 @@ public class FinanceOperationLogEntity {
     private String businessType;
 
     /**
-     * 对应财务事实主键。
+     * 对应财务记录主键。
      */
     private Long businessId;
 
@@ -41,7 +41,7 @@ public class FinanceOperationLogEntity {
     private String operator;
 
     /**
-     * 原因；破坏性动作必填，由服务层与对应事实表的 CHECK 共同保证。
+     * 原因；破坏性动作必填，由服务层与对应记录表的 CHECK 共同保证。
      */
     private String reason;
 

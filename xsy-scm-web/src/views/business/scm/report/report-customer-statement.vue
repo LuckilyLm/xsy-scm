@@ -101,7 +101,7 @@ import ReportDateRangePicker from './report-components/report-date-range-picker.
 
 const settlementCustomerId = ref<ReportId>(),
   customerId = ref<ReportId>(),
-  // 默认不包含：过账不是财务事实，客户默认看到的应只是应收/收付时间线
+  // 默认不包含：过账不是财务记录，客户默认看到的应只是应收/收付时间线
   includePosting = ref(false);
 const dateRange = ref<DateRange>(defaultDateRange());
 

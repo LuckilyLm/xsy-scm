@@ -13,7 +13,7 @@ test('表单内容变化才视为未保存修改', () => {
   assert.equal(formChanged({name: '客户甲', creditLimit: '100.0000'}, baseline), true);
 });
 
-test('空基线字符串与 undefined 都表示没有可比较的快照', () => {
+test('空基线字符串与 undefined 都表示没有可比较的已存数据', () => {
   assert.equal(formChanged({}, ''), false);
   assert.equal(formChanged({}, undefined), false);
 });

@@ -125,7 +125,7 @@ class ScmFinanceReadPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("应付查询按收货负责人范围派生余额并导出红字事实")
+    @DisplayName("应付查询按收货负责人范围派生余额并导出红字记录")
     void payableQueryDetailAndExport() throws Exception {
         Long supplierId = newSupplier("READ-AP");
         Long normalId = normalPayable(supplierId, "100.0000");
@@ -188,7 +188,7 @@ class ScmFinanceReadPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("付款查询沿用供应商共享范围，导出退款来源快照")
+    @DisplayName("付款查询沿用供应商共享范围，导出退款来源保存的数据")
     void paymentQueryDetailAndExport() throws Exception {
         Long supplierId = newSupplier("READ-PM");
         FinancePaymentAddForm addForm = supplierPayment(supplierId, "80.0000");

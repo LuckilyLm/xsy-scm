@@ -67,7 +67,7 @@ public enum FileFolderTypeEnum implements BaseEnum {
     /**
      * 存量私有目录白名单：只用于继续读取改造前上传的文件。
      *
-     * <p>新上传不再进入这些前缀；未知的 {@code private/} 子目录仍然按失败关闭处理，
+     * <p>新上传不再进入这些前缀；未知的 {@code private/} 子目录仍然按校验失败时拒绝操作处理，
      * 不能仅凭前缀就到手读取权。
      */
     public static final List<String> LEGACY_PRIVATE_FOLDERS = List.of(

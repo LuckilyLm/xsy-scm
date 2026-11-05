@@ -61,7 +61,7 @@ internal sealed partial class ScaleState
 
     /// <summary>发送完成后开始观察窗口；不因写入成功而声称硬件执行成功。</summary>
     /// <param name="controlId">本次操作的非空ID；不匹配当前操作时拒绝。</param>
-    /// <returns>WAITING快照，后续至少隔离500ms再观察新帧。</returns>
+    /// <returns>WAITING状态信息，后续至少隔离500ms再观察新帧。</returns>
     /// <exception cref="AgentFault">操作已经被替代或ID不匹配。</exception>
     internal ScaleControlStatus ControlSent(string controlId)
     {

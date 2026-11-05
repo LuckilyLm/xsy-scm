@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>本类是唯一直接断言 schema 形状的地方（表 / 索引 / 序列 / 种子 / 外键 / 库存表 / CHECK），
  * 其余 IT 只断言行为。schema 一旦后续被悄悄改动，这里会先失败。
  *
- * <p><b>V1–V12 永久冻结、V15/V16 只追加</b>：本类不修改任何数据，只读元数据 + 断言约束生效。
+ * <p><b>V1–V12 永久保存、V15/V16 只能新增</b>：本类不修改任何数据，只读元数据 + 断言约束生效。
  */
 @DisplayName("W5 采购域迁移（PG IT）")
 class ScmPurchaseMigrationIT extends ScmBaselineMigrationPgITBase {
@@ -57,7 +57,7 @@ class ScmPurchaseMigrationIT extends ScmBaselineMigrationPgITBase {
 
         // 非主键索引：主键走 pg_constraint，不计入这里的计数。部分索引分别来自
         // V22（双入库生命周期）、V40（地图归属，warehouse）、V51（报表日期轴）、V74（采购每日清单）、
-        // V78（ADM-05 净需求冻结批次给 purchase_demand 加的「同一批次行只能生成一条需求」唯一索引）
+        // V78（ADM-05 净需求计算结果批次给 purchase_demand 加的「同一批次行只能生成一条需求」唯一索引）
         // 与 V183（录单参考最近采购价：采购单提交时间轴 + 采购行 SKU 有价索引）
         Integer indexes = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
@@ -80,7 +80,7 @@ class ScmPurchaseMigrationIT extends ScmBaselineMigrationPgITBase {
         // WHERE deleted=FALSE AND calculation_batch_item_id IS NOT NULL）。
         assertThat(partial).isEqualTo(36);
 
-        // 8 条唯一索引 = V15 里显式 CREATE UNIQUE INDEX 的 7 条 + V78（ADM-05 冻结批次）
+        // 8 条唯一索引 = V15 里显式 CREATE UNIQUE INDEX 的 7 条 + V78（ADM-05 计算结果批次）
         // 在 purchase_demand 上加的批次行唯一索引。
         // 必须排除「约束支撑的索引」：PG 的 PRIMARY KEY / UNIQUE 约束也会生成 CREATE UNIQUE INDEX，
         // 不排除就会把 9 个主键算进来，从而把断言变成对主键个数的间接断言。
@@ -94,7 +94,7 @@ class ScmPurchaseMigrationIT extends ScmBaselineMigrationPgITBase {
                 Integer.class, V15_TABLE_LIST);
         assertThat(unique).isEqualTo(8);
 
-        // 2 条种子：默认仓库（单仓库口径）+ 超收容差配置
+        // 2 条种子：默认仓库（单仓库规则）+ 超收容差配置
         assertThat(jdbc.queryForObject(
                 "SELECT status FROM xsy_warehouse WHERE warehouse_code = ? AND deleted = FALSE",
                 String.class, SEED_WAREHOUSE_CODE)).isEqualTo("ENABLED");

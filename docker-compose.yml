@@ -59,7 +59,7 @@ services:
       XSY_MAIL_PORT: ${XSY_MAIL_PORT:-465}
       XSY_MAIL_USERNAME: ${XSY_MAIL_USERNAME:-xsy-scm@localhost}
       XSY_MAIL_PASSWORD: ${XSY_MAIL_PASSWORD:-unset}
-      # prod 下盘点快照签名密钥必须显式配置，否则 StocktakeSnapshotSigner 拒绝启动。
+      # prod 下盘点时保存的数据签名密钥必须显式配置，否则 StocktakeSnapshotSigner 拒绝启动。
       SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET: ${SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET:?Set SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET in .env}
       # 标签二维码里的公开溯源页地址；留空时标签只印码不印二维码（见 TracePublicLinkBuilder）
       SCM_TRACE_PUBLIC_BASE_URL: ${SCM_TRACE_PUBLIC_BASE_URL:-}

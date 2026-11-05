@@ -24,4 +24,4 @@ copies or substantial portions of the Software."）的合规方式。
 |---|---|---|
 | Java 包名 `net.lab1024.sa.*` | 全部 Java 源码 | 结构性命名空间，改动需调整所有 import |
 | 传输加密密钥 | 前端 `src/lib/encrypt.ts`、后端 `ApiEncryptServiceAesImpl` / `ApiEncryptServiceSmImpl` | 功能性常量，改动会破坏登录口令加密 |
-| 数据库注释 | `V5__sa_system_remaining_tables.sql` | 属已冻结的 Flyway 迁移，改动会使既有库校验失败 |
+| 数据库注释 | `V5__sa_system_remaining_tables.sql` | 属已发布的 Flyway 迁移，改动会使既有库校验失败 |

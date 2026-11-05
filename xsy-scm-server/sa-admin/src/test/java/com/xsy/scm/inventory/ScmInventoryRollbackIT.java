@@ -42,7 +42,7 @@ class ScmInventoryRollbackIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("#3 超收 40989：真实回滚后余额与流水零残留，采购侧与幂等记录也不动")
+    @DisplayName("#3 超收 40989：真实回滚后余额与流水零残留，采购侧与防重复处理记录也不动")
     void overReceiptLeavesNoResidue() {
         Long warehouseId = seedWarehouseId();
         Long skuId = newOnShelfSku("RB3");
@@ -60,7 +60,7 @@ class ScmInventoryRollbackIT extends ScmW6PgITBase {
         assertThat(receivedQuantityOf(fx.orderItemId())).isEqualByComparingTo("0.0000");
         assertThat(reloadOrder(fx.order().getId()).getStatus()).isEqualTo("SUBMITTED");
 
-        // 幂等 claim 也随事务回滚：同一个键 + 同样的内容重试，再次执行并再次得到 40989。
+        // 防重复处理 claim 也随事务回滚：同一个键 + 同样的内容重试，再次执行并再次得到 40989。
         // 若 claim 残留成「已提交但缺 result_data」，这里会得到另一个错误码 —— 断言会立刻失败。
         String key = prefix + ":RB3:retry";
         expectCode(() -> confirmReceipt(fx.receipt().getId(), "20.0000", key), 40989);

@@ -47,7 +47,7 @@ public class PurchaseOwnerResolver {
     }
 
     /**
-     * 是否有权把采购归属指定 / 改派给别人。失败关闭：拿不到 Sa-Token 上下文即无权限。
+     * 是否有权把采购归属指定 / 改派给别人。校验失败时拒绝操作：拿不到 Sa-Token 上下文即无权限。
      *
      * <p>
      * 本模块的编辑接口（{@code /scm/purchase/update}）永远不动归属，即使调用方有分配权：改派只有 {@code /scm/purchase/reassign}

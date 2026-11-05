@@ -315,13 +315,13 @@ MAGIC_STRING_RULINGS: tuple[tuple[str, str, str, str], ...] = (
         "com/xsy/scm/purchase/support/PurchaseInventoryContract.java",
         "PURCHASE_RECEIPT_ITEM",
         r'SOURCE_DOCUMENT_TYPE\s*=\s*"PURCHASE_RECEIPT_ITEM"\s*;',
-        "采购的稳定契约常量，让采购在编译期不依赖库存；库存侧的来源单据枚举刻意同值。",
+        "采购的稳定约定常量，让采购在编译期不依赖库存；库存侧的来源单据枚举刻意同值。",
     ),
     (
         "com/xsy/scm/product/service/ProductImportService.java",
         "CATEGORY_DISABLED",
         r'\baddError\s*\([^;\r\n]*,\s*"CATEGORY_DISABLED"\s*,',
-        "这是导入行的错误码 token，不是落库的状态或类型。",
+        "这是导入行的错误码 token，不是写入数据库的状态或类型。",
     ),
     (
         "com/xsy/scm/order/service/OrderTagService.java",
@@ -482,7 +482,7 @@ def legacy_package_files() -> list[Finding]:
     里那条被否掉的 ArchUnit 规则是同一个陷阱：**空集合上的合规不能当断言**。
     因此这里刻意**保留真实扫描**，而不是 `return []`：
     写死返回空会把「旧包复活了一堆文件」这件事静默掉，那比退役前更危险。
-    旧包目录仍在（空壳），扫描结果是 0 条，这是事实而非约定。
+    旧包目录仍在（空壳），扫描结果是 0 条，这是实际结果。
 
     「旧包不得复活」另有两条更强的机制（但**都不替代本扫描**）：
       * ArchUnit ``scmProductionCodeLivesInXsyPackage``（具体业务域必须在 com.xsy.scm）；
@@ -663,7 +663,7 @@ FAMILIES: tuple[RuleFamily, ...] = (
         "SCM 生产代码（com/xsy/scm；迁移期新旧两个包都扫）",
         "非 text block 的字符串字面量，内容恰好等于某个 SCM enum 常量名；enum 词汇表由扫描根"
         "下的生产源码构建，否则引用了新包 enum 的常量会漏判；"
-        "*ErrorCode 枚举不计入词汇表；测试源码、SQL、文档、JSON 快照不在扫描范围；"
+        "*ErrorCode 枚举不计入词汇表；测试源码、SQL、文档、JSON 参照文件不在扫描范围；"
         "撞名但属于别的业务字段的取值记在 MAGIC_STRING_RULINGS，逐条写清理由，"
         "且只对那一个文件的那一行生效",
     ),

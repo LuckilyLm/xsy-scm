@@ -133,7 +133,8 @@ public class SortingScaleEventService {
      * 单位必须与明细销售单位一致：未知单位按公斤兜底会让斤与件混入同一累计。毛重在未去皮时同样拒绝，因为把毛重当净重会系统性多记。
      *
      * <p>
-     * 幂等分两层：{@code operationId} 标识一次人工操作，{@code eventKey} 标识一筐读数。 两者任一命中既有记录时返回原记录并置 {@code duplicated}；同一键换了内容则显式报冲突。
+     * 防重复处理分两层：{@code operationId} 标识一次人工操作，{@code eventKey} 标识一筐读数。 两者任一命中既有记录时返回原记录并置
+     * {@code duplicated}；同一键换了内容则显式报冲突。
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingScaleBasketVO reportBasket(SortingScaleBasketForm form) {
@@ -307,7 +308,7 @@ public class SortingScaleEventService {
         }
     }
 
-    /** 同一幂等键的重放必须内容一致：换了重量、筐号或任务就不是重试，而是另一笔数据。 */
+    /** 同一防重复请求编号的重放必须内容一致：换了重量、筐号或任务就不是重试，而是另一笔数据。 */
     private static boolean sameBasket(SortingScaleEventEntity existing, SortingScaleEventEntity row) {
         return Objects.equals(existing.getTaskId(), row.getTaskId())
             && Objects.equals(existing.getTaskItemId(), row.getTaskItemId())

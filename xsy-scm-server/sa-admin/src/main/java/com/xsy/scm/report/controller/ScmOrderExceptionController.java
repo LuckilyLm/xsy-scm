@@ -59,6 +59,6 @@ public class ScmOrderExceptionController {
                 row.getActualQuantity(), row.getDifferenceQuantity(),
                 ScmSortingResultEnum.valueOf(row.getSourceStatus()).getDesc(), row.getReason()))
             .toList();
-        ScmExcel.write(response, "异常订单分析.xlsx", "异常事实", TITLES, rows);
+        ScmExcel.write(response, "异常订单分析.xlsx", "异常记录", TITLES, rows);
     }
 }

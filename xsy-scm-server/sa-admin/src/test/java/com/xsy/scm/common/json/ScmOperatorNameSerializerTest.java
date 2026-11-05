@@ -13,17 +13,17 @@ import java.util.function.UnaryOperator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 操作人字段的展示口径：只有 {@code userType:userId} 形状才换人名，其它值一律不动。
+ * 操作人字段的展示规则：只有 {@code userType:userId} 形状才换人名，其它值一律不动。
  *
  * <p>
  * 用假的解析器直接绑定，不依赖员工表 —— 这里要守的是「什么该换、什么不该换」这条边界，
- * 以及快照里按「键名」递归替换的行为。
+ * 以及保存的数据里按「键名」递归替换的行为。
  */
 class ScmOperatorNameSerializerTest {
 
     private static final String EMPLOYEE_ONE = "1:1";
 
-    /** 装着快照字段的壳，只为让注解生效，验证真实序列化路径。 */
+    /** 装着保存当时资料的字段的壳，只为让注解生效，验证真实序列化路径。 */
     private record SnapshotHolder(
             @JsonSerialize(using = ScmOperatorSnapshotSerializer.class) Map<String, Object> data) {
     }
@@ -66,7 +66,7 @@ class ScmOperatorNameSerializerTest {
     }
 
     @Test
-    @DisplayName("审计快照：顶层与嵌套的操作人键都换人名，其它键不动")
+    @DisplayName("审计保存的数据：顶层与嵌套的操作人键都换人名，其它键不动")
     void snapshotRewritesOperatorKeysAtAnyDepth() throws Exception {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("status", "CANCELLED");

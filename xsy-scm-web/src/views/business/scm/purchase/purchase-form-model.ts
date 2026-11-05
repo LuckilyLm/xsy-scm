@@ -184,7 +184,7 @@ export function validateOrder(form: Order): string | undefined {
     if (!FIXED.test(plannedQuantity) || new Decimal(plannedQuantity).lte(0)) {
       return '采购数量必须大于0，最多保留4位小数';
     }
-    // 待定价与单价互斥：待定价必须留空，非待定价必须有价（服务端同一口径）
+    // 待定价与单价互斥：待定价必须留空，非待定价必须有价（服务端同一套规则）
     if (item.pricePending) {
       if (String(item.purchasePrice ?? '').trim() !== '') {
         return '标记为待定价的行不能填写采购单价';

@@ -32,10 +32,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 也会让「收货日志漏填采购单」这种错误溜过去 —— V15 的
  * ck_purchase_operation_log_owner 是四分支 CHECK，本类逐分支验证。
  *
- * <p><b>日志是只追加的审计事实</b>：表上没有 version / updated_* 列，
+ * <p><b>日志是只能新增的审计记录</b>：表上没有 version / updated_* 列，
  * 单据的后续变更不会改写既有行。因此「跑完整流程后回看早期日志仍原样」也是断言的一部分。
  */
-@DisplayName("采购操作日志：Q14 归属四分支 + 快照契约（PG IT）")
+@DisplayName("采购操作日志：Q14 归属四分支 + 保存的数据约定（PG IT）")
 class PurchaseOperationLogIT extends ScmW5PgITBase {
 
     private Map<String, Object> latestLog(String operationType) {
@@ -59,7 +59,7 @@ class PurchaseOperationLogIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("Q14 分支一：DEMAND_GENERATE 的两个归属 id 同时为空（无前态快照）")
+    @DisplayName("Q14 分支一：DEMAND_GENERATE 的两个归属 id 同时为空（无前态保存的数据）")
     void demandGenerateLogHasBothOwnerIdsNull() {
         Long skuId = newOnShelfSku("LG1");
         Long supplierId = newPurchasableSupplier("LG1", skuId);
@@ -70,7 +70,7 @@ class PurchaseOperationLogIT extends ScmW5PgITBase {
         Map<String, Object> log = latestLog("DEMAND_GENERATE");
         assertThat(log.get("purchase_order_id")).isNull();
         assertThat(log.get("purchase_receipt_id")).isNull();
-        // 操作者落的是 userType:employeeId（ScmOperator 的口径），不是员工姓名
+        // 操作者落的是 userType:employeeId（ScmOperator 的规则），不是员工姓名
         assertThat(log.get("operator")).isEqualTo(ScmOperator.current());
         assertThat(log.get("before_data")).isNull();
         assertThat(String.valueOf(log.get("after_data"))).contains("createdCount");
@@ -115,14 +115,14 @@ class PurchaseOperationLogIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 3. RECEIPT_*：两个归属都非空 + 只追加
+    // 3. RECEIPT_*：两个归属都非空 + 只能新增
     // ------------------------------------------------------------------
 
     @Test
     @DisplayName("Q14 分支四：RECEIPT_CREATE / RECEIPT_CONFIRM 两个归属都非空，且早期日志不被改写")
     void receiptLogsCarryBothOwnerIdsAndAreAppendOnly() {
         ReceiptFixture fx = receiptFixture("LG3", "10.0000");
-        // 记下 RECEIPT_CREATE 的原始快照，确认之后回看必须一字不变
+        // 记下 RECEIPT_CREATE 的原始保存的数据，确认之后回看必须一字不变
         Map<String, Object> createLogBefore = latestLog("RECEIPT_CREATE");
 
         PurchaseReceiptVO confirmed = confirm(fx, "10.0000");
@@ -140,7 +140,7 @@ class PurchaseOperationLogIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 4. 单据变更日志的快照形状
+    // 4. 单据变更日志的已存数据形状
     // ------------------------------------------------------------------
 
     @Test
@@ -175,13 +175,13 @@ class PurchaseOperationLogIT extends ScmW5PgITBase {
         assertThat(update.getBeforeData()).containsKeys("items", "status", "version");
         assertThat(update.getAfterData()).containsKeys("items", "status", "version");
 
-        // 只追加：id 严格递减（DESC 排序下等价于「严格递增」，条数与动作数一致）
+        // 只能新增：id 严格递减（DESC 排序下等价于「严格递增」，条数与动作数一致）
         assertThat(logs).extracting(PurchaseOperationLogVO::getId)
                 .isSortedAccordingTo(Comparator.reverseOrder());
     }
 
     // ------------------------------------------------------------------
-    // 5. CANCEL 的 reason 独立于快照
+    // 5. CANCEL 的 reason 独立于保存的数据
     // ------------------------------------------------------------------
 
     @Test

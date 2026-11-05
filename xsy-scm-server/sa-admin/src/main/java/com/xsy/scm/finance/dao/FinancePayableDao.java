@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 正常应付按业务来源防重；没有来源 ID 的手工红字应付用金额限制和请求幂等键防重。应付记录只能追加。
+ * 正常应付按业务来源防重；没有来源 ID 的手工红字应付用金额限制和请求防重复请求编号防重。应付记录只能追加。
  */
 @Mapper
 public interface FinancePayableDao extends AppendOnlyMapper<FinancePayableEntity> {
@@ -49,7 +49,7 @@ public interface FinancePayableDao extends AppendOnlyMapper<FinancePayableEntity
      * 自动核销候选：同一供应商的未结正常应付，按账单日期、id 升序（FIFO）。
      *
      * <p>
-     * {@code scope} 为采购员数据范围，null 按失败关闭。
+     * {@code scope} 为采购员数据范围，null 按校验失败时拒绝操作。
      */
     List<FinanceAutoWriteOffTargetDto> selectAutoTargets(@Param("supplierId") Long supplierId,
         @Param("scope") ScmValueScope scope, @Param("limit") int limit);

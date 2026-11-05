@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: [
         /*
-         * mock 契约层刻意放在 src/ 之外，且用 `@mock` 作为引入标识：
+         * mock 约定层刻意放在 src/ 之外，且用 `@mock` 作为引入标识：
          *
          * 1) 为什么在 src/ 之外：uni-app 会把 src/ 整棵树镜像进构建产物
          *    （未被引用的文件同样会被发射），假数据留在 src/ 里就会被打进包里。

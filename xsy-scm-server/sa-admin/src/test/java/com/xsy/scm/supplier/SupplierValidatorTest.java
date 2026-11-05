@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 供应商字段归一化契约测试。
+ * 供应商字段归一化约定检查。
  */
 class SupplierValidatorTest {
 

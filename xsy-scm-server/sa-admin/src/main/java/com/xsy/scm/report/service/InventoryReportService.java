@@ -140,10 +140,10 @@ public class InventoryReportService {
     }
 
     /**
-     * 负库存损耗：查询时点的余额快照。金额列跟随成本权限抹除，数量列照常显示。
+     * 负库存损耗：查询时点的查询时的余额数据。金额列跟随成本权限抹除，数量列照常显示。
      *
      * <p>
-     * 只读余额与历史流水，不生成报损单、不改库存。负库存本身不是损耗事实，它的用途是月末让负责人 知道「卖出去但没入成本」的缺口有多大，真实损耗仍走报损 / 盘亏审批。
+     * 只读余额与历史流水，不生成报损单、不改库存。负库存本身不是损耗记录，它的用途是月末让负责人 知道「卖出去但没入成本」的缺口有多大，真实损耗仍走报损 / 盘亏审批。
      */
     public PageResult<InventoryReportVO.NegativeStockRow> negativeStockList(ScmNegativeStockReportQueryForm form) {
         SalesReportService.rejectClientSort(form);

@@ -20,7 +20,7 @@ public class FinanceReceivableSourceDto {
     private Long customerId;
 
     /**
-     * 订单上的客户名称快照，不回读 {@code xsy_customer} 主档。
+     * 订单上的当时的客户名称，不回读 {@code xsy_customer} 主档。
      */
     private String customerNameSnapshot;
 

@@ -15,10 +15,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 对账单打印只读已冻结的对账版本，不重算财务事实。
+ * 对账单打印只读已保存的对账版本，不重算财务记录。
  *
  * <p>
- * 原对账详情只允许生成人查看；打印使用报表域提供的专用读取，按当前数据范围重新验证全部源事实。 生成人之外的人能否打印取决于是否仍能看到这些事实，而不是是否曾经由自己生成。
+ * 原对账详情只允许生成人查看；打印使用报表域提供的专用读取，按当前数据范围重新验证全部源记录。 生成人之外的人能否打印取决于是否仍能看到这些记录，而不是是否曾经由自己生成。
  */
 @Component
 @RequiredArgsConstructor

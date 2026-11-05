@@ -175,7 +175,7 @@ async function wechatLogin(event) {
 }
 
 /**
- * @param {object} data 后端签发的token和profile；改密要求以当前认证会话的服务端投影为准。
+ * @param {object} data 后端签发的token和profile；改密要求以当前认证会话的服务端查询结果为准。
  * @returns {void} 保存统一会话并进入商城或密码修改页。
  */
 function finishLogin(data) {

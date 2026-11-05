@@ -14,7 +14,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 幂等请求哈希契约测试。
+ * 防重复处理请求哈希约定检查。
  *
  * <p>这三条规范化规则决定了「同 key 同内容 → 重放」与「同 key 异内容 → 40990」的边界，
  * 任何一条缺失都会造成误判：
@@ -73,7 +73,7 @@ class PurchaseIdempotencyRequestHasherTest {
     void numericStringsAreNormalized() {
         for (String field : List.of("amount", "quantity", "price", "weight", "cost", "rate")) {
             assertThat(hasher.hash(Map.of(field, "1.5000")))
-                    .as("业务数值字段 %s 的 scale 不应改变幂等请求身份", field)
+                    .as("业务数值字段 %s 的 scale 不应改变防重复处理请求身份", field)
                     .isEqualTo(hasher.hash(Map.of(field, "1.5")));
         }
     }

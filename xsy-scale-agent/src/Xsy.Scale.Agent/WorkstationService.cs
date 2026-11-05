@@ -14,7 +14,7 @@ internal sealed record DeviceSetup(string Protocol, string SerialPort, int BaudR
 /// <summary>平台签发的员工会话引用；不是员工密码或本地新建身份。</summary>
 internal sealed record WorkstationSession(string OperatorSessionId);
 
-/// <summary>本地工作台编排、只读诊断及受维护码约束的配置，平台业务继续保持独立。</summary>
+/// <summary>本地工作台协调、只读诊断及受维护码约束的配置，平台业务继续保持独立。</summary>
 internal sealed class WorkstationService(AgentOptions options, WorkstationOptions policy, StateStore store,
     CaptureService captures, BasketService baskets)
 {
@@ -36,12 +36,12 @@ internal sealed class WorkstationService(AgentOptions options, WorkstationOption
         string? previous = store.Setting("workstation_mode");
         if (previous != null && previous != mode) throw new InvalidOperationException("现场与演练不能共用数据目录");
         if (previous == null && policy.LocalTest && store.HasStoredFacts())
-            throw new InvalidOperationException("不能把已有事实的数据目录指定为演练");
+            throw new InvalidOperationException("不能把已有记录的数据目录指定为演练");
         store.Setting("workstation_mode", mode);
     }
 
     /// <summary>返回工作台可公开的本机信息，不返回本机密钥、维护码或设备Token。</summary>
-    /// <returns>包含当前会话引用及有限设备配置的匿名投影；未设置会话时为空字符串。</returns>
+    /// <returns>包含当前会话引用及有限设备配置的匿名查询结果；未设置会话时为空字符串。</returns>
     internal object Bootstrap() => new
     {
         version = WireJson.Version, deviceCode = options.DeviceCode, stationCode = options.StationCode,
@@ -126,7 +126,7 @@ internal sealed class WorkstationService(AgentOptions options, WorkstationOption
 
     /// <summary>查询本地凭条，沿用本商品历史可见性。</summary>
     /// <param name="scope">非空当前员工缓存中的作业和明细。</param>
-    /// <returns>原始冻结内容及每次执行状态。</returns>
+    /// <returns>原始保存内容及每次执行状态。</returns>
     internal LocalTicket[] Tickets(BasketScope scope) { baskets.Summary(scope); return store.LocalTickets(scope); }
 
     /// <summary>确认补打原因及当前员工范围，追加执行而不修改原筐。</summary>

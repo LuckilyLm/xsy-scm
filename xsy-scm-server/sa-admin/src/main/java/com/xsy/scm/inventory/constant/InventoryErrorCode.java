@@ -34,15 +34,15 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 41002：源身份重复入库。
      *
      * <p>
-     * 实时 confirm 路径下这属于不可能发生的数据异常（claim 幂等 + 收货单状态机已挡住），因此直接失败，不静默吞掉， 否则会掩盖库存不一致。backfill 路径下「影响行数 = 0」是预期值，由 backfill
-     * 自身区分处理。
+     * 实时 confirm 路径下这属于不可能发生的数据异常（claim 防重复处理 + 收货单状态机已挡住），因此直接失败，不静默吞掉， 否则会掩盖库存不一致。backfill 路径下「影响行数 = 0」是预期值，由
+     * backfill 自身区分处理。
      */
     INVENTORY_DUPLICATE_INBOUND(41002, "该来源单据已入库，不能重复入库"),
 
     /**
      * 41003：入库数据非法（quantity &lt;= 0、unit / occurredAt / operator 缺失等）。
      */
-    INVENTORY_PARAM_INVALID(41003, "库存入库事实不合法"),
+    INVENTORY_PARAM_INVALID(41003, "库存入库记录不合法"),
 
     /**
      * 41011：可用量不足。
@@ -54,9 +54,9 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_INSUFFICIENT_AVAILABLE(41011, "可用库存不足（可用量 = 现有量 − 预留量）"),
 
     /**
-     * 41012：出库事实非法（quantity &lt;= 0、warehouseId / skuId / 来源行缺失等）。
+     * 41012：出库记录非法（quantity &lt;= 0、warehouseId / skuId / 来源行缺失等）。
      */
-    INVENTORY_OUTBOUND_PARAM_INVALID(41012, "库存出库事实不合法"),
+    INVENTORY_OUTBOUND_PARAM_INVALID(41012, "库存出库记录不合法"),
 
     /**
      * 41013：出库单不存在（行不存在或已软删）。
@@ -74,7 +74,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_DUPLICATE_OUTBOUND(41015, "该来源单据已出库，不能重复出库"),
 
     /**
-     * 41016：预留事实非法或状态不允许（如已释放还要再释放）。
+     * 41016：预留记录非法或状态不允许（如已释放还要再释放）。
      */
     INVENTORY_RESERVATION_INVALID(41016, "库存预留不合法或当前状态不允许该操作"),
 
@@ -99,9 +99,9 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_STOCKTAKE_EMPTY_ITEMS(41021, "盘点单至少需要一条明细"),
 
     /**
-     * 41022：盘点事实非法（actualQuantity 为负、warehouseId / skuId / 来源行缺失等）。
+     * 41022：盘点记录非法（actualQuantity 为负、warehouseId / skuId / 来源行缺失等）。
      */
-    INVENTORY_STOCKTAKE_PARAM_INVALID(41022, "库存盘点事实不合法"),
+    INVENTORY_STOCKTAKE_PARAM_INVALID(41022, "库存盘点记录不合法"),
 
     /**
      * 41023：该 {@code (xsy_warehouse, sku)} 没有余额行，无法盘点。
@@ -160,9 +160,9 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_LOSS_GAIN_EMPTY_ITEMS(41030, "报损报溢单至少需要一条明细"),
 
     /**
-     * 41031：报损报溢事实非法（quantity &lt;= 0、仓库 / SKU / 来源行缺失等）。
+     * 41031：报损报溢记录非法（quantity &lt;= 0、仓库 / SKU / 来源行缺失等）。
      */
-    INVENTORY_LOSS_GAIN_PARAM_INVALID(41031, "报损报溢事实不合法"),
+    INVENTORY_LOSS_GAIN_PARAM_INVALID(41031, "报损报溢记录不合法"),
 
     /**
      * 41032：该 {@code (xsy_warehouse, sku)} 没有余额行，无法报损报溢。
@@ -225,9 +225,9 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_TRANSFER_EMPTY_ITEMS(41040, "调拨单至少需要一条明细"),
 
     /**
-     * 41041：调拨事实非法（quantity &lt;= 0、仓库 / SKU / 来源行缺失等）。
+     * 41041：调拨记录非法（quantity &lt;= 0、仓库 / SKU / 来源行缺失等）。
      */
-    INVENTORY_TRANSFER_PARAM_INVALID(41041, "调拨事实不合法"),
+    INVENTORY_TRANSFER_PARAM_INVALID(41041, "调拨记录不合法"),
 
     /**
      * 41042：源仓库与目标仓库相同。
@@ -326,9 +326,9 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_CONVERSION_EMPTY_ITEMS(41055, "规格转换单至少需要一条明细"),
 
     /**
-     * 41056：规格转换事实非法（数量非正、仓库 / SKU / 来源行缺失、单位空白等）。
+     * 41056：规格转换记录非法（数量非正、仓库 / SKU / 来源行缺失、单位空白等）。
      */
-    INVENTORY_CONVERSION_PARAM_INVALID(41056, "规格转换事实不合法"),
+    INVENTORY_CONVERSION_PARAM_INVALID(41056, "规格转换记录不合法"),
 
     /**
      * 41057：同一行的源 SKU 与目标 SKU 相同。
@@ -398,7 +398,8 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 41066：一条来源单据已经有一张出库单。
      *
      * <p>
-     * 拦截的是部分唯一索引 {@code uk_inventory_outbound_source_active}，正常情况下由调用方的状态机与幂等键先挡住； 走到这里说明有并发或旁路，必须让它直接失败，不能再生成一张扣库存的单。
+     * 拦截的是部分唯一索引 {@code uk_inventory_outbound_source_active}，正常情况下由调用方的状态机与防重复请求编号先挡住；
+     * 走到这里说明有并发或旁路，必须让它直接失败，不能再生成一张扣库存的单。
      */
     INVENTORY_SOURCE_ALREADY_OUTBOUND(41066, "该来源单据已产生出库单，不能重复出库"),
 

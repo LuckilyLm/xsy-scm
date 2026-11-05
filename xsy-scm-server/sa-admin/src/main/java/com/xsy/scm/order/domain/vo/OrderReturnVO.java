@@ -24,7 +24,7 @@ public class OrderReturnVO {
     private String sourceType;
     private Long customerId;
     /**
-     * 退货单上的客户名称快照，不随客户主档改名变化。
+     * 退货单上的当时的客户名称，不随客户主档改名变化。
      */
     private String customerName;
     private String status;

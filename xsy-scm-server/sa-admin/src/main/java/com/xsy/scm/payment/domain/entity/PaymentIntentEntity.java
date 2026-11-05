@@ -58,7 +58,7 @@ public class PaymentIntentEntity {
     private String externalIntentId;
 
     /**
-     * 仅 MOCK：回放剧本。表上有 CHECK 保证非 mock 渠道带不上。
+     * 仅 MOCK：模拟支付结果。后端拒绝非 mock 渠道传入该值。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String mockScenario;

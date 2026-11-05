@@ -26,9 +26,9 @@ import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * 客户月利润的对账口径：应收净额、收款净额、有效过账和暂定费用公式。
+ * 客户月利润的对账规则：应收净额、收款净额、有效过账和暂定费用公式。
  *
- * <p>这些列全部是报表派生值，不落库；用例直接写应收 / 收款 / 过账事实，避免把报表公式
+ * <p>这些列全部是报表派生值，不写入数据库；用例直接写应收 / 收款 / 过账记录，避免把报表公式
  * 和订单、退货链路绑在一起。
  */
 class CustomerMonthlyProfitStatementPgIT extends ScmW6PgITBase {
@@ -97,7 +97,7 @@ class CustomerMonthlyProfitStatementPgIT extends ScmW6PgITBase {
         assertThat(row.getPostingTaxAmount()).isEqualByComparingTo("6.5000");
         assertThat(row.getStatementAmount()).isEqualByComparingTo("1050.0000");
         assertThat(row.getActualGoodsAmount()).isEqualByComparingTo("993.5000");
-        // 没有成本费用登记时对账利润为空，但对账 / 实付等事实列仍照常展示。
+        // 没有成本费用登记时对账利润为空，但对账 / 实付等记录列仍照常展示。
         assertThat(row.getCostMissingCount()).isEqualTo(1);
         assertThat(row.getStatementProfit()).isNull();
         assertThat(row.getInvoiceTaxAmount()).isEqualByComparingTo("10.5000");

@@ -50,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public abstract class ScmW6PgITBase extends ScmW5PgITBase {
 
-    /** @param movementId 非空已存在流水ID；验证通用更新、逻辑删除和物理删除均被后端拒绝且事实不变。 */
+    /** @param movementId 非空已存在流水ID；验证通用更新、逻辑删除和物理删除均被后端拒绝且记录不变。 */
     protected void assertMovementImmutable(Long movementId) {
         Map<String, Object> before = jdbc.queryForMap("SELECT * FROM xsy_inventory_movement WHERE id=?", movementId);
         var changed = new com.xsy.scm.inventory.domain.entity.InventoryMovementEntity();
@@ -171,7 +171,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
      *
      * <p>采购基类的 {@code newProductSku} 把 {@code productType} 写死为 {@code NON_STANDARD}
      * （非标品必须有实重），因此「标品 + 非标品混合收货」这条用例需要这里另开一个入口。
-     * 标品与非标品的差别只在校验口径（非标品：实重必填且来源 MANUAL），不是另一张表。
+     * 标品与非标品的差别只在校验规则（非标品：实重必填且来源 MANUAL），不是另一张表。
      */
     protected Long newSkuOfType(String suffix, String productType, String status) {
         ProductSpuAddForm form = new ProductSpuAddForm();
@@ -202,7 +202,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
      * 读回服务端发号的 SKU 内部编码。
      *
      * <p>V147 起 SPU / SKU 编码由后端 sequence 生成，{@code ProductSkuForm#setSkuCode} 不再被采信；
-     * 断言编码时必须回读落库值，不能沿用造数时传入的字符串。
+     * 断言编码时必须回读写入数据库值，不能沿用造数时传入的字符串。
      */
     protected String skuCodeOf(Long skuId) {
         return jdbc.queryForObject("SELECT sku_code FROM xsy_product_sku WHERE id = ?", String.class, skuId);
@@ -213,9 +213,9 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * 确认收货（幂等键由本方法生成）。
+     * 确认收货（防重复请求编号由本方法生成）。
      *
-     * <p>幂等键必须逐次唯一，否则第二次确认会命中收货的幂等重放而拿回第一次的结果 ——
+     * <p>防重复请求编号必须逐次唯一，否则第二次确认会命中收货的重复请求返回原结果而拿回第一次的结果 ——
      * 那是 {@code PurchaseReceiptServiceIT} 的用例，不是入库用例想验证的东西。
      * 要验证重放请用 {@link #confirmReceipt(Long, String, String)} 显式传键。
      */
@@ -225,7 +225,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     }
 
     /**
-     * 确认收货，显式指定幂等键。
+     * 确认收货，显式指定防重复请求编号。
      *
      * <p>版本与行版本都在这里回读，调用方不必自己数：数错会得到 40921，
      * 而不是被测的行为。
@@ -271,7 +271,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     }
 
     /**
-     * 活动流水，按 {@code occurred_at ASC, id ASC}（= 业务发生顺序 = 回放顺序）。
+     * 活动流水，按 {@code occurred_at ASC, id ASC}（= 业务发生顺序 = 重新执行顺序）。
      *
      * <p>按业务时刻排序而不是 id：id 顺序可能与 {@code occurred_at} 顺序不一致，
      * 用 id 排序会把被测的缺陷藏起来。
@@ -348,7 +348,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * 读取固定Git提交中的历史迁移原文，仅供回放测试。
+     * 读取固定Git提交中的历史迁移原文，仅供重新执行测试。
      */
     protected static String migrationSql(String fileName) {
         return net.lab1024.sa.admin.test.LegacyMigrationSql.read(fileName);
@@ -374,7 +374,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     }
 
     /**
-     * V118 之前的物理表名。回放历史迁移正文时要映射到当前表名 ——
+     * V118 之前的物理表名。重新执行历史迁移正文时要映射到当前表名 ——
      * 迁移文件本身不可改（已 apply），而 PostgreSQL 的 RENAME 也不会改写文件里的文本。
      */
     private static final String LEGACY_TABLE_NAMES =
@@ -479,14 +479,14 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     }
 
     /**
-     * V19 Step 2：回放历史 CONFIRMED 收货行为 PURCHASE_IN 流水（幂等）。
+     * V19 Step 2：重新执行历史 CONFIRMED 收货行为 PURCHASE_IN 流水（防重复处理）。
      */
     protected void runBackfillMovements() {
         jdbc.execute(migrationSection(V19, "-- Step 2", "-- Step 3"));
     }
 
     /**
-     * V19 Step 3：由流水汇总余额（幂等）。
+     * V19 Step 3：由流水汇总余额（防重复处理）。
      */
     protected void runBackfillBalances() {
         jdbc.execute(migrationSection(V19, "-- Step 3", "-- Step 4"));
@@ -500,7 +500,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
      * 决定，V22 又让「已确认收货但未上架」成为没有流水的合法中间态，因此在任何用过一段时间的真实库上
      * 重放原文必然误报。
      *
-     * <p>方向从流水快照等式推导，不写 {@code movement_type} 清单：{@code ck_inventory_movement_snap}
+     * <p>方向从流水保存的数据等式推导，不写 {@code movement_type} 清单：{@code ck_inventory_movement_snap}
      * 已按类型把「入向 after = before + quantity、出向 after = before - quantity」钉成约束，
      * 而手写类型清单会随新增流水类型过期。
      *
@@ -527,12 +527,12 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     }
 
     /**
-     * 把某个收货行的采购单位快照改成别的值。
+     * 把某个收货行的采购时的单位改成别的值。
      *
      * <p><b>为什么需要它</b>：「同 (warehouse, sku) 混单位」在实时路径上不可能产生
      * ——第二笔异单位入库会在 {@code InventoryCommandService} 抛 41001 并整体回滚，
      * 因此永远落不了库。要验证 backfill 的前置检查，只能构造一份「历史遗留的脏数据」：
-     * 先用实时路径正常确认两笔同单位收货，再把其中一笔的历史快照改成异单位。
+     * 先用实时路径正常确认两笔同单位收货，再把其中一笔的历史数据改成异单位。
      * 前置检查存在的理由正是这条：实时路径之外遗留的数据没有被任何环节挡过。
      */
     protected void overrideReceiptItemUnit(Long receiptItemId, String unit) {
@@ -547,7 +547,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
      * 把收货单的确认时刻改成一个确定的历史时刻。
      *
      * <p>用来构造「{@code receipt_item.id} 顺序与 {@code confirmed_at} 顺序不一致」的历史数据，
-     * 以及证明回放的 {@code occurred_at} 取的是收货事实而不是 {@code now()}。
+     * 以及证明重新执行的 {@code occurred_at} 取的是收货记录而不是 {@code now()}。
      */
     protected void overrideReceiptConfirmedAt(Long receiptId, OffsetDateTime confirmedAt) {
         int updated = jdbc.update(
@@ -559,12 +559,12 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     /**
      * 在事务临时账本中移除某个 (warehouse, sku) 的流水，构造迁移前历史。
      *
-     * <p><b>只用于「把时钟拨回去」</b>：要验证 backfill 的回放顺序，必须让这些历史收货看起来
+     * <p><b>只用于「把时钟拨回去」</b>：要验证 backfill 的重新执行顺序，必须让这些历史收货看起来
      * 「还没有被任何路径入库过」。实时路径已经写过一遍流水，所以先物理删掉它们，
-     * 再执行 V19 的 backfill 段，观察回放结果。
+     * 再执行 V19 的 backfill 段，观察重新执行结果。
      *
      * <p>V21 禁止真实账本的 UPDATE / DELETE / TRUNCATE，因此复制到当前连接的临时表，
-     * 让后续未限定 schema 的 V19 回放 SQL 使用该副本。LIKE INCLUDING ALL 保留列、
+     * 让后续未限定 schema 的 V19 重新执行 SQL 使用该副本。LIKE INCLUDING ALL 保留列、
      * CHECK 和唯一索引，不复制触发器；真实表的保护始终开启，未删除任何真实流水。
      * 临时表及其 identity 序列随测试事务结束而销毁。
      */

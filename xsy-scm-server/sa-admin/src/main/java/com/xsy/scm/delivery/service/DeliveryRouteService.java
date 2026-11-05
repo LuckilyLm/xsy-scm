@@ -179,7 +179,7 @@ public class DeliveryRouteService {
         var current = active(id);
         if (current.size() + ids.size() > 500)
             throw new ScmBusinessException(LIMIT_EXCEEDED);
-        // 先锁住全部请求订单，再读快照、判断 ACTIVE 唯一占用。
+        // 先锁住全部请求订单，再读保存的数据、判断 ACTIVE 唯一占用。
         for (Long orderId : ids) {
             var order = salesOrderDao.lock(orderId);
             if (!eligibility.eligible(order) || (order.getMallDeliveryWarehouseId() != null
@@ -189,7 +189,7 @@ public class DeliveryRouteService {
         var routeStops = new ArrayList<>(
             deliveryRouteStopDao.selectList(new LambdaQueryWrapper<DeliveryRouteStopEntity>()
                 .eq(DeliveryRouteStopEntity::getRouteId, id).orderByAsc(DeliveryRouteStopEntity::getStopSeq)));
-        // ACTIVE 占用和订单快照各查一次：以前逐单查，500 单就是 1000 次往返。
+        // ACTIVE 占用和当时的订单资料各查一次：以前逐单查，500 单就是 1000 次往返。
         // 上面已经锁住所有请求订单，这里读到的数据是稳定的。
         var alreadyAssigned = new HashSet<Long>();
         var snapshots = new HashMap<Long, DeliveryCandidateVO>();
@@ -411,8 +411,8 @@ public class DeliveryRouteService {
                     throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
                 List<OrderBundleComponentEntity> components = bundles.get(line.getSalesOrderItemId());
                 if (components == null) {
-                    // 商城换算快照成对写入；后台单没有快照，等于「一个销售单位就是一个库存单位」。
-                    // 单位与换算因子必须成对给出：只给单位不给因子会被换算器判成残缺快照（41001），
+                    // 商城换算保存的数据成对写入；后台单没有保存的数据，等于「一个销售单位就是一个库存单位」。
+                    // 单位与换算因子必须成对给出：只给单位不给因子会被换算器判成残缺保存的数据（41001），
                     // 所以这里显式写 1，而不是让换算器去猜「没有因子」是什么意思。
                     boolean mallConversion = line.getMallStockUnitSnapshot() != null
                         && line.getMallStockUnitsPerSaleUnit() != null;
@@ -551,7 +551,7 @@ public class DeliveryRouteService {
         save(route);
     }
 
-    /** 按订单正式生成打印：只对本次显式提交且当前仍为 ACTIVE 的订单计次。持有线路锁，同一线路的计次串行累加；同一幂等键重试只计一次。 */
+    /** 按订单正式生成打印：只对本次显式提交且当前仍为 ACTIVE 的订单计次。持有线路锁，同一线路的计次串行累加；同一防重复请求编号重试只计一次。 */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printOrders(Long id, DeliveryPrintOrdersForm form, String key) {
         return deliveryRoutePrintService.printOrders(id, form, key);

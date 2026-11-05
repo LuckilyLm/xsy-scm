@@ -32,8 +32,8 @@ import java.util.stream.Collectors;
  * 订单抽屉里的整单粘贴预览。
  *
  * <p>
- * 只负责把粘贴行匹配到商品规格并解析价格，不创建订单；最终仍走 {@link SalesOrderService} 的建单/改单命令， 不绕过定价、改价原因、幂等和数据范围。匹配规则与送货单导入保持一致：商品名称 + 规格 + 单位，
- * 规格为空时要求该名称只对应一个规格。
+ * 只负责把粘贴行匹配到商品规格并解析价格，不创建订单；最终仍走 {@link SalesOrderService} 的建单/改单命令， 不绕过定价、改价原因、防重复处理和数据范围。匹配规则与送货单导入保持一致：商品名称 + 规格 +
+ * 单位， 规格为空时要求该名称只对应一个规格。
  */
 @Service
 @RequiredArgsConstructor
@@ -71,7 +71,7 @@ public class SalesOrderPasteService {
             result.setErrorRows(1);
             return result;
         }
-        // 预览会带出该客户的协议价：与普通价格预览同一口径，客户必须在当前数据范围内
+        // 预览会带出该客户的协议价：与普通价格预览同一套规则，客户必须在当前数据范围内
         customerService.requireInCurrentScope(customer.getId());
 
         var skuByName = loadSkus(rows);

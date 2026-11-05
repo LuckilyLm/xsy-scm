@@ -28,28 +28,28 @@ import java.util.function.BiFunction;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 盘点 Excel「导出快照模板 → 填实盘 → 导回草稿」的 PostgreSQL 集成测试。
+ * 盘点 Excel「导出保存的数据模板 → 填实盘 → 导回草稿」的 PostgreSQL 集成测试。
  *
  * <p>这条链路的两个关键性质在 mock 测试里都验不了，必须在真 PG + 真签名凭证 + 真 Excel 上跑：
  * <ol>
  *   <li><b>导入只建草稿、绝不碰库存</b> —— 成功导入后余额与盘点流水都不变，只有随后的
  *       {@code confirm} 才产生盘盈/盘亏流水。这是「导入≠调整」边界的直接证据；</li>
- *   <li><b>整批拒绝且不留草稿</b> —— 空白实盘 / 篡改凭证 / 混用来源行 / 快照漂移，任一命中都不产生
+ *   <li><b>整批拒绝且不留草稿</b> —— 空白实盘 / 篡改凭证 / 混用来源行 / 保存的数据漂移，任一命中都不产生
  *       草稿（校验全部发生在写库之前，所以共享测试事务里也不会残留半截行）。</li>
  * </ol>
  *
- * <p><b>漂移用例是裁决核心</b>：账面 10 → 导出快照 → 出库 2（版本自增）→
+ * <p><b>漂移用例是裁决核心</b>：账面 10 → 导出保存的数据 → 出库 2（版本自增）→
  * 填实盘导回，即使「当前账面恰好等于要填的实盘」也必须因版本变化整批拒绝，不接受「先校验再保存」竞态。
  *
- * <p><b>为什么每个用例都填写全表实盘量</b>：模板是<b>整仓</b>余额快照，不是「本次这几行」的快照。
- * 本类因此使用自己独占的仓库（覆盖 {@code fixtureWarehouseId()}），快照规模不再受别的测试
+ * <p><b>为什么每个用例都填写全表实盘量</b>：模板是<b>整仓</b>查询时的余额数据，不是「本次这几行」的已存数据。
+ * 本类因此使用自己独占的仓库（覆盖 {@code fixtureWarehouseId()}），保存的数据规模不再受别的测试
  * 在播种仓库里留下的余额行影响 —— 这条链路的签名凭证要为仓库里<b>每条</b>活跃余额带上
  * skuCode / 单位 / 账面量，并被逐行写进模板单元格，而 POI 单元格上限是 32767 字符，
  * 仓库行数不可控就等于凭证长度不可控。
  *
  * <p>独占仓库里仍然可能不止一行（一个用例会备多个 SKU），所以非目标行也必须填合法实盘，
  * 否则会在解析阶段就报 BLANK 而挡住它之后才做的凭证 / 来源核验；会走 {@code confirm} 的成功用例
- * 把非目标行的实盘填成各自的账面快照（差异 0，确认时不产生流水）。断言全部按 SKU 收窄，不用全仓计数。
+ * 把非目标行的实盘填成各自的导出时的账面数据（差异 0，确认时不产生流水）。断言全部按 SKU 收窄，不用全仓计数。
  */
 @DisplayName("盘点 Excel 导入（PG IT）")
 class ScmStocktakeImportPgIT extends ScmW6PgITBase {
@@ -109,8 +109,8 @@ class ScmStocktakeImportPgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 给每个数据行填实盘量：实盘 = {@code actualFor(该行SKU编码, 该行账面快照)}。
-     * 「实盘 = 账面快照」即差异 0，用来把非目标行填成不影响确认的中性行。
+     * 给每个数据行填实盘量：实盘 = {@code actualFor(该行SKU编码, 该行导出时的账面数据)}。
+     * 「实盘 = 导出时的账面数据」即差异 0，用来把非目标行填成不影响确认的中性行。
      */
     private void fillActual(XSSFSheet sheet, BiFunction<String, String, String> actualFor) {
         for (int row = 1; row <= sheet.getLastRowNum(); row++) {
@@ -160,7 +160,7 @@ class ScmStocktakeImportPgIT extends ScmW6PgITBase {
         String targetCode = skuCode(sku);
 
         var template = importService.buildTemplate(wh);
-        // 目标行填实盘 8（差异 −2），其余行填各自账面快照（差异 0）。
+        // 目标行填实盘 8（差异 −2），其余行填各自导出时的账面数据（差异 0）。
         var file = editedFile(template, sheet ->
                 fillActual(sheet, (code, book) -> targetCode.equals(code) ? "8.0000" : book));
 
@@ -174,7 +174,7 @@ class ScmStocktakeImportPgIT extends ScmW6PgITBase {
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("10.0000");
         assertThat(stocktakeMovements(wh, sku)).isEmpty();
 
-        // 确认才是库存的唯一写入者：差异 = 实盘 8 − 账面快照 10 = −2，施加到当前账面 10 → 8。
+        // 确认才是库存的唯一写入者：差异 = 实盘 8 − 导出时的账面数据 10 = −2，施加到当前账面 10 → 8。
         stocktakeService.confirm(result.getStocktakeId());
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("8.0000");
         var movements = stocktakeMovements(wh, sku);
@@ -262,7 +262,7 @@ class ScmStocktakeImportPgIT extends ScmW6PgITBase {
 
         var result = importService.importFile(file, key());
 
-        // 被换上的编码不在快照来源集合内（SOURCE_UNKNOWN），原来源行随之缺失（SOURCE_MISSING）。
+        // 被换上的编码不在保存的数据来源集合内（SOURCE_UNKNOWN），原来源行随之缺失（SOURCE_MISSING）。
         assertThat(codes(result)).contains("SOURCE_UNKNOWN", "SOURCE_MISSING");
         assertThat(result.getStocktakeId()).isNull();
     }
@@ -300,10 +300,10 @@ class ScmStocktakeImportPgIT extends ScmW6PgITBase {
         Long wh = (Long) s[0];
         Long sku = (Long) s[1];
 
-        // 导出快照：账面 10、版本 v。
+        // 导出保存的数据：账面 10、版本 v。
         var template = importService.buildTemplate(wh);
 
-        // 快照之后出库 2 → 账面 8、版本 v+1。填的实盘恰好等于「当前账面 8」，
+        // 保存的数据之后出库 2 → 账面 8、版本 v+1。填的实盘恰好等于「当前账面 8」，
         // 若实现按数量比较就会误放行；按版本判定才能挡住这个竞态。
         inventoryCommandService.postSalesOutbound(new InventoryOutboundFact(
                 wh, sku, 0L, 930001L, new BigDecimal("2.0000"), null,

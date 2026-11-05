@@ -217,7 +217,7 @@ class MallCheckoutServiceTest {
     @Test
     void idempotencyIdentitySurvivesAnAddressEditedByAnotherAccount() {
         // 第一次下单成功后，同一客户的其他采购账号把共享地址改了内容。
-        // 若幂等指纹直接取订单表单（含地址快照），重试时哈希就变了，原订单回放不出来。
+        // 若防重复处理指纹直接取订单表单（含下单时保存的地址），重试时哈希就变了，无法返回原订单。
         when(salesOrderService.replayMallOrder(any(), eq("key"))).thenReturn(Optional.empty());
         when(salesOrderService.createFromMall(any(), any(), eq("key")))
                 .thenReturn(new MallOrderCreationResult(order(), false));
@@ -229,9 +229,9 @@ class MallCheckoutServiceTest {
         ArgumentCaptor<SalesOrderAddForm> forms = ArgumentCaptor.forClass(SalesOrderAddForm.class);
         ArgumentCaptor<Object> requests = ArgumentCaptor.forClass(Object.class);
         verify(salesOrderService, times(2)).createFromMall(forms.capture(), requests.capture(), eq("key"));
-        // 指纹不受地址内容影响：两次请求的幂等身份相同
+        // 指纹不受地址内容影响：两次请求的防重复处理身份相同
         assertThat(requests.getAllValues().get(0)).isEqualTo(requests.getAllValues().get(1));
-        // 而建单用的地址快照确实变了，说明指纹没有跟着地址内容走
+        // 而建单用的下单时保存的地址确实变了，说明指纹没有跟着地址内容走
         assertThat(forms.getAllValues().get(0).getAddress().getReceiverName()).isEqualTo("张三");
         assertThat(forms.getAllValues().get(1).getAddress().getReceiverName()).isEqualTo("李四");
     }
@@ -239,7 +239,7 @@ class MallCheckoutServiceTest {
     @Test
     void alreadySucceededRequestIsReturnedBeforeThePriceCheck() {
         // 第一次下单已成功但响应丢失，客户重试前商品变了价：此时价格指纹与当前价都对不上，
-        // 但幂等预检必须先把原订单还回去，否则客户会收到「价格已变化」而以为没下成。
+        // 但防重复处理预检必须先把原订单还回去，否则客户会收到「价格已变化」而以为没下成。
         when(salesOrderService.replayMallOrder(any(), eq("key")))
                 .thenReturn(Optional.of(new MallOrderCreationResult(order(), true)));
         when(catalogService.visibleProducts(eq(customer), any(), eq(3L), eq(8L)))
@@ -269,7 +269,7 @@ class MallCheckoutServiceTest {
     @Test
     void replayedRequestStillReturnsWhenTheAddressWasDeleted() {
         // 第一次下单成功后，同一客户的其他采购账号把该收货地址删了。
-        // 重试必须先回放原订单；若先读地址，就会抛「地址不存在」，把一笔已成功的订单藏起来。
+        // 重试必须先返回原订单；若先读地址，就会抛「地址不存在」，把一笔已成功的订单藏起来。
         when(salesOrderService.replayMallOrder(any(), eq("key")))
                 .thenReturn(Optional.of(new MallOrderCreationResult(order(), true)));
         when(addressDao.detailById(9L, 3L)).thenReturn(null);
@@ -283,7 +283,7 @@ class MallCheckoutServiceTest {
 
     @Test
     void newRequestStillFailsWhenTheAddressIsGone() {
-        // 幂等预检提前不能把地址校验弄丢：没有已成功的原订单时，地址不存在仍要拒绝
+        // 防重复处理预检提前不能把地址校验弄丢：没有已成功的原订单时，地址不存在仍要拒绝
         when(salesOrderService.replayMallOrder(any(), eq("key"))).thenReturn(Optional.empty());
         when(addressDao.detailById(9L, 3L)).thenReturn(null);
 

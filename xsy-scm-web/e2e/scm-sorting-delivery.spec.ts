@@ -142,7 +142,7 @@ test.describe('scm-delivery', () => {
     adminToken = await login(accounts, accounts.admin);
     api = await apiClient(adminToken);
 
-    // L0：给启用仓库补齐定位。列表接口不返回坐标，因此必须按明细回读才算落库。
+    // L0：给启用仓库补齐定位。列表接口不返回坐标，因此必须按明细回读才算写入数据库。
     const warehouses = await get<Row[]>('/scm/delivery/options/warehouses');
     expect(warehouses.length, '开发库没有启用仓库，无法验收配送 L0').toBeGreaterThan(0);
     const target = warehouses.find((w) => w.warehouseCode === 'WH001') ?? warehouses[0];
@@ -263,7 +263,7 @@ test.describe('scm-delivery', () => {
     /**
      * P1 之后「已确认」不再等于「可配送」：候选要求订单每条有效明细行都被**已完成**的分拣任务覆盖
      * （`docs/decisions.md`「P1 分拣管理裁决」第 11 条与补充第 18 条）。组单夹具因此必须走一遍
-     * 真实分拣命令链（建单 → 录入 → 完成），不能靠改订单状态糊过去 —— 那正是被验收的口径本身。
+     * 真实分拣命令链（建单 → 录入 → 完成），不能靠改订单状态糊过去 —— 那正是被验收的规则本身。
      */
     async function sortingCompleted(detail: Row) {
       const itemIds = (detail.items as Row[]).map((i) => Number(i.itemId));
@@ -324,7 +324,7 @@ test.describe('scm-delivery', () => {
     expect(geoless.cityName, '省市区归属与坐标是两件事，解析不出坐标也仍应有归属').toBe('杭州市');
   });
 
-  test('2｜L1 司机与车辆在主档页新建并落库，重复编码被服务端拒绝', async ({page}) => {
+  test('2｜L1 司机与车辆在主档页新建并写入数据库，重复编码被服务端拒绝', async ({page}) => {
     await authenticate(page, adminToken);
 
     await page.goto('/#/delivery/drivers');
@@ -361,7 +361,7 @@ test.describe('scm-delivery', () => {
     // 由临时账号脚本决定，不该用文案去猜），页面这一段只验新行确实出现在主档列表里。
 
     const drivers = await get<Row>(`/scm/delivery/drivers?keyword=${driverCodeUpper}&pageNum=1&pageSize=20`);
-    expect(drivers.list, '司机必须真的落库').toHaveLength(1);
+    expect(drivers.list, '司机必须真的写入数据库').toHaveLength(1);
     driverId = String(drivers.list[0].id);
     expect(drivers.list[0].status).toBe('ENABLED');
     expect(drivers.list[0].employeeId, '启用司机必须带上绑定的员工 id').toBeTruthy();
@@ -400,7 +400,7 @@ test.describe('scm-delivery', () => {
     expect(duplicate.code, '重复司机编码必须由服务端挡住').toBe(41106);
   });
 
-  test('3｜L2 页面新建草稿线路并快照仓库起点坐标', async ({page}) => {
+  test('3｜L2 页面新建草稿线路并保存的数据仓库起点坐标', async ({page}) => {
     await authenticate(page, adminToken);
     await page.goto('/#/delivery/routes');
     await expect(page.locator('#scm-delivery-route-table')).toBeVisible();
@@ -464,7 +464,7 @@ test.describe('scm-delivery', () => {
       version: await routeVersion(),
     });
     const assigned = await route();
-    expect(assigned.driverId != null, '司机/车辆可稍后分配，但分配后必须落库').toBeTruthy();
+    expect(assigned.driverId != null, '司机/车辆可稍后分配，但分配后必须写入数据库').toBeTruthy();
     expect(assigned.vehicleId != null).toBeTruthy();
   });
 
@@ -553,7 +553,7 @@ test.describe('scm-delivery', () => {
 
     const located = await detail();
     const patched = located.stops.find((s: Row) => s.geomCrs === 'GCJ02' && String(s.longitude ?? '').includes('113.946'));
-    expect(patched, '页面补的坐标必须落库').toBeTruthy();
+    expect(patched, '页面补的坐标必须写入数据库').toBeTruthy();
     expect((await route()).locatedCount).toBe(3);
   });
 
@@ -681,13 +681,13 @@ test.describe('scm-delivery-l3', () => {
   /**
    * P2 物流配送 L3 的浏览器整链验收：
    * 备货 → 订单 → 分拣完成（其中一张少拣）→ 组单 → 确认规划 → **发车** → 出库单与 SALES_OUT 取证 →
-   * 签收 / 异常签收 → 完成线路，再加四条「页面照样能跑、事实却错了」的负向。
+   * 签收 / 异常签收 → 完成线路，再加四条「页面照样能跑、记录却错了」的负向。
    *
    * 为什么必须跑整链而不是只看接口码：
    * 1. 实发量必须来自分拣的 {@code sorted_quantity}。两张订单刻意给不同实发量（3 与 2），
    *    再从余额与流水反推 —— 若发车偷偷回读订单行的 {@code actual_quantity}，余额差就对不上，
    *    而接口一路返回成功。
-   * 2. 发车只产生一份事实：同键重放、以及对已 DISPATCHED 线路再发一次，都不许追加出库单或二次扣账。
+   * 2. 发车只产生一份记录：同键重放、以及对已 DISPATCHED 线路再发一次，都不许追加出库单或二次扣账。
    * 3. 发车与分拣重开互斥要双向验（重开后整线拒发、发车后任务不能重开）；
    *    这条守卫跨 sorting / delivery / inventory 三个模块。
    * 4. 取证照落在非超管账号上：没有仓库授权的调度不能发车，司机不能签别人的线路。
@@ -925,7 +925,7 @@ test.describe('scm-delivery-l3', () => {
     expect(sortedB.task.status).toBe('COMPLETED');
     const activeB = (sortedB.items as Row[]).filter((i) => i.occupationStatus === 'ACTIVE');
     expect(activeB.length, '任务里应有一条活动明细').toBe(1);
-    expect(Number(activeB[0].sortedQuantity), '少拣事实必须落在分拣行上，发车才有唯一来源').toBe(2);
+    expect(Number(activeB[0].sortedQuantity), '少拣记录必须落在分拣行上，发车才有唯一来源').toBe(2);
     expect(activeB[0].result).toBe('SHORT');
   });
 
@@ -953,7 +953,7 @@ test.describe('scm-delivery-l3', () => {
     expect(route.status).toBe('DISPATCHED');
     expect(Number(route.outboundId)).toBe(outboundId);
     expect(route.outboundNo, '线路详情要能直接读回出库单号').toBeTruthy();
-    expect(route.dispatchedAt, '发车时点与操作人成对落库').toBeTruthy();
+    expect(route.dispatchedAt, '发车时点与操作人成对写入数据库').toBeTruthy();
     expect(route.dispatchedBy).toBeTruthy();
 
     expect(before - (await balanceQuantity()), `扣的必须是分拣实发量 ${SHIPPED}（3 + 2），不是订单行数量 6`).toBe(SHIPPED);
@@ -969,17 +969,17 @@ test.describe('scm-delivery-l3', () => {
       expect((await orderOnRoute(orderId)).fulfillmentStatus, '发车把活动订单全部推进在途').toBe('IN_TRANSIT');
     }
 
-    // 同一把键 + 同一份载荷必须走回放分支：拿回同一张出库单，账上不再动一次。
+    // 同一把键 + 同一份载荷必须走历史记录查询分支：拿回同一张出库单，账上不再动一次。
     // 真实客户端的重试就是 axios 原样重发，所以载荷复用同一个对象，不重新读 version。
     const afterFirst = await balanceQuantity();
     const replay = await ok<Row>(dispatcher, 'post', `/scm/delivery/routes/${routeId}/dispatch`, body, dispatchKey);
     expect(Number(replay.outboundId), '重放不能再生成一张出库单').toBe(outboundId);
-    // 基线是**首发之后**的余额：首发扣掉 5 是事实，重放必须在同一个数上不动。
+    // 基线是**首发之后**的余额：首发扣掉 5 是记录，重放必须在同一个数上不动。
     expect(await balanceQuantity(), '重放不再扣账').toBe(afterFirst);
     expect(afterFirst, '首发只扣了一个实发量合计').toBe(before - SHIPPED);
   });
 
-  test('4｜重复发车：同键回放同一张出库单，换键再发被状态拒绝，账上不多一份', async () => {
+  test('4｜重复发车：同编号重复请求返回原结果同一张出库单，换键再发被状态拒绝，账上不多一份', async () => {
     const before = await balanceQuantity();
     const again = await envelope(`/scm/delivery/routes/${routeId}/dispatch`, {version: await routeVersion()}, dispatcher);
     expect(again.code, '已发车线路换一把键也不能再发一次').toBe(41101);
@@ -1025,7 +1025,7 @@ test.describe('scm-delivery-l3', () => {
     expect(route.completedAt).toBeTruthy();
     expect(route.completedBy).toBeTruthy();
     expect((await orderOnRoute(orderA)).fulfillmentStatus).toBe('SIGNED');
-    expect(await balanceQuantity(), '签收与完成都不产生库存事实').toBe(balanceAfterStock - SHIPPED);
+    expect(await balanceQuantity(), '签收与完成都不产生库存记录').toBe(balanceAfterStock - SHIPPED);
   });
 
   test('6｜发车后不可逆：线路不能取消，订单也不能被摘掉', async () => {
@@ -1039,7 +1039,7 @@ test.describe('scm-delivery-l3', () => {
       randomUUID(),
       'delete'
     );
-    expect(remove.code, '线路上的订单归属在发车后不可变更').toBe(41101);
+    expect(remove.code, '线路上的订单归属在发车后不可修改更').toBe(41101);
     expect((await ordersOnRoute()).length).toBe(2);
   });
 
@@ -1115,11 +1115,11 @@ test.describe('scm-delivery-l3', () => {
 test.describe('scm-delivery-print', () => {
   /*
     Wave 5 配送打印追踪 E2E：自建线路 → 挂单 → 补坐标 → 规划，再验证双只读视角、GET 预览不计次、
-    正式登记计次与幂等、按客户 PARTIAL 只补未打印订单，以及缺权限账号被服务端拒。
+    正式登记计次与防重复处理、按客户 PARTIAL 只补未打印订单，以及缺权限账号被服务端拒。
 
     原先这组用例靠外部注入的一次性管理员令牌门控（缺令牌即整组 skip），于是「文件存在」被当成了
     「场景已验收」；现在它自建临时账号与线路，收尾取消线路把订单退回候选池并删除账号。
-    口径按 §1.2 钉死：打印只登记计次，绝不等于发货确认，也不扣减库存。
+    规则按 §1.2 钉死：打印只登记计次，绝不等于发货确认，也不扣减库存。
   */
 
   type Row = Record<string, any>;
@@ -1224,7 +1224,7 @@ test.describe('scm-delivery-print', () => {
       reason: 'E2E 挂单',
     });
 
-    // 挂单时停靠点沿用订单地址快照；历史订单多数没有坐标，这里走真实的选点写入路径补齐。
+    // 挂单时停靠点沿用订单下单时保存的地址；历史订单多数没有坐标，这里走真实的选点写入路径补齐。
     const stops: Row[] = (await get(`/scm/delivery/routes/${routeId}`)).stops;
     expect(stops.length, '挂单后应按客户生成停靠点').toBe(2);
     for (const [index, stop] of stops.entries()) {
@@ -1250,7 +1250,7 @@ test.describe('scm-delivery-print', () => {
     }
   });
 
-  test('只读视角与 GET 预览都不计次，客户聚合与订单事实同源', async () => {
+  test('只读视角与 GET 预览都不计次，客户聚合与订单记录同源', async () => {
     const before = await ordersView();
     expect(before.length).toBe(3);
     for (const row of before) expect(['PRINTED', 'UNPRINTED']).toContain(row.printStatus);
@@ -1268,7 +1268,7 @@ test.describe('scm-delivery-print', () => {
     }
   });
 
-  test('按订单登记：只有提交的订单计次，同幂等键重放不再累加，越界订单被拒', async () => {
+  test('按订单登记：只有提交的订单计次，同防重复请求编号重放不再累加，越界订单被拒', async () => {
     const [first, second] = picked;
     const before = await ordersView();
     const key = randomUUID();
@@ -1392,7 +1392,7 @@ test.describe('scm-delivery-print', () => {
     const detailPage = page.locator('.route-detail-page');
     const pane = detailPage.locator('.ant-tabs-tabpane-active');
     await detailPage.getByRole('tab', {name: accessibleName('配送打印')}).click();
-    // 打印面板就位：默认「按订单」视角（原常驻口径说明已按文案治理删除，语义由下面的接口计数断言承载）
+    // 打印面板就位：默认「按订单」视角（原常驻规则说明已按文案治理删除，语义由下面的接口计数断言承载）
     await expect(pane.getByText('按订单', {exact: true}).first()).toBeVisible();
     // 默认「按订单」视角：未勾选任何行时登记按钮必须禁用，避免无选择地重打整条线路
     const record = pane.getByRole('button', {name: /^生\s*成\s*打\s*印/});
@@ -1458,8 +1458,8 @@ test.describe('scm-delivery-print', () => {
 // ---------------------------------------------------------------- 来源：e2e/scm-sorting.spec.ts
 test.describe('scm-sorting', () => {
   /*
-    P1 分拣管理的浏览器验收（主线计划 P1「完成标准」：按订单与按商品同一套事实、不直接修改库存、
-    分拣结果可稳定供 Delivery L3 使用、重复生成不产生重复业务事实、正式分拣角色可完整使用）。
+    P1 分拣管理的浏览器验收（主线计划 P1「完成标准」：按订单与按商品同一套记录、不直接修改库存、
+    分拣结果可稳定供 Delivery L3 使用、重复生成不产生重复业务记录、正式分拣角色可完整使用）。
 
     四条边界各自都有正反两侧的取证：
       * 不回写订单（实发量与结算额逐字段比对基线）、不写库存（流水总数前后不变）；
@@ -1643,7 +1643,7 @@ test.describe('scm-sorting', () => {
     expect(rejected.code, '组单侧必须给出可分辨的「不符合配送条件」').toBe(41102);
   });
 
-  test('主管在页面上建单并派给分拣员，任务以 PENDING 落库', async ({page}) => {
+  test('主管在页面上建单并派给分拣员，任务以 PENDING 写入数据库', async ({page}) => {
     authenticate(page, leadToken);
     await page.goto('/#/sorting/tasks');
     await button(page, '新建分拣任务').click();
@@ -1828,7 +1828,7 @@ test.describe('scm-sorting', () => {
     expect(Number(after.task.version), '打印不改版本，否则会把别人的编辑顶成假冲突').toBe(Number(before.task.version));
   });
 
-  test('按商品汇总是同一套事实的只读视角，页面不提供任何录入口', async ({page}) => {
+  test('按商品汇总是同一套记录的只读视角，页面不提供任何录入口', async ({page}) => {
     authenticate(page, leadToken);
     await page.goto('/#/sorting/summary');
     await expect(page.locator('.ant-table-tbody')).toContainText('kg', {timeout: 20000});
@@ -1844,7 +1844,7 @@ test.describe('scm-sorting', () => {
     const summary = await ok<Paged>(leadClient, 'get', '/scm/sorting/summary?pageNum=1&pageSize=100');
     const row = summary.list.find((r) => Number(r.skuId) === Number(skuId) && String(r.saleUnitSnapshot) === 'kg' && Number(r.lineCount) >= 2);
     expect(row, '两句任务应在汇总里并成一行同单位的聚合').toBeTruthy();
-    // 汇总量与逐行事实必须一致：同一 SKU + 单位下，计划合计 = 各行计划量之和。
+    // 汇总量与逐行记录必须一致：同一 SKU + 单位下，计划合计 = 各行计划量之和。
     const items = (await taskPage(leadClient)).list.filter((t) => Number(t.warehouseId) === warehouseId);
     const lines = [];
     for (const task of items) {

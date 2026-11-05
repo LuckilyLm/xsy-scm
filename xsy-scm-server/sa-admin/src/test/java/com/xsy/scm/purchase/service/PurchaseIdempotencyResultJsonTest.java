@@ -12,19 +12,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 幂等结果的持久化编解码（被测：{@code PurchaseIdempotencyService#RESULT_JSON}）。
+ * 防重复处理结果的持久化编解码（被测：{@code PurchaseIdempotencyService#RESULT_JSON}）。
  *
- * <p>测的是「写出去再读回来是否无损」，因为幂等重放的契约是「返回首次的真实结果」
+ * <p>测的是「写出去再读回来是否无损」，因为重复请求返回原结果的约定是「返回首次的真实结果」
  * 而不是「返回一个大致相同的对象」。
  *
  * <p>测试放在 {@code ...purchase.service} 子包：被测的 mapper 保持包私有
  * （它是这个服务的内部实现细节，不是给外部用的 API）。
  */
-@DisplayName("W6 幂等结果持久化编解码（单元）")
+@DisplayName("W6 防重复处理结果持久化编解码（单元）")
 class PurchaseIdempotencyResultJsonTest {
 
     /**
-     * 覆盖幂等结果里会出现的全部类型形状：带时区时间 / null 时间 / 字符串 / 定点数 / 布尔。
+     * 覆盖防重复处理结果里会出现的全部类型形状：带时区时间 / null 时间 / 字符串 / 定点数 / 布尔。
      *
      * <p>用 record 而不是 Map：Jackson 对 record 走「构造器反序列化」，
      * 与 VO 的反序列化路径最接近，能真实暴露「字段名对不上」「类型不可构造」这类问题。

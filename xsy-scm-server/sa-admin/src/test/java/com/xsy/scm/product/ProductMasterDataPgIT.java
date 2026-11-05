@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.*;
 
 /**
  * 商品主档增强：单位与标签字典、删除保护、批量维护与高级筛选。
- * 用例只覆盖主数据侧的口径，订单与采购写入路径的既有行为由 {@link ProductPgIT} 守住了事实验证。
+ * 用例只覆盖主数据侧的规则，订单与采购写入路径的既有行为由 {@link ProductPgIT} 守住了记录验证。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
         "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
@@ -271,7 +271,7 @@ class ProductMasterDataPgIT {
         jdbc.update("INSERT INTO xsy_customer_agreement_price(customer_id,sku_id,unit_price,effective_from,created_by) VALUES (?,?,1.5,?,?)",
                 1L, skuId(priced), OffsetDateTime.now(), "pco1-it");
         conflict(() -> service.delete(deletion(priced)), PRODUCT_BUSINESS_REFERENCED);
-        // 撤销价格行也不解锁：删除保护看的是「是否产生过事实」，不是「现在还挂着价格」。
+        // 撤销价格行也不解锁：删除保护看的是「是否产生过记录」，不是「现在还挂着价格」。
         jdbc.update("UPDATE xsy_customer_agreement_price SET deleted=TRUE WHERE sku_id=?", skuId(priced));
         conflict(() -> service.delete(deletion(priced)), PRODUCT_BUSINESS_REFERENCED);
     }
@@ -282,7 +282,7 @@ class ProductMasterDataPgIT {
     @Test
     void supplierRelationDoesNotBlockProductDeletion() {
         Long linked = service.add(product("kg"));
-        // 本库不建外键，关联行只需存在即可验证删除口径，不依赖 supplier 种子数据。
+        // 本库不建外键，关联行只需存在即可验证删除规则，不依赖 supplier 种子数据。
         jdbc.update("INSERT INTO xsy_supplier_sku(supplier_id,sku_id,supplier_code_snapshot,supplier_name_snapshot,sku_code_snapshot,sku_name_snapshot,purchase_unit) "
                 + "VALUES (999999,?, 'S-IT','IT 供应商','SKU','IT 规格','kg')", skuId(linked));
         service.delete(deletion(linked));

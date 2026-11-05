@@ -142,12 +142,12 @@ class ScmInventoryStocktakeRollbackIT extends ScmW6PgITBase {
 
         InventoryStocktakeAddForm form = new InventoryStocktakeAddForm();
         form.setWarehouseId(wh);
-        // 账面快照 10、实盘 0 → delta = −10；账面就是 10 → after = 0，正好不越界。
+        // 导出时的账面数据 10、实盘 0 → delta = −10；账面就是 10 → after = 0，正好不越界。
         // 为了构造「推成负数」，先把账面降到 3（出库 7），再盘亏到 0 → after = 3 − 10 = −7。
         form.setItems(new ArrayList<>(List.of(item(sku, "0.0000"))));
         Long id = stocktakeService.create(form);
 
-        // 确认之前出库 7 → 确认瞬间账面 3，delta 仍以快照 10 为基线 = −10 → after = −7
+        // 确认之前出库 7 → 确认瞬间账面 3，delta 仍以保存的数据 10 为基线 = −10 → after = −7
         jdbc.update("UPDATE xsy_inventory_balance SET quantity = 3 WHERE warehouse_id = ? AND sku_id = ?",
                 wh, sku);
         evictMybatisCache();

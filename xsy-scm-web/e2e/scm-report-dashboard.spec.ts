@@ -76,7 +76,7 @@ test.describe('scm-dashboard-todo', () => {
 
   /**
    * 取页面**自己发出的**列表查询条件：POST 读请求体、GET 读 query。
-   * 断言这个而不是 DOM 上的选中态，才能证明 URL 条件真的进了后端查询口径。
+   * 断言这个而不是 DOM 上的选中态，才能证明 URL 条件真的进了后端查询规则。
    */
   async function firedQuery(page: Page, path: string, method: 'get' | 'post'): Promise<Row> {
     // Playwright 的 Request.method() 是大写动词，直接和小写字面量比会永远等不到
@@ -194,7 +194,7 @@ test.describe('scm-dashboard-todo', () => {
       const queryString = new URLSearchParams(Object.entries(query).map(([key, value]) => [key, String(value)]));
       const total =
         target.method === 'get' ? (await get<Row>(`${target.queryPath}?${queryString}`)).total : (await post(target.queryPath, query)).total;
-      // 同一条筛选口径算出来的两个数：待办不是第二套统计
+      // 同一条筛选规则算出来的两个数：待办不是第二套统计
       expect(Number(total), `${card.key} 待办数字应等于列表 total`).toBe(Number(card.count));
     }
     // 本组造的单据让上面那条断言不再是 0 == 0
@@ -273,7 +273,7 @@ test.describe('scm-dashboard-todo', () => {
     );
     expect((await get(`/scm/inventory/loss-gain/detail/${lossGainId}`)).status).toBe('REJECTED');
 
-    // 消息落库必须带 messageType + dataId：前端据此决定跳转，解析标题只是文案
+    // 消息写入数据库必须带 messageType + dataId：前端据此决定跳转，解析标题只是文案
     const messages = await post<Row>('/support/message/queryMyMessage', {pageNum: 1, pageSize: 10, searchWord: lossGainNo});
     const message = (messages.list as Row[]).find((m) => String(m.dataId) === lossGainId);
     expect(message, '驳回后应给录单人留一条带 dataId 的消息').toBeTruthy();
@@ -314,11 +314,11 @@ test.describe('scm-report', () => {
   /*
     Finance 报表中心浏览器场景。
 
-    口径：报表页是只读层，因此本 spec 的断言重点是「数字来自哪个事实」而不是「页面好不好看」：
+    规则：报表页是只读层，因此本 spec 的断言重点是「数字来自哪个记录」而不是「页面好不好看」：
     - 销售只计 CONFIRMED + confirmed_at + settlement_*，草稿与取消单一律不进；
     - 采购只计提交后的四态，草稿与取消单不进；
-    - 收货确认（商业事实）与库存入账（PURCHASE_IN 流水）是两条生命周期，必须能分别看到；
-    - 成本金额来自流水冻结的 unit_cost，不是当前 avg_cost 回算；
+    - 收货确认（商业记录）与库存入账（PURCHASE_IN 流水）是两条生命周期，必须能分别看到；
+    - 成本金额来自流水保存的 unit_cost，不是当前 avg_cost 回算；
     - 无权限账号必须在服务端被拒（前端隐藏按钮不算防线）。
 
     夹具走真实领域流程（采购单 → 收货 → 入库），不直接改库：
@@ -332,7 +332,7 @@ test.describe('scm-report', () => {
   const env = {...process.env, W6_E2E_NAME: name, W6_E2E_PASSWORD: password};
   // 报表按业务日界（Asia/Shanghai）取窗口：toISOString() 给的是 UTC 日期，
   // 在 UTC 16:00 之后跑用例时，当天确认的订单其 confirmed_at（东八区）已落在「明天」，
-  // 窗口就会把这条事实正当排除，表现为 0 行的假失败。
+  // 窗口就会把这条记录正当排除，表现为 0 行的假失败。
   const today = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Asia/Shanghai'}).format(new Date());
 
   function shiftBusinessDate(value: string, days: number) {
@@ -536,7 +536,7 @@ test.describe('scm-report', () => {
         address: '验收地址',
       })
     );
-    // 采购单要求供应商已启用该 SKU 的采购配置（40992），否则采购事实根本不成立
+    // 采购单要求供应商已启用该 SKU 的采购配置（40992），否则采购记录根本不成立
     await post('/scm/supplier/sku/replace', {
       supplierId,
       items: [{skuId, purchaseUnit: 'kg', defaultFlag: true, status: 'ENABLED'}],
@@ -552,13 +552,13 @@ test.describe('scm-report', () => {
     // 同一个标签会同时出现在指标卡、趋势说明与表头，因此断言存在而不是唯一
     await expect(page.getByText('已确认订单金额', {exact: true}).filter({visible: true}).first()).toBeVisible();
     await expect(page.getByText('当前库存账面金额', {exact: true}).filter({visible: true}).first()).toBeVisible();
-    // R0 没有签收 / 收款事实，出现这些名字就是把承诺说成已实现
+    // R0 没有签收 / 收款记录，出现这些名字就是把承诺说成已实现
     for (const banned of ['营业收入', '销售收入', '实收金额', '应收', '应付', '毛利']) {
       await expect(page.getByText(banned, {exact: true})).toHaveCount(0);
     }
   });
 
-  test('1b 五张报表页逐个打开：0 pageerror 且各自的口径标题在位', async ({page}) => {
+  test('1b 五张报表页逐个打开：0 pageerror 且各自的规则标题在位', async ({page}) => {
     // 逐页打开而不是只测首页：动态菜单没配好时页面会静默 404，接口全绿也发现不了
     const pages: Array<[string, string]> = [
       ['/report/report-overview-list', '已确认订单金额'],
@@ -627,7 +627,7 @@ test.describe('scm-report', () => {
 
     const kpi = await report('overview');
     expect(kpi.confirmedOrderCount).toBeGreaterThanOrEqual(1);
-    // 每日统计的每一行之和必须等于指标卡：两处是同一 SQL 口径，不是第二次计算
+    // 每日统计的每一行之和必须等于指标卡：两处是同一 SQL 规则，不是第二次计算
     const daily = await report('overview/daily');
     const dailyAmount = (daily.list ?? daily).reduce((sum: number, r: any) => sum + Number(r.confirmedOrderAmount ?? 0), 0);
     expect(dailyAmount).toBeCloseTo(Number(kpi.confirmedOrderAmount), 4);
@@ -651,7 +651,7 @@ test.describe('scm-report', () => {
     await expect(page.getByText('下单时结算方式', {exact: true})).toBeVisible();
   });
 
-  test('3 采购报表只计提交后的采购事实', async ({page}) => {
+  test('3 采购报表只计提交后的采购记录', async ({page}) => {
     // 采购单草稿态已下线：创建即提交，立即进入采购报表。
     await post('/scm/purchase/create', {
       supplierId,
@@ -735,7 +735,7 @@ test.describe('scm-report', () => {
     const inbound = (await report('inbound/query', {keyword: receipt.receiptNo})).list;
     expect(inbound).toHaveLength(1);
     expect(inbound[0].quantity).toBe('7.0000');
-    // 入库成本按流水冻结的 unit_cost，而不是当前 avg_cost 回算
+    // 入库成本按流水保存的 unit_cost，而不是当前 avg_cost 回算
     expect(Number(inbound[0].costAmount)).toBeCloseTo(Number(inbound[0].quantity) * Number(inbound[0].unitCost), 4);
   });
 
@@ -755,7 +755,7 @@ test.describe('scm-report', () => {
       if (row.unitCost !== null) {
         expect(Number(row.costAmount)).toBeCloseTo(Number(row.quantity) * Number(row.unitCost), 4);
       }
-      // 快照等式是方向唯一的真相来源，报表不得自己另算一套
+      // 保存的数据等式是方向唯一的真相来源，报表不得自己另算一套
       expect(Number(row.afterQuantity)).toBeCloseTo(Number(row.beforeQuantity) + Number(row.quantity), 4);
     }
   });
@@ -814,7 +814,7 @@ test.describe('scm-report', () => {
     }
   });
 
-  test('11 采购每日清单保留下单快照并完成查询、筛选、分页与导出', async ({page}) => {
+  test('11 采购每日清单保留下单保存的数据并完成查询、筛选、分页与导出', async ({page}) => {
     const reportDates = w6Fixture('unused-report-dates', ['--count', '2']).split(/\r?\n/).filter(Boolean);
     expect(reportDates).toHaveLength(2);
     const [emptyDate, dataDate] = reportDates;

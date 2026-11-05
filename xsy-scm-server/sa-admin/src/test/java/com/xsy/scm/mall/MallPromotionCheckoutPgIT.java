@@ -65,11 +65,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * 商城营销优惠「领券 → 结算预览 → 下单 → 后台确认 → 客户查看优惠结果」的完整闭环（真实 PostgreSQL + 真实服务）。
  *
  * <p>
- * 这条链把 MKT-01~05 的关键口径一次钉死：
+ * 这条链把 MKT-01~05 的关键规则一次钉死：
  * <ul>
  * <li><b>预览不占用</b>：结算预览带券只做试算，券实例必须仍为 {@code AVAILABLE}；</li>
- * <li><b>下单不冻结</b>：下单把预选券写到订单上，冻结只发生在后台确认命令内；</li>
- * <li><b>确认才冻结</b>：确认成功后券转 {@code RESERVED}，并落 {@code order_discount} 正式优惠事实；</li>
+ * <li><b>下单不保存</b>：下单把预选券写到订单上，保存只发生在后台确认命令内；</li>
+ * <li><b>确认才保存</b>：确认成功后券转 {@code RESERVED}，并落 {@code order_discount} 正式优惠记录；</li>
  * <li><b>客户可见</b>：客户侧订单详情能读到优惠金额与券名，金额与后台一致。</li>
  * </ul>
  */
@@ -190,18 +190,18 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         assertThat(preview.getPromotion().getCouponInstanceId()).isEqualTo(instanceId);
         assertThat(instanceStatus(instanceId)).as("预览不得占用券").isEqualTo("AVAILABLE");
 
-        // 5. 下单携带预选券：写入订单，但券仍不被冻结
+        // 5. 下单携带预选券：写入订单，但券仍不被保存
         MallOrderSubmitForm submitForm = submitForm(skuId, addressId, preview.getPriceFingerprint());
         submitForm.setCouponInstanceId(instanceId);
         var submitted = mallCheckoutService.submit(customer, submitForm, prefix + ":submit");
         assertThat(submitted.getStatus()).isEqualTo("PENDING");
         assertThat(jdbc.queryForObject("SELECT mall_coupon_instance_id FROM xsy_sales_order WHERE id = ?",
                 Long.class, submitted.getOrderId())).isEqualTo(instanceId);
-        assertThat(instanceStatus(instanceId)).as("下单不冻结券，冻结只在确认命令内").isEqualTo("AVAILABLE");
+        assertThat(instanceStatus(instanceId)).as("下单不保存券，保存只在确认命令内").isEqualTo("AVAILABLE");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_order_discount WHERE sales_order_id = ?",
-                Integer.class, submitted.getOrderId())).as("下单阶段不得产生优惠事实").isZero();
+                Integer.class, submitted.getOrderId())).as("下单阶段不得产生优惠记录").isZero();
 
-        // 6. 后台确认：非标品先录实重，再确认（确认命令内冻结优惠）
+        // 6. 后台确认：非标品先录实重，再确认（确认命令内已确认优惠）
         asAdmin();
         SalesOrderDetailVO order = salesOrderQueryService.detail(submitted.getOrderId());
         OrderActualQuantityForm actual = new OrderActualQuantityForm();
@@ -221,7 +221,7 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
                 submitted.getOrderId())).isEqualTo("CONFIRMED");
         assertThat(instanceStatus(instanceId)).as("确认后券被占用为 RESERVED").isEqualTo("RESERVED");
         assertThat(jdbc.queryForObject("SELECT coupon_instance_id FROM xsy_order_discount WHERE sales_order_id = ?",
-                Long.class, submitted.getOrderId())).as("确认后落正式优惠事实并绑定券实例").isEqualTo(instanceId);
+                Long.class, submitted.getOrderId())).as("确认后落正式优惠记录并绑定券实例").isEqualTo(instanceId);
 
         // 7. 客户侧订单详情：能看到优惠金额与券名，且与后台一致
         SmartRequestUtil.setRequestUser(customer);
@@ -279,7 +279,7 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("余额订单确认不受零授信阻断；本阶段仍不产生钱包扣款事实")
+    @DisplayName("余额订单确认不受零授信阻断；本阶段仍不产生钱包扣款记录")
     void walletConfirmationDoesNotUseCreditApproval() {
         Long skuId = newOnShelfSku("wallet");
         Long customerId = newCustomer();
@@ -320,7 +320,7 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
     void creditConfirmationUsesTheNetAmountFrozenInTheSameCommand() {
         Long skuId = newOnShelfSku("mkt-credit");
         Long customerId = newCustomer();
-        // 额度 2.0000：够付优惠后 1.9000，不够付优惠前 2.4000 —— 优惠越大，旧口径挡得越狠
+        // 额度 2.0000：够付优惠后 1.9000，不够付优惠前 2.4000 —— 优惠越大，旧规则挡得越狠
         jdbc.update("UPDATE xsy_customer SET credit_limit = 2.0000 WHERE id = ?", customerId);
         evictMybatisCache();
         Long couponId = activeClaimableCoupon("MKT-CREDIT", "0.5000");
@@ -343,7 +343,7 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         confirm.setOrderId(orderId);
         confirm.setVersion(weighted.getVersion());
         assertThat(salesOrderService.confirm(confirm, prefix + ":credit-confirm").getStatus())
-                .as("确认按同一命令内冻结出来的净额 1.9000 判定，而不是优惠前毛额 2.4000")
+                .as("确认按同一命令内保存出来的净额 1.9000 判定，而不是优惠前毛额 2.4000")
                 .isEqualTo("CONFIRMED");
         assertThat(jdbc.queryForObject("SELECT settlement_total_amount FROM xsy_sales_order WHERE id = ?",
                 BigDecimal.class, orderId)).as("订单上的结算额仍然是优惠前毛额").isEqualByComparingTo("2.4000");

@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 供应商端点契约测试。
+ * 供应商端点约定检查。
  */
 @WebMvcTest(SupplierController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -115,7 +115,7 @@ class SupplierControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0));
 
-        // 契约层面证明：SupplierUpdateForm 及其父类都没有 status 属性
+        // 约定层面证明：SupplierUpdateForm 及其父类都没有 status 属性
         List<String> fieldNames = new java.util.ArrayList<>();
         for (Class<?> clazz = SupplierUpdateForm.class; clazz != null && clazz != Object.class; clazz = clazz.getSuperclass()) {
             Arrays.stream(clazz.getDeclaredFields()).map(Field::getName).forEach(fieldNames::add);

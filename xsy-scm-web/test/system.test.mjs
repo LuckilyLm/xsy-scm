@@ -1,5 +1,5 @@
 /**
- * 系统与横切规则模块契约测试。
+ * 系统与横切规则模块约定检查。
  *
  * 由 11 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -49,10 +49,10 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 // ---------------------------------------------------------------- 来源：scm-area.test.mjs
 {
   /*
-   * 省 / 市 / 区路径 ↔ 六列快照转换单测（地图 M0）
+   * 省 / 市 / 区路径 ↔ 六列保存的数据转换单测（地图 M0）
    *
    * 覆盖两条会静默写错数据的规则：
-   * 1. 名称快照必须来自同一次选择的节点，且清空选择要把六列整体归 null，不能只清编码；
+   * 1. 当时的名称必须来自同一次选择的节点，且清空选择要把六列整体归 null，不能只清编码；
    * 2. 回填给 `a-cascader` 的必须是一条连续路径——缺市就停在省，不能拼出「省 + 空 + 区」。
    */
 
@@ -93,7 +93,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     assert.deepEqual(areaNodesOf(areaColumnsOf(PATH)), PATH);
     assert.deepEqual(areaNodesOf({provinceCode: 330000, provinceName: '浙江省', districtCode: 330106, districtName: '西湖区'}), [PATH[0]]);
     assert.deepEqual(areaNodesOf(null), []);
-    // 名称快照缺失时该级不可信，从该级截断（大屏按 city_code 聚合，与是否回填无关）。
+    // 当时的名称缺失时该级不可信，从该级截断（大屏按 city_code 聚合，与是否回填无关）。
     assert.deepEqual(areaNodesOf({provinceCode: 330000, provinceName: '浙江省', cityCode: 330100}), [PATH[0]]);
   });
 }
@@ -101,7 +101,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 // ---------------------------------------------------------------- 来源：scm-comment-noise-contract.test.mjs
 {
   /**
-   * SCM 生产源码注释噪声契约。
+   * SCM 生产源码注释噪声约定。
    *
    * 只约束开发过程标记（来源 / 复制日期 / 波次 / 阶段号 / 批次号 / 计划章节号 / 「新增文件」），
    * 不限制注释长度 —— 长度是审计信号，`longCommentCount` 只输出报告。
@@ -126,13 +126,13 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     },
     {
       // 测试源码只扫注释（`commentsOf` 对 `.mjs` 走 `codeComments`，天然跳过字符串、
-      // 模板串与正则字面量），因此测试名、断言、正则与内联快照都不在射程内。
-      // 但契约测试自身必须排除：它把标记模式写成注释与正则字面量，扫自己必然自证违规。
+      // 模板串与正则字面量），因此测试名、断言、正则与内联保存的数据都不在射程内。
+      // 但约定检查自身必须排除：它把标记模式写成注释与正则字面量，扫自己必然自证违规。
       key: 'xsy-scm-web/test',
       root: `${REPO}xsy-scm-web/test`,
       extensions: new Set(['.mjs']),
       excludedFiles: new Set([
-        // 文案契约与注释契约合并进了 system.test.mjs：它们把标记模式写成注释与正则字面量，
+        // 文案约定与注释约定合并进了 system.test.mjs：它们把标记模式写成注释与正则字面量，
         // 扫自己必然自证违规，因此整份排除。
         'xsy-scm-web/test/system.test.mjs',
       ]),
@@ -201,23 +201,23 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     // 裸 `P\d+` 会命中指向 `docs/decisions.md`「P0/P1/P2/P3 裁决」与
     // `CONTRIBUTING.md`「P12 锁序」的<b>活锚点</b>，因此只在没有这些后缀时才算标记。
     ['Pn 批次号（非裁决锚点）', /(?<!锁序 )\bP\d{1,2}\b(?!\s*(?:裁决|基线收口裁决|锁序))/],
-    // 裸 `B\d+` 会命中缺口文档的 `Bn` 溯源（那是活契约），由 WHITELIST 逐文件放行。
+    // 裸 `B\d+` 会命中缺口文档的 `Bn` 溯源（那是活约定），由 WHITELIST 逐文件放行。
     ['Bn 批次号（非缺口溯源）', /\bB\d{1,2}\b/],
     // 裸 `A\d+` 曾因「`A4` 是纸张尺寸」被放过，结果 `A17/A18/A25/A26/A31` 全漏了。
     // 现在改成<b>默认禁止 + 精确白名单放行</b>（纸张尺寸的两个文件已登记）。
     ['An 条目号（非业务值）', /\bA\d{1,2}\b/],
-    // 「设计考古」：旧项目当时怎么做、旧口径的段落名。
+    // 「设计考古」：旧项目当时怎么做、旧规则的段落名。
     ['考古：C 的 / A 源 / C 段', /C 的|A 源|C 段|V2 原生/],
     // 开发波次。注意 `预配送波次`（`deliveryWave`）是真实业务字段，不能裸匹配 `波次`。
     ['开发波次', /(出库|盘点|报损报溢|调拨|阈值预警|规格转换)波次|波次新增|本波次/],
     // commit 考古：`历史：提交 48134bf 曾…`。Git 已是历史，源码不需要复述它。
     ['提交 sha 考古', /(历史|背景|提交)\s*[:：]?\s*(提交\s*)?[0-9a-f]{7,40}\b/],
-    // 迁移版本号的<b>开发语境</b>：`V15 一并落库` / `V15 阶段` / `V15 旧版` / `V15 migration 提供`。
+    // 迁移版本号的<b>开发语境</b>：`V15 一并写入数据库` / `V15 阶段` / `V15 旧版` / `V15 migration 提供`。
     // 裸 `V\d+` 不禁 —— `V34 移动加权`、`V63 ck_*`、`V61 web_perms` 是指向真实 migration 文件的
-    // 有效溯源（文件存在且不可变），属当前事实。只有把它当"第几批开发"来讲时才是过程标记。
-    // 后置语境词只收<b>动作/产物</b>（一并落库 / 播种 / 新建 / 引入）；裸「迁移」不收，
+    // 有效溯源（文件存在且不可修改），属当前记录。只有把它当"第几批开发"来讲时才是过程标记。
+    // 后置语境词只收<b>动作/产物</b>（一并写入数据库 / 播种 / 新建 / 引入）；裸「迁移」不收，
     // 好让「见 V34 迁移头注释」这种有效指向继续成立。
-    ['Vn 迁移版本开发语境', /\bV\d{1,3}\b[^\n]{0,10}(一并落库|落库|阶段|旧版|migration|播种|新建|引入|尚未)/],
+    ['Vn 迁移版本开发语境', /\bV\d{1,3}\b[^\n]{0,10}(一并写入数据库|写入数据库|阶段|旧版|migration|播种|新建|引入|尚未)/],
     // 机械清理后的破损句：删掉 token 时留下了残缺句法。这里只钉<b>已实际出现过</b>的形态，
     // 不搞宽泛的「中文空格」匹配（正常散文里「与 X 成对」「和 Y 一致」是合法的）。
     // 1) 注释体某行以标点开头 —— 主语被删，后面的话失去了依托（`// ：需求单位必须等于…`）。
@@ -261,13 +261,13 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    *
    * 刻意不收 p / br / li：它们可能是在描述真实的 HTML 语义（例如「分隔符可设置
    * html 标签如 br 标签」），判成残留会误伤。Java 侧允许 `{@code}` / `{@link}` 与
-   * 复杂契约用的段落标签，因此也不入此列。扫描只看注释体，Vue 模板里真实的标签是
+   * 复杂约定用的段落标签，因此也不入此列。扫描只看注释体，Vue 模板里真实的标签是
    * 运行时 DOM，不在射程内。
    */
   const FRONTEND_ONLY_MARKERS = [
     ['注释里的 HTML 强调标签', /<\/?[biu]\s*\/?>/],
     // 规范第 2 节把 `{@code}` / `{@link}` 与 HTML 强调标签同等对待：它们是 Javadoc 内联标记，
-    // 搬到 `.ts` / `.vue` 注释里不会渲染。此前仓库里恰好是 0，但契约没钉，加回来不会红。
+    // 搬到 `.ts` / `.vue` 注释里不会渲染。此前仓库里恰好是 0，但约定没钉，加回来不会红。
     ['前端 Javadoc code', /\{@code\b/],
     ['前端 Javadoc link', /\{@link\b/],
   ];
@@ -309,7 +309,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     {
       file: 'xsy-scm-web/src/views/business/scm/promotion/promotion-coupon-list.vue',
       marker: 'Bn 批次号（非缺口溯源）',
-      reason: '指向 docs/status.md 的 B7 缺口溯源，是活契约',
+      reason: '指向 docs/status.md 的 B7 缺口溯源，是活约定',
     },
     {
       file: 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintPaperEnum.java',
@@ -339,7 +339,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     {
       file: 'xsy-scm-web/test/inventory.test.mjs',
       marker: 'Bn 批次号（非缺口溯源）',
-      reason: '守卫 docs/status.md 中的后端字段缺口，B1、B4、B5、B7 是逐条校验的对象，属活契约',
+      reason: '守卫 docs/status.md 中的后端字段缺口，B1、B4、B5、B7 是逐条校验的对象，属活约定',
     },
     {
       file: 'xsy-scm-web/test/ui.test.mjs',
@@ -358,7 +358,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    * 实际数量由「长注释计数」那条测试在运行时从扫描结果打印。
    */
   const REPORT_BASELINE = {
-    // order-return-list 的 2 个 §14.5 引用随 B6 缺口补齐（原订单号/客户快照已入 VO）一并移除，基线 4→2。
+    // order-return-list 的 2 个 §14.5 引用随 B6 缺口补齐（原订单号/当时的客户资料已入 VO）一并移除，基线 4→2。
     'xsy-scm-web/src': {anchoredSection: 2},
     'xsy-scm-web/test': {anchoredSection: 0},
     'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm': {anchoredSection: 0},
@@ -741,7 +741,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 // ---------------------------------------------------------------- 来源：scm-metrics-single-source-contract.test.mjs
 {
   /*
-   * 经营指标单一来源契约：同一个业务指标只能有一处 SQL 定义。
+   * 经营指标单一来源约定：同一个业务指标只能有一处 SQL 定义。
    *
    * 为什么需要这条门禁：首页、大屏、报表都要显示「今日销售额」。各自写一份 SQL 时，两份都跑得通、
    * 都不报错，只是数字慢慢不一样 —— 而用户会先失去对数字的信任，再去找人核对。这类漂移不会触发任何
@@ -808,7 +808,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     'trendByDay',
   ];
 
-  test('经营类指标全部定义在 metrics mapper，迁一半会留下两个口径', () => {
+  test('经营类指标全部定义在 metrics mapper，迁一半会留下两个规则', () => {
     const ids = new Set(selectIds(read(METRICS_MAPPER)));
     const missing = MOVED_METRICS.filter((id) => !ids.has(id));
     assert.deepEqual(missing, [], `这些指标必须定义在 ScmBusinessMetricsMapper.xml：${missing.join(', ')}`);
@@ -820,15 +820,15 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     const duplicated = MOVED_METRICS.filter((id) => ids.includes(id));
     assert.deepEqual(duplicated, [], `这些指标已迁入 metrics，大屏不得再有一份：${duplicated.join(', ')}`);
 
-    // 销售金额列只允许出现在 metrics：出现在这里就说明有人又抄了一份销售额口径。
+    // 销售金额列只允许出现在 metrics：出现在这里就说明有人又抄了一份销售额规则。
     for (const column of ['settlement_total_amount', 'ordered_total_amount']) {
-      assert.ok(!xml.includes(column), `大屏 mapper 不应再出现 ${column}（销售额 / 下单金额的唯一口径在 metrics）`);
+      assert.ok(!xml.includes(column), `大屏 mapper 不应再出现 ${column}（销售额 / 下单金额的唯一规则在 metrics）`);
     }
   });
 
-  test('报表概览的销售三件套与 metrics 同口径（同轴、同列、同状态）', () => {
+  test('报表概览的销售三件套与 metrics 同规则（同轴、同列、同状态）', () => {
     // 报表与大屏的范围策略不同（报表销售不做归属收窄，可见性由页面权限承担），
-    // 但口径必须一致：同一根时间轴、同一个金额列、同一个状态。
+    // 但规则必须一致：同一根时间轴、同一个金额列、同一个状态。
     const xml = read(REPORT_MAPPER);
     const overview = /<select id="overviewKpi"[\s\S]*?<\/select>/.exec(xml);
     assert.ok(overview, 'ReportDao.xml 必须保留 overviewKpi');
@@ -877,12 +877,12 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 // ---------------------------------------------------------------- 来源：scm-ui-copy-contract.test.mjs
 {
   /**
-   * SCM UI 文案与信息层级的契约单测。
+   * SCM UI 文案与信息层级的约定单测。
    *
-   * ## 为什么需要这份契约
+   * ## 为什么需要这份约定
    *
    * 项目曾系统性地把开发设计说明、业务规则推导、技术实现细节直接写进业务 UI：
-   * 常驻蓝色说明框、表单 `help` 长句、报表工具栏口径注释，甚至把 `path` / `parent_id` /
+   * 常驻蓝色说明框、表单 `help` 长句、报表工具栏规则注释，甚至把 `path` / `parent_id` /
    * `SALES_OUT` / `occurred_at` 这类字段名与枚举名展示给业务用户。
    *
    * 典型反例（计量单位编辑弹窗）：
@@ -950,7 +950,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 
   const SCM_VIEW_FILES = collect(SCM_VIEWS, /\.vue$/);
   const SCM_COMPONENT_FILES = collect(SCM_COMPONENTS, /\.vue$/);
-  /** 黑名单与用词规则扫描全量 SCM 界面；棘轮只针对业务页面。 */
+  /** 黑名单与用词规则扫描全量 SCM 界面；新增问题检查只针对业务页面。 */
   const SCM_UI_FILES = [...SCM_VIEW_FILES, ...SCM_COMPONENT_FILES];
 
   /** 用户可见的属性值。只有这些属性名会被读取，`d` / `key` / `type` 天然不在内。 */
@@ -972,7 +972,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 
   /**
    * 「就地」上下文：这些组件里的文案只在用户主动打开后出现，不算常驻解释，
-   * 因此不计入常驻长句棘轮（弹窗里的操作后果说明、Warning 里的原因都属此列）。
+   * 因此不计入常驻长句新增问题检查（弹窗里的操作后果说明、Warning 里的原因都属此列）。
    */
   const CONTEXTUAL = new Set(['amodal', 'adrawer', 'aalert', 'aempty', 'atooltip', 'apopover', 'adescriptions']);
 
@@ -1013,10 +1013,10 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
       pattern: /\b(PURCHASE_IN|SALES_OUT|DIRECT|WAREHOUSE_CONFIRM)\b/,
     },
     {label: '错误码', pattern: /\b(40989|40995)\b/},
-    {label: '技术词', pattern: /数据库|事务|幂等|真值|精度|后端|前端|服务端|客户端/},
+    {label: '技术词', pattern: /数据库|事务|防重复处理|真值|精度|后端|前端|服务端|客户端/},
     // 实现词：数据的存储 / 比对方式不是用户关心的事，页面只说「改了什么」。
-    // 曾经以列标题「快照」和说明句「保留快照」出现在财务抽屉与停用确认里。
-    {label: '实现词 快照', pattern: /快照/},
+    // 曾经以列标题「保存的数据」和说明句「保留保存的数据」出现在财务抽屉与停用确认里。
+    {label: '实现词 保存的数据', pattern: /保存的数据/},
     // 「测试」只属于开发过程；用户界面出现它，说明开发期的临时数据或自测入口带上了线。
     {label: '实现词 测试', pattern: /测试/},
     {label: '技术缩写 VO', pattern: /\bVO\b/},
@@ -1164,7 +1164,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    * 统计常驻正文里的长句（渲染文本 > 40 字，且不在 `CONTEXTUAL` 子树内）。
    *
    * 这一类比 `hint` 类元素更难发现：它没有专门的类名，只是「顺手多写一句」，
-   * 因此单钉一条上限棘轮，逼着新增时长句必须有理由。
+   * 因此单钉一条上限新增问题检查，逼着新增时长句必须有理由。
    */
   function countResidentLongText(files, limit = 40) {
     let total = 0;
@@ -1208,7 +1208,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   const hasHelpAttribute = (node) =>
     node.type === 'VElement' && (node.startTag?.attributes ?? []).some((attribute) => attributeName(attribute) === 'help');
 
-  /** `type="secondary"` 排版：单元格占位、单位、动态计数与解释性文案共用，只看总量棘轮。 */
+  /** `type="secondary"` 排版：单元格占位、单位、动态计数与解释性文案共用，只看总量新增问题检查。 */
   const hasSecondaryType = (node) =>
     node.type === 'VElement' &&
     (node.startTag?.attributes ?? []).some((attribute) => {
@@ -1220,7 +1220,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   /**
    * 解释性提示的另一种形态：`class` 里带 `hint`（`coupon-hint` / `__hint` / `--hint`）。
    * 治理前统计「解释性 secondary 89 处」时用的就是这一类选择器，单看 `type="secondary"`
-   * 会漏掉一大半，因此两种形态各钉一条棘轮。
+   * 会漏掉一大半，因此两种形态各钉一条新增问题检查。
    */
   const hasHintClass = (node) =>
     node.type === 'VElement' &&
@@ -1235,19 +1235,19 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     });
 
   // ------------------------------------------------------------------
-  // 基线（治理完成后复扫所得，棘轮只降不升）
+  // 基线（治理完成后复扫所得，新增问题检查只降不升）
   // ------------------------------------------------------------------
 
   /**
-   * 基线 = 文案收口完成后由本文件的扫描器跑出来的真实值，棘轮只降不升。
+   * 基线 = 文案收口完成后由本文件的扫描器跑出来的真实值，新增问题检查只降不升。
    *
    * `type="secondary"` 与 `hint` 类分开计数：前者是 antd 排版的属性形态，后者是页面自建的
    * 提示样式（`coupon-hint` / `__hint`），两者不重叠也不互相替代。每个数字只用于
-   * 「不比上一次多」，不要跨口径对数 —— 尤其不要把纯渲染的 `secondary`
+   * 「不比上一次多」，不要跨规则对数 —— 尤其不要把纯渲染的 `secondary`
    * （单元格占位 `—`、单位、`已选 N 个`）当成待删项：删了会破坏表格显示。
    *
    * 提高基线必须在 PR 里说明「不告知会导致什么操作错误」，否则应改为
-   * Tooltip / 口径说明 / 操作时确认（见 CONTRIBUTING.md SCM 界面规范）。
+   * Tooltip / 规则说明 / 操作时确认（见 CONTRIBUTING.md SCM 界面规范）。
    *
    * 清理是分批做的：每清完一批就把受影响的基线降到新的实测值，别留旧数字 —— 留下的差额
    * 会被下一轮「顺手补一句」吃掉。
@@ -1266,11 +1266,11 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     // 采购单详情「锁单时间/操作人」与明细操作列占位（4 处里的 2 处）、
     // 仓库表单「允许负库存」的后果说明（关闭前必须先清负余额，告知不到会直接错账）、
     // 秤端会话记录「班次到期需重新签发」及结束原因（不告知会以为登录一次就长期有效）。
-    // 四处都是「不告知就可能操作错误」，不是实现口径说明；订单明细区原「合计数量」旁的解释句已删。
+    // 四处都是「不告知就可能操作错误」，不是实现规则说明；订单明细区原「合计数量」旁的解释句已删。
     // 37 → 38（2026-10-28 过账特殊单据，D-1028-16）：
     // 过账页工具栏的「虚拟单据：不生成应收应付，不参与核销」，不写的话财务会以为
     // 登记过账就等于给客户挂账，月末对账时把金额重复计一次。属于「不告知就操作错误」，
-    // 不是实现口径说明。
+    // 不是实现规则说明。
     // 38 → 39（合并 origin/main 的商城「仅下单」）：订单详情待确认态补了一句
     // 「确认不会自动扣款」。不告知的话，销售会以为点确认就把钱收了，客户账上却没动。
     hintClass: 39,
@@ -1325,7 +1325,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    *
    * 注释层的同类规则在 `scm-comment-noise-contract`，那里只扫注释，因此写在正文里的
    * `**加粗**` 会原样显示成星号 —— 实测在库存盘点详情与转换单页各漏了一处。
-   * 只扫 SCM 自己的页面；SmartAdmin 页面按各自的界面契约检查。
+   * 只扫 SCM 自己的页面；SmartAdmin 页面按各自的界面约定检查。
    */
   const VISIBLE_MARKDOWN = [
     {label: 'markdown 加粗', pattern: /\*\*/},
@@ -1345,7 +1345,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   });
 
   // ------------------------------------------------------------------
-  // 4. 常驻解释性文案：棘轮只降不升
+  // 4. 常驻解释性文案：新增问题检查只降不升
   // ------------------------------------------------------------------
 
   test('常驻 info alert 数量不超过基线（新增需在 PR 说明理由）', () => {
@@ -1353,7 +1353,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     assert.ok(
       total <= BASELINE.residentInfoAlert,
       `常驻 info alert 从 ${BASELINE.residentInfoAlert} 涨到 ${total}；` +
-        '「不告诉用户就可能操作错误」的信息才留在界面上，其余收进 Tooltip / 口径说明 / 操作时确认。' +
+        '「不告诉用户就可能操作错误」的信息才留在界面上，其余收进 Tooltip / 规则说明 / 操作时确认。' +
         `当前分布：${JSON.stringify(offenders)}`
     );
   });
@@ -1393,14 +1393,14 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   });
 
   // ------------------------------------------------------------------
-  // 5. 报表口径说明：统一走 ReportNote，不再常驻 Alert
+  // 5. 报表规则说明：统一走 ReportNote，不再常驻 Alert
   // ------------------------------------------------------------------
 
   test('report 下不再有常驻 info alert', () => {
     const {total, offenders} = countShape(REPORT_FILES, isResidentInfoAlert);
     assert.ok(
       total <= BASELINE.reportResidentInfoAlert,
-      `report 下仍有 ${total} 处常驻 info alert：${JSON.stringify(offenders)}；` + '统计口径统一收进 report-note 的 Popover / Drawer。'
+      `report 下仍有 ${total} 处常驻 info alert：${JSON.stringify(offenders)}；` + '统计方式统一收进 report-note 的 Popover / Drawer。'
     );
   });
 
@@ -1413,18 +1413,18 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     const source = readFileSync(component, 'utf8');
     assert.match(source, /props\.points\.length > 3/, 'report-note 未约束 Popover 条数（最多 3 条）');
     assert.match(source, /point\.length > 40/, 'report-note 未约束单条长度（每条 ≤ 40 字）');
-    assert.match(source, /sections/, 'report-note 未提供分组（Drawer）形态，长口径只能塞进 Popover');
+    assert.match(source, /sections/, 'report-note 未提供分组（Drawer）形态，长规则只能塞进 Popover');
   });
 
   /**
-   * 报表模块不再常驻口径说明：`report-note`（Popover / Drawer）与指标卡 ⓘ（`hint`）都算常驻解释。
+   * 报表模块不再常驻规则说明：`report-note`（Popover / Drawer）与指标卡 ⓘ（`hint`）都算常驻解释。
    *
    * 它们讲的多是 SQL、枚举名与推导过程（§8.2 黑名单），而不是「不告知就会操作错误」的信息。
    * 数据缺失、权限受限与操作不可逆仍走 Warning / 操作时确认，不受这条约束。
    */
-  test('报表模块不再常驻口径说明', () => {
+  test('报表模块不再常驻规则说明', () => {
     const note = countShape(REPORT_FILES, isElement('report-note'));
-    assert.equal(note.total, 0, `报表模块仍有 ${note.total} 处 report-note：${JSON.stringify(note.offenders)}；` + '口径不常驻正文，也不做 ⓘ。');
+    assert.equal(note.total, 0, `报表模块仍有 ${note.total} 处 report-note：${JSON.stringify(note.offenders)}；` + '规则不常驻正文，也不做 ⓘ。');
 
     const hint = countShape(REPORT_FILES, hasNamedAttribute('hint'));
     assert.equal(
@@ -1439,7 +1439,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 // ---------------------------------------------------------------- 来源：screen-geo-contract.test.mjs
 {
   /*
-   * 大屏地图底图与区划字典的同源契约（地图 M1）
+   * 大屏地图底图与区划字典的同源约定（地图 M1）
    *
    * 钉的是唯一一个跨目录、跨语言才会成立的不变量：省级着色数据按 `adcode`（= `province_code`，
    * 同为 GB/T 2260 六位码）挂到底图要素上。底图少一个码，那个省就静默不着色 ——
@@ -1506,7 +1506,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 // ---------------------------------------------------------------- 来源：system-hidden-menu-grant-contract.test.mjs
 {
   /*
-   * 角色权限树的级联契约：勾父菜单必须把隐藏子菜单一并授出。
+   * 角色权限树的级联约定：勾父菜单必须把隐藏子菜单一并授出。
    *
    * 隐藏的详情页路由（商品详情 / 客户详情 / 供应商详情 / 线路详情）在侧栏里没有入口，
    * 完全靠「勾了父菜单就一并授出」这一条链路。后端菜单树不过滤 visible_flag（否则隐藏菜单
@@ -1554,10 +1554,10 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 // ---------------------------------------------------------------- 来源：business-todo-contract.test.mjs
 {
   /**
-   * 业务待办（首页只读聚合）的前端契约测试。
+   * 业务待办（首页只读聚合）的前端约定检查。
    *
    * 钉死这一波破坏后不报错的前端边界（权限裁剪与领域计数由 Java 测试覆盖）：
-   * 1. 待办是只读 Pull：走 getRequest，绝不 POST、绝不复用带幂等的写命令；
+   * 1. 待办是只读 Pull：走 getRequest，绝不 POST、绝不复用带防重复处理的写命令；
    * 2. 前端不重复判断权限、不缓存计数、不写业务表 —— 卡片清单完全来自后端；
    * 3. 卡片入口用 scm:todo:query 门禁（无权整卡隐藏），不新建第二套消息中心；
    * 4. 点击是带条件跳转：直接使用后端给的 route（已含查询串），不在前端拼状态。
@@ -1575,7 +1575,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   const card = code('../src/views/system/home/components/business-todo-card/home-business-todo.vue');
   const home = code('../src/views/system/home/index.vue');
 
-  test('待办接口是只读 GET，不引入写命令或幂等封装', () => {
+  test('待办接口是只读 GET，不引入写命令或防重复处理封装', () => {
     assert.match(api, /todo:[\s\S]*?getRequest(?:<[^']*>)?\('\/scm\/dashboard\/todo',\s*\{\},\s*REGION_REQUEST_OPTIONS\)/);
     assert.match(api, /const REGION_REQUEST_OPTIONS = \{suppressGlobalErrorMessage: true\}/);
     assert.doesNotMatch(api, /postRequest|putRequest|deleteRequest|Idempotency|sendMessage/);
@@ -1607,7 +1607,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 // ---------------------------------------------------------------- 来源：message-business-link.test.mjs
 {
   /**
-   * 「报损报溢驳回消息要能进入目标业务」的前端契约测试。
+   * 「报损报溢驳回消息要能进入目标业务」的前端约定检查。
    *
    * 业务类型判定必须走原生 `t_message.message_type` 的数值，不能解析中文标题；
    * 跳转目标必须与后端待办枚举指向同一个列表页（该页消费 `?id=` 打开详情，详情接口自带权限校验）。
@@ -1686,7 +1686,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 // ---------------------------------------------------------------- 来源：todo-deep-link.test.mjs
 {
   /**
-   * 「待办卡片带筛选 URL，目标页面必须真正消费」的前端契约测试。
+   * 「待办卡片带筛选 URL，目标页面必须真正消费」的前端约定检查。
    *
    * 钉死三层：
    * 1. 解析器真实执行：白名单命中、非法值回落、缺参回落、重复键只取第一个；
@@ -1819,7 +1819,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 // ---------------------------------------------------------------- 来源：operate-log-audit-contract.test.mjs
 {
   /**
-   * 通用操作日志「业务上下文」与脱敏的前端契约测试。
+   * 通用操作日志「业务上下文」与脱敏的前端约定检查。
    *
    * 钉死这一波破坏后不报错的前端边界（后端 STRPOS 精确匹配与读权限白名单由
    * OperateLogBusinessFilterPgIT / AdminOperateLogBusinessGuardTest 覆盖）：

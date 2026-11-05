@@ -27,12 +27,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 收款登记（PG IT）。
  *
- * <p>这里钉的是「一笔钱就是一个事实」：登记收款只产生 {@code xsy_finance_receipt} + 一条
+ * <p>这里钉的是「一笔钱就是一个记录」：登记收款只产生 {@code xsy_finance_receipt} + 一条
  * {@code RECEIVE} 日志，<b>不</b>自动核销、<b>不</b>改应收、<b>不</b>改客户与订单，
  * 也<b>不</b>要求客户存在任何应收（预收是合法业务）。
  *
- * <p>金额形态、方式三值、幂等重放、数据范围与快照冻结各有一条以上断言；
- * 幂等键冲突与越权都必须「什么都不产生」，而不是产生一张孤儿单。
+ * <p>金额形态、方式三值、重复请求返回原结果、数据范围与保存的数据保存各有一条以上断言；
+ * 防重复请求编号冲突与越权都必须「什么都不产生」，而不是产生一张孤儿单。
  */
 @DisplayName("收款登记（Finance R1 F1-3A，PG IT）")
 class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
@@ -140,7 +140,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("CASH 登记：NORMAL 收款落库、单号 RC 前缀、日志 RECEIVE 且快照齐全")
+    @DisplayName("CASH 登记：NORMAL 收款写入数据库、单号 RC 前缀、日志 RECEIVE 且保存的数据齐全")
     void cashReceiptWritesFactAndLog() throws Exception {
         Long customerId = customerOwnedBy(null);
         FinanceReceiptVO result = add(form(customerId, "100.0000", "CASH", PAST));
@@ -178,7 +178,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("BANK_TRANSFER 与 OTHER 都在允许集合内，照常落库")
+    @DisplayName("BANK_TRANSFER 与 OTHER 都在允许集合内，照常写入数据库")
     void bankTransferAndOtherAreAccepted() {
         Long customerId = customerOwnedBy(null);
 
@@ -201,7 +201,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
 
         // 渠道名不是收款方式：具体渠道写在 external_reference，塞进 method 会让「钱怎么进来的」失去答案
         expectCode(() -> add(form(customerId, "10.0000", "WECHAT_PAY", PAST)), 41140);
-        // 余额抵扣必须由余额流水驱动，人工登记会造出「账上有收款、余额没动」的假事实
+        // 余额抵扣必须由余额流水驱动，人工登记会造出「账上有收款、余额没动」的假记录
         expectCode(() -> add(form(customerId, "10.0000", "BALANCE", PAST)), 41140);
         assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId)).isZero();
 
@@ -235,7 +235,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         // 123.4567 原样保存（不四舍五入成 123.4567 → 123.4567，也不截断）
         Long preciseId = add(form(customerId, "123.4567", "CASH", PAST)).getReceiptId();
         assertThat((BigDecimal) receiptRow(preciseId).get("amount")).isEqualByComparingTo("123.4567");
-        assertThat(((BigDecimal) receiptRow(preciseId).get("amount")).scale()).as("落库 scale 恒 4").isEqualTo(4);
+        assertThat(((BigDecimal) receiptRow(preciseId).get("amount")).scale()).as("写入数据库 scale 恒 4").isEqualTo(4);
 
         // "10" → 10.0000
         Long paddedId = add(form(customerId, "10", "CASH", PAST)).getReceiptId();
@@ -250,7 +250,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("external_reference 重复：两次合法登记都成功，各一张收款单（它不是幂等键）")
+    @DisplayName("external_reference 重复：两次合法登记都成功，各一张收款单（它不是防重复请求编号）")
     void duplicateExternalReferenceIsAllowed() {
         Long customerId = customerOwnedBy(null);
         // 三件全部相同：金额、凭据号、时点。真实业务里「同一账号同日两笔等额同流水号引用」就是
@@ -269,9 +269,9 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         // external_reference 上有普通索引、没有唯一约束（V65）：银行流水号跨客户重复是真实存在的
         assertThat(count("SELECT count(*) FROM pg_indexes WHERE tablename = 'xsy_finance_receipt'"
                 + " AND indexdef ILIKE '%unique%' AND indexdef ILIKE '%external_reference%'")).isZero();
-        // 收款表的来源列 + 第二层幂等索引（ADM-12）：
-        // 同一笔支付交易被驱动多少次，Finance 只留一条 NORMAL 且带来源的收款事实。
-        // 它是「支付交易 → 收款」的幂等键，不是人工收款的自然唯一键，因此谓词必须收窄。
+        // 收款表的来源列 + 第二层防重复处理索引（ADM-12）：
+        // 同一笔支付交易被驱动多少次，Finance 只留一条 NORMAL 且带来源的收款记录。
+        // 它是「支付交易 → 收款」的防重复请求编号，不是人工收款的自然唯一键，因此谓词必须收窄。
         assertThat(jdbc.queryForList(
                 "SELECT indexdef FROM pg_indexes WHERE tablename = 'xsy_finance_receipt'"
                         + " AND indexdef ILIKE '%unique%'", String.class))
@@ -300,7 +300,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         assertThat(result.getReceiptNo()).matches("^XSY\\d{18,19}$");
         assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
                 result.getReceiptId())).as("这笔预收不自动生成核销").isZero();
-        // 按客户收窄而不是全表：同一库里 NOT_SUPPORTED 的 IT 会提交真实的应收事实
+        // 按客户收窄而不是全表：同一库里 NOT_SUPPORTED 的 IT 会提交真实的应收记录
         assertThat(count("SELECT count(*) FROM xsy_finance_receivable WHERE customer_id = ?", customerId))
                 .as("登记收款不产生任何应收").isZero();
     }
@@ -310,7 +310,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     void registeringReceiptNeverWritesOffOrTouchesReceivable() {
         Long customerId = customerOwnedBy(null);
         Long orderId = confirmedSalesOrder(customerId, newOnShelfSku("RCT"), "10.0000", "10.0000");
-        // 受控夹具：按 schema 直插一张正常应收事实，
+        // 受控夹具：按 schema 直插一张正常应收记录，
         // 目的是证明「收款登记不会碰它」，核销仍只能由核销命令产生。
         jdbc.update("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id,"
                         + " customer_id, customer_name_snapshot, settlement_customer_id,"
@@ -340,11 +340,11 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // L / M. 幂等重放与冲突
+    // L / M. 重复请求返回原结果与冲突
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("幂等重放：同键同内容返回同一张收款单，库里一张、日志一条")
+    @DisplayName("重复请求返回原结果：同键同内容返回同一张收款单，库里一张、日志一条")
     void sameKeyAndContentReplaysTheFirstResult() {
         Long customerId = customerOwnedBy(null);
         FinanceReceiptAddForm form = form(customerId, "88.0000", "CASH", PAST);
@@ -363,7 +363,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("收款重放：客户改派后按当前范围拒绝，保持 30005 且不追加事实")
+    @DisplayName("收款重放：客户改派后按当前范围拒绝，保持 30005 且不追加记录")
     void replayIsRejectedAfterCustomerIsReassigned() {
         Long employeeA = newPlainEmployee("RRA");
         Long employeeB = newPlainEmployee("RRB");
@@ -394,7 +394,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("幂等冲突：同键不同金额 → 40966，不产生第二张收款单")
+    @DisplayName("防重复处理冲突：同键不同金额 → 40966，不产生第二张收款单")
     void sameKeyDifferentContentIsRejectedAsConflict() {
         Long customerId = customerOwnedBy(null);
         String idempotencyKey = key("conflict");
@@ -418,11 +418,11 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // N. 客户名称快照冻结
+    // N. 当时的客户名称保存
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("登记后改客户名称：收款单上的名称快照不变（历史账不回读主档）")
+    @DisplayName("登记后改客户名称：收款单上的当时的名称不变（历史账不回读主档）")
     void customerNameSnapshotIsFrozenAtRegistration() {
         Long customerId = customerOwnedBy(null);
         String original = jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class, customerId);
@@ -433,7 +433,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
 
         assertThat(receiptRow(receiptId).get("customer_name_snapshot")).isEqualTo(original);
         assertThat(jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class, customerId))
-                .as("主档确实已经改名，快照才有判别性").startsWith("改名后的客户");
+                .as("主档确实已经改名，保存的数据才有判别性").startsWith("改名后的客户");
     }
 
     // ------------------------------------------------------------------
@@ -477,7 +477,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("未分配业务员的客户：非超管不可代其登记（失败关闭，不放宽成「都能收」）")
+    @DisplayName("未分配业务员的客户：非超管不可代其登记（校验失败时拒绝操作，不放宽成「都能收」）")
     void unassignedCustomerIsFailClosedForNonAdministrator() {
         Long employeeId = newPlainEmployee("Q");
         Long customerId = customerOwnedBy(null);
@@ -498,7 +498,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("received_at：显式业务时点逐值落库，服务端不改成 now()")
+    @DisplayName("received_at：显式业务时点逐值写入数据库，服务端不改成 now()")
     void receivedAtIsTheCallerSuppliedBusinessMoment() {
         Long customerId = customerOwnedBy(null);
         Long receiptId = add(form(customerId, "40.0000", "BANK_TRANSFER", PAST)).getReceiptId();

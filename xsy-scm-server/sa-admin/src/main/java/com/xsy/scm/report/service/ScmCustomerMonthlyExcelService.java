@@ -13,7 +13,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-/** 客户原版十二列月度对账导出；只消费已授权月报，不修改财务事实。 */
+/** 客户原版十二列月度对账导出；只消费已授权月报，不修改财务记录。 */
 @Service
 @RequiredArgsConstructor
 public class ScmCustomerMonthlyExcelService {
@@ -36,7 +36,7 @@ public class ScmCustomerMonthlyExcelService {
             CellStyle money = book.createCellStyle();
             money.cloneStyleFrom(sheet.getRow(3).getCell(3).getCellStyle());
             money.setDataFormat(book.createDataFormat().getFormat("0.0000"));
-            // 保持客户可见的十二列；辅助事实隐藏但留在工作簿中，确保实际货款和利润可复算。
+            // 保持客户可见的十二列；辅助记录隐藏但留在工作簿中，确保实际货款和利润可复算。
             String[] helpers = {"外部账单税金", "运费", "扣点金额", "专票税率", "服务费率"};
             for (int i = 0; i < helpers.length; i++) {
                 sheet.getRow(0).createCell(13 + i).setCellValue(helpers[i]);
@@ -70,7 +70,7 @@ public class ScmCustomerMonthlyExcelService {
                 ScmExcel.setNumber(row.getCell(15), source.getCommissionAmount());
                 int n = i + 4;
                 row.getCell(5).setCellFormula("ROUND(D" + n + "-E" + n + ",4)");
-                // 开票金额沿用已声明的占位口径，不冒充新建的发票台账。
+                // 开票金额沿用已声明的占位规则，不冒充新建的发票台账。
                 row.getCell(6).setCellFormula("D" + n);
                 row.getCell(8).setCellFormula("ROUND(D" + n + "-H" + n + "-N" + n + ",4)");
                 row.getCell(10).setCellFormula("ROUND(D" + n + "*$Q$2,4)");

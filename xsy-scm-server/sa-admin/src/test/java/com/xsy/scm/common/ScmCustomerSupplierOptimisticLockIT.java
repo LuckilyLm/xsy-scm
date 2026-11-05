@@ -101,7 +101,7 @@ class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
         entity.setName("落后版本的写入");
         assertThat(customerDao.updateById(entity)).as("落后版本必须更新 0 行").isZero();
         assertThat(jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class, id))
-                .as("失败写入不得落库").isEqualTo("第一次改名");
+                .as("失败写入不得写入数据库").isEqualTo("第一次改名");
     }
 
     @Test

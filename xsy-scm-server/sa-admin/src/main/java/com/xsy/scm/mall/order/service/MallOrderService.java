@@ -44,7 +44,7 @@ public class MallOrderService {
     private final MallCatalogService catalogService;
 
     /**
-     * 客户取消订单先校验订单归属；已经取消的订单继续交给正式订单服务处理幂等重试，避免重复点击被误判为失败。
+     * 客户取消订单先校验订单归属；已经取消的订单继续交给正式订单服务处理防重复处理重试，避免重复点击被误判为失败。
      */
     @Transactional(rollbackFor = Exception.class)
     public MallOrderVO cancel(RequestMallCustomer customer, Long orderId, MallOrderCancelForm form,

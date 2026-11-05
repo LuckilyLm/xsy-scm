@@ -21,7 +21,7 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_SOURCE_INVALID(40075, "后台订单来源仅允许后台录单或补单"),
     ORDER_RETURN_APPROVAL_INVALID(40072, "批准数量无效或未批准任何商品"),
     ORDER_RETURN_ITEM_INVALID(40073, "退货明细不属于原订单或订单行不可退"),
-    ORDER_DELETE_STATE_INVALID(40074, "仅未确认且无资金库存事实的订单可以删除"),
+    ORDER_DELETE_STATE_INVALID(40074, "仅未确认且无资金库存记录的订单可以删除"),
     ORDER_QUANTITY_FORMAT_INVALID(40076, "数量必须是整数至多 14 位、小数至多 4 位的定点数字符串"),
     ORDER_NOT_FOUND(40460, "销售订单不存在"),
     ORDER_ITEM_NOT_FOUND(40461, "订单明细不存在"),
@@ -46,7 +46,7 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_ASSIGN_TARGET_INVALID(40974, "目标业务员不存在、已停用或没有订单查看权限"),
     ORDER_REPRICE_REQUIRED(40975, "订单价格依据已变化，请授权人员手动重算并填写原因"),
     // 40977–40982 属采购/商城域，订单新码走自己的 412xx 段，原因见下方 409xx 段说明。
-    ORDER_PENDING_EDIT_BLOCKED(41204, "待确认订单已产生支付、应收、预留、出库或分拣事实，不能再改单"),
+    ORDER_PENDING_EDIT_BLOCKED(41204, "待确认订单已产生支付、应收、预留、出库或分拣记录，不能再改单"),
     // 40912–40917 是 409xx 段中现查未占用的连续空位：40977–40982 与采购/商城域撞码，
     // 由 PurchaseErrorCodeTest 撞码门禁拦下后整体迁移。
     ORDER_LOCKED(40912, "订单已锁单，请新建加单而不是修改原单"),
@@ -69,7 +69,7 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_RESERVE_STATE_INVALID(40945, "当前订单状态不允许预留库存（仅已确认订单可预留）");
 
     /**
-     * 兼容别名；幂等错误码由共享 SCM 层定义。
+     * 兼容别名；防重复处理错误码由共享 SCM 层定义。
      */
     @Deprecated
     public static final ScmErrorCode ORDER_IDEMPOTENCY_KEY_REQUIRED = ScmCommonErrorCode.IDEMPOTENCY_KEY_REQUIRED;

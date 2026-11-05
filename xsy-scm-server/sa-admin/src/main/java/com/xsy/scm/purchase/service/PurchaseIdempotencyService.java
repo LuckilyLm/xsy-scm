@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.OffsetDateTime;
 
 /**
- * 采购写命令的幂等控制，复用共享表 {@code xsy_idempotency_record}。 {@code claim} 通过唯一索引竞争执行权；调用方须将认领、业务写入和结果保存置于同一事务。
+ * 采购写命令的防重复处理控制，复用共享表 {@code xsy_idempotency_record}。 {@code claim} 通过唯一索引竞争执行权；调用方须将认领、业务写入和结果保存置于同一事务。
  */
 @Service
 @RequiredArgsConstructor
@@ -25,7 +25,7 @@ public class PurchaseIdempotencyService {
     private final ScmIdempotencyService idempotencyService;
 
     /**
-     * 结果存储专用 mapper：写入完整时间精度，并兼容读取旧的秒级展示格式。该 mapper 只负责结果回放；请求哈希由公共幂等服务保持统一规则。
+     * 结果存储专用 mapper：写入完整时间精度，并兼容读取旧的秒级展示格式。该 mapper 只负责读取已保存的结果；请求哈希由公共防重复处理服务保持统一规则。
      */
     static final ObjectMapper RESULT_JSON = JsonMapper.builder().addModule(new JavaTimeModule())
         // 覆盖 JavaTimeModule 的时间读取器，同时接受展示格式和 ISO-8601。
@@ -35,7 +35,7 @@ public class PurchaseIdempotencyService {
 
     /**
      * @param record
-     *            已提交（或本次新建）的幂等记录
+     *            已提交（或本次新建）的防重复处理记录
      * @param replay
      *            {@code true} 表示命中已有记录，调用方必须直接返回 {@link #replay(Claim, Class)} 的结果，不得再次执行副作用
      */
@@ -43,7 +43,7 @@ public class PurchaseIdempotencyService {
     }
 
     /**
-     * 认领幂等键。
+     * 认领防重复请求编号。
      *
      * @throws ScmBusinessException
      *             键缺失 → 40084；超长 → 40085；同键异内容 → 40990
@@ -51,7 +51,7 @@ public class PurchaseIdempotencyService {
     public Claim claim(String scope, String key, Object request) {
         ScmIdempotencyService.Claim sharedClaim = idempotencyService.claim(scope, key, request,
             PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_REQUIRED, PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_INVALID,
-            PurchaseErrorCode.PURCHASE_IDEMPOTENCY_CONFLICT, "已提交的幂等记录缺少 result_data（数据完整性异常）");
+            PurchaseErrorCode.PURCHASE_IDEMPOTENCY_CONFLICT, "已提交的防重复处理记录缺少 result_data（数据完整性异常）");
         return new Claim(sharedClaim.record(), sharedClaim.replay());
     }
 

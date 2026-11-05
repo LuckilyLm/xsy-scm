@@ -61,7 +61,7 @@ public class ScmCustomerMonthlyProfitService {
         }
         ScmDataScopeContext scope = dataScopeService.resolve();
         // 月成本与费用属于客户整体，不能用局部订单收入减去整月成本；不依赖仓库成本。
-        // 外部账单既有原值也参与利润派生，必须在取数前统一校验，隐藏列不足以保护这些事实。
+        // 外部账单既有原值也参与利润派生，必须在取数前统一校验，隐藏列不足以保护这些记录。
         if (!scope.isCostVisible() || !scope.getOrderSellerScope().isAll()
             || !ScmDataScopeService.hasPermission(FinancePermission.POSTING_QUERY)) {
             throw new ScmDataScopeException();

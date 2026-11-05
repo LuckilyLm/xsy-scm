@@ -69,7 +69,7 @@ import static org.mockito.Mockito.mockStatic;
 /**
  * 销售域（订单族 + 客户）的行级数据范围与其写入侧前提。
  *
- * <p>被测口径来自 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4、6 条：
+ * <p>被测规则来自 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4、6 条：
  * 销售默认只看 {@code xsy_customer.seller_id} / {@code xsy_sales_order.seller_id} 等于本人的行；
  * {@code seller_id IS NULL} 是「未分配」，普通销售看不见、持全量范围者看得见；
  * 放宽只能通过显式权限点；<b>新建客户的负责人由服务端强制为当前员工</b>——
@@ -80,10 +80,10 @@ import static org.mockito.Mockito.mockStatic;
  * （{@code StpUtil.hasPermission}）。IT 线程里没有 Sa-Token 上下文，直接调 {@code StpUtil}
  * 会抛「SaTokenContext 未初始化」并被 {@code ScmDataScopeService#hasPermission} 吞成 false，
  * 因此这里按 {@code FileAccessGuardTest} 的既有做法用 {@code mockStatic(StpUtil.class)}
- * 显式给权限；未点名的权限码取 Mockito 默认值 false，正好等于失败关闭。
+ * 显式给权限；未点名的权限码取 Mockito 默认值 false，正好等于校验失败时拒绝操作。
  * 普通员工场景使用 {@code administratorFlag=false}；管理员全量范围另行显式覆盖。
  *
- * <p><b>越权读的断言口径</b>：只断到异常类型与 {@link UserErrorCode#NO_PERMISSION} 的语义。
+ * <p><b>越权读的断言规则</b>：只断到异常类型与 {@link UserErrorCode#NO_PERMISSION} 的语义。
  * HTTP 信封里的数字码不在这里断：底座 {@code GlobalExceptionHandler} 对普通
  * {@code BusinessException} 统一按系统错误出码，30005 的映射归属底座，不在本域内改。
  *
@@ -173,7 +173,7 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
         // 越权判定不得倒过来把「不存在」也报成无权限：那会让探测 id 与探测权限混成一种结果
         expectCode(() -> as(sellerB, Set.of(), () -> customerQueryService.detail(-1L)), 40430);
 
-        // 全量范围者能读别人的详情（销售主管 / 财务口径）
+        // 全量范围者能读别人的详情（销售主管 / 财务规则）
         assertThat(as(sellerB, Set.of(ScmDataScopeService.CUSTOMER_ALL_PERM),
                 () -> customerQueryService.detail(customerOfA).getCustomerId())).isEqualTo(customerOfA);
     }
@@ -215,7 +215,7 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
     }
 
     @Test
-    @DisplayName("没有登录员工时客户范围为空，三个价格读取入口全部失败关闭")
+    @DisplayName("没有登录员工时客户范围为空，三个价格读取入口全部校验失败时拒绝操作")
     void priceReadsFailClosedWithEmptyScope() {
         Long customerOfA = createTradableCustomer("PE", sellerA);
         Long sku = newOnShelfSku("PE");
@@ -309,7 +309,7 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
         assertThat(roleHoldsPermission("SCM_SALES", ScmDataScopeService.CUSTOMER_ASSIGN_PERM)).isFalse();
         assertThat(roleHoldsPermission("SCM_SALES_LEAD", ScmDataScopeService.CUSTOMER_ASSIGN_PERM)).isTrue();
 
-        // 版本比对与 update 同一口径：陈旧改派必须撞 40921，而不是覆盖别人的编辑
+        // 版本比对与 update 同一套规则：陈旧改派必须撞 40921，而不是覆盖别人的编辑
         expectCode(() -> as(sellerA, Set.of(ScmDataScopeService.CUSTOMER_ASSIGN_PERM), () -> {
             customerService.reassignSeller(reassignForm(customerId, sellerB, 99));
             return null;
@@ -348,7 +348,7 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
         assertNoPermission(() -> as(sellerA, Set.of(),
                 () -> salesOrderService.create(orderForm(customerOfB, sku), prefix + "-w5")));
 
-        // 负责人自己照常能开单，且订单负责人取自客户快照
+        // 负责人自己照常能开单，且订单负责人取自当时的客户资料
         Long orderId = as(sellerB, Set.of(),
                 () -> salesOrderService.create(orderForm(customerOfB, sku), prefix + "-w5b").getOrderId());
         assertThat(sellerIdOfOrder(orderId)).isEqualTo(sellerB);
@@ -433,7 +433,7 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
                 .containsExactly(refundOfA);
         assertNoPermission(() -> as(sellerA, Set.of(), () -> orderRefundService.detail(refundOfB)));
 
-        // 全量范围两类单都看得到（销售主管口径）
+        // 全量范围两类单都看得到（销售主管规则）
         assertThat(as(sellerB, Set.of(ScmDataScopeService.ORDER_ALL_PERM),
                 () -> returnIds(orderReturnService.query(newForm(new OrderReturnQueryForm())))))
                 .contains(returnOfA, returnOfB);
@@ -459,7 +459,7 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
         assertThat(as(sellerA, Set.of(), () -> salesOrderQueryService.logs(targeted).getList())).isEmpty();
     }
 
-    // ==================== 4. 失败关闭的边界 ====================
+    // ==================== 4. 校验失败时拒绝操作的边界 ====================
 
     @Test
     @DisplayName("没有登录员工上下文：列表返回空分页，而不是全量")
@@ -488,7 +488,7 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
                     continue;
                 }
                 assertThat(field.getName())
-                        .as("%s.%s 属于成本/毛利口径，必须按 scm:report:cost:query 抹成 null 才能暴露",
+                        .as("%s.%s 属于成本/毛利规则，必须按 scm:report:cost:query 抹成 null 才能暴露",
                                 vo.getSimpleName(), field.getName())
                         .doesNotMatch("(?i).*(cost|margin|profit|purchaseprice).*");
             }
@@ -527,7 +527,7 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
 
     /**
      * 以某个员工 + 一组功能权限执行一段逻辑。权限由 {@code mockStatic(StpUtil.class)} 提供：
-     * 未点名的权限码取 Mockito 默认值 false，与生产上的失败关闭取向一致。
+     * 未点名的权限码取 Mockito 默认值 false，与生产上的校验失败时拒绝操作取向一致。
      */
     private <T> T as(Long employeeId, Set<String> permissions, Supplier<T> body) {
         loginAs(employeeId);
@@ -670,7 +670,7 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
 
     private Long insertReturn(Long orderId, Long customerId, String suffix) {
         String returnNo = prefix + "-RT" + suffix;
-        // V202 起退货单必须带客户名称快照：独立退货没有原单可回查，页面与日志都读这一列。
+        // V202 起退货单必须带当时的客户名称：独立退货没有原单可回查，页面与日志都读这一列。
         jdbc.update("INSERT INTO xsy_order_return (return_no, source_type, order_id, customer_id,"
                 + " customer_name_snapshot, status, reason)"
                 + " VALUES (?, 'ORDER', ?, ?, '范围测试客户', 'PENDING', '范围测试退货')",

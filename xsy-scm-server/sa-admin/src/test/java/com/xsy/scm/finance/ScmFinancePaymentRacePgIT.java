@@ -35,11 +35,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 同一退款被真并发双付时的收敛（PG IT，无外层事务）。
  *
  * <p>两个<b>不同</b> {@code Idempotency-Key}
- * 同时付同一张 {@code COMPLETED} 退款。幂等键只能防「同一个请求重发」，防不了「两个人各自发起一次」，
+ * 同时付同一张 {@code COMPLETED} 退款。防重复请求编号只能防「同一个请求重发」，防不了「两个人各自发起一次」，
  * 而财务上「同一笔退款只付一次钱」必须由库来保证 —— 唯一索引
  * {@code uk_finance_payment_source_active} 在这里是唯一的仲裁点。
  *
- * <p>断言只看最终事实，不写死哪个线程先成功（那是在测调度器）：
+ * <p>断言只看最终记录，不写死哪个线程先成功（那是在测调度器）：
  * 恰好一笔付款 + 恰好一条 {@code PAY} 日志 + 恰好一个线程失败，
  * 且失败必须是业务码 41139 —— 不能是裸 {@code DuplicateKeyException}（那会把约束名与 SQLState
  * 泄漏到接口），也不能是死锁或超时（两个线程都只写自己的行，冲突在索引上排队，
@@ -157,7 +157,7 @@ class ScmFinancePaymentRacePgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("两个不同幂等键同时付同一张退款：恰好一笔付款 + 一条日志，失败侧是 41139 而不是裸唯一键异常")
+    @DisplayName("两个不同防重复请求编号同时付同一张退款：恰好一笔付款 + 一条日志，失败侧是 41139 而不是裸唯一键异常")
     void concurrentRefundPaymentsConvergeToOneFact() throws Exception {
         Refund refund = completedRefund("RACE1");
 
@@ -193,7 +193,7 @@ class ScmFinancePaymentRacePgIT extends ScmW5PgITBase {
         assertThat(((ScmBusinessException) loser).getErrorCode().getCode())
                 .as("FINANCE_PAYMENT_SOURCE_INVALID").isEqualTo(41139);
 
-        // 最终事实：一笔付款、一条日志，两个 claim 各自成对（成功侧完成、失败侧随事务回滚）
+        // 最终记录：一笔付款、一条日志，两个 claim 各自成对（成功侧完成、失败侧随事务回滚）
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM xsy_finance_payment WHERE source_id = ?", Integer.class, refund.refundId()))
                 .isEqualTo(1);

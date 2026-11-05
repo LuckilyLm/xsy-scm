@@ -14,7 +14,7 @@ internal sealed class WorkstationOptions
     public string TraceUrlTemplate { get; set; } = "";
 }
 
-/// <summary>逐笔冻结凭条；任务、重量和设备/人工来源一起保存，补打不取新重量。</summary>
+/// <summary>逐笔保存凭条；任务、重量和设备/人工来源一起保存，补打不取新重量。</summary>
 internal sealed record TicketSnapshot(string EventKey, string TaskNo, string ProductName, string SpecName,
     string? CustomerName, string? OrderNo, int BasketNumber, string NetWeight, string Unit,
     string? TareWeight, string DeviceCode, DateTimeOffset CapturedAt, bool TestOnly, string TemplateVersion = "LOCAL_PENDING_V1",
@@ -34,8 +34,8 @@ internal sealed record TicketOutput(string State, string? SpoolerJobId = null);
 /// <summary>只表示当前Windows驱动提交能力，不提供正式平台业务确认。</summary>
 internal interface ITicketPrinter
 {
-    /// <summary>执行一次冻结凭条，不在适配器内重试。</summary>
-    /// <param name="ticket">非空持久尝试，包含冻结纸张、队列和内容；不得用新采样替换。</param>
+    /// <summary>执行一次保存凭条，不在适配器内重试。</summary>
+    /// <param name="ticket">非空持久尝试，包含保存纸张、队列和内容；不得用新采样替换。</param>
     /// <returns>真实驱动提交状态或明确演练状态，不证明物理出纸。</returns>
     /// <exception cref="Exception">驱动拒绝、纸张配置不合法或打印I/O失败。</exception>
     TicketOutput Submit(LocalTicket ticket);

@@ -13,7 +13,7 @@ BASELINE_VERSION = '1000.24'
 
 
 def check_snapshot(directory: Path = MIGRATION_DIR, manifest_path: Path = MANIFEST_PATH) -> dict:
-    """检查已批准模块快照；目录和清单必须存在，差异抛ValueError，不连接数据库。"""
+    """检查已批准模块结构清单；目录和清单必须存在，差异抛ValueError，不连接数据库。"""
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     if manifest.get('format') != 'postgresql-module-snapshot-v1' or manifest.get('version') != BASELINE_VERSION:
         raise ValueError('模块初始化清单格式或版本不符')
@@ -40,7 +40,7 @@ def check_snapshot(directory: Path = MIGRATION_DIR, manifest_path: Path = MANIFE
                       ('legacy_migration_manifest.json', 'legacy_manifest_sha256')]:
         content = (ROOT / 'tools' / name).read_text(encoding='utf-8')
         if hashlib.sha256(content.encode('utf-8')).hexdigest() != manifest.get(key):
-            raise ValueError('旧库切换的元数据与模块快照清单不符：' + name)
+            raise ValueError('旧库切换的元数据与模块结构清单清单不符：' + name)
     for path in directory.glob('*.sql'):
         if path.name in {entry['file'] for entry in entries}:
             continue

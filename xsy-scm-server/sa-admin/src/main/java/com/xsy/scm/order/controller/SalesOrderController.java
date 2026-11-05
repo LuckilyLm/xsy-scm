@@ -117,7 +117,7 @@ public class SalesOrderController {
     }
 
     /**
-     * 最近采购价只作为录单参考，不参与当前商品定价。查询必须同时具备订单查询和成本查看权限； 取数再按采购员数据范围收窄，范围为空时失败关闭。
+     * 最近采购价只作为录单参考，不参与当前商品定价。查询必须同时具备订单查询和成本查看权限； 取数再按采购员数据范围收窄，范围为空时校验失败时拒绝操作。
      */
     @GetMapping("/reference/last-purchase-prices")
     @SaCheckPermission(value = {OrderPermission.QUERY, ScmReportPermission.COST_QUERY}, mode = SaMode.AND)

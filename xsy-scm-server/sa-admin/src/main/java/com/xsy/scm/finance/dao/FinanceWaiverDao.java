@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 抹零事实只追加、不修改：反向是追加一条 REVERSE 核销行，抹零表本身不留状态。
+ * 抹零记录只能新增、不修改：反向是追加一条 REVERSE 核销行，抹零表本身不留状态。
  */
 @Mapper
 public interface FinanceWaiverDao extends AppendOnlyMapper<FinanceWaiverEntity> {

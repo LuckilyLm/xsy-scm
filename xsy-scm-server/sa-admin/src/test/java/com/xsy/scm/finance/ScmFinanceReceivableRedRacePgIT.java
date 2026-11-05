@@ -52,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 后拿到锁的一方在 {@code READ COMMITTED} 下必然看见先提交的一方，
  * 于是两条路径都调用同一个红字算法，其中一次真正生成、另一次命中来源唯一索引静默返回。
  *
- * <p>断言只看最终事实，不断言哪个线程一定先成功 —— 先后取决于调度，写死顺序的断言
+ * <p>断言只看最终记录，不断言哪个线程一定先成功 —— 先后取决于调度，写死顺序的断言
  * 只是在测调度器。同时把两边的异常都收上来断言为空，因此死锁 / 超时 / 一方被牺牲都会红。
  */
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -159,7 +159,7 @@ class ScmFinanceReceivableRedRacePgIT extends ScmW6PgITBase {
 
     /**
      * 工作线程必须自带请求身份：{@code SmartRequestUtil} 是 ThreadLocal，
-     * 而签收人与批准人要落进财务事实（{@code signed_by} / {@code updated_by}）。
+     * 而签收人与批准人要落进财务记录（{@code signed_by} / {@code updated_by}）。
      */
     private void login(String name) {
         var employee = new RequestEmployee();
@@ -227,7 +227,7 @@ class ScmFinanceReceivableRedRacePgIT extends ScmW6PgITBase {
             assertThat(signFailure.get()).as("签收侧不得失败（死锁会被 PostgreSQL 牺牲成异常）").isNull();
             assertThat(approveFailure.get()).as("批准侧不得失败").isNull();
 
-            // 最终事实：一正一红，红字挂对原单、金额与来源正确
+            // 最终记录：一正一红，红字挂对原单、金额与来源正确
             Map<String, Object> normal = jdbc.queryForMap(
                     "SELECT * FROM xsy_finance_receivable WHERE source_type = 'SALES_ORDER'"
                             + " AND entry_type = 'NORMAL' AND source_id = ?", orderId);
@@ -245,7 +245,7 @@ class ScmFinanceReceivableRedRacePgIT extends ScmW6PgITBase {
                     "SELECT count(*) FROM xsy_finance_receivable_item WHERE receivable_id = ?",
                     Integer.class, ((Number) red.get("id")).longValue())).isEqualTo(1);
 
-            // 两边都尝试过派生，但每条事实只落一次
+            // 两边都尝试过派生，但每条记录只落一次
             assertThat(jdbc.queryForObject(
                     "SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'RECEIVABLE'"
                             + " AND business_id = ? AND operation_type = 'GENERATE'",

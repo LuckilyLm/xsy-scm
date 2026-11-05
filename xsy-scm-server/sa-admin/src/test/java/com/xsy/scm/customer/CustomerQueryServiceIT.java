@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>重点是两件在纯单测里证明不了的事：
  * <ul>
  *   <li><b>批量补全</b>（类型名 / 上级客户名 / 业务员名 / 供应商名）真的从关联表读到了名字；</li>
- *   <li><b>金额契约</b>——{@code NUMERIC(18,4)} 序列化成 4 位小数字符串，且 {@code null} 保持 {@code null}
+ *   <li><b>金额约定</b>——{@code NUMERIC(18,4)} 序列化成 4 位小数字符串，且 {@code null} 保持 {@code null}
  *       （不能被写成 {@code "0.0000"}，否则「未设置账期」与「账期为 0」会被混淆）。</li>
  * </ul>
  */
@@ -175,7 +175,7 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("金额契约：授信额度序列化为 4 位小数字符串，未设置的账期阈值保持 null")
+    @DisplayName("金额约定：授信额度序列化为 4 位小数字符串，未设置的账期阈值保持 null")
     void decimalContractSurvivesSerialization() throws Exception {
         CustomerAddForm form = form("J1");
         form.setCreditLimit("1234.5");

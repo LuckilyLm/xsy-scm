@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 采购单分配级差量契约测试 —— 分配集合的核心防线。
+ * 采购单分配级差量约定检查 —— 分配集合的核心防线。
  *
  * <p>allocation 身份 = {@code (purchase_order_item_id, purchase_demand_id)}。
  * 用 {@code Map<itemId, allocation>} 覆盖写的实现，会让「一行多需求」在编辑时只保留最后一条。

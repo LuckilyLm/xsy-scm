@@ -11,7 +11,7 @@ public class FinanceSupplierFactDto {
     private Long supplierId;
 
     /**
-     * {@code xsy_supplier.name}，登记时冻结为 {@code counterparty_name_snapshot}。
+     * {@code xsy_supplier.name}，登记时保存为 {@code counterparty_name_snapshot}。
      */
     private String supplierName;
 }

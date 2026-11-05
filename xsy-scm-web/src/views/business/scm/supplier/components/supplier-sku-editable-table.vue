@@ -200,7 +200,7 @@ const unitOptions = computed(() => {
 
 const emptyText = computed(() => props.emptyText ?? '尚未关联任何商品；点击“添加商品”开始');
 
-/** 已有关联行用列表快照回显，避免首屏 50 条之外只剩数字 ID。 */
+/** 已有关联行用列表保存的数据回显，避免首屏 50 条之外只剩数字 ID。 */
 function selectedSkuOptions(record: SkuDraft): SelectedSkuOption[] {
   if (record.skuId == null || !record.skuNameSnapshot) return [];
   const spec = Object.values(record.specValuesSnapshot ?? {}).join('/') || '默认规格';

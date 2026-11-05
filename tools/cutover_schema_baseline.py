@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 VERSION = '1000.24'
 DESCRIPTION = 'SCM module baseline V244'
 
-# 旧V243与最终模块快照的唯一默认数据差异；不处理自建模板及历史打印快照。
+# 旧V243与最终模块结构清单的唯一默认数据差异；不处理自建模板及历史当时保存的打印内容。
 PRINT_TEMPLATE_PATCH = """
 UPDATE xsy_v2.xsy_print_template t
 SET model=jsonb_insert(t.model,
@@ -83,7 +83,7 @@ def backend_rule_catalog(expected: dict) -> dict:
     triggers = {key for key in expected if key.startswith('trigger:')}
     functions = {key for key in expected if key.startswith('function:')}
     if (len(checks), len(triggers), len(functions)) != (675, 34, 31):
-        raise ValueError('冻结基线的业务保护清单不一致，不能派生V1001结构目标')
+        raise ValueError('已发布的初始版本的业务保护清单不一致，不能派生V1001结构目标')
     return {key: value for key, value in expected.items() if key not in checks | triggers | functions}
 
 

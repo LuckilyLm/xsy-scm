@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.*;
  * 单元测试只能证明合并结果，这里要证明的是「只改一列不会清掉其他列、未列出的 SKU 不会被删」
  * 这类只有落到 {@code ProductSpuService.update} 与变更集上才会暴露的破坏性语义，以及整批回滚。
  * <p>本类<b>不加</b> {@code @Transactional}：更新写入必须真的提交，之后才能在新的只读事务里
- * 读回事实；写阶段冲突的整批回滚也只有脱离测试事务才观察得到。用例结束时按前缀清理自建数据。
+ * 读回记录；写阶段冲突的整批回滚也只有脱离测试事务才观察得到。用例结束时按前缀清理自建数据。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
         "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
@@ -113,7 +113,7 @@ class ProductImportUpdatePgIT {
         assertThat(result.getTotalErrors()).isZero();
         assertThat(price(target)).isEqualByComparingTo("9.0000");
 
-        // 改价会带着既有图片走同一条同步链：内容角色与主图事实都必须原样保留
+        // 改价会带着既有图片走同一条同步链：内容角色与主图记录都必须原样保留
         var after = jdbc.queryForMap("SELECT image_type, is_primary, version FROM xsy_product_image WHERE id=?", image);
         assertThat(after.get("image_type")).isEqualTo("DETAIL");
         assertThat(after.get("is_primary")).isEqualTo(true);
@@ -132,7 +132,7 @@ class ProductImportUpdatePgIT {
         var sku = jdbc.queryForMap("SELECT market_price, sale_unit, product_type, status, is_default, spec_values::text AS specs,"
                 + " version FROM xsy_product_sku WHERE id=?", keepMe);
         assertThat((BigDecimal) sku.get("market_price")).isEqualByComparingTo("3.4500");
-        // 文件里这些列全是空白：单位、类型、上下架、默认标记与规格快照都必须还是原值（本行是非默认 SKU）
+        // 文件里这些列全是空白：单位、类型、上下架、默认标记与商品规格资料都必须还是原值（本行是非默认 SKU）
         assertThat(sku.get("sale_unit")).isEqualTo("份");
         assertThat(sku.get("product_type")).isEqualTo("STANDARD");
         assertThat(sku.get("status")).isEqualTo("ON_SHELF");

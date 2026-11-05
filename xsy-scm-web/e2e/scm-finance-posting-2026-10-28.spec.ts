@@ -3,7 +3,7 @@
  *
  * 覆盖页面上能看见的闭环：登记 → 列表 → 修改 → 作废。
  * 「不生成应收应付、不影响对账余额」由 FinancePostingIT / StatementPostingOptionPgIT 覆盖，
- * 这里只确认页面确实按这套口径把单据写进了外部账单表，而不是写成了应收。
+ * 这里只确认页面确实按这套规则把单据写进了外部账单表，而不是写成了应收。
  */
 import {test, expect} from './scm-test-base';
 import type {APIRequestContext, Page} from '@playwright/test';

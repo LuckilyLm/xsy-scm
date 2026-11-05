@@ -1,4 +1,4 @@
-<!-- workspace：冻结批次明细的两张宽表要横向铺开才看得清。
+<!-- workspace：计算结果批次明细的两张宽表要横向铺开才看得清。
      只读，数字都由后端下发，前端不重算；接口同时校验批次和库存余额权限。 -->
 <template>
   <a-drawer :open="open" title="需求计算明细" :width="scmDrawerWidth('workspace')" @close="close">

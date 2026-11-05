@@ -14,7 +14,7 @@ import type {
   PromotionDiscountLine,
 } from '/@/views/business/scm/promotion/promotion-types';
 
-/** 幂等命令通道：失败保留同一 UUID 供重试，成功即释放，内容变化后换新键。 */
+/** 防重复处理命令通道：失败保留同一 UUID 供重试，成功即释放，内容变化后换新键。 */
 const keys = new Map<string, string>();
 
 async function promotionCommand<T>(path: string, data: unknown): Promise<ScmResponse<T>> {
@@ -59,14 +59,14 @@ export const promotionApi = {
   couponStatus: (id: Id, version: number, status: 'ACTIVE' | 'STOPPED') =>
     postRequest<string>(`/scm/promotion/coupon/${id}/status`, {version, status}),
 
-  /** 发券：带 `Idempotency-Key`，重试回放首次结果，不重复发券。 */
+  /** 发券：带 `Idempotency-Key`，重试返回首次处理结果，不重复发券。 */
   couponIssue: (couponId: Id, customerId: Id, quantity: number) =>
     promotionCommand<number>('/scm/promotion/coupon/issue', {couponId, customerId, quantity}),
 
   couponInstances: (customerId: Id, status?: string, options?: RequestOptions) =>
     getRequest<PromotionCouponInstance[]>('/scm/promotion/coupon/instances', status ? {customerId, status} : {customerId}, options),
 
-  // ---- 优惠试算 / 冻结 ----
+  // ---- 优惠试算 / 保存 ----
   discountPreview: (
     form: {
       customerId: Id;
@@ -77,5 +77,5 @@ export const promotionApi = {
     options?: RequestOptions
   ) => postRequest<PromotionDiscount>('/scm/promotion/discount/preview', form, options),
 
-  /** 优惠冻结属于服务端订单确认事务，前端只选择优惠券，不单独提交活动或调用冻结接口。 */
+  /** 优惠保存属于服务端订单确认事务，前端只选择优惠券，不单独提交活动或调用保存接口。 */
 };

@@ -15,7 +15,7 @@ public class FinanceReturnSourceLineDto {
     private Long orderItemId;
 
     /**
-     * {@code xsy_order_return_item} 不存商品快照，SKU 三件套从其来源订单行取。
+     * {@code xsy_order_return_item} 不存当时的商品资料，SKU 三件套从其来源订单行取。
      */
     private Long skuId;
 

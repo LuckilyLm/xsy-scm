@@ -1,4 +1,4 @@
-"""模块快照、checksum与旧库切换前提的回归源码；不依赖数据库即可执行。"""
+"""模块结构清单、checksum与旧库切换前提的回归源码；不依赖数据库即可执行。"""
 import contextlib
 import copy
 import io

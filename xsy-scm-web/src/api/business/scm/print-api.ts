@@ -1,4 +1,4 @@
-/** 打印模板管理与单据查看权限分开；正式打印用幂等键防重复，预览不计次。 */
+/** 打印模板管理与单据查看权限分开；正式打印用防重复请求编号防重复，预览不计次。 */
 import {getRequest, postRequest, request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
@@ -20,7 +20,7 @@ import type {
 
 const keys = new Map<string, string>();
 
-/** 幂等 POST：同签名重试复用同一个键，成功后释放。 */
+/** 防重复处理 POST：同签名重试复用同一个键，成功后释放。 */
 async function printCommand<T>(path: string, data: unknown): Promise<ScmResponse<T>> {
   const signature = path + JSON.stringify(data);
   let key = keys.get(signature);

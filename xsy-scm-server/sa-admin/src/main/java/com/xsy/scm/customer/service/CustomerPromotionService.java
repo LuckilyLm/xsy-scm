@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 客户专属推广二维码。
  *
  * <p>
- * 码属于客户，业务员取扫码时客户当时的 seller_id：客户换了业务员，历史扫码仍能看出当时是谁的线索。扫码只追加记录，不改归属；真正挂到业务员名下是后台建客户时。
+ * 码属于客户，业务员取扫码时客户当时的 seller_id：客户换了业务员，历史扫码仍能看出当时是谁的线索。扫码只能新增记录，不改归属；真正挂到业务员名下是后台建客户时。
  */
 @Service
 @RequiredArgsConstructor

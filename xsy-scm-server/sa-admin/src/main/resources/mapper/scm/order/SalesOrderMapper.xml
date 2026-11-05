@@ -22,7 +22,7 @@
     </select>
 
     <!--
-      与发车出库同一取数口径（xsy_delivery_route_order → SortingQueryDao.sortedLines）：已完成任务的有效明细。
+      与发车出库同一取数规则（xsy_delivery_route_order → SortingQueryDao.sortedLines）：已完成任务的有效明细。
       含 0 数量，缺货行也必须按 0 打送货单；行还没分拣时整行不返回，调用方回落到订单实发/下单量。
     -->
     <select id="sortedQuantities" resultType="com.xsy.scm.order.domain.dto.SalesOrderSortedQuantityDto">
@@ -185,8 +185,8 @@
         FROM xsy_sales_order
         WHERE deleted = FALSE
         <!--
-          数据范围（裁决「P0 基线收口裁决」第 2、6 条）：scope 缺省即失败关闭，绝不允许「不传 = 全量」。
-          scope.all 时不拼任何谓词，因此 seller_id IS NULL 的未分配单对持全量范围者可见，这是有意口径。
+          数据范围（裁决「P0 基线收口裁决」第 2、6 条）：scope 缺省即校验失败时拒绝操作，绝不允许「不传 = 全量」。
+          scope.all 时不拼任何谓词，因此 seller_id IS NULL 的未分配单对持全量范围者可见，这是有意规则。
         -->
         <if test="scope != null and scope.all == false">
             AND seller_id IN

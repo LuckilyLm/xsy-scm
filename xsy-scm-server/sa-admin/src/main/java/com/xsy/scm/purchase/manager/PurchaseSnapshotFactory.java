@@ -40,7 +40,7 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * 新建采购单时写入供应商、仓库快照；新建即提交，后续编辑只改允许变更的字段。 采购员由服务端确定，不能信任客户端传入的 ID。
+     * 新建采购单时写入供应商、仓库保存的数据；新建即提交，后续编辑只改允许变更的字段。 采购员由服务端确定，不能信任客户端传入的 ID。
      */
     public static PurchaseOrderEntity order(String supplierCode, String supplierName, String warehouseCode,
         String warehouseName, Long purchaserId, PurchaseOrderAddForm form) {
@@ -249,7 +249,7 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * 可变的 JSONB 记录容器（{@code Map.of} 不可变，日志记录需要逐项 put）。
+     * 可变的 JSONB 记录容器（{@code Map.of} 不可修改，日志记录需要逐项 put）。
      */
     public static Map<String, Object> snapshot() {
         return new LinkedHashMap<>();

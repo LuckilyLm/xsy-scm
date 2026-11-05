@@ -321,7 +321,7 @@ public class PurchaseOrderService {
      * 少收关单的核心转换：锁单 → 版本校验 → 状态机 → 「至少一行已收且一行未收齐」→ 保存 → 操作日志。
      *
      * <p>
-     * 单张命令与批量命令共用此方法，对合法性、版本、原因的要求完全一致；区别只在批量命令不走每单幂等 （整批在同一事务内要么全成要么全回滚）。
+     * 单张命令与批量命令共用此方法，对合法性、版本、原因的要求完全一致；区别只在批量命令不走每单防重复处理 （整批在同一事务内要么全成要么全回滚）。
      */
     private PurchaseOrderVO applyShortClose(PurchaseOrderShortCloseForm form) {
         PurchaseOrderEntity order = lockOrder(form.getId());
@@ -357,7 +357,7 @@ public class PurchaseOrderService {
     public void delete(PurchaseOrderDeleteForm form) {
         PurchaseOrderEntity order = purchaseOrderDao.lock(form.getId());
         if (order == null) {
-            // 幂等：已删除视为成功（与单张删除一致）
+            // 防重复处理：已删除视为成功（与单张删除一致）
             return;
         }
         // 删除没走 lockOrder，归属守卫单独补一次；批量删除逐单委托本方法，因此同样生效

@@ -6,12 +6,12 @@
 
 <!-- 勾选本次触碰到的，并在下方说明如何保证。未触碰的项不必勾选。 -->
 
-- [ ] 幂等（`IdempotencyService.claim` / `complete` / `replay`）
+- [ ] 防重复处理（`IdempotencyService.claim` / `complete` / `replay`）
 - [ ] 锁序 P12（`FOR UPDATE` 加锁顺序、批量按 id 升序）
-- [ ] 迁移不可变性 / 版本号唯一连续
+- [ ] 迁移不可修改的要求 / 版本号唯一连续
 - [ ] 无外键原则（关系完整性由服务层 + 唯一约束 + CHECK 保证）
 - [ ] 库存 Q13 单位不变量 / Q7 只增账本
-- [ ] 事务边界（`@Transactional` 只在编排层）
+- [ ] 事务边界（`@Transactional` 只在协调层）
 - [ ] 状态机（`PurchaseOrderStateMachine` 等，而非裸写 `setStatus`）
 - [ ] 文件访问策略（公开目录 / 存量私有附件授权）
 - [ ] 以上均不涉及

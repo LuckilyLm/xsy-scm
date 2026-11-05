@@ -34,12 +34,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * 工作台卡片口径与门禁的纯逻辑单测（无库）。
+ * 工作台卡片规则与门禁的纯逻辑单测（无库）。
  *
  * <p>钉住两件事：<b>库存预警卡片的数字来自预警列表本身</b>（不是指标层那张更宽的健康度分档求和，
  * 否则会出现「首页 12、点进去只有 8」），以及逐卡裁剪与库存健康度的权限边界。
  */
-@DisplayName("工作台卡片口径与门禁（unit）")
+@DisplayName("工作台卡片规则与门禁（unit）")
 class ScmDashboardServiceTest {
 
     private final LoginManager loginManager = mock(LoginManager.class);
@@ -133,7 +133,7 @@ class ScmDashboardServiceTest {
     }
 
     @Test
-    @DisplayName("可见卡片与其聚合必须配套：编排漏取数时直接报错，不静默给 0")
+    @DisplayName("可见卡片与其聚合必须配套：协调漏取数时直接报错，不静默给 0")
     void missingAggregationForVisibleCardFailsLoudly() {
         assertThatThrownBy(() -> service.cardsFor(
                 List.of(com.xsy.scm.dashboard.constant.ScmDashboardCardEnum.SALES_AMOUNT), null, null, 0L))

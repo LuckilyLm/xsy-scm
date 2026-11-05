@@ -51,7 +51,7 @@ public final class TraceUnitVO {
         private String createdBy;
     }
 
-    /** 批次信息（回放用）。 */
+    /** 批次信息（历史记录查询用）。 */
     @Data
     public static class Lot {
         private Long lotId;
@@ -65,7 +65,7 @@ public final class TraceUnitVO {
         private String skuName;
     }
 
-    /** 收货来源（回放用）：批次首次入库的那张收货单。 */
+    /** 收货来源（历史记录查询用）：批次首次入库的那张收货单。 */
     @Data
     public static class Receipt {
         private String receiptNo;
@@ -73,7 +73,7 @@ public final class TraceUnitVO {
         private OffsetDateTime confirmedAt;
     }
 
-    /** 出库去向（回放用）：该批次参与过的出库单。 */
+    /** 出库去向（历史记录查询用）：该批次参与过的出库单。 */
     @Data
     public static class Outbound {
         private String outboundNo;
@@ -129,7 +129,7 @@ public final class TraceUnitVO {
         private BigDecimal balance;
     }
 
-    /** 一个包装码的完整回放：单元 → 批次 → 收货来源 → 分拣绑定 → 出库去向。 */
+    /** 一个包装码的完整历史记录查询：单元 → 批次 → 收货来源 → 分拣绑定 → 出库去向。 */
     @Data
     public static class Replay {
         private Unit unit;

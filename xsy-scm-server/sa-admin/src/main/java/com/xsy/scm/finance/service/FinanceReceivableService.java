@@ -287,7 +287,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 客户级红字单头：来源是独立退货单，订单与原应收都为空；到期日与信用规则由数据库触发器按 RED 分支留空。
+     * 客户级红字单头：来源是独立退货单，订单与原应收都为空；到期日与账期规则不填，因为没有可沿用的原应收。
      */
     private FinanceReceivableEntity independentRedHeader(FinanceIndependentReturnSourceDto returned,
         BigDecimal amount) {
@@ -387,7 +387,7 @@ public class FinanceReceivableService {
      * 行级优惠分摊：把保存的订单行优惠按「该行本次金额 / 该订单行下单金额」等比折算到本次行金额上。
      *
      * <p>
-     * 必须等比：优惠是按下单金额保存的，少发或部分退货时该行应承担的优惠要按比例变小。整额落到部分金额上会减出负数（被数据库 CHECK 拒绝）， 也会让部分退货多冲优惠。
+     * 必须等比：优惠是按下单金额保存的，少发或部分退货时该行应承担的优惠要按比例变小。整额落到部分金额上会减出不允许的负数， 也会让部分退货多冲优惠。
      *
      * <p>
      * 正常与红字共用本方法，因此「已确认优惠 × 退货金额 / 已出库金额」与「保存的行分摊 × 退货金额 / 下单金额」恒等， 红字不必回读正常应收明细就能得到一致的反向额。
@@ -410,7 +410,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 生成类动作的 {@code after_data} 单头快照。金额与时间写成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是未注册 JavaTimeModule 的
+     * 生成类动作的 {@code after_data} 单头保存的数据。金额与时间写成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是未注册 JavaTimeModule 的
      * ObjectMapper。
      */
     private Map<String, Object> generatedSnapshot(FinanceReceivableEntity receivable, int itemCount) {
@@ -420,7 +420,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 红字的 {@code after_data}：除单头快照外必须能直接看出它冲的是哪张原应收、来源是哪张退货单 ，否则事后核对要连表跳三次。
+     * 红字的 {@code after_data}：除单头保存的数据外必须能直接看出它冲的是哪张原应收、来源是哪张退货单 ，否则事后核对要连表跳三次。
      */
     private Map<String, Object> redGeneratedSnapshot(FinanceReceivableEntity red, FinanceReturnSourceDto returned,
         int itemCount) {

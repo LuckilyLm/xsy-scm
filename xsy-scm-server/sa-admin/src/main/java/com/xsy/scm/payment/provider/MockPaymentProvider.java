@@ -187,7 +187,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
     }
 
     /**
-     * 渠道交易号：由本地意图号稳定派生，因此同一意图重发得到同一个渠道号（便于幂等验证）。
+     * 渠道交易号：由本地意图号稳定派生，因此同一意图重发得到同一个渠道号（便于防重复处理验证）。
      */
     private static String transactionNoOf(String intentNo) {
         return "MOCK-TXN-" + intentNo;

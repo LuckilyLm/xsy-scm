@@ -132,7 +132,7 @@ public class ProductImageCenterService {
      * 生成「商品编码.jpg / 商品编码-2.jpg / 商品编码-3.jpg」形式的展示名。
      *
      * <p>
-     * 只影响商品图片记录里的 fileName，存储 key 仍是上传时的不可变文件名；序号会跳过该商品已占用的名称。
+     * 只影响商品图片记录里的 fileName，存储 key 仍是上传时的不可修改文件名；序号会跳过该商品已占用的名称。
      */
     private List<String> generatedFileNames(String spuCode, List<ProductImageEntity> existing,
         List<ProductImageCenterForms.BindItem> binds) {

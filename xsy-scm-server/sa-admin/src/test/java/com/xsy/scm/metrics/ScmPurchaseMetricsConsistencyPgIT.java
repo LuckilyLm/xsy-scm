@@ -28,19 +28,19 @@ import java.time.ZoneId;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 采购指标口径（PG IT）：提交轴 + 已提交状态。
+ * 采购指标规则（PG IT）：提交轴 + 已提交状态。
  *
  * <p>钉住四件事，它们都不会报错、只会给出一个看起来正常的错数：
  * <ol>
  * <li>采购额按 {@code submitted_at} 归属，不按 {@code created_at}。</li>
  * <li>草稿不计入 —— 它还没进入履约链路。</li>
- * <li>取消后不计入（当前有效口径）：这是有意的，前提是「取消只发生在未收货的单上」。</li>
+ * <li>取消后不计入（当前有效规则）：这是有意的，前提是「取消只发生在未收货的单上」。</li>
  * <li>收货单在确认之后才计入，草稿收货单不算「今天收了多少货」。</li>
  * </ol>
  *
- * <p>本类验的是口径，不是数据范围，因此以超管身份执行；范围收窄由 {@code ScmScreenDataScopePgIT} 负责。
+ * <p>本类验的是规则，不是数据范围，因此以超管身份执行；范围收窄由 {@code ScmScreenDataScopePgIT} 负责。
  */
-@DisplayName("采购指标口径：提交轴 + 已提交状态（PG IT）")
+@DisplayName("采购指标规则：提交轴 + 已提交状态（PG IT）")
 class ScmPurchaseMetricsConsistencyPgIT extends ScmW5PgITBase {
 
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
@@ -58,7 +58,7 @@ class ScmPurchaseMetricsConsistencyPgIT extends ScmW5PgITBase {
     void loginAsAdministrator() {
         RequestEmployee employee = new RequestEmployee();
         employee.setEmployeeId(1L);
-        employee.setActualName("采购口径 IT");
+        employee.setActualName("采购规则 IT");
         employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
         employee.setAdministratorFlag(true);
         employee.setDepartmentId(1L);
@@ -115,7 +115,7 @@ class ScmPurchaseMetricsConsistencyPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("提交后又取消：退出采购额（当前有效口径）")
+    @DisplayName("提交后又取消：退出采购额（当前有效规则）")
     void cancelledOrderDropsOutOfPurchaseAmount() {
         Long skuId = newOnShelfSku("PQC");
         Long supplierId = newPurchasableSupplier("PQC", skuId);
@@ -130,7 +130,7 @@ class ScmPurchaseMetricsConsistencyPgIT extends ScmW5PgITBase {
         PurchaseOrderCancelForm cancel = new PurchaseOrderCancelForm();
         cancel.setId(draft.getId());
         cancel.setVersion(reloadOrder(draft.getId()).getVersion());
-        cancel.setCancelReason("口径 IT：提交后取消");
+        cancel.setCancelReason("规则 IT：提交后取消");
         purchaseOrderService.cancel(cancel, prefix + ":cancel:" + draft.getId());
         evictMybatisCache();
 
@@ -182,7 +182,7 @@ class ScmPurchaseMetricsConsistencyPgIT extends ScmW5PgITBase {
 
         int last = trend.purchaseAmounts().size() - 1;
         assertThat(trend.fullDates().get(last)).isEqualTo(LocalDate.now(BUSINESS_ZONE).toString());
-        assertThat(trend.purchaseAmounts().get(last)).as("趋势末点与大屏 KPI 必须同口径")
+        assertThat(trend.purchaseAmounts().get(last)).as("趋势末点与大屏 KPI 必须同规则")
                 .isEqualByComparingTo(kpi.todayPurchaseAmount());
         assertThat(trend.purchaseOrders().get(last)).as("单数同理").isEqualTo(kpi.todayPurchaseOrderCount());
 

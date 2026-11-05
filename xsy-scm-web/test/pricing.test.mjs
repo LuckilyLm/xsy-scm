@@ -1,5 +1,5 @@
 /**
- * 价格模块契约测试。
+ * 价格模块约定检查。
  *
  * 由 2 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -13,7 +13,7 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
 {
   /*
    * 价格来源是后端枚举直出的字段：前端只要漏一个映射，订单行就会把英文常量端给使用者。
-   * 这条契约把「后端枚举 = 前端映射键」钉死，新增来源时漏改会当场失败。
+   * 这条约定把「后端枚举 = 前端映射键」钉死，新增来源时漏改会当场失败。
    */
 
   const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -29,7 +29,7 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     return [...backend.matchAll(/^\s{4}([A-Z_]+)\(/gm)].map((m) => m[1]);
   }
 
-  test('后端价格来源枚举非空，避免契约空转', () => {
+  test('后端价格来源枚举非空，避免约定空转', () => {
     const sources = backendSources();
     assert.ok(sources.length >= 4, `解析到的来源过少：${sources.join(',')}`);
     assert.ok(sources.includes('TIME_PRICE'));
@@ -117,7 +117,7 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     assert.match(drawer, /:min="0"/);
     // 提交前必须收口回 4 位定点字符串：后端拒绝 JSON 数字，也拒绝空串
     assert.match(drawer, /form\.unitPrice\s*=\s*form\.formulaType\s*===\s*'FIXED'\s*\?\s*moneyPayload\(form\.unitPriceInput\)\s*:\s*null/);
-    // 模型必须是稳定对象：`:model="{...form, ...}"` 每次渲染新建对象，change 校验读到的是上一份快照，
+    // 模型必须是稳定对象：`:model="{...form, ...}"` 每次渲染新建对象，change 校验读到的是上一份保存的数据，
     // 表现为「选了客户仍提示请选择客户」「填了单价仍提示请填写单价」
     assert.doesNotMatch(drawer, /:model="\{\.\.\./);
     assert.match(drawer, /:model="form"/);

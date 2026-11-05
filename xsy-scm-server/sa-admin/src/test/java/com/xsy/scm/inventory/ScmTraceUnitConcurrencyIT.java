@@ -121,7 +121,7 @@ class ScmTraceUnitConcurrencyIT extends ScmW6PgITBase {
                     })));
             assertThat(dispatched.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
             Future<?> binding = pool.submit(withOperator(() -> traceUnitService.bind(form, "W9 late bind")));
-            // 发货尚未提交时绑定必须等待；提交后必须复核出库，不能使用旧快照通过。
+            // 发货尚未提交时绑定必须等待；提交后必须复核出库，不能使用原来保存的资料通过。
             assertThatThrownBy(() -> binding.get(300, TimeUnit.MILLISECONDS))
                 .isInstanceOf(java.util.concurrent.TimeoutException.class);
             commit.countDown();
@@ -167,7 +167,7 @@ class ScmTraceUnitConcurrencyIT extends ScmW6PgITBase {
 
     /**
      * 工作线程没有父线程的登录上下文（{@code SmartRequestUtil} 是 ThreadLocal），
-     * 而数据范围解析会因「取不到登录员工」失败关闭 —— 必须在线程内重新挂身份。
+     * 而数据范围解析会因「取不到登录员工」校验失败时拒绝操作 —— 必须在线程内重新挂身份。
      */
     private Runnable withOperator(Runnable task) {
         return () -> {

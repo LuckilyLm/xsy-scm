@@ -321,7 +321,7 @@ async function preview() {
       const p = r.data.items.find((p) => String(p.skuId) === String(i.skuId));
       i.draftUnitPrice = p?.unitPrice ?? null;
       i.draftPriceSource = p?.priceSource ?? null;
-      // 单位用于参考价对比，只在解析结果给出时覆盖，避免清掉已保存行的快照
+      // 单位用于参考价对比，只在解析结果给出时覆盖，避免清掉已保存行的已存数据
       if (p?.saleUnit) i.saleUnitSnapshot = p.saleUnit;
     }
   } catch (e) {

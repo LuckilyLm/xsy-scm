@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 付款登记（PG IT）。
  *
- * <p>这里钉的是「一笔付出就是一个事实，且它只有两种成立方式」：
+ * <p>这里钉的是「一笔付出就是一个记录，且它只有两种成立方式」：
  * {@code SUPPLIER} + 无来源（付款 / 预付，允许当前没有任何应付），
  * {@code CUSTOMER} + {@code ORDER_REFUND}（退款付款，必须 COMPLETED 且金额与对方逐值相等）。
  * 其余组合一律 41139，包括「客户无来源付款」—— 客户侧付款必须挂在退款来源上。
@@ -178,7 +178,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     private List<Map<String, Object>> logsOf(Long paymentId) {
-        // business_id 只在同一 business_type 内唯一（各事实表各有 id 序列），必须带类型
+        // business_id 只在同一 business_type 内唯一（各记录表各有 id 序列），必须带类型
         return jdbc.queryForList(
                 "SELECT * FROM xsy_finance_operation_log WHERE business_type = 'PAYMENT' AND business_id = ?",
                 paymentId);
@@ -202,7 +202,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
                 + " AND p.counterparty_id = ?", supplierId);
     }
 
-    /** 某退款名下的付款数（来源两列一起判，与 {@code uk_finance_payment_source_active} 同口径）。 */
+    /** 某退款名下的付款数（来源两列一起判，与 {@code uk_finance_payment_source_active} 同规则）。 */
     private int paymentsOfRefund(Long refundId) {
         return count("SELECT count(*) FROM xsy_finance_payment"
                 + " WHERE source_type = 'ORDER_REFUND' AND source_id = ?", refundId);
@@ -292,7 +292,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         assertThat(String.valueOf(row.get("payment_no"))).matches("^XSY\\d{18,19}$");
         assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
                 result.getPaymentId())).as("该笔预付款不自动生成核销").isZero();
-        assertThat(result.getCounterpartyName()).as("回显登记时冻结的对方名").isEqualTo(row.get("counterparty_name_snapshot"));
+        assertThat(result.getCounterpartyName()).as("回显登记时保存的对方名").isEqualTo(row.get("counterparty_name_snapshot"));
     }
 
     @Test
@@ -325,7 +325,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("C 供应商两笔完全相同的事实：不同命令即两张付款单（没有自然唯一键）")
+    @DisplayName("C 供应商两笔完全相同的记录：不同命令即两张付款单（没有自然唯一键）")
     void twoIdenticalSupplierPaymentsAreBothAccepted() {
         Long supplierId = supplier();
         FinancePaymentAddForm first = supplierForm(supplierId, "120.0000");
@@ -340,7 +340,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
 
         assertThat(firstId).isNotEqualTo(secondId);
         assertThat(paymentsOfSupplier(supplierId))
-                .as("对方 / 金额 / 时点 / 凭据号四项全同也不构成重复事实").isEqualTo(2);
+                .as("对方 / 金额 / 时点 / 凭据号四项全同也不构成重复记录").isEqualTo(2);
 
         // 库侧取证：finance_payment 的全部唯一索引只有主键、单据号、来源（含 source_id IS NOT NULL 谓词）
         // 与反向唯一 —— 没有任何按业务字段组合的自然键。
@@ -469,14 +469,14 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         expectCode(() -> add(form("CUSTOMER", refund.customerId(), refund.refundAmount().toPlainString(),
                 "CASH", PAST, "SALES_ORDER", 12345L)), 41139);
         assertThat(paymentsOfRefund(refund.refundId()) + paymentsOfSupplier(supplierId))
-                .as("两种越界来源都没落库").isZero();
+                .as("两种越界来源都没写入数据库").isZero();
 
         expectCode(() -> add(form("WAREHOUSE", supplierId, "10.0000", "CASH", PAST, null, null)), 40000);
         assertThat(paymentsOfRefund(refund.refundId()) + paymentsOfSupplier(supplierId)).isZero();
     }
 
     @Test
-    @DisplayName("K 同一退款顺序重复付款（两个不同幂等键）：第二次被来源唯一索引拒绝")
+    @DisplayName("K 同一退款顺序重复付款（两个不同防重复请求编号）：第二次被来源唯一索引拒绝")
     void secondPaymentForSameRefundIsRejectedBySourceUnique() {
         Refund refund = completedRefund("K", "10.0000", "2.0000");
         String exact = refund.refundAmount().toPlainString();
@@ -503,7 +503,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     void paymentNeverReducesReceivableTwice() {
         Refund refund = completedRefund("M", "10.0000", "2.0000");
         // 该退货发生在签收之前，因此批准时成功跳过、库里此刻没有红字。
-        // 直接按 schema 补两张应收事实作为「已存在」的前置，不依赖签收链路。
+        // 直接按 schema 补两张应收记录作为「已存在」的前置，不依赖签收链路。
         jdbc.update("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id,"
                         + " customer_id, customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, amount, event_at,"
@@ -547,7 +547,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("O paid_at 由调用方给出并逐值落库；P 未来时点不被拒绝")
+    @DisplayName("O paid_at 由调用方给出并逐值写入数据库；P 未来时点不被拒绝")
     void paidAtIsTheCallerSuppliedMoment() {
         Long supplierId = supplier();
         Long receiptId = add(supplierForm(supplierId, "31.0000")).getPaymentId();
@@ -584,7 +584,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("S 金额形态与收款同一契约：0 / 负 / 超精度 / 科学计数 / NaN 全拒，合法值补齐 scale 4")
+    @DisplayName("S 金额形态与收款同一约定：0 / 负 / 超精度 / 科学计数 / NaN 全拒，合法值补齐 scale 4")
     void amountUsesTheSharedStrictDecimalContract() {
         Long supplierId = supplier();
         expectCode(() -> add(supplierForm(supplierId, "0")), 40000);
@@ -597,7 +597,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
 
         Long preciseId = add(supplierForm(supplierId, "99.9999")).getPaymentId();
         assertThat((BigDecimal) paymentRow(preciseId).get("amount")).isEqualByComparingTo("99.9999");
-        assertThat(((BigDecimal) paymentRow(preciseId).get("amount")).scale()).as("落库标度恒 4").isEqualTo(4);
+        assertThat(((BigDecimal) paymentRow(preciseId).get("amount")).scale()).as("写入数据库标度恒 4").isEqualTo(4);
         Long paddedId = add(supplierForm(supplierId, "10")).getPaymentId();
         assertThat(((BigDecimal) paymentRow(paddedId).get("amount")).toPlainString()).isEqualTo("10.0000");
     }
@@ -607,7 +607,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("T 退款付款范围：客户归属本人可付；他人客户与未分配客户都失败关闭")
+    @DisplayName("T 退款付款范围：客户归属本人可付；他人客户与未分配客户都校验失败时拒绝操作")
     void customerScopeFollowsSellerIdAndFailsClosed() {
         Refund mine = completedRefund("T-MINE", "10.0000", "1.0000");
         Refund theirs = completedRefund("T-THEIRS", "10.0000", "1.0000");
@@ -669,17 +669,17 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         assertThat(paymentsOfSupplier(supplierId)).isEqualTo(1);
     }
 
-    /** {@code ScmOperator.current()} 的口径：{@code userType.getValue() + ":" + employeeId}。 */
+    /** {@code ScmOperator.current()} 的规则：{@code userType.getValue() + ":" + employeeId}。 */
     private static String currentOperatorOf(Long employeeId) {
         return UserTypeEnum.ADMIN_EMPLOYEE.getValue() + ":" + employeeId;
     }
 
     // ------------------------------------------------------------------
-    // V / W / X. 幂等与日志
+    // V / W / X. 防重复处理与日志
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("V 幂等重放：同键同内容返回同一张付款单，库里一张、日志一条")
+    @DisplayName("V 重复请求返回原结果：同键同内容返回同一张付款单，库里一张、日志一条")
     void sameKeyAndContentReplaysTheFirstResult() {
         Long supplierId = supplier();
         FinancePaymentAddForm form = supplierForm(supplierId, "210.0000");
@@ -699,7 +699,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("CUSTOMER 付款重放重新校验当前客户归属，拒绝时不追加事实、日志或幂等行")
+    @DisplayName("CUSTOMER 付款重放重新校验当前客户归属，拒绝时不追加记录、日志或防重复处理行")
     void customerReplayRechecksCurrentSellerScope() {
         Long employeeA = newPlainEmployee("PRA");
         Long employeeB = newPlainEmployee("PRB");
@@ -738,7 +738,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("W 幂等冲突 40966 与缺键 40069：两种失败都不产生付款")
+    @DisplayName("W 防重复处理冲突 40966 与缺键 40069：两种失败都不产生付款")
     void conflictAndMissingKeyProduceNothing() {
         Long supplierId = supplier();
         String idempotencyKey = key("conflict");
@@ -752,11 +752,11 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("X 操作日志 PAY：改前为空、快照含来源与对方、操作人是登记人；重放不追加")
+    @DisplayName("X 操作日志 PAY：改前为空、保存的数据含来源与对方、操作人是登记人；重放不追加")
     void operationLogPaysTheRegistration() throws Exception {
         Refund refund = completedRefund("X", "10.0000", "2.0000");
         // 重放必须用同一把 key 与同一份请求内容：换 key 就是另一条命令（会被来源唯一索引
-        // 按重复事实拒掉），换内容则按既有语义报 40966 —— 两者都不是「重放」。
+        // 按重复记录拒掉），换内容则按既有语义报 40966 —— 两者都不是「重放」。
         String idempotencyKey = key("x");
         FinancePaymentAddForm form = refundForm(refund.customerId(),
                 refund.refundAmount().toPlainString(), refund.refundId());

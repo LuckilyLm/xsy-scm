@@ -26,11 +26,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>覆盖四件在单测里验证不了的事：
  * <ol>
- *   <li><b>方向感知的快照约束扩到四个分支</b> —— 盘盈 {@code after = before + quantity}、
+ *   <li><b>方向感知的已存数据约束扩到四个分支</b> —— 盘盈 {@code after = before + quantity}、
  *       盘亏 {@code after = before - quantity}，这是 V29 重建
  *       {@code ck_inventory_movement_snap} 的直接原因；</li>
- *   <li><b>差异施加到「确认瞬间的账面量」而不是快照</b> —— 保存草稿到确认之间发生的
- *       收货 / 出库必须被保留，这是盘点确认环节的核心口径；</li>
+ *   <li><b>差异施加到「确认瞬间的账面量」而不是保存的数据</b> —— 保存草稿到确认之间发生的
+ *       收货 / 出库必须被保留，这是盘点确认环节的核心规则；</li>
  *   <li><b>可用量与预留的双重下限</b> —— 盘亏不得把库存推成负数，也不得吃掉已预留的货；</li>
  *   <li><b>append-only 对盘点同样生效</b> —— 新增流水类型不能绕过 append-only 约束。</li>
  * </ol>
@@ -87,7 +87,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("盘盈：实盘高于账面 → 余额增加并写 STOCKTAKE_GAIN，快照方向为加")
+    @DisplayName("盘盈：实盘高于账面 → 余额增加并写 STOCKTAKE_GAIN，保存的数据方向为加")
     void gainIncreasesBalanceAndWritesInboundSnapshot() {
         Object[] s = stocked("st1", "10.0000");
         Long wh = (Long) s[0];
@@ -103,7 +103,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
         assertThat(row.get("movement_type")).isEqualTo("STOCKTAKE_GAIN");
         assertThat(row.get("source_document_type")).isEqualTo("STOCKTAKE_ITEM");
         assertThat(decimal(row, "quantity")).isEqualByComparingTo("2.0000");
-        // 方向感知快照：盘盈是加，这正是 V29 必须重建 ck_inventory_movement_snap 的原因
+        // 方向感知保存的数据：盘盈是加，这正是 V29 必须重建 ck_inventory_movement_snap 的原因
         assertThat(decimal(row, "before_quantity")).isEqualByComparingTo("10.0000");
         assertThat(decimal(row, "after_quantity")).isEqualByComparingTo("12.0000");
         // 单位以余额记账单位为准，由服务端取，不由调用方传
@@ -115,7 +115,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("盘亏：实盘低于账面 → 余额减少并写 STOCKTAKE_LOSS，快照方向为减")
+    @DisplayName("盘亏：实盘低于账面 → 余额减少并写 STOCKTAKE_LOSS，保存的数据方向为减")
     void lossDecreasesBalanceAndWritesOutboundSnapshot() {
         Object[] s = stocked("st2", "10.0000");
         Long wh = (Long) s[0];
@@ -133,7 +133,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("账实相符：差异为 0 时不写流水，但单位快照仍回写")
+    @DisplayName("账实相符：差异为 0 时不写流水，但当时的单位仍回写")
     void zeroDeltaWritesNoMovementButStillStampsUnit() {
         Object[] s = stocked("st3", "10.0000");
         Long wh = (Long) s[0];
@@ -147,7 +147,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
         assertThat(stocktakeMovements(wh, sku)).isEmpty();
         assertThat(movementCount(wh, sku)).isEqualTo(1);
 
-        // 差异为 0 的行仍然回写单位快照（确认动作本身走完了）
+        // 差异为 0 的行仍然回写当时的单位（确认动作本身走完了）
         String unit = jdbc.queryForObject(
                 "SELECT unit_snapshot FROM xsy_inventory_stocktake_item WHERE stocktake_id = ?",
                 String.class, id);
@@ -155,17 +155,17 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 核心口径：差异施加到「确认瞬间的账面量」
+    // 核心规则：差异施加到「确认瞬间的账面量」
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("核心口径：差异施加到确认瞬间的账面量，保存草稿后的出库不会被抹掉")
+    @DisplayName("核心规则：差异施加到确认瞬间的账面量，保存草稿后的出库不会被抹掉")
     void deltaIsAppliedToCurrentOnHandNotToTheSnapshot() {
         Object[] s = stocked("st4", "10.0000");
         Long wh = (Long) s[0];
         Long sku = (Long) s[1];
 
-        // 保存草稿：账面量快照 = 10，实盘 12 → 清点发现的差异 delta = +2
+        // 保存草稿：账面量保存的数据 = 10，实盘 12 → 清点发现的差异 delta = +2
         Long id = stocktakeService.create(form(wh, sku, "12.0000"));
 
         // 确认之前发生一次出库：确认瞬间的账面量变成 7
@@ -180,7 +180,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
 
         Map<String, Object> row = stocktakeMovements(wh, sku).getFirst();
         assertThat(row.get("movement_type")).isEqualTo("STOCKTAKE_GAIN");
-        assertThat(decimal(row, "quantity")).as("差异 = 实盘 − 账面快照").isEqualByComparingTo("2.0000");
+        assertThat(decimal(row, "quantity")).as("差异 = 实盘 − 导出时的账面数据").isEqualByComparingTo("2.0000");
         assertThat(decimal(row, "before_quantity")).as("before 是确认瞬间的账面量").isEqualByComparingTo("7.0000");
         assertThat(decimal(row, "after_quantity")).isEqualByComparingTo("9.0000");
     }
@@ -196,7 +196,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
         Long wh = (Long) s[0];
         Long sku = (Long) s[1];
 
-        // 账面快照 10、实盘 0 → delta = −10；确认前出库 6，live = 4 → after = −6
+        // 导出时的账面数据 10、实盘 0 → delta = −10；确认前出库 6，live = 4 → after = −6
         Long id = stocktakeService.create(form(wh, sku, "0.0000"));
         inventoryCommandService.postSalesOutbound(outboundFact(wh, sku, "6.0000", 910002L));
 
@@ -216,7 +216,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
                 wh, sku, "SALES_ORDER_ITEM", 710001L, 810001L,
                 new BigDecimal("8.0000"), OffsetDateTime.now(), null));
 
-        // 账面快照 10、实盘 7 → delta = −3 → after = 7 < 已预留 8
+        // 导出时的账面数据 10、实盘 7 → delta = −3 → after = 7 < 已预留 8
         expectCode(() -> stocktakeService.confirm(stocktakeService.create(form(wh, sku, "7.0000"))), 41025);
 
         InventoryBalanceEntity balance = balanceRow(wh, sku);
@@ -311,7 +311,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("改草稿会重新快照账面量：基线跟着账面走，不冻结在建单那一刻")
+    @DisplayName("改草稿会重新保存的数据账面量：基线跟着账面走，不保存在建单那一刻")
     void updatingDraftRefreshesTheBookSnapshot() {
         Object[] s = stocked("st12", "10.0000");
         Long wh = (Long) s[0];
@@ -329,7 +329,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 命令侧契约
+    // 命令侧约定
     // ------------------------------------------------------------------
 
     @Test

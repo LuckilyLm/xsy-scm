@@ -31,7 +31,7 @@ import {productSkuApi} from '/@/api/business/scm/product-sku-api';
 import type {ScmId} from '/@/types/business/scm/customer';
 import type {SkuOption} from '/@/types/business/scm/pricing';
 
-/** 回显用：已有值可能不在首屏选项里，调用方补一份最小快照即可显示名称。 */
+/** 回显用：已有值可能不在首屏选项里，调用方补一份必要资料即可显示名称。 */
 type SelectedSku = Pick<SkuOption, 'skuId' | 'productName' | 'specName'> & Partial<Pick<SkuOption, 'status' | 'spuStatus' | 'categoryStatus'>>;
 
 const props = withDefaults(
@@ -65,7 +65,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:value': [value: ScmId | ScmId[] | undefined];
   change: [value: ScmId | ScmId[] | undefined];
-  /** 选中项的完整规格快照；订单行用它回填商品名称、规格和单位，避免只存 skuId。 */
+  /** 选中项的完整商品规格资料；订单行用它回填商品名称、规格和单位，避免只存 skuId。 */
   select: [option: SkuOption | undefined];
 }>();
 const rows = ref<SkuOption[]>([]),

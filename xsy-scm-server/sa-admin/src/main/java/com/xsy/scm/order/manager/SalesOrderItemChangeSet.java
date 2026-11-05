@@ -34,7 +34,7 @@ public record SalesOrderItemChangeSet(List<SalesOrderItemEntity> inserted, List<
                 throw new ScmBusinessException(ORDER_ITEM_VERSION_REQUIRED);
             if (!Objects.equals(requestedItem.getVersion(), existingItem.getVersion()))
                 throw new ScmBusinessException(ORDER_ITEM_VERSION_CONFLICT);
-            // 规格变化就是另一条业务明细，不能继承旧报价、实重或已关联的分拣/出库事实。
+            // 规格变化就是另一条业务明细，不能继承旧报价、实重或已关联的分拣/出库记录。
             if (!Objects.equals(requestedItem.getSkuId(), existingItem.getSkuId())) {
                 removed.add(existingItem);
                 requestedItem.setId(null);

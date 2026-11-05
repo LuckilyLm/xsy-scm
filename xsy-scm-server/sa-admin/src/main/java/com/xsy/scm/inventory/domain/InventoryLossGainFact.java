@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 报损报溢事实。
+ * 报损报溢记录。
  *
  * <p>
  * 方向不在这里：{@code adjustType} 是单据头的属性，命令服务按它选流水类型与加减。让调用方传「入 / 出」标志等于把方向的 定义权分散出去，而方向必须与 {@code movement_type}

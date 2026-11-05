@@ -20,7 +20,7 @@ import static org.mockito.Mockito.mockStatic;
 /**
  * 收款登记的原子性（PG IT，无外层事务）。
  *
- * <p>收款是一条资金事实，幂等 claim 也在同一个事务里。因此任何一段失败都必须「整笔什么都不留」：
+ * <p>收款是一条资金记录，防重复处理 claim 也在同一个事务里。因此任何一段失败都必须「整笔什么都不留」：
  * 留下收款单而没有日志 = 资金动作没有证据；留下 claim 而没有结果 = 同一把 key 的后续重放
  * 只能读到空结果（{@code OrderIdempotencyService} 对这种状态就是直接抛错）。
  *
@@ -68,7 +68,7 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("日志阶段失败：收款单、日志、幂等记录三者零残留")
+    @DisplayName("日志阶段失败：收款单、日志、防重复处理记录三者零残留")
     void operationLogFailureRollsBackTheWholeReceipt() {
         Long customerId = customer();
         String idempotencyKey = prefix + ":log-failure:" + UUID.randomUUID();
@@ -110,7 +110,7 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("插入阶段失败（receipt_no 撞 uk_finance_receipt_no）：日志与幂等记录零残留")
+    @DisplayName("插入阶段失败（receipt_no 撞 uk_finance_receipt_no）：日志与防重复处理记录零残留")
     void receiptNoCollisionRollsBackLogAndClaim() {
         Long customerId = customer();
         String idempotencyKey = prefix + ":no-collision:" + UUID.randomUUID();
@@ -123,7 +123,7 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
                         + " VALUES (?, ?, '占位客户', ?, '占位客户', 1.0000, 'CASH', now(), 'NORMAL', now(), now(), '2:1')",
                 taken, customerId, customerId);
 
-        // 基线：本类是 NOT_SUPPORTED（真提交），前一个用例留下的收款与日志是既有事实，
+        // 基线：本类是 NOT_SUPPORTED（真提交），前一个用例留下的收款与日志是既有记录，
         // 因此「零残留」只能相对本次调用之前测量，按全局零断言会把别人的证据算成自己的泄漏。
         int receiptsBefore = count("SELECT count(*) FROM xsy_finance_receipt");
         int receiveLogsBefore = count("SELECT count(*) FROM xsy_finance_operation_log"
@@ -144,7 +144,7 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
             assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'RECEIPT'"))
                     .as("日志与收款单同事务，一起回滚").isEqualTo(receiveLogsBefore);
             assertThat(count("SELECT count(*) FROM xsy_idempotency_record WHERE idempotency_key = ?", idempotencyKey))
-                    .as("幂等 claim 也随事务回滚").isZero();
+                    .as("防重复处理 claim 也随事务回滚").isZero();
         } finally {
             jdbc.update("DELETE FROM xsy_finance_receipt WHERE receipt_no = ?", taken);
         }

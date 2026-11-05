@@ -178,7 +178,7 @@ test.describe('scm-inventory', () => {
     expect(confirmed.putawayAt).not.toBeNull();
     expect(confirmed.putawayBy).not.toBeNull();
 
-    // 接口层：余额与流水同时落地，单位取采购单位快照（Q13）
+    // 接口层：余额与流水同时落地，单位取采购时的单位（Q13）
     const balances = await balanceQuery({warehouseId, skuId});
     expect(balances.total).toBe(1);
     expect(balances.list[0].quantity).toBe('10.0000');
@@ -221,7 +221,7 @@ test.describe('scm-inventory', () => {
     expect(balances.list[0].version).toBe(2);
     const movements = await movementQuery({warehouseId, skuId});
     expect(movements.total).toBe(2);
-    // 回放链：第二条的期初 = 第一条的期末（append-only 账本的核心恒等式）
+    // 历史记录查询链：第二条的期初 = 第一条的期末（append-only 账本的核心恒等式）
     const chain = movements.list.slice().sort((a: any, b: any) => Number(a.id) - Number(b.id));
     expect(chain[0].beforeQuantity).toBe('0.0000');
     expect(chain[0].afterQuantity).toBe('10.0000');
@@ -278,7 +278,7 @@ test.describe('scm-inventory', () => {
     //
     // 断言刻意落在「404 页出现」而不是「侧边栏不含库存管理」：该账号连布局都没渲染，
     // `.ant-menu` 在 DOM 里根本不存在，而 Playwright 的 `not.toContainText` 要求元素先存在
-    // —— 用后者会得到一个「元素找不到」的假失败，掩盖掉真正被验证的事实。
+    // —— 用后者会得到一个「元素找不到」的假失败，掩盖掉真正被验证的记录。
     await page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), readToken);
     await page.goto('/#/inventory/inventory-balance-list');
     await expect(page.getByText('您访问的内容不存在')).toBeVisible();
@@ -697,7 +697,7 @@ test.describe('scm-inventory-lot', () => {
     await page.screenshot({path: '../.runtime/w9-inventory-lot.png', fullPage: true});
   });
 
-  test('4｜页面按批次发码并回放到收货来源', async ({page}) => {
+  test('4｜页面按批次发码并历史记录查询到收货来源', async ({page}) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await browse(page, '/inventory/inventory-trace-unit-list');
@@ -726,19 +726,19 @@ test.describe('scm-inventory-lot', () => {
     await search(page);
     await expect(page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row')).toHaveCount(2);
 
-    // 回放：从码回到批次与收货来源
+    // 历史记录查询：从码回到批次与收货来源
     const firstRow = page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first();
     const unitCode = (await firstRow.locator('td').first().innerText()).trim();
     firstUnitCode = unitCode;
-    await firstRow.getByRole('button', {name: '回放'}).click();
-    const drawer = page.locator('.ant-drawer-open').filter({hasText: '包装码回放'}).first();
+    await firstRow.getByRole('button', {name: '历史记录查询'}).click();
+    const drawer = page.locator('.ant-drawer-open').filter({hasText: '包装码记录查询'}).first();
     await expect(drawer).toContainText(unitCode);
     await expect(drawer).toContainText(lotNo);
     await expect(drawer).toContainText(receiptNo);
     expect(errors).toEqual([]);
   });
 
-  test('5｜扫码把包装码绑到分拣任务行，回放能回到客户', async ({page}) => {
+  test('5｜扫码把包装码绑到分拣任务行，历史记录查询能回到客户', async ({page}) => {
     // 分拣夹具要等库存存在才能建单：客户 → 确认订单 → 分拣任务 → 录入实拣
     const customerId = await post('/scm/customer/add', {
       name: name + '客户',
@@ -797,18 +797,18 @@ test.describe('scm-inventory-lot', () => {
     expect(body.data.customerName).toBe(name + '客户');
     await expect(modal).toBeHidden();
 
-    // 回放：分拣去向显示客户与订单号
+    // 历史记录查询：分拣去向显示客户与订单号
     await page.getByPlaceholder('包装码', {exact: true}).fill(firstUnitCode);
     await search(page);
-    await page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first().getByRole('button', {name: '回放'}).click();
-    const drawer = page.locator('.ant-drawer-open').filter({hasText: '包装码回放'}).first();
+    await page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first().getByRole('button', {name: '历史记录查询'}).click();
+    const drawer = page.locator('.ant-drawer-open').filter({hasText: '包装码记录查询'}).first();
     await expect(drawer).toContainText('分拣去向');
     await expect(drawer).toContainText(name + '客户');
     await expect(drawer).toContainText(String(order.orderNo));
     expect(errors).toEqual([]);
   });
 
-  test('6｜包装码标签走打印中心：预览含码与批次，打印留下冻结记录', async ({page}) => {
+  test('6｜包装码标签走打印中心：预览含码与批次，打印留下保存记录', async ({page}) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await browse(page, '/inventory/inventory-trace-unit-list');
@@ -833,7 +833,7 @@ test.describe('scm-inventory-lot', () => {
     await modal.getByRole('button', {name: /^打\s*印$/}).click();
     const body = await (await printed).json();
     expect(body.code, body.msg).toBe(0);
-    expect(body.data.frozen, '正式打印必须返回冻结版面').toBe(true);
+    expect(body.data.frozen, '正式打印必须返回保存版面').toBe(true);
     expect(errors).toEqual([]);
   });
 
@@ -907,12 +907,12 @@ test.describe('scm-inventory-lot', () => {
     expect(rejectedBody.code, '申请与审批不能是同一人').toBe(41522);
     await expect(page.locator('.ant-message').getByText(/不能审批自己/)).toBeVisible();
 
-    // 绑定仍然有效：回放仍显示客户
+    // 绑定仍然有效：历史记录查询仍显示客户
     await browse(page, '/inventory/inventory-trace-unit-list');
     await page.getByPlaceholder('包装码', {exact: true}).fill(firstUnitCode);
     await search(page);
-    await page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first().getByRole('button', {name: '回放'}).click();
-    const drawer = page.locator('.ant-drawer-open').filter({hasText: '包装码回放'}).first();
+    await page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first().getByRole('button', {name: '历史记录查询'}).click();
+    const drawer = page.locator('.ant-drawer-open').filter({hasText: '包装码记录查询'}).first();
     await expect(drawer).toContainText(name + '客户');
   });
 });
@@ -961,7 +961,7 @@ test.describe('scm-inventory-write', () => {
     await c.dispose();
     return r.data.token;
   }
-  /** 每次调用都换新幂等键：同一把键会命中幂等回放，拿不到「重复操作应被拒」的真实错误码。 */
+  /** 每次调用都换新防重复请求编号：同一把键会命中重复请求返回原结果，拿不到「重复操作应被拒」的真实错误码。 */
   async function raw(path: string, data: unknown = null, key = randomUUID()) {
     return await rawAs(api, path, data, key);
   }
@@ -991,7 +991,7 @@ test.describe('scm-inventory-write', () => {
     await page.getByRole('button', {name: /^查\s*询$/}).click();
   }
   const rows = (page: Page, tableId: string, text: string) => page.locator(`#${tableId} tr`).filter({hasText: text});
-  /** 金额与均价用数值比较：SCALE 由 SQL 决定，字面量断言会把口径变更误报成失败。 */
+  /** 金额与均价用数值比较：SCALE 由 SQL 决定，字面量断言会把规则变更误报成失败。 */
   const num = (v: unknown) => Number(v);
   const balanceQuery = (warehouse: string | number, skuId: string) =>
     post('/scm/inventory/balance/query', {pageNum: 1, pageSize: 50, warehouseId: warehouse, skuId});
@@ -1166,7 +1166,7 @@ test.describe('scm-inventory-write', () => {
     await expect(row.getByRole('button', {name: '确认出库'})).toHaveCount(0);
     await page.screenshot({path: '../.runtime/w6-write-outbound.png', fullPage: true});
 
-    // 余额扣减 + 一条出库流水：出库不改变均价，但必须写下当时的均价（成本事实）
+    // 余额扣减 + 一条出库流水：出库不改变均价，但必须写下当时的均价（成本记录）
     const after = await balance(warehouseId, id);
     expect(after.quantity).toBe('15.0000');
     expect(num(after.avgCost)).toBe(6.2);
@@ -1199,7 +1199,7 @@ test.describe('scm-inventory-write', () => {
     await post('/scm/inventory/stocktake/confirm/' + gainId);
     let row = await balance(warehouseId, id);
     expect(row.quantity).toBe('25.0000');
-    expect(num(row.avgCost)).toBe(6.2); // 盘盈没有采购价格事实，均价不动
+    expect(num(row.avgCost)).toBe(6.2); // 盘盈没有采购价格记录，均价不动
     const gain = await movement(warehouseId, id, 'STOCKTAKE_GAIN');
     expect(gain.quantity).toBe('5.0000');
     expect(gain.beforeQuantity).toBe('20.0000');
@@ -1724,7 +1724,7 @@ test.describe('scm-purchase', () => {
     expect(order.items[0].remainingQuantity).toBe('6.0000');
   });
   test('4 second receipt completes the order and the progress reaches one', async ({page}) => {
-    // 新草稿行的对账量是「确认前」快照（§7.5：cumulative = 采购行 received_quantity，**确认后**的累计），
+    // 新草稿行的对账量是「确认前」保存的数据（§7.5：cumulative = 采购行 received_quantity，**确认后**的累计），
     // 所以 create 时是 0 / planned / −planned；真正的累计在 confirm 时物化。
     const second = await createReceipt(orderA.id);
     expect(second.items[0].cumulativeReceivedQuantity).toBe('0.0000');
@@ -1906,7 +1906,7 @@ test.describe('scm-purchase', () => {
   /**
    * Wave 2A：订单汇总 / 库存缺口预览（只读）。
    *
-   * 契约：读端点按 `[startAt,endAt)` + `warehouseId` 聚合，数量为后端算好的四位定点字符串；
+   * 约定：读端点按 `[startAt,endAt)` + `warehouseId` 聚合，数量为后端算好的四位定点字符串；
    * 重复调用**不得**新建需求或流水（只读辅助决策），`calculationStatus` 只落在后端 5 值内。
    * 注：本用例需要**包含 Wave 2A 端点的后端构建**；18080 上若在跑更早的 fat jar，
    * 该 `summary-preview` 会 404 —— 属部署版本问题，不是本 Wave 缺陷。
@@ -1957,7 +1957,7 @@ test.describe('scm-purchase', () => {
   /**
    * Wave 2B：采购效率（导出 / 批量少收关单 / 按商品收货工作台）。
    *
-   * 契约：导出与工作台都是只读端点（无 Idempotency-Key、不改采购状态、不新建收货 / 库存）；
+   * 约定：导出与工作台都是只读端点（无 Idempotency-Key、不改采购状态、不新建收货 / 库存）；
    * 批量少关整批原子——批内含不可关单据时全部回滚。
    * 注：这些用例需要**包含 Wave 2B 端点的后端构建**；18080 上若在跑更早的 fat jar，
    * `export` / `batch/short-close` / `item-workbench` 会 404 —— 属部署版本问题，不是本 Wave 缺陷。
@@ -2112,7 +2112,7 @@ test.describe('scm-purchase', () => {
    * §12.3 Wave 2B「打印」要求真实浏览器点一次打印按钮，但无头环境既没有打印对话框，
    * 打印实现又会在调起 print() 后立即移除 iframe，文档来不及读。
    * 这里只替换掉最外层的 `print()`：在打印代码读 `iframe.contentWindow` 的那一刻，
-   * 把它换成「先固化渲染结果、再拒绝弹系统窗口」的记录器。
+   * 把它换成「先保存渲染结果、再拒绝弹系统窗口」的记录器。
    * 被测路径不变（同一份 document.write、同一次 print 调用），只是不唤起系统对话框。
    */
   function capturePrint(page: Page) {
@@ -2241,7 +2241,7 @@ test.describe('scm-purchase', () => {
     expect(batch.text).toContain(order.orderNo);
     expect(batch.rows).toBe(1);
     expect(batch.scripts).toBe(0);
-    // 模板打印只追加冻结打印记录；采购订单状态不会改变，也不能触发其它写入口。
+    // 模板打印只能新增保存打印记录；采购订单状态不会改变，也不能触发其它写入口。
     const paths = writes.map((entry) => {
       const [method, url] = entry.split(' ', 2);
       return `${method} ${new URL(url).pathname}`;
@@ -2258,7 +2258,7 @@ test.describe('scm-purchase', () => {
 test.describe('scm-stocktake-import', () => {
   const test = pwTest;
   /*
-   * Wave 6 盘点 Excel 快照导入 + 复制历史盘点 E2E（真实登录，自建临时账号）
+   * Wave 6 盘点 Excel 保存的数据导入 + 复制历史盘点 E2E（真实登录，自建临时账号）
    *
    * 账号与登录见 `e2e/scm-e2e-account.ts`；本组用例串行走一条完整业务链：
    *   导出模板 → 填实盘 → 页面导入建草稿 → 确认盘点写流水 → 旧凭证再导必被漂移拒绝 → 复制历史盘点。
@@ -2271,14 +2271,14 @@ test.describe('scm-stocktake-import', () => {
    * 1. 导出模板：页面选仓库后命中 `/import/template` 且返回 xlsx；**只读账号同一端点必须 30005**
    *    （权限由服务端把关，不是靠前端隐藏按钮）；
    * 2. 填实盘导入：整文件走页面上传控件 → 后端整批校验 → 建出草稿，且逐行实盘量与填写值一致；
-   * 3. 快照漂移拒绝：确认盘点会真实改余额（版本 +1），因此确认前导出的凭证在确认后再导
+   * 3. 保存的数据漂移拒绝：确认盘点会真实改余额（版本 +1），因此确认前导出的凭证在确认后再导
    *    必须整批拒绝（SNAPSHOT_STALE）且不落第二张草稿 —— 这正是「导入绝不把余额当可直接改的状态」的正证；
    * 4. 复制历史盘点：点「复制到新建」必须按 `pageSize<=100` 分页读余额
    *    （P0 缺陷是前端写死 2000，被后端 @Max(100) 直接拒掉，功能必挂）；
    * 5. 复制后实盘为空：复制只带仓库 + SKU 集合 + 当前记账单位，实盘量整列留空，
    *    历史账面量/实盘量绝不冒充实盘，且复制本身不建任何单据。
    *
-   * 签名字节级细节（篡改 / 过期 / 来源集合增删 / 幂等重放）由 ScmStocktakeImportPgIT 用真 POI + 真 PG 覆盖，
+   * 签名字节级细节（篡改 / 过期 / 来源集合增删 / 重复请求返回原结果）由 ScmStocktakeImportPgIT 用真 POI + 真 PG 覆盖，
    * 本 spec 不重复；这里只补 IT 覆盖不到的真实链路与前端接线。
    *
    * 副作用说明：用例 4/5 会确认一张盘点单，因此**必然**在开发库留下盘盈/盘亏流水（append-only，
@@ -2328,14 +2328,14 @@ test.describe('scm-stocktake-import', () => {
     return (await response).json();
   }
 
-  test.describe.serial('Wave 6 盘点快照导入与复制历史盘点', () => {
+  test.describe.serial('Wave 6 盘点表导入与复制历史盘点', () => {
     test.beforeAll(async () => {
       accounts = provisionTempAccounts('w6');
       adminToken = await login(accounts, accounts.admin);
       admin = await apiClient(adminToken);
 
       // 模板按「当前余额行」签发凭证，所以必须挑一个真有余额的仓库，否则来源集合为空、整条链路没有意义。
-      // 批次仓要排除：一期盘点不支持批次（41070），挑到它只会验到一个与快照凭证无关的拒绝。
+      // 批次仓要排除：一期盘点不支持批次（41070），挑到它只会验到一个与资料校验凭证无关的拒绝。
       const warehouses = await ok<any[]>(admin.get('/scm/warehouse/list'));
       for (const w of warehouses) {
         if (w.lotTrackingEnabled === true) {
@@ -2410,7 +2410,7 @@ test.describe('scm-stocktake-import', () => {
       expect(errors).toEqual([]);
     });
 
-    test('填好实盘的模板经页面上传 → 建出草稿且逐行实盘量落库', async ({page}) => {
+    test('填好实盘的模板经页面上传 → 建出草稿且逐行实盘量写入数据库', async ({page}) => {
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(e.message));
       const before = await draftTotal();
@@ -2419,16 +2419,16 @@ test.describe('scm-stocktake-import', () => {
       const body = await uploadThroughUi(page, filledOncePath);
       expect(body.code, JSON.stringify(body.errors ?? body.msg)).toBe(0);
       expect(body.data.stocktakeId, '整批校验通过必须建出草稿').toBeTruthy();
-      expect(body.data.replayed, '首次导入不是幂等重放').toBe(false);
+      expect(body.data.replayed, '首次导入不是重复请求返回原结果').toBe(false);
       await expect(page.getByText(/已创建待确认盘点单/)).toBeVisible();
 
       const detail = await ok<any>(admin.get(`/scm/inventory/stocktake/detail/${body.data.stocktakeId}`));
       expect(detail.status).toBe('PENDING');
       const actualBySku = Object.fromEntries((detail.items ?? []).map((i: any) => [i.skuCode, String(i.actualQuantity)]));
-      expect(asNumber(actualBySku), '落库实盘量必须等于 Excel 里填的值').toEqual(asNumber(filledOnce));
+      expect(asNumber(actualBySku), '写入数据库实盘量必须等于 Excel 里填的值').toEqual(asNumber(filledOnce));
       expect(
         detail.items.every((i: any) => i.bookQuantity !== undefined),
-        '账面量由后端按快照写入'
+        '账面量由后端按保存的数据写入'
       ).toBe(true);
       expect(await draftTotal(), '导入只建草稿，不写余额').toBe(before + 1);
       expect(errors).toEqual([]);

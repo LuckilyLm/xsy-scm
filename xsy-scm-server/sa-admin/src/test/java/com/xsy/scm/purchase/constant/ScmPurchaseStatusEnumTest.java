@@ -77,7 +77,7 @@ class ScmPurchaseStatusEnumTest {
                     .as("归属 CHECK 未覆盖 operation_type=%s", type.name())
                     .contains("'" + type.name() + "'");
         }
-        // 五个分支的分组口径固定：采购单类含采购价后置/锁单，收货分支含 RECEIPT_PUTAWAY
+        // 五个分支的分组规则固定：采购单类含采购价后置/锁单，收货分支含 RECEIPT_PUTAWAY
         assertThat(owner).contains("operation_type='DEMAND_GENERATE'");
         assertThat(owner).contains("operation_type='DEMAND_ALLOCATE'");
         assertThat(owner).contains("'CREATE','UPDATE','SUBMIT','CANCEL','SHORT_CLOSE','DELETE'");

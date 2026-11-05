@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>覆盖四类断言：
  * <ol>
- *   <li>V1～V12由成功的增量或B快照覆盖，Flyway校验通过；</li>
+ *   <li>V1～V12由成功的增量或B保存的数据覆盖，Flyway校验通过；</li>
  *   <li><b>核心断言</b>：{@code enterprise_id} / {@code employee_id} 两列的 PG 类型确实是
  *       {@code bigint}（{@code information_schema.columns.data_type='bigint'} 且
  *       {@code udt_name='int8'}），不是 {@code character varying}；</li>

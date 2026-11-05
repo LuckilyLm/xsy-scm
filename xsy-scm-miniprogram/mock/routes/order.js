@@ -1,5 +1,5 @@
 /*
- * Mock 契约层 · 结算、下单与订单中心
+ * Mock 约定层 · 结算、下单与订单中心
  *
  * 与后端 /scm/mall/orders/** 同构：预览返回明细 + 价格指纹；提交必须回传同一指纹；
  * 新订单统一停留在 PENDING，等待后台确认，不发起付款。
@@ -24,7 +24,7 @@ function guard(session) {
   return session ? null : fail(PLATFORM_ERROR_CODE.LOGIN_STATE_INVALID, '登录已失效，请重新登录');
 }
 
-/** 与后端 MallOrderDisplayStatusEnum 同构的展示分类（mock 无配送事实，一律未发车） */
+/** 与后端 MallOrderDisplayStatusEnum 同构的展示分类（mock 无配送记录，一律未发车） */
 function displayStatusOf(status) {
   if (status === 'CANCELLED') return 'CANCELLED';
   if (status === 'DRAFT' || status === 'PENDING') return 'PENDING';
@@ -78,7 +78,7 @@ function saveOrders(session, rows) {
   ORDERS.set(accountKey(session), rows);
 }
 
-/** 配送进度节点：与后端 MallOrderQueryService.progressNodes 同形；done 只按事实是否存在判定 */
+/** 配送进度节点：与后端 MallOrderQueryService.progressNodes 同形；done 只按记录是否存在判定 */
 function progressOf(order) {
   const nodes = [{code: 'SUBMITTED', text: '已提交订单', detail: null, time: order.submittedAt || order.createdAt, done: true}];
   if (order.status === 'CANCELLED') {
@@ -110,7 +110,7 @@ function progressOf(order) {
   return nodes;
 }
 
-/** 与后端 MallOrderVO 同构的资金投影：仅已确认订单下发应付/已付；mock 不建模优惠与实重，应付取订货金额 */
+/** 与后端 MallOrderVO 同构的资金查询结果：仅已确认订单下发应付/已付；mock 不建模优惠与实重，应付取订货金额 */
 function fundsOf(order) {
   if (order.status !== 'CONFIRMED') return {};
   const payable = order.payableAmount || order.orderedTotalAmount;
@@ -244,12 +244,12 @@ export const orderRoutes = [
       const denied = guard(session);
       if (denied) return denied;
       const idempotencyKey = header?.['Idempotency-Key'];
-      if (!idempotencyKey) return fail(40086, '缺少幂等键，无法安全提交订单');
+      if (!idempotencyKey) return fail(40086, '缺少防重复请求编号，无法安全提交订单');
       const replayKey = `${accountKey(session)}:${idempotencyKey || ''}`;
       const requestSignature = JSON.stringify(data || {});
       const previous = IDEMPOTENT_ORDERS.get(replayKey);
       if (previous) {
-        return previous.requestSignature === requestSignature ? ok(previous.order) : fail(40966, '幂等键已用于不同的下单内容');
+        return previous.requestSignature === requestSignature ? ok(previous.order) : fail(40966, '防重复请求编号已用于不同的下单内容');
       }
       const preview = buildPreview(session, data);
       if (!preview.address) {

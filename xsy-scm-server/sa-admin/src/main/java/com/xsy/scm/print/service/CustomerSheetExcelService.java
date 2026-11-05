@@ -19,14 +19,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
 
-/** 客户单据复用发布模板与正式订单事实，采购价格不参与对客单据。 */
+/** 客户单据复用发布模板与正式订单记录，采购价格不参与对客单据。 */
 @Service
 @RequiredArgsConstructor
 public class CustomerSheetExcelService {
     private final SalesOrderQueryService orderQueryService;
 
     /**
-     * 导出一张客户订单或送货单，不产生打印、库存或财务事实。
+     * 导出一张客户订单或送货单，不产生打印、库存或财务记录。
      *
      * @param orderId
      *            必填订单编号，沿用订单详情的数据范围校验
@@ -98,7 +98,7 @@ public class CustomerSheetExcelService {
                     BigDecimal discount = discounts.get(item.getItemId());
                     if (discount != null && discount.signum() > 0 && item.getOrderedLineAmount() != null
                         && item.getOrderedLineAmount().signum() > 0) {
-                        // 复用正式优惠的按行毛额比例口径；辅助值隐藏，数量变化时Excel仍可正确复算。
+                        // 复用正式优惠的按行毛额比例规则；辅助值隐藏，数量变化时Excel仍可正确复算。
                         ScmExcel.setNumber(row.createCell(8), discount);
                         ScmExcel.setNumber(row.createCell(9), item.getOrderedLineAmount());
                         row.getCell(6).setCellFormula("ROUND(" + gross + "-MIN(" + gross + ",MAX(0,ROUND(" + gross

@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 客户「常购商品」只读聚合的真实 SQL 验证。
  *
- * <p>聚合口径全部落在 PostgreSQL 的 JOIN / 状态过滤 / {@code COUNT(DISTINCT)} / {@code ROW_NUMBER} /
+ * <p>聚合规则全部落在 PostgreSQL 的 JOIN / 状态过滤 / {@code COUNT(DISTINCT)} / {@code ROW_NUMBER} /
  * {@code SUM} 与日界窗口上，MockMvc 触不到 mapper，因此这里用真实库跑一遍：
  * 只取未删除 CONFIRMED 单（排除 DRAFT / PENDING / CANCELLED）、同 (SKU, 单位) 分组、
  * 订购量求和、最近单价取「最近一张已确认行」而非平均 / 最早、limit 按频次降序、

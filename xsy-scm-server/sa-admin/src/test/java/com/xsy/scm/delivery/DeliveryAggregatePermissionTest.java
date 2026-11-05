@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 配送读接口的权限形状：只按配送侧岗位收口，不叠订单查看权。
  *
- * <p>这些出口的返回体确实带订单金额（线路合计、停靠点合计、订单金额快照、打印明细行金额），
+ * <p>这些出口的返回体确实带订单金额（线路合计、停靠点合计、订单当时保存的金额、打印明细行金额），
  * 但管控点是 {@code DeliveryVisibility}：缺 {@code scm:delivery:amount:query} 时由服务端把金额
  * 字段抹成 null。裁剪行为由 {@code ScmDeliveryDataScopePgIT} 覆盖，本类只钉<b>注解形状</b>。
  *

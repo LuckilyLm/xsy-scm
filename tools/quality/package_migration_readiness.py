@@ -368,7 +368,7 @@ def check_domain_completeness_contract() -> Check:
     comparison is set-based, and that recording it is refused once Q1 has started.
     """
     check = Check("domain-completeness-contract",
-                  "domain 完整迁移契约存在：manifest 记录精确文件集合、按集合断言、"
+                  "domain 完整迁移约定存在：manifest 记录精确文件集合、按集合断言、"
                   "且 Q1 开始后禁止重建")
     source = inspect.getsource(sys.modules[__name__])
 

@@ -109,7 +109,7 @@ public class InventoryStocktakeImportService {
      * 导入用户填好实盘量的 Excel → 新建待确认盘点单。
      *
      * @param idempotencyKey
-     *            客户端为「同一次上传」稳定生成的键；响应丢失后原样重发即命中幂等重试，不建第二张盘点单
+     *            客户端为「同一次上传」稳定生成的键；响应丢失后原样重发即命中防重复处理重试，不建第二张盘点单
      */
     public InventoryStocktakeImportResultVO importFile(MultipartFile file, String idempotencyKey) throws Exception {
         var result = new InventoryStocktakeImportResultVO();
@@ -140,7 +140,7 @@ public class InventoryStocktakeImportService {
             addError(result, 0, null, "模板校验码", "OPERATOR_MISMATCH", "该模板由他人导出，请用本人重新导出的模板导入");
             return result;
         }
-        // 仓库授权必须在幂等认领之前判：认领本身就是写，越权的导入请求不能在库里留下任何痕迹
+        // 仓库授权必须在防重复处理认领之前判：认领本身就是写，越权的导入请求不能在库里留下任何痕迹
         warehouseScopeGuard.require(payload.warehouseId());
 
         // 来源集合必须与凭证完全一致：不能增删 / 替换行。
@@ -180,7 +180,7 @@ public class InventoryStocktakeImportService {
             result.setImportedItems(lines.size());
             return result;
         } catch (StocktakeSnapshotDriftException exception) {
-            // 整事务（含幂等认领）已回滚：不写入任何盘点单，要求重导。
+            // 整事务（含防重复处理认领）已回滚：不写入任何盘点单，要求重导。
             addError(result, 0, exception.getSkuCode(), "账面数量", "SNAPSHOT_STALE",
                 "余额自导出后已变动（商品规格" + exception.getSkuCode() + "），整批未导入，请重新导出并核对实盘");
             return result;
@@ -292,7 +292,7 @@ public class InventoryStocktakeImportService {
         } catch (Exception exception) {
             // 对调用方仍收敛成稳定的 FILE_INVALID，但服务端必须留下真因：解析循环里的 NPE、越界与 POI
             // 内部异常若只被改写成「请使用最新模板」，用户会反复重导模板而运维零线索。
-            log.error("盘点快照导入文件解析失败，整批按 FILE_INVALID 拒绝", exception);
+            log.error("盘点表导入文件解析失败，整批按 FILE_INVALID 拒绝", exception);
             addError(result, 0, null, "文件", "FILE_INVALID", "Excel 文件无法读取，请使用最新模板");
         }
         if (rows.isEmpty()) {
@@ -308,7 +308,7 @@ public class InventoryStocktakeImportService {
     }
 
     /**
-     * 参与幂等哈希的指纹：凭证 + 每行（skuCode / 实盘量 / 备注）的稳定序列，内容变即视为不同请求。
+     * 参与防重复处理哈希的指纹：凭证 + 每行（skuCode / 实盘量 / 备注）的稳定序列，内容变即视为不同请求。
      */
     private static Object fingerprint(StocktakeSnapshotSigner.Payload payload,
         List<InventoryStocktakeService.SnapshotLine> lines) {

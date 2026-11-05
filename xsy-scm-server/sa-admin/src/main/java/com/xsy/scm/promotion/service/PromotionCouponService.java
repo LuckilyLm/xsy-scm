@@ -180,7 +180,7 @@ public class PromotionCouponService {
             PromotionCouponInstanceEntity row = new PromotionCouponInstanceEntity();
             row.setCouponId(coupon.getId());
             row.setCustomerId(form.getCustomerId());
-            // 幂等记录主键标识批次，不以毫秒时间猜测唯一性。
+            // 防重复处理记录主键标识批次，不以毫秒时间猜测唯一性。
             row.setInstanceNo(batch + "-" + (index + 1));
             row.setStatus(ScmPromotionCouponInstanceStatusEnum.AVAILABLE.name());
             rows.add(row);
@@ -234,7 +234,7 @@ public class PromotionCouponService {
         row.setCouponId(coupon.getId());
         row.setCustomerId(customerId);
         row.setIssueSource(ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name());
-        // 幂等记录主键标识领取批次，不以毫秒时间猜测唯一性；与后台发券同一约定。
+        // 防重复处理记录主键标识领取批次，不以毫秒时间猜测唯一性；与后台发券同一约定。
         row.setInstanceNo("CLAIM-" + claim.record().getId() + "-1");
         row.setStatus(ScmPromotionCouponInstanceStatusEnum.AVAILABLE.name());
         promotionCouponInstanceDao.insert(row);

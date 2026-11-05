@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 预留事实。
+ * 预留记录。
  *
  * <p>
  * 预留来源是销售订单行（{@code sourceDocumentType = SALES_ORDER_ITEM}）。用「来源单据类型 + 行 id」而不是写死

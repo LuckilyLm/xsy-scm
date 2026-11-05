@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 事务内（默认 REQUIRED 传播，不开 SAVEPOINT），因此「非法成员令前面已处理的合法成员一并回滚」这一
  * 效果在事务内<b>不可观测</b>（要等最外层回滚）。故非法状态 / 版本冲突两例只断言抛出的业务码，
  * 不回读兄弟单的状态 —— 那会误测到同一未提交事务里前一成员残留的写入。原子性由服务方法上的
- * {@code @Transactional(rollbackFor)} 保证，属结构性事实；真正的「整批回滚后兄弟单未被部分关单」取证
+ * {@code @Transactional(rollbackFor)} 保证，属结构性记录；真正的「整批回滚后兄弟单未被部分关单」取证
  * 在 {@link PurchaseShortCloseRollbackIT}（该类关掉外层测试事务，让批量调用自己成为提交边界）。
  */
 @DisplayName("批量少收关单 + 按商品收货工作台（PG IT）")

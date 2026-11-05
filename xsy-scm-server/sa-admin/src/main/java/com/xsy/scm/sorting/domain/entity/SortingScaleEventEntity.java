@@ -69,7 +69,7 @@ public class SortingScaleEventEntity {
     /** 明细内递增的筐号；单事件上报为空。 */
     private Integer basketNo;
 
-    /** 秤端一次人工操作的幂等号；与 {@code eventKey} 分工不同。 */
+    /** 秤端一次人工操作的防重复处理号；与 {@code eventKey} 分工不同。 */
     private String operationId;
 
     private Long deviceSessionId;

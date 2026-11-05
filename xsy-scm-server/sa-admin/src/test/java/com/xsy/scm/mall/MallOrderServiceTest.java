@@ -83,7 +83,7 @@ class MallOrderServiceTest {
 
     @Test
     void replayOfAnAlreadyCancelledOrderStillReachesTheIdempotencyRecord() {
-        // 首次取消成功后订单已是 CANCELLED。同一个幂等键重试必须能走到正式订单服务的幂等记录，
+        // 首次取消成功后订单已是 CANCELLED。同一个防重复请求编号重试必须能走到正式订单服务的防重复处理记录，
         // 否则会被商城的前置状态检查挡成「当前状态不允许取消」，与「重复点击返回首次结果」不符。
         when(queryService.requireOwnedOrder(customer, ORDER_ID)).thenReturn(order("CANCELLED", 5));
 

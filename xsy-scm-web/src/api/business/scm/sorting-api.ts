@@ -1,4 +1,4 @@
-/** 建单和打印用幂等键，数量录入靠版本号防重；预览不计次。 */
+/** 建单和打印用防重复请求编号，数量录入靠版本号防重；预览不计次。 */
 import {request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

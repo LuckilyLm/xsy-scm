@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("SCM Permission Catalog 与菜单发布契约（PG IT）")
+@DisplayName("SCM Permission Catalog 与菜单发布约定（PG IT）")
 class ScmPermissionContractPgIT extends ScmW5PgITBase {
 
     @Autowired

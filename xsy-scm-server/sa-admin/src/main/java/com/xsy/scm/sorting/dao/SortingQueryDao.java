@@ -53,17 +53,20 @@ public interface SortingQueryDao {
     /** 建单用的候选订单行队列：不受订单业务员限制，只授建单权限、只取队列必需列。 */
     List<SortingCandidateLineVO> candidateLines(Page<?> page, @Param("q") SortingCandidateQueryForm q);
 
-    /** 按 id 批量取订单行快照（含已删除标志），一次往返完成校验与保存。 */
+    /** 按 id 批量取订单当时的明细（含已删除标志），一次往返完成校验与保存。 */
     List<SortingOrderLineSnapshot> orderLines(@Param("ids") List<Long> ids);
 
     int markPrinted(@Param("id") Long id, @Param("operator") String operator);
 
     /**
-     * 首次录入只推进作业状态，不使同一任务其余商品已冻结的设备版本失效。
+     * 首次录入只推进作业状态，不使同一任务其余商品已保存的设备版本失效。
      *
-     * @param id 已持有聚合锁的任务 ID，不可空
-     * @param version 锁内读取的当前版本，不可空；不匹配时返回 0
-     * @param operator 当前操作人，不可空
+     * @param id
+     *            已持有聚合锁的任务 ID，不可空
+     * @param version
+     *            锁内读取的当前版本，不可空；不匹配时返回 0
+     * @param operator
+     *            当前操作人，不可空
      * @return 从待分拣开始时返回 1，其余状态或任务不存在时返回 0
      */
     int markStarted(@Param("id") Long id, @Param("version") Integer version, @Param("operator") String operator);

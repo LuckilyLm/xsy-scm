@@ -28,7 +28,7 @@
         FOR UPDATE
     </select>
 
-    <!-- 与退货单同口径：xsy_order_refund 无 owner 列，可见性跟随父订单的 xsy_sales_order.seller_id（子查询，不放大行数）。 -->
+    <!-- 与退货单同规则：xsy_order_refund 无 owner 列，可见性跟随父订单的 xsy_sales_order.seller_id（子查询，不放大行数）。 -->
     <select id="query" resultMap="row">
         SELECT *
         FROM xsy_order_refund

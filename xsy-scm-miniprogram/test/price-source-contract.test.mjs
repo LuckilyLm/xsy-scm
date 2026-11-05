@@ -5,7 +5,7 @@ import {URL} from 'node:url';
 
 /*
  * 价格来源是后端枚举直出的字段：商城只要漏一个映射，商品详情就会把英文常量
- * 端给客户。列表不展示来源标签，这条契约仍反查商城两处映射，
+ * 端给客户。列表不展示来源标签，这条约定仍反查商城两处映射，
  * 新增来源时漏改会当场失败（与主前端 scm-price-source-contract 同一思路）。
  */
 
@@ -22,7 +22,7 @@ function backendSources() {
   return [...backendEnum.matchAll(/^\s{4}([A-Z_]+)\(/gm)].map((m) => m[1]);
 }
 
-test('后端价格来源枚举解析非空，避免契约空转', () => {
+test('后端价格来源枚举解析非空，避免约定空转', () => {
   const sources = backendSources();
   assert.ok(sources.length >= 4);
   assert.ok(sources.includes('TIME_PRICE'));

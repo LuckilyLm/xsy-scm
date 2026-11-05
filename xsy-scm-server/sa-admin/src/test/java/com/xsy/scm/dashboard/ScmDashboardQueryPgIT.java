@@ -94,7 +94,7 @@ class ScmDashboardQueryPgIT extends ScmW5PgITBase {
             dashboardService.ranking("product", 5);
 
             // 逐个断言「哪个指标要哪个领域权限」：销售额走订单查询权，采购额走采购查询权，
-            // 库存趋势走库存流水查询权；两个排行维度都来自销售事实，所以共用订单查询权（销售额 1 次 + 两个排行各 1 次）。
+            // 库存趋势走库存流水查询权；两个排行维度都来自销售记录，所以共用订单查询权（销售额 1 次 + 两个排行各 1 次）。
             stp.verify(() -> StpUtil.checkPermission(OrderPermission.QUERY), times(3));
             stp.verify(() -> StpUtil.checkPermission(PurchasePermission.QUERY), times(1));
             stp.verify(() -> StpUtil.checkPermission(InventoryPermission.MOVEMENT_QUERY), times(1));

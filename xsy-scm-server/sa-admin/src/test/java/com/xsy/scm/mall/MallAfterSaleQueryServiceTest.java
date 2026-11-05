@@ -36,7 +36,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * 商城售后投影的口径：展示分类、退款明细与进度节点全部来自正式事实；内部字段不下发，归属不符即 404。
+ * 商城售后查询结果的规则：展示分类、退款明细与进度节点全部来自正式记录；内部字段不下发，归属不符即 404。
  */
 class MallAfterSaleQueryServiceTest {
     private static final Long RETURN_ID = 33L;

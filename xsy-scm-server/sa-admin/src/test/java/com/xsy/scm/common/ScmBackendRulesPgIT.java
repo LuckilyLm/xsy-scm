@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** 当前结构和服务路径验收：移除SQL业务保护后，后端仍维护同一套事实规则。 */
+/** 当前结构和服务路径验收：移除SQL业务保护后，后端仍维护同一套记录规则。 */
 class ScmBackendRulesPgIT extends ScmW6PgITBase {
     @Autowired
     private CustomerService customers;

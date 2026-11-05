@@ -10,7 +10,7 @@
         </if>
     </sql>
 
-    <!-- 应收报表口径：有订单的按订单业务员，没有订单的客户级红字按客户负责业务员。 -->
+    <!-- 应收报表规则：有订单的按订单业务员，没有订单的客户级红字按客户负责业务员。 -->
     <sql id="receivableScopeFilter">
         <if test="orderScope == null">AND FALSE</if>
         <if test="orderScope != null and orderScope.all == false">

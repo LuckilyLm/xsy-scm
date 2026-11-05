@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Param;
 public interface FinanceCounterpartySourceDao {
 
     /**
-     * 未删除的客户行（名称快照 + 归属业务员）。
+     * 未删除的客户行（当时的名称 + 归属业务员）。
      *
      * <p>
      * 只判断是否存在和是否已删除；收付款命令不以客户经营状态为前置条件。

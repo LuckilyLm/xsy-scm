@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/** 余额只读查询：钱包键由服务端解析，范围失败关闭。 */
+/** 余额只读查询：钱包键由服务端解析，范围校验失败时拒绝操作。 */
 class CustomerBalanceQueryServiceTest {
     private final CustomerBalanceAccountDao accounts = mock(CustomerBalanceAccountDao.class);
     private final CustomerBalanceMovementDao movements = mock(CustomerBalanceMovementDao.class);

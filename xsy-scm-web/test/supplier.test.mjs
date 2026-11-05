@@ -1,5 +1,5 @@
 /**
- * 供应商模块契约测试。
+ * 供应商模块约定检查。
  *
  * 由 1 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -195,11 +195,11 @@ import {
     assert.match(source, /<a-switch[\s\S]{0,300}record\.defaultFlag/);
     assert.match(source, /<a-switch[\s\S]{0,400}record\.status/);
     assert.doesNotMatch(source, /<a-checkbox/);
-    // 压缩到抽屉内容宽度，只固定右侧操作列（SCM 不允许冻结首屏字段）。
+    // 压缩到抽屉内容宽度，只固定右侧操作列（SCM 不允许保存首屏字段）。
     assert.match(source, /:scroll="\{x: 960\}"/);
     assert.match(source, /dataIndex: 'action'[\s\S]{0,120}fixed: 'right'/);
     assert.doesNotMatch(source, /fixed: 'left'/);
-    // 已有关联行用快照回显名称，且同一表内不允许重复选规格。
+    // 已有关联行用保存的数据回显名称，且同一表内不允许重复选规格。
     assert.match(source, /selected-options="selectedSkuOptions\(record\)"/);
     assert.match(source, /disabled-values="otherSkuIds\(record\.skuId\)"/);
     // 员工选项由表格组件统一加载一次，不再每行请求。

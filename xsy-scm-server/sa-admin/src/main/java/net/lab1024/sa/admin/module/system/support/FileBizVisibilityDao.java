@@ -36,7 +36,7 @@ public interface FileBizVisibilityDao {
     /**
      * 追溯批次是否存在。
      *
-     * <p>批次没有软删除列：批次事实只追加，回收整批要走库存流水而不是删行。
+     * <p>批次没有软删除列：批次记录只能新增，回收整批要走库存流水而不是删行。
      */
     int countTraceLot(@Param("lotId") Long lotId);
 

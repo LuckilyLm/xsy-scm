@@ -37,18 +37,18 @@ import static org.mockito.Mockito.mockStatic;
 /**
  * 仓库主档的可见性收口（P0 基线收口裁决第 3 条）。
  *
- * <p>裁决口径：非管理员调用仓库接口时<b>只返回自己被授权的仓库</b>，未授权仓的
+ * <p>裁决规则：非管理员调用仓库接口时<b>只返回自己被授权的仓库</b>，未授权仓的
  * id / 名称 / 地址一律不给 —— 选择器一旦漏出别人的仓库 id，就等于把「往那个仓提交单据」
  * 的入口也一并给了出去，而那正是 {@code ScmWarehouseScopeGuard} 在写侧要挡的东西。
  *
  * <p><b>同时钉住一条不能收的</b>：历史单据展示的是自己行上的
  * {@code warehouse_name_snapshot}，不经过仓库主档读取。所以「已经无权管这个仓」的员工
- * 仍然能读到自己当年那张单的收货仓名字 —— 那是历史事实，不等于获得该仓的查询权。
- * 本类最后一条用例把这两件事放在同一个人身上取证：选择器为空，快照照旧可读。
+ * 仍然能读到自己当年那张单的收货仓名字 —— 那是历史记录，不等于获得该仓的查询权。
+ * 本类最后一条用例把这两件事放在同一个人身上取证：选择器为空，保存的数据照旧可读。
  *
  * <p>身份与权限的造法与 {@code ScmPurchaseDataScopePgIT} 一致：登录员工走
  * {@code SmartRequestUtil}，功能权限走 {@code mockStatic(StpUtil.class)}，
- * 未点名的权限码取 Mockito 默认值 false（即失败关闭），测试员工一律 {@code administratorFlag=false}。
+ * 未点名的权限码取 Mockito 默认值 false（即校验失败时拒绝操作），测试员工一律 {@code administratorFlag=false}。
  */
 @DisplayName("P0-H 仓库主档可见性（PG IT）")
 class WarehouseDataScopePgIT extends ScmW5PgITBase {
@@ -137,7 +137,7 @@ class WarehouseDataScopePgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("失去仓库授权不影响历史单据：采购单读的是行上的仓库名称快照")
+    @DisplayName("失去仓库授权不影响历史单据：采购单读的是行上的当时的仓库名称")
     void historicalOrderStillShowsWarehouseSnapshot() {
         Long warehouse = newWarehouse("HS");
         Long employee = newEmployee("HS1");
@@ -153,7 +153,7 @@ class WarehouseDataScopePgIT extends ScmW5PgITBase {
         assertThat(as(employee, Set.of(), () -> purchaseQueryService.orderDetail(orderId).getWarehouseName()))
                 .isEqualTo(snapshotName);
 
-        // 收回授权：选择器立刻空掉，但那张历史单上的仓库名仍然读得到 —— 历史事实不是查询授权
+        // 收回授权：选择器立刻空掉，但那张历史单上的仓库名仍然读得到 —— 历史记录不是查询授权
         jdbc.update("DELETE FROM xsy_employee_warehouse_scope WHERE employee_id = ?", employee);
         evictMybatisCache();
         assertThat(as(employee, Set.of(), this::selectorCodes)).isEmpty();

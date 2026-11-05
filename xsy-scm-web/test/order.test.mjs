@@ -1,5 +1,5 @@
 /**
- * 销售订单模块契约测试。
+ * 销售订单模块约定检查。
  *
  * 由 9 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
  * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
@@ -160,8 +160,8 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
    * 订单录单效率纯模型测试：连续录单与历史复用。
    *
    * 这两件事都涉及「什么能复制、什么绝不能复制」的安全边界，违背后不报错但会把
-   * 历史价 / version 当新单事实，因此对纯函数逐条钉死：
-   * 1. 连续录单只保留客户与仓库，其余来源快照全部清空；
+   * 历史价 / version 当新单记录，因此对纯函数逐条钉死：
+   * 1. 连续录单只保留客户与仓库，其余来源保存的数据全部清空；
    * 2. 历史复用不复制 orderId / orderNo / version / status / 历史价 / 人工改价，来源回落后台录单。
    */
 
@@ -169,7 +169,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     return {orderedQuantity: '2.0000', manualPriceOverride: false, ...over};
   }
 
-  test('连续录单只保留客户与仓库，清空来源快照、旧地址、商品、价款及补单关联', () => {
+  test('连续录单只保留客户与仓库，清空来源保存的数据、旧地址、商品、价款及补单关联', () => {
     const previous = {
       ...newOrder(),
       orderId: '9007199254740993',
@@ -204,7 +204,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
       customerId: '12',
       deliveryWarehouseId: '31',
     });
-    assert.equal(previous.items.length, 1, '准备下一单不能修改上一单快照');
+    assert.equal(previous.items.length, 1, '准备下一单不能修改上一单保存的数据');
     assert.notEqual(next.address, previous.address);
     const chosen = nextOrderForCustomer({...previous, deliveryWarehouseId: '42'});
     assert.equal(chosen.deliveryWarehouseId, '42', '显式选仓优先于历史商城履约仓');
@@ -250,7 +250,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     const line = reuse.items[0];
     assert.equal(line.skuId, 5);
     assert.equal(line.orderedQuantity, '3.0000');
-    // 历史价 / 人工改价 / 行身份绝不作为新单事实
+    // 历史价 / 人工改价 / 行身份绝不作为新单记录
     assert.equal(line.manualPriceOverride, false);
     assert.equal(line.unitPrice, null);
     assert.equal(line.itemId, undefined);
@@ -277,7 +277,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   const list = read('../src/views/business/scm/order/order-list.vue');
   const modal = read('../src/views/business/scm/order/components/order-tag-modal.vue');
 
-  test('标签独立存储并按订单与标签对唯一约束，不能改变订单交易事实', () => {
+  test('标签独立存储并按订单与标签对唯一约束，不能改变订单交易记录', () => {
     assert.match(sql, /CREATE TABLE xsy_order_tag\b/);
     assert.match(sql, /CREATE TABLE xsy_order_tag_link\b/);
     assert.match(sql, /PRIMARY KEY \(order_id, tag_id\)/);
@@ -333,7 +333,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 // ---------------------------------------------------------------- 来源：order-log-return-refund-contract.test.mjs
 {
   /**
-   * 订单日志、退货、退款的前端契约测试。
+   * 订单日志、退货、退款的前端约定检查。
    *
    * 这三个页面此前只做过「操作列居中」（commit ffa95370 是 8 文件 16 行的 align 改动），
    * 列精简与动作分组都没有做。本文件钉住两件容易回退的事：
@@ -416,7 +416,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 // ---------------------------------------------------------------- 来源：order-entry-contract.test.mjs
 {
   /**
-   * 订单录单效率（历史复用 / 最近已确认订单价）的前端契约测试。
+   * 订单录单效率（历史复用 / 最近已确认订单价）的前端约定检查。
    *
    * 钉死这一波最容易被日后改动悄悄破坏、且破坏后不报错的前端边界（后端读路径 / 权限由 Java 测试覆盖）：
    * 1. 最近已确认订单价是只读查询：走 getRequest，绝不复用带 Idempotency-Key 的 orderCommand；
@@ -434,7 +434,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
       .replace(/^\s*\/\/.*$/gm, '');
   }
 
-  test('最近已确认订单价走只读 getRequest 的 reference 端点，不复用幂等命令封装', () => {
+  test('最近已确认订单价走只读 getRequest 的 reference 端点，不复用防重复处理命令封装', () => {
     const api = code('../src/api/business/scm/order-api.ts');
     assert.match(api, /recentPrices:[\s\S]*?getRequest(?:<[^']*>)?\('\/scm\/order\/reference\/recent-prices'/);
     assert.doesNotMatch(api, /recentPrices:[^\n]*orderCommand/);
@@ -472,7 +472,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   test('订单列表把「复用为新单」接在操作列的「更多」里，沿用 scm:order:add 权限', () => {
     const list = code('../src/views/business/scm/order/order-list.vue');
     // 已确认订单行内只留「详情 + 预留库存」，复用为新单属于低频动作，收进「更多」。
-    // 菜单项挂不上 v-privilege 指令，改用同一口径的 hasPermission 裁剪，权限码不变。
+    // 菜单项挂不上 v-privilege 指令，改用同一套规则的 hasPermission 裁剪，权限码不变。
     assert.match(list, /key: 'reuse', label: '复用为新单'/);
     assert.match(list, /openFromHistory\(row\.orderId\)/);
     assert.match(list, /hasPermission\('scm:order:add'\)/);
@@ -609,7 +609,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 {
   /**
    * 「最近采购价」只读参考价：
-   * 1. 走只读 getRequest，绝不复用带幂等键的写命令；
+   * 1. 走只读 getRequest，绝不复用带防重复请求编号的写命令；
    * 2. 缓存键只用商品规格，换行/换客户不会串价；
    * 3. 不写回报价单价，也不进入订单载荷。
    */
@@ -631,7 +631,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     supplierName: '供应商',
   });
 
-  test('最近采购价走只读 getRequest 的 reference 端点，不复用幂等命令封装', () => {
+  test('最近采购价走只读 getRequest 的 reference 端点，不复用防重复处理命令封装', () => {
     const api = code('../src/api/business/scm/order-api.ts');
     assert.match(api, /lastPurchasePrices:[\s\S]*?getRequest(?:<[^']*>)?\('\/scm\/order\/reference\/last-purchase-prices'/);
     assert.doesNotMatch(api, /lastPurchasePrices:[^\n]*orderCommand/);

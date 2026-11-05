@@ -8,7 +8,7 @@
 
     <!--
       计数只含未删除商品：商品档案删除后不应继续占住标签。两处查询共用别名 d 与同一子查询，
-      保证列表展示与删除复核得到的 productCount 口径一致。
+      保证列表展示与删除复核得到的 productCount 规则一致。
     -->
     <sql id="columns">
         d.id tag_id, d.version, d.tag_code, d.name, d.status, d.sort_order

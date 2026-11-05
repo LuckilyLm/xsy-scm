@@ -187,7 +187,7 @@ export function isLoadingRecentPrice(cache: RecentPriceCache, customerId: Id | n
   return key != null && cache.loadingKey === key;
 }
 
-/** 最近采购价缓存。键只用商品规格，不掺客户或行号：同一规格在不同客户下是同一个采购事实。 */
+/** 最近采购价缓存。键只用商品规格，不掺客户或行号：同一规格在不同客户下是同一个采购记录。 */
 export interface LastPurchasePriceCache {
   loadingKey: string | null;
   rowsBySkuId: Record<string, LastPurchasePrice | null>;

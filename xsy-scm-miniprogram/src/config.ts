@@ -6,5 +6,5 @@ export const API_BASE: string = process.env.TARO_APP_API_BASE || 'https://api.ex
 
 export const APP_NAME = '鲜蔬源'
 
-/** 结算幂等键过期时间（毫秒），用于避免重复提交。 */
+/** 结算防重复请求编号过期时间（毫秒），用于避免重复提交。 */
 export const IDEMPOTENCY_TTL = 5 * 60 * 1000

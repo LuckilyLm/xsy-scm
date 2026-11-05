@@ -55,7 +55,7 @@
         <checkstyle.version>10.21.1</checkstyle.version>
         <spotless-maven-plugin.version>2.44.3</spotless-maven-plugin.version>
         <archunit.version>1.4.1</archunit.version>
-        <!-- Spotless 棘轮基准：只格式化相对该 ref 变更过的文件 -->
+        <!-- Spotless 新增问题检查基准：只格式化相对该 ref 变更过的文件 -->
         <quality.ratchet.from>origin/main</quality.ratchet.from>
     </properties>
 
@@ -436,14 +436,14 @@
                     </sourceDirectories>
                     <!-- check 目标的 includes 是逗号分隔字符串，不是列表。
                          两条模式分别覆盖 Q1 迁移的两侧：只留旧路径会让迁进 com/xsy/scm 的代码
-                         静默脱离 Checkstyle 检查，而 Checkstyle 是 baseline 棘轮的一路输入，
+                         静默脱离 Checkstyle 检查，而 Checkstyle 是 baseline 新增问题检查的一路输入，
                          表现是「违规数下降」这种假改善。sourceDirectories 已限定在
                          sa-admin/src/main/java，所以这里不会把 SmartAdmin 底座扫进来。 -->
                     <includes>**/module/scm/**/*.java,**/com/xsy/scm/**/*.java</includes>
                     <includeTestSourceDirectory>false</includeTestSourceDirectory>
                     <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
                     <!-- 历史债务由 tools/quality/quality_guard.py 的 baseline 承接；
-                         这里失败会让 mvn 本身变红，把「新增 0」的棘轮语义丢掉。 -->
+                         这里失败会让 mvn 本身变红，把「新增 0」的新增问题检查语义丢掉。 -->
                     <failOnViolation>false</failOnViolation>
                     <consoleOutput>false</consoleOutput>
                     <logViolationsToConsole>false</logViolationsToConsole>
@@ -464,7 +464,7 @@
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>${spotless-maven-plugin.version}</version>
                 <configuration>
-                    <!-- 棘轮：只检查相对该 git ref 变更过的文件，历史文件一条都不重写。
+                    <!-- 新增问题检查：只检查相对该 git ref 变更过的文件，历史文件一条都不重写。
                          可用 -Dquality.ratchet.from=<ref> 覆盖（例如新克隆没有 origin 时）。 -->
                     <ratchetFrom>${quality.ratchet.from}</ratchetFrom>
                     <!-- 换行统一按 LF 判定。

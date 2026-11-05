@@ -20,7 +20,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-/** 真实 PostgreSQL 下核对商城资金只读查询的归属、净额与分页口径。 */
+/** 真实 PostgreSQL 下核对商城资金只读查询的归属、净额与分页规则。 */
 class MallFundsQueryPgIT extends ScmW5PgITBase {
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
 
