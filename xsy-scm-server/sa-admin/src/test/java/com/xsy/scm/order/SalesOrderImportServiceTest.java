@@ -419,6 +419,27 @@ class SalesOrderImportServiceTest {
         assertThat(item.getUnitPrice()).isEqualTo("0.0000");
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void rejectsAnotherOrderAfterTotalOrSignature(boolean keepTotal) throws Exception {
+        var result = service.importFile(workbook(book -> {
+            var sheet = book.getSheetAt(0);
+            if (!keepTotal) sheet.removeRow(sheet.getRow(5));
+            sheet.createRow(8).createCell(0).setCellValue("收货单位：第二个客户");
+            sheet.createRow(9).createCell(1).setCellValue("商品甲");
+        }), "key", true);
+        assertThat(result.getErrors()).extracting("code").contains("DATA_AFTER_END");
+        verifyNoInteractions(orders);
+    }
+
+    @Test
+    void rejectsExtraDataInOtherwiseEmptyRows() throws Exception {
+        var result = service.importFile(workbook(book ->
+            book.getSheetAt(0).createRow(7).createCell(8).setCellValue("遗漏的商品")), "key", true);
+        assertThat(result.getErrors()).extracting("code").contains("DATA_AFTER_END");
+        verifyNoInteractions(orders);
+    }
+
     @Test
     void missingUnitIsReportedOnce() throws Exception {
         var result = service.importFile(

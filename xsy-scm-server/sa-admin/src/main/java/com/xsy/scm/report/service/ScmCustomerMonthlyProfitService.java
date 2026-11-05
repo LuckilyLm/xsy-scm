@@ -8,6 +8,7 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.finance.permission.FinancePermission;
 import com.xsy.scm.report.constant.ScmFinanceProfitDimensionEnum;
 import com.xsy.scm.report.dao.ScmFinanceProfitDao;
 import com.xsy.scm.report.domain.form.ScmCustomerMonthlyProfitQueryForm;
@@ -60,7 +61,9 @@ public class ScmCustomerMonthlyProfitService {
         }
         ScmDataScopeContext scope = dataScopeService.resolve();
         // 月成本与费用属于客户整体，不能用局部订单收入减去整月成本；不依赖仓库成本。
-        if (!scope.isCostVisible() || !scope.getOrderSellerScope().isAll()) {
+        // 外部账单既有原值也参与利润派生，必须在取数前统一校验，隐藏列不足以保护这些事实。
+        if (!scope.isCostVisible() || !scope.getOrderSellerScope().isAll()
+            || !ScmDataScopeService.hasPermission(FinancePermission.POSTING_QUERY)) {
             throw new ScmDataScopeException();
         }
         return scope;

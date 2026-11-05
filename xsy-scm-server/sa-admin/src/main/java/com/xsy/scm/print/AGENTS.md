@@ -1,0 +1,6 @@
+# 打印与客户Excel
+
+- Service负责取数和工作簿，Controller仅编排请求与文件响应；跨域读取复用正式查询服务，不直连订单或采购表。
+- CustomerSheetExcelService复用classpath发布模板；单据事实与列含义以根目录docs/decisions.md为准。POI扩展明细时同时移动合计、合并区域和签字栏，不能截断长订单。
+- 客户送货打印字段目录、内置模板和取数必须同步；已应用migration不改，历史打印快照不重写。
+- 回归入口为CustomerSheetExcelServiceTest、CustomerDeliveryDiscountTest和SalesOrderPrintContractTest；输出工作簿需检查公式缓存、数值类型与空值，源码存在不代表运行通过。

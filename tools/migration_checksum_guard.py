@@ -20,10 +20,10 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION_DIR = ROOT / "xsy-scm-server/sa-admin/src/main/resources/db/migration"
+MIGRATION_DIR = ROOT / "xsy-scm-server/sa-admin/src/main/resources/db/migration/modules"
 SNAPSHOT_PATH = ROOT / "tools/migration_checksum_snapshot.json"
 ALGORITHM = "flyway-crc32-readline-v11"
-FILENAME_RE = re.compile(r"^V(?P<version>[0-9][0-9.]*)__(?P<description>.+)\.sql$")
+FILENAME_RE = re.compile(r"^(?P<prefix>[VB])(?P<version>[0-9][0-9.]*)__(?P<description>.+)\.sql$")
 
 
 def flyway_checksum(raw: bytes) -> int:
@@ -42,17 +42,35 @@ def flyway_checksum(raw: bytes) -> int:
 
 
 def version_key(version: str) -> tuple:
-    return tuple(int(part) for part in version.split("."))
+    parts = [int(part) for part in version.removeprefix("B").split(".")]
+    while len(parts) > 1 and parts[-1] == 0:
+        parts.pop()
+    return tuple(parts)
+
+
+def migration_label(version: str) -> str:
+    """展示Flyway标签；保留既有V快照数值键，B基线使用独立B前缀键。"""
+    return version if version.startswith("B") else f"V{version}"
+
+
+def migration_directories(directory: Path) -> tuple[Path, ...]:
+    """正式链仅扫描当前模块目录；旧历史元数据由切换工具单独核对。"""
+    return (directory,)
 
 
 def scan_migrations(directory: Path) -> dict:
-    """version -> {file, checksum}；同一版本号出现两次直接报错，因为 Flyway 会拒绝启动。"""
+    """同类型同版本跨目录重复也拒绝；同号B与V可以共存。"""
     migrations: dict[str, dict] = {}
-    for path in sorted(directory.glob("V*.sql")):
+    paths = [path for source in migration_directories(directory)
+             for pattern in ("V*.sql", "B*.sql") for path in source.glob(pattern)]
+    for path in sorted(paths):
         match = FILENAME_RE.match(path.name)
         if not match:
-            raise ValueError(f"迁移文件名不符合 V<version>__<description>.sql：{path.name}")
-        version = match.group("version")
+            raise ValueError(f"迁移文件名不符合 V/B<version>__<description>.sql：{path.name}")
+        # Flyway把1000.01与1000.1视为同一版本，清单和重复检查必须使用同一规范化规则。
+        version = ".".join(str(part) for part in version_key(match.group("version")))
+        if match.group("prefix") == "B":
+            version = "B" + version
         entry = {"file": path.name, "checksum": flyway_checksum(path.read_bytes())}
         if version in migrations:
             raise ValueError(f"版本号 {version} 重复：{migrations[version]['file']} 与 {path.name}")
@@ -108,24 +126,24 @@ def cmd_check(args) -> int:
     if result["drift"]:
         print("\n--- 已应用迁移的字节被改动 (blocking) ---")
         for version, name, was, now in result["drift"]:
-            print(f"  V{version} {name}: snapshot {was} -> current {now}")
+            print(f"  {migration_label(version)} {name}: snapshot {was} -> current {now}")
         print("  恢复原字节，不要改快照：格式化后的 SQL 语义没变但校验和变了，"
               "真实库上的 flyway.validate() 会失败。")
 
     if result["vanished"]:
         print("\n--- 快照里的版本号在文件里消失 (blocking) ---")
         for version in result["vanished"]:
-            print(f"  V{version} {snapshot['migrations'][version]['file']}")
+            print(f"  {migration_label(version)} {snapshot['migrations'][version]['file']}")
         print("  已应用的版本号不能改号或删文件；确需重排时按「保留已被真实库应用的版本号」处理并同步快照。")
 
     if result["renamed"]:
         print("\n--- 文件名变了而字节没变（通常无害）---")
         for version, was, now in result["renamed"]:
-            print(f"  V{version}: {was} -> {now}")
+            print(f"  {migration_label(version)}: {was} -> {now}")
 
     if result["pending"]:
         print("\n--- 未入快照的新迁移 ---")
-        print("  " + ", ".join(f"V{v}" for v in result["pending"]))
+        print("  " + ", ".join(migration_label(v) for v in result["pending"]))
         print("  在真实库应用后用 `sync` 冻结；本状态不算失败。")
 
     ok = not result["drift"] and not result["vanished"]
@@ -143,13 +161,13 @@ def cmd_sync(args) -> int:
         print("=== Migration checksum guard ===")
         print("拒绝写入：以下已冻结版本的字节与快照不一致，先恢复原文件再 sync。")
         for version, name, was, now in result["drift"]:
-            print(f"  V{version} {name}: snapshot {was} -> current {now}")
+            print(f"  {migration_label(version)} {name}: snapshot {was} -> current {now}")
         print("\nRESULT: FAIL")
         return 1
     if result["vanished"] and not args.prune:
         print("=== Migration checksum guard ===")
         print("拒绝写入：快照里的版本号在文件里不存在（"
-              + ", ".join(f"V{v}" for v in result["vanished"])
+              + ", ".join(migration_label(v) for v in result["vanished"])
               + "）。确认要丢弃这些条目时加 --prune。")
         print("\nRESULT: FAIL")
         return 1
@@ -167,9 +185,9 @@ def cmd_sync(args) -> int:
     write_snapshot(snapshot_path, merged)
     print("=== Migration checksum guard ===")
     print(f"frozen       : {len(merged)}")
-    print("added        : " + (", ".join(f"V{v}" for v in sorted(added, key=version_key)) or "none"))
+    print("added        : " + (", ".join(migration_label(v) for v in sorted(added, key=version_key)) or "none"))
     if args.force and result["drift"]:
-        print("OVERWRITTEN  : " + ", ".join(f"V{v}" for v, *_ in result["drift"])
+        print("OVERWRITTEN  : " + ", ".join(migration_label(v) for v, *_ in result["drift"])
               + "  ← 用 --force 覆盖了已冻结校验和，必须能说明为什么旧字节不可能再出现在任何库里")
     print("\nRESULT: PASS")
     return 0

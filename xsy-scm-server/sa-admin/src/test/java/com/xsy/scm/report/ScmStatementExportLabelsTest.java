@@ -43,8 +43,9 @@ class ScmStatementExportLabelsTest {
             var sheet = book.getSheetAt(0);
             assertThat(columnValues(sheet, "类型")).containsExactly("销售应收", "退货扣减", "实际收款", "撤销收款记录",
                 "账款抵扣", "撤销抵扣", "抹零", "撤销抹零", "实际退款", "撤销退款记录", "外部账单");
-            assertThat(sheet.getRow(2).getCell(columnIndex(sheet, "应收变动")).getStringCellValue())
-                .isEqualTo("-12.3456");
+            var amount = sheet.getRow(2).getCell(columnIndex(sheet, "应收变动"));
+            assertThat(amount.getCellType()).isEqualTo(org.apache.poi.ss.usermodel.CellType.NUMERIC);
+            assertThat(BigDecimal.valueOf(amount.getNumericCellValue())).isEqualByComparingTo("-12.3456");
         }
     }
 

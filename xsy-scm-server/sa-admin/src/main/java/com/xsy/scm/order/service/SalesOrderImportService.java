@@ -256,16 +256,35 @@ public class SalesOrderImportService {
     private List<NoteLine> readLines(Sheet sheet, int headerRowIndex, DataFormatter formatter,
         SalesOrderImportResultVO result) {
         var lines = new ArrayList<NoteLine>();
+        boolean ended = false;
         for (int rowIndex = headerRowIndex + 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
             var row = sheet.getRow(rowIndex);
             if (row == null)
                 continue;
             var first = cellText(row.getCell(0), formatter);
-            if (first != null && first.startsWith("合计"))
-                break;
             var productName = cellText(row.getCell(1), formatter);
-            if (productName != null && productName.contains("销售方"))
-                break;
+            var receiver = cellText(row.getCell(7), formatter);
+            boolean signature = (productName != null && productName.startsWith("销售方"))
+                || (receiver != null && receiver.startsWith("收货方"));
+            for (int column = 0; signature && column < row.getLastCellNum(); column++) {
+                if (column != 1 && column != 7 && cellText(row.getCell(column), formatter) != null)
+                    signature = false;
+            }
+            if (ended) {
+                // 允许原模板签字栏；结束标记后的新订单或补充商品必须拒绝，不能静默只导第一张。
+                boolean hasContent = false;
+                for (int column = 0; column < row.getLastCellNum(); column++) {
+                    hasContent |= cellText(row.getCell(column), formatter) != null;
+                }
+                if (!signature && hasContent) {
+                    addError(result, rowIndex + 1, null, "订单", "DATA_AFTER_END", "合计或签字栏后仍有订单数据，请将每张客户订单分别保存为一个文件后导入");
+                }
+                continue;
+            }
+            if ((first != null && first.startsWith("合计")) || signature) {
+                ended = true;
+                continue;
+            }
             if (isBlankLine(row, formatter))
                 continue;
             var rowNumber = rowIndex + 1;
@@ -301,7 +320,8 @@ public class SalesOrderImportService {
     }
 
     private boolean isBlankLine(Row row, DataFormatter formatter) {
-        for (int column = 1; column < HEADERS.size(); column++)
+        // 模板可预填序号，但模板外的列也必须检查，避免单独填在额外列的数据被当成空行。
+        for (int column = 1; column < Math.max(row.getLastCellNum(), HEADERS.size()); column++)
             if (cellText(row.getCell(column), formatter) != null)
                 return false;
         return true;

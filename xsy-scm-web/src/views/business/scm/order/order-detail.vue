@@ -9,6 +9,22 @@
       <template v-if="order">
         <!-- 当前状态下真正要做的动作留在外面；只有一个次要动作时直接显示，多个才收进「更多」 -->
         <a-space class="actions scm-detail-actions">
+          <a-button
+            type="primary"
+            v-privilege="'scm:report:export'"
+            :loading="exportingSheet === 'order'"
+            :disabled="loading || saving || !!exportingSheet"
+            @click="exportSheet(false)"
+            >导出订货单</a-button
+          >
+          <a-button
+            type="primary"
+            v-privilege="'scm:report:export'"
+            :loading="exportingSheet === 'delivery'"
+            :disabled="loading || saving || !!exportingSheet"
+            @click="exportSheet(true)"
+            >导出送货单</a-button
+          >
           <a-button v-if="order.status === 'PENDING'" type="primary" v-privilege="'scm:order:confirm'" @click="confirm"> 确认订单 </a-button>
           <a-button v-if="isConfirmedOrderStatus(order.status)" v-privilege="'scm:order:return:add'" @click="returnForm?.open(order)"
             >申请退货
@@ -274,7 +290,21 @@ import ReturnForm from './components/order-return-form-modal.vue';
 import OrderPaymentDrawer from './components/order-payment-drawer.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const paymentDrawer = ref<InstanceType<typeof OrderPaymentDrawer>>();
+const exportingSheet = ref<'order' | 'delivery'>();
 const router = useRouter();
+
+/** 下载使用当前正式订单；异常提示由统一下载入口负责。 */
+async function exportSheet(delivery: boolean) {
+  const id = order.value?.orderId;
+  if (id == null || exportingSheet.value || loading.value || saving.value) return;
+  exportingSheet.value = delivery ? 'delivery' : 'order';
+  try {
+    if (delivery) await orderApi.exportCustomerDelivery(id);
+    else await orderApi.exportCustomerOrder(id);
+  } finally {
+    exportingSheet.value = undefined;
+  }
+}
 
 function openCodCollection() {
   if (order.value?.orderId) router.push({path: '/finance/receipts', query: {codOrderId: String(order.value.orderId)}});

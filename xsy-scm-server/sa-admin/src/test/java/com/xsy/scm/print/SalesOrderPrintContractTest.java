@@ -65,4 +65,16 @@ class SalesOrderPrintContractTest {
         assertThat(type.total("settlementTotalAmount").money()).isTrue();
         assertThat(type.column("lockedUnitPrice").label()).isNotEqualTo(type.column("draftUnitPrice").label());
     }
+
+    @Test
+    void customerDeliveryTemplateCanDisplayOrderedAndActualQuantitiesTogether() {
+        var model = new ScmPrintTemplateModel();
+        model.setTitle("客户送货单");
+        model.setPaper("A4");
+        model.setOrientation("PORTRAIT");
+        model.setHeaderFields(List.of("customerName"));
+        model.setColumns(List.of("productName", "orderedQuantity", "actualQuantity", "lockedUnitPrice"));
+        assertThat(ScmPrintTemplateValidator.validate(ScmPrintDocumentTypeEnum.CUSTOMER_DELIVERY_NOTE, model).getColumns())
+            .containsExactly("productName", "orderedQuantity", "actualQuantity", "lockedUnitPrice");
+    }
 }

@@ -1,11 +1,14 @@
 package com.xsy.scm.report;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.finance.permission.FinancePermission;
 import com.xsy.scm.finance.domain.form.FinanceCustomerExpenseForm;
 import com.xsy.scm.finance.service.FinanceCustomerExpenseService;
 import com.xsy.scm.report.constant.ScmFinanceProfitDimensionEnum;
@@ -99,6 +102,31 @@ class CustomerMonthlyProfitStatementPgIT extends ScmW6PgITBase {
         assertThat(row.getStatementProfit()).isNull();
         assertThat(row.getInvoiceTaxAmount()).isEqualByComparingTo("10.5000");
         assertThat(row.getServiceFeeAmount()).isEqualByComparingTo("63.0000");
+    }
+
+    @Test
+    void revokedPostingPermissionBlocksEveryMonthlyRead() {
+        permissions.when(() -> StpUtil.hasPermission(FinancePermission.POSTING_QUERY)).thenReturn(false);
+        var query = monthlyQuery(1L);
+        assertThatThrownBy(() -> monthlyProfitService.query(query)).isInstanceOf(ScmDataScopeException.class);
+        assertThatThrownBy(() -> monthlyProfitService.summary(query)).isInstanceOf(ScmDataScopeException.class);
+        assertThatThrownBy(() -> monthlyProfitService.export(query)).isInstanceOf(ScmDataScopeException.class);
+    }
+
+    @Test
+    void statementProfitSubtractsTheDisplayedRoundedFees() {
+        Long customer = newCustomer();
+        insertReceivable(customer, "100.0008", OffsetDateTime.now(ZoneId.of("Asia/Shanghai")));
+        addExpense(customer, "80.0000", "0.0000", "0.0000", "0.0000", "0.0000");
+        var query = monthlyQuery(customer);
+        var row = monthlyProfitService.query(query).getList().getFirst();
+        assertThat(row.getStatementPeriod()).isEqualTo(query.getStartDate() + " 至 " + query.getEndDate());
+        assertThat(row.getInvoiceTaxAmount()).isEqualByComparingTo("1.0000");
+        assertThat(row.getServiceFeeAmount()).isEqualByComparingTo("6.0000");
+        assertThat(row.getStatementProfit()).isEqualByComparingTo("13.0008");
+        assertThat(row.getStatementProfit()).isEqualByComparingTo(row.getStatementAmount()
+            .subtract(row.getSalesCostAmount()).subtract(row.getInvoiceTaxAmount()).subtract(row.getServiceFeeAmount()));
+        assertThat(monthlyProfitService.summary(query).getStatementProfit()).isEqualByComparingTo("13.0008");
     }
 
     private void insertReceivable(Long customerId, String amount, OffsetDateTime eventAt) {
