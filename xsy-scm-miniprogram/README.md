@@ -47,6 +47,10 @@ npm run dev:mp-weixin
 
 微信工具导入开发产物 `dist/dev/mp-weixin`；执行 `npm run build:mp-weixin` 后则导入 `dist/build/mp-weixin`。若导入工作区根目录，本机 `project.config.json` 的 `miniprogramRoot` 必须指向对应产物目录，不能直接运行 `src/` 中的 Vue 源码。
 
+真机体验版使用 `npm run build:mp-weixin:test`，选择 `test` 环境并生成 `dist/build/mp-weixin`。构建前，在被 Git 忽略的 `.env.test.local` 中将 `VITE_APP_API_URL` 配置为手机可访问的完整 HTTPS 测试接口地址，并设置 `VITE_APP_USE_MOCK=false`；复用仓库 Nginx 入口时，接口地址需包含 `/api` 前缀。该文件按模式覆盖 `.env.test` 和通用 `.env.local`，无需改动本机联调地址。
+
+微信后台配置对应的服务器合法域名，按实际功能补充上传、下载域名及隐私声明。核对本节下方的 AppID 配置后，用微信开发者工具导入构建产物并上传，在后台版本管理中选为体验版、添加体验成员，再提供二维码扫码。上传开发版本不等于提交审核或正式发布；体验版下单会写入所连接的测试后端。
+
 API 地址在编译时写入产物，修改环境变量后需要重新编译；若磁盘产物已更新而运行时仍使用旧地址，清理微信工具的编译缓存后重新编译，不必清除登录和本地存储。
 
 直连本机后端时，将 API 地址改为实际后端端口；以下命令选择 `localhost` 模式，需要自行提供对应模式的环境配置：
