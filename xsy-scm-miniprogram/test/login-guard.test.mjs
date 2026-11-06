@@ -104,18 +104,19 @@ test('page lifecycle catches direct opens and returning to cached protected page
   assert.equal(h.calls.routes.length, 2);
 });
 
-test('guest cold start enters login immediately after the first page is ready', () => {
+test('guest cold start toasts and enters login immediately after the first page is ready', () => {
   for (const route of ['pages/home/index', 'pages/mine/index']) {
     const h = harness();
     h.api.createApp();
     h.setRoute(undefined);
     assert.equal(h.app.hooks.onShow(), true);
     assert.deepEqual(h.calls.routes, []);
+    assert.deepEqual(h.calls.toasts, []);
     h.setRoute(route);
     assert.equal(h.app.hooks.onShow(), false);
     assert.deepEqual(h.calls.routes, ['/pages/login/login']);
     assert.equal(h.calls.timers.length, 0);
-    assert.deepEqual(h.calls.toasts, []);
+    assert.deepEqual(h.calls.toasts, ['请先登录']);
     h.app.hooks.onShow();
     assert.equal(h.calls.routes.length, 1);
   }

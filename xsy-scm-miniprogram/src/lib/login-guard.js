@@ -14,12 +14,14 @@ export function hasUserSession() {
 /**
  * 统一提示并进入登录页；并发触发只跳转一次，不清理已有会话。
  * @param {string} message 登录原因，省略时提示“请先登录”。
- * @param {boolean} immediate 启动检查时为 true，直接跳转，不等待提示；省略时先提示再跳转。
+ * @param {boolean} immediate 启动检查时为 true，提示后立即跳转；省略时给提示留出阅读时间再跳转。
  */
 export function redirectToLogin(message = '请先登录', immediate = false) {
   const pages = getCurrentPages();
   if (redirecting || pages[pages.length - 1]?.route === LOGIN_PAGE.slice(1)) return;
   redirecting = true;
+  // 启动检查同样要提示未登录，不能静默跳转；toast 是应用级浮层，跳转后仍会显示。
+  uni.showToast({ title: message, icon: 'none' });
   const openLogin = () => {
     if (hasUserSession()) {
       redirecting = false;
@@ -30,7 +32,6 @@ export function redirectToLogin(message = '请先登录', immediate = false) {
   if (immediate) {
     openLogin();
   } else {
-    uni.showToast({ title: message, icon: 'none' });
     // 给主动点击后的提示留出阅读时间；启动检查不等待这段延时。
     setTimeout(openLogin, 600);
   }
