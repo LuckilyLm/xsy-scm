@@ -184,6 +184,9 @@ test('success and incoming funds retain semantic colors', () => {
 test('anonymous theme failure is silent and cannot clear the customer session', async () => {
   const effects = [];
   let headers;
+  let token = 'existing-customer-token';
+  let defer = false;
+  let respond;
   const source = read('../src/lib/xsy-request.js')
     .replace(/^[^\S\r\n]*import[\s\S]*?;\r?\n/gm, '')
     .replace('import.meta.env.VITE_APP_API_URL', "'http://example.invalid'")
@@ -196,13 +199,17 @@ test('anonymous theme failure is silent and cannot clear the customer session', 
     USE_MOCK: false,
     setTimeout: (fn) => fn(),
     uni: {
-      getStorageSync: () => 'existing-customer-token',
-      removeStorageSync: () => effects.push('logout'),
+      getStorageSync: () => token,
+      removeStorageSync: () => {
+        token = '';
+        effects.push('logout');
+      },
       showToast: () => effects.push('toast'),
       reLaunch: () => effects.push('redirect'),
       request: (options) => {
         headers = options.header;
-        options.success({ statusCode: 401, data: { code: 30007, msg: 'unavailable' } });
+        respond = () => options.success({ statusCode: 401, data: { code: 30007, msg: 'unavailable' } });
+        if (!defer) respond();
       },
     },
   });
@@ -212,5 +219,14 @@ test('anonymous theme failure is silent and cannot clear the customer session', 
   assert.deepEqual(effects, []);
   await assert.rejects(context.get('/scm/mall/orders'));
   assert.equal(headers.Authorization, 'Bearer existing-customer-token');
+  assert.deepEqual(effects, ['logout', 'toast', 'redirect']);
+
+  defer = true;
+  token = 'old-token';
+  const oldRequest = context.get('/scm/mall/auth/profile');
+  token = 'new-token';
+  respond();
+  await assert.rejects(oldRequest);
+  assert.equal(token, 'new-token');
   assert.deepEqual(effects, ['logout', 'toast', 'redirect']);
 });

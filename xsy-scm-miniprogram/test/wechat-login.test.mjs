@@ -7,7 +7,7 @@ import { computed, ref, reactive } from 'vue';
 const source = readFileSync(new URL('../src/pages/login/login.vue', import.meta.url), 'utf8');
 
 function harness(login) {
-  const calls = { phone: [], password: [], saved: [], routes: [], toasts: [], errors: [], loading: 0 };
+  const calls = { phone: [], password: [], saved: [], routes: [], toasts: [], loadingAtToast: [], loading: 0 };
   const store = {
     passwordChangeRequired: false,
     setUserLoginInfo(data) {
@@ -32,9 +32,11 @@ function harness(login) {
         return login(form);
       },
     },
-    xsySentry: { captureError: (error) => calls.errors.push(error) },
     uni: {
-      showToast: ({ title }) => calls.toasts.push(title),
+      showToast: ({ title }) => {
+        calls.toasts.push(title);
+        calls.loadingAtToast.push(calls.loading);
+      },
       showLoading: () => calls.loading++,
       hideLoading: () => calls.loading--,
       switchTab: ({ url }) => calls.routes.push(url),
@@ -86,17 +88,34 @@ test('verified phone signs in with only the one-time code and coalesces repeated
 test('failed authorization exchange leaves user signed out and allows a new authorization', async () => {
   let fail = true;
   const { page, calls } = harness(async () => {
-    if (fail) throw new Error('expired authorization');
+    if (fail) throw { code: 40098, msg: '微信授权已失效，请重新授权手机号' };
     return { data: { token: 'new-token', profile: { firstPasswordChange: false } } };
   });
   await page.wechatLogin({ detail: { errMsg: 'getPhoneNumber:ok', code: 'expired' } });
   assert.equal(calls.saved.length, 0);
   assert.equal(calls.routes.length, 0);
   assert.equal(page.submitting.value, false);
+  assert.deepEqual(calls.toasts, ['微信授权已失效，请重新授权手机号']);
+  assert.deepEqual(calls.loadingAtToast, [0]);
   fail = false;
   await page.wechatLogin({ detail: { errMsg: 'getPhoneNumber:ok', code: 'new-authorization' } });
   assert.equal(calls.saved.length, 1);
   assert.equal(calls.loading, 0);
+});
+
+test('password login reports a transport failure after hiding loading', async () => {
+  const message = '网络连接失败，请检查网络后重试';
+  const { page, calls } = harness(async () => {
+    throw { code: 0, msg: message };
+  });
+  page.form.phone = '13800000000';
+  page.form.password = 'temporary-password';
+  await page.submit();
+  assert.deepEqual(calls.toasts, [message]);
+  assert.deepEqual(calls.loadingAtToast, [0]);
+  assert.equal(calls.saved.length, 0);
+  assert.equal(calls.routes.length, 0);
+  assert.equal(page.submitting.value, false);
 });
 
 test('password fallback still obeys the server temporary-password requirement', async () => {

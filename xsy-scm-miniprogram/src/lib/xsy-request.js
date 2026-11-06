@@ -85,7 +85,7 @@ function handleSessionExpired() {
   uni.showToast({ title: '登录已失效，请重新登录', icon: 'none' });
   setTimeout(() => {
     redirecting = false;
-    uni.reLaunch({ url: '/pages/login/login' });
+    if (!getUserToken()) uni.reLaunch({ url: '/pages/login/login' });
   }, 800);
 }
 
@@ -93,7 +93,7 @@ function handleSessionExpired() {
  * 处理返回的信封。
  * 无论 HTTP 状态码为何都优先解析信封，否则业务错误会退化成「网络错误」。
  */
-function handleResponse(response, resolve, reject, url, options = {}) {
+function handleResponse(response, resolve, reject, url, options, token) {
   const res = response.data;
   const code = res && res.code;
 
@@ -104,7 +104,8 @@ function handleResponse(response, resolve, reject, url, options = {}) {
 
   // 令牌失效
   if (!options.anonymous && !isAuthPath(url) && SESSION_EXPIRED_CODES.includes(code)) {
-    handleSessionExpired();
+    // 旧请求的失效响应不能退出刚登录的新会话。
+    if (token === getUserToken()) handleSessionExpired();
     reject(new ApiError(code, res.msg, response));
     return;
   }
@@ -140,7 +141,7 @@ export const request = function (url, method, data, options = {}) {
           sendReal();
           return;
         }
-        handleResponse({ statusCode: 200, data: mocked }, resolve, reject, url, options);
+        handleResponse({ statusCode: 200, data: mocked }, resolve, reject, url, options, token);
       });
       return;
     }
@@ -152,7 +153,7 @@ export const request = function (url, method, data, options = {}) {
         data,
         method,
         header,
-        success: (response) => handleResponse(response, resolve, reject, url, options),
+        success: (response) => handleResponse(response, resolve, reject, url, options, token),
         fail: (error) => reject(new ApiError(0, '网络连接失败，请检查网络后重试', error)),
       });
     }

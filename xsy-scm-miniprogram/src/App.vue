@@ -13,6 +13,7 @@
       // 断网/恢复各提示一次，避免用户把请求失败当成操作错误
       const { isConnected } = useNetworkStatus();
       watch(isConnected, (online) => {
+        if (online) useUserStore().getLoginInfo();
         uni.showToast({
           title: online ? '网络已恢复' : '网络已断开，请检查网络设置',
           icon: 'none',
@@ -23,6 +24,7 @@
     onShow: function () {
       // 恢复前台刷新主题；与页面 onShow 触发的请求在 store 内合并为一次
       useMallThemeStore().refresh();
+      useUserStore().getLoginInfo();
     },
   };
 </script>

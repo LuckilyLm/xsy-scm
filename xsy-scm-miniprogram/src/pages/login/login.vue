@@ -93,7 +93,6 @@
   import { useUserStore } from '@/store/modules/system/user';
   import { useMallTheme } from '@/composables/use-mall-theme';
   import { useMallStorefront } from '@/composables/use-mall-storefront';
-  import { xsySentry } from '@/lib/xsy-sentry';
 
   const { themeStyle, theme } = useMallTheme();
   const { storeName } = useMallStorefront();
@@ -134,22 +133,12 @@
       uni.showToast({ title: '请输入密码', icon: 'none' });
       return;
     }
-    submitting.value = true;
-    uni.showLoading({ title: '登录中' });
-    try {
-      const response = await mallAuthApi.login({ phone: form.phone, password: form.password });
-      finishLogin(response.data);
-    } catch (error) {
-      xsySentry.captureError(error);
-    } finally {
-      submitting.value = false;
-      uni.hideLoading();
-    }
+    await signIn(() => mallAuthApi.login({ phone: form.phone, password: form.password }));
   }
 
   /**
    * @param {object} event 微信getPhoneNumber事件；取消授权或缺少一次性code时不发起登录请求。
-   * @returns {Promise<void>} 授权成功后登录；错误提示沿用正式请求层，不记录授权凭证。
+   * @returns {Promise<void>} 授权成功后登录，不记录授权凭证。
    */
   async function wechatLogin(event) {
     if (submitting.value) return;
@@ -159,19 +148,25 @@
       uni.showToast({ title: canceled ? '已取消授权，可使用账号密码登录' : '未取得手机号授权，请重试', icon: 'none' });
       return;
     }
+    await signIn(() => mallAuthApi.wechatPhoneLogin({ code: detail.code }), true);
+  }
+
+  async function signIn(request, viaWechat = false) {
     submitting.value = true;
-    wechatSubmitting.value = true;
+    wechatSubmitting.value = viaWechat;
     uni.showLoading({ title: '登录中' });
+    let failure = '';
     try {
-      const response = await mallAuthApi.wechatPhoneLogin({ code: detail.code });
+      const response = await request();
       finishLogin(response.data);
     } catch (error) {
-      xsySentry.captureError(error);
+      failure = error?.msg || '登录失败，请稍后重试';
     } finally {
       submitting.value = false;
       wechatSubmitting.value = false;
       uni.hideLoading();
     }
+    if (failure) uni.showToast({ title: failure, icon: 'none' });
   }
 
   /**

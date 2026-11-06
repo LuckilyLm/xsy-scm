@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { USER_TOKEN } from '@/constants/local-storage-key-const';
-import { PLATFORM_ERROR_CODE } from '@/constants/error-code-const';
+import { SESSION_EXPIRED_CODES } from '@/constants/error-code-const';
 import { mallAuthApi } from '@/api/mall/auth-api';
 import { setSessionExpiredHandler } from '@/lib/xsy-request';
 import { xsySentry } from '@/lib/xsy-sentry';
@@ -16,6 +16,8 @@ const initialState = () => ({
   customerStatus: '',
   passwordChangeRequired: false,
 });
+
+let restoreRequest = null;
 
 export const useUserStore = defineStore({
   id: 'mallUser',
@@ -35,34 +37,44 @@ export const useUserStore = defineStore({
       }
     },
     clearUserLoginInfo() {
+      restoreRequest = null;
       Object.assign(this, initialState());
       uni.removeStorageSync(USER_TOKEN);
     },
     async getLoginInfo() {
       const token = uni.getStorageSync(USER_TOKEN);
-      if (!token) return;
-      this.token = token;
-      try {
-        const response = await mallAuthApi.getProfile();
-        this.setUserLoginInfo({ token, profile: response.data });
-        if (this.passwordChangeRequired) {
-          uni.reLaunch({ url: '/pages/account/password' });
+      if (!token || this.token === token) return;
+      if (restoreRequest?.token === token) return restoreRequest.task;
+
+      const request = { token, task: null };
+      restoreRequest = request;
+      const isCurrent = () => restoreRequest === request && uni.getStorageSync(USER_TOKEN) === token;
+      request.task = (async () => {
+        try {
+          const { data: profile } = await mallAuthApi.getProfile();
+          if (!isCurrent()) return;
+          if (!profile?.accountId || !profile?.customerId) throw new Error('未读取到完整的登录资料');
+          this.setUserLoginInfo({ token, profile });
+          if (this.passwordChangeRequired) {
+            uni.reLaunch({ url: '/pages/account/password' });
+          }
+        } catch (error) {
+          if (!isCurrent()) return;
+          if (SESSION_EXPIRED_CODES.includes(error?.code)) {
+            this.clearUserLoginInfo();
+            return;
+          }
+          // 临时请求失败保留本地令牌，待网络恢复或回到前台后再读资料。
+          xsySentry.captureError(error);
+        } finally {
+          if (restoreRequest === request) restoreRequest = null;
         }
-      } catch (error) {
-        /*
-         * 令牌过期是正常路径（卸载重装、换设备、Redis 过期），
-         * 清掉本地令牌回到未登录态即可，不要当成异常上报，
-         * 否则冷启动每次都会在控制台留一条错误，掩盖真正的问题。
-         */
-        if (error && error.code === PLATFORM_ERROR_CODE.LOGIN_STATE_INVALID) {
-          this.clearUserLoginInfo();
-          return;
-        }
-        xsySentry.captureError(error);
-      }
+      })();
+      return request.task;
     },
     setUserLoginInfo(data) {
       if (!data) return;
+      restoreRequest = null;
       const profile = data.profile || data;
       const token = data.token || uni.getStorageSync(USER_TOKEN) || '';
       Object.assign(this, {
