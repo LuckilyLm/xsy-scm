@@ -73,6 +73,20 @@
   padding-bottom: calc(#{$extra} + env(safe-area-inset-bottom));
 }
 
+/* 交易操作栏始终保留基础留白；安全区为0的设备也不能让按钮贴住屏幕边缘。 */
+@mixin action-bar-spacing {
+  padding: $space-3 var(--xsy-page-x, 16px);
+  @include safe-area-bottom($space-3);
+}
+
+/* 详情与购物车共用数量控件外观，按钮热区由各自布局保留44px。 */
+@mixin quantity-control {
+  display: flex;
+  align-items: center;
+  border-radius: $radius-md;
+  background-color: $color-bg-hover;
+}
+
 /* 固定底部操作条 */
 @mixin fixed-bottom-bar {
   /*

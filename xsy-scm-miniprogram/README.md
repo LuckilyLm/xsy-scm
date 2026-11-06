@@ -53,6 +53,8 @@ npm run dev:mp-weixin
 
 API 地址在编译时写入产物，修改环境变量后需要重新编译；若磁盘产物已更新而运行时仍使用旧地址，清理微信工具的编译缓存后重新编译，不必清除登录和本地存储。
 
+Windows调用微信CLI时，项目路径应与工具中已打开的项目一致，建议使用PowerShell的`(Resolve-Path .).Path`取得原生规范路径，避免同一目录因斜杠写法不同被工具识别为两个项目。uni-app完整构建后，若出现多处文字、图片和组件同时缺失，先核对模拟器实际页面数据与磁盘WXML是否对应；清理文件与编译缓存，再完整编译。不要通过清除登录资料处理编译缓存问题，也不要用H5显示正常代替微信端验收。
+
 直连本机后端时，将 API 地址改为实际后端端口；以下命令选择 `localhost` 模式，需要自行提供对应模式的环境配置：
 
 ```bash
@@ -75,6 +77,10 @@ XSY_WECHAT_APP_SECRET=YOUR_MINIPROGRAM_APP_SECRET
 
 AppID 必须与实际小程序一致；更换小程序时同步核对 `src/manifest.json` 的 `mp-weixin.appid`、开发者工具的 `project.config.json` 与后端配置，重新编译后通过 `wx.getAccountInfoSync()` 核对实际运行的 AppID。微信后台需具备手机号获取权限和可用额度，完成隐私声明、服务端调用IP白名单及小程序请求域名等实际要求。配置后重新部署后端使变量生效；仅轮换后端密钥无需重新编译小程序。
 
+微信公众平台的“设置 → 服务内容声明 → 用户隐私保护指引”需按实际功能声明：手机号码用于识别客户账号和登录，地址用于填写收货资料和配送，位置信息用于地图选点。填写开发者联系方式，保存对应的开发版指引后再测试预览或真机调试；前端的 `__usePrivacyCheck__` 不能代替微信后台声明。平台返回 `errno=112`、`api scope is not declared in the privacy agreement` 或 `appid privacy api banned` 时，微信会在返回手机号授权码之前拒绝调用，应先修正平台指引，不能当作系统账号未开通。参考[微信隐私协议开发指南](https://developers.weixin.qq.com/miniprogram/dev/framework/user-privacy/PrivacyAuthorize.html)。
+
+自行开发的小程序以微信公众平台页面的实际指引和能力权限为准。第三方代开发的 `getprivacysetting` 接口返回 `code_exist=0`，可能只是没有通过第三方 `commit` 接口上传代码，不能据此认定后台未配置指引；设置接口返回成功也应重新读取或在平台页面核对结果。参考[查询隐私保护指引](https://developers.weixin.qq.com/doc/oplatform/openApi/miniprogram-management/privacy-management/api_getprivacysetting.html)。
+
 未配置时后端返回业务码50381，授权code失效为40098，手机号未开通采购账号为40381；停用和登录锁定仍使用原业务码。拒绝授权或缺少code不发起登录请求。真实微信取号单独验证，不能以模拟事件、模拟HTTP响应或密码登录成功替代。
 
 官方文档：[手机号授权](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/getPhoneNumber.html)、[服务端取号](https://developers.weixin.qq.com/miniprogram/dev/server/API/user-info/phone-number/api_getphonenumber.html)、[stable_token](https://developers.weixin.qq.com/miniprogram/dev/server/API/mp-access-token/api_getstableaccesstoken.html)。
@@ -85,7 +91,7 @@ AppID 必须与实际小程序一致；更换小程序时同步核对 `src/manif
 
 首页组件为空时仍可发布主题，默认商品与活动区域继续显示。顶部品牌区、主要动作和领券入口使用统一派生的渐变。店铺名称用于首页、我的和登录页；有效 HTTPS 链接在“我的”中提供复制入口。
 
-分类、快捷与六类空状态使用用户交付的轻3D PNG，映射集中于 `src/utils/category-icon.js` 和 `src/constants/mall-visual-const.js`，来源与原图哈希见 `src/static/mall-visual/sources.json`。主图与专题通过后台上传发布；图片完整展示自带文案。发布营销内容后仍保留真实常购、新品和商品目录。
+分类、快捷与空状态使用用户交付的轻3D PNG，映射集中于 `src/utils/category-icon.js` 和 `src/constants/mall-visual-const.js`，来源与原图哈希见 `src/static/mall-visual/sources.json`。主图与专题通过后台上传发布；图片完整展示自带文案。发布营销内容后仍保留真实常购、新品和商品目录。
 
 ## 验证
 

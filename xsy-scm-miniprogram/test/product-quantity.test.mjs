@@ -5,6 +5,43 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../src/pages-sub/product/detail.vue', import.meta.url), 'utf8');
 
+test('preorder opens confirmation without adding, while stock and inquiry retain their actions', () => {
+  const card = readFileSync(new URL('../src/components/business/product-card.vue', import.meta.url), 'utf8');
+  const display = readFileSync(new URL('../src/utils/product-display.js', import.meta.url), 'utf8');
+  const events = [];
+  const product = { price: '10.0000', sellable: true, stockStatus: 'OUT_OF_STOCK' };
+  const state = vm.createContext({
+    props: { product },
+    emit: (name, value) => events.push({ name, value }),
+    computed: (read) => ({
+      get value() {
+        return read();
+      },
+    }),
+  });
+  vm.runInContext(display.replace(/^import .*;$/gm, '').replace(/export /g, ''), state);
+  const start = card.indexOf('  const priced =');
+  const end = card.indexOf('  /*', card.indexOf('  function onAction()'));
+  vm.runInContext(card.slice(start, end) + '\nglobalThis.action = onAction;', state);
+  state.action();
+  assert.equal(events.at(-1).name, 'click');
+  assert.equal(
+    events.some((event) => event.name === 'add'),
+    false
+  );
+  product.stockStatus = 'IN_STOCK';
+  state.action();
+  assert.equal(events.at(-1).name, 'add');
+  product.sellable = false;
+  const before = events.length;
+  state.action();
+  assert.equal(events.length, before);
+  product.price = null;
+  state.action();
+  assert.equal(events.at(-1).name, 'inquiry');
+  assert.ok(events.every((event) => event.value === product));
+});
+
 function quantityState({ quantity = 1, minimum = 1, step = 1, available = 0, sellable = true } = {}) {
   const state = vm.createContext({
     quantity: { value: quantity },

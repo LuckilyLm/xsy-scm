@@ -7,7 +7,7 @@ import { computed, ref, reactive } from 'vue';
 const source = readFileSync(new URL('../src/pages/login/login.vue', import.meta.url), 'utf8');
 
 function harness(login) {
-  const calls = { phone: [], password: [], saved: [], routes: [], toasts: [], loadingAtToast: [], loading: 0 };
+  const calls = { phone: [], password: [], saved: [], routes: [], toasts: [], loadingAtToast: [], loading: 0, globalLoadingCalls: 0 };
   const store = {
     passwordChangeRequired: false,
     setUserLoginInfo(data) {
@@ -37,8 +37,14 @@ function harness(login) {
         calls.toasts.push(title);
         calls.loadingAtToast.push(calls.loading);
       },
-      showLoading: () => calls.loading++,
-      hideLoading: () => calls.loading--,
+      showLoading: () => {
+        calls.globalLoadingCalls++;
+        throw new Error('global loading must not be used');
+      },
+      hideLoading: () => {
+        calls.globalLoadingCalls++;
+        throw new Error("hideLoading:fail:toast can't be found");
+      },
       switchTab: ({ url }) => calls.routes.push(url),
       redirectTo: ({ url }) => calls.routes.push(url),
     },
@@ -60,7 +66,33 @@ test('wechat authorization denial or missing code never sends a login request', 
   assert.equal(calls.phone.length, 0);
   assert.equal(calls.saved.length, 0);
   assert.equal(calls.routes.length, 0);
-  assert.equal(calls.toasts.length, 2);
+  assert.equal(calls.toasts.length, 1);
+  assert.match(calls.toasts[0], /暂时无法获取微信手机号/);
+});
+
+test('privacy declaration and platform capability errors never masquerade as an unopened customer account', async () => {
+  const { page, calls } = harness(() => {
+    throw new Error('must not request');
+  });
+  await page.wechatLogin({ detail: { errMsg: 'getPhoneNumber:fail no permission' } });
+  await page.wechatLogin({ detail: { errMsg: 'getPhoneNumber:fail api scope is not declared in the privacy agreement', errno: 112 } });
+  await page.wechatLogin({ detail: { errMsg: 'getPhoneNumber:fail privacy authorization denied', errno: 104 } });
+  assert.equal(calls.phone.length, 0);
+  assert.deepEqual(calls.toasts, ['暂时无法使用微信手机号登录，请使用手机号密码登录', '微信手机号登录暂不可用，请联系商家处理']);
+  assert.equal(calls.saved.length, 0);
+});
+
+test('unopened phone is reported only after WeChat returns a successful authorization code', async () => {
+  const { page, calls } = harness(async () => {
+    throw { code: 40381, msg: '该手机号尚未开通采购账号，请联系商家' };
+  });
+  await page.wechatLogin({ detail: { errMsg: 'getPhoneNumber:fail user deny' } });
+  assert.equal(calls.phone.length, 0);
+  assert.deepEqual(calls.toasts, []);
+  await page.wechatLogin({ detail: { errMsg: 'getPhoneNumber:ok', code: 'authorized-phone-code' } });
+  assert.equal(calls.phone.length, 1);
+  assert.deepEqual(calls.toasts, ['该手机号尚未开通采购账号，请联系商家']);
+  assert.equal(calls.saved.length, 0);
 });
 
 test('verified phone signs in with only the one-time code and coalesces repeated authorization events', async () => {
@@ -83,6 +115,7 @@ test('verified phone signs in with only the one-time code and coalesces repeated
   assert.equal(calls.saved.length, 1);
   assert.equal(page.submitting.value, false);
   assert.equal(calls.loading, 0);
+  assert.equal(calls.globalLoadingCalls, 0);
 });
 
 test('failed authorization exchange leaves user signed out and allows a new authorization', async () => {
@@ -103,7 +136,7 @@ test('failed authorization exchange leaves user signed out and allows a new auth
   assert.equal(calls.loading, 0);
 });
 
-test('password login reports a transport failure after hiding loading', async () => {
+test('password login clears button loading before reporting a failure without using the global overlay', async () => {
   const message = '网络连接失败，请检查网络后重试';
   const { page, calls } = harness(async () => {
     throw { code: 0, msg: message };
@@ -116,6 +149,7 @@ test('password login reports a transport failure after hiding loading', async ()
   assert.equal(calls.saved.length, 0);
   assert.equal(calls.routes.length, 0);
   assert.equal(page.submitting.value, false);
+  assert.equal(calls.globalLoadingCalls, 0);
 });
 
 test('password fallback still obeys the server temporary-password requirement', async () => {

@@ -81,7 +81,7 @@
                 :hover-stay-time="80"
                 @click="decrease"
               >
-                <uni-icons type="minus" :size="14" :color="canDecrease ? COLOR_TEXT_PRIMARY : COLOR_TEXT_PLACEHOLDER" />
+                <text aria-hidden="true">−</text>
               </view>
               <text class="detail__qty-value">{{ quantity }}</text>
               <view
@@ -92,7 +92,7 @@
                 :hover-stay-time="80"
                 @click="increase"
               >
-                <uni-icons type="plus" :size="14" :color="canIncrease ? COLOR_TEXT_PRIMARY : COLOR_TEXT_PLACEHOLDER" />
+                <text aria-hidden="true">+</text>
               </view>
             </view>
           </view>
@@ -321,6 +321,8 @@
     &__body {
       flex: 1;
       min-height: 0;
+      padding-bottom: $space-4;
+      box-sizing: border-box;
     }
 
     &__missing-action-text {
@@ -541,29 +543,26 @@
     }
 
     &__stepper {
-      @include flex-start;
+      @include quantity-control;
       /* 高度按 44px 触控下限给；底色 #F5F6F8、圆角 4px 沿用设计稿 */
       box-sizing: border-box;
-      height: 88rpx;
-      border-radius: $radius-sm;
-      background-color: $color-bg-page;
+      height: 44px;
       overflow: hidden;
     }
 
     &__step {
-      /* Figma：加减按钮 34×38，底色 #F2F3F5；禁用态只把文字转灰 */
       box-sizing: border-box;
-      width: 88rpx;
+      width: 44px;
       height: 100%;
       @include flex-center;
+      font-size: $font-size-lg;
     }
 
     &__qty-value {
-      /* Figma：数量格 58×38 */
       box-sizing: border-box;
-      min-width: 112rpx;
+      min-width: 44px;
       height: 100%;
-      line-height: 73rpx;
+      line-height: 44px;
       text-align: center;
       background-color: $color-bg-page;
       font-size: $font-size-base;
@@ -584,18 +583,17 @@
     }
 
     &__footer {
-      /* Figma：底栏 = 1px 分割线 + 5 上 + 44 按钮 + 4 下 ≈ 54px；这里取 token 4/4 近似 */
-      padding: $space-1 $space-4;
+      flex-shrink: 0;
       background-color: $color-bg-card;
       @include hairline-top($color-divider);
-      @include safe-area-bottom;
+      @include action-bar-spacing;
     }
 
     &__footer-button {
       box-sizing: border-box;
       /* Figma：主按钮 358×44 */
-      height: 85rpx;
-      border-radius: $radius-md;
+      height: 44px;
+      border-radius: $radius-pill;
       background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
       @include flex-center;
 

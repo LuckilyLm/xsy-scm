@@ -17,14 +17,13 @@ export function useMallCart() {
   async function addToCart(product, quantity, replaceQuantity = false) {
     try {
       const effective = quantity ?? product?.minOrderQty ?? '1';
-      const response = await mallCartApi.addItem({
+      await mallCartApi.addItem({
         skuId: product.skuId,
         quantity: String(effective),
         quickAdd: quantity == null,
         replaceQuantity,
       });
-      const count = response.data?.availableCount ?? 0;
-      uni.showToast({ title: replaceQuantity ? '购物车数量已更新' : count ? `已加入购物车（可结算 ${count} 项）` : '已加入购物车', icon: 'none' });
+      uni.showToast({ title: replaceQuantity ? '数量已更新' : '已加入购物车', icon: 'none', duration: 1200 });
       return true;
     } catch (error) {
       xsySentry.captureError(error);

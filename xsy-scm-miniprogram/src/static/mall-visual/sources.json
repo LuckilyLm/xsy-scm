@@ -294,5 +294,13 @@
     "sourcePackage": "优化素材",
     "sourceSha256": "4d329fd17bb07740120f7e2ab9fee00ee275e14ee46fd7d56ba071d0935cec15",
     "size": 8049
+  },
+  {
+    "name": "暂无收货地址",
+    "source": "鲜蔬源绿色配送地址图标.png",
+    "sourcePackage": "用户单独交付",
+    "sourceSha256": "f60f77d5bf9c7ba982cf9279f8f5eb9c58d0f0169cfbbcb949a63976d916a780",
+    "file": "empty/address.png",
+    "size": 11529
   }
 ]

@@ -10,7 +10,7 @@ const baseUrl = import.meta.env.VITE_APP_API_URL;
 
 export const tracePublicApi = {
   /** 按令牌取溯源信息 */
-  detail: (token) => getRequest(`/scm/trace/public/${encodeURIComponent(token)}`),
+  detail: (token) => getRequest(`/scm/trace/public/${encodeURIComponent(token)}`, {}, { anonymous: true }),
 
   /** 附件下载地址：直接交给 uni.downloadFile，不经过请求层（它要带 Authorization 头） */
   fileUrl: (token, fileKey) => `${baseUrl}/scm/trace/public/${encodeURIComponent(token)}/files?fileKey=${encodeURIComponent(fileKey)}`,

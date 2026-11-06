@@ -26,6 +26,7 @@ function harness(getProfile) {
     setSessionExpiredHandler() {},
     xsySentry: { captureError() {} },
     useMallThemeStore: () => ({ refresh() {} }),
+    checkAppLogin() {},
     useNetworkStatus: () => ({ isConnected: {} }),
     watch: (_, callback) => {
       onNetworkChange = callback;

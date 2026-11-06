@@ -1,10 +1,10 @@
 /*
  * JS 侧颜色常量
  *
- * 与 src/styles/tokens.scss 一一对应，供无法使用 SCSS 变量的场景引用，
+ * 基础颜色与 src/styles/tokens.scss 对应，供无法使用 SCSS 变量的场景引用，
  * 例如 canvas 绘制、uni.setNavigationBarColor、图表配置等。
  *
- * 修改颜色时**必须同时改这两处**，否则 SCSS 与 JS 会不一致。
+ * 基础颜色修改时须同步这两处；命名页面场景色由 JS 集中定义并注入 CSS 变量。
  * 之所以不通过 `:export` 从 SCSS 导出：那是 webpack css-loader 的特性，
  * Vite 不支持，写出来只会变成非法 CSS 并触发构建警告。
  */
@@ -32,6 +32,15 @@ export const COLOR_TEXT_INVERSE = '#ffffff';
 export const COLOR_BG_PAGE = '#f5f6f8';
 export const COLOR_BG_CARD = '#ffffff';
 export const COLOR_BG_HOVER = '#f2f3f5';
+
+/** 首页导航与内容面的场景色，仅注入首页，其他页面继续读取已发布主题。 */
+export const MALL_HOME_COLORS = {
+  headerStart: '#10844B',
+  headerEnd: '#087345',
+  background: '#F6F8F5',
+  searchIcon: '#418B66',
+  placeholder: '#8F9A94',
+};
 
 /** 边框与分割线 */
 export const COLOR_BORDER = '#e5e6eb';

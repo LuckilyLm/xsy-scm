@@ -1,12 +1,17 @@
 <template>
   <view class="mine" :style="themeStyle">
-    <view class="mine__header" :style="{ paddingTop: statusBarHeight + 'px', paddingRight: headerRightGap + 'px' }">
+    <view
+      class="mine__header"
+      :style="{ paddingTop: statusBarHeight + 'px', paddingRight: headerRightGap + 'px' }"
+      :role="userStore.isLogin ? undefined : 'button'"
+      :aria-label="userStore.isLogin ? undefined : '登录后查看客户信息'"
+      @click="!userStore.isLogin && goLogin()"
+    >
       <view class="mine__avatar">{{ avatarText }}</view>
       <view class="mine__identity">
-        <text class="mine__name">{{ userStore.customerName || '未登录' }}</text>
-        <text class="mine__meta">{{ metaLine }}</text>
+        <text v-if="userStore.isLogin" class="mine__name">{{ userStore.customerName }}</text>
+        <text class="mine__meta" :class="{ 'mine__meta--guest': !userStore.isLogin }">{{ metaLine }}</text>
       </view>
-      <text v-if="!userStore.isLogin" class="mine__login" @click="goLogin">登录</text>
     </view>
     <view class="mine__card">
       <text class="mine__store-name">{{ storeName }}</text>
@@ -88,7 +93,7 @@
   const { storeName, storeLink } = useMallStorefront();
 
   const { statusBarHeight, menuButtonRect } = useSystemLayout();
-  /** 未登录时右侧有「登录」按钮，必须让开右上角胶囊 */
+  /** 身份信息保持在胶囊之外，避免长客户名称与微信操作区重叠。 */
   const headerRightGap = computed(() => {
     const rect = menuButtonRect.value;
     if (!rect || !rect.left) {
@@ -117,16 +122,16 @@
     uni.navigateTo({ url: '/pages-sub/address/list' });
   }
   function goAfterSales() {
-    userStore.isLogin ? uni.navigateTo({ url: '/pages-sub/after-sale/list' }) : goLogin();
+    uni.navigateTo({ url: '/pages-sub/after-sale/list' });
   }
   function goMyCoupons() {
-    userStore.isLogin ? uni.navigateTo({ url: '/pages-sub/promotion/my' }) : goLogin();
+    uni.navigateTo({ url: '/pages-sub/promotion/my' });
   }
   function goCoupons() {
-    userStore.isLogin ? uni.navigateTo({ url: '/pages-sub/promotion/coupons' }) : goLogin();
+    uni.navigateTo({ url: '/pages-sub/promotion/coupons' });
   }
   function changePassword() {
-    userStore.isLogin ? uni.navigateTo({ url: '/pages/account/password' }) : goLogin();
+    uni.navigateTo({ url: '/pages/account/password' });
   }
   /** 单页内容不要求登录：条款、公告与售后规则对未登录顾客也应可查 */
   function goPage(pageCode) {
@@ -200,6 +205,7 @@
     background: var(--mall-brand-gradient, var(--mall-primary, #16a34a));
   }
   .mine__avatar {
+    flex-shrink: 0;
     width: 112rpx;
     height: 112rpx;
     border-radius: 50%;
@@ -226,11 +232,10 @@
     color: rgba(255, 255, 255, 0.8);
     font-size: $font-size-sm;
   }
-  .mine__login {
-    padding: $space-1 $space-3;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: $radius-pill;
+  .mine__meta--guest {
+    margin-top: 0;
     color: white;
+    @include ellipsis;
   }
   .mine__card {
     margin: -$space-4 var(--xsy-page-x) 0;

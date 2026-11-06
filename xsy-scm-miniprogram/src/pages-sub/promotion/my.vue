@@ -1,7 +1,5 @@
 <template>
   <view class="my-coupons" :style="themeStyle">
-    <view v-if="selectMode" class="my-coupons__hint">请选择一张优惠券，实际优惠以结算试算为准</view>
-    <view class="my-coupons__nav" @click="goClaimable">前往领券中心 ›</view>
     <view class="my-coupons__tabs">
       <text
         v-for="item in COUPON_TABS"
@@ -14,7 +12,9 @@
     </view>
     <view v-if="loading && !rows.length" class="my-coupons__state">优惠券加载中…</view>
     <XsyEmpty v-else-if="error && !rows.length" tone="error" :title="error" action-text="重试" @action="load(true)" />
-    <XsyEmpty v-else-if="!rows.length" kind="coupons" :title="`暂无${currentTabLabel}优惠券`" />
+    <view v-else-if="!rows.length" class="my-coupons__empty">
+      <XsyEmpty kind="coupons" :title="`暂无${currentTabLabel}优惠券`" />
+    </view>
     <MallCouponCard
       v-for="coupon in rows"
       :key="coupon.id"
@@ -26,6 +26,9 @@
     />
     <view v-if="rows.length" class="my-coupons__bottom">{{ loading ? '加载中…' : hasMore ? '上拉加载更多' : '没有更多了' }}</view>
     <view v-if="error && rows.length" class="my-coupons__retry" @click="load(false)">{{ error }}，点击重试</view>
+    <view class="my-coupons__bar">
+      <view class="my-coupons__claim" hover-class="xsy-press-button--active" @click="goClaimable">前往领券中心</view>
+    </view>
   </view>
 </template>
 
@@ -111,21 +114,29 @@
 <style lang="scss" scoped>
   .my-coupons {
     @include viewport-min-height;
-    padding-bottom: $space-8;
+    @include content-clear-bottom(68px, $space-4);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
     background: $color-bg-page;
   }
-  .my-coupons__hint {
-    padding: $space-3 $space-4;
-    background: #fff8e6;
-    color: $color-warning;
-    font-size: $font-size-xs;
+  .my-coupons__empty {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
   }
-  .my-coupons__nav {
-    padding: $space-3 $space-4;
-    background: $color-bg-card;
-    color: var(--mall-primary-ink, #12833c);
-    text-align: right;
-    font-size: $font-size-sm;
+  .my-coupons__bar {
+    @include fixed-bottom-bar;
+    @include action-bar-spacing;
+  }
+  .my-coupons__claim {
+    @include flex-center;
+    height: 44px;
+    border-radius: $radius-pill;
+    background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
+    color: white;
+    font-size: $font-size-base;
   }
   .my-coupons__tabs {
     display: flex;

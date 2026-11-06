@@ -5,6 +5,7 @@
  * 令牌统一使用 `Authorization: Bearer <token>`；会话失效码由请求层清理并跳回登录页。
  */
 import { USER_TOKEN } from '@/constants/local-storage-key-const';
+import { redirectToLogin } from '@/lib/login-guard';
 import { PLATFORM_ERROR_CODE, SESSION_EXPIRED_CODES, SUCCESS_CODE } from '@/constants/error-code-const';
 /*
  * 注意：这里刻意用 `@mock` 而不是 `@/mock`。
@@ -18,8 +19,6 @@ const baseUrl = import.meta.env.VITE_APP_API_URL;
 
 /** 登录相关接口自身的失败不应触发「登录失效跳转」，否则会与登录页互相重定向 */
 const AUTH_PATHS = ['/scm/mall/auth/login', '/scm/mall/auth/wechat/phone-login'];
-
-let redirecting = false;
 
 /**
  * 会话失效回调。
@@ -67,11 +66,6 @@ function isAuthPath(url) {
 
 /** 令牌失效：清会话 + 提示 + 跳登录页（做去重，避免并发请求触发多次跳转） */
 function handleSessionExpired() {
-  if (redirecting) {
-    return;
-  }
-  redirecting = true;
-
   // 令牌的读写都是请求层自己的事，这里直接清掉，
   // 保证即使回调未注册（store 尚未初始化）也不会残留脏令牌。
   uni.removeStorageSync(USER_TOKEN);
@@ -82,11 +76,7 @@ function handleSessionExpired() {
     // 回调异常不应阻塞跳转
   }
 
-  uni.showToast({ title: '登录已失效，请重新登录', icon: 'none' });
-  setTimeout(() => {
-    redirecting = false;
-    if (!getUserToken()) uni.reLaunch({ url: '/pages/login/login' });
-  }, 800);
+  redirectToLogin('登录已失效，请重新登录');
 }
 
 /**
@@ -125,6 +115,11 @@ function handleResponse(response, resolve, reject, url, options, token) {
 export const request = function (url, method, data, options = {}) {
   const header = { 'Content-Type': 'application/json', ...(options.header || {}) };
   const token = getUserToken();
+  // 页面直达或后台恢复也可能触发请求；没有令牌时不把未登录误报为网络错误。
+  if (!token && !options.anonymous && !isAuthPath(url)) {
+    redirectToLogin();
+    return Promise.reject(new ApiError(PLATFORM_ERROR_CODE.LOGIN_STATE_INVALID, '请先登录'));
+  }
   if (token && !options.anonymous) {
     header.Authorization = 'Bearer ' + token;
   }

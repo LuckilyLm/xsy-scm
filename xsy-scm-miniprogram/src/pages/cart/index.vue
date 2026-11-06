@@ -44,13 +44,20 @@
             <text v-else class="cart-item__unavailable">{{ unavailableText(item) }}</text>
 
             <view class="cart-item__foot">
-              <view class="stepper">
-                <view class="stepper__btn" aria-label="减少数量" hover-class="xsy-press--active" :hover-stay-time="80" @click="step(item, -1)">
-                  <uni-icons type="minus" :size="14" :color="COLOR_TEXT_SECONDARY" />
+              <view v-if="isSettleable(item)" class="stepper">
+                <view
+                  class="stepper__btn"
+                  :class="{ 'stepper__btn--disabled': scaled(item.quantity) <= scaled(item.minOrderQty || 1) }"
+                  aria-label="减少数量"
+                  hover-class="xsy-press--active"
+                  :hover-stay-time="80"
+                  @click="step(item, -1)"
+                >
+                  <text aria-hidden="true">−</text>
                 </view>
                 <text class="stepper__value">{{ displayQuantity(item) }}</text>
                 <view class="stepper__btn" aria-label="增加数量" hover-class="xsy-press--active" :hover-stay-time="80" @click="step(item, 1)">
-                  <uni-icons type="plus" :size="14" :color="COLOR_TEXT_SECONDARY" />
+                  <text aria-hidden="true">+</text>
                 </view>
               </view>
               <text class="cart-item__remove" aria-label="移除该商品" hover-class="xsy-press--active" :hover-stay-time="80" @click="remove(item)"
@@ -95,7 +102,7 @@
   import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
   import { mallCartApi } from '@/api/mall/cart-api';
   import { xsySentry } from '@/lib/xsy-sentry';
-  import { COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_SECONDARY } from '@/constants/theme-color-const';
+  import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
   import { useMallTheme } from '@/composables/use-mall-theme';
   import { displayMoney } from '@/utils/money-display';
 
@@ -273,9 +280,8 @@
   .cart {
     @include viewport-min-height;
     background-color: $color-bg-page;
-    /* 底部固定条 108rpx，安全区单独相加，否则 iPhone 上最后一行会被压住 */
-    /* 底部结算条 + 自绘导航，两段高度相加 */
-    padding-bottom: calc(108rpx + 32rpx + var(--xsy-tabbar-h, 100rpx));
+    /* 结算栏、阅读间距与自绘导航分别计入占位，导航已包含安全区。 */
+    padding-bottom: calc(68px + 16px + var(--xsy-tabbar-h, 100rpx));
   }
   .cart__skeleton {
     margin-top: $space-3;
@@ -287,12 +293,17 @@
   }
 
   .cart__list {
-    margin-top: $space-3;
+    margin: $space-3 var(--xsy-page-x);
+    border-radius: $radius-lg;
+    overflow: hidden;
     background-color: $color-bg-card;
   }
   .cart-item {
-    @include flex-start;
-    padding: $space-3 $space-4;
+    display: grid;
+    grid-template-columns: 32px 64px minmax(0, 1fr);
+    align-items: start;
+    column-gap: $space-2;
+    padding: $space-4 $space-3;
     @include hairline-bottom;
   }
   .cart-item--off {
@@ -300,14 +311,14 @@
   }
   .cart-item__check {
     flex-shrink: 0;
-    min-width: 88rpx;
-    min-height: 88rpx;
-    padding-right: $space-2;
+    width: 44px;
+    height: 64px;
+    margin-left: -6px;
     @include flex-start;
   }
   .cart-item__thumb {
-    width: 128rpx;
-    height: 128rpx;
+    width: 64px;
+    height: 64px;
     border-radius: $radius-md;
     overflow: hidden;
     flex-shrink: 0;
@@ -327,19 +338,20 @@
   .cart-item__main {
     flex: 1;
     min-width: 0;
-    margin-left: $space-3;
   }
   .cart-item__name {
+    display: block;
     font-size: $font-size-base;
     color: $color-text-primary;
     font-weight: $font-weight-medium;
-    @include ellipsis;
+    @include ellipsis(2);
   }
   .cart-item__spec {
     display: block;
     margin-top: $space-1;
     font-size: $font-size-xs;
     color: $color-text-tertiary;
+    @include ellipsis;
   }
   .cart-item__price-row {
     @include flex-start;
@@ -366,45 +378,53 @@
     color: $color-text-tertiary;
   }
   .cart-item__foot {
-    @include flex-between;
+    @include flex-start;
+    flex-wrap: wrap;
+    gap: $space-1;
     margin-top: $space-2;
   }
   .cart-item__remove {
-    padding: $space-3 0 $space-3 $space-3;
+    @include flex-center;
+    min-width: 44px;
+    min-height: 44px;
     font-size: $font-size-xs;
     color: $color-text-tertiary;
   }
   .stepper {
-    @include flex-start;
+    @include quantity-control;
   }
-  /*
-   * uni-icons 的 plus / minus 本身是圆形图标，再套一层描边会变成双层框。
-   * 尺寸按 44px 触控下限给（88rpx），图标视觉大小由 :size 控制，不跟着放大。
-   */
   .stepper__btn {
     @include pressable;
-    width: 88rpx;
-    height: 88rpx;
+    width: 44px;
+    height: 44px;
+    font-size: $font-size-lg;
+    color: $color-text-secondary;
     @include flex-center;
   }
   .stepper__value {
-    min-width: 64rpx;
+    min-width: 36px;
     text-align: center;
     font-size: $font-size-base;
     color: $color-text-primary;
+  }
+  .stepper__btn--disabled {
+    opacity: 0.4;
   }
 
   .cart__bar {
     @include fixed-bottom-bar;
     @include flex-between;
-    height: 108rpx;
-    padding: 0 var(--xsy-page-x);
+    box-sizing: border-box;
+    min-height: 68px;
+    gap: $space-2;
+    padding: $space-3 var(--xsy-page-x);
     /* 结算条压在自绘导航之上，安全区由导航承担 */
     bottom: var(--xsy-tabbar-h, 100rpx);
-    padding-bottom: 0;
   }
   .cart__all {
     @include flex-start;
+    min-height: 44px;
+    flex-shrink: 0;
   }
   .cart__all-text {
     margin-left: $space-1;
@@ -415,8 +435,10 @@
     flex: 1;
     @include flex-start;
     justify-content: flex-end;
-    margin-right: $space-3;
-    align-items: baseline;
+    margin-right: 0;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-end;
   }
   .cart__amount-label {
     font-size: $font-size-sm;
@@ -440,8 +462,8 @@
   }
   .cart__submit {
     flex-shrink: 0;
-    padding: 0 $space-6;
-    height: 72rpx;
+    padding: 0 $space-4;
+    height: 44px;
     @include flex-center;
     border-radius: $radius-pill;
     background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
@@ -454,12 +476,9 @@
 
   /*
    * 小屏（≤359px）：底部条三段并排最容易溢出。
-   * 收紧左右内边距与字号，保证「合计金额 + 去结算」在同一行。
+   * 收紧辅助字号，给合计金额与确认订单保留空间。
    */
   @include screen-compact {
-    .cart__bar {
-      padding: 0 var(--xsy-page-x);
-    }
     .cart__submit {
       padding: 0 $space-4;
     }

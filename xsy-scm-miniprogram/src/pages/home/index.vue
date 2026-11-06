@@ -1,23 +1,20 @@
 <template>
   <view class="home" :style="themeStyle">
-    <view v-if="headerScrolled" class="home__reading-nav" :style="{ paddingTop: statusBarHeight + 'px' }">
+    <view v-if="headerScrolled" class="home__reading-nav" :style="{ paddingTop: statusBarHeight + 'px', height: navBarHeight + 'px' }">
       <text>{{ storeName }}</text>
     </view>
-    <!-- 顶部只有定位：高度与右上角胶囊一致，垂直居中对齐 -->
+    <!-- 定位行按动态导航高度与胶囊居中，搜索框共用品牌背景。 -->
     <view class="home__header" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="home__location" :style="locationStyle" @click="goAddress">
         <uni-icons type="location" :size="16" color="#ffffff" />
         <text class="home__location-text">{{ locationText }}</text>
         <uni-icons type="bottom" :size="12" color="rgba(255,255,255,0.8)" />
       </view>
-      <text class="home__store-name">{{ storeName }}</text>
-    </view>
-
-    <!-- 搜索框：公告之下，白底绿描边胶囊 -->
-    <view class="home__search-wrap">
-      <view class="home__search" hover-class="xsy-press--active" :hover-stay-time="80" aria-label="搜索商品名称或规格" @click="goSearch">
-        <uni-icons type="search" :size="18" :color="theme.primary" />
-        <text class="home__search-text">搜索商品名称或规格</text>
+      <view class="home__search-wrap">
+        <view class="home__search" hover-class="xsy-press--active" :hover-stay-time="80" aria-label="搜索商品名称或规格" @click="goSearch">
+          <uni-icons type="search" :size="18" :color="MALL_HOME_COLORS.searchIcon" />
+          <text class="home__search-text">搜索商品名称或规格</text>
+        </view>
       </view>
     </view>
 
@@ -64,7 +61,7 @@
         </scroll-view>
       </view>
       <view v-else-if="section.type === 'SERVICES'">
-        <view class="home__services">
+        <view class="home__services" :class="{ 'home__services--standalone': !categoryRail.length }">
           <view
             v-for="shortcut in serviceShortcuts"
             :key="shortcut.key"
@@ -175,6 +172,7 @@
 <script setup>
   import { computed, ref, watch } from 'vue';
   import { onHide, onPageScroll, onReachBottom, onShow } from '@dcloudio/uni-app';
+  import { guardPage } from '@/lib/login-guard';
   import ProductCard from '@/components/business/product-card.vue';
   import MallHomePopup from '@/components/business/mall-home-popup.vue';
   import XsySkeleton from '@/components/common/xsy-skeleton.vue';
@@ -194,11 +192,18 @@
   import { xsySentry } from '@/lib/xsy-sentry';
   import { formatDate } from '@/utils/order-display';
   import { categoryIcon } from '@/utils/category-icon';
-  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import { COLOR_TEXT_TERTIARY, MALL_HOME_COLORS } from '@/constants/theme-color-const';
   import { HOME_POPUP_SEEN } from '@/constants/local-storage-key-const';
   import { MALL_SHORTCUT_IMAGES } from '@/constants/mall-visual-const';
 
-  const { theme, themeStyle } = useMallTheme();
+  const { theme, themeStyle: sharedThemeStyle } = useMallTheme();
+  const themeStyle = computed(() => ({
+    ...sharedThemeStyle.value,
+    '--home-header-start': MALL_HOME_COLORS.headerStart,
+    '--home-header-end': MALL_HOME_COLORS.headerEnd,
+    '--home-page-bg': MALL_HOME_COLORS.background,
+    '--home-search-placeholder': MALL_HOME_COLORS.placeholder,
+  }));
   const { storeName } = useMallStorefront();
 
   /*
@@ -207,20 +212,20 @@
    */
 
   const PAGE_SIZE = 10;
-  const { statusBarHeight, menuButtonRect } = useSystemLayout();
+  const { statusBarHeight, navBarHeight, menuButtonRect } = useSystemLayout();
   const headerScrolled = ref(false);
   // 深色头图离开后切回白底原生前景，避免系统时间和胶囊覆盖商品内容。
   onPageScroll(({ scrollTop }) => {
     const scrolled = scrollTop > 96;
     if (scrolled === headerScrolled.value) return;
     headerScrolled.value = scrolled;
-    uni.setNavigationBarColor({ frontColor: scrolled ? '#000000' : '#ffffff', backgroundColor: scrolled ? '#ffffff' : '#0f6f32' });
+    uni.setNavigationBarColor({ frontColor: scrolled ? '#000000' : '#ffffff', backgroundColor: scrolled ? '#ffffff' : MALL_HOME_COLORS.headerStart });
   });
   /** 定位行与右上角胶囊同高、并让开胶囊宽度，视觉上与胶囊同一水平线 */
   const locationStyle = computed(() => {
     const rect = menuButtonRect.value;
     if (!rect || !rect.left) {
-      return { height: '32px' };
+      return { height: navBarHeight.value + 'px' };
     }
     let windowWidth = 0;
     try {
@@ -230,13 +235,14 @@
       windowWidth = 0;
     }
     return {
-      height: (rect.height || 32) + 'px',
+      height: navBarHeight.value + 'px',
       paddingRight: Math.max(0, windowWidth - rect.left + 8) + 'px',
     };
   });
   /** 顶部定位：取默认收货地址的市区，没有地址时提示去选 */
   const locationText = ref('选择收货地址');
   async function loadLocation() {
+    if (!userStore.isLogin) return;
     try {
       const response = await mallAddressApi.getList();
       const list = response.data || [];
@@ -304,6 +310,7 @@
   /** 首页展示正式可见树的一级分类，进入分类页后再逐级选购。 */
   const categoryRail = ref([]);
   async function loadCategoryRail() {
+    if (!userStore.isLogin) return;
     try {
       const response = await mallCatalogApi.getCategories();
       // 只用正式可见树的一级分类，素材包里的其它大类不自动变成业务入口。
@@ -324,6 +331,7 @@
   const greeting = computed(() => (new Date().getHours() < 12 ? '上午好' : new Date().getHours() < 18 ? '下午好' : '晚上好'));
 
   async function loadProducts(reset = false) {
+    if (!userStore.isLogin) return;
     if (loading.value) return;
     if (reset) {
       products.value = [];
@@ -450,6 +458,9 @@
       homeLayout.value = null;
       popupVisible.value = false;
       if (userStore.isLogin) {
+        loadProducts(true);
+        loadCategoryRail();
+        loadLocation();
         loadHomeLayout();
         loadHomePopup();
       }
@@ -511,6 +522,7 @@
   function goService(key) {
     if (key === 'activities') return goActivities();
     if (key === 'delivery') return uni.switchTab({ url: '/pages/order/index' });
+    if (!guardPage('/pages/category/index')) return;
     // 锚点让开固定阅读栏与微信胶囊，不把分区标题滚到系统状态栏下面。
     uni
       .createSelectorQuery()
@@ -541,7 +553,7 @@
   onShow(() => {
     uni.setNavigationBarColor({
       frontColor: headerScrolled.value ? '#000000' : '#ffffff',
-      backgroundColor: headerScrolled.value ? '#ffffff' : '#0f6f32',
+      backgroundColor: headerScrolled.value ? '#ffffff' : MALL_HOME_COLORS.headerStart,
     });
     bannerAutoplay.value = true;
     if (showed) {
@@ -567,13 +579,14 @@
 <style lang="scss" scoped>
   .home {
     @include viewport-min-height;
-    background: $color-bg-page;
+    --xsy-page-x: #{$space-4};
+    background: var(--home-page-bg);
     /* 让开自绘底部导航 */
     padding-bottom: calc(var(--xsy-tabbar-h, 100rpx) + #{$space-6});
   }
   .home__header {
-    padding: 0 var(--xsy-page-x) $space-3;
-    background: var(--mall-brand-gradient, var(--mall-primary, #16a34a));
+    padding: 0 var(--xsy-page-x) $space-4;
+    background: linear-gradient(115deg, var(--home-header-start), var(--home-header-end));
   }
   .home__reading-nav {
     position: fixed;
@@ -582,7 +595,6 @@
     right: 0;
     z-index: 30;
     box-sizing: content-box;
-    height: 44px;
     background: white;
     display: flex;
     align-items: center;
@@ -590,14 +602,6 @@
     color: $color-text-primary;
     font-size: $font-size-lg;
     font-weight: $font-weight-medium;
-  }
-  .home__store-name {
-    display: block;
-    padding: $space-2 0 $space-1;
-    color: white;
-    font-size: $font-size-xxl;
-    font-weight: $font-weight-bold;
-    @include ellipsis;
   }
   .home__section-head {
     @include flex-between;
@@ -617,29 +621,29 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  /* 搜索框与分类横滑同处一张白卡，避免出现「白框浮在灰底上」的碎块 */
+  /* 搜索与定位共用绿色容器，控件之外不再出现独立白色底块。 */
   .home__search-wrap {
-    padding: $space-3 var(--xsy-page-x) 0;
-    background: white;
+    padding-top: $space-3;
   }
   .home__search {
     @include pressable;
     @include flex-start;
-    /* 88rpx = 44px，满足移动端最小触控高度 */
-    height: 88rpx;
+    box-sizing: border-box;
+    height: 44px;
     padding: 0 $space-3;
-    border: 1px solid var(--mall-primary, #16a34a);
     border-radius: $radius-pill;
     background: white;
   }
   .home__search-text {
     margin-left: $space-2;
-    color: $color-text-placeholder;
+    color: var(--home-search-placeholder);
     font-size: $font-size-sm;
   }
   /* 分类横滑与下方四列快捷入口对齐，其余分类保留在滚动区域内。 */
   .home__rail {
-    padding: $space-3 var(--xsy-page-x);
+    margin: $space-3 var(--xsy-page-x) 0;
+    padding: $space-3 0;
+    border-radius: $radius-lg $radius-lg 0 0;
     background: white;
   }
   .home__rail-scroll {
@@ -677,15 +681,22 @@
     white-space: nowrap;
   }
   .home__section {
-    margin-top: $space-3;
+    margin: $space-3 var(--xsy-page-x) 0;
+    overflow: hidden;
+    border-radius: $radius-lg;
     background: white;
   }
   .home__services {
     display: flex;
     justify-content: space-around;
-    padding: $space-4 var(--xsy-page-x);
-    margin-top: $space-3;
+    padding: $space-3 0 $space-4;
+    margin: 0 var(--xsy-page-x);
+    border-radius: 0 0 $radius-lg $radius-lg;
     background: white;
+  }
+  .home__services--standalone {
+    margin-top: $space-3;
+    border-radius: $radius-lg;
   }
   .home__service {
     display: flex;
@@ -703,7 +714,7 @@
   }
   .home__banner {
     height: calc((100vw - var(--xsy-page-x) - var(--xsy-page-x)) / 2.5);
-    border-radius: $radius-md;
+    border-radius: $radius-lg;
     overflow: hidden;
   }
   .home__banner-image {
@@ -770,9 +781,10 @@
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: $space-2;
-    margin-top: $space-3;
+    margin: $space-3 var(--xsy-page-x) 0;
     padding: $space-3 var(--xsy-page-x);
     background: white;
+    border-radius: $radius-lg;
   }
   .home__shortcut {
     @include pressable;
@@ -804,7 +816,7 @@
   .home__topic {
     margin: $space-3 var(--xsy-page-x) 0;
     overflow: hidden;
-    border-radius: $radius-md;
+    border-radius: $radius-lg;
   }
   .home__topic-image {
     display: block;
@@ -828,7 +840,6 @@
     gap: $space-3;
     min-height: 120rpx;
     padding: $space-3 var(--xsy-page-x);
-    @include hairline-bottom;
   }
   .home__activity-image {
     width: 96rpx;

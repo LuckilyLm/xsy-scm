@@ -3,6 +3,7 @@
   import { useUserStore } from '@/store/modules/system/user';
   import { useMallThemeStore } from '@/store/modules/mall/theme';
   import { useNetworkStatus } from '@/composables/use-network-status';
+  import { checkAppLogin } from '@/lib/login-guard';
 
   export default {
     onLaunch: function () {
@@ -22,6 +23,7 @@
       });
     },
     onShow: function () {
+      checkAppLogin();
       // 恢复前台刷新主题；与页面 onShow 触发的请求在 store 内合并为一次
       useMallThemeStore().refresh();
       useUserStore().getLoginInfo();

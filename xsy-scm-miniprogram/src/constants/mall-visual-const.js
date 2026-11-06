@@ -11,7 +11,7 @@ export const MALL_SHORTCUT_IMAGES = {
 };
 
 export const MALL_EMPTY_IMAGES = Object.fromEntries(
-  ['cart', 'orders', 'coupons', 'search', 'products', 'network'].map((kind) => [kind, `${ROOT}/empty/${kind}.png`])
+  ['cart', 'orders', 'coupons', 'search', 'products', 'network', 'address'].map((kind) => [kind, `${ROOT}/empty/${kind}.png`])
 );
 
 // 导航使用交付的普通/选中两套原色图片，颜色不通过滤镜重绘。

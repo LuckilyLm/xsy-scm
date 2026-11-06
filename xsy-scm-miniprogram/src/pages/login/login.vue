@@ -144,8 +144,16 @@
     if (submitting.value) return;
     const detail = event?.detail;
     if (detail?.errMsg !== 'getPhoneNumber:ok' || !detail.code) {
-      const canceled = /deny|cancel/i.test(detail?.errMsg || '');
-      uni.showToast({ title: canceled ? '已取消授权，可使用账号密码登录' : '未取得手机号授权，请重试', icon: 'none' });
+      const reason = detail?.errMsg || '';
+      // 用户取消不再追加失败提示；没有微信一次性code时，不能让后台猜测手机号或账号权限。
+      if (/user deny|user cancel|cancel|disagree/i.test(reason) || detail?.errno === 103 || detail?.errno === 104) return;
+      let title = '暂时无法获取微信手机号，请重试或使用手机号密码登录';
+      if (detail?.errno === 112 || /scope is not declared|privacy api banned/i.test(reason)) {
+        title = '微信手机号登录暂不可用，请联系商家处理';
+      } else if (/no permission|not support|not authorized/i.test(reason)) {
+        title = '暂时无法使用微信手机号登录，请使用手机号密码登录';
+      }
+      uni.showToast({ title, icon: 'none' });
       return;
     }
     await signIn(() => mallAuthApi.wechatPhoneLogin({ code: detail.code }), true);
@@ -154,7 +162,7 @@
   async function signIn(request, viaWechat = false) {
     submitting.value = true;
     wechatSubmitting.value = viaWechat;
-    uni.showLoading({ title: '登录中' });
+    // 两种按钮自带加载状态，避免全局遮罩在跳页或被其他提示关闭后再次hideLoading。
     let failure = '';
     try {
       const response = await request();
@@ -164,7 +172,6 @@
     } finally {
       submitting.value = false;
       wechatSubmitting.value = false;
-      uni.hideLoading();
     }
     if (failure) uni.showToast({ title: failure, icon: 'none' });
   }

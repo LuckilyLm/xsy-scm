@@ -28,7 +28,7 @@ test('real categories select supplied PNGs without changing taxonomy or re-colou
 
 test('every supplied local illustration exists and its recorded total fits a small media budget', () => {
   const manifest = JSON.parse(read('../src/static/mall-visual/sources.json'));
-  assert.equal(manifest.length, 40);
+  assert.equal(manifest.length, 41);
   let total = 0;
   for (const item of manifest) {
     const path = new URL(`../src/static/mall-visual/${item.file}`, import.meta.url);

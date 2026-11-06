@@ -1,5 +1,5 @@
 <template>
-  <view class="co" :style="themeStyle">
+  <view class="co" :class="{ 'co--editing': remarkFocused || keyboardHeight > 0 }" :style="themeStyle">
     <!-- 收货地址 -->
     <view class="co-card co-address" @click="chooseAddress">
       <template v-if="address">
@@ -75,6 +75,7 @@
       </view>
       <text v-if="selectedCouponId" class="co-coupon__clear" @click="clearCoupon">不使用优惠券</text>
       <text v-if="promotionError" class="co-coupon__error">{{ promotionError }}</text>
+      <text v-else-if="couponNotice" class="co-coupon__hint">{{ couponNotice }}</text>
       <text v-else-if="promotion?.couponName" class="co-coupon__hint">已试算：{{ promotion.couponName }}</text>
     </view>
 
@@ -91,8 +92,6 @@
       <text class="co-promotion__note">优惠金额仅供参考，确认订单时会重新核对并确定；称重商品以最终结算金额为准。</text>
     </view>
 
-    <view class="co-tip">订单提交后由后台确认，付款及结算请联系业务员处理。</view>
-
     <!-- 备注 -->
     <view class="co-card">
       <view class="co-card__title">订单备注</view>
@@ -102,17 +101,21 @@
         :maxlength="500"
         placeholder="如有特殊要求可在此说明"
         auto-height
-        :cursor-spacing="96"
+        :cursor-spacing="24"
         show-confirm-bar
         hold-keyboard
+        :adjust-position="true"
+        @focus="remarkFocused = true"
+        @blur="remarkFocused = false"
       ></textarea>
     </view>
 
-    <view class="co-bar" :style="barStyle">
+    <!-- 原生hidden会被flex样式覆盖，输入期间直接移除底栏，避免遮挡备注。 -->
+    <view v-if="!remarkFocused && keyboardHeight === 0" class="co-bar">
       <view class="co-bar__amount">
         <text class="co-bar__label">优惠后预估</text>
-        <text v-if="previewing" class="co-bar__hint">计算中…</text>
-        <text v-else-if="!previewReady" class="co-bar__error" @click="refreshPreview">{{ promotionError || '金额获取失败，点击重试' }}</text>
+        <text v-if="previewing || preparing" class="co-bar__hint">计算中…</text>
+        <text v-else-if="!previewReady" class="co-bar__error" @click="retryPreview">{{ loadError || promotionError || '点击重新获取金额' }}</text>
         <text v-else class="co-bar__value">¥{{ displayMoney(promotion?.payableAmount || estimatedAmount) }}</text>
       </view>
       <view
@@ -132,7 +135,7 @@
   import { computed, ref } from 'vue';
   import { useMallTheme } from '@/composables/use-mall-theme';
 
-  import { onLoad, onShow } from '@dcloudio/uni-app';
+  import { onLoad, onShow, onHide } from '@dcloudio/uni-app';
   import { mallCartApi } from '@/api/mall/cart-api';
   import { mallAddressApi } from '@/api/mall/address-api';
   import { mallOrderApi } from '@/api/mall/order-api';
@@ -142,10 +145,17 @@
   import { CHECKOUT_ADDRESS } from '@/constants/local-storage-key-const';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
   import { useKeyboardHeight } from '@/composables/use-keyboard-height';
+  import { previewCheckout } from '@/utils/checkout-preview';
 
   const { themeStyle } = useMallTheme();
-  /** 键盘弹出时把提交栏抬到键盘上沿 */
-  const { barStyle } = useKeyboardHeight();
+  // 备注使用系统原生避让；输入期间隐藏提交栏，避免键盘顶起与手工bottom叠加。
+  const { keyboardHeight } = useKeyboardHeight();
+  const remarkFocused = ref(false);
+  const loadError = ref('');
+  const preparing = ref(false);
+  const couponMode = ref('AUTO');
+  const couponNotice = ref('');
+  let loadSeq = 0;
 
   const skuIds = ref([]);
   const items = ref([]);
@@ -186,7 +196,7 @@
   const nonStandardCount = computed(() => items.value.filter((item) => item.nonStandard === true).length);
   const unavailableTip = computed(() => {
     if (!unavailableItems.value.length) return '';
-    const names = unavailableItems.value.map((item) => item.productName || `SKU ${item.skuId}`);
+    const names = unavailableItems.value.map((item) => item.productName || '部分商品');
     const head = names.slice(0, 2).join('、');
     const rest = names.length > 2 ? ` 等 ${names.length} 项` : '';
     return `${head}${rest}：${unavailableText(unavailableItems.value[0])}。请返回购物车调整后再结算`;
@@ -201,7 +211,9 @@
       !promotionError.value &&
       previewReady.value &&
       !previewing.value &&
-      !submitting.value
+      !submitting.value &&
+      !preparing.value &&
+      !loadError.value
   );
 
   function isAvailable(item) {
@@ -240,44 +252,68 @@
   });
 
   onShow(() => {
+    remarkFocused.value = false;
+    keyboardHeight.value = 0;
     load();
+  });
+  onHide(() => {
+    remarkFocused.value = false;
+    keyboardHeight.value = 0;
+    ++loadSeq;
+    ++previewSeq;
   });
 
   async function load() {
-    await Promise.all([loadAddress(), loadItems()]);
-    await loadWarehouses();
-    await refreshPreview();
-  }
-
-  async function loadAddress() {
+    const seq = ++loadSeq;
+    ++previewSeq;
+    previewReady.value = false;
+    previewing.value = false;
+    fingerprint.value = '';
+    preparing.value = true;
+    loadError.value = '';
     try {
-      const response = await mallAddressApi.getList();
-      const list = response.data || [];
-      const picked = uni.getStorageSync(CHECKOUT_ADDRESS);
-      const selectedId = picked || address.value?.addressId;
-      const chosen = selectedId ? list.find((item) => String(item.addressId) === String(selectedId)) : null;
-      address.value = chosen || list.find((item) => item.isDefault) || list[0] || null;
-      if (picked) uni.removeStorageSync(CHECKOUT_ADDRESS);
+      await Promise.all([loadAddress(seq), loadItems(seq)]);
+      if (seq !== loadSeq) return;
+      await loadWarehouses(seq);
+      if (seq !== loadSeq) return;
+      await refreshPreview();
     } catch (error) {
+      if (seq !== loadSeq) return;
+      loadError.value = error?.message || '订单资料加载失败，点击重试';
       xsySentry.captureError(error);
+    } finally {
+      if (seq === loadSeq) preparing.value = false;
     }
   }
 
-  async function loadWarehouses() {
+  function retryPreview() {
+    return loadError.value ? load() : refreshPreview();
+  }
+
+  async function loadAddress(seq) {
+    const response = await mallAddressApi.getList();
+    const list = response.data || [];
+    if (seq !== loadSeq) return;
+    const picked = uni.getStorageSync(CHECKOUT_ADDRESS);
+    const selectedId = picked || address.value?.addressId;
+    const chosen = selectedId ? list.find((item) => String(item.addressId) === String(selectedId)) : null;
+    address.value = chosen || list.find((item) => item.isDefault) || list[0] || null;
+    if (picked) uni.removeStorageSync(CHECKOUT_ADDRESS);
+  }
+
+  async function loadWarehouses(seq) {
     warehouseOptions.value = [];
     warehouseError.value = '';
-    if (!address.value) {
-      warehouseId.value = null;
-      return;
-    }
     try {
-      const response = await mallOrderApi.getWarehouses(address.value.addressId);
+      const response = await mallOrderApi.getWarehouses(address.value?.addressId);
+      if (seq !== loadSeq) return;
       warehouseOptions.value = response.data || [];
       if (!warehouseOptions.value.some((item) => item.warehouseId === warehouseId.value)) {
         warehouseId.value = warehouseOptions.value[0]?.warehouseId || null;
       }
       if (!warehouseId.value) warehouseError.value = '当前收货地址暂无可用配送仓，请联系管理员';
     } catch (error) {
+      if (seq !== loadSeq) return;
       warehouseId.value = null;
       warehouseError.value = error?.message || '配送仓信息加载失败，请稍后重试';
       xsySentry.captureError(error);
@@ -289,20 +325,17 @@
     if (!selected || selected.warehouseId === warehouseId.value) return;
     warehouseId.value = selected.warehouseId;
     syncIdempotencyKey();
-    refreshPreview();
+    return refreshPreview();
   }
 
-  async function loadItems() {
-    try {
-      const response = await mallCartApi.getCart();
-      const all = response.data?.items || [];
-      const selected = all.filter((item) => skuIds.value.includes(item.skuId));
-      // 购物车按默认仓读取的可售状态不适用于本次收货地址对应的配送仓。
-      // 不能提前丢弃行；统一由选仓后的结算预览给出可售性及原因。
-      items.value = selected;
-    } catch (error) {
-      xsySentry.captureError(error);
-    }
+  async function loadItems(seq) {
+    const response = await mallCartApi.getCart();
+    const all = response.data?.items || [];
+    if (seq !== loadSeq) return;
+    const selected = all.filter((item) => skuIds.value.includes(item.skuId));
+    // 购物车按默认仓读取的可售状态不适用于本次收货地址对应的配送仓。
+    // 不能提前丢弃行；统一由选仓后的结算预览给出可售性及原因。
+    items.value = selected;
   }
 
   function payloadItems() {
@@ -318,21 +351,34 @@
     unavailableItems.value = [];
     promotion.value = null;
     promotionError.value = '';
-    if (!items.value.length || !warehouseId.value) {
+    if (!items.value.length) {
       estimatedAmount.value = '0.00';
+      promotionError.value = '没有可结算的商品，请返回购物车调整';
+      previewing.value = false;
       return;
     }
     previewing.value = true;
     try {
-      const response = await mallOrderApi.preview({
-        items: payloadItems(),
-        addressId: address.value ? address.value.addressId : null,
-        warehouseId: warehouseId.value,
-        couponInstanceId: selectedCouponId.value || undefined,
-      });
+      const result = await previewCheckout(
+        {
+          items: payloadItems(),
+          addressId: address.value ? address.value.addressId : null,
+          warehouseId: warehouseId.value || undefined,
+          couponInstanceId: selectedCouponId.value || undefined,
+        },
+        couponMode.value,
+        () => seq === previewSeq
+      );
       // 只认最后一次预览：旧响应后到一律丢弃，否则会把新金额与指纹覆盖回旧的
       if (seq !== previewSeq) return;
-      const data = response.data || {};
+      const data = result.data || {};
+      selectedCouponId.value = result.couponId;
+      selectedCouponName.value = result.couponName;
+      couponNotice.value = result.couponNotice;
+      if (result.couponNotice) couponMode.value = 'NONE';
+      warehouseOptions.value = data.warehouses || warehouseOptions.value;
+      warehouseId.value = data.warehouseId || null;
+      warehouseError.value = data.warehouseRequired ? '当前收货地址暂无可用配送仓，请联系商家' : '';
       const nextItems = data.items || items.value;
       items.value = nextItems;
       // 服务端判定不可售的项：金额已被排除，必须同时禁止提交，不能只看金额
@@ -341,13 +387,14 @@
       promotion.value = data.promotion || null;
       promotionError.value = data.promotionError || '';
       fingerprint.value = data.priceFingerprint || '';
+      if (!fingerprint.value && !promotionError.value) promotionError.value = '订单金额资料不完整，请点击重试';
       previewReady.value = !!fingerprint.value && !promotionError.value;
       syncIdempotencyKey();
     } catch (error) {
       if (seq !== previewSeq) return;
       xsySentry.captureError(error);
       estimatedAmount.value = '';
-      uni.showToast({ title: error?.message || '订单信息获取失败', icon: 'none' });
+      promotionError.value = error?.message || '订单金额加载失败，点击重试';
     } finally {
       // 旧请求不得把仍在进行中的最新预览标记成已结束
       if (seq === previewSeq) previewing.value = false;
@@ -377,6 +424,7 @@
   function onDateChange(event) {
     deliveryDate.value = event.detail.value || '';
     syncIdempotencyKey();
+    return refreshPreview();
   }
 
   function chooseAddress() {
@@ -388,6 +436,7 @@
       url: '/pages-sub/promotion/my?select=1',
       events: {
         couponSelected: (coupon) => {
+          couponMode.value = 'MANUAL';
           selectedCouponId.value = coupon.id;
           selectedCouponName.value = coupon.name;
           syncIdempotencyKey();
@@ -398,14 +447,16 @@
   }
 
   function clearCoupon() {
+    couponMode.value = 'NONE';
+    couponNotice.value = '';
     selectedCouponId.value = null;
     selectedCouponName.value = '';
     syncIdempotencyKey();
-    refreshPreview();
+    return refreshPreview();
   }
 
   async function submit() {
-    if (submitting.value) return;
+    if (submitting.value || preparing.value || loadError.value) return;
     if (!items.value.length) {
       uni.showToast({ title: '没有可结算的商品', icon: 'none' });
       return;
@@ -474,8 +525,11 @@
   .co {
     @include viewport-min-height;
     background-color: $color-bg-page;
-    /* 底部固定条 108rpx，安全区单独相加 */
-    @include content-clear-bottom(108rpx, 32rpx);
+    /* 固定操作栏之外保留阅读间距，安全区单独相加 */
+    @include content-clear-bottom(68px, $space-4);
+  }
+  .co--editing {
+    padding-bottom: $space-4;
   }
   .co-card {
     margin-top: $space-3;
@@ -674,12 +728,15 @@
   .co-bar {
     @include fixed-bottom-bar;
     @include flex-between;
-    height: 108rpx;
-    padding: 0 var(--xsy-page-x);
+    @include action-bar-spacing;
+    min-height: 44px;
+    gap: $space-3;
   }
   .co-bar__amount {
-    @include flex-start;
-    align-items: baseline;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
     flex: 1;
   }
   .co-bar__label {
@@ -687,7 +744,7 @@
     color: $color-text-secondary;
   }
   .co-bar__value {
-    margin-left: $space-1;
+    margin-top: $space-1;
     font-size: $font-size-xl;
     font-weight: $font-weight-bold;
     color: $color-danger;
@@ -705,7 +762,7 @@
   .co-bar__submit {
     flex-shrink: 0;
     padding: 0 $space-6;
-    height: 72rpx;
+    height: 44px;
     @include flex-center;
     border-radius: $radius-pill;
     background: var(--mall-action-gradient, var(--mall-primary, #16a34a));

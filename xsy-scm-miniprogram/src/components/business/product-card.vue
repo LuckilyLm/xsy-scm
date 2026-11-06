@@ -108,7 +108,10 @@
   function onAction() {
     if (actionKind.value === 'inquiry') {
       emit('inquiry', props.product);
-    } else if (actionKind.value === 'add' || actionKind.value === 'preorder') {
+    } else if (actionKind.value === 'preorder') {
+      // 预订先进入已有规格与数量确认页，取消返回时不写购物车。
+      emit('click', props.product);
+    } else if (actionKind.value === 'add') {
       emit('add', props.product);
     }
   }

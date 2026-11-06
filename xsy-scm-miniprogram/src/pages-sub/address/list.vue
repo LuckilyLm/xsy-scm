@@ -2,11 +2,7 @@
   <view class="addr" :style="themeStyle">
     <view v-if="loading && !list.length" class="addr__hint">加载中…</view>
 
-    <view v-else-if="!list.length" class="addr__empty">
-      <uni-icons type="location" :size="56" :color="COLOR_TEXT_PLACEHOLDER" />
-      <text class="addr__empty-title">还没有收货地址</text>
-      <text class="addr__empty-desc">添加常用收货地址，下单时可直接选择</text>
-    </view>
+    <XsyEmpty v-else-if="!list.length" kind="address" title="还没有收货地址" desc="添加常用收货地址，下单时可直接选择" />
 
     <view v-else class="addr__list">
       <view v-for="item in list" :key="item.addressId" class="addr-item" @click="onItemTap(item)">
@@ -38,7 +34,7 @@
   import { onLoad, onShow } from '@dcloudio/uni-app';
   import { mallAddressApi } from '@/api/mall/address-api';
   import { xsySentry } from '@/lib/xsy-sentry';
-  import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
+  import XsyEmpty from '@/components/common/xsy-empty.vue';
   import { CHECKOUT_ADDRESS } from '@/constants/local-storage-key-const';
 
   const { themeStyle } = useMallTheme();
@@ -128,22 +124,6 @@
     text-align: center;
     color: $color-text-tertiary;
   }
-  .addr__empty {
-    @include flex-center;
-    flex-direction: column;
-    padding-top: 160rpx;
-  }
-  .addr__empty-title {
-    margin-top: $space-3;
-    font-size: $font-size-lg;
-    color: $color-text-secondary;
-  }
-  .addr__empty-desc {
-    margin-top: $space-1;
-    font-size: $font-size-sm;
-    color: $color-text-tertiary;
-  }
-
   .addr__list {
     margin-top: $space-3;
     background-color: $color-bg-card;

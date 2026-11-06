@@ -28,7 +28,7 @@ export const mallOrderApi = {
    * 结算预览
    * @param {{items: Array<{skuId: number, quantity: string}>, addressId?: number, couponInstanceId?: number}} param
    */
-  preview: (param) => postRequest('/scm/mall/orders/preview', param),
+  preview: (param, options) => postRequest('/scm/mall/orders/preview', param, options),
 
   /**
    * 提交订单

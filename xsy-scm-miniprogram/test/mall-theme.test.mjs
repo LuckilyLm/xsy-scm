@@ -197,6 +197,7 @@ test('anonymous theme failure is silent and cannot clear the customer session', 
     SESSION_EXPIRED_CODES: [30007],
     PLATFORM_ERROR_CODE: { LOGIN_STATE_INVALID: 30007 },
     USE_MOCK: false,
+    getCurrentPages: () => [],
     setTimeout: (fn) => fn(),
     uni: {
       getStorageSync: () => token,
@@ -205,7 +206,10 @@ test('anonymous theme failure is silent and cannot clear the customer session', 
         effects.push('logout');
       },
       showToast: () => effects.push('toast'),
-      reLaunch: () => effects.push('redirect'),
+      reLaunch: ({ complete }) => {
+        effects.push('redirect');
+        complete?.();
+      },
       request: (options) => {
         headers = options.header;
         respond = () => options.success({ statusCode: 401, data: { code: 30007, msg: 'unavailable' } });
@@ -213,7 +217,10 @@ test('anonymous theme failure is silent and cannot clear the customer session', 
       },
     },
   });
-  vm.runInContext(`${source}\nglobalThis.get = getRequest;`, context);
+  const guard = read('../src/lib/login-guard.js')
+    .replace(/^[^\S\r\n]*import[\s\S]*?;\r?\n/gm, '')
+    .replace(/export function /g, 'function ');
+  vm.runInContext(`${guard}\n${source}\nglobalThis.get = getRequest;`, context);
   await assert.rejects(context.get('/scm/mall/home/theme', {}, { anonymous: true, silent: true }));
   assert.equal(headers.Authorization, undefined);
   assert.deepEqual(effects, []);

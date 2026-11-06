@@ -17,6 +17,6 @@ export const mallPromotionApi = {
     return { ...response, data: adaptProducts(response.data || []) };
   },
   claimableCoupons: (query) => getRequest('/scm/mall/promotion/coupons/claimable', query),
-  myCoupons: (query) => getRequest('/scm/mall/promotion/coupons/mine', query),
+  myCoupons: (query, options) => getRequest('/scm/mall/promotion/coupons/mine', query, options),
   claimCoupon: (couponId, idempotencyKey) => postRequest(`/scm/mall/promotion/coupons/${couponId}/claim`, {}, { idempotencyKey }),
 };
