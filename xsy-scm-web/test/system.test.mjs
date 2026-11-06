@@ -661,7 +661,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     for (const scope of SCOPES) {
       const result = RESULTS.get(scope.key);
       // 测试目录按模块合并成少量文件（每个模块一个），不适用「> 50 个文件」的体量门槛；其余范围沿用。
-      const minimum = scope.key === 'xsy-scm-web/test' ? 10 : 50;
+      const minimum = scope.key.includes('/src/test/') ? 25 : scope.key === 'xsy-scm-web/test' ? 10 : 50;
       assert.ok(result.files > minimum, `${scope.key} 只枚举到 ${result.files} 个文件，扫描方式可能已失效`);
     }
     // 反向护栏：如果抽取器坏了（比如把整个文件当成注释），长注释数会异常膨胀

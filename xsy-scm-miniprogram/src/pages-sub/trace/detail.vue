@@ -59,8 +59,7 @@
         <view v-for="report in reports" :key="report.reportNo" class="trace__report">
           <text class="trace__section">{{ report.reportName }}</text>
           <text class="trace__report-line trace__mono">{{ report.reportNo }}</text>
-          <text class="trace__report-result"
-            :class="'trace__report-result--' + inspectionPublicResult(report).tone">
+          <text class="trace__report-result" :class="'trace__report-result--' + inspectionPublicResult(report).tone">
             {{ inspectionPublicResult(report).label }}
           </text>
           <text class="trace__report-line">检测日期：{{ report.inspectionDate }}</text>
@@ -69,8 +68,13 @@
           <text v-if="report.expiresAt" class="trace__report-line">有效期至：{{ formatBeijingTime(report.expiresAt) }}（北京时间）</text>
           <text v-if="report.expired" class="trace__report-line">报告已过期，不作为当前检测合格依据。</text>
           <text v-if="report.expired" class="trace__report-line">原报告结论：{{ inspectionConclusionLabel(report.conclusion) }}</text>
-          <view v-for="file in report.attachments" :key="file.fileKey" class="trace__file"
-            hover-class="xsy-press--row--active" @click="openFile(file)">
+          <view
+            v-for="file in report.attachments"
+            :key="file.fileKey"
+            class="trace__file"
+            hover-class="xsy-press--row--active"
+            @click="openFile(file)"
+          >
             <text class="trace__file-name">{{ file.fileName }}</text>
             <uni-icons type="download" :size="16" :color="COLOR_PRIMARY" />
           </view>
@@ -115,7 +119,7 @@
 
   const voided = computed(() => view.value?.status === 'VOID');
   const attachments = computed(() => view.value?.attachments || []);
-  const reports = computed(() => voided.value ? [] : view.value?.inspectionReports || []);
+  const reports = computed(() => (voided.value ? [] : view.value?.inspectionReports || []));
 
   const PACKAGE_LABEL = { BAG: '袋', BOX: '箱', CRATE: '筐' };
   const packageLabel = computed(() => PACKAGE_LABEL[view.value?.packageType] || '—');
@@ -204,8 +208,12 @@
   onLoad((options) => {
     token.value = options?.token || '';
   });
-  onShow(() => { if (token.value) load(); });
-  onUnload(() => { requestId++; });
+  onShow(() => {
+    if (token.value) load();
+  });
+  onUnload(() => {
+    requestId++;
+  });
 </script>
 
 <style lang="scss" scoped>
@@ -308,12 +316,30 @@
     font-weight: $font-weight-bold;
   }
 
-  .trace__report { padding: $space-3 0; border-top: 1px solid $color-border; overflow-wrap: anywhere; }
-  .trace__report-line { display: block; margin-top: $space-2; font-size: $font-size-sm; }
-  .trace__report-result { display: block; margin-top: $space-2; font-weight: $font-weight-bold; }
-  .trace__report-result--success { color: $color-success; }
-  .trace__report-result--error { color: $color-danger; }
-  .trace__report-result--warning { color: $color-warning; }
+  .trace__report {
+    padding: $space-3 0;
+    border-top: 1px solid $color-border;
+    overflow-wrap: anywhere;
+  }
+  .trace__report-line {
+    display: block;
+    margin-top: $space-2;
+    font-size: $font-size-sm;
+  }
+  .trace__report-result {
+    display: block;
+    margin-top: $space-2;
+    font-weight: $font-weight-bold;
+  }
+  .trace__report-result--success {
+    color: $color-success;
+  }
+  .trace__report-result--error {
+    color: $color-danger;
+  }
+  .trace__report-result--warning {
+    color: $color-warning;
+  }
 
   .trace__file {
     display: flex;

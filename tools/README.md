@@ -20,7 +20,7 @@
 E2E 账号示例：
 
 ```powershell
-$env:XSY_V2_PG_DB = '独立测试库名'
+$env:XSY_PG_DB = '独立测试库名'
 $env:W1_E2E_NAME = 'w1_e2e_唯一后缀'
 $env:W1_E2E_PASSWORD = '仅测试环境使用的密码'
 python tools/e2e_fixtures.py account-setup --wave w1

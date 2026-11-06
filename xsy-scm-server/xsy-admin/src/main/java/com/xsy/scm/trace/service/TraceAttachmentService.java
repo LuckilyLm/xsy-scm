@@ -115,7 +115,7 @@ public class TraceAttachmentService {
      * <p>
      * 公开页以包装令牌限定商品与批次；报告附件另由发布状态控制，后台入口仍校验仓库范围。
      */
-    List<TraceAttachmentVO> publicAttachments(Long lotId, Long spuId) {
+    public List<TraceAttachmentVO> publicAttachments(Long lotId, Long spuId) {
         List<TraceAttachmentVO> result = new ArrayList<>();
         if (spuId != null) {
             result.addAll(attachmentsOf(FileRelationBizTypeEnum.PRODUCT_QUALIFICATION, spuId,
@@ -133,7 +133,7 @@ public class TraceAttachmentService {
         return result.stream().filter(file -> !reportKeys.contains(file.getFileKey())).toList();
     }
 
-    List<TraceAttachmentVO> reportAttachments(Long reportId) {
+    public List<TraceAttachmentVO> reportAttachments(Long reportId) {
         return attachmentsOf(FileRelationBizTypeEnum.TRACE_INSPECTION_REPORT, reportId,
             TraceAttachmentCategoryEnum.INSPECTION);
     }

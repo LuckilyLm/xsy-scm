@@ -32,6 +32,9 @@ public class ScmServiceValidationAspect {
     @Around("execution(public * com.xsy.scm..service..*(..))"
         + " && !within(com.xsy.scm.admin..*) && !within(com.xsy.scm.base..*)")
     public Object validate(ProceedingJoinPoint invocation) throws Throwable {
+        if (ScmServiceValidationSuspension.suspended()) {
+            return invocation.proceed();
+        }
         for (Object argument : invocation.getArgs()) {
             if (argument == null || !argument.getClass().getPackageName().startsWith("com.xsy.scm.")
                 || !argument.getClass().getPackageName().contains(".domain.form")) {

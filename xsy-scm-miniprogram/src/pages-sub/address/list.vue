@@ -32,184 +32,184 @@
 </template>
 
 <script setup>
-import {ref} from 'vue';
-import {useMallTheme} from '@/composables/use-mall-theme';
+  import { ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
 
-import {onLoad, onShow} from '@dcloudio/uni-app';
-import {mallAddressApi} from '@/api/mall/address-api';
-import {xsySentry} from '@/lib/xsy-sentry';
-import {COLOR_TEXT_PLACEHOLDER} from '@/constants/theme-color-const';
-import {CHECKOUT_ADDRESS} from '@/constants/local-storage-key-const';
+  import { onLoad, onShow } from '@dcloudio/uni-app';
+  import { mallAddressApi } from '@/api/mall/address-api';
+  import { xsySentry } from '@/lib/xsy-sentry';
+  import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
+  import { CHECKOUT_ADDRESS } from '@/constants/local-storage-key-const';
 
-const {themeStyle} = useMallTheme();
+  const { themeStyle } = useMallTheme();
 
-const list = ref([]);
-const loading = ref(false);
-/** 由结算页以 ?select=1 打开时，点选地址即回传并返回，不做编辑 */
-const selectMode = ref(false);
+  const list = ref([]);
+  const loading = ref(false);
+  /** 由结算页以 ?select=1 打开时，点选地址即回传并返回，不做编辑 */
+  const selectMode = ref(false);
 
-onLoad((options) => {
-  selectMode.value = String(options?.select || '') === '1';
-});
-
-function onItemTap(item) {
-  if (!selectMode.value) {
-    edit(item);
-    return;
-  }
-  uni.setStorageSync(CHECKOUT_ADDRESS, item.addressId);
-  uni.navigateBack();
-}
-
-function fullAddress(item) {
-  return [item.provinceName, item.cityName, item.districtName, item.detailAddress].filter(Boolean).join(' ');
-}
-
-async function load() {
-  loading.value = true;
-  try {
-    const response = await mallAddressApi.getList();
-    list.value = response.data || [];
-  } catch (error) {
-    xsySentry.captureError(error);
-  } finally {
-    loading.value = false;
-  }
-}
-
-function create() {
-  uni.navigateTo({url: '/pages-sub/address/edit'});
-}
-function edit(item) {
-  uni.navigateTo({url: `/pages-sub/address/edit?id=${item.addressId}`});
-}
-
-async function setDefault(item) {
-  try {
-    const response = await mallAddressApi.setDefault(item.addressId);
-    list.value = response.data || [];
-  } catch (error) {
-    xsySentry.captureError(error);
-    uni.showToast({title: error?.message || '设置失败', icon: 'none'});
-  }
-}
-
-function remove(item) {
-  uni.showModal({
-    title: '删除地址',
-    content: `确认删除「${item.receiverName} ${item.receiverPhone}」这条地址？`,
-    success: async ({confirm}) => {
-      if (!confirm) return;
-      try {
-        const response = await mallAddressApi.remove(item.addressId);
-        list.value = response.data || [];
-      } catch (error) {
-        xsySentry.captureError(error);
-        uni.showToast({title: error?.message || '删除失败', icon: 'none'});
-      }
-    },
+  onLoad((options) => {
+    selectMode.value = String(options?.select || '') === '1';
   });
-}
 
-onShow(() => {
-  load();
-});
+  function onItemTap(item) {
+    if (!selectMode.value) {
+      edit(item);
+      return;
+    }
+    uni.setStorageSync(CHECKOUT_ADDRESS, item.addressId);
+    uni.navigateBack();
+  }
+
+  function fullAddress(item) {
+    return [item.provinceName, item.cityName, item.districtName, item.detailAddress].filter(Boolean).join(' ');
+  }
+
+  async function load() {
+    loading.value = true;
+    try {
+      const response = await mallAddressApi.getList();
+      list.value = response.data || [];
+    } catch (error) {
+      xsySentry.captureError(error);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  function create() {
+    uni.navigateTo({ url: '/pages-sub/address/edit' });
+  }
+  function edit(item) {
+    uni.navigateTo({ url: `/pages-sub/address/edit?id=${item.addressId}` });
+  }
+
+  async function setDefault(item) {
+    try {
+      const response = await mallAddressApi.setDefault(item.addressId);
+      list.value = response.data || [];
+    } catch (error) {
+      xsySentry.captureError(error);
+      uni.showToast({ title: error?.message || '设置失败', icon: 'none' });
+    }
+  }
+
+  function remove(item) {
+    uni.showModal({
+      title: '删除地址',
+      content: `确认删除「${item.receiverName} ${item.receiverPhone}」这条地址？`,
+      success: async ({ confirm }) => {
+        if (!confirm) return;
+        try {
+          const response = await mallAddressApi.remove(item.addressId);
+          list.value = response.data || [];
+        } catch (error) {
+          xsySentry.captureError(error);
+          uni.showToast({ title: error?.message || '删除失败', icon: 'none' });
+        }
+      },
+    });
+  }
+
+  onShow(() => {
+    load();
+  });
 </script>
 
 <style lang="scss" scoped>
-.addr {
-  @include viewport-min-height;
-  background-color: $color-bg-page;
-  padding-bottom: 140rpx;
-}
-.addr__hint {
-  display: block;
-  padding: $space-6;
-  text-align: center;
-  color: $color-text-tertiary;
-}
-.addr__empty {
-  @include flex-center;
-  flex-direction: column;
-  padding-top: 160rpx;
-}
-.addr__empty-title {
-  margin-top: $space-3;
-  font-size: $font-size-lg;
-  color: $color-text-secondary;
-}
-.addr__empty-desc {
-  margin-top: $space-1;
-  font-size: $font-size-sm;
-  color: $color-text-tertiary;
-}
+  .addr {
+    @include viewport-min-height;
+    background-color: $color-bg-page;
+    padding-bottom: 140rpx;
+  }
+  .addr__hint {
+    display: block;
+    padding: $space-6;
+    text-align: center;
+    color: $color-text-tertiary;
+  }
+  .addr__empty {
+    @include flex-center;
+    flex-direction: column;
+    padding-top: 160rpx;
+  }
+  .addr__empty-title {
+    margin-top: $space-3;
+    font-size: $font-size-lg;
+    color: $color-text-secondary;
+  }
+  .addr__empty-desc {
+    margin-top: $space-1;
+    font-size: $font-size-sm;
+    color: $color-text-tertiary;
+  }
 
-.addr__list {
-  margin-top: $space-3;
-  background-color: $color-bg-card;
-}
-.addr-item {
-  padding: $space-4;
-  @include hairline-bottom;
-}
-.addr-item__head {
-  @include flex-start;
-}
-.addr-item__receiver {
-  font-size: $font-size-lg;
-  font-weight: $font-weight-bold;
-  color: $color-text-primary;
-}
-.addr-item__phone {
-  margin-left: $space-3;
-  font-size: $font-size-base;
-  color: $color-text-secondary;
-}
-.addr-item__tag {
-  margin-left: $space-2;
-  padding: 2rpx 12rpx;
-  border-radius: $radius-pill;
-  background-color: var(--mall-primary-light, #e8f5ec);
-  color: var(--mall-primary-ink, #12833c);
-  font-size: $font-size-xs;
-}
-.addr-item__tag--pick {
-  background-color: $color-bg-hover;
-  color: $color-text-secondary;
-}
-.addr-item__detail {
-  display: block;
-  margin-top: $space-2;
-  font-size: $font-size-sm;
-  color: $color-text-secondary;
-}
-.addr-item__actions {
-  @include flex-start;
-  justify-content: flex-end;
-  margin-top: $space-2;
-}
-.addr-item__action {
-  margin-left: $space-4;
-  font-size: $font-size-sm;
-  color: $color-text-secondary;
-}
-.addr-item__action--danger {
-  color: $color-danger;
-}
+  .addr__list {
+    margin-top: $space-3;
+    background-color: $color-bg-card;
+  }
+  .addr-item {
+    padding: $space-4;
+    @include hairline-bottom;
+  }
+  .addr-item__head {
+    @include flex-start;
+  }
+  .addr-item__receiver {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+  }
+  .addr-item__phone {
+    margin-left: $space-3;
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+  }
+  .addr-item__tag {
+    margin-left: $space-2;
+    padding: 2rpx 12rpx;
+    border-radius: $radius-pill;
+    background-color: var(--mall-primary-light, #e8f5ec);
+    color: var(--mall-primary-ink, #12833c);
+    font-size: $font-size-xs;
+  }
+  .addr-item__tag--pick {
+    background-color: $color-bg-hover;
+    color: $color-text-secondary;
+  }
+  .addr-item__detail {
+    display: block;
+    margin-top: $space-2;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+  .addr-item__actions {
+    @include flex-start;
+    justify-content: flex-end;
+    margin-top: $space-2;
+  }
+  .addr-item__action {
+    margin-left: $space-4;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+  .addr-item__action--danger {
+    color: $color-danger;
+  }
 
-.addr__bar {
-  @include fixed-bottom-bar;
-  @include flex-center;
-  height: 108rpx;
-  padding: 0 $space-4;
-}
-.addr__add {
-  width: 100%;
-  height: 80rpx;
-  @include flex-center;
-  border-radius: $radius-pill;
-  background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
-  color: white;
-  font-size: $font-size-base;
-}
+  .addr__bar {
+    @include fixed-bottom-bar;
+    @include flex-center;
+    height: 108rpx;
+    padding: 0 $space-4;
+  }
+  .addr__add {
+    width: 100%;
+    height: 80rpx;
+    @include flex-center;
+    border-radius: $radius-pill;
+    background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
+    color: white;
+    font-size: $font-size-base;
+  }
 </style>

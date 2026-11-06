@@ -97,7 +97,7 @@ public class DataSourceConfig {
     @Primary
     public DataSource druidDataSource() {
         DruidDataSource druidDataSource = new DruidDataSource();
-        // V2 基线：PostgreSQL（早期系统配置硬编码 DbType.MYSQL）
+        // PostgreSQL 基线。
         druidDataSource.setDbType(DbType.POSTGRE_SQL.getDb());
         druidDataSource.setDriverClassName(driver);
         druidDataSource.setUrl(url);

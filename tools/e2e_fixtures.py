@@ -14,7 +14,7 @@ patch_product_update_xlsx.py、fill_stocktake_template.py；它们服务于同�
 
 各节之间不共用列假设：账号只碰 t_employee / t_role / t_role_menu，报表只碰报表与采购单
 回填，三个 xlsx 分别对齐各自模板的列约定与受保护列。数据库操作仍要求显式
-XSY_V2_PG_DB，且只按带 `_e2e_` 标记的 login_name 精确删除。
+XSY_PG_DB，且只按带 `_e2e_` 标记的 login_name 精确删除。
 """
 import argparse
 import json
@@ -45,19 +45,19 @@ from decimal import Decimal, InvalidOperation
 #   登录时 LoginService 用同一套 generateSaltPassword 复算后做 matches()，
 #   因此这里必须写**一样的摘要**，否则登录失败。
 #
-# 数据库：本机 docker Compose 的 Postgres 容器（默认 `xsy-scm-postgres-1`，127.0.0.1:15432），schema=xsy_v2；
-# **库名必须由 XSY_V2_PG_DB 显式给出**，不给即拒绝执行（默认值会把账号建到过期保存的数据库，登录只报「登录名或密码错误」）。
-# 可用环境变量覆盖：XSY_V2_PG_CONTAINER / XSY_V2_PG_DB（必填）/ XSY_V2_PG_SCHEMA / XSY_V2_PG_USER
+# 数据库：本机 docker Compose 的 Postgres 容器（默认 `xsy-scm-postgres-1`，127.0.0.1:15432），schema=xsy；
+# **库名必须由 XSY_PG_DB 显式给出**，不给即拒绝执行（默认值会把账号建到过期保存的数据库，登录只报「登录名或密码错误」）。
+# 可用环境变量覆盖：XSY_PG_CONTAINER / XSY_PG_DB（必填）/ XSY_PG_SCHEMA / XSY_PG_USER
 #
 # 安全约束：
 #   · login_name 必须以 `<波次>_e2e_` 开头（`_e2e_` 是硬性标记，波次如 w1 / w8 / f0），否则拒绝执行；
 #   · 永不触碰种子管理员行（login_name = 'admin' / employee_id = 1）；
 #   · cleanup 只按 login_name 精确删除，不做任何前缀通配删除。
 
-CONTAINER = os.environ.get("XSY_V2_PG_CONTAINER", "xsy-scm-postgres-1")
-DB = os.environ.get("XSY_V2_PG_DB", "")
-SCHEMA = os.environ.get("XSY_V2_PG_SCHEMA", "xsy_v2")
-USER = os.environ.get("XSY_V2_PG_USER", "xsy_scm_app")
+CONTAINER = os.environ.get("XSY_PG_CONTAINER", "xsy-scm-postgres-1")
+DB = os.environ.get("XSY_PG_DB", "")
+SCHEMA = os.environ.get("XSY_PG_SCHEMA", "xsy")
+USER = os.environ.get("XSY_PG_USER", "xsy_scm_app")
 
 SEED_LOGIN_NAME = "admin"     # V3 播种的管理员账号，任何情况下都不允许被本脚本触碰
 SEED_EMPLOYEE_ID = 1          # 与上面同一行记录的 employee_id
@@ -196,7 +196,7 @@ def argon2_encode(salt_password: str) -> str:
 def guard() -> None:
     if not DB:
         raise SystemExit(
-            "[e2e-accounts] 必须显式设置 XSY_V2_PG_DB 为后端实际连接的库名。"
+            "[e2e-accounts] 必须显式设置 XSY_PG_DB 为后端实际连接的库名。"
             "写错库时账号照样建成功，但登录只会报「登录名或密码错误」，排查方向会被带偏，因此不接受默认值。"
         )
     if not NAME or (ACTION == "setup" and not PASSWORD):

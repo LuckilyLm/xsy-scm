@@ -16,21 +16,7 @@ import org.springframework.util.ClassUtils;
 public class PreviousClassNameHandler extends DeserializationProblemHandler {
     private static final Map<String, String> ALIASES = aliases();
 
-    /**
-     * 只转换已知旧包下的类型，其他错误继续由Jackson处理。
-     *
-     * @param context
-     *            当前读取上下文，不能为空。
-     * @param baseType
-     *            原数据要求的基础类型，映射后的类型必须与其兼容。
-     * @param previousName
-     *            旧缓存写入的类型全名，未知名称不会被接受。
-     * @param resolver
-     *            Jackson当前类型解析器，不改变其默认规则。
-     * @param failureMessage
-     *            原解析失败说明，未知映射时保留原错误处理。
-     * @return 可用的新类型；无映射、类型不存在或不兼容时返回null。
-     */
+    /** 只映射已知旧包类型，未知名称交给 Jackson 原样报错。 */
     @Override
     public JavaType handleUnknownTypeId(DeserializationContext context, JavaType baseType, String previousName,
         TypeIdResolver resolver, String failureMessage) {

@@ -16,13 +16,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @Configuration
 public class MybatisPlusConfig {
 
-    /**
-     * 分页插件
-     *
-     * <p>
-     * V2 基线使用 PostgreSQL；早期系统配置硬编码 {@code DbType.MYSQL}， 若不改会导致 PostgreSQL 下分页 SQL 生成错误。
-     * </p>
-     */
+    /** 分页插件，PostgreSQL 方言。 */
     @Bean
     public MybatisPlusInterceptor paginationInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();

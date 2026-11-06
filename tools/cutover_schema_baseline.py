@@ -15,7 +15,7 @@ DESCRIPTION = 'SCM module baseline V244'
 
 # 旧V243与最终模块结构清单的唯一默认数据差异；不处理自建模板及历史当时保存的打印内容。
 PRINT_TEMPLATE_PATCH = """
-UPDATE xsy_v2.xsy_print_template t
+UPDATE xsy.xsy_print_template t
 SET model=jsonb_insert(t.model,
     ARRAY['columns',(SELECT (c.column_no-1)::text
       FROM jsonb_array_elements_text(t.model->'columns') WITH ORDINALITY AS c(value,column_no)
@@ -98,21 +98,21 @@ def cutover(connection, expected_database: str | None, apply: bool) -> dict:
     expected = json.loads((ROOT / 'tools/schema_baseline_catalog.json').read_text(encoding='utf-8'))['objects']
     with connection.transaction(), connection.cursor(row_factory=dict_row) as cursor:
         cursor.execute('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE' + ('' if apply else ' READ ONLY'))
-        cursor.execute("SET LOCAL search_path TO xsy_v2, pg_catalog")
+        cursor.execute("SET LOCAL search_path TO xsy, pg_catalog")
         cursor.execute("SET LOCAL lock_timeout TO '5s'")
         cursor.execute('SELECT current_database() AS name, current_schema() AS schema')
         database = cursor.fetchone()['name']
         if apply and database != expected_database:
             raise ValueError('当前数据库名称与--expected-database不符')
-        cursor.execute("SELECT to_regclass('xsy_v2.flyway_schema_history') AS history, "
-                       "to_regclass('xsy_v2.flyway_schema_history_legacy') AS legacy")
+        cursor.execute("SELECT to_regclass('xsy.flyway_schema_history') AS history, "
+                       "to_regclass('xsy.flyway_schema_history_legacy') AS legacy")
         relations = cursor.fetchone()
         if not relations['history']:
             raise ValueError('没有旧迁移历史；空库由Flyway直接按模块安装')
         if apply:
-            cursor.execute('LOCK TABLE xsy_v2.flyway_schema_history IN ACCESS EXCLUSIVE MODE')
+            cursor.execute('LOCK TABLE xsy.flyway_schema_history IN ACCESS EXCLUSIVE MODE')
         cursor.execute('SELECT version,type,description,script,checksum,success '
-                       'FROM xsy_v2.flyway_schema_history ORDER BY installed_rank')
+                       'FROM xsy.flyway_schema_history ORDER BY installed_rank')
         state = history_state(cursor.fetchall(), legacy)
         if state == 'legacy' and relations['legacy']:
             raise ValueError('旧历史备份表已存在，拒绝覆盖')
@@ -120,7 +120,7 @@ def cutover(connection, expected_database: str | None, apply: bool) -> dict:
             raise ValueError('基线标记缺少保留的原迁移历史，拒绝接管')
         if state.startswith('cutover'):
             cursor.execute('SELECT version,type,description,script,checksum,success '
-                           'FROM xsy_v2.flyway_schema_history_legacy ORDER BY installed_rank')
+                           'FROM xsy.flyway_schema_history_legacy ORDER BY installed_rank')
             if history_state(cursor.fetchall(), legacy) != 'legacy':
                 raise ValueError('保留的原迁移历史异常')
         if state.endswith('_upgraded'):
@@ -129,7 +129,7 @@ def cutover(connection, expected_database: str | None, apply: bool) -> dict:
             # 短暂阻止业务写入与DDL，防止目录核对和切换之间结构发生变化；超时整笔回滚。
             tables = sorted(key[6:] for key in expected if key.startswith('table:'))
             cursor.execute(sql.SQL('LOCK TABLE {} IN SHARE ROW EXCLUSIVE MODE').format(
-                sql.SQL(',').join(sql.Identifier('xsy_v2', name) for name in tables)))
+                sql.SQL(',').join(sql.Identifier('xsy', name) for name in tables)))
         cursor.execute(CATALOG_SQL)
         actual = fingerprints(cursor.fetchone()['coalesce'])
         drift = differences(expected, actual)
@@ -141,15 +141,15 @@ def cutover(connection, expected_database: str | None, apply: bool) -> dict:
             return result
         cursor.execute(PRINT_TEMPLATE_PATCH)
         result['builtin_templates_updated'] = cursor.rowcount
-        cursor.execute('ALTER TABLE xsy_v2.flyway_schema_history RENAME TO flyway_schema_history_legacy')
+        cursor.execute('ALTER TABLE xsy.flyway_schema_history RENAME TO flyway_schema_history_legacy')
         # 复制Flyway列形状，不复制原主键/索引名称，避免与保留历史中的同名对象冲突。
-        cursor.execute('CREATE TABLE xsy_v2.flyway_schema_history '
-                       '(LIKE xsy_v2.flyway_schema_history_legacy INCLUDING DEFAULTS INCLUDING CONSTRAINTS)')
-        cursor.execute('ALTER TABLE xsy_v2.flyway_schema_history ADD CONSTRAINT '
+        cursor.execute('CREATE TABLE xsy.flyway_schema_history '
+                       '(LIKE xsy.flyway_schema_history_legacy INCLUDING DEFAULTS INCLUDING CONSTRAINTS)')
+        cursor.execute('ALTER TABLE xsy.flyway_schema_history ADD CONSTRAINT '
                        'flyway_schema_history_module_pk PRIMARY KEY (installed_rank)')
         cursor.execute('CREATE INDEX flyway_schema_history_module_success_idx '
-                       'ON xsy_v2.flyway_schema_history (success)')
-        cursor.execute('INSERT INTO xsy_v2.flyway_schema_history '
+                       'ON xsy.flyway_schema_history (success)')
+        cursor.execute('INSERT INTO xsy.flyway_schema_history '
                        '(installed_rank,version,description,type,script,checksum,installed_by,execution_time,success) '
                        'VALUES (1,%s,%s,%s,%s,NULL,current_user,0,true)',
                        (VERSION, DESCRIPTION, 'BASELINE', '<< Flyway Baseline >>'))

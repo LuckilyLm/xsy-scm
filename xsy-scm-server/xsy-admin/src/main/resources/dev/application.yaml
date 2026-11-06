@@ -10,10 +10,10 @@
 # 而 ${project.name} 是 Maven 内置属性，会被替换成模块 artifactId（xsy-admin），
 # 覆盖掉 YAML 中的 project.name 键。因此日志目录段使用字面量。
 project:
-  name: xsy-scm-v2-admin
+  name: xsy-scm-admin
   # 默认值不写死盘符：原基线硬编码 D:/Browser Download/...，遇到没有 D 盘的机器直接不可用。
-  # XSY_V2_LOG_DIR 存在时优先（部署或本地验证可用绝对路径），否则落到仓库内 .runtime/logs。
-  log-directory: ${XSY_V2_LOG_DIR:../.runtime/logs}/xsy-scm-v2-admin/${spring.profiles.active}
+  # XSY_LOG_DIR 存在时优先（部署或本地验证可用绝对路径），否则落到仓库内 .runtime/logs。
+  log-directory: ${XSY_LOG_DIR:../.runtime/logs}/xsy-scm-admin/${spring.profiles.active}
 
 # 项目端口和url根路径
 # 注意：早期系统配置默认 1024，但本机 Windows 的动态端口范围是 1024-15000
@@ -21,7 +21,7 @@ project:
 # 1024 会与系统服务的临时连接冲突（bind 报 EACCES / Port already in use）。
 # 因此 dev 默认改为动态范围之外的 18080，并保留环境变量覆盖能力。
 server:
-  port: ${XSY_V2_SERVER_PORT:18080}
+  port: ${XSY_SERVER_PORT:18080}
   servlet:
     context-path: /
 

@@ -1,11 +1,23 @@
 package com.xsy.scm.admin.test;
 
+import cn.hutool.crypto.symmetric.SM4;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.Security;
 import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.Set;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.test.context.DynamicPropertyRegistry;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/** 保存模块基线的独立测试库；历史DDL断言不连接执行后续迁移的业务回归库。 */
+
 public final class PgITBaselineDatabase {
     private static String baselineUrl;
 
@@ -44,7 +56,7 @@ public final class PgITBaselineDatabase {
         }
         String target = primary.replace("/" + database, "/" + name);
         Flyway flyway = Flyway.configure().dataSource(target, PgITDatabase.user(), PgITDatabase.password())
-            .schemas("xsy_v2").defaultSchema("xsy_v2").cleanDisabled(true).placeholderReplacement(false)
+            .schemas("xsy").defaultSchema("xsy").cleanDisabled(true).placeholderReplacement(false)
             .locations("classpath:db/migration/modules").target("1000.24").load();
         flyway.migrate();
         flyway.validate();
@@ -54,7 +66,9 @@ public final class PgITBaselineDatabase {
 
     /** @param registry 非空Spring测试属性注册器；只切换历史DDL用例的数据源和迁移目标。 */
     public static void register(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", PgITBaselineDatabase::url);
+        // Spring 数据源配置使用 P6Spy 驱动，URL 必须保留 jdbc:p6spy: 前缀；
+        // Flyway 与裸 JDBC 连接则使用剥掉前缀的 url()。
+        registry.add("spring.datasource.url", () -> "jdbc:p6spy:" + url().substring("jdbc:".length()));
         registry.add("spring.flyway.target", () -> "1000.24");
     }
 }

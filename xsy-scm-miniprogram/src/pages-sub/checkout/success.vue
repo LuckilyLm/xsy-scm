@@ -22,122 +22,122 @@
 </template>
 
 <script setup>
-import {computed, ref} from 'vue';
-import {COLOR_SUCCESS} from '@/constants/theme-color-const';
-import {useMallTheme} from '@/composables/use-mall-theme';
-import {displayMoney} from '@/utils/money-display';
+  import { computed, ref } from 'vue';
+  import { COLOR_SUCCESS } from '@/constants/theme-color-const';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+  import { displayMoney } from '@/utils/money-display';
 
-import {onLoad} from '@dcloudio/uni-app';
+  import { onLoad } from '@dcloudio/uni-app';
 
-const {themeStyle} = useMallTheme();
+  const { themeStyle } = useMallTheme();
 
-const orderId = ref('');
-const orderNo = ref('');
-const amount = ref('');
-const discount = ref('');
-const payable = ref('');
-const hasDiscount = computed(() => !!discount.value && Number(discount.value) > 0 && !!payable.value);
+  const orderId = ref('');
+  const orderNo = ref('');
+  const amount = ref('');
+  const discount = ref('');
+  const payable = ref('');
+  const hasDiscount = computed(() => !!discount.value && Number(discount.value) > 0 && !!payable.value);
 
-onLoad((options) => {
-  orderId.value = options?.orderId || '';
-  orderNo.value = options?.orderNo ? decodeURIComponent(options.orderNo) : '';
-  amount.value = options?.amount || '';
-  discount.value = options?.discount || '';
-  payable.value = options?.payable || '';
-});
+  onLoad((options) => {
+    orderId.value = options?.orderId || '';
+    orderNo.value = options?.orderNo ? decodeURIComponent(options.orderNo) : '';
+    amount.value = options?.amount || '';
+    discount.value = options?.discount || '';
+    payable.value = options?.payable || '';
+  });
 
-function goOrders() {
-  if (orderId.value) {
-    uni.navigateTo({url: `/pages-sub/order/detail?orderId=${orderId.value}`});
-    return;
+  function goOrders() {
+    if (orderId.value) {
+      uni.navigateTo({ url: `/pages-sub/order/detail?orderId=${orderId.value}` });
+      return;
+    }
+    uni.switchTab({ url: '/pages/order/index' });
   }
-  uni.switchTab({url: '/pages/order/index'});
-}
 
-function goHome() {
-  uni.switchTab({url: '/pages/home/index'});
-}
+  function goHome() {
+    uni.switchTab({ url: '/pages/home/index' });
+  }
 </script>
 
 <style lang="scss" scoped>
-.done {
-  @include flex-center;
-  flex-direction: column;
-  @include viewport-min-height;
-  padding: 0 $space-6;
-  background-color: $color-bg-page;
-}
-.done__icon {
-  width: 160rpx;
-  height: 160rpx;
-  border-radius: 50%;
-  background-color: $color-success-light;
-  @include flex-center;
-}
-.done__title {
-  margin-top: $space-5;
-  font-size: $font-size-xl;
-  font-weight: $font-weight-bold;
-  color: $color-text-primary;
-}
-.done__no {
-  margin-top: $space-2;
-  font-size: $font-size-sm;
-  color: $color-text-secondary;
-}
-.done__amount {
-  margin-top: $space-1;
-  font-size: $font-size-lg;
-  font-weight: $font-weight-bold;
-  color: $color-danger;
-}
-.done__discount {
-  margin-top: $space-1;
-  font-size: $font-size-sm;
-  color: $color-text-secondary;
-}
-.done__payable {
-  margin-top: $space-1;
-  font-size: $font-size-base;
-  font-weight: $font-weight-bold;
-  color: $color-danger;
-}
-.done__final {
-  margin-top: $space-3;
-  font-size: $font-size-sm;
-  color: $color-text-primary;
-}
-.done__discount-tip {
-  margin-top: $space-1;
-  font-size: $font-size-xs;
-  color: $color-text-tertiary;
-  text-align: center;
-}
-.done__tip {
-  margin-top: $space-3;
-  font-size: $font-size-xs;
-  color: $color-text-tertiary;
-  text-align: center;
-}
-.done__actions {
-  @include flex-between;
-  width: 100%;
-  margin-top: $space-8;
-}
-.done__btn {
-  flex: 1;
-  height: 84rpx;
-  @include flex-center;
-  border-radius: $radius-pill;
-  font-size: $font-size-base;
-}
-.done__btn--ghost {
-  margin-right: $space-3;
-  border: 1px solid $color-border;
-  color: $color-text-secondary;
-}
-.done__btn--primary {
-  background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
-  color: white;
-}
+  .done {
+    @include flex-center;
+    flex-direction: column;
+    @include viewport-min-height;
+    padding: 0 $space-6;
+    background-color: $color-bg-page;
+  }
+  .done__icon {
+    width: 160rpx;
+    height: 160rpx;
+    border-radius: 50%;
+    background-color: $color-success-light;
+    @include flex-center;
+  }
+  .done__title {
+    margin-top: $space-5;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+  }
+  .done__no {
+    margin-top: $space-2;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+  .done__amount {
+    margin-top: $space-1;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-danger;
+  }
+  .done__discount {
+    margin-top: $space-1;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+  .done__payable {
+    margin-top: $space-1;
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+    color: $color-danger;
+  }
+  .done__final {
+    margin-top: $space-3;
+    font-size: $font-size-sm;
+    color: $color-text-primary;
+  }
+  .done__discount-tip {
+    margin-top: $space-1;
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+    text-align: center;
+  }
+  .done__tip {
+    margin-top: $space-3;
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+    text-align: center;
+  }
+  .done__actions {
+    @include flex-between;
+    width: 100%;
+    margin-top: $space-8;
+  }
+  .done__btn {
+    flex: 1;
+    height: 84rpx;
+    @include flex-center;
+    border-radius: $radius-pill;
+    font-size: $font-size-base;
+  }
+  .done__btn--ghost {
+    margin-right: $space-3;
+    border: 1px solid $color-border;
+    color: $color-text-secondary;
+  }
+  .done__btn--primary {
+    background: var(--mall-action-gradient, var(--mall-primary, #16a34a));
+    color: white;
+  }
 </style>

@@ -1,7 +1,10 @@
 package com.xsy.scm.admin.module.system.support;
 
+import com.xsy.scm.base.module.support.file.permission.FilePermission;
+
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.trace.permission.TracePermission;
+import com.xsy.scm.product.permission.ProductPermission;
 import com.xsy.scm.base.common.domain.RequestUser;
 import com.xsy.scm.base.common.enumeration.UserTypeEnum;
 import com.xsy.scm.admin.module.system.login.domain.RequestEmployee;
@@ -33,11 +36,9 @@ public class AdminFileAccessIdentity implements FileAccessIdentity {
         if (Boolean.TRUE.equals(employee.getAdministratorFlag())) {
             return true;
         }
-        // Sa-Token 上下文只在真实请求线程里存在；异步导出、XsyJob 线程与 IT 里直接调
-        // StpUtil 会抛「SaTokenContext 未初始化」。这里按 fail-closed 处理而不是让它冒泡：
-        // 拿不到权限就只能走「非超管」分支，静默放行才是问题。
+        // 异步线程里没有 Sa-Token 上下文，按无权限处理，不能静默放行。
         try {
-            return StpUtil.hasPermission("support:file:query");
+            return StpUtil.hasPermission(FilePermission.QUERY);
         } catch (Exception e) {
             return false;
         }
@@ -51,7 +52,7 @@ public class AdminFileAccessIdentity implements FileAccessIdentity {
         return switch (bizType) {
             // 商品图沿用商品查看权：有商品可见性就等于能看它的图片，不引入第三种权限模型。
             // 同时要求 SPU 本身还活着 —— 删除商品不回收关系行，只看权限会留下长期可读的孤儿授权。
-            case PRODUCT -> StpUtil.hasPermission("scm:product:query") && visibilityDao.countLiveSpu(bizId) > 0;
+            case PRODUCT -> StpUtil.hasPermission(ProductPermission.QUERY) && visibilityDao.countLiveSpu(bizId) > 0;
             // 公告按既有可见范围判定（全部可见或员工/部门命中），不比公告列表更宽。
             case NOTICE -> visibilityDao.countVisibleNotice(bizId, user.getUserId(),
                 ((RequestEmployee) user).getDepartmentId()) > 0;
@@ -67,10 +68,10 @@ public class AdminFileAccessIdentity implements FileAccessIdentity {
             // 商品资质随商品查看权：能看这个商品，就能看它的资质；同样要求 SPU 还活着，
             // 否则已删商品的资质会对全体有商品查看权的人长期可读。
             case PRODUCT_QUALIFICATION ->
-                StpUtil.hasPermission("scm:product:query") && visibilityDao.countLiveSpu(bizId) > 0;
+                StpUtil.hasPermission(ProductPermission.QUERY) && visibilityDao.countLiveSpu(bizId) > 0;
             // 批次检测报告随包装码查看权：批次在召回与追溯里出现的地方都能读到报告。
             case LOT_INSPECTION ->
-                StpUtil.hasPermission("scm:inventory:unit:query") && visibilityDao.countTraceLot(bizId) > 0;
+                StpUtil.hasPermission(TracePermission.UNIT_QUERY) && visibilityDao.countTraceLot(bizId) > 0;
             case TRACE_INSPECTION_REPORT ->
                 (StpUtil.hasPermission(TracePermission.PHOTO_QUERY) && visibilityDao.countInspectionPhoto(bizId) > 0)
                     || (StpUtil.hasPermission(TracePermission.UNIT_QUERY)

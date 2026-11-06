@@ -1,5 +1,5 @@
 -- 只更新系统自带任务的执行类名称，保留任务编号、时间、启停状态和业务配置。
-UPDATE xsy_v2.t_smart_job AS job
+UPDATE xsy.t_smart_job AS job
 SET job_class = names.current_name
 FROM (VALUES
     ('net.lab1024.sa.base.module.support.job.sample.SmartJobSample1',

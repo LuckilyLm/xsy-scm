@@ -1,11 +1,24 @@
 package com.xsy.scm.admin.test;
 
+import cn.hutool.crypto.symmetric.SM4;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.security.Security;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.Set;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationVersion;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/** 从固定Git对象读取仅供重新执行测试的旧SQL，不再将退役迁移打包进应用。 */
+
 public final class LegacyMigrationSql {
-
     private static final String REVISION = "2940c3b5f08781a6833804ecede43c50a29afb1d";
 
     private LegacyMigrationSql() {

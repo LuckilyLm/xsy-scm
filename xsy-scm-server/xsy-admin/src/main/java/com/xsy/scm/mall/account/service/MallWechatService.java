@@ -44,7 +44,7 @@ public class MallWechatService {
             .requestFactory(new BufferingClientHttpRequestFactory(factory)).build();
     }
 
-    MallWechatService(RedisService redis, String appId, String appSecret, RestClient wechatClient) {
+    public MallWechatService(RedisService redis, String appId, String appSecret, RestClient wechatClient) {
         this.redis = redis;
         this.appId = appId;
         this.appSecret = appSecret;

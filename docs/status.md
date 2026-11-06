@@ -109,12 +109,14 @@
 
 ## 测试与验证入口
 
+每个业务模块只有一个测试类（`<模块>/<模块名>Test.java`），用例以内嵌类分组。
+
 | 范围 | 文件或入口 |
 | --- | --- |
-| 订单明细与金额 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/order/OrderRulesTest.java`、`OrderLockPgIT.java` |
-| 采购补价重复提交 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/purchase/service/PurchasePriceReplayTest.java` |
-| 分拣版本与多商品 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/sorting/SortingTaskPgIT.java` |
-| 财务过账防重复处理 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/finance/FinancePostingIT.java` |
+| 订单明细与金额 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/order/OrderTest.java` |
+| 采购补价重复提交 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/purchase/PurchaseTest.java` |
+| 分拣版本与多商品 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/sorting/SortingTest.java` |
+| 财务过账防重复处理 | `xsy-scm-server/xsy-admin/src/test/java/com/xsy/scm/finance/FinanceTest.java` |
 | 后台表单与分页 | `xsy-scm-web/test/order.test.mjs`、`test/local-table.test.mjs`、`e2e/` |
 | 小程序与秤端 | 各模块测试目录及 README 中的验证入口 |
 | 统一验证与结果产物 | [tools/README.md](../tools/README.md) |

@@ -579,7 +579,7 @@ public class PurchaseReceiptService {
     /**
      * 采购入库必须最后获取库存余额锁，并按仓库 ID、商品规格 ID 升序锁定，避免两个收货事务相互等待。
      */
-    static Comparator<PurchaseInventoryContract.InboundFact> inboundLockOrder() {
+    public static Comparator<PurchaseInventoryContract.InboundFact> inboundLockOrder() {
         return Comparator.comparing(PurchaseInventoryContract.InboundFact::warehouseId)
             .thenComparing(PurchaseInventoryContract.InboundFact::skuId);
     }

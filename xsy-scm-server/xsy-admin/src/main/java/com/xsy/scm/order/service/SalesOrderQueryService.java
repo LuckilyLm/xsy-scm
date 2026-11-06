@@ -260,12 +260,12 @@ public class SalesOrderQueryService {
         }).toList());
     }
 
-    static List<Long> operatorIds(List<OrderOperationLogEntity> logs, String prefix) {
+    public static List<Long> operatorIds(List<OrderOperationLogEntity> logs, String prefix) {
         return logs.stream().map(OrderOperationLogEntity::getOperator).map(operator -> operatorId(operator, prefix))
             .filter(java.util.Objects::nonNull).distinct().toList();
     }
 
-    static String operatorName(String operator, Map<Long, String> mallAccountNames,
+    public static String operatorName(String operator, Map<Long, String> mallAccountNames,
         UnaryOperator<String> employeeDisplay) {
         if (operator == null) {
             return null;

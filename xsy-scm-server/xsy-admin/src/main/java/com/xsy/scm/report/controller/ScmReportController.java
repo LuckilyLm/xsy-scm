@@ -23,6 +23,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmSettleModeEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.validation.ScmServiceValidationSuspension;
 import com.xsy.scm.order.constant.ScmOrderPriceSourceEnum;
 import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.report.constant.ReportErrorCode;
@@ -658,7 +659,8 @@ public class ScmReportController {
     private <T> List<T> exportRows(PageParam form, Supplier<PageResult<T>> query) {
         form.setPageNum(1L);
         form.setPageSize(ScmReportExportGuard.PROBE_PAGE_SIZE);
-        List<T> rows = query.get().getList();
+        // 探针分页必然超过日常 500 行上限，仅这一处内部调用跳过入口校验。
+        List<T> rows = ScmServiceValidationSuspension.run(() -> query.get().getList());
         if (rows != null && rows.size() > ScmReportExportGuard.EXPORT_MAX_ROWS) {
             throw new ScmBusinessException(ReportErrorCode.REPORT_EXPORT_ROW_LIMIT_EXCEEDED);
         }

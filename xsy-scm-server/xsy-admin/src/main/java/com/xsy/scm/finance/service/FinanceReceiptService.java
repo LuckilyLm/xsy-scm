@@ -70,20 +70,7 @@ public class FinanceReceiptService {
     private final FinanceReceivableDao financeReceivableDao;
     private final FinanceWriteOffService financeWriteOffService;
 
-    /**
-     * 登记一笔 {@code NORMAL} 收款。
-     *
-     * <p>
-     * 整条链必须同事务：防重复处理 claim、收款记录、操作日志、防重复处理 complete 要么一起成，要么一起不成。留下「收款已保存、日志没落」 或「claim
-     * 已占、结果为空」都是不可接受的半成品——前者是记录链断裂，后者会让同一 key 的后续重放读到空结果。
-     *
-     * <p>
-     * 范围判定在读到客户之后立刻做，且拒绝方式与「客户不存在」共用 {@link ScmDataScopeException}（对外 30005）：
-     * 能分辨「存在但无权」就等于把主键探测变成了一个可用信号，因此有权与无权的客户查询返回相同结果。
-     *
-     * @param idempotencyKey
-     *            请求级防重复请求编号；同键同内容重放首次结果，同键异内容按既有语义报冲突
-     */
+    /** 登记一笔 NORMAL 收款；claim、收款、日志、complete 同事务，重放首次结果。 */
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptVO add(FinanceReceiptAddForm form, String idempotencyKey) {
         FinanceCustomerFactDto customer = requireAuthorizedCustomer(form.getCustomerId());

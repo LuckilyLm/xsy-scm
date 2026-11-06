@@ -1,19 +1,72 @@
 package com.xsy.scm.common;
 
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xsy.scm.admin.test.PgITBaselineDatabase;
+import com.xsy.scm.admin.test.PgITDatabase;
+import com.xsy.scm.admin.test.PgITMigrationHistory;
+import com.xsy.scm.base.config.MybatisPlusConfig;
+import com.xsy.scm.common.dao.AppendOnlyMapper;
+import com.xsy.scm.common.excel.ScmExcel;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.export.ScmExportColumnSelection.Column;
+import com.xsy.scm.common.export.ScmExportColumnSelection;
+import com.xsy.scm.common.filter.ScmAdvancedFilterCatalog.Condition;
+import com.xsy.scm.common.filter.ScmAdvancedFilterCatalog.Field;
+import com.xsy.scm.common.filter.ScmAdvancedFilterCatalog;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.validation.ScmServiceValidationAspect;
+import com.xsy.scm.customer.domain.form.CustomerAddForm;
+import com.xsy.scm.customer.permission.CustomerPermission;
+import com.xsy.scm.product.domain.form.ProductSpuQueryForm;
+import com.xsy.scm.product.support.ProductAdvancedFilters;
+import com.xsy.scm.report.domain.form.ScmPurchaseReportQueryForm;
+import com.xsy.scm.report.domain.form.ScmSalesReportQueryForm;
+import com.xsy.scm.report.support.ScmReportAdvancedFilters;
+import com.xsy.scm.supplier.permission.SupplierPermission;
+import jakarta.validation.Validation;
+import java.io.ByteArrayInputStream;
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
+import javax.xml.parsers.DocumentBuilderFactory;
+import lombok.Data;
+import org.apache.ibatis.mapping.Environment;
+import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.postgresql.ds.PGSimpleDataSource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.mock.web.MockHttpServletResponse;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-/**
- * 集成测试夹具的展示名称。
- *
- * <p>夹具造出来的名字会出现在页面、导出文件和审计日志里（例如「谁改了哪张单」），
- * 用随机十六进制串拼出来的名字看起来像密钥而不是数据，截图和演示时无法使用。
- * 这里统一给成真实业务里会出现的名字：品牌 + 门店号。
- *
- * <p>唯一性靠递增序号，同一 JVM 内不会重复。跨进程并发跑同一套用例仍可能撞名，
- * 但那种场景本来就应该跑在独立 schema 上。
- */
+
 final class PgITFixtureNames {
-
     /**
      * 品牌名池：覆盖生鲜供应链里常见的自营 / 合作品牌，避免所有夹具都叫同一个名字。
      */

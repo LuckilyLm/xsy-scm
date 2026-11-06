@@ -4,11 +4,11 @@
 
 ## 项目范围
 
-- V2 正式项目位于 `xsy-scm-server/`、`xsy-scm-web/` 与 `xsy-scm-miniprogram/`；管理后台采用 Vue 3 + TypeScript，微信小程序采用 uni-app + Vue 3。
+- 正式项目位于 `xsy-scm-server/`、`xsy-scm-web/` 与 `xsy-scm-miniprogram/`；管理后台采用 Vue 3 + TypeScript，微信小程序采用 uni-app + Vue 3。
 - 系统管理与公共模块提供登录、认证、用户、员工、部门、角色、菜单、权限、数据权限、日志、字典、文件、统一异常和后台布局；供应链业务复用这些能力。
 - 后端模块为xsy-admin和xsy-base，所有正式Java包以com.xsy.scm为根，系统管理放在admin，通用能力放在base，其余业务目录保持清楚的职责边界。
 - `xsy-scm-miniprogram/` 是给用户使用的微信小程序，只承载用户端身份与页面；后续员工端使用独立工作区，不与小程序权限和路由混用。
-- `xsy-scale-agent/` 是独立的 Windows 秤端与触屏工作台源码；正式分拣、库存与财务记录仍以 V2 服务端为准。平台设备接口 `/scm/device/scale/v1`（V171/V172）已接入；真实电子秤、打印机与现场标定仍须单独联调验收，不能将本地演练结果当作平台验收。
+- `xsy-scale-agent/` 是独立的 Windows 秤端与触屏工作台源码；正式分拣、库存与财务记录仍以服务端为准。平台设备接口 `/scm/device/scale/v1`（V171/V172）已接入；真实电子秤、打印机与现场标定仍须单独联调验收，不能将本地演练结果当作平台验收。
 - 旧 Taro/React 小程序已从工作树移除，历史代码仅由 Git 追溯。不要迁移旧 `auth` / `system` 实现，也不要机械复制旧代码或把 React 翻译成 Vue。
 - 业务主线是客户与商品 → 销售订单 → 采购与收货 → 库存 → 分拣 → 配送 → 财务。当前交付状态和待办以 [项目状态](docs/status.md) 为准。
 
@@ -63,6 +63,7 @@
 - 依赖字段名称应表达完整业务语义；禁止 wildcard import 和重复包装 JDK / Spring / Apache 工具类。
 - Java 格式统一由 `mvn -pl xsy-admin spotless:apply` 维护，配置为 `tools/quality/eclipse-formatter.xml`（4 空格、120 列、续行 4 空格、LF）；不要另建一套格式或手工规避 `spotless:check`。
 - 注释解释当前代码中无法直接看出的约束，不记录代码是怎么被开发出来的；能从类名、方法名、参数名、类型和代码流程直接读出来的信息，不要再用 Javadoc 翻译一遍（如字段名翻译式 `@param`）。不写阶段编号、测试统计、提交过程或过期计划；跨域长期规则放入 `docs/decisions.md`，源码只保留必要说明。
+- 每个业务模块只有一个测试类 `<模块>/<模块名>Test.java`，同类用例按功能用 `@Nested` 分组；共享基类和测试工具类保留在 `common` 或 `admin/test`。
 
 ## 业务不变量
 

@@ -4,8 +4,8 @@
  * 商品卡片与详情页都调它，避免两处各写一份「加购 + 提示」而出现行为漂移。
  * 不做本地乐观写入：购物车以服务端返回的整车商品信息为准（跨端一致）。
  */
-import {mallCartApi} from '@/api/mall/cart-api';
-import {xsySentry} from '@/lib/xsy-sentry';
+import { mallCartApi } from '@/api/mall/cart-api';
+import { xsySentry } from '@/lib/xsy-sentry';
 
 export function useMallCart() {
   /**
@@ -24,14 +24,14 @@ export function useMallCart() {
         replaceQuantity,
       });
       const count = response.data?.availableCount ?? 0;
-      uni.showToast({title: replaceQuantity ? '购物车数量已更新' : count ? `已加入购物车（可结算 ${count} 项）` : '已加入购物车', icon: 'none'});
+      uni.showToast({ title: replaceQuantity ? '购物车数量已更新' : count ? `已加入购物车（可结算 ${count} 项）` : '已加入购物车', icon: 'none' });
       return true;
     } catch (error) {
       xsySentry.captureError(error);
-      uni.showToast({title: error?.message || '加入购物车失败', icon: 'none'});
+      uni.showToast({ title: error?.message || '加入购物车失败', icon: 'none' });
       return false;
     }
   }
 
-  return {addToCart};
+  return { addToCart };
 }

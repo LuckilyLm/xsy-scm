@@ -88,9 +88,11 @@ class ScmPermissionContractPgIT extends ScmW5PgITBase {
                 .map(String::trim)
                 .filter(value -> !value.isEmpty())
                 .collect(Collectors.toSet());
-        assertThat(publishedValues)
-                .as("不得在测试中自动补种权限；每个真实端点权限必须由 migration 发布到 t_menu.api_perms")
-                .containsAll(usedValues);
+        Set<String> unpublishedValues = new HashSet<>(usedValues);
+        unpublishedValues.removeAll(publishedValues);
+        assertThat(unpublishedValues)
+                .as("不得在测试中自动补种权限；未发布的端点权限：%s", unpublishedValues)
+                .isEmpty();
     }
 
     @Test
@@ -110,6 +112,10 @@ class ScmPermissionContractPgIT extends ScmW5PgITBase {
         Set<Class<?>> controllers = scanClasses(new AnnotationTypeFilter(Controller.class));
         int endpointCount = 0;
         for (Class<?> controller : controllers) {
+            // admin.module 是底座自带的后台模板，权限由底座菜单种子维护，不属于 SCM 领域目录。
+            if (controller.getName().startsWith("com.xsy.scm.admin.module")) {
+                continue;
+            }
             SaCheckPermission classPermission = AnnotatedElementUtils.findMergedAnnotation(
                     controller, SaCheckPermission.class);
             for (Method method : controller.getMethods()) {

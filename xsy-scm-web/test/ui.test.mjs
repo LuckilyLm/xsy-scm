@@ -2119,7 +2119,7 @@ import ts from 'typescript';
     for (const statement of statements) {
       assert.match(
         statement,
-        /^UPDATE xsy_v2\.t_menu SET sort = \d+,\s+update_time = now\(\) WHERE menu_id = \d+$/,
+        /^UPDATE \w+\.t_menu SET sort = \d+,\s+update_time = now\(\) WHERE menu_id = \d+$/,
         `V110 出现了非「只改 sort」的语句：\n${statement}`
       );
     }

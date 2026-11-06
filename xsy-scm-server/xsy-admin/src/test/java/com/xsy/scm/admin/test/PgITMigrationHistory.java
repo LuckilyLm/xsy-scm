@@ -1,17 +1,24 @@
 package com.xsy.scm.admin.test;
 
-import org.flywaydb.core.api.MigrationVersion;
-
+import cn.hutool.crypto.symmetric.SM4;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.Security;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
-
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationVersion;
+import org.springframework.test.context.DynamicPropertyRegistry;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** 同时识别模块初始化和保数据切换后的历史覆盖，结构仍由各用例独立断言。 */
-public final class PgITMigrationHistory {
 
+public final class PgITMigrationHistory {
     private PgITMigrationHistory() {
     }
 
@@ -38,7 +45,7 @@ public final class PgITMigrationHistory {
         }
         if (cutover) {
             try (var result = statement.executeQuery(
-                    "SELECT to_regclass('xsy_v2.flyway_schema_history_legacy') IS NOT NULL")) {
+                    "SELECT to_regclass('xsy.flyway_schema_history_legacy') IS NOT NULL")) {
                 result.next();
                 assertThat(result.getBoolean(1)).as("切换基线必须保留原历史表").isTrue();
             }

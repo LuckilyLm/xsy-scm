@@ -16,7 +16,7 @@ public class ScmOperatorNameSerializer extends JsonSerializer<String> {
     private static volatile UnaryOperator<String> resolver = UnaryOperator.identity();
 
     /** 由 {@code ScmOperatorNameResolver} 在启动时调用。 */
-    static void bind(UnaryOperator<String> operatorNameResolver) {
+    public static void bind(UnaryOperator<String> operatorNameResolver) {
         resolver = operatorNameResolver;
     }
 
@@ -26,7 +26,7 @@ public class ScmOperatorNameSerializer extends JsonSerializer<String> {
      * <p>
      * 给 {@link ScmOperatorSnapshotSerializer} 复用：审计内容里的操作人藏在 Map 的键上，走不了字段注解。
      */
-    static String resolve(String value) {
+    public static String resolve(String value) {
         return value == null ? null : resolver.apply(value);
     }
 

@@ -1,5 +1,7 @@
 package com.xsy.scm.admin.module.system.support;
 
+import com.xsy.scm.base.module.support.file.permission.FilePermission;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +31,7 @@ public class AdminFileController extends SupportBaseController {
 
     @Operation(summary = "分页查询")
     @PostMapping("/file/queryPage")
-    @SaCheckPermission("support:file:query")
+    @SaCheckPermission(FilePermission.QUERY)
     public ResponseDTO<PageResult<FileVO>> queryPage(@RequestBody @Valid FileQueryForm queryForm) {
         return ResponseDTO.ok(fileService.queryPage(queryForm));
     }

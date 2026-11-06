@@ -19,7 +19,7 @@
       "file": "V1000.01__system.sql",
       "module": "system",
       "version": "1000.1",
-      "sha256": "99799fcb2ef43f5190d0063c4d490e969b27fc0aa9377af189dda8a278c8d2e4",
+      "sha256": "f2d7ded214497b1217a0fdec927131a62043827f106e39b2fed923ea29f21f28",
       "tables": [
         "t_change_log",
         "t_config",
@@ -77,7 +77,7 @@
       "file": "V1000.02__common.sql",
       "module": "common",
       "version": "1000.2",
-      "sha256": "0b5b7383d6c7f5a07c8526e7b2454cae7d9128f5ddbe5ed15c324d4785a7a414",
+      "sha256": "25940bd6869607efcd9d334c568284118ffecc6d0d156a6e40cc10ec866cb87a",
       "tables": [
         "xsy_idempotency_record",
         "xsy_region",
@@ -96,7 +96,7 @@
       "file": "V1000.03__businesscategory.sql",
       "module": "businesscategory",
       "version": "1000.3",
-      "sha256": "61b417904eea6d72515aa8d1021b9ee1b50c3512adaa03c1c5b683af71bfe259",
+      "sha256": "1ac4c71713e633ae1d84b09e854444668434f99ff6666e1b8a7ec060ef8b25fc",
       "tables": [
         "xsy_business_category"
       ],
@@ -112,7 +112,7 @@
       "file": "V1000.04__warehouse.sql",
       "module": "warehouse",
       "version": "1000.4",
-      "sha256": "9461daa917adb8d355dfd8324bcf9add362a86084c2d076b66bbfafac62fe95b",
+      "sha256": "c33021849de73284ddfcabe9a8a61f11254f68387073dea7991fbcb4c101b609",
       "tables": [
         "xsy_employee_warehouse_scope",
         "xsy_warehouse"
@@ -131,7 +131,7 @@
       "file": "V1000.05__product.sql",
       "module": "product",
       "version": "1000.5",
-      "sha256": "f5319eeb42becc68d4f2eb3b4c99e87b0333f114f62fbde600bc5e516f4ddce3",
+      "sha256": "8ab8923e8b88391d79d3153b15971fc7bda865a755fbf0e60ccac74bbec15df9",
       "tables": [
         "xsy_product_bundle_component",
         "xsy_product_category",
@@ -155,7 +155,7 @@
       "file": "V1000.06__customer.sql",
       "module": "customer",
       "version": "1000.6",
-      "sha256": "4d198846f18dec6647b8c86ef431b05c2eaed8b95d976fa37c6b325d72f8a0ff",
+      "sha256": "e6bc0e8ff141278011857fafa54ef92cbfefc7ee0757bb7887186e35d670c0d9",
       "tables": [
         "xsy_customer",
         "xsy_customer_group",
@@ -176,7 +176,7 @@
       "file": "V1000.07__supplier.sql",
       "module": "supplier",
       "version": "1000.7",
-      "sha256": "bbc29c085b8f55b28c9ee4704d8194a85995a38bf48e92719d425e5c4964a42d",
+      "sha256": "c5c3173fe67882f9d40b85cf5cc58e01da735b7145bc55de07a5e8c5bb61f05d",
       "tables": [
         "xsy_supplier",
         "xsy_supplier_sku"
@@ -193,7 +193,7 @@
       "file": "V1000.08__pricing.sql",
       "module": "pricing",
       "version": "1000.8",
-      "sha256": "a0e3f774c71685ff3e4f66a5ed97521e4e69d42788191b02d42fa4b845f85307",
+      "sha256": "2bc32ca2f4afb071de5db8420875ac4966617a926663e7e7792fd729b6195a42",
       "tables": [
         "xsy_customer_agreement_price",
         "xsy_customer_group_price",
@@ -215,7 +215,7 @@
       "file": "V1000.09__balance.sql",
       "module": "balance",
       "version": "1000.9",
-      "sha256": "b1e8849c142d524a72be3fabfe794ad7d72d8740f2c9d5472a3498d51a000bd8",
+      "sha256": "81dba595cbc25b0511a90b9e5a7977716906a788938ca94e00157e60685010c3",
       "tables": [
         "xsy_customer_balance_account",
         "xsy_customer_balance_movement",
@@ -233,7 +233,7 @@
       "file": "V1000.10__promotion.sql",
       "module": "promotion",
       "version": "1000.10",
-      "sha256": "1af54532742ad1af2c5db224de0c89521fcd6e58d4e6fadfea9fcf5a6e15a3f6",
+      "sha256": "a544d301d148d53495001a0dcb1edd830986700f7c0e6805086d309dc89fb8f9",
       "tables": [
         "xsy_customer_promotion_code",
         "xsy_customer_promotion_scan",
@@ -256,7 +256,7 @@
       "file": "V1000.11__order.sql",
       "module": "order",
       "version": "1000.11",
-      "sha256": "db4079cf7fbd27d2a624443eb42fdcda96c20bd21e27ac3f98aa3d1772499ac5",
+      "sha256": "bd4b5ff1bebc955df23a015f5f742fd513b3f5c6a463b68d1bdecebee8d69609",
       "tables": [
         "xsy_order_address_snapshot",
         "xsy_order_bundle_component",
@@ -288,7 +288,7 @@
       "file": "V1000.12__purchase.sql",
       "module": "purchase",
       "version": "1000.12",
-      "sha256": "dad315d233d6cf30083f8070c26f733302a13fd168a6ea5e8f38dce12dd858e1",
+      "sha256": "7b8d87fa2a1833e21b126927fae55de858f0dbcf5976d10f0cf26a64b8f74497",
       "tables": [
         "xsy_purchase_account",
         "xsy_purchase_account_item",
@@ -325,7 +325,7 @@
       "file": "V1000.13__inventory.sql",
       "module": "inventory",
       "version": "1000.13",
-      "sha256": "ee7257e5235bb94398d4b8995f78f40f9166dbc56a80f466a1d8da405f97fa32",
+      "sha256": "0902d9b7148577e69b8b24ebba317b5bdc398a470814776d4be7c98ab1a8344f",
       "tables": [
         "xsy_inventory_balance",
         "xsy_inventory_conversion",
@@ -359,7 +359,7 @@
       "file": "V1000.14__sorting.sql",
       "module": "sorting",
       "version": "1000.14",
-      "sha256": "435fa2bbd31cb7d2fb8f353e3fe41d0611dd078812cc29c276272e2bc2e26787",
+      "sha256": "3a717020080eb3443f2f1b6c0420027368825fc1fcbc42ba689686a25e661e10",
       "tables": [
         "xsy_sorting_part_record",
         "xsy_sorting_scale_event",
@@ -378,7 +378,7 @@
       "file": "V1000.15__delivery.sql",
       "module": "delivery",
       "version": "1000.15",
-      "sha256": "8ac8f9f0317bcbe921d00df2b407b682a432599a33e58cfd1d9a25c3f973b447",
+      "sha256": "97cdebbb4f522c736ee2bcdf5418cb0a33b2b45ef433e8fb2d4d3864de80a258",
       "tables": [
         "xsy_delivery_driver",
         "xsy_delivery_gps_event",
@@ -402,7 +402,7 @@
       "file": "V1000.16__finance.sql",
       "module": "finance",
       "version": "1000.16",
-      "sha256": "18c6cf59f7303265ee070f2f909dea0854034a44ade5adc5cf16aed7411a33dd",
+      "sha256": "da7b6423ac1608f50de5f4a81afcd2166901999a171b773cb68ae8ac214c15b5",
       "tables": [
         "xsy_customer_statement",
         "xsy_customer_statement_item",
@@ -439,7 +439,7 @@
       "file": "V1000.17__payment.sql",
       "module": "payment",
       "version": "1000.17",
-      "sha256": "014751dcc07a716a8ff5f2bad1955f9094a463025de4efd0d4dbb2de0664dab1",
+      "sha256": "e615a21108ef4f15826bb2468e5c89ce7c62a74c7144ba6a83d264c58f380473",
       "tables": [
         "xsy_payment_callback_event",
         "xsy_payment_intent",
@@ -465,7 +465,7 @@
       "file": "V1000.18__mall.sql",
       "module": "mall",
       "version": "1000.18",
-      "sha256": "cc327cd285b18e94cc2be45cee6214cd4fad11884606e56a43c7dea94e56322c",
+      "sha256": "f26a4e42733aba94b86ecc4ba6b234a564a3e0f334b9d0df1552f5a7cca312af",
       "tables": [
         "xsy_mall_cart_item",
         "xsy_mall_customer_account",
@@ -493,7 +493,7 @@
       "file": "V1000.19__device.sql",
       "module": "device",
       "version": "1000.19",
-      "sha256": "7f6efb7594fd6a5af6868f667f2dd7425102bc6ddf461e1746a83f640a8b633c",
+      "sha256": "783588ff4732a6ecb7c1b30e040c37a9cbcf04e8eccc387b00d29b77e09e6d92",
       "tables": [
         "xsy_scale_device",
         "xsy_scale_device_session",
@@ -511,7 +511,7 @@
       "file": "V1000.20__trace.sql",
       "module": "trace",
       "version": "1000.20",
-      "sha256": "464af94bd233c4ced68b5a1980b0e06ef3a83e1b1fb981fff270895bbb8e428e",
+      "sha256": "d9722d2fd3c80ff04d0dfed792255b607cbcbb78f7024df62b659692bbab11cd",
       "tables": [
         "xsy_trace_event",
         "xsy_trace_inspection_report",
@@ -536,7 +536,7 @@
       "file": "V1000.21__print.sql",
       "module": "print",
       "version": "1000.21",
-      "sha256": "df7750e95552501124eca263eed1991ad20b21452f674b347a671f602c440514",
+      "sha256": "3d8be09593992470921b9cce420930a0463ed98705b943320595c94add8b355e",
       "tables": [
         "xsy_print_customer_template",
         "xsy_print_record",
@@ -556,7 +556,7 @@
       "file": "V1000.22__report.sql",
       "module": "report",
       "version": "1000.22",
-      "sha256": "67e9ca7197f26e21190fe314f540f17b7df03095e0dd4679d285ef7f2bf4bdc4",
+      "sha256": "e7c53080fbe4799a973b21b7a9b5cee14814a6e2173936448471e1ccc8b467f3",
       "tables": [
         "xsy_report_negative_stock_snapshot",
         "xsy_report_purchase_daily",
@@ -576,7 +576,7 @@
       "file": "V1000.23__notification.sql",
       "module": "notification",
       "version": "1000.23",
-      "sha256": "a12d3af1a386d45ca0e4b10d81d959c9afb3a6f921d59fdba8a82fd38bf15898",
+      "sha256": "74de1f7aa7685a5ed5ea027381ce4c8c902ad0f44d7e85549800f545223a8177",
       "tables": [
         "xsy_notification_event"
       ],
@@ -591,7 +591,7 @@
       "file": "V1000.24__preference.sql",
       "module": "preference",
       "version": "1000.24",
-      "sha256": "1e4ca7f412853ef104bbcf5a9ebf7fc66f7b0c842d83526fa03986f99000047b",
+      "sha256": "16ff93415340dfc0d885cda68f4599cfae1c877eb51d6d2ef82faf3d773720a3",
       "tables": [
         "xsy_user_filter_preset"
       ],

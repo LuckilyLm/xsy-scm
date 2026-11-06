@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.validation.ScmServiceValidationSuspension;
 import com.xsy.scm.report.constant.ReportErrorCode;
 import com.xsy.scm.report.constant.ScmReportPermission;
 import com.xsy.scm.report.domain.form.PurchaseDailyQueryForm;
@@ -43,7 +44,9 @@ public class PurchaseDailyReportController {
         List<PurchaseDailyReportVO.ProductRow> products = ScmReportExportGuard.exportRows(limit -> {
             form.setPageNum(1L);
             form.setPageSize(limit);
-            PurchaseDailyReportVO report = purchaseDailyQueryService.query(form);
+            // 导出探针分页必然超过日常上限，仅这一处内部调用跳过入口校验。
+            PurchaseDailyReportVO report = ScmServiceValidationSuspension
+                .run(() -> purchaseDailyQueryService.query(form));
             if (report.getGeneratedAt() == null) {
                 throw new ScmBusinessException(ReportErrorCode.REPORT_DAILY_UNAVAILABLE);
             }

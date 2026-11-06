@@ -7,8 +7,8 @@
 
 # 项目配置: 名称、日志目录
 project:
-  name: xsy-scm-v2-test
-  log-directory: ${XSY_V2_LOG_DIRECTORY:../.runtime/logs/test}
+  name: xsy-scm-test
+  log-directory: ${XSY_LOG_DIRECTORY:../.runtime/logs/test}
 
 # 项目端口和url根路径
 server:

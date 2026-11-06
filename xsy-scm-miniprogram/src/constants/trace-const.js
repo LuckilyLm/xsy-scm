@@ -20,8 +20,10 @@ export function inspectionPublicResult(report) {
   if (report.status !== TRACE_INSPECTION_STATUS_ENUM.PUBLISHED.value) return { label: '报告未公开', tone: 'neutral' };
   if (report.expired) return { label: '报告已过期', tone: 'warning' };
   return {
-    label: report.conclusion === TRACE_INSPECTION_CONCLUSION_ENUM.UNDETERMINED.value
-      ? '检测结论未判定' : '检测' + inspectionConclusionLabel(report.conclusion),
+    label:
+      report.conclusion === TRACE_INSPECTION_CONCLUSION_ENUM.UNDETERMINED.value
+        ? '检测结论未判定'
+        : '检测' + inspectionConclusionLabel(report.conclusion),
     tone: CONCLUSION_TONE[report.conclusion] || 'neutral',
   };
 }

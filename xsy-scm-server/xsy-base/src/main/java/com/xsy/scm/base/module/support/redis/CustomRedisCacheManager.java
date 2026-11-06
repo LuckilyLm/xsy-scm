@@ -9,53 +9,7 @@ import java.time.Duration;
 
 import static com.xsy.scm.base.common.constant.StringConst.COLON;
 
-/**
- * 自定义 RedisCacheManager，支持在 cacheName 中通过 '#' 指定 TTL（过期时间）。
- *
- * <p>
- * 支持格式：{@code cacheName#ttl}，其中 ttl 支持 Spring 的 Duration 格式。 特殊值：{@code -1} 表示永久缓存（永不过期）。
- * </p>
- *
- * <h3>使用示例：</h3>
- *
- * <pre>
- * // 10 秒后过期
- * &#64;Cacheable(value = "user#10s", key = "#id")
- * // 2 小时后过期
- * &#64;Cacheable(value = "report#2h", key = "#date")
- * // 30 分钟后过期
- * &#64;Cacheable(value = "session#30m", key = "#token")
- * // 永不过期（永久缓存），适用于极少变化的配置数据
- * &#64;Cacheable(value = "appConfig#-1", key = "'globalSettings'")
- * // 无 TTL，使用全局默认过期时间（如 7 天）
- * &#64;Cacheable(value = "product", key = "#productId")
- * </pre>
- *
- * <h3>生成的 Redis Key 格式：</h3>
- *
- * <pre>
- * cache:cacheName:key
- * 例如：cache:user:123
- *      cache:appConfig:globalSettings
- * </pre>
- *
- * <h3>支持的 TTL 单位：</h3>
- * <ul>
- * <li>{@code ms} / {@code millis} / {@code milliseconds} - 毫秒</li>
- * <li>{@code s} / {@code secs} / {@code seconds} - 秒</li>
- * <li>{@code m} / {@code mins} / {@code minutes} - 分钟</li>
- * <li>{@code h} / {@code hrs} / {@code hours} - 小时</li>
- * <li>{@code d} / {@code days} - 天</li>
- * </ul>
- *
- * <h3>注意事项：</h3>
- * <ul>
- * <li>不写单位默认为毫秒</li>
- * <li>永久缓存（#-1）不会自动过期，请配合 &#64;CacheEvict 手动清理。</li>
- * <li>避免对频繁更新的数据使用永久缓存，防止数据陈旧。</li>
- * <li>cacheName 中的 '#' 只解析第一个，后续字符将作为 TTL 处理。</li>
- * </ul>
- */
+/** 支持在 cacheName 中用 # 指定 TTL 的 RedisCacheManager，例如 user#10s；-1 表示永不过期。 */
 @Slf4j
 public class CustomRedisCacheManager extends RedisCacheManager {
 

@@ -17,11 +17,11 @@ export const MALL_EMPTY_IMAGES = Object.fromEntries(
 // 导航使用交付的普通/选中两套原色图片，颜色不通过滤镜重绘。
 const NAVIGATION_ROOT = '/static/mall-navigation';
 export const MALL_NAVIGATION_IMAGES = {
-  home: {normal: `${NAVIGATION_ROOT}/home-normal.png`, active: `${NAVIGATION_ROOT}/home-selected.png`},
-  category: {normal: `${NAVIGATION_ROOT}/category-normal.png`, active: `${NAVIGATION_ROOT}/category-selected.png`},
-  cart: {normal: `${NAVIGATION_ROOT}/cart-normal.png`, active: `${NAVIGATION_ROOT}/cart-selected.png`},
-  orders: {normal: `${NAVIGATION_ROOT}/orders-normal.png`, active: `${NAVIGATION_ROOT}/orders-selected.png`},
-  mine: {normal: `${NAVIGATION_ROOT}/mine-normal.png`, active: `${NAVIGATION_ROOT}/mine-selected.png`},
+  home: { normal: `${NAVIGATION_ROOT}/home-normal.png`, active: `${NAVIGATION_ROOT}/home-selected.png` },
+  category: { normal: `${NAVIGATION_ROOT}/category-normal.png`, active: `${NAVIGATION_ROOT}/category-selected.png` },
+  cart: { normal: `${NAVIGATION_ROOT}/cart-normal.png`, active: `${NAVIGATION_ROOT}/cart-selected.png` },
+  orders: { normal: `${NAVIGATION_ROOT}/orders-normal.png`, active: `${NAVIGATION_ROOT}/orders-selected.png` },
+  mine: { normal: `${NAVIGATION_ROOT}/mine-normal.png`, active: `${NAVIGATION_ROOT}/mine-selected.png` },
 };
 
 const PROFILE_ROOT = '/static/mall-profile';

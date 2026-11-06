@@ -583,7 +583,7 @@ public class OrderReturnService {
         return result;
     }
 
-    static LinkedHashMap<String, Object> mallCancelFingerprint(OrderReturnDecisionForm form) {
+    public static LinkedHashMap<String, Object> mallCancelFingerprint(OrderReturnDecisionForm form) {
         LinkedHashMap<String, Object> fingerprint = new LinkedHashMap<>();
         fingerprint.put("returnId", form.getReturnId());
         fingerprint.put("decisionReason", form.getDecisionReason() == null ? null : form.getDecisionReason().trim());

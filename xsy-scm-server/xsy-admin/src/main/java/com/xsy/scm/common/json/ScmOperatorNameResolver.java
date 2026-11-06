@@ -22,10 +22,10 @@ import java.util.stream.Collectors;
 public class ScmOperatorNameResolver {
 
     /** 员工已被删除（或编号查不到）时的写法：页面只显示人名，不露 {@code userType:userId}。 */
-    static final String UNKNOWN_EMPLOYEE = "已删除员工";
+    public static final String UNKNOWN_EMPLOYEE = "已删除员工";
 
     /** 商城客户操作人只给身份；无姓名可查时不编造。 */
-    static final String MALL_CUSTOMER = "商城客户";
+    public static final String MALL_CUSTOMER = "商城客户";
 
     /** 缓存有效期。名字改了晚一分钟生效没关系。 */
     private static final long TTL_MILLIS = 60_000L;
@@ -75,7 +75,7 @@ public class ScmOperatorNameResolver {
      * <p>
      * 格式不对、或不是管理端员工时返回 {@code null}：其它 userType 的 id 和员工 id 不是一套编号，查员工表会张冠李戴。
      */
-    static Long adminEmployeeId(String operator) {
+    public static Long adminEmployeeId(String operator) {
         if (operator == null) {
             return null;
         }

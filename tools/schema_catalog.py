@@ -4,11 +4,11 @@ import json
 import re
 
 
-# search_path由调用方固定为xsy_v2,pg_catalog，防止regclass展示受连接配置影响。
+# search_path由调用方固定为xsy,pg_catalog，防止regclass展示受连接配置影响。
 CATALOG_SQL = """
 WITH tables AS (
  SELECT c.oid, c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
- WHERE n.nspname='xsy_v2' AND c.relkind IN ('r','p')
+ WHERE n.nspname='xsy' AND c.relkind IN ('r','p')
    AND c.relname NOT IN ('flyway_schema_history','flyway_schema_history_legacy')
 ), objects AS (
  SELECT 'table:'||t.relname AS key, jsonb_build_object(
@@ -41,7 +41,7 @@ WITH tables AS (
  UNION ALL
  SELECT 'function:'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')',
    jsonb_build_object('definition',pg_get_functiondef(p.oid),'comment',obj_description(p.oid,'pg_proc'))
- FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='xsy_v2'
+ FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='xsy'
  UNION ALL
  SELECT 'sequence:'||c.relname, jsonb_build_object('type',format_type(s.seqtypid,NULL),
    'start',s.seqstart,'increment',s.seqincrement,'max',s.seqmax,'min',s.seqmin,
@@ -52,7 +52,7 @@ WITH tables AS (
  LEFT JOIN pg_depend d ON d.objid=c.oid AND d.classid='pg_class'::regclass AND d.deptype IN ('a','i')
  LEFT JOIN tables t ON t.oid=d.refobjid
  LEFT JOIN pg_attribute a ON a.attrelid=t.oid AND a.attnum=d.refobjsubid
- WHERE n.nspname='xsy_v2'
+ WHERE n.nspname='xsy'
 )
 SELECT coalesce(jsonb_object_agg(key,value),'{}'::jsonb) FROM objects
 """

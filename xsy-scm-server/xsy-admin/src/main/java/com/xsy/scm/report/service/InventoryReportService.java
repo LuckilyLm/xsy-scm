@@ -93,7 +93,7 @@ public class InventoryReportService {
     /**
      * 数量精度来自库存流水，先按单位汇总后拼文字，不将箱/公斤相加。
      */
-    static String lossQuantityText(List<InventoryReportVO.LossUnitRow> units, String movementType) {
+    public static String lossQuantityText(List<InventoryReportVO.LossUnitRow> units, String movementType) {
         if (units == null)
             return null;
         String grouped = units.stream()

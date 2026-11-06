@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import {readFileSync, existsSync, statSync} from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
-const {categoryIcon} = await import(`data:text/javascript;base64,${Buffer.from(read('../src/utils/category-icon.js')).toString('base64')}`);
+const { categoryIcon } = await import(`data:text/javascript;base64,${Buffer.from(read('../src/utils/category-icon.js')).toString('base64')}`);
 
 test('real categories select supplied PNGs without changing taxonomy or re-colouring images', () => {
   for (const [name, file] of [

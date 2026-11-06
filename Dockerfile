@@ -1,4 +1,4 @@
-# xsy-scm V2 backend image
+# xsy-scm backend image
 # Build context: repository root
 
 FROM maven:3.9.9-eclipse-temurin-21 AS builder

@@ -1,6 +1,6 @@
 # 鲜蔬源智慧供应链管理平台
 
-鲜蔬源智链（`xsy-scm`）V2 是按业务域组织的供应链管理平台，覆盖客户与商品、销售订单、采购收货、库存、分拣、配送、财务和报表，并提供配套的微信小程序与 Windows 秤端工作台。
+鲜蔬源智链（`xsy-scm`）是按业务域组织的供应链管理平台，覆盖客户与商品、销售订单、采购收货、库存、分拣、配送、财务和报表，并提供配套的微信小程序与 Windows 秤端工作台。
 
 当前交付状态、验证证据和未完成工作以 [项目状态](docs/status.md) 为准；业务边界以 [项目决策](docs/decisions.md) 和 [需求基线](docs/requirements/产品功能需求基线.md) 为准。本文只说明工程组成、启动方式和常用入口。
 
@@ -55,7 +55,7 @@ mvn.cmd install -DskipTests
 mvn.cmd -pl xsy-admin spring-boot:run
 ```
 
-Linux / macOS 将 `mvn.cmd` 替换为 `mvn`。dev profile 默认端口为 `18080`，可通过 `XSY_V2_SERVER_PORT` 覆盖。数据库使用独立 schema `xsy_v2`；Flyway 是唯一的 schema 演进机制，已应用的 migration 不得回改。
+Linux / macOS 将 `mvn.cmd` 替换为 `mvn`。dev profile 默认端口为 `18080`，可通过 `XSY_SERVER_PORT` 覆盖。数据库使用独立 schema `xsy`；Flyway 是唯一的 schema 演进机制，已应用的 migration 不得回改。
 
 ### 管理后台
 

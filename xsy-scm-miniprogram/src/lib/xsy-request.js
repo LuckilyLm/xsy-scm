@@ -4,15 +4,15 @@
  * 与 XSY 共用 `{ code, ok, msg, data, dataType }` 响应信封，code === 0 表示成功。
  * 令牌统一使用 `Authorization: Bearer <token>`；会话失效码由请求层清理并跳回登录页。
  */
-import {USER_TOKEN} from '@/constants/local-storage-key-const';
-import {PLATFORM_ERROR_CODE, SESSION_EXPIRED_CODES, SUCCESS_CODE} from '@/constants/error-code-const';
+import { USER_TOKEN } from '@/constants/local-storage-key-const';
+import { PLATFORM_ERROR_CODE, SESSION_EXPIRED_CODES, SUCCESS_CODE } from '@/constants/error-code-const';
 /*
  * 注意：这里刻意用 `@mock` 而不是 `@/mock`。
  * uni-app 自带一条 `@` → `src/` 的别名且优先级更高，`@/mock` 会被它先命中、
  * 解析成 src/mock（该目录已不存在）。`@mock` 不匹配 uni-app 的 `@` 规则，
  * 因此能被 vite.config.js 里我们自己的别名稳定接管。
  */
-import {USE_MOCK, dispatchMock} from '@mock';
+import { USE_MOCK, dispatchMock } from '@mock';
 
 const baseUrl = import.meta.env.VITE_APP_API_URL;
 
@@ -82,10 +82,10 @@ function handleSessionExpired() {
     // 回调异常不应阻塞跳转
   }
 
-  uni.showToast({title: '登录已失效，请重新登录', icon: 'none'});
+  uni.showToast({ title: '登录已失效，请重新登录', icon: 'none' });
   setTimeout(() => {
     redirecting = false;
-    uni.reLaunch({url: '/pages/login/login'});
+    uni.reLaunch({ url: '/pages/login/login' });
   }, 800);
 }
 
@@ -110,7 +110,7 @@ function handleResponse(response, resolve, reject, url, options = {}) {
   }
 
   const message = (res && res.msg) || `请求失败 (${response.statusCode})`;
-  if (!options.silent) uni.showToast({title: message, icon: 'none'});
+  if (!options.silent) uni.showToast({ title: message, icon: 'none' });
   reject(new ApiError(code, message, response));
 }
 
@@ -122,7 +122,7 @@ function handleResponse(response, resolve, reject, url, options = {}) {
  * @param {object} options { idempotencyKey, header }
  */
 export const request = function (url, method, data, options = {}) {
-  const header = {'Content-Type': 'application/json', ...(options.header || {})};
+  const header = { 'Content-Type': 'application/json', ...(options.header || {}) };
   const token = getUserToken();
   if (token && !options.anonymous) {
     header.Authorization = 'Bearer ' + token;
@@ -135,12 +135,12 @@ export const request = function (url, method, data, options = {}) {
     // mock 开关为编译期常量：关闭时整段被 tree-shake，且 mock 模块不会进生产包。
     // 未命中 mock 路由时回落真实请求，所以新增接口不必先补 mock。
     if (USE_MOCK) {
-      dispatchMock(url, method, data, {header}).then((mocked) => {
+      dispatchMock(url, method, data, { header }).then((mocked) => {
         if (mocked === null) {
           sendReal();
           return;
         }
-        handleResponse({statusCode: 200, data: mocked}, resolve, reject, url, options);
+        handleResponse({ statusCode: 200, data: mocked }, resolve, reject, url, options);
       });
       return;
     }

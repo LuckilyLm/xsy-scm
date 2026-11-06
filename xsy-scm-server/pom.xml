@@ -7,8 +7,8 @@
     <version>3.0.0</version>
     <packaging>pom</packaging>
 
-    <name>xsy-scm-v2-parent</name>
-    <description>鲜蔬源智链 V2 后台服务（基于 系统通用功能 基线，Java 21 + PostgreSQL）</description>
+    <name>xsy-scm-parent</name>
+    <description>鲜蔬源智链后台服务（基于 系统通用功能 基线，Java 21 + PostgreSQL）</description>
 
 	<modules>
         <module>xsy-base</module>
@@ -87,7 +87,7 @@
             </dependency>
 
             <!--
-              V2 数据库基线：PostgreSQL（不使用 MySQL）。
+              数据库基线：PostgreSQL（不使用 MySQL）。
               postgresql 驱动、flyway-core、flyway-database-postgresql 的版本由 Spring Boot BOM 统一管理，
               因此这里不再单独声明 dependencyManagement 条目。
             -->
@@ -353,7 +353,7 @@
 
         <plugins>
             <!--
-              V2 修正：早期系统配置的根 pom 没有继承 spring-boot-starter-parent，
+              修正：早期系统配置的根 pom 没有继承 spring-boot-starter-parent，
               因此 maven-resources-plugin 只认 ${...} 分隔符，不认 @...@。
               结果 dev/application.yaml 中的 spring.profiles.active: '@profiles.active@'
               不会被替换，打进 jar 后 Spring Boot 启动即失败：

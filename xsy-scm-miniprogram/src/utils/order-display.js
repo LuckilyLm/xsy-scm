@@ -6,24 +6,24 @@
  * 这样列表与详情不共享类名，样式仍各自独立。
  */
 
-import {shanghaiDateTime} from './mall-date';
+import { shanghaiDateTime } from './mall-date';
 
 /** 展示分类文案（与后端 MallOrderDisplayStatusEnum 一一对应） */
 const DISPLAY_STATUS_MAP = {
-  PENDING: {text: '待处理', level: 'warn'},
-  PREPARING: {text: '备货中', level: 'primary'},
-  DELIVERING: {text: '配送中', level: 'primary'},
-  COMPLETED: {text: '已完成', level: 'ok'},
-  CANCELLED: {text: '已取消', level: 'off'},
+  PENDING: { text: '待处理', level: 'warn' },
+  PREPARING: { text: '备货中', level: 'primary' },
+  DELIVERING: { text: '配送中', level: 'primary' },
+  COMPLETED: { text: '已完成', level: 'ok' },
+  CANCELLED: { text: '已取消', level: 'off' },
 };
 
 /** 列表页签；value 为空表示「全部」 */
 export const ORDER_TABS = [
-  {value: '', label: '全部'},
-  {value: 'PENDING', label: '待处理'},
-  {value: 'PREPARING', label: '备货中'},
-  {value: 'DELIVERING', label: '配送中'},
-  {value: 'COMPLETED', label: '已完成'},
+  { value: '', label: '全部' },
+  { value: 'PENDING', label: '待处理' },
+  { value: 'PREPARING', label: '备货中' },
+  { value: 'DELIVERING', label: '配送中' },
+  { value: 'COMPLETED', label: '已完成' },
 ];
 
 /** 取消原因快捷选项（仍允许自定义填写） */

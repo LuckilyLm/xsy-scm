@@ -36,15 +36,15 @@ docker compose ps -a
 
 浏览器访问 `http://服务器IP:7515`（端口随 `WEB_PORT` 修改）。前端 API 固定走同源 `/api`，由 Nginx 转发到 `backend:1024`。上传入口限制 25 MB，后端单文件限制 20 MB。数据库、Redis、MinIO API 和 Console 默认仅绑定本机，Console 可通过 SSH 隧道访问。
 
-首次空库由Flyway自动创建`xsy_v2`，顺序执行`db/migration/modules`中24份模块SQL（V1000.01～V1000.24），直接创建截至原V244的最终结构与系统默认数据。已有旧V历史的库必须先按下节核对并切换基线，再启动新版本；保持baseline-on-migrate关闭，不自动接管非空库。
+首次空库由Flyway自动创建`xsy`，顺序执行`db/migration/modules`中24份模块SQL（V1000.01～V1000.24），直接创建截至原V244的最终结构与系统默认数据。已有旧V历史的库必须先按下节核对并切换基线，再启动新版本；保持baseline-on-migrate关闭，不自动接管非空库。
 
 ```bash
-docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT version, success FROM xsy_v2.flyway_schema_history ORDER BY installed_rank;"'
+docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT version, success FROM xsy.flyway_schema_history ORDER BY installed_rank;"'
 docker compose logs -f backend
 docker compose logs -f web
 ```
 
-查询迁移历史时连接的数据库必须与`XSY_V2_DB_URL`一致；如果数据库容器的`POSTGRES_DB`只是初始管理库，替换上例`-d`参数为实际业务库名，不能从管理库缺表推断应用没有迁移。
+查询迁移历史时连接的数据库必须与`XSY_DB_URL`一致；如果数据库容器的`POSTGRES_DB`只是初始管理库，替换上例`-d`参数为实际业务库名，不能从管理库缺表推断应用没有迁移。
 
 初始管理员由system模块默认数据写入（账号`admin`；初始口令来源可从Git中的原V3种子说明追溯）。首次登录后立即修改管理员密码及系统配置中的万能密码。
 
@@ -66,7 +66,7 @@ python tools/migration_checksum_guard.py check
 python tools/build_install_baseline.py check
 ```
 
-旧库切换工具默认只读，连接串通过`SCM_MIGRATION_DSN`提供（libpq连接格式，例如`host=数据库地址 port=5432 dbname=业务库名 user=维护账号`；口令使用`PGPASSWORD`或pgpass）。该连接应与应用`XSY_V2_DB_URL`指向同一个业务库。工具需有查询目录、锁表、修改历史表及指定内置模板的权限。
+旧库切换工具默认只读，连接串通过`SCM_MIGRATION_DSN`提供（libpq连接格式，例如`host=数据库地址 port=5432 dbname=业务库名 user=维护账号`；口令使用`PGPASSWORD`或pgpass）。该连接应与应用`XSY_DB_URL`指向同一个业务库。工具需有查询目录、锁表、修改历史表及指定内置模板的权限。
 
 ```bash
 python -m pip install -r tools/requirements-baseline.txt

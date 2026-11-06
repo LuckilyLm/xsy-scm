@@ -13,10 +13,6 @@ import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
 import com.xsy.scm.purchase.support.PurchaseInventoryContract;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -26,30 +22,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * 库存域 PostgreSQL 集成测试基类。
- *
- * <p>库存的语义几乎全部落在数据库里 —— 部分唯一索引、{@code CHECK} 约束、{@code ON CONFLICT}
- * 的冲突目标匹配、{@code FOR UPDATE} 锁序、{@code NUMERIC(18,4)} 精度、以及迁移里的一次性
- * backfill。因此库存的验证主体是 PG IT，而不是 mock 测试。
- *
- * <p><b>为什么直接继承 {@link ScmW5PgITBase}</b>：入库的唯一来源是采购收货确认，
- * 造数链路（商品 → 供应商挂 SKU → 客户 → 销售订单 → 需求 → 采购单 → 收货单）在采购基类里
- * 已经由领域服务实现。这里复用它而不是往表里直插行 —— 直插行会绕过采购聚合的不变量，
- * 让 IT 验证到一份「现实中不可能出现」的采购数据。
- *
- * <p><b>事务策略</b>：用例包在一个事务里、结束时回滚。
- * 唯一的例外是需要真并发的两个用例（见 {@code ScmInventoryConcurrencyIT}），
- * 它们用 {@code Propagation.NOT_SUPPORTED} 关掉外层事务，靠 {@link #prefix} 的随机后缀隔离数据。
- *
- * <p><b>前缀</b>：本基类会把 {@code prefix} 换成自己独立的前缀，
- * 避免与其它用例或开发库既有数据撞唯一索引。
- */
-public abstract class ScmW6PgITBase extends ScmW5PgITBase {
 
+public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     /** @param movementId 非空已存在流水ID；验证通用更新、逻辑删除和物理删除均被后端拒绝且记录不变。 */
     protected void assertMovementImmutable(Long movementId) {
         Map<String, Object> before = jdbc.queryForMap("SELECT * FROM xsy_inventory_movement WHERE id=?", movementId);

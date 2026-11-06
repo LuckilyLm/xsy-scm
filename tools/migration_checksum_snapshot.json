@@ -3,107 +3,111 @@
   "migrations": {
     "1000.1": {
       "file": "V1000.01__system.sql",
-      "checksum": 588258817
+      "checksum": -349996684
     },
     "1000.2": {
       "file": "V1000.02__common.sql",
-      "checksum": -1103687862
+      "checksum": -752972410
     },
     "1000.3": {
       "file": "V1000.03__businesscategory.sql",
-      "checksum": -159055075
+      "checksum": -510665828
     },
     "1000.4": {
       "file": "V1000.04__warehouse.sql",
-      "checksum": -1905840762
+      "checksum": 1473625551
     },
     "1000.5": {
       "file": "V1000.05__product.sql",
-      "checksum": -1990207190
+      "checksum": -172693203
     },
     "1000.6": {
       "file": "V1000.06__customer.sql",
-      "checksum": -8129879
+      "checksum": -693350190
     },
     "1000.7": {
       "file": "V1000.07__supplier.sql",
-      "checksum": 1719979646
+      "checksum": 2076240845
     },
     "1000.8": {
       "file": "V1000.08__pricing.sql",
-      "checksum": 1754317365
+      "checksum": 14874962
     },
     "1000.9": {
       "file": "V1000.09__balance.sql",
-      "checksum": -726998032
+      "checksum": 1209009774
     },
     "1000.10": {
       "file": "V1000.10__promotion.sql",
-      "checksum": 808246058
+      "checksum": 379358886
     },
     "1000.11": {
       "file": "V1000.11__order.sql",
-      "checksum": -1195724260
+      "checksum": 2069559415
     },
     "1000.12": {
       "file": "V1000.12__purchase.sql",
-      "checksum": 1698779831
+      "checksum": -1509413286
     },
     "1000.13": {
       "file": "V1000.13__inventory.sql",
-      "checksum": -1081691541
+      "checksum": 1753219468
     },
     "1000.14": {
       "file": "V1000.14__sorting.sql",
-      "checksum": 1725779628
+      "checksum": -625469637
     },
     "1000.15": {
       "file": "V1000.15__delivery.sql",
-      "checksum": 1859072621
+      "checksum": 56162365
     },
     "1000.16": {
       "file": "V1000.16__finance.sql",
-      "checksum": -1317684511
+      "checksum": -1979232394
     },
     "1000.17": {
       "file": "V1000.17__payment.sql",
-      "checksum": 822719874
+      "checksum": 768051417
     },
     "1000.18": {
       "file": "V1000.18__mall.sql",
-      "checksum": 1713563548
+      "checksum": -949474653
     },
     "1000.19": {
       "file": "V1000.19__device.sql",
-      "checksum": -2113233899
+      "checksum": 804014951
     },
     "1000.20": {
       "file": "V1000.20__trace.sql",
-      "checksum": -874929493
+      "checksum": 49413602
     },
     "1000.21": {
       "file": "V1000.21__print.sql",
-      "checksum": -668295387
+      "checksum": 584594441
     },
     "1000.22": {
       "file": "V1000.22__report.sql",
-      "checksum": -690729089
+      "checksum": -916361373
     },
     "1000.23": {
       "file": "V1000.23__notification.sql",
-      "checksum": 2090291200
+      "checksum": 1850334179
     },
     "1000.24": {
       "file": "V1000.24__preference.sql",
-      "checksum": -921254922
+      "checksum": -436084930
     },
     "1001": {
       "file": "V1001__backend_business_rules.sql",
-      "checksum": -677091279
+      "checksum": -1330264969
     },
     "1002": {
       "file": "V1002__xsy_job_class_names.sql",
-      "checksum": 1534197987
+      "checksum": 1782430133
+    },
+    "1003": {
+      "file": "V1003__dashboard_permissions.sql",
+      "checksum": -1627544089
     }
   }
 }

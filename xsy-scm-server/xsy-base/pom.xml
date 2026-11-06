@@ -86,7 +86,7 @@
             <artifactId>postgresql</artifactId>
         </dependency>
 
-        <!-- Flyway：V2 唯一的 schema 演进机制（早期系统配置为手工 SQL，此处引入 Flyway） -->
+        <!-- Flyway：唯一的 schema 演进机制（早期系统配置为手工 SQL，此处引入 Flyway） -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>

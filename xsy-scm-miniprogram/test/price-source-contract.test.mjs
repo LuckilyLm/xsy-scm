@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import {URL} from 'node:url';
+import { URL } from 'node:url';
 
 /*
  * 价格来源是后端枚举直出的字段：商城只要漏一个映射，商品详情就会把英文常量

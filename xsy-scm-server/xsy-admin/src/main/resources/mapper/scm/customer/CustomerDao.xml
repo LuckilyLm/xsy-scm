@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.customer.dao.CustomerDao">
     <select id="nextId" resultType="java.lang.Long">
-        SELECT nextval(pg_get_serial_sequence('xsy_v2.xsy_customer', 'id'))
+        SELECT nextval(pg_get_serial_sequence('xsy.xsy_customer', 'id'))
     </select>
 
     <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式约定） -->

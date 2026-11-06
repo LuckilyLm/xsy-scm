@@ -15,9 +15,10 @@ import com.xsy.scm.base.module.support.operatelog.OperateLogBusinessType;
 import com.xsy.scm.base.module.support.operatelog.OperateLogService;
 import com.xsy.scm.base.module.support.operatelog.domain.OperateLogQueryForm;
 import com.xsy.scm.base.module.support.operatelog.domain.OperateLogVO;
+import com.xsy.scm.customer.permission.CustomerPermission;
+import com.xsy.scm.delivery.permission.DeliveryPermission;
+import com.xsy.scm.product.permission.ProductPermission;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 /**
  * 操作日志
@@ -26,14 +27,6 @@ import java.util.Map;
 @RestController
 @Tag(name = SwaggerTagConst.Support.OPERATE_LOG)
 public class AdminOperateLogController extends SupportBaseController {
-
-    /**
-     * 业务对象筛选白名单 → 该领域对象读取权限。结构化筛选要求同时具备操作日志读取权 （方法级 {@code @SaCheckPermission}）与对应领域读取权，避免以商品查询权限拿到完整通用日志。
-     */
-    private static final Map<String,
-        String> BUSINESS_READ_PERMISSIONS = Map.of(OperateLogBusinessType.PRODUCT, "scm:product:query",
-            OperateLogBusinessType.CUSTOMER, "scm:customer:query", OperateLogBusinessType.DELIVERY_ROUTE,
-            "scm:delivery:route:query");
 
     @Resource
     private OperateLogService operateLogService;
@@ -60,7 +53,7 @@ public class AdminOperateLogController extends SupportBaseController {
         // 日志正文含领域对象明细，能识别归属时必须再要求该领域读取权；识别不出的一律按通用日志权限处理
         OperateLogVO log = responseDTO.getData();
         for (String businessType : OperateLogBusinessType.recognize(log.getParam(), log.getUrl())) {
-            StpUtil.checkPermission(BUSINESS_READ_PERMISSIONS.get(businessType));
+            requireBusinessReadPermission(businessType);
         }
         return responseDTO;
     }
@@ -93,13 +86,27 @@ public class AdminOperateLogController extends SupportBaseController {
         if (!hasType) {
             return ResponseDTO.userErrorParam("业务类型与业务ID必须同时提供");
         }
-        String readPermission = BUSINESS_READ_PERMISSIONS.get(businessType);
-        if (readPermission == null) {
+        if (!requireBusinessReadPermission(businessType)) {
             return ResponseDTO.userErrorParam("不支持的业务类型");
         }
-        // 缺该领域读取权时抛出 NotPermissionException，由全局异常处理返回 30005；administratorFlag 自动放行
-        StpUtil.checkPermission(readPermission);
         return null;
+    }
+
+    /**
+     * 按业务类型校验领域读取权；缺权限时抛出 NotPermissionException，由全局异常处理返回 30005。
+     *
+     * @return 业务类型是否受支持
+     */
+    private static boolean requireBusinessReadPermission(String businessType) {
+        switch (businessType) {
+            case OperateLogBusinessType.PRODUCT -> StpUtil.checkPermission(ProductPermission.QUERY);
+            case OperateLogBusinessType.CUSTOMER -> StpUtil.checkPermission(CustomerPermission.QUERY);
+            case OperateLogBusinessType.DELIVERY_ROUTE -> StpUtil.checkPermission(DeliveryPermission.ROUTE_QUERY);
+            default -> {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

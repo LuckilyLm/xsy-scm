@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
+import com.xsy.scm.pricing.constant.PricingErrorCode;
 import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 
@@ -45,8 +46,12 @@ public final class OrderSnapshotFactory {
         if (orderItem.getManualPriceOverride()) {
             orderItem.setDraftUnitPrice(OrderValidator.decimal(salesOrderItemForm.getUnitPrice(), false));
             orderItem.setDraftPriceSource(ScmOrderPriceSourceEnum.OVERRIDE.name());
-        } else
+        } else {
+            // 价格缺失不得落单：数据库 CHECK 已移到服务层，所有入口共用这一道关。
+            if (resolvedPrice == null || resolvedPrice.getUnitPrice() == null)
+                throw new ScmBusinessException(PricingErrorCode.SKU_NOT_SELLABLE);
             applyPrice(orderItem, resolvedPrice);
+        }
         orderItem.setOrderedLineAmount(
             OrderAmountCalculator.lineAmount(orderItem.getOrderedQuantity(), orderItem.getDraftUnitPrice()));
         // 行备注只属于这一行商品；整单备注另存，两者不能互相顶替

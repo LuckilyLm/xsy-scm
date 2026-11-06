@@ -8,7 +8,7 @@ import com.alibaba.fastjson.parser.Feature;
 import java.util.regex.Pattern;
 
 /** 操作日志在写库前就必须脱敏密码、令牌等敏感字段，不能只依赖前端隐藏。 */
-final class OperateLogParamMask {
+public final class OperateLogParamMask {
     /**
      * 与前端展示层遮罩保持同一份规则，避免两侧各判一套键名。
      */
@@ -32,7 +32,7 @@ final class OperateLogParamMask {
      * <p>
      * 看似 JSON 但解析失败时返回不含原文的占位载荷，而不是原文。
      */
-    static String mask(String json) {
+    public static String mask(String json) {
         if (json == null || json.isEmpty() || (json.charAt(0) != '{' && json.charAt(0) != '[')) {
             return json;
         }

@@ -1,11 +1,11 @@
 spring:
   # 数据库连接信息
-  # V2 基线：PostgreSQL（早期系统配置为 MySQL，此处已切换）
+  # PostgreSQL 基线。
   # 凭据通过环境变量注入，不要在此提交真实密码。
   datasource:
-    url: ${XSY_V2_DB_URL:jdbc:p6spy:postgresql://127.0.0.1:15432/xsy_scm?currentSchema=xsy_v2&ApplicationName=xsy-scm-v2}
-    username: ${XSY_V2_DB_USERNAME:xsy_scm_app}
-    password: ${XSY_V2_DB_PASSWORD:}
+    url: ${XSY_DB_URL:jdbc:p6spy:postgresql://127.0.0.1:15432/xsy_scm?currentSchema=xsy&ApplicationName=xsy-scm}
+    username: ${XSY_DB_USERNAME:xsy_scm_app}
+    password: ${XSY_DB_PASSWORD:}
     driver-class-name: com.p6spy.engine.spy.P6SpyDriver
     initial-size: 2
     min-idle: 2
@@ -22,14 +22,12 @@ spring:
       method:
         pointcut: com.xsy.scm..*Service.*
 
-  # Flyway：V2 唯一的 schema 演进机制
-  # 注意：早期系统配置使用手工 SQL 脚本，V2 引入 Flyway 以保留
-  # 「迁移只能追加、不可修改已应用迁移」的纪律。
+  # Flyway 是唯一的 schema 演进机制，迁移只能追加。
   flyway:
     enabled: true
     locations: classpath:db/migration/modules
-    schemas: xsy_v2
-    default-schema: xsy_v2
+    schemas: xsy
+    default-schema: xsy
     create-schemas: true
     baseline-on-migrate: false
     validate-on-migrate: true
@@ -117,8 +115,8 @@ file:
   storage:
     mode: ${XSY_FILE_STORAGE_MODE:local}
     local:
-      # 默认值不写死盘符（原基线为 D:/Browser Download/...）；部署时用 XSY_V2_UPLOAD_PATH 覆盖。
-      upload-path: ${XSY_V2_UPLOAD_PATH:../.runtime/upload/}   #文件上传目录
+      # 默认值不写死盘符（原基线为 D:/Browser Download/...）；部署时用 XSY_UPLOAD_PATH 覆盖。
+      upload-path: ${XSY_UPLOAD_PATH:../.runtime/upload/}   #文件上传目录
       url-prefix:
     cloud:
       region: ${XSY_FILE_REGION:us-east-1}

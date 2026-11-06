@@ -8,11 +8,11 @@
  * - cancel 只能成功于服务端状态机允许的状态，客户端不做「能不能取消」的最终判断，只按 cancelable 置灰；
  * - reorder 由服务端按当前可见性与客户价重新校验，客户端不得回传或复用历史成交价；
  */
-import {getRequest, postRequest} from '@/lib/xsy-request';
+import { getRequest, postRequest } from '@/lib/xsy-request';
 
 export const mallOrderApi = {
   /** 按当前客户和收货地址列出允许选择的配送仓。 */
-  getWarehouses: (addressId) => getRequest('/scm/mall/warehouses', {addressId}),
+  getWarehouses: (addressId) => getRequest('/scm/mall/warehouses', { addressId }),
 
   /**
    * 当前客户的订单分页
@@ -36,7 +36,7 @@ export const mallOrderApi = {
    *          priceFingerprint: string, remark?: string, expectDeliveryDate?: string, couponInstanceId?: number}} param
    * @param {string} idempotencyKey 内容不变时复用
    */
-  submit: (param, idempotencyKey) => postRequest('/scm/mall/orders', param, {idempotencyKey}),
+  submit: (param, idempotencyKey) => postRequest('/scm/mall/orders', param, { idempotencyKey }),
 
   /**
    * 取消订单
@@ -44,7 +44,7 @@ export const mallOrderApi = {
    * @param {string} reason 取消原因，必填
    * @param {string} idempotencyKey 同一订单同一原因重试时复用
    */
-  cancel: (orderId, reason, idempotencyKey) => postRequest(`/scm/mall/orders/${orderId}/cancel`, {reason}, {idempotencyKey}),
+  cancel: (orderId, reason, idempotencyKey) => postRequest(`/scm/mall/orders/${orderId}/cancel`, { reason }, { idempotencyKey }),
 
   /**
    * 再来一单：服务端按当前可见性与客户价重新校验后写入购物车

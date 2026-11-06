@@ -25,13 +25,13 @@ export const STOCK_STATUS = {
  * 这样组件不共享类名，样式仍各自独立。
  */
 const STOCK_MAP = {
-  [STOCK_STATUS.AVAILABLE]: {text: '有货', level: 'ok'},
-  [STOCK_STATUS.INSUFFICIENT]: {text: '库存不足', level: 'warn'},
-  [STOCK_STATUS.OUT_OF_STOCK]: {text: '暂时缺货', level: 'off'},
-  [STOCK_STATUS.UNKNOWN]: {text: '库存未知', level: 'off'},
+  [STOCK_STATUS.AVAILABLE]: { text: '有货', level: 'ok' },
+  [STOCK_STATUS.INSUFFICIENT]: { text: '库存不足', level: 'warn' },
+  [STOCK_STATUS.OUT_OF_STOCK]: { text: '暂时缺货', level: 'off' },
+  [STOCK_STATUS.UNKNOWN]: { text: '库存未知', level: 'off' },
 };
 
-const UNKNOWN_STOCK = {text: '库存未知', level: 'off'};
+const UNKNOWN_STOCK = { text: '库存未知', level: 'off' };
 
 function stockEntry(product) {
   return (product && STOCK_MAP[product.stockStatus]) || UNKNOWN_STOCK;

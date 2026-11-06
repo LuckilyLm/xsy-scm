@@ -28,7 +28,7 @@ def check_snapshot(directory: Path = MIGRATION_DIR, manifest_path: Path = MANIFE
         sql = (directory / filename).read_text(encoding='utf-8')
         if hashlib.sha256(sql.encode('utf-8')).hexdigest() != entry['sha256']:
             raise ValueError('模块SQL内容与已发布清单不符：' + filename)
-        declared = sorted(re.findall(r'^CREATE TABLE xsy_v2\.([a-z0-9_]+) \(', sql, re.M))
+        declared = sorted(re.findall(r'^CREATE TABLE xsy\.([a-z0-9_]+) \(', sql, re.M))
         if declared != entry['tables']:
             raise ValueError('模块表归属与清单不符：' + filename)
         tables.extend(declared)

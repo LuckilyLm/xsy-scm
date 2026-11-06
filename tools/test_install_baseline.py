@@ -38,7 +38,7 @@ class InstallBaselineTest(unittest.TestCase):
         baseline.check_snapshot(root)
         target = next(root.glob('V*__inventory.sql'))
         original = target.read_text(encoding='utf-8')
-        target.write_text(original + '\nDROP TABLE xsy_v2.xsy_inventory_balance;', encoding='utf-8')
+        target.write_text(original + '\nDROP TABLE xsy.xsy_inventory_balance;', encoding='utf-8')
         with self.assertRaises(ValueError):
             baseline.check_snapshot(root)
         target.write_text(original, encoding='utf-8')

@@ -8,7 +8,7 @@
 # 项目配置: 名称、日志目录
 project:
   name: xsy-admin
-  log-directory: ${PROJECT_LOG_DIRECTORY:/home/logs/xsy-scm-v2-admin/prod}
+  log-directory: ${PROJECT_LOG_DIRECTORY:/home/logs/xsy-scm-admin/prod}
 
 # 项目端口和url根路径
 server:

@@ -21,7 +21,7 @@ public class StocktakeSnapshotSigner {
     /**
      * 仓库里公开的占位密钥：只允许在非生产 profile 下兜底。
      */
-    static final String DEV_SECRET = "xsy-scm-stocktake-snapshot-dev-secret-change-in-production";
+    public static final String DEV_SECRET = "xsy-scm-stocktake-snapshot-dev-secret-change-in-production";
 
     /**
      * 来源集合里的一行：导入持锁核对时逐项比对的数据。

@@ -202,7 +202,7 @@ public class SalesOrderService {
      * <p>
      * 用 {@link LinkedHashMap} 而不是 {@code Map.of}：后者迭代顺序不固定，序列化后的哈希会漂移，重启后就认不出同一个键。包内可见，便于直接验证指纹稳定性。
      */
-    static Map<String, Object> cancelFingerprint(OrderCancelForm orderCancelForm) {
+    public static Map<String, Object> cancelFingerprint(OrderCancelForm orderCancelForm) {
         Map<String, Object> fingerprint = new LinkedHashMap<>();
         fingerprint.put("orderId", orderCancelForm.getOrderId());
         fingerprint.put("reason", orderCancelForm.getReason() == null ? null : orderCancelForm.getReason().trim());

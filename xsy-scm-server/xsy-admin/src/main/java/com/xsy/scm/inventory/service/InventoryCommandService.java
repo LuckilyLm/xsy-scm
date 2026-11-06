@@ -216,20 +216,7 @@ public class InventoryCommandService {
         return weightedAvgCost(balance.getQuantity(), balance.getAvgCost(), inboundQuantity, inboundUnitCost);
     }
 
-    /**
-     * 移动加权均价 —— 全项目唯一一份加权公式实现，转换的成本基准计算也走它。
-     *
-     * <pre>
-     * newAvg = (旧量·旧均价 + 入量·入价) / (旧量 + 入量)     四舍五入到 4 位小数
-     * </pre>
-     *
-     * <p>
-     * 取整方式固定为 {@code HALF_UP}：四舍五入是财务上的默认做法，而 {@code HALF_EVEN}（银行家舍入）会让「同一批数据算两遍」的结果依赖于末位奇偶，对账时难以解释。
-     *
-     * <p>
-     * 均价为空按 0 计入 —— 那意味着「这批货没有成本数据」。把它当作 0 会把均价拉低，这是有意为之：宁可在均价上体现「有一批货成本未知」，也不要凭空编一个价格。采购收货的 unit_cost
-     * 一定非空；实际会走到空值分支的只有成本核算上线前已发出、上线后才收货的在途调拨。
-     */
+    /** 移动加权均价；缺失成本按 0 计。 */
     public static BigDecimal weightedAvgCost(BigDecimal beforeQuantity, BigDecimal beforeAvgCost,
         BigDecimal inboundQuantity, BigDecimal inboundUnitCost) {
         BigDecimal oldQuantity = beforeQuantity == null ? BigDecimal.ZERO : beforeQuantity;
