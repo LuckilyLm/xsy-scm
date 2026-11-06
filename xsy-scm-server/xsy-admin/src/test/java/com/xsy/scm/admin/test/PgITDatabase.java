@@ -3,10 +3,9 @@ package com.xsy.scm.admin.test;
 /**
  * 集成测试数据库连接参数。
  *
- * <p><b>URL 必须指向可用库：</b>这几个 migration / 锁相关的 IT 若连到 {@code xsy_scm} ——
- * 已弃用的存量库（停在 version 17 且与仓库分叉）—— 会以
- * {@code FlywayValidateException: Migration checksum mismatch for version 17}
- * 失败，失败原因是环境，不是业务代码。
+ * <p><b>URL 必须指向可用库：</b>这几个 migration / 锁相关的 IT 若连到开发库 {@code xsy} ——
+ * 带开发种子数据 —— 会因既有数据与用例假设冲突而失败，失败原因是环境，不是业务代码。
+ * 旧的 {@code xsy_scm} 存量库（停在旧 version 历史且与仓库分叉）同样不可用，它只保留作备份。
  *
  * <p><b>取值约定：</b>与 {@code xsy-base.yaml} 使用同一个环境变量 {@code XSY_DB_URL}，
  * 未设置时回退到 {@link #DEFAULT_URL}。
