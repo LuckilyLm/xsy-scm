@@ -131,6 +131,19 @@
   border-style: dashed;
 }
 
+/* 卡片标题行：标题居左，卡片级动作靠右，同一行垂直居中 */
+.scm-detail-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.scm-detail-card__head > .scm-detail-card__title {
+  margin-bottom: 0;
+}
+
 .scm-detail-card__title {
   margin: 0 0 12px;
   font-size: 15px;
