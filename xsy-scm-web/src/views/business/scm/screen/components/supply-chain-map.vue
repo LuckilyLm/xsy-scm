@@ -1,8 +1,10 @@
 <template>
   <screen-panel title="供应链分布" flex>
     <template #extra>
-      <span class="scm-map-legend">气泡大小 = 该市主档数 · 着色 = 客户数</span>
-      <span v-if="unlocatedText" class="scm-map-unlocated">{{ unlocatedText }}</span>
+      <div class="scm-map-meta">
+        <span class="scm-map-legend">气泡大小 = 该市主档数 · 着色 = 客户数</span>
+        <span v-if="unlocatedText" class="scm-map-unlocated">{{ unlocatedText }}</span>
+      </div>
     </template>
 
     <div v-if="baseMapError" class="scm-state">
@@ -21,14 +23,12 @@
       <div class="scm-map-rail">
         <div class="scm-map-rail-title">启用仓库</div>
         <div v-if="!nodes.length" class="scm-map-rail-empty">暂无启用仓库</div>
-        <div v-else class="scm-map-rail-list">
+        <div v-else class="scm-map-rail-list scm-scroll">
           <div v-for="node in nodes" :key="node.warehouseName" class="scm-map-rail-row">
             <span class="scm-map-rail-name" :title="node.warehouseName">{{ node.warehouseName }}</span>
-            <span class="scm-map-rail-figure">
-              库存 <b>{{ formatQty(node.quantity) }}</b>
-            </span>
+            <span class="scm-map-rail-figure"> <span>库存</span><fit-number :value="formatQty(node.quantity)" :size="13" align="end" /> </span>
             <span class="scm-map-rail-figure is-dim">
-              今日出库 <b>{{ formatQty(node.todayOutboundQuantity) }}</b>
+              <span>今日出库</span><fit-number :value="formatQty(node.todayOutboundQuantity)" :size="13" align="end" />
             </span>
           </div>
         </div>
@@ -37,19 +37,19 @@
 
     <div class="scm-map-stats">
       <div class="scm-map-stat">
-        <span class="scm-map-stat-value">{{ formatInt(cities.length) }}</span>
+        <fit-number class="scm-map-stat-value" :value="formatInt(cities.length)" :size="20" align="center" />
         <span class="scm-map-stat-label">覆盖城市</span>
       </div>
       <div class="scm-map-stat">
-        <span class="scm-map-stat-value">{{ formatInt(business?.customerCount) }}</span>
+        <fit-number class="scm-map-stat-value" :value="formatInt(business?.customerCount)" :size="20" align="center" />
         <span class="scm-map-stat-label">客户总数</span>
       </div>
       <div class="scm-map-stat">
-        <span class="scm-map-stat-value">{{ formatInt(inventory?.todayOutboundCount) }}</span>
+        <fit-number class="scm-map-stat-value" :value="formatInt(inventory?.todayOutboundCount)" :size="20" align="center" />
         <span class="scm-map-stat-label">出库次数</span>
       </div>
       <div class="scm-map-stat">
-        <span class="scm-map-stat-value">{{ formatInt(inventory?.todayInboundCount) }}</span>
+        <fit-number class="scm-map-stat-value" :value="formatInt(inventory?.todayInboundCount)" :size="20" align="center" />
         <span class="scm-map-stat-label">入库次数</span>
       </div>
     </div>
@@ -60,8 +60,9 @@
 import {computed, nextTick, onMounted, ref, watch} from 'vue';
 import * as echarts from 'echarts';
 import ScreenPanel from './screen-panel.vue';
+import FitNumber from './fit-number.vue';
 import {useEcharts} from '../composables/use-echarts';
-import {formatInt, formatQty, toNumber} from '../format';
+import {escapeScreenHtml, formatInt, formatQty, toNumber} from '../format';
 import type {BusinessData, GeoData, GeoCityNode, InventoryData} from '../types';
 
 /** 供应链地图展示已提供的位置与统计数据；缺少地理位置时提供空状态，不臆造坐标。 */
@@ -81,7 +82,7 @@ const C = {
 };
 
 const mapEl = ref<HTMLElement>();
-const chart = useEcharts(mapEl);
+const chart = useEcharts(mapEl, {resizeOnAnimationFrame: true});
 const baseMapError = ref('');
 
 const cities = computed(() => props.geo.cities ?? []);
@@ -177,17 +178,22 @@ function tooltip(params: unknown): string {
   if (data.cityCount !== undefined) {
     rows.push(`覆盖市 ${formatInt(data.cityCount)}`);
   }
-  return `<b>${item.name}</b><br/>${rows.join('<br/>')}`;
+  return `<b>${escapeScreenHtml(item.name)}</b><br/>${rows.join('<br/>')}`;
 }
 
 function render() {
+  if (!echarts.getMap(MAP_NAME)) return;
   const list = cities.value;
+  const densityScale = Math.min(1, Math.sqrt(64 / Math.max(1, list.length)));
   const maxTotal = list.reduce((acc, city) => Math.max(acc, totalOf(city)), 0);
   const provinceMax = (props.geo.provinces ?? []).reduce((acc, p) => Math.max(acc, p.customerCount), 0);
 
   chart.setOption({
+    animation: false,
     tooltip: {
       trigger: 'item',
+      confine: true,
+      extraCssText: 'max-width:min(280px,100%);white-space:normal;overflow-wrap:anywhere;',
       backgroundColor: 'rgba(7, 30, 66, 0.94)',
       borderColor: C.border,
       textStyle: {color: C.text1, fontSize: 12},
@@ -195,6 +201,7 @@ function render() {
     // 底色固定表示客户数，气泡另带明细。
     visualMap: {
       type: 'continuous',
+      seriesIndex: 0,
       min: 0,
       max: provinceMax || 1,
       left: 10,
@@ -237,11 +244,12 @@ function render() {
         })),
       },
       {
-        type: 'effectScatter',
+        type: 'scatter',
+        progressive: 200,
+        progressiveThreshold: 300,
         coordinateSystem: 'geo',
         // 只有已归属到市的数据才画气泡
-        rippleEffect: {brushType: 'stroke', scale: 3},
-        symbolSize: (_value: unknown, params: {data?: {total: number}}) => bubbleSize(params.data?.total ?? 0, maxTotal),
+        symbolSize: (_value: unknown, params: {data?: {total: number}}) => bubbleSize(params.data?.total ?? 0, maxTotal) * densityScale,
         tooltip: {formatter: tooltip},
         data: list.map((city) => ({
           name: city.cityName,
@@ -251,7 +259,7 @@ function render() {
           supplierCount: city.supplierCount,
           warehouseCount: city.warehouseCount,
         })),
-        itemStyle: {color: C.cyan, opacity: 0.9},
+        itemStyle: {color: C.cyan, opacity: 0.72, borderColor: '#13426a', borderWidth: 0.6},
       },
     ],
   });
@@ -280,13 +288,20 @@ watch(() => props.geo, render);
 <style lang="less" scoped>
 @import '../styles/variables.less';
 
+.scm-map-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .scm-map-legend {
   font-size: 12px;
   color: @text-3;
 }
 
 .scm-map-unlocated {
-  margin-left: 10px;
   font-size: 12px;
   color: @state-warn;
 }
@@ -331,12 +346,16 @@ watch(() => props.geo, render);
   background: rgba(6, 21, 47, 0.82);
   border: 1px solid @panel-border;
   border-radius: 3px;
-  white-space: nowrap;
+  width: max-content;
+  max-width: 90%;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 // 右侧仓库明细
 .scm-map-rail {
-  flex: 0 0 186px;
+  flex: 0 0 clamp(218px, 27%, 288px);
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -355,7 +374,6 @@ watch(() => props.geo, render);
 .scm-map-rail-list {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -387,18 +405,19 @@ watch(() => props.geo, render);
 }
 
 .scm-map-rail-figure {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
   font-size: 12px;
   color: @text-2;
-  white-space: nowrap;
 
-  b {
-    font-family: @font-num;
-    font-size: 12px;
+  .scm-fit-number {
     color: @tech-cyan;
+    font-weight: 600;
   }
-
-  &.is-dim b {
-    color: @text-2;
+  &.is-dim .scm-fit-number {
+    color: @text-1;
   }
 }
 
@@ -406,13 +425,14 @@ watch(() => props.geo, render);
 .scm-map-stats {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-top: 1px solid rgba(27, 77, 122, 0.6);
   padding-top: 8px;
   margin-top: 6px;
 }
 
 .scm-map-stat {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -1,3 +1,5 @@
+import Decimal from 'decimal.js';
+
 /** 大屏各指标统一使用此处的数字与金额格式化，避免同一数值在不同面板显示格式不一致。 */
 
 /** 把后端返回的小数字符串安全转成 number。非法值一律返回 0，不返回 NaN。 */
@@ -67,4 +69,29 @@ export function deltaDirection(delta: number | null): DeltaDirection {
     return 'down';
   }
   return 'flat';
+}
+
+/** 大屏窄数字列的缩写，完整值仍由显示组件提供。 */
+export function formatScreenCompact(value: string | number): string {
+  const text = String(value);
+  const parts = /^([¥￥]?)([+-]?\d[\d,]*(?:\.\d+)?)$/.exec(text);
+  if (!parts) return text;
+  const number = new Decimal(parts[2].replaceAll(',', ''));
+  if (number.abs().lt(10_000)) return text;
+  const useYi = number.abs().gte(100_000_000) || number.abs().div(10_000).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).gte(10_000);
+  const scaled = number.div(useYi ? 100_000_000 : 10_000).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  return `${parts[1]}${parts[2].includes('.') ? scaled.toFixed(2) : scaled.toString()}${useYi ? '亿' : '万'}`;
+}
+
+/** 缺失数据留作图表断点，不能转换成零。 */
+export function toChartValue(value: unknown): number | null {
+  if (typeof value !== 'number' && (typeof value !== 'string' || !value.trim())) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+const HTML_ENTITIES: Record<string, string> = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'};
+
+export function escapeScreenHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => HTML_ENTITIES[char]);
 }

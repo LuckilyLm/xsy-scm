@@ -1,12 +1,17 @@
 <template>
   <div class="scm-metric" :class="[`is-${size}`, tone && `tone-${tone}`]">
-    <div class="scm-metric-label">
+    <div class="scm-metric-label" :title="label">
       {{ label }}
     </div>
     <div class="scm-metric-value">
-      <span v-if="prefix" class="scm-metric-prefix">{{ prefix }}</span>
-      <span class="scm-metric-number">{{ value }}</span>
-      <span v-if="unit" class="scm-metric-unit">{{ unit }}</span>
+      <fit-number
+        :value="value"
+        :prefix="prefix"
+        :unit="unit"
+        :size="numberSize"
+        :min-size="size === 'hero' ? 32 : 16"
+        :align="size === 'hero' ? 'center' : 'start'"
+      />
     </div>
     <div v-if="delta !== undefined" class="scm-metric-delta" :class="`is-${direction}`">
       <template v-if="direction === 'unknown'">
@@ -18,7 +23,8 @@
           <path v-else-if="direction === 'down'" d="M5 8.5 1 2h8z" fill="currentColor" />
           <rect v-else x="1.5" y="4.2" width="7" height="1.6" fill="currentColor" />
         </svg>
-        <span class="scm-metric-delta-text">{{ deltaText }}</span>
+        <span v-if="size === 'hero'" class="scm-metric-delta-text">{{ deltaText }}</span>
+        <fit-number v-else class="scm-metric-delta-value" :value="deltaText" :size="12" :min-size="10" />
         <span class="scm-metric-delta-label">较昨日</span>
       </template>
     </div>
@@ -27,6 +33,7 @@
 
 <script setup lang="ts">
 import {computed} from 'vue';
+import FitNumber from './fit-number.vue';
 import {deltaDirection, formatDeltaText} from '../format';
 
 /** 指标卡：用 size 表达视觉层级；环比固定是今天对比昨天。 */
@@ -51,6 +58,8 @@ const props = withDefaults(
   }
 );
 
+const numberSize = computed(() => ({hero: 60, lg: 30, md: 24, sm: 19})[props.size]);
+
 const direction = computed(() => deltaDirection(props.delta ?? null));
 const deltaText = computed(() => formatDeltaText(props.delta ?? null));
 </script>
@@ -66,10 +75,10 @@ const deltaText = computed(() => formatDeltaText(props.delta ?? null));
   min-width: 0;
 
   .scm-metric-label {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
+    min-width: 0;
+    max-width: 100%;
     font-size: 13px;
+    line-height: 1.2;
     color: @text-2;
     white-space: nowrap;
     overflow: hidden;
@@ -77,21 +86,10 @@ const deltaText = computed(() => formatDeltaText(props.delta ?? null));
   }
 
   .scm-metric-value {
-    display: flex;
-    align-items: baseline;
-    gap: 3px;
-    font-family: @font-num;
+    width: 100%;
+    min-width: 0;
     font-weight: 700;
     color: @text-1;
-    line-height: 1.1;
-    white-space: nowrap;
-  }
-
-  .scm-metric-prefix,
-  .scm-metric-unit {
-    font-size: 0.5em;
-    font-weight: 500;
-    color: @text-2;
   }
 
   .scm-metric-delta {
@@ -99,7 +97,8 @@ const deltaText = computed(() => formatDeltaText(props.delta ?? null));
     align-items: center;
     gap: 4px;
     font-size: 12px;
-    line-height: 1;
+    line-height: 1.25;
+    white-space: nowrap;
 
     &.is-up {
       color: @state-ok;
@@ -121,45 +120,24 @@ const deltaText = computed(() => formatDeltaText(props.delta ?? null));
     flex: 0 0 auto;
   }
 
+  .scm-metric-delta-value {
+    flex: 1 1 0%;
+  }
+
   .scm-metric-delta-label {
+    flex: 0 0 auto;
     color: @text-3;
     font-size: 12px;
   }
 
-  // 层级
   &.is-hero {
+    align-items: center;
     gap: 6px;
-
     .scm-metric-label {
       font-size: 15px;
-      letter-spacing: 1px;
     }
-
-    .scm-metric-value {
-      font-size: 62px;
-      letter-spacing: 1px;
-    }
-
     .scm-metric-delta {
       font-size: 14px;
-    }
-  }
-
-  &.is-lg .scm-metric-value {
-    font-size: 30px;
-  }
-
-  &.is-md .scm-metric-value {
-    font-size: 24px;
-  }
-
-  &.is-sm {
-    .scm-metric-label {
-      font-size: 12px;
-    }
-
-    .scm-metric-value {
-      font-size: 19px;
     }
   }
 

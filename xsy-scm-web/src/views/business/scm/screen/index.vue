@@ -116,7 +116,7 @@ onBeforeUnmount(() => {
 <style lang="less" scoped>
 @import './styles/variables.less';
 
-// 外层 wrapper 占满视口并负责居中；缩放作用在内层的 1920×1080 设计稿容器上
+// 外层负责全屏，内层保持等比缩放。
 .scm-screen-wrapper {
   position: relative;
   width: 100vw;
@@ -128,7 +128,7 @@ onBeforeUnmount(() => {
   background: @screen-bg;
 }
 
-// 绝对定位避开 flex 压缩，布局恒为 1920×1080；缩放由 useScreenScale 负责。
+// 内层的逻辑宽高由可用视口决定。
 .scm-screen {
   position: absolute;
   top: 50%;
@@ -138,8 +138,9 @@ onBeforeUnmount(() => {
 
 // 中列核心指标固定高度，剩余空间全部给供应链分布地图
 .scm-core-slot {
-  flex: 0 0 @core-h;
-  height: @core-h;
+  flex: 0 0 var(--screen-core-height);
+  height: var(--screen-core-height);
+  min-width: 0;
   display: flex;
   min-height: 0;
 }
@@ -156,7 +157,10 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  max-width: min(90%, 600px);
   gap: 12px;
+  text-align: center;
+  overflow-wrap: anywhere;
   font-size: 15px;
   color: @text-2;
 

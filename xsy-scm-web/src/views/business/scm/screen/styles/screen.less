@@ -3,10 +3,20 @@
 @import './variables.less';
 
 .scm-screen {
-  // 定位和缩放在 index.vue 里，这里只管尺寸和盒模型。
+  --screen-gap: @gap;
+  --screen-pad: @screen-pad;
+  --screen-core-height: @core-h;
+  --screen-trend-height: @trend-h;
+
+  &[data-density='compact'] {
+    --screen-gap: 14px;
+    --screen-pad: 16px;
+    --screen-core-height: 196px;
+    --screen-trend-height: 224px;
+  }
   width: @screen-w;
   height: @screen-h;
-  padding: @screen-pad;
+  padding: var(--screen-pad);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -19,21 +29,21 @@
     box-sizing: border-box;
   }
 
-  // 主区域：左 420 / 中 1000 / 右 420，与设计稿一致
+  // 两侧保留稳定宽度，超宽屏的额外空间留给中列。
   .scm-body {
     flex: 1;
     min-height: 0;
     display: flex;
-    gap: @gap;
-    margin-top: @gap;
+    gap: var(--screen-gap);
+    margin-top: var(--screen-gap);
   }
 
   .scm-col-side {
-    width: @col-side;
-    flex: 0 0 @col-side;
+    flex: 0 0 clamp(320px, 22.35%, @col-side);
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: @gap;
+    gap: var(--screen-gap);
     min-height: 0;
   }
 
@@ -42,7 +52,7 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: @gap;
+    gap: var(--screen-gap);
     min-height: 0;
   }
 
@@ -55,7 +65,12 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    min-width: 0;
+    min-height: 0;
+    gap: 6px;
+    padding: 8px;
+    text-align: center;
+    overflow-wrap: anywhere;
     color: @text-3;
     font-size: 14px;
 
@@ -73,9 +88,11 @@
     }
   }
 
-  // 大屏是固定设计稿，内容超出时用细滚动条而不是撑破面板
+  // 列表使用面板内原生滚动，外层尺寸不随数据量变化。
   .scm-scroll {
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 
     &::-webkit-scrollbar {
       width: 4px;
@@ -93,9 +110,16 @@
   }
 }
 
-// 全屏作用在外层 wrapper，设计稿容器始终保持 1920×1080。
+// 全屏作用在外层，内层随可用尺寸等比调整。
 .scm-screen-wrapper:fullscreen {
   width: 100vw;
   height: 100vh;
   background: @screen-bg;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scm-screen .scm-spinner,
+  .scm-screen .scm-icon.is-spin {
+    animation: none;
+  }
 }

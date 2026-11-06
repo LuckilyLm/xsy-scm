@@ -70,7 +70,8 @@ const purchaseDelta = computed(() => deltaOf(props.purchase?.todayPurchaseOrderC
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 8px 16px 10px;
+  min-width: 0;
+  padding: 10px 16px;
 }
 
 .scm-core-hero {
@@ -79,6 +80,10 @@ const purchaseDelta = computed(() => deltaOf(props.purchase?.todayPurchaseOrderC
   display: flex;
   align-items: center;
   justify-content: center;
+  > * {
+    width: 100%;
+    min-width: 0;
+  }
   // 分隔主数字和次级指标
   border-bottom: 1px solid rgba(27, 77, 122, 0.5);
   padding-bottom: 6px;
@@ -88,12 +93,20 @@ const purchaseDelta = computed(() => deltaOf(props.purchase?.todayPurchaseOrderC
 .scm-core-sub {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 
   > * + * {
     padding-left: 12px;
     border-left: 1px solid rgba(27, 77, 122, 0.5);
   }
+}
+
+.scm-screen[data-density='compact'] .scm-core {
+  padding-block: 6px;
+}
+.scm-screen[data-density='compact'] .scm-core-hero {
+  padding-bottom: 4px;
+  margin-bottom: 5px;
 }
 </style>

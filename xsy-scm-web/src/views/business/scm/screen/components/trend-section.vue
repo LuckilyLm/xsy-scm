@@ -10,6 +10,7 @@
           type="button"
           class="scm-trend-tab"
           :class="{'is-active': range === item.value}"
+          :aria-pressed="range === item.value"
           @click="emit('update:range', item.value)"
         >
           {{ item.label }}
@@ -20,29 +21,29 @@
     <div class="scm-trend-charts">
       <screen-panel title="销售趋势" flex flush>
         <template #extra>销售额 / 订单数</template>
-        <div v-if="empty" class="scm-state">
+        <div v-if="salesEmpty" class="scm-state">
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-show="!empty" ref="salesEl" class="scm-chart" />
+        <div v-show="!salesEmpty" ref="salesEl" class="scm-chart" />
       </screen-panel>
 
       <screen-panel title="采购趋势" flex flush>
         <template #extra>采购额 / 采购单</template>
-        <div v-if="empty" class="scm-state">
+        <div v-if="purchaseEmpty" class="scm-state">
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-show="!empty" ref="purchaseEl" class="scm-chart" />
+        <div v-show="!purchaseEmpty" ref="purchaseEl" class="scm-chart" />
       </screen-panel>
 
       <screen-panel title="库存趋势" flex flush>
         <template #extra>库存量 / 出入库</template>
-        <div v-if="empty" class="scm-state">
+        <div v-if="inventoryEmpty" class="scm-state">
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-show="!empty" ref="inventoryEl" class="scm-chart" />
+        <div v-show="!inventoryEmpty" ref="inventoryEl" class="scm-chart" />
       </screen-panel>
     </div>
   </div>
@@ -52,7 +53,7 @@
 import {computed, ref, watch} from 'vue';
 import ScreenPanel from './screen-panel.vue';
 import {useEcharts} from '../composables/use-echarts';
-import {toNumber} from '../format';
+import {escapeScreenHtml, formatAmount, formatQty, formatScreenCompact, toChartValue} from '../format';
 import type {ScreenRange, TrendData} from '../types';
 
 /** 三张趋势图共用一个日期区间。 */
@@ -70,15 +71,27 @@ const RANGES: Array<{label: string; value: ScreenRange}> = [
   {label: '近 30 天', value: '30d'},
 ];
 
-const empty = computed(() => !props.trend.dates?.length);
+type SeriesKey = 'sales' | 'orders' | 'purchaseAmounts' | 'purchaseOrders' | 'inventoryQuantity' | 'inboundQuantity' | 'outboundQuantity';
+
+function values(key: SeriesKey) {
+  return (props.trend.dates ?? []).map((_, index) => toChartValue(props.trend[key]?.[index]));
+}
+
+function hasValues(...keys: SeriesKey[]) {
+  return keys.some((key) => values(key).some((value) => value !== null));
+}
+
+const salesEmpty = computed(() => !hasValues('sales', 'orders'));
+const purchaseEmpty = computed(() => !hasValues('purchaseAmounts', 'purchaseOrders'));
+const inventoryEmpty = computed(() => !hasValues('inventoryQuantity', 'inboundQuantity', 'outboundQuantity'));
 
 const salesEl = ref<HTMLElement>();
 const purchaseEl = ref<HTMLElement>();
 const inventoryEl = ref<HTMLElement>();
 
-const salesChart = useEcharts(salesEl);
-const purchaseChart = useEcharts(purchaseEl);
-const inventoryChart = useEcharts(inventoryEl);
+const salesChart = useEcharts(salesEl, {resizeOnAnimationFrame: true});
+const purchaseChart = useEcharts(purchaseEl, {resizeOnAnimationFrame: true});
+const inventoryChart = useEcharts(inventoryEl, {resizeOnAnimationFrame: true});
 
 // 颜色与 variables.less 保持一致
 const C = {
@@ -87,32 +100,74 @@ const C = {
   text3: '#7d9dbd',
   cyan: '#27d7fe',
   blue: '#2f80ed',
-  green: '#34d399',
-  warn: '#f6c344',
-  orange: '#ff8a65',
   border: 'rgba(27, 77, 122, 0.6)',
 };
 
 const AXIS = {
   axisLine: {lineStyle: {color: C.border}},
-  axisLabel: {color: C.text2, fontSize: 12},
-  splitLine: {lineStyle: {color: 'rgba(27, 77, 122, 0.35)'}},
+  axisTick: {show: false},
+  axisLabel: {color: C.text2, fontSize: 11, hideOverlap: true},
 };
 
-const TOOLTIP = {
-  trigger: 'axis',
-  backgroundColor: 'rgba(7, 30, 66, 0.94)',
-  borderColor: '#1b4d7a',
-  textStyle: {color: C.text1, fontSize: 12},
-};
+interface SeriesLabel {
+  key: SeriesKey;
+  name: string;
+  money?: boolean;
+}
 
-const LEGEND = {
-  top: 2,
-  right: 6,
-  itemWidth: 10,
-  itemHeight: 6,
-  textStyle: {color: C.text2, fontSize: 12},
-};
+function chartLayout(fields: SeriesLabel[], boundaryGap: boolean) {
+  const t = props.trend;
+  return {
+    animation: false,
+    tooltip: {
+      trigger: 'axis',
+      confine: true,
+      backgroundColor: 'rgba(7, 30, 66, 0.96)',
+      borderColor: '#2f6f9e',
+      padding: [8, 12],
+      textStyle: {color: C.text1, fontSize: 12},
+      extraCssText: 'max-width:min(280px,100%);white-space:normal;overflow-wrap:anywhere;border-radius:6px;',
+      formatter: (params: unknown) => {
+        const index = (params as Array<{dataIndex?: number}>)[0]?.dataIndex;
+        if (index === undefined) return '';
+        const rows = fields.map(({key, name, money}) => {
+          const value = t[key]?.[index];
+          const text = toChartValue(value) === null ? '—' : money ? `¥${formatAmount(value)}` : formatQty(value);
+          return `${name}：${text}`;
+        });
+        return `<b>${escapeScreenHtml(t.fullDates?.[index] ?? t.dates[index] ?? '')}</b><br/>${rows.join('<br/>')}`;
+      },
+    },
+    legend: {
+      top: 4,
+      left: 10,
+      itemWidth: 12,
+      itemHeight: 6,
+      itemGap: 14,
+      textStyle: {color: C.text2, fontSize: 11},
+      data: fields.map(({name}) => name),
+    },
+    grid: {left: 8, right: 8, top: 28, bottom: 6, containLabel: true},
+    xAxis: {
+      type: 'category',
+      data: t.dates,
+      boundaryGap,
+      ...AXIS,
+      axisLabel: {...AXIS.axisLabel, interval: Math.max(0, Math.ceil(t.dates.length / 7) - 1), showMaxLabel: true},
+    },
+    yAxis: [valueAxis(true), valueAxis(false)],
+  };
+}
+
+function valueAxis(gridLines: boolean) {
+  return {
+    type: 'value',
+    ...AXIS,
+    splitNumber: 3,
+    splitLine: {show: gridLines, lineStyle: {color: C.border, type: 'dashed'}},
+    axisLabel: {...AXIS.axisLabel, color: gridLines ? C.text2 : C.text3, formatter: (value: number) => formatScreenCompact(formatQty(value))},
+  };
+}
 
 /** 折线/面积用的公共 series 片段。 */
 function areaStyle(color: string) {
@@ -126,16 +181,14 @@ function areaStyle(color: string) {
 }
 
 function renderSales() {
-  const t = props.trend;
   salesChart.setOption({
-    tooltip: TOOLTIP,
-    legend: {...LEGEND, data: ['销售额', '订单数']},
-    grid: {left: 6, right: 6, top: 26, bottom: 4, containLabel: true},
-    xAxis: {type: 'category', data: t.dates, boundaryGap: false, ...AXIS},
-    yAxis: [
-      {type: 'value', ...AXIS, splitLine: {show: false}},
-      {type: 'value', ...AXIS, splitLine: {show: false}, axisLabel: {...AXIS.axisLabel, color: C.text3}},
-    ],
+    ...chartLayout(
+      [
+        {key: 'sales', name: '销售额', money: true},
+        {key: 'orders', name: '订单数'},
+      ],
+      false
+    ),
     series: [
       {
         name: '销售额',
@@ -153,30 +206,28 @@ function renderSales() {
             ],
           },
         },
-        data: t.sales.map(toNumber),
+        data: values('sales'),
       },
       {
         name: '订单数',
-        ...areaStyle(C.warn),
+        ...areaStyle(C.blue),
         yAxisIndex: 1,
-        lineStyle: {width: 1.5, color: C.warn, type: 'dashed'},
-        data: t.orders.map(toNumber),
+        lineStyle: {width: 1.5, color: C.blue, type: 'dashed'},
+        data: values('orders'),
       },
     ],
   });
 }
 
 function renderPurchase() {
-  const t = props.trend;
   purchaseChart.setOption({
-    tooltip: TOOLTIP,
-    legend: {...LEGEND, data: ['采购额', '采购单']},
-    grid: {left: 6, right: 6, top: 26, bottom: 4, containLabel: true},
-    xAxis: {type: 'category', data: t.dates, ...AXIS},
-    yAxis: [
-      {type: 'value', ...AXIS, splitLine: {show: false}},
-      {type: 'value', ...AXIS, splitLine: {show: false}, axisLabel: {...AXIS.axisLabel, color: C.text3}},
-    ],
+    ...chartLayout(
+      [
+        {key: 'purchaseAmounts', name: '采购额', money: true},
+        {key: 'purchaseOrders', name: '采购单'},
+      ],
+      true
+    ),
     series: [
       {
         name: '采购额',
@@ -196,30 +247,29 @@ function renderPurchase() {
             ],
           },
         },
-        data: t.purchaseAmounts.map(toNumber),
+        data: values('purchaseAmounts'),
       },
       {
         name: '采购单',
-        ...areaStyle(C.warn),
+        ...areaStyle(C.blue),
         yAxisIndex: 1,
-        lineStyle: {width: 1.5, color: C.warn},
-        data: t.purchaseOrders.map(toNumber),
+        lineStyle: {width: 1.5, color: C.blue},
+        data: values('purchaseOrders'),
       },
     ],
   });
 }
 
 function renderInventory() {
-  const t = props.trend;
   inventoryChart.setOption({
-    tooltip: TOOLTIP,
-    legend: {...LEGEND, data: ['库存量', '入库', '出库']},
-    grid: {left: 6, right: 6, top: 26, bottom: 4, containLabel: true},
-    xAxis: {type: 'category', data: t.dates, boundaryGap: false, ...AXIS},
-    yAxis: [
-      {type: 'value', ...AXIS, splitLine: {show: false}},
-      {type: 'value', ...AXIS, splitLine: {show: false}, axisLabel: {...AXIS.axisLabel, color: C.text3}},
-    ],
+    ...chartLayout(
+      [
+        {key: 'inventoryQuantity', name: '库存量'},
+        {key: 'inboundQuantity', name: '入库'},
+        {key: 'outboundQuantity', name: '出库'},
+      ],
+      false
+    ),
     series: [
       {
         name: '库存量',
@@ -237,21 +287,21 @@ function renderInventory() {
             ],
           },
         },
-        data: t.inventoryQuantity.map(toNumber),
+        data: values('inventoryQuantity'),
       },
       {
         name: '入库',
-        ...areaStyle(C.green),
+        ...areaStyle(C.blue),
         yAxisIndex: 1,
-        lineStyle: {width: 1.5, color: C.green},
-        data: t.inboundQuantity.map(toNumber),
+        lineStyle: {width: 1.5, color: C.blue},
+        data: values('inboundQuantity'),
       },
       {
         name: '出库',
-        ...areaStyle(C.orange),
+        ...areaStyle(C.text2),
         yAxisIndex: 1,
-        lineStyle: {width: 1.5, color: C.orange},
-        data: t.outboundQuantity.map(toNumber),
+        lineStyle: {width: 1.5, color: C.text2},
+        data: values('outboundQuantity'),
       },
     ],
   });
@@ -261,12 +311,9 @@ function renderInventory() {
 watch(
   () => props.trend,
   () => {
-    if (empty.value) {
-      return;
-    }
-    renderSales();
-    renderPurchase();
-    renderInventory();
+    if (!salesEmpty.value) renderSales();
+    if (!purchaseEmpty.value) renderPurchase();
+    if (!inventoryEmpty.value) renderInventory();
   },
   {immediate: true, deep: false}
 );
@@ -276,9 +323,10 @@ watch(
 @import '../styles/variables.less';
 
 .scm-trend {
-  flex: 0 0 @trend-h;
-  height: @trend-h;
-  margin-top: @gap;
+  flex: 0 0 var(--screen-trend-height);
+  height: var(--screen-trend-height);
+  min-width: 0;
+  margin-top: var(--screen-gap);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -293,7 +341,7 @@ watch(
 
 .scm-trend-title {
   flex: 1;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: @text-1;
   letter-spacing: 0.5px;
@@ -313,7 +361,7 @@ watch(
 .scm-trend-toggle {
   display: inline-flex;
   border: 1px solid @panel-border;
-  border-radius: 3px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -347,16 +395,17 @@ watch(
   flex: 1;
   min-height: 0;
   display: flex;
-  gap: @gap;
+  gap: var(--screen-gap);
 
   > * {
-    flex: 1;
+    flex: 1 1 0%;
     min-width: 0;
   }
 }
 
 .scm-chart {
-  flex: 1;
+  flex: 1 1 0%;
+  min-width: 0;
   min-height: 0;
   width: 100%;
 }
