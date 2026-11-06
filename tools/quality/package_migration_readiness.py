@@ -32,6 +32,7 @@ import re
 import shutil
 import subprocess
 import sys
+from java_source import JavaSource
 import tempfile
 from pathlib import Path
 
@@ -46,7 +47,7 @@ POM = guard.SERVER / "pom.xml"
 # readiness 会因为「找不到被检查文件」而失败 —— 而它本该在迁移全程继续有效。
 ARCHITECTURE_TEST_RELATIVE = "ScmArchitectureTest.java"
 W5_BASE_RELATIVE = "common/ScmW5PgITBase.java"
-STOCKTAKE_IT_RELATIVE = "inventory/ScmStocktakeImportPgIT.java"
+STOCKTAKE_IT_RELATIVE = "inventory/InventoryTest.java"
 MIGRATION_TOOL = Path(__file__).resolve().parent / "migrate_baseline_paths.py"
 MIGRATION_SELFTEST = Path(__file__).resolve().parent / "test_quality_tools.py"
 MIGRATION_SELFTEST_MARKER = "class MigrateLineTest"
@@ -306,7 +307,23 @@ def check_editorconfig_is_markdown_safe() -> Check:
 
 def check_stocktake_fixture_is_isolated() -> Check:
     check = Check("stocktake-fixture", "ScmStocktakeImportPgIT 使用独占 warehouse")
-    source = text(resolve_migrating_file(STOCKTAKE_IT_RELATIVE))
+    path = resolve_migrating_file(STOCKTAKE_IT_RELATIVE)
+    code = JavaSource(path, STOCKTAKE_IT_RELATIVE, text(path)).code
+    matches = list(re.finditer(r'\bclass\s+ScmStocktakeImportPgIT\s+extends\s+ScmW6PgITBase\s*\{',code))
+    if len(matches) != 1:
+        check.failures.append("stocktake import nested test class missing or ambiguous")
+        return check
+    start = matches[0].end()
+    depth = 1
+    end = start
+    while end < len(code) and depth:
+        if code[end] == '{': depth += 1
+        elif code[end] == '}': depth -= 1
+        end += 1
+    if depth:
+        check.failures.append("stocktake import nested test class is incomplete")
+        return check
+    source = code[start:end - 1]
     if not source:
         check.failures.append("stocktake import IT not found")
         return check

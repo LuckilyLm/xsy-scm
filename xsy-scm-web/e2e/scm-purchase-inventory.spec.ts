@@ -1994,11 +1994,11 @@ test.describe('scm-purchase', () => {
     await confirmReceipt(r1, [line(r1, '4.0000', '4.0000')]);
     await confirmReceipt(r2, [line(r2, '5.0000', '5.0000')]);
     const v1 = (await orderDetail(p1.id)).version,
-      v2 = (await orderDetail(p2.id)).version;
+      otherVersion = (await orderDetail(p2.id)).version;
     await post('/scm/purchase/batch/short-close', {
       orders: [
         {id: p1.id, version: v1},
-        {id: p2.id, version: v2},
+        {id: p2.id, version: otherVersion},
       ],
       shortCloseReason: 'W5 验收批量少收',
     });

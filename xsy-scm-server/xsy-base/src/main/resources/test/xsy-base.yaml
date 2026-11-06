@@ -13,7 +13,7 @@ spring:
     placeholder-replacement: false
   # 数据库连接信息
   datasource:
-    url: ${XSY_DB_URL:jdbc:p6spy:postgresql://127.0.0.1:15432/xsy_scm?currentSchema=xsy&ApplicationName=xsy-scm-test}
+    url: ${XSY_DB_URL:jdbc:p6spy:postgresql://127.0.0.1:15432/xsy?currentSchema=xsy&ApplicationName=xsy-scm-test}
     username: ${XSY_DB_USERNAME:xsy_scm_app}
     password: ${XSY_DB_PASSWORD:}
     driver-class-name: com.p6spy.engine.spy.P6SpyDriver

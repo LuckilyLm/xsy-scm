@@ -3,10 +3,13 @@ import contextlib
 import copy
 import io
 import json
+import os
 from pathlib import Path
 import shutil
 import tempfile
+import subprocess
 import unittest
+import uuid
 from unittest.mock import patch
 
 import build_install_baseline as baseline
@@ -140,6 +143,49 @@ class InstallBaselineTest(unittest.TestCase):
             changed[1][field] = value
             with self.assertRaises(ValueError):
                 cutover.history_state(rows + changed, legacy)
+
+    def test_permission_upgrade_requires_complete_known_history(self):
+        _, legacy = self.legacy()
+        snapshot = guard.scan_migrations(guard.MIGRATION_DIR)
+        rows = [{'version': v, 'type': 'SQL', 'description': '', 'script': e['file'],
+                 'checksum': e['checksum'], 'success': True} for v, e in snapshot.items()
+                if guard.version_key(v) <= guard.version_key(cutover.VERSION)]
+        increments = [{'version': v, 'type': 'SQL', 'description': '', 'script': snapshot[v]['file'],
+                       'checksum': snapshot[v]['checksum'], 'success': True} for v in ('1001','1002','1003')]
+        marker = [{'version': cutover.VERSION, 'type': 'BASELINE', 'description': cutover.DESCRIPTION,
+                   'script': '<< Flyway Baseline >>', 'checksum': None, 'success': True}]
+        self.assertEqual('modules_upgraded', cutover.history_state(rows + increments, legacy))
+        self.assertEqual('cutover_upgraded', cutover.history_state(marker + increments, legacy))
+        bad_chains = [increments[1:], increments[:1] + increments[2:], list(reversed(increments)),
+                      increments + [dict(increments[-1], version='1004')]]
+        for chain in bad_chains:
+            with self.assertRaises(ValueError):
+                cutover.history_state(rows + chain, legacy)
+        for field, value in [('checksum', increments[-1]['checksum'] + 1), ('script','changed.sql'),
+                             ('success',False), ('type','BASELINE')]:
+            changed = copy.deepcopy(increments)
+            changed[-1][field] = value
+            with self.assertRaises(ValueError):
+                cutover.history_state(rows + changed, legacy)
+
+    @unittest.skipUnless(os.environ.get('XSY_PERMISSION_PG_IT') == '1', '需要显式指定本地PostgreSQL权限升级验证')
+    def test_permission_upgrade_preserves_existing_ids_roles_and_sequences(self):
+        config = json.loads(subprocess.run(['docker','compose','config','--format','json'],
+            cwd=baseline.ROOT, capture_output=True, check=True).stdout)
+        user = config['services']['postgres']['environment']['POSTGRES_USER']
+        database = 'xsy_permission_' + uuid.uuid4().hex[:10] + '_it'
+        command = ['docker','compose','exec','-T','postgres']
+        subprocess.run(command + ['createdb','-U',user,database], cwd=baseline.ROOT, check=True, capture_output=True)
+        system = (guard.MIGRATION_DIR/'V1000.01__system.sql').read_text(encoding='utf-8')
+        import re
+        definitions = [re.search(r'CREATE TABLE xsy\.' + table + r' \(.*?\n\);',system,re.S).group()
+                       for table in ('t_menu','t_role','t_role_menu')]
+        case = (baseline.ROOT/'xsy-scm-server/xsy-admin/src/test/resources/sql/permission_upgrade.sql').read_text(encoding='utf-8')
+        migration = (guard.MIGRATION_DIR/'V1003__dashboard_permissions.sql').read_text(encoding='utf-8')
+        script = 'CREATE SCHEMA xsy;\n' + '\n'.join(definitions) + '\n' + case.replace('-- APPLY_PERMISSION_MIGRATION',migration)
+        result = subprocess.run(command + ['psql','-X','-q','-v','ON_ERROR_STOP=1','-U',user,'-d',database],
+            cwd=baseline.ROOT,input=script.encode('utf-8'),capture_output=True)
+        self.assertEqual(0,result.returncode,result.stderr.decode('utf-8',errors='replace'))
 
     def test_catalog_drift_is_explicit_and_order_independent(self):
         a = fingerprints({'table:a': {'not_null':True,'type':'bigint'}})

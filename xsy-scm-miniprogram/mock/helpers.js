@@ -35,7 +35,7 @@ export function delay(min = 120, max = 320) {
 
 /**
  * 内存分页，对齐后端 `PageResult`。
- * 注意 V2 用 `pageNum` / `pageSize`（v1 的 `page` 已废弃）。
+ * 注意 用 `pageNum` / `pageSize`（v1 的 `page` 已废弃）。
  */
 export function paginate(list, { pageNum = 1, pageSize = 10 } = {}) {
   const num = Math.max(1, Number(pageNum) || 1);

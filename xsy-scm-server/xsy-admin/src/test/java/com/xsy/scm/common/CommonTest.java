@@ -1837,7 +1837,7 @@ class CommonTest {
         }
 
         /**
-         * V2 数据库禁止外键约束（见 AGENTS.md）。V127 清理最后一个外键后，
+         * 数据库禁止外键约束（见 AGENTS.md）。V127 清理最后一个外键后，
          * xsy schema 的外键数量必须保持为零。
          */
         @Test

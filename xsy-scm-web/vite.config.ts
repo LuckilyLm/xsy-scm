@@ -36,7 +36,7 @@ export default ({mode}) => {
     },
     server: {
       host: '0.0.0.0',
-      // V2 修正：上游为 8081，但本机 Windows 动态端口范围是 1024-15000
+      // 修正：上游为 8081，但本机 Windows 动态端口范围是 1024-15000
       // （netsh int ipv4 show dynamicport tcp），8081 落在范围内会 bind 失败。
       // 改为范围之外的 18081，并支持 VITE_DEV_PORT 覆盖。
       port: Number(env.VITE_DEV_PORT) || 18081,

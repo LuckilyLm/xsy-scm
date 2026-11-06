@@ -805,12 +805,12 @@ class SortingTest {
         @DisplayName("范围是「授权仓 ∩ 可见指派人」：分拣员只看派给自己的，管理者看全部")
         void visibilityIntersectsWarehouseAndAssignee() {
             var mine = order("v1", "2.0000");
-            var theirs = order("v2", "2.0000");
+            var theirs = order("otherVersion", "2.0000");
             var free = order("v3", "2.0000");
             Long myTask = as(lead, QUEUE_MANAGER,
                     () -> sorting.create(createForm("v1", List.of(mine.item()), sorterA), key("v1"))).getTask().getId();
             Long theirTask = as(lead, QUEUE_MANAGER,
-                    () -> sorting.create(createForm("v2", List.of(theirs.item()), sorterB), key("v2"))).getTask().getId();
+                    () -> sorting.create(createForm("otherVersion", List.of(theirs.item()), sorterB), key("otherVersion"))).getTask().getId();
             Long freeTask = as(lead, QUEUE_MANAGER,
                     () -> sorting.create(createForm("v3", List.of(free.item()), null), key("v3"))).getTask().getId();
 

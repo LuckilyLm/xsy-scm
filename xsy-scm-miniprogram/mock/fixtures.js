@@ -3,7 +3,7 @@
  *
  * ⚠️ 这些字段形状是**暂定约定**，依据：
  *   1. docs/reference/2026-09-22-遗留商城v1约定参考.md（v1 保存的接口语义）
- *   2. V2 既有领域（product / pricing / customer / inventory 的真实枚举与字段习惯）
+ *   2. 既有领域（product / pricing / customer / inventory 的真实枚举与字段习惯）
  *
  * 后端 `/scm/mall/**` 落地后，**只需核对字段名并调整本文件**，
  * 页面与 api 层不用改（它们只依赖 src/api/mall/** 的签名）。

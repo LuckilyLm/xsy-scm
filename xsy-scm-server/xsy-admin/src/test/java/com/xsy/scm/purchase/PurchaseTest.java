@@ -7148,7 +7148,7 @@ class PurchaseTest {
         @Test
         @DisplayName("全库零外键 + 库存表归属 W6/V19 而非 W5（§3 / §8.1）")
         void noForeignKeysAndInventoryTablesBelongToW6() {
-            // 全库 FK=0 是 V2 起定下的既有纪律，任何域都不得引入第一个外键。
+            // 全库 FK=0 是 起定下的既有纪律，任何域都不得引入第一个外键。
             // 库存表之间（余额 → 流水）的引用完整性同样走服务层守卫，不走 DB 外键。
             assertThat(jdbc.queryForObject(
                     "SELECT count(*) FROM pg_constraint WHERE contype = 'f'", Integer.class)).isZero();

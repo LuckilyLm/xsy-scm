@@ -154,7 +154,7 @@ class Verification:
                  [sys.executable, quality_tests, "CommonDomainSourceGuardTest"],
                  ROOT / "tools/quality")
         self.run("quality-source-rules-selftest",
-                 [sys.executable, quality_tests, "StageCommentScannerTest", "MagicStringRulingTest"],
+                 [sys.executable, quality_tests, "StageCommentScannerTest", "MagicStringRulingTest", "StocktakeFixtureSelectionTest"],
                  ROOT / "tools/quality")
         self.run("baseline-migration-selftest",
                  [sys.executable, quality_tests, "MigrateLineTest", "MigrateFileReportTest",

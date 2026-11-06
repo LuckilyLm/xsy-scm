@@ -144,7 +144,7 @@ def parse_tsc_output(raw: str) -> list[Diagnostic]:
 
 
 def run_typecheck() -> tuple[str, int]:
-    """Run ``vue-tsc --noEmit`` inside the V2 web workspace."""
+    """Run ``vue-tsc --noEmit`` inside the web workspace."""
     node = shutil.which("node")
     if not node:
         raise RuntimeError("node is not on PATH")

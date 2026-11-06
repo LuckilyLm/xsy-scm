@@ -38,7 +38,7 @@ xsy-scm/
 - Java 21、Maven 3.9+
 - Node.js 20+、npm
 - PostgreSQL（仓库验证环境为 18）与 Redis
-- 运行秤端或 Docker 部署时另需 .NET 10 SDK 或 Docker Engine / Docker Desktop（Linux 容器）与 Compose v2
+- 运行秤端或 Docker 部署时另需 .NET 10 SDK 或 Docker Engine / Docker Desktop（Linux 容器）与 Docker Compose
 
 ## 本地开发
 

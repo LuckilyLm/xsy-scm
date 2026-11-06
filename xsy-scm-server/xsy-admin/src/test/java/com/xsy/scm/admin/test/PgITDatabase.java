@@ -26,7 +26,7 @@ public interface PgITDatabase {
     /**
      * 未显式指定时使用的默认地址。
      */
-    String DEFAULT_URL = "jdbc:postgresql://127.0.0.1:15432/xsy_scm?currentSchema=xsy";
+    String DEFAULT_URL = "jdbc:postgresql://127.0.0.1:15432/xsy_it?currentSchema=xsy";
 
     /**
      * 裸 JDBC 连接地址：优先取 {@code XSY_DB_URL}，并剥掉 p6spy 前缀。

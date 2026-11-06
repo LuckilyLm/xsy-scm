@@ -17,6 +17,7 @@ import re
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 import migrate_baseline_paths as migrate
@@ -1021,6 +1022,35 @@ class CaptureAttackTest(unittest.TestCase):
         self.assertEqual(code, 0)
         allowed = guard.read_baseline(rule)
         self.assertEqual(sum(allowed.values()), 1)
+
+class StocktakeFixtureSelectionTest(unittest.TestCase):
+    def check(self, source):
+        with patch.object(readiness, 'resolve_migrating_file', side_effect=lambda name: Path(name)), \
+                patch.object(readiness, 'text', side_effect=lambda path: '@Transactional' if path.name == 'ScmW5PgITBase.java' else source):
+            return readiness.check_stocktake_fixture_is_isolated()
+
+    def test_other_nested_classes_do_not_change_fixture_scope(self):
+        source = '''class InventoryTest {
+            class OtherTest { void example() { seedWarehouseId(); } }
+            class ScmStocktakeImportPgIT extends ScmW6PgITBase {
+                Long fixtureWarehouseId() { return newWarehouse("exclusive"); }
+            }
+        }'''
+        self.assertFalse(self.check(source).failures)
+
+    def test_shared_warehouse_inside_target_still_fails(self):
+        source = '''class ScmStocktakeImportPgIT extends ScmW6PgITBase {
+            Long fixtureWarehouseId() { newWarehouse("unused"); return seedWarehouseId(); }
+        }'''
+        self.assertTrue(self.check(source).failures)
+
+    def test_missing_class_or_only_commented_override_cannot_pass(self):
+        self.assertTrue(self.check('class OtherTest {}').failures)
+        source = '''class ScmStocktakeImportPgIT extends ScmW6PgITBase {
+            // fixtureWarehouseId() { return newWarehouse("exclusive"); }
+        }'''
+        self.assertTrue(self.check(source).failures)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

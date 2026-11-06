@@ -3,7 +3,7 @@
   "migrations": {
     "1000.1": {
       "file": "V1000.01__system.sql",
-      "checksum": -349996684
+      "checksum": 361724772
     },
     "1000.2": {
       "file": "V1000.02__common.sql",
@@ -107,7 +107,7 @@
     },
     "1003": {
       "file": "V1003__dashboard_permissions.sql",
-      "checksum": -1627544089
+      "checksum": -1079581079
     }
   }
 }

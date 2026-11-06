@@ -10,7 +10,7 @@
 | 前端格式 | `xsy-scm-web` 的 `npm run format` / `format:check`、`.prettierrc.cjs` | 按 2 空格、150 列、单引号、LF 格式化源码、E2E、单测和配置 |
 | 迁移校验 | `migration_checksum_guard.py`、`migration_checksum_snapshot.json` | 校验已应用 Flyway 文件的字节和版本清单 |
 | 模块SQL清单 | `build_install_baseline.py check`、`install_baseline_manifest.json` | 校验24份最终模块SQL及旧库切换元数据，不重放历史V |
-| 旧库基线切换 | `cutover_schema_baseline.py`、`schema_catalog.py` | 默认只读核验V243/V244历史和结构；显式apply保留业务数据与旧历史后切换，详见部署说明 |
+| 当前库结构核对 | `cutover_schema_baseline.py`、`schema_catalog.py` | 默认只读核验当前已知历史与结构；资料迁移采用新库导入路线，详见部署说明 |
 | 前端类型基线 | `ts_baseline_ratchet.py` | 区分历史诊断与新增错误，SCM 源码错误要求为零 |
 | 集成测试库重置 | `tools/reset-it-db.sh [库名]` | 只允许名字以 `_it` 结尾的库；清空前打印目标并等待 5 秒，开发库/演示库直接拒绝 |
 | 质量守卫 | `quality/quality_guard.py`、`quality/scm_*_guard.py`、`quality/scm_error_code_registry.py` | 按不同规则检查 Java 质量、领域边界与错误码；门禁自测合集见 `quality/test_quality_tools.py` |

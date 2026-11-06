@@ -3,7 +3,7 @@ spring:
   # PostgreSQL 基线。
   # 凭据通过环境变量注入，不要在此提交真实密码。
   datasource:
-    url: ${XSY_DB_URL:jdbc:p6spy:postgresql://127.0.0.1:15432/xsy_scm?currentSchema=xsy&ApplicationName=xsy-scm}
+    url: ${XSY_DB_URL:jdbc:p6spy:postgresql://127.0.0.1:15432/xsy?currentSchema=xsy&ApplicationName=xsy-scm}
     username: ${XSY_DB_USERNAME:xsy_scm_app}
     password: ${XSY_DB_PASSWORD:}
     driver-class-name: com.p6spy.engine.spy.P6SpyDriver

@@ -19,7 +19,7 @@
       "file": "V1000.01__system.sql",
       "module": "system",
       "version": "1000.1",
-      "sha256": "f2d7ded214497b1217a0fdec927131a62043827f106e39b2fed923ea29f21f28",
+      "sha256": "cc33db87b7d3a80a83469e8337c0fb8e07098d4f2b0da197aeaf7dfd6c30fb65",
       "tables": [
         "t_change_log",
         "t_config",
@@ -604,7 +604,7 @@
     }
   ],
   "columns": 2685,
-  "catalog_sha256": "a1f82d9fadbae4a85049cd50fbdc63f8aea4df8efa8f807cad44e3b892664796",
+  "catalog_sha256": "71a636dc8d39bc798a78402e63863d5ae61b5551c49f4ecce9056231e5697fc2",
   "seed_tables": [
     "t_config",
     "t_department",

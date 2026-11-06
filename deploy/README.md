@@ -36,7 +36,7 @@ docker compose ps -a
 
 浏览器访问 `http://服务器IP:7515`（端口随 `WEB_PORT` 修改）。前端 API 固定走同源 `/api`，由 Nginx 转发到 `backend:1024`。上传入口限制 25 MB，后端单文件限制 20 MB。数据库、Redis、MinIO API 和 Console 默认仅绑定本机，Console 可通过 SSH 隧道访问。
 
-首次空库由Flyway自动创建`xsy`，顺序执行`db/migration/modules`中24份模块SQL（V1000.01～V1000.24），直接创建截至原V244的最终结构与系统默认数据。已有旧V历史的库必须先按下节核对并切换基线，再启动新版本；保持baseline-on-migrate关闭，不自动接管非空库。
+数据库名与schema统一为`xsy`。首次空库由Flyway创建schema，顺序执行`db/migration/modules`中24份模块SQL和后续增量。已有数据按下节导入新库，保持baseline-on-migrate关闭，不自动接管旧历史。
 
 ```bash
 docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT version, success FROM xsy.flyway_schema_history ORDER BY installed_rank;"'
@@ -48,16 +48,16 @@ docker compose logs -f web
 
 初始管理员由system模块默认数据写入（账号`admin`；初始口令来源可从Git中的原V3种子说明追溯）。首次登录后立即修改管理员密码及系统配置中的万能密码。
 
-### 模块初始化与旧库基线切换
+### 模块初始化与数据导入
 
-正式资源只保留24份模块SQL，一模块一文件；每份直接定义当前表、字段、约束、索引、函数、触发器和默认数据，没有历次增删字段、重命名及回填。历史迁移SQL已退出正式资源；已提交原文由Git追溯，未发布改动直接并入所属模块。运行仅扫描modules子目录，打包排除旧平铺SQL与历史目录，防止增量构建残留旧资源进入制品。模块清单与完整性校验位于`tools/install_baseline_manifest.json`；旧历史仅保留文件名/checksum元数据，不再打包旧SQL。
+正式初始化按24个模块组织，后续差异追加增量。当前初始化链用于新的`xsy`库；旧库的版本记录不能直接复制进来，也不能通过修改旧历史的checksum接管。新库投入使用后，已应用SQL保持字节稳定。模块清单见`tools/install_baseline_manifest.json`。
 
 | 数据库状态 | 路线 |
 | --- | --- |
-| 空库 | Flyway顺序执行24份V1000模块SQL |
-| 原V243或V244完整历史 | 只读核对历史与最终结构 → 备份、停止业务写入 → 显式切换 → 启动新版本 |
-| 已完成模块初始化或本工具切换 | 继续正常Flyway校验和后续增量，不重复初始化 |
-| 更早、分叉、失败或没有历史的非空库 | 拒绝自动接管，先按对应旧版本完成升级或单独核对 |
+| 新的空库 | Flyway执行模块初始化与增量 |
+| 需要保留原资料 | 备份原库 → 新建`xsy` → 初始化 → 导入表数据与序列 → 核对后切换 |
+| 已投入使用的`xsy`库 | 正常校验与追加增量，不重复初始化或替换历史 |
+| 结构或数据校验不一致 | 保留原库和备份，修正差异后再切换 |
 
 发布前的静态预检：
 
@@ -66,26 +66,23 @@ python tools/migration_checksum_guard.py check
 python tools/build_install_baseline.py check
 ```
 
-旧库切换工具默认只读，连接串通过`SCM_MIGRATION_DSN`提供（libpq连接格式，例如`host=数据库地址 port=5432 dbname=业务库名 user=维护账号`；口令使用`PGPASSWORD`或pgpass）。该连接应与应用`XSY_DB_URL`指向同一个业务库。工具需有查询目录、锁表、修改历史表及指定内置模板的权限。
+导入应在维护窗口执行：
+
+1. 停止后端和其他业务写入，用`pg_dump --format=custom`完整备份原库，并确认备份可读取。备份保存在项目目录之外。
+2. 创建`xsy`数据库，按正式初始化链建表；导入前应已执行V1001，使用当前后端业务校验对应的结构。
+3. 清空新库业务种子，按列复制原业务表，映射源schema到`xsy`。保留主键、口令、角色授权、金额、数量和序列值；不导入`flyway_schema_history`及其备份表，不对业务文本作全局替换。
+4. 逐表比较行数与完整行摘要，逐项比较序列位置；补齐当前系统任务类名及权限目录。V1003按现有采购新增权补提交权，不覆盖原授权，编号由数据库分配；落后序列只前移。
+5. 完成Flyway校验，将`POSTGRES_DB`与`XSY_DB_URL`指向新库，启动系统，核对账号登录、菜单和主要业务资料。
+6. 新库验证通过、备份可恢复后，再删除原库。新库有误时停止切换，不删除原库或覆盖备份。
+
+当前库的结构和历史可只读核对，`SCM_MIGRATION_DSN`应指向`xsy`，口令通过`PGPASSWORD`或pgpass提供：
 
 ```bash
 python -m pip install -r tools/requirements-baseline.txt
 python tools/cutover_schema_baseline.py
 ```
 
-检查通过后进入维护窗口：停止旧backend与其他业务写入，完成目标数据库备份，然后显式切换。下例的`业务库名`必须替换为实际库名，备份文件须属于本次目标库。
-
-```bash
-docker compose stop backend
-pg_dump --dbname="$SCM_MIGRATION_DSN" --format=custom --file=backup-before-schema-cutover.dump
-python tools/cutover_schema_baseline.py --apply --expected-database 业务库名 --backup backup-before-schema-cutover.dump
-```
-
-工具重新检查完整历史和最终结构对象签名，差异即拒绝；短暂锁表以防切换时并发写入或DDL。单事务内仅补齐指定内置送货模板的下单数量，将原历史表重命名为`flyway_schema_history_legacy`原样保留，并在新历史表登记`1000.24`切换基线。不清空业务表、不重置序列、不覆盖客户自建模板。失败自动回滚；再次运行已完成切换的库只核对，不重复登记。
-
-结构核对包含当前列、类型、默认值、identity、约束、索引、函数、触发器、序列定义及说明，忽略业务行、序列当前位置、owner与授权。PostgreSQL可能将无长度varchar常量数组转text[]表示为整体转换或逐项转换，签名只归一这两种等价形式，保留具体值、顺序与类型长度。自建表/索引或实际结构不同会阻止切换，不能通过关闭校验、改checksum或repair绕过。工具不替代备份恢复；完成切换后回滚旧镜像仍需恢复对应备份与原迁移历史。
-
-切换完成后再构建并启动新版本。后续上线结构差异追加V1001及更高版本；已经使用的模块初始化SQL不能修改。再次整理基线需另行明确版本边界与旧库切换，不能靠修改CREATE TABLE自动升级现有表。
+结构核对包含列、类型、默认值、identity、约束、索引、函数、触发器及序列定义；业务数据和序列当前位置还须按导入前后的独立记录核对。未知、失败、缺失或checksum不匹配的版本均拒绝通过，不关闭校验或使用repair掩盖差异。
 
 升级前备份 PostgreSQL 与 MinIO 数据，再执行：
 
