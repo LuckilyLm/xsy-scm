@@ -34,14 +34,12 @@ const avgOrderText = computed(() => {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 10px 14px;
 
-  // 细分割线分隔四格
   > * {
-    padding-left: 12px;
-    border-left: 1px solid rgba(27, 77, 122, 0.55);
+    min-width: 0;
   }
 }
 </style>

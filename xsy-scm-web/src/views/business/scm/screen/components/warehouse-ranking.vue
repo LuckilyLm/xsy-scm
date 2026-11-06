@@ -1,6 +1,9 @@
 <template>
   <screen-panel title="仓库库存分布" flex>
-    <template #extra>库存总量 {{ formatQty(total) }}</template>
+    <div class="scm-wh-total">
+      <span>库存总量</span>
+      <fit-number :value="formatQty(total)" align="end" />
+    </div>
 
     <div v-if="!rows.length" class="scm-state">
       <span class="scm-state-icon">—</span>
@@ -11,7 +14,7 @@
       <div v-for="row in rows" :key="row.name" class="scm-wh-row">
         <div class="scm-wh-line">
           <span class="scm-wh-name" :title="row.name">{{ row.name }}</span>
-          <span class="scm-wh-qty">{{ row.qtyText }}</span>
+          <fit-number class="scm-wh-qty" :value="row.qtyText" align="end" />
           <span class="scm-wh-pct">{{ row.pctText }}</span>
         </div>
         <div class="scm-wh-bar">
@@ -24,6 +27,7 @@
 
 <script setup lang="ts">
 import {computed} from 'vue';
+import FitNumber from './fit-number.vue';
 import ScreenPanel from './screen-panel.vue';
 import {formatQty, toNumber} from '../format';
 import type {WarehouseDistribution} from '../types';
@@ -53,6 +57,16 @@ const rows = computed(() => {
 <style lang="less" scoped>
 @import '../styles/variables.less';
 
+.scm-wh-total {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  flex: 0 0 auto;
+  color: @text-2;
+  font-size: 13px;
+}
+
 // 仓库多时在面板内滚动，不撑出边界。
 .scm-wh-list {
   flex: 1;
@@ -63,13 +77,16 @@ const rows = computed(() => {
 }
 
 .scm-wh-row {
+  flex: 0 0 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
 .scm-wh-line {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 42%) 52px;
   align-items: baseline;
   gap: 8px;
   font-size: 13px;
@@ -95,7 +112,6 @@ const rows = computed(() => {
 
 // 百分比放在名称行右侧
 .scm-wh-pct {
-  flex: 0 0 48px;
   text-align: right;
   font-family: @font-num;
   font-size: 12px;
@@ -103,15 +119,15 @@ const rows = computed(() => {
 }
 
 .scm-wh-bar {
-  height: 6px;
+  height: 4px;
   background: rgba(27, 77, 122, 0.42);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 
   .scm-wh-bar-fill {
     display: block;
     height: 100%;
-    border-radius: 3px;
+    border-radius: 2px;
     background: linear-gradient(90deg, @brand-blue, @tech-cyan);
     transition: width 0.6s ease;
   }

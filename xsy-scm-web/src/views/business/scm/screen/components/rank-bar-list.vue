@@ -1,5 +1,5 @@
 <template>
-  <div class="scm-rank">
+  <div class="scm-rank scm-scroll">
     <div v-if="!items.length" class="scm-state">
       <span class="scm-state-icon">—</span>
       <span>{{ emptyText }}</span>
@@ -11,7 +11,7 @@
             {{ String(index + 1).padStart(2, '0') }}
           </span>
           <span class="scm-rank-name" :title="item.name">{{ item.name }}</span>
-          <span class="scm-rank-value">{{ item.text }}</span>
+          <fit-number class="scm-rank-value" :value="item.text" align="end" />
         </div>
         <div class="scm-rank-bar">
           <span class="scm-rank-bar-fill" :style="{width: barWidth(item.value)}" />
@@ -23,6 +23,7 @@
 
 <script setup lang="ts">
 import {computed} from 'vue';
+import FitNumber from './fit-number.vue';
 import {toNumber} from '../format';
 
 export interface RankRow {
@@ -48,14 +49,15 @@ const props = withDefaults(
 const visible = computed(() => props.items.slice(0, props.limit));
 
 /** 条形长度以本列表最大值为 100%（相对长度，不是绝对量级）。 */
+const maximum = computed(() => props.items.reduce((max, row) => Math.max(max, toNumber(row.value)), 0));
+
 function barWidth(value: string | number): string {
-  const max = props.items.reduce((acc, cur) => Math.max(acc, toNumber(cur.value)), 0);
+  const max = maximum.value;
   if (max <= 0) {
     return '0%';
   }
   const ratio = toNumber(value) / max;
-  // 最小 2%，避免短条看起来像没渲染
-  return `${Math.max(ratio * 100, 2).toFixed(2)}%`;
+  return `${Math.min(100, Math.max(0, ratio * 100))}%`;
 }
 </script>
 
@@ -67,11 +69,13 @@ function barWidth(value: string | number): string {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
-  gap: 2px;
+  min-width: 0;
+  gap: 4px;
 }
 
 .scm-rank-item {
+  flex: 0 0 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -79,10 +83,11 @@ function barWidth(value: string | number): string {
 }
 
 .scm-rank-line {
-  display: flex;
-  align-items: baseline;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) minmax(0, 46%);
+  align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.2;
 }
 
@@ -135,7 +140,7 @@ function barWidth(value: string | number): string {
 
 .scm-rank-bar {
   height: 4px;
-  margin-left: 28px;
+  margin-left: 32px;
   background: rgba(27, 77, 122, 0.42);
   border-radius: 2px;
   overflow: hidden;
@@ -145,7 +150,6 @@ function barWidth(value: string | number): string {
     height: 100%;
     border-radius: 2px;
     background: linear-gradient(90deg, @brand-blue, @tech-cyan);
-    transition: width 0.6s ease;
   }
 }
 </style>

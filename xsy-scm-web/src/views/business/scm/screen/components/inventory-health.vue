@@ -1,10 +1,9 @@
 <template>
   <screen-panel title="库存健康度" flex>
-    <template #extra>
-      <span class="scm-health-total">
-        参与评估 <b>{{ formatInt(health?.totalSkuCount) }}</b> 个（仓库、商品规格组合）
-      </span>
-    </template>
+    <div class="scm-health-total" title="参与评估数量按仓库和商品规格组合统计">
+      <span>参与评估</span>
+      <fit-number :value="formatInt(health?.totalSkuCount)" unit="个" align="end" />
+    </div>
 
     <div v-if="!health || !health.totalSkuCount" class="scm-state">
       <span class="scm-state-icon">—</span>
@@ -12,12 +11,12 @@
     </div>
 
     <template v-else>
-      <div class="scm-health-list">
+      <div class="scm-health-list scm-scroll">
         <div v-for="row in rows" :key="row.key" class="scm-health-row">
           <div class="scm-health-line">
             <span class="scm-health-dot" :style="{background: row.color}" />
             <span class="scm-health-label">{{ row.label }}</span>
-            <span class="scm-health-count">{{ formatInt(row.count) }}</span>
+            <fit-number class="scm-health-count" :value="formatInt(row.count)" align="end" />
             <span class="scm-health-pct">{{ percent(row.count) }}</span>
           </div>
           <div class="scm-health-bar">
@@ -26,9 +25,9 @@
         </div>
       </div>
 
-      <div v-if="unconfigured > 0" class="scm-health-foot">
-        <span class="scm-health-foot-dot" />
-        另有 {{ formatInt(unconfigured) }} 个未配置阈值，无法判定健康度
+      <div v-if="unconfigured > 0" class="scm-health-foot" :title="`另有 ${formatInt(unconfigured)} 个未配置阈值，无法判定健康度`">
+        <span>未配置阈值，无法评估</span>
+        <fit-number :value="formatInt(unconfigured)" unit="个" :size="13" align="end" />
       </div>
     </template>
   </screen-panel>
@@ -36,6 +35,7 @@
 
 <script setup lang="ts">
 import {computed} from 'vue';
+import FitNumber from './fit-number.vue';
 import ScreenPanel from './screen-panel.vue';
 import {formatInt, toNumber} from '../format';
 import type {InventoryHealth} from '../types';
@@ -70,15 +70,15 @@ function barWidth(count: number): string {
 <style lang="less" scoped>
 @import '../styles/variables.less';
 
-.scm-health-total {
-  font-size: 12px;
-  color: @text-3;
-
-  b {
-    color: @tech-cyan;
-    font-family: @font-num;
-    font-size: 13px;
-  }
+.scm-health-total,
+.scm-health-foot {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  color: @text-2;
 }
 
 .scm-health-list {
@@ -86,17 +86,20 @@ function barWidth(count: number): string {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  min-width: 0;
+  gap: 2px;
 }
 
 .scm-health-row {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .scm-health-line {
-  display: flex;
+  display: grid;
+  grid-template-columns: 7px minmax(2em, 1fr) minmax(0, 45%) 52px;
   align-items: baseline;
   gap: 6px;
   font-size: 13px;
@@ -125,7 +128,6 @@ function barWidth(count: number): string {
 }
 
 .scm-health-pct {
-  flex: 0 0 46px;
   text-align: right;
   font-family: @font-num;
   font-size: 12px;
@@ -133,35 +135,21 @@ function barWidth(count: number): string {
 }
 
 .scm-health-bar {
-  height: 5px;
+  height: 4px;
   margin-left: 13px;
   background: rgba(27, 77, 122, 0.42);
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 
   .scm-health-bar-fill {
     display: block;
     height: 100%;
-    border-radius: 3px;
-    transition: width 0.6s ease;
+    border-radius: 2px;
   }
 }
 
 .scm-health-foot {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding-top: 6px;
-  border-top: 1px dashed rgba(27, 77, 122, 0.7);
-  font-size: 12px;
-  color: @text-3;
-
-  .scm-health-foot-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: @text-3;
-  }
+  padding-top: 5px;
+  border-top: 1px solid @panel-border;
 }
 </style>

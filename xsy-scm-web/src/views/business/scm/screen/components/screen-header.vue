@@ -5,16 +5,15 @@
       <div class="scm-brand">
         <span class="scm-brand-name">鲜蔬源智链</span>
       </div>
-      <span class="scm-brand-divider" />
       <!-- 运行状态放在品牌旁，右侧空间留给时钟和按钮 -->
-      <span class="scm-status-item" :class="statusClass"> <i class="scm-dot" />{{ statusText }} </span>
+      <span class="scm-status-item" :class="statusClass">
+        <i class="scm-dot" /><span class="scm-status-text" :title="statusText">{{ statusText }}</span>
+      </span>
     </div>
 
-    <!-- 中：中心标题（带左右引导线，不用龙纹/跑马灯） -->
+    <!-- 中：中心标题 -->
     <div class="scm-header-center">
-      <span class="scm-header-line" />
       <h1 class="scm-header-title">供应链运营中心</h1>
-      <span class="scm-header-line" />
     </div>
 
     <!-- 右：日期时钟 + 更新时间 + 操作 -->
@@ -94,41 +93,30 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
 .scm-header {
   flex: 0 0 @header-h;
   height: @header-h;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   padding: 0 18px;
   background: linear-gradient(180deg, rgba(11, 42, 84, 0.92) 0%, rgba(7, 30, 66, 0.62) 100%);
   border: 1px solid @panel-border;
-  border-radius: 4px;
+  border-radius: @panel-radius;
 }
 
 .scm-header-side {
-  flex: 0 0 400px;
   display: flex;
   align-items: center;
+  min-width: 0;
+  gap: 12px;
 
-  &.is-left {
-    gap: 12px;
-  }
-
-  /* 400px 是下限，保证时钟不折行 */
   &.is-right {
-    flex: 0 0 auto;
-    min-width: 400px;
     justify-content: flex-end;
   }
 }
 
-/* 分隔品牌和运行状态 */
-.scm-brand-divider {
-  flex: 0 0 auto;
-  width: 1px;
-  height: 16px;
-  background: @panel-border;
-}
-
 .scm-brand {
+  flex: 0 0 auto;
+  white-space: nowrap;
   display: flex;
   flex-direction: column;
   line-height: 1.2;
@@ -141,36 +129,13 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
   }
 }
 
-.scm-header-center {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-
-  .scm-header-line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, @panel-border-strong 60%, @panel-border-strong);
-  }
-
-  .scm-header-line:last-child {
-    background: linear-gradient(90deg, @panel-border-strong, @panel-border-strong 40%, transparent);
-  }
-
-  .scm-header-title {
-    flex: 0 0 auto;
-    margin: 0;
-    padding: 4px 18px;
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    color: @text-1;
-    // 标题上下细线
-    border-top: 1px solid @panel-border-strong;
-    border-bottom: 1px solid @panel-border-strong;
-    text-shadow: 0 0 14px rgba(39, 215, 254, 0.28);
-  }
+.scm-header-title {
+  margin: 0;
+  color: @text-1;
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: 2px;
+  white-space: nowrap;
 }
 
 .scm-clock {
@@ -180,13 +145,16 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
   align-items: baseline;
   gap: 8px;
   line-height: 1.25;
-  margin-right: 14px;
   /* 日期和时间共用同一套字号、颜色 */
   font-family: @font-num;
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 600;
   color: @text-1;
-  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+
+  .scm-clock-time {
+    font-size: 20px;
+  }
 
   .scm-clock-date,
   .scm-clock-time {
@@ -206,6 +174,7 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  min-width: 0;
   font-size: 12px;
   white-space: nowrap;
 
@@ -218,12 +187,18 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
   }
 }
 
+.scm-status-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .scm-dot {
+  flex: 0 0 auto;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: currentColor;
-  box-shadow: 0 0 6px currentColor;
 }
 
 .scm-icon {
@@ -246,13 +221,13 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   color: @text-2;
   background: rgba(47, 128, 237, 0.12);
   border: 1px solid @panel-border;
-  border-radius: 3px;
+  border-radius: 6px;
   cursor: pointer;
   transition:
     color 0.2s,

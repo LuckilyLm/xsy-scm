@@ -2,7 +2,7 @@
   <section class="scm-panel">
     <header v-if="title || $slots.title || $slots.extra" class="scm-panel-head">
       <slot name="title">
-        <span class="scm-panel-title">{{ title }}</span>
+        <h2 class="scm-panel-title">{{ title }}</h2>
       </slot>
       <div v-if="$slots.extra" class="scm-panel-extra">
         <slot name="extra" />
