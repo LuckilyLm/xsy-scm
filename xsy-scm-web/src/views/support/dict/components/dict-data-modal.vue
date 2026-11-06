@@ -52,7 +52,9 @@
           批量删除
         </a-button>
       </div>
-      <div class="xsy-table-setting-block"></div>
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.DICT_DATA" :refresh="queryData" />
+      </div>
     </a-row>
 
     <LocalTable
@@ -87,8 +89,10 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import LocalTable from '/@/components/support/local-table/index.vue';
-import {reactive, ref} from 'vue';
+import {ref} from 'vue';
 import DictDataFormModal from './dict-data-form-modal.vue';
 import {dictApi} from '/@/api/support/dict-api';
 import {XsyLoading} from '/@/components/framework/xsy-loading';
@@ -119,7 +123,7 @@ function onClose() {
   dictCode.value = undefined;
 }
 
-const columns = reactive([
+const columns = ref([
   {
     title: '值',
     dataIndex: 'dataValue',

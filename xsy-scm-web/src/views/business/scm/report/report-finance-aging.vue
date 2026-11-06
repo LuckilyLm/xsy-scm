@@ -32,18 +32,23 @@
       >
     </a-form-item>
   </a-form>
-  <a-alert v-if="error" :message="error" type="error" show-icon class="aging-note">
+  <RequestError v-if="error" :message="error" class="aging-note">
     <template #action><a-button @click="load">重试</a-button></template>
-  </a-alert>
+  </RequestError>
   <a-card :bordered="false" size="small">
-    <div class="aging-toolbar">
-      <a-typography-text v-if="applied"
-        >截至 {{ applied.asOfDate }} · {{ applied.accountType === 'RECEIVABLE' ? '应收' : '应付' }}剩余未结金额</a-typography-text
-      >
-      <a-typography-text v-else type="secondary">请选择截止日后查询</a-typography-text>
-      <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows"
-        >导出当前结果</a-button
-      >
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
+        <a-typography-text v-if="applied"
+          >截至 {{ applied.asOfDate }} · {{ applied.accountType === 'RECEIVABLE' ? '应收' : '应付' }}剩余未结金额</a-typography-text
+        >
+        <a-typography-text v-else type="secondary">请选择截止日后查询</a-typography-text>
+      </div>
+      <div class="xsy-table-setting-block">
+        <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows"
+          >导出当前结果</a-button
+        >
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.SCM_REPORT_FINANCE_AGING" :refresh="load" />
+      </div>
     </div>
     <a-table
       bordered
@@ -56,6 +61,7 @@
       :scroll="{x: scmColumnsWidth(summaryColumns)}"
       class="aging-summary"
     />
+
     <a-table
       id="scm-report-finance-aging-table"
       size="small"
@@ -107,8 +113,10 @@
   />
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, onMounted, reactive, ref} from 'vue';
+import {shallowRef, computed, onMounted, reactive, ref} from 'vue';
 import dayjs from 'dayjs';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {
@@ -171,7 +179,7 @@ const summaryColumns = [
   {title: '单据数', dataIndex: 'documentCount', width: 96},
   {title: '剩余未结金额', dataIndex: 'openAmount', width: 148, customRender: ({text}: {text: string}) => moneyText(text)},
 ];
-const columns: TableColumnsType<AgingRow> = [
+const columns = shallowRef<TableColumnsType<AgingRow>>([
   {title: '财务单号', dataIndex: 'documentNo', width: 190},
   {title: '来源单号', dataIndex: 'sourceNo', width: 190},
   {title: '客户或供应商', dataIndex: 'counterpartyName', width: 160},
@@ -186,7 +194,7 @@ const columns: TableColumnsType<AgingRow> = [
     customRender: ({text}: {text: string}) => moneyText(text),
   })),
   {title: '操作', dataIndex: 'action', fixed: 'right', width: 100, align: 'center'},
-];
+]);
 
 async function load() {
   const id = ++requestId;
@@ -202,7 +210,7 @@ async function load() {
   summary.value = [];
   total.value = 0;
   try {
-    // 加载失败由页内 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const quiet = {suppressGlobalErrorMessage: true};
     const [page, totals] = await Promise.all([financeAgingApi.query(payload, quiet), financeAgingApi.summary(payload, quiet)]);
     if (id !== requestId) return;
@@ -285,14 +293,6 @@ onMounted(load);
 <style scoped>
 .aging-note,
 .aging-summary {
-  margin-bottom: 16px;
-}
-.aging-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
   margin-bottom: 16px;
 }
 .bucket-select {

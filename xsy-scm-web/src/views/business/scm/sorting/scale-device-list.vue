@@ -4,40 +4,43 @@
   配对码与会话令牌明文只出现一次，弹窗里必须提示离开即不可再查看。
 -->
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline" @submit.prevent>
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="关键字" class="xsy-query-form-item">
-          <a-input v-model:value="queryForm.keyword" placeholder="设备编号 / 名称 / 工位" allow-clear @pressEnter="onSearch" />
-        </a-form-item>
-        <a-form-item label="仓库" class="xsy-query-form-item">
-          <WarehouseSelect v-model:value="queryForm.warehouseId" width="180px" />
-        </a-form-item>
-        <a-form-item label="状态" class="xsy-query-form-item">
-          <a-select v-model:value="queryForm.status" :options="statusOptions" allow-clear placeholder="全部" style="width: 140px" />
-        </a-form-item>
-        <a-form-item class="xsy-query-form-item">
-          <a-button-group>
-            <a-button type="primary" v-privilege="PERM.QUERY" @click="onSearch">查询</a-button>
-            <a-button @click="resetQuery">重置</a-button>
-          </a-button-group>
-        </a-form-item>
-      </a-row>
-    </a-form>
-    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
-      <div class="xsy-table-operate-block">
-        <a-button type="primary" v-privilege="PERM.BIND" @click="openRegister">登记电子秤</a-button>
-      </div>
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="关键字" class="xsy-query-form-item">
+        <a-input v-model:value="queryForm.keyword" placeholder="设备编号 / 名称 / 工位" allow-clear @pressEnter="onSearch" />
+      </a-form-item>
+      <a-form-item label="仓库" class="xsy-query-form-item">
+        <WarehouseSelect v-model:value="queryForm.warehouseId" width="180px" />
+      </a-form-item>
+      <a-form-item label="状态" class="xsy-query-form-item">
+        <a-select v-model:value="queryForm.status" :options="statusOptions" allow-clear placeholder="全部" style="width: 140px" />
+      </a-form-item>
+      <a-form-item class="xsy-query-form-item">
+        <a-button-group>
+          <a-button type="primary" v-privilege="PERM.QUERY" @click="onSearch">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-button-group>
+      </a-form-item>
     </a-row>
-  </div>
+  </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
+    <a-row class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
+        <a-button type="primary" v-privilege="PERM.BIND" @click="openRegister">登记电子秤</a-button>
+      </div>
+
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.SCM_SCALE_DEVICE" :refresh="queryData" />
+      </div>
+    </a-row>
+
     <a-table
       :id="TABLE_ID"
       size="small"
@@ -101,7 +104,7 @@
 
   <!-- 登记：配对码一次性，30 分钟内有效 -->
   <a-modal :open="registerOpen" title="登记电子秤" :confirm-loading="registering" @ok="submitRegister" @cancel="closeRegister">
-    <a-alert v-if="registerError" :message="registerError" type="error" show-icon class="xsy-margin-bottom10" />
+    <RequestError v-if="registerError" :message="registerError" class="xsy-margin-bottom10" />
     <a-form ref="registerFormRef" :model="registerForm" :rules="registerRules" layout="vertical">
       <a-form-item label="设备编号" name="deviceCode" extra="现场贴在秤上的编号；撤销后也不会被另一台秤复用">
         <a-input v-model:value="registerForm.deviceCode" :maxlength="64" />
@@ -138,7 +141,7 @@
   <!-- 签发员工会话 -->
   <a-modal :open="sessionOpen" title="生成员工登录码" :confirm-loading="issuing" ok-text="生成" @ok="submitSession" @cancel="sessionOpen = false">
     <p class="scm-note">该登录仅代表员工使用本台电子秤，不包含后台菜单权限；可查看与可操作的范围仍按本人账号权限校验。</p>
-    <a-alert v-if="sessionError" :message="sessionError" type="error" show-icon class="xsy-margin-bottom10" />
+    <RequestError v-if="sessionError" :message="sessionError" class="xsy-margin-bottom10" />
     <a-form layout="vertical">
       <a-form-item label="操作员工" required>
         <EmployeeSelect v-model:value="sessionForm.employeeId" width="100%" />
@@ -168,11 +171,16 @@
 
   <!-- 会话记录 -->
   <a-drawer :open="sessionsOpen" title="员工登录记录" :width="scmDrawerWidth('m')" @close="sessionsOpen = false">
-    <a-alert v-if="sessionsError" :message="sessionsError" type="error" show-icon class="xsy-margin-bottom10">
+    <RequestError v-if="sessionsError" :message="sessionsError" class="xsy-margin-bottom10">
       <template #action>
         <a-button @click="loadSessions">重试</a-button>
       </template>
-    </a-alert>
+    </RequestError>
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="sessionColumns" :table-id="TABLE_ID_CONST.LIST.SCM_SCALE_DEVICE_SESSION" :refresh="loadSessions" />
+      </div>
+    </div>
     <a-table
       bordered
       size="small"
@@ -206,11 +214,13 @@
 </template>
 
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
-import {computed, onMounted, reactive, ref} from 'vue';
+import {shallowRef, computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal, type FormInstance, type TableColumnsType} from 'ant-design-vue';
 import {scaleDeviceApi} from '/@/api/business/scm/scale-device-api';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -275,7 +285,7 @@ function rowActions(record: ScaleDevice): ScmActionItem[] {
       label: '撤销绑定',
       danger: true,
       disabled: record.status === 'REVOKED',
-      hidden: !canBind.value,
+      authorized: canBind.value,
     },
   ];
 }
@@ -426,14 +436,14 @@ const sessionsError = ref('');
 const sessions = ref<ScaleDeviceSession[]>([]);
 const sessionDeviceId = ref<Id>();
 
-const sessionColumns: TableColumnsType<ScaleDeviceSession> = [
+const sessionColumns = shallowRef<TableColumnsType<ScaleDeviceSession>>([
   {title: '员工', dataIndex: 'employeeName', width: 120},
   {title: '状态', dataIndex: 'active', width: 90},
   {title: '生成时间', dataIndex: 'issuedAt', width: 170},
   {title: '到期时间', dataIndex: 'expiresAt', width: 170},
   {title: '结束', dataIndex: 'endedAt', width: 170},
   {title: '操作', dataIndex: 'action', align: 'center', width: 80},
-];
+]);
 
 function openSessions(device: ScaleDevice) {
   sessionDeviceId.value = device.id;

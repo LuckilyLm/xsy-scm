@@ -3,7 +3,7 @@
     <div class="promo-page__card">
       <div class="promo-page__title">推荐信息</div>
       <a-spin :spinning="loading">
-        <a-alert v-if="error" type="error" show-icon :message="error" />
+        <RequestError v-if="error" :message="error" />
         <template v-if="landing">
           <a-descriptions :column="1" size="small" bordered>
             <a-descriptions-item label="推荐方">{{ landing.customerName }}</a-descriptions-item>

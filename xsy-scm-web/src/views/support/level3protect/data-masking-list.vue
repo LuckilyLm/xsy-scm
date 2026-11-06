@@ -37,6 +37,11 @@
       </a-row>
     </a-form>
 
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.DATA_MASKING" :refresh="ajaxQuery" />
+      </div>
+    </div>
     <LocalTable
       size="small"
       bordered
@@ -49,6 +54,8 @@
   </a-card>
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import LocalTable from '/@/components/support/local-table/index.vue';
 import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {onMounted, reactive, ref} from 'vue';
@@ -56,8 +63,6 @@ import {heartBeatApi} from '/@/api/support/heart-beat-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
 import {xsySentry} from '/@/lib/xsy-sentry';
-import TableOperator from '/@/components/support/table-operator/index.vue';
-import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {dataMaskingApi} from '/@/api/support/data-masking-api';
 
 //------------------------ 表格渲染 ---------------------

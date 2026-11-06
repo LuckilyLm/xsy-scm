@@ -7,7 +7,7 @@
     :keyboard="!saving && !itemModalOpen"
     @close="closeDrawer"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon />
+    <RequestError v-if="error" :message="error" />
     <p v-if="exchangeReturnId" class="scm-note">原货已接收。替换订单重新定价后按正常订单办理，不自动抵扣退款。</p>
     <p v-if="form.status === 'PENDING'" class="scm-note pending-edit-note">
       该订单已提交，等待确认。保存后仍为待确认；未修改的商品沿用提交时报价，如需按最新价格重算请使用「批量核价」。

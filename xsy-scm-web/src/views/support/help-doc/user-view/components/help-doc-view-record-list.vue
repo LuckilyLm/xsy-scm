@@ -27,6 +27,11 @@
         </a-form-item>
       </a-row>
     </a-form>
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="tableColumns" :table-id="TABLE_ID_CONST.LIST.HELP_DOC_VIEW_RECORD" :refresh="queryViewRecord" />
+      </div>
+    </div>
     <a-table rowKey="employeeId" :columns="tableColumns" :dataSource="tableData" :pagination="false" :loading="tableLoading" size="small" bordered>
       <template #bodyCell="{column, record, text}">
         <template v-if="column.dataIndex === 'firstIp'"> {{ text }} ({{ record.firstDevice }})</template>
@@ -50,6 +55,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {reactive, ref} from 'vue';
 import {helpDocApi} from '/@/api/support/help-doc-api';
 import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
@@ -66,7 +73,7 @@ defineExpose({
   onSearch,
 });
 
-const tableColumns = [
+const tableColumns = ref([
   {
     title: '用户名',
     dataIndex: 'userName',
@@ -94,7 +101,7 @@ const tableColumns = [
     dataIndex: 'updateTime',
     with: 120,
   },
-];
+]);
 
 const tableData = ref([]);
 const total = ref(0);

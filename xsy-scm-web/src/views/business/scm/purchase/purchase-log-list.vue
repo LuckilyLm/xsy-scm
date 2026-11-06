@@ -15,19 +15,22 @@
         </a-button-group>
       </a-form-item>
       <span v-if="orderNo" class="scm-query-table-context">当前采购单：{{ orderNo }}</span>
-      <div class="scm-query-table-tools">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_LOG" :refresh="queryData" />
-      </div>
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_LOG" :refresh="queryData" />
+      </div>
+    </div>
+
     <!-- 查询过才出表格：未查询时表格自带空状态会和下面的提示叠成两块「没有数据」 -->
     <LocalTable
       :page-size-options="SCM_PAGE_SIZE_OPTIONS"

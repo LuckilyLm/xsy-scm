@@ -28,7 +28,7 @@
       <a-select v-model:value="color" :options="colorOptions" style="width: 125px" />
       <a-button :disabled="!name.trim()" :loading="creating" @click="create">创建标签</a-button>
     </a-space>
-    <a-alert v-if="error" type="error" show-icon class="xsy-margin-top10" :message="error" />
+    <RequestError v-if="error" class="xsy-margin-top10" :message="error" />
   </a-modal>
 </template>
 

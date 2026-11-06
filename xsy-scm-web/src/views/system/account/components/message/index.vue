@@ -42,6 +42,11 @@
     </a-row>
   </a-form>
 
+  <div class="xsy-table-btn-block">
+    <div class="xsy-table-setting-block">
+      <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.ACCOUNT_MESSAGE" :refresh="ajaxQuery" />
+    </div>
+  </div>
   <a-table size="small" :dataSource="tableData" :columns="columns" rowKey="messageId" :pagination="false" bordered>
     <template #bodyCell="{text, record, column}">
       <template v-if="column.dataIndex === 'messageType'">
@@ -82,6 +87,8 @@
   <MessageDetail ref="messageDetailRef" @refresh="ajaxQuery" />
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {reactive, ref, onMounted} from 'vue';
 import {messageApi} from '/@/api/support/message-api';
 import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
@@ -89,7 +96,7 @@ import XsyEnumSelect from '/@/components/framework/xsy-enum-select//index.vue';
 import {xsySentry} from '/@/lib/xsy-sentry';
 import MessageDetail from './components/message-detail.vue';
 
-const columns = reactive([
+const columns = ref([
   {
     title: '消息',
     dataIndex: 'title',

@@ -1,10 +1,10 @@
 <template>
   <a-drawer :open="visible" :title="order?.orderNo || '订单详情'" :width="scmDrawerWidth('xl')" @close="visible = false">
-    <a-alert v-if="error" :message="error" type="error" show-icon>
+    <RequestError v-if="error" :message="error">
       <template #action>
         <a-button size="small" :loading="loading" @click="load">重试</a-button>
       </template>
-    </a-alert>
+    </RequestError>
     <a-spin :spinning="loading">
       <template v-if="order">
         <!-- 当前状态下真正要做的动作留在外面；只有一个次要动作时直接显示，多个才收进「更多」 -->
@@ -187,7 +187,11 @@
         disabled: (requiresSettlement && !confirmationSettlementMethod) || (!usesMallSettlement && !creditCheck?.allowed && !creditOverride),
       }"
     >
-      <a-alert v-if="error" :message="error" type="error" show-icon />
+      <RequestError v-if="error" :message="error">
+        <template #action>
+          <a-button size="small" :loading="loading" @click="load">重试</a-button>
+        </template>
+      </RequestError>
       <p v-if="usesMallSettlement" class="scm-note">确认时将按订单的结算方式、实际数量和优惠重新校验，确认订单不会自动扣款。</p>
       <a-form-item v-if="requiresSettlement" label="结算约定" required>
         <a-select
@@ -263,6 +267,7 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {orderStatusTone} from './order-status-tone';
 import LocalTable from '/@/components/support/local-table/index.vue';
@@ -364,7 +369,7 @@ async function reprice() {
     emit('saved');
     void message.success('订单价格已重算');
   } catch (error) {
-    void message.error(orderError(error));
+    void notifyRequestError(orderError(error));
   } finally {
     saving.value = false;
   }
@@ -422,7 +427,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由抽屉内的 Alert 提示
+    // 请求失败交给共享反馈处理，避免重复提示。
     const response = await orderApi.detail(id, {suppressGlobalErrorMessage: true});
     if (current !== requestId) return;
     order.value = response.data;

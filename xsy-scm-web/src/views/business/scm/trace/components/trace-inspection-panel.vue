@@ -7,9 +7,9 @@
     <p v-if="lotNo" class="inspection-panel__context">
       当前批次：<span class="scm-mono">{{ lotNo }}</span>
     </p>
-    <a-alert v-if="error" :message="error" type="error" show-icon>
+    <RequestError v-if="error" :message="error">
       <template #action><a-button size="small" :disabled="busy" @click="load">刷新</a-button></template>
-    </a-alert>
+    </RequestError>
     <a-spin :spinning="loading">
       <template v-if="!editing">
         <a-empty v-if="!reports.length && !loading && !error" description="暂无检测报告" />
@@ -58,7 +58,7 @@
         </article>
       </template>
       <a-form v-else ref="formRef" :model="form" layout="vertical" class="inspection-panel__form" @finish="save">
-        <a-alert v-if="editError" :message="editError" type="error" show-icon />
+        <RequestError v-if="editError" :message="editError" />
         <fieldset :disabled="busy">
           <legend>{{ form.id ? '编辑检测报告' : '新建检测报告' }}</legend>
           <a-form-item label="报告编号" name="reportNo" :rules="[{required: true, whitespace: true, message: '请填写报告编号'}]">

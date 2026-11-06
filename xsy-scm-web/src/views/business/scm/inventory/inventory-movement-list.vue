@@ -21,19 +21,22 @@
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
       </a-form-item>
-      <div class="scm-query-table-tools">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_MOVEMENT" :refresh="queryData" />
-      </div>
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_MOVEMENT" :refresh="queryData" />
+      </div>
+    </div>
+
     <a-table
       :id="SCM_INVENTORY_TABLE_ID.MOVEMENT"
       size="small"
@@ -165,7 +168,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await inventoryMovementApi.query(
       {
         ...queryForm,

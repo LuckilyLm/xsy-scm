@@ -44,9 +44,9 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
+  <RequestError v-if="page.error.value" class="page-error" :message="page.error.value">
     <template #action><a-button @click="queryData">重试</a-button></template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
     <a-row class="xsy-table-btn-block scm-table-toolbar">
@@ -181,7 +181,7 @@
     :mask-closable="!addSaving"
     @close="requestCloseAdd"
   >
-    <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError" />
+    <RequestError v-if="addError" class="form-error" :message="addError" />
     <a-form ref="addFormRef" :model="addModel" :rules="addRules" layout="vertical" class="app-drawer-form">
       <a-form-item name="sourceType">
         <template #label>
@@ -275,7 +275,7 @@
 
   <a-modal v-model:open="reverseOpen" title="撤销抵扣" :confirm-loading="reverseSaving" @ok="submitReverse">
     <p v-if="reverseRow" class="scm-note">确认后该账款抵扣记录将作废，{{ moneyText(reverseRow.amount) }} 将退回对应单据的未结金额。</p>
-    <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError" />
+    <RequestError v-if="reverseError" class="form-error" :message="reverseError" />
     <a-form ref="reverseFormRef" :model="reverseModel" :rules="reverseRules" layout="vertical"
       ><a-form-item label="撤销原因" name="reverseReason"
         ><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count /></a-form-item

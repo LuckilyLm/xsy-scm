@@ -1,38 +1,37 @@
 <!-- 供应商列表：只有单条删除；关联商品走独立的整表替换接口。 -->
 <template>
   <section aria-label="供应商档案">
-    <div class="xsy-query-layout">
-      <a-form class="xsy-query-form" layout="inline">
-        <a-row class="xsy-query-form-row">
-          <a-form-item label="关键字" class="xsy-query-form-item">
-            <a-input v-model:value="filters.keyword" allow-clear placeholder="编码 / 名称 / 联系人 / 电话" style="width: 240px" />
-          </a-form-item>
-          <a-form-item label="供应商分类" class="xsy-query-form-item">
-            <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="SUPPLIER" style="width: 160px" />
-          </a-form-item>
-          <a-form-item label="状态" class="xsy-query-form-item">
-            <XsyEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_STATUS_ENUM" width="130px" />
-          </a-form-item>
-          <a-form-item class="xsy-query-form-item">
-            <a-space>
-              <a-button type="primary" @click="search">查询</a-button>
-              <a-button @click="reset">重置</a-button>
-            </a-space>
-          </a-form-item>
-        </a-row>
-      </a-form>
-      <a-row data-toolbar-layout="query" class="xsy-table-btn-block" justify="space-between" align="middle">
+    <a-form class="xsy-query-form" layout="inline">
+      <a-row class="xsy-query-form-row">
+        <a-form-item label="关键字" class="xsy-query-form-item">
+          <a-input v-model:value="filters.keyword" allow-clear placeholder="编码 / 名称 / 联系人 / 电话" style="width: 240px" />
+        </a-form-item>
+        <a-form-item label="供应商分类" class="xsy-query-form-item">
+          <BusinessCategoryTreeSelect v-model:value="filters.businessCategoryId" scope="SUPPLIER" style="width: 160px" />
+        </a-form-item>
+        <a-form-item label="状态" class="xsy-query-form-item">
+          <XsyEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_STATUS_ENUM" width="130px" />
+        </a-form-item>
+        <a-form-item class="xsy-query-form-item">
+          <a-space>
+            <a-button type="primary" @click="search">查询</a-button>
+            <a-button @click="reset">重置</a-button>
+          </a-space>
+        </a-form-item>
+      </a-row>
+    </a-form>
+
+    <a-card size="small" :bordered="false">
+      <a-row class="xsy-table-btn-block" justify="space-between" align="middle">
         <a-button v-privilege="'scm:supplier:add'" type="primary" @click="drawer?.open()">新增供应商</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER" :refresh="load" />
       </a-row>
-    </div>
 
-    <a-card size="small" :bordered="false">
-      <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
+      <RequestError v-if="error" :message="error" class="xsy-margin-bottom10">
         <template #action>
           <a-button size="small" @click="load">重新加载</a-button>
         </template>
-      </a-alert>
+      </RequestError>
       <a-table
         ref="tableRef"
         :data-source="rows"
@@ -152,7 +151,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const response = await supplierApi.query({...filters}, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       rows.value = response.data.list;
@@ -229,7 +228,7 @@ const entryHidden = computed(() => !columns.value.some((column) => (column as {d
 function rowActions(): ScmActionItem[] {
   return [
     {key: 'detail', label: '详情', hidden: !entryHidden.value},
-    {key: 'delete', label: '删除', danger: true, hidden: !canDelete.value},
+    {key: 'delete', label: '删除', danger: true, authorized: canDelete.value},
   ];
 }
 

@@ -1,28 +1,35 @@
 <!-- 分拣列表用于记录已分拣数量，计划量保留任务创建时的数据；取消和重开必须填写原因。 -->
 <template>
-  <div class="xsy-query-layout">
-    <SortingTaskFilterForm
-      :keyword="queryForm.keyword"
-      :status="queryForm.status"
-      :warehouse-id="queryForm.warehouseId"
-      :unassigned-only="queryForm.unassignedOnly"
-      :assignee-id="assigneeFilter"
-      :delivery-range="deliveryRange"
-      :delivery-wave="queryForm.deliveryWave"
-      :supplier-id="queryForm.supplierId"
-      :is-queue-manager="isQueueManager"
-      @update:keyword="queryForm.keyword = $event"
-      @update:status="queryForm.status = $event"
-      @update:warehouse-id="queryForm.warehouseId = $event"
-      @update:unassigned-only="queryForm.unassignedOnly = $event"
-      @update:assignee-id="assigneeFilter = $event"
-      @update:delivery-range="deliveryRange = $event"
-      @update:delivery-wave="queryForm.deliveryWave = $event"
-      @update:supplier-id="queryForm.supplierId = $event"
-      @search="onSearch"
-      @reset="resetQuery"
-    />
-    <div data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
+  <SortingTaskFilterForm
+    :keyword="queryForm.keyword"
+    :status="queryForm.status"
+    :warehouse-id="queryForm.warehouseId"
+    :unassigned-only="queryForm.unassignedOnly"
+    :assignee-id="assigneeFilter"
+    :delivery-range="deliveryRange"
+    :delivery-wave="queryForm.deliveryWave"
+    :supplier-id="queryForm.supplierId"
+    :is-queue-manager="isQueueManager"
+    @update:keyword="queryForm.keyword = $event"
+    @update:status="queryForm.status = $event"
+    @update:warehouse-id="queryForm.warehouseId = $event"
+    @update:unassigned-only="queryForm.unassignedOnly = $event"
+    @update:assignee-id="assigneeFilter = $event"
+    @update:delivery-range="deliveryRange = $event"
+    @update:delivery-wave="queryForm.deliveryWave = $event"
+    @update:supplier-id="queryForm.supplierId = $event"
+    @search="onSearch"
+    @reset="resetQuery"
+  />
+
+  <RequestError v-if="listError" :message="listError">
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </RequestError>
+
+  <a-card size="small" :bordered="false">
+    <div class="xsy-table-btn-block scm-table-toolbar">
       <div class="xsy-table-operate-block">
         <a-button type="primary" v-privilege="'scm:sorting:task:add'" @click="openCreate">新建分拣任务</a-button>
       </div>
@@ -30,15 +37,7 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_TASK" :refresh="queryData" />
       </div>
     </div>
-  </div>
 
-  <a-alert v-if="listError" :message="listError" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
-  <a-card size="small" :bordered="false">
     <a-table
       :id="SCM_SORTING_TABLE_ID.TASK"
       ref="tableRef"
@@ -203,6 +202,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import PrintDocumentModal from '../print/print-document-modal.vue';
 import {computed, onMounted, reactive, ref, watch} from 'vue';
@@ -303,13 +303,23 @@ function rowActions(row: SortingTask): ScmActionItem[] {
   const printable = SCM_SORTING_PRINTABLE_STATUS.includes(row.status);
   return [
     // 未指派时的「指派」已在行内，这里只留低频的改派
-    {key: 'assign', label: '改派', hidden: !(working && row.assigneeEmployeeId != null && hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN))},
-    {key: 'scale', label: '称重工作台', hidden: !hasPermission(SCM_SORTING_PERMISSION.SCALE_QUERY)},
-    {key: 'ticket', label: '小票', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_QUERY))},
-    {key: 'print', label: '打印', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_PRINT))},
+    {
+      key: 'assign',
+      label: '改派',
+      hidden: !(working && row.assigneeEmployeeId != null),
+      authorized: working && row.assigneeEmployeeId != null && hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN),
+    },
+    {key: 'scale', label: '称重工作台', authorized: hasPermission(SCM_SORTING_PERMISSION.SCALE_QUERY)},
+    {key: 'ticket', label: '小票', hidden: !printable, authorized: printable && hasPermission(SCM_SORTING_PERMISSION.TASK_QUERY)},
+    {key: 'print', label: '打印', hidden: !printable, authorized: printable && hasPermission(SCM_SORTING_PERMISSION.TASK_PRINT)},
     // 取消只对进行中的任务，重开只对已完成的任务
-    {key: 'cancel', label: '取消单据', danger: true, hidden: !(working && hasPermission(SCM_SORTING_PERMISSION.TASK_CANCEL))},
-    {key: 'reopen', label: '重开', hidden: !(row.status === 'COMPLETED' && hasPermission(SCM_SORTING_PERMISSION.TASK_REOPEN))},
+    {key: 'cancel', label: '取消单据', danger: true, hidden: !working, authorized: working && hasPermission(SCM_SORTING_PERMISSION.TASK_CANCEL)},
+    {
+      key: 'reopen',
+      label: '重开',
+      hidden: !(row.status === 'COMPLETED'),
+      authorized: row.status === 'COMPLETED' && hasPermission(SCM_SORTING_PERMISSION.TASK_REOPEN),
+    },
   ];
 }
 
@@ -485,7 +495,7 @@ function confirmComplete(record: SortingTask) {
         await afterTaskChanged(record.id);
       } catch (e) {
         // 是否还有未处理明细由服务端判断，前端不重复计算
-        message.error(sortingError(e));
+        notifyRequestError(sortingError(e));
         await afterTaskChanged(record.id);
       } finally {
         busy.value = false;

@@ -13,11 +13,11 @@
         </a-space>
       </a-row>
 
-      <a-alert v-if="cardError" type="error" show-icon :message="cardError" class="xsy-margin-bottom10">
+      <RequestError v-if="cardError" :message="cardError" class="xsy-margin-bottom10">
         <template #action>
           <a-button size="small" @click="loadCards">重新加载</a-button>
         </template>
-      </a-alert>
+      </RequestError>
 
       <a-spin :spinning="cardLoading">
         <div v-if="visibleCards.length" class="customer-grid">
@@ -74,11 +74,11 @@
           </a-row>
         </a-form>
 
-        <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
+        <RequestError v-if="error" :message="error" class="xsy-margin-bottom10">
           <template #action>
             <a-button size="small" @click="load">重新加载</a-button>
           </template>
-        </a-alert>
+        </RequestError>
 
         <a-table
           :data-source="rows"
@@ -163,7 +163,7 @@ async function loadCards() {
   cardLoading.value = true;
   cardError.value = '';
   try {
-    // 加载失败由卡片区 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const response = await customerVisibilityApi.summarize({suppressGlobalErrorMessage: true});
     cards.value = response.data ?? [];
   } catch (cause) {
@@ -240,7 +240,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const response = await customerVisibilityApi.query({...filters, customerId: selected.value.customerId}, {suppressGlobalErrorMessage: true});
     if (currentRequest === requestId) {
       rows.value = response.data.list;

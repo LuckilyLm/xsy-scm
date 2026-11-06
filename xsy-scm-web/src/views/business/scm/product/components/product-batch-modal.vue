@@ -1,7 +1,7 @@
 <!-- 批量维护：状态、分类、标签三种命令共用一个弹窗。 -->
 <template>
   <a-modal v-model:open="visible" :title="TITLES[command]" :confirm-loading="saving" :width="620" @ok="submit" @cancel="visible = false">
-    <a-alert v-if="error" type="error" :message="error" show-icon class="xsy-margin-bottom10" />
+    <RequestError v-if="error" :message="error" class="xsy-margin-bottom10" />
     <a-alert
       v-if="failures.length"
       type="warning"

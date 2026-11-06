@@ -27,11 +27,11 @@
         </a-row>
       </a-form>
 
-      <a-alert v-if="error" :message="error" type="error" show-icon>
+      <RequestError v-if="error" :message="error">
         <template #action>
           <a-button @click="queryData">重试</a-button>
         </template>
-      </a-alert>
+      </RequestError>
 
       <a-card size="small" :bordered="false">
         <a-row class="xsy-table-btn-block">
@@ -195,8 +195,8 @@ const canDelete = computed(() => hasPermission('scm:purchase:receipt:delete'));
 function rowActions(row: Receipt): ScmActionItem[] {
   const pending = row.status === 'PENDING';
   return [
-    {key: 'edit', label: '编辑备注', hidden: !(pending && canUpdate.value)},
-    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
+    {key: 'edit', label: '编辑备注', hidden: !pending, authorized: pending && canUpdate.value},
+    {key: 'delete', label: '删除', danger: true, hidden: !pending, authorized: pending && canDelete.value},
   ];
 }
 
@@ -229,7 +229,7 @@ async function queryData() {
   error.value = '';
   try {
     await resolveOrderId();
-    // 列表加载失败由页头 Alert 承担（带重试），不再让全局 toast 重复说一遍
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await purchaseReceiptApi.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;

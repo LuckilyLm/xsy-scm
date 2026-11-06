@@ -8,7 +8,7 @@
     :ok-text="`加入线路（${selected.length}）`"
     @ok="save"
   >
-    <a-alert v-if="error" type="error" :message="error" show-icon />
+    <RequestError v-if="error" :message="error" />
     <a-form layout="inline" class="candidate-filters" @submit.prevent="search">
       <a-form-item label="配送日期">
         <a-date-picker v-model:value="query.deliveryDate" value-format="YYYY-MM-DD" />
@@ -171,7 +171,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由弹窗内的 Alert 提示
+    // 请求失败交给共享反馈处理，避免重复提示。
     const result = await deliveryApi.candidates(query, {suppressGlobalErrorMessage: true});
     if (current === generation) {
       rows.value = result.data.list;

@@ -17,22 +17,26 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
-  <a-alert v-if="documentTypesError" :message="documentTypesError" type="error" show-icon class="xsy-margin-bottom10">
+  </RequestError>
+  <RequestError v-if="documentTypesError" :message="documentTypesError" class="xsy-margin-bottom10">
     <template #action>
       <a-button @click="loadDocumentTypes">重新加载单据类型</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
     <a-row class="xsy-table-btn-block">
       <div class="xsy-table-operate-block">
         <a-button type="primary" v-privilege="'scm:print:template:add'" :disabled="!documentTypes.length" @click="openCreate">新建模板</a-button>
         <a-button v-privilege="'scm:print:template:update'" @click="bindingOpen = true">客户专属模板</a-button>
+      </div>
+
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.SCM_PRINT_TEMPLATE" :refresh="queryData" />
       </div>
     </a-row>
 
@@ -87,7 +91,7 @@
     @ok="submit"
     @cancel="requestClose"
   >
-    <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner" />
+    <RequestError v-if="editError" :message="editError" class="banner" />
     <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical">
       <a-row :gutter="12">
         <a-col :span="12">
@@ -170,8 +174,10 @@
 </template>
 
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, onMounted, reactive, ref} from 'vue';
+import {shallowRef, computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import {printApi} from '/@/api/business/scm/print-api';
@@ -233,7 +239,7 @@ function toOptions(fields?: {key: string; label: string; money: boolean}[]) {
   }));
 }
 
-const columns: TableColumnsType<PrintTemplate> = [
+const columns = shallowRef<TableColumnsType<PrintTemplate>>([
   {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130, align: 'center'},
   {title: '模板名称', dataIndex: 'templateName', width: 180},
   {title: '默认', dataIndex: 'defaultFlag', align: 'center', width: 90},
@@ -241,7 +247,7 @@ const columns: TableColumnsType<PrintTemplate> = [
   {title: '版本', dataIndex: 'version', width: 80},
   {title: '更新时间', dataIndex: 'updatedAt', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
-];
+]);
 
 const form = reactive<PrintTemplateSave & {id?: Id}>({
   documentType: 'PURCHASE_ORDER',
@@ -279,7 +285,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await printApi.templateQuery({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list ?? [];
@@ -444,8 +450,8 @@ async function submit() {
 function rowActions(record: PrintTemplate): ScmActionItem[] {
   const isDefault = !!record.defaultFlag;
   return [
-    {key: 'setDefault', label: '设为默认', hidden: isDefault || !hasPermission('scm:print:template:update')},
-    {key: 'delete', label: '删除', danger: true, hidden: isDefault || !hasPermission('scm:print:template:delete')},
+    {key: 'setDefault', label: '设为默认', hidden: isDefault, authorized: !(isDefault || !hasPermission('scm:print:template:update'))},
+    {key: 'delete', label: '删除', danger: true, hidden: isDefault, authorized: !(isDefault || !hasPermission('scm:print:template:delete'))},
   ];
 }
 

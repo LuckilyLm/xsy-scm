@@ -39,14 +39,15 @@ public class ScmFinanceAgingController {
 
     @PostMapping("/summary")
     @SaCheckPermission(ScmReportPermission.FINANCE_AGING_QUERY)
-    public ResponseDTO<List<ScmFinanceAgingSummaryVO>> summary(@Valid @RequestBody ScmFinanceAgingQueryForm form) {
+    public ResponseDTO<List<ScmFinanceAgingSummaryVO>> summary(
+        @Valid @RequestBody ScmFinanceAgingQueryForm.Filter form) {
         return ResponseDTO.ok(financeAgingService.summary(form));
     }
 
     @PostMapping("/export")
     @SaCheckPermission(value = {ScmReportPermission.FINANCE_AGING_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
-    public void export(@Valid @RequestBody ScmFinanceAgingQueryForm form, HttpServletResponse response)
+    public void export(@Valid @RequestBody ScmFinanceAgingQueryForm.Filter form, HttpServletResponse response)
         throws IOException {
         var rows = financeAgingService.export(form).stream()
             .map(row -> ScmExcel.row(TITLES, form.getAsOfDate(), form.isReceivable() ? "应收" : "应付", row.getDocumentNo(),

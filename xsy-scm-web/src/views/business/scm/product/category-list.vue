@@ -3,11 +3,11 @@
     <a-row data-toolbar-layout="single" class="xsy-table-btn-block">
       <a-button v-privilege="'scm:product:category:add'" type="primary" @click="modal?.open()">新增分类</a-button>
     </a-row>
-    <a-alert v-if="error" type="error" :message="error" show-icon class="xsy-margin-bottom10">
+    <RequestError v-if="error" :message="error" class="xsy-margin-bottom10">
       <template #action>
         <a-button size="small" @click="load">重新加载</a-button>
       </template>
-    </a-alert>
+    </RequestError>
     <CategoryTable
       :rows="rows"
       :loading="loading"
@@ -36,7 +36,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     rows.value = (await productCategoryApi.tree({suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = productError(e);

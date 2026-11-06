@@ -23,13 +23,16 @@
       <a-form-item class="xsy-query-form-item">
         <a-button type="primary" @click="search" v-privilege="'scm:pricing:history:query'">查询</a-button>
       </a-form-item>
-      <div class="scm-query-table-tools">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load" />
-      </div>
     </a-row>
   </a-form>
-  <a-alert v-if="error" type="error" :message="error" />
+  <RequestError v-if="error" :message="error" />
   <a-card size="small" :bordered="false">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load" />
+      </div>
+    </div>
+
     <a-table
       :data-source="rows"
       :columns="columns"
@@ -142,7 +145,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await pricingApi.history(
       {
         ...query,

@@ -8,7 +8,7 @@
     :mask-closable="!saving"
     @close="requestClose"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon />
+    <RequestError v-if="error" :message="error" />
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
         <a-form-item name="purchaseOrderId">

@@ -1,71 +1,68 @@
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline" @submit.prevent>
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="业务日期">
-          <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'业务开始日期'" />
-          <span class="date-separator">至</span>
-          <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'业务结束日期'" />
-        </a-form-item>
-        <a-form-item label="客户">
-          <a-select
-            v-model:value="query.customerId"
-            allow-clear
-            show-search
-            option-filter-prop="label"
-            :options="customerOptions"
-            placeholder="全部客户"
-            style="width: 190px"
-            v-aria-label="'客户'"
-          />
-        </a-form-item>
-        <a-form-item label="订单号"
-          ><a-input v-model:value="query.orderNo" allow-clear v-aria-label="'订单号'" @press-enter="onSearch"
-        /></a-form-item>
-        <a-form-item label="记录类型">
-          <a-select
-            v-model:value="query.entryType"
-            allow-clear
-            :options="entryOptions"
-            placeholder="全部"
-            style="width: 120px"
-            v-aria-label="'记录类型'"
-          />
-        </a-form-item>
-        <a-form-item>
-          <template #label
-            ><ScmFieldHelp label="结清状态" text="应收是客户应付给我们的货款；剩余待收按退货扣减、收款抵扣和抹零后的结果显示。"
-          /></template>
-          <a-select
-            v-model:value="query.settleState"
-            allow-clear
-            :options="settleOptions"
-            placeholder="全部"
-            style="width: 140px"
-            v-aria-label="'结清状态'"
-          />
-        </a-form-item>
-        <a-form-item class="xsy-query-form-item">
-          <a-button-group>
-            <a-button type="primary" v-privilege="PERM.RECEIVABLE_QUERY" @click="onSearch">查询</a-button>
-            <a-button @click="resetQuery">重置</a-button>
-          </a-button-group>
-        </a-form-item>
-      </a-row>
-    </a-form>
-    <a-row data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="业务日期">
+        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'业务开始日期'" />
+        <span class="date-separator">至</span>
+        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'业务结束日期'" />
+      </a-form-item>
+      <a-form-item label="客户">
+        <a-select
+          v-model:value="query.customerId"
+          allow-clear
+          show-search
+          option-filter-prop="label"
+          :options="customerOptions"
+          placeholder="全部客户"
+          style="width: 190px"
+          v-aria-label="'客户'"
+        />
+      </a-form-item>
+      <a-form-item label="订单号"><a-input v-model:value="query.orderNo" allow-clear v-aria-label="'订单号'" @press-enter="onSearch" /></a-form-item>
+      <a-form-item label="记录类型">
+        <a-select
+          v-model:value="query.entryType"
+          allow-clear
+          :options="entryOptions"
+          placeholder="全部"
+          style="width: 120px"
+          v-aria-label="'记录类型'"
+        />
+      </a-form-item>
+      <a-form-item>
+        <template #label
+          ><ScmFieldHelp label="结清状态" text="应收是客户应付给我们的货款；剩余待收按退货扣减、收款抵扣和抹零后的结果显示。"
+        /></template>
+        <a-select
+          v-model:value="query.settleState"
+          allow-clear
+          :options="settleOptions"
+          placeholder="全部"
+          style="width: 140px"
+          v-aria-label="'结清状态'"
+        />
+      </a-form-item>
+      <a-form-item class="xsy-query-form-item">
+        <a-button-group>
+          <a-button type="primary" v-privilege="PERM.RECEIVABLE_QUERY" @click="onSearch">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-button-group>
+      </a-form-item>
+    </a-row>
+  </a-form>
+
+  <RequestError v-if="page.error.value" class="page-error" :message="page.error.value">
+    <template #action><a-button @click="queryData">重试</a-button></template>
+  </RequestError>
+
+  <a-card size="small" :bordered="false">
+    <a-row class="xsy-table-btn-block scm-table-toolbar">
       <div class="xsy-table-setting-block">
         <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_RECEIVABLE" :refresh="queryData" />
       </div>
     </a-row>
-  </div>
 
-  <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
-    <template #action><a-button @click="queryData">重试</a-button></template>
-  </a-alert>
-
-  <a-card size="small" :bordered="false">
     <div class="finance-mobile-balance-list">
       <div v-for="record in page.tableData.value" :key="record.receivableId" class="finance-mobile-balance-row">
         <div class="mobile-balance-heading">

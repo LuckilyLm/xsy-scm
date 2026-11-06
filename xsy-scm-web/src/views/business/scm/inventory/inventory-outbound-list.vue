@@ -1,26 +1,33 @@
 <!-- 库存出库单：待出库确认后扣减库存并写流水，确认后不可撤销。 -->
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline" @submit.prevent>
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="出库单号" class="xsy-query-form-item">
-          <a-input v-model:value="queryForm.outboundNo" placeholder="出库单号" allow-clear @pressEnter="onSearch" />
-        </a-form-item>
-        <a-form-item label="仓库" class="xsy-query-form-item">
-          <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px" />
-        </a-form-item>
-        <a-form-item label="状态" class="xsy-query-form-item">
-          <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 140px" />
-        </a-form-item>
-        <a-form-item class="xsy-query-form-item">
-          <a-button-group>
-            <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:outbound:query'">查询</a-button>
-            <a-button @click="resetQuery">重置</a-button>
-          </a-button-group>
-        </a-form-item>
-      </a-row>
-    </a-form>
-    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="出库单号" class="xsy-query-form-item">
+        <a-input v-model:value="queryForm.outboundNo" placeholder="出库单号" allow-clear @pressEnter="onSearch" />
+      </a-form-item>
+      <a-form-item label="仓库" class="xsy-query-form-item">
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px" />
+      </a-form-item>
+      <a-form-item label="状态" class="xsy-query-form-item">
+        <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 140px" />
+      </a-form-item>
+      <a-form-item class="xsy-query-form-item">
+        <a-button-group>
+          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:outbound:query'">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-button-group>
+      </a-form-item>
+    </a-row>
+  </a-form>
+
+  <RequestError v-if="error" :message="error">
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </RequestError>
+
+  <a-card size="small" :bordered="false">
+    <a-row class="xsy-table-btn-block">
       <div class="xsy-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:outbound:add'"> 新建出库单 </a-button>
       </div>
@@ -28,15 +35,7 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_OUTBOUND" :refresh="queryData" />
       </div>
     </a-row>
-  </div>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
-  <a-card size="small" :bordered="false">
     <a-table
       :id="SCM_INVENTORY_TABLE_ID.OUTBOUND"
       size="small"
@@ -172,6 +171,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {computed, onMounted, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import {message, Modal} from 'ant-design-vue';
@@ -259,9 +259,9 @@ const canDelete = computed(() => hasPermission('scm:inventory:outbound:delete'))
 function rowActions(row: InventoryOutbound): ScmActionItem[] {
   const pending = row.status === 'PENDING';
   return [
-    {key: 'edit', label: '编辑', hidden: !(pending && canUpdate.value)},
-    {key: 'cancel', label: '取消单据', hidden: !(pending && canUpdate.value)},
-    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
+    {key: 'edit', label: '编辑', hidden: !pending, authorized: pending && canUpdate.value},
+    {key: 'cancel', label: '取消单据', hidden: !pending, authorized: pending && canUpdate.value},
+    {key: 'delete', label: '删除', danger: true, hidden: !pending, authorized: pending && canDelete.value},
   ];
 }
 
@@ -282,7 +282,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await inventoryOutboundApi.query({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
@@ -482,7 +482,7 @@ async function onSubmit() {
     drawerOpen.value = false;
     queryData();
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   } finally {
     saving.value = false;
   }
@@ -500,7 +500,7 @@ async function openDetail(record: InventoryOutbound) {
     detail.value = r.data;
     detailOpen.value = true;
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   }
 }
 
@@ -518,7 +518,7 @@ function onConfirm(record: InventoryOutbound) {
         queryData();
       } catch (e) {
         // 可用量不足等业务失败会走到这里，整单已回滚
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });
@@ -536,7 +536,7 @@ function onCancel(record: InventoryOutbound) {
         message.success('已取消');
         queryData();
       } catch (e) {
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });
@@ -555,7 +555,7 @@ function onDelete(record: InventoryOutbound) {
         message.success('已删除');
         queryData();
       } catch (e) {
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });

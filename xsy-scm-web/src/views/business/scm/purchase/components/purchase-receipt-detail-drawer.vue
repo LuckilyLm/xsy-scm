@@ -2,11 +2,11 @@
      确认收货与仓库入库仍是列表上的状态动作，不在详情里重复入口。 -->
 <template>
   <a-drawer :open="visible" :title="receipt?.receiptNo || '收货单详情'" :width="scmDrawerWidth('l')" @close="visible = false">
-    <a-alert v-if="error" :message="error" type="error" show-icon>
+    <RequestError v-if="error" :message="error">
       <template #action>
         <a-button @click="load">重试</a-button>
       </template>
-    </a-alert>
+    </RequestError>
 
     <a-spin :spinning="loading">
       <template v-if="receipt">

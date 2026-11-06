@@ -15,8 +15,21 @@
         </p>
       </div>
       <div class="scm-detail-header__actions">
-        <a-button v-if="order && canPrint" @click="printOpen = true">打印订单</a-button>
-        <a-button v-if="order && canOperate" type="primary" @click="operation?.open(order.orderId!)">订单操作</a-button>
+        <a-button
+          :disabled="!(order && canPrint)"
+          :title="order && canPrint ? undefined : '暂无操作权限，请联系管理员'"
+          v-if="order"
+          @click="printOpen = true"
+          >打印订单</a-button
+        >
+        <a-button
+          :disabled="!(order && canOperate)"
+          :title="order && canOperate ? undefined : '暂无操作权限，请联系管理员'"
+          v-if="order"
+          type="primary"
+          @click="operation?.open(order.orderId!)"
+          >订单操作</a-button
+        >
       </div>
     </header>
 

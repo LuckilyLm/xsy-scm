@@ -15,7 +15,7 @@
     @ok="submit"
   >
     <p class="scm-note">将所选标准品按下方计划数量确认为正常分拣。</p>
-    <a-alert v-if="error" type="error" show-icon :message="error" />
+    <RequestError v-if="error" :message="error" />
     <a-button :disabled="saving || loading" @click="load">刷新预览</a-button>
     <a-table
       bordered

@@ -13,11 +13,11 @@
       </div>
     </header>
 
-    <a-alert v-if="error" :message="error" type="error" show-icon>
+    <RequestError v-if="error" :message="error">
       <template #action>
         <a-button size="small" @click="load">重新加载</a-button>
       </template>
-    </a-alert>
+    </RequestError>
     <template v-else-if="supplier">
       <div class="scm-detail-read">
         <div class="scm-detail-grid">
@@ -91,11 +91,11 @@
               </a-tag>
             </template>
           </LocalTable>
-          <a-alert v-if="relationsError" type="error" show-icon :message="relationsError" class="xsy-margin-bottom10">
+          <RequestError v-if="relationsError" :message="relationsError" class="xsy-margin-bottom10">
             <template #action>
               <a-button size="small" @click="loadRelations(supplier.supplierId)">重试</a-button>
             </template>
-          </a-alert>
+          </RequestError>
           <a-empty v-else-if="!loading && relations.length === 0" description="尚未关联任何商品" />
         </section>
 
@@ -184,7 +184,7 @@ async function load() {
   supplier.value = undefined;
   relations.value = [];
   try {
-    // 加载失败由页内 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const response = await supplierApi.detail(id, {suppressGlobalErrorMessage: true});
     if (request !== requestId) {
       return;

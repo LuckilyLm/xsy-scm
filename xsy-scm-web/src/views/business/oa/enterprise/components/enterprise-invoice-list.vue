@@ -31,7 +31,12 @@
           </a-button>
         </a-button-group>
       </a-form-item>
-      <div class="xsy-query-table-actions">
+    </a-row>
+  </a-form>
+
+  <a-card size="small" :bordered="false" :hoverable="false">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
         <a-button @click="addOrUpdate()" type="primary" v-if="$privilege('oa:invoice:add')">
           <template #icon>
             <PlusOutlined />
@@ -40,10 +45,8 @@
         </a-button>
         <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.OA.ENTERPRISE_INVOICE" :refresh="ajaxQuery" />
       </div>
-    </a-row>
-  </a-form>
+    </div>
 
-  <a-card size="small" :bordered="false" :hoverable="false">
     <a-table :scroll="{x: 1300}" size="small" :dataSource="tableData" :columns="columns" rowKey="invoiceId" :pagination="false" bordered>
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'disabledFlag'">

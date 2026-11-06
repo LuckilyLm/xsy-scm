@@ -109,7 +109,7 @@
 
   <!-- 只列同一商品规格、还有可分配余量的需求 -->
   <a-modal :open="picker.open" title="选择采购需求" width="900px" :footer="null" @cancel="picker.open = false">
-    <a-alert v-if="picker.error" :message="picker.error" type="error" show-icon />
+    <RequestError v-if="picker.error" :message="picker.error" />
     <a-spin :spinning="picker.loading">
       <a-table bordered size="small" :data-source="picker.rows" :columns="pickerColumns" :pagination="false" row-key="id">
         <template #bodyCell="{record: demand, column}">

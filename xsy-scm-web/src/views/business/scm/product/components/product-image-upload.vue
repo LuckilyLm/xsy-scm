@@ -14,7 +14,7 @@
         </a-upload>
       </div>
     </div>
-    <a-alert v-if="uploadError" type="error" :message="uploadError" show-icon closable @close="uploadError = ''" />
+    <RequestError v-if="uploadError" :message="uploadError" />
     <a-alert v-if="hasBrokenPreview" type="warning" message="部分图片无法预览，请检查图片访问地址或网络连接。" show-icon />
     <div v-if="modelValue.length" class="images">
       <figure

@@ -1,26 +1,33 @@
 <!-- 包装码：一个码对应一个批次，由系统发号且不复用。页面提供发码、绑定和历史记录查询。 -->
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="批次号">
-          <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch" />
-        </a-form-item>
-        <a-form-item label="包装码">
-          <a-input v-model:value="queryForm.unitCode" placeholder="包装码" allow-clear @pressEnter="onSearch" />
-        </a-form-item>
-        <a-form-item label="状态">
-          <a-select v-model:value="queryForm.status" :options="STATUS_OPTIONS" allow-clear placeholder="全部" style="width: 140px" />
-        </a-form-item>
-        <a-form-item class="xsy-query-form-item">
-          <a-space>
-            <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:unit:query'">查询</a-button>
-            <a-button @click="resetQuery">重置</a-button>
-          </a-space>
-        </a-form-item>
-      </a-row>
-    </a-form>
-    <a-row data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="批次号">
+        <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch" />
+      </a-form-item>
+      <a-form-item label="包装码">
+        <a-input v-model:value="queryForm.unitCode" placeholder="包装码" allow-clear @pressEnter="onSearch" />
+      </a-form-item>
+      <a-form-item label="状态">
+        <a-select v-model:value="queryForm.status" :options="STATUS_OPTIONS" allow-clear placeholder="全部" style="width: 140px" />
+      </a-form-item>
+      <a-form-item class="xsy-query-form-item">
+        <a-space>
+          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:unit:query'">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-space>
+      </a-form-item>
+    </a-row>
+  </a-form>
+
+  <RequestError v-if="error" :message="error">
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </RequestError>
+
+  <a-card size="small" :bordered="false">
+    <a-row class="xsy-table-btn-block scm-table-toolbar">
       <div class="xsy-table-operate-block">
         <a-button type="primary" @click="openIssue" v-privilege="'scm:inventory:unit:issue'">按批次发码</a-button>
       </div>
@@ -28,15 +35,7 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRACE_UNIT" :refresh="queryData" />
       </div>
     </a-row>
-  </div>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
-  <a-card size="small" :bordered="false">
     <a-table
       :id="SCM_INVENTORY_TABLE_ID.TRACE_UNIT"
       size="small"
@@ -92,7 +91,7 @@
   </a-card>
 
   <a-modal v-model:open="issueOpen" title="按批次发码" :confirm-loading="issuing" ok-text="发码" @ok="submitIssue">
-    <a-alert v-if="issueError" class="form-error" type="error" show-icon :message="issueError" />
+    <RequestError v-if="issueError" class="form-error" :message="issueError" />
     <a-form layout="vertical">
       <a-form-item label="批次号" required>
         <a-input v-model:value="issueForm.lotNo" placeholder="输入批次号后确认可发数量" @blur="loadLot" />
@@ -121,7 +120,7 @@
   </a-modal>
 
   <a-modal v-model:open="bindOpen" title="绑定分拣任务行" :confirm-loading="binding" ok-text="绑定" @ok="submitBind">
-    <a-alert v-if="bindError" class="form-error" type="error" show-icon :message="bindError" />
+    <RequestError v-if="bindError" class="form-error" :message="bindError" />
     <a-form layout="vertical">
       <a-form-item label="包装码" required>
         <a-input v-model:value="bindForm.unitCode" placeholder="扫码或输入包装码" aria-label="包装码" />
@@ -148,7 +147,7 @@
   </a-modal>
 
   <a-modal v-model:open="correctOpen" title="申请更正" :confirm-loading="correcting" ok-text="提交申请" @ok="submitCorrect">
-    <a-alert v-if="correctError" class="form-error" type="error" show-icon :message="correctError" />
+    <RequestError v-if="correctError" class="form-error" :message="correctError" />
     <p class="scm-note">提交后需他人审批；批准前绑定仍然有效。</p>
     <a-form layout="vertical">
       <a-form-item label="包装码">
@@ -161,7 +160,7 @@
   </a-modal>
 
   <a-modal v-model:open="voidOpen" title="作废包装码" :confirm-loading="voidSaving" ok-text="作废" ok-type="danger" @ok="submitVoid">
-    <a-alert v-if="voidError" class="form-error" type="error" show-icon :message="voidError" />
+    <RequestError v-if="voidError" class="form-error" :message="voidError" />
     <p class="scm-note">作废只把码标记为已作废并保留原码，不能复用到别的实物；已绑定分拣行的码不能作废。</p>
     <a-form layout="vertical">
       <a-form-item label="包装码">
@@ -183,7 +182,7 @@
 
   <a-drawer :open="replayOpen" title="包装码记录查询" :width="scmDrawerWidth('m')" @close="replayOpen = false">
     <a-spin :spinning="replayLoading">
-      <a-alert v-if="replayError" :message="replayError" type="error" show-icon />
+      <RequestError v-if="replayError" :message="replayError" />
       <template v-if="replay">
         <a-descriptions bordered size="small" :column="2">
           <a-descriptions-item label="包装码">{{ replay.unit.unitCode }}</a-descriptions-item>
@@ -482,9 +481,15 @@ async function submitIssue() {
 /** 打印和作废收进“更多”，常驻位置留给历史记录查询与绑定。 */
 function moreActions(record: TraceUnit): ScmActionItem[] {
   return [
-    {key: 'print', label: '打印标签', hidden: !hasPermission('scm:inventory:unit:query')},
-    {key: 'correct', label: '申请更正', hidden: !hasPermission('scm:inventory:unit:correct:apply')},
-    {key: 'void', label: '作废', danger: true, hidden: !hasPermission('scm:inventory:unit:void') || record.status !== 'ACTIVE'},
+    {key: 'print', label: '打印标签', authorized: hasPermission('scm:inventory:unit:query')},
+    {key: 'correct', label: '申请更正', authorized: hasPermission('scm:inventory:unit:correct:apply')},
+    {
+      key: 'void',
+      label: '作废',
+      danger: true,
+      hidden: record.status !== 'ACTIVE',
+      authorized: !(!hasPermission('scm:inventory:unit:void') || record.status !== 'ACTIVE'),
+    },
   ];
 }
 

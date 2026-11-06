@@ -17,13 +17,18 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.SCM_PRINT_RECORD" :refresh="queryData" />
+      </div>
+    </div>
     <a-table
       size="small"
       :data-source="tableData"
@@ -65,8 +70,10 @@
 </template>
 
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, onMounted, reactive, ref} from 'vue';
+import {shallowRef, computed, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {printApi} from '/@/api/business/scm/print-api';
@@ -87,7 +94,7 @@ let requestId = 0;
 
 const typeOptions = computed(() => documentTypes.value.map((item) => ({value: item.documentType, label: item.documentTypeLabel})));
 
-const columns: TableColumnsType<PrintRecord> = [
+const columns = shallowRef<TableColumnsType<PrintRecord>>([
   {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130, align: 'center'},
   {title: '业务单号', dataIndex: 'businessNo', width: 190},
   {title: '模板名称', dataIndex: 'templateName', width: 170},
@@ -95,14 +102,14 @@ const columns: TableColumnsType<PrintRecord> = [
   {title: '打印时间', dataIndex: 'printedAt', width: 165},
   {title: '打印人', dataIndex: 'printedBy', width: 110},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 100},
-];
+]);
 
 async function queryData() {
   const id = ++requestId;
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await printApi.recordQuery({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list ?? [];

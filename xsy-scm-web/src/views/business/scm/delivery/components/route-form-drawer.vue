@@ -6,7 +6,7 @@
     :mask-closable="!saving"
     @close="requestClose"
   >
-    <a-alert v-if="error" type="error" :message="error" show-icon class="drawer-error" />
+    <RequestError v-if="error" :message="error" class="drawer-error" />
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
         <section class="scm-form-section">
@@ -141,7 +141,7 @@ async function open(route?: DeliveryRoute) {
   departure.value = route?.plannedDepartureTime ? dayjs(route.plannedDepartureTime).format('YYYY-MM-DD HH:mm:ss') : undefined;
   unsaved.capture();
   try {
-    // 选项加载失败由抽屉内的 Alert 提示
+    // 请求失败交给共享反馈处理，避免重复提示。
     const [w, d, v] = await Promise.all([
       deliveryApi.warehouses({suppressGlobalErrorMessage: true}),
       deliveryApi.drivers({suppressGlobalErrorMessage: true}),

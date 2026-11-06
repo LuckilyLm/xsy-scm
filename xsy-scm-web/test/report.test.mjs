@@ -455,10 +455,10 @@ import {
     assert.match(errors, /e\?\.msg \?\? e\?\.message/, '未登记的码要回落到后端消息');
   });
 
-  test('每页都有 error 横幅与重试入口', () => {
+  test('每页提供统一请求反馈并保留查询或刷新入口', () => {
     for (const [name, source] of Object.entries(PAGES)) {
-      assert.match(source, /type="error"/, `${name} 页缺错误提示`);
-      assert.match(source, /重试/, `${name} 页缺重试入口`);
+      assert.match(source, /<RequestError\b[^>]*:message=/, `${name} 页缺统一请求反馈`);
+      assert.match(source, /@click="(?:onSearch|query\w*|search|load\w*|reset\w*)"|@reload=|:refresh=/, `${name} 页缺重新查询入口`);
     }
   });
 

@@ -4,7 +4,7 @@
       <div class="share-page__title">采购任务</div>
 
       <a-spin :spinning="loading">
-        <a-alert v-if="error" type="error" show-icon :message="error" class="share-page__alert" />
+        <RequestError v-if="error" :message="error" class="share-page__alert" />
 
         <template v-if="view">
           <a-descriptions :column="2" size="small" bordered class="share-page__info">
@@ -57,6 +57,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {onMounted, reactive, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import {message} from 'ant-design-vue';
@@ -144,7 +145,7 @@ async function submit() {
     message.success('已提交');
     await load();
   } catch (e) {
-    message.error((e as Error)?.message || '提交失败');
+    notifyRequestError((e as Error)?.message || '提交失败');
   } finally {
     submitting.value = false;
   }

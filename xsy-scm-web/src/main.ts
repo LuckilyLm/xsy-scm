@@ -15,6 +15,7 @@ import {loginApi} from '/@/api/system/login-api';
 import constantsInfo from '/@/constants/index';
 import {privilegeDirective} from '/@/directives/privilege';
 import {ariaLabelDirective} from '/@/directives/aria-label';
+import RequestError from '/@/components/support/request-error/index.vue';
 import i18n from '/@/i18n/index';
 import privilegePlugin from '/@/plugins/privilege-plugin';
 import dictPlugin from '/@/plugins/dict-plugin';
@@ -72,10 +73,10 @@ async function initVue() {
   let vueApp = createApp(App);
   let app = vueApp.use(router).use(store).use(i18n).use(Antd).use(xsyEnumPlugin, constantsInfo).use(privilegePlugin).use(dictPlugin).use(JsonViewer);
   //注入权限
+  app.component('RequestError', RequestError);
   app.directive('privilege', {
-    mounted(el, binding) {
-      privilegeDirective(el, binding);
-    },
+    mounted: privilegeDirective,
+    updated: privilegeDirective,
   });
   // 把无障碍名称写到组件内部真正的表单控件上
   app.directive('aria-label', ariaLabelDirective);

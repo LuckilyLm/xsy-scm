@@ -20,14 +20,22 @@
       </a-space></a-form-item
     >
   </a-form>
-  <a-alert v-if="error" class="report-note" type="error" :message="error" show-icon>
+  <RequestError v-if="error" class="report-note" :message="error">
     <template #action><a-button @click="search">重试查询</a-button></template>
-  </a-alert>
+  </RequestError>
   <a-card size="small" :bordered="false">
-    <div class="report-toolbar">
-      <a-button type="primary" v-privilege="'scm:report:export'" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
-        >导出当前结果</a-button
-      >
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <a-button type="primary" v-privilege="'scm:report:export'" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
+          >导出当前结果</a-button
+        >
+        <TableOperator
+          v-model="columns"
+          :table-id="TABLE_ID_CONST.LIST.SCM_REPORT_ORDER_EXCEPTION"
+          :refresh="() => (applied ? load(applied) : search())"
+          :exclude-column-keys="hasPermission('scm:inventory:balance:query') ? [] : [...stockColumns]"
+        />
+      </div>
     </div>
     <a-table
       bordered
@@ -45,6 +53,7 @@
         <template v-else>{{ text }}</template>
       </template>
     </a-table>
+
     <a-table
       size="small"
       :data-source="rows"
@@ -89,8 +98,10 @@
 </template>
 
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref, shallowRef} from 'vue';
 import {useRouter} from 'vue-router';
 import dayjs from 'dayjs';
 import {message, type TableColumnsType} from 'ant-design-vue';
@@ -160,7 +171,7 @@ const summaryColumns = [
   {title: '异常条数', dataIndex: 'exceptionCount', width: 96},
   {title: '该类别关联订单数', dataIndex: 'orderCount', width: 92},
 ];
-const columns: TableColumnsType<OrderExceptionRow> = [
+const columns = shallowRef<TableColumnsType<OrderExceptionRow>>([
   {title: '异常类别', dataIndex: 'exceptionType', align: 'center', width: 145},
   {title: '发生时间', dataIndex: 'occurredAt', width: 180},
   {title: '来源单号', dataIndex: 'sourceNo', width: 200},
@@ -180,11 +191,11 @@ const columns: TableColumnsType<OrderExceptionRow> = [
   {title: '原因', dataIndex: 'reason', width: 260},
   {title: '处理建议', dataIndex: 'suggestion', width: 300},
   {title: '操作', dataIndex: 'action', fixed: 'right', width: 110, align: 'center'},
-];
+]);
 const displayColumns = computed(() =>
   hasPermission('scm:inventory:balance:query')
-    ? columns
-    : columns.filter((column) => !('dataIndex' in column && stockColumns.has(String(column.dataIndex))))
+    ? columns.value
+    : columns.value.filter((column) => !('dataIndex' in column && stockColumns.has(String(column.dataIndex))))
 );
 function statusLabel(row: OrderExceptionRow) {
   if (row.exceptionType === 'SORTING_DIFFERENCE' || row.exceptionType === 'SORTING_SHORTAGE')
@@ -223,7 +234,7 @@ async function load(payload: OrderExceptionQuery) {
   summary.value = [];
   total.value = 0;
   try {
-    // 加载失败由页内 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const quiet = {suppressGlobalErrorMessage: true};
     const [page, counts] = await Promise.all([orderExceptionApi.query(payload, quiet), orderExceptionApi.summary(payload, quiet)]);
     if (id !== requestId) return;
@@ -293,14 +304,6 @@ onMounted(search);
 }
 .report-note,
 .report-summary {
-  margin-bottom: 14px;
-}
-.report-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 12px;
   margin-bottom: 14px;
 }
 .type-select {

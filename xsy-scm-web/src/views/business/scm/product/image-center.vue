@@ -10,7 +10,7 @@
               ><a-space><a-button type="primary" @click="onSearch">查询</a-button> <a-button @click="resetPick">重置</a-button></a-space></a-form-item
             >
           </a-form>
-          <a-alert v-if="pickError" :message="pickError" type="error" show-icon class="gap" />
+          <RequestError v-if="pickError" :message="pickError" class="gap" />
           <a-table
             bordered
             :data-source="products"
@@ -62,7 +62,7 @@
           </template>
           <a-empty v-if="!view" description="请从左侧选择一个商品" />
           <template v-else>
-            <a-alert v-if="imageError" :message="imageError" type="error" show-icon class="gap" />
+            <RequestError v-if="imageError" :message="imageError" class="gap" />
             <a-spin :spinning="imageLoading">
               <div class="images">
                 <figure
@@ -145,7 +145,7 @@
           />
         </span>
       </template>
-      <a-alert v-if="poolError" :message="poolError" type="error" show-icon class="gap" />
+      <RequestError v-if="poolError" :message="poolError" class="gap" />
       <a-spin :spinning="poolLoading">
         <a-empty v-if="!pool.length" description="没有待绑定的图片" />
         <div v-else class="pool">
@@ -268,6 +268,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {computed, onMounted, ref} from 'vue';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {message} from 'ant-design-vue';
@@ -719,7 +720,7 @@ const stageFiles: UploadProps['beforeUpload'] = async (selected) => {
     }
     await refreshAutoMatches();
   } catch (e) {
-    message.error(productError(e));
+    notifyRequestError(productError(e));
   } finally {
     staging.value = false;
   }
@@ -741,7 +742,7 @@ async function confirmBatch() {
     if (touchedSelected) await select(view.value!.spuId);
     await loadPool();
   } catch (e) {
-    message.error(productError(e));
+    notifyRequestError(productError(e));
   } finally {
     binding.value = false;
   }

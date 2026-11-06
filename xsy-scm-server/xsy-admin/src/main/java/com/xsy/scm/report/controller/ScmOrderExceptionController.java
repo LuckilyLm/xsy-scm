@@ -41,7 +41,8 @@ public class ScmOrderExceptionController {
 
     @PostMapping("/summary")
     @SaCheckPermission(ScmReportPermission.ORDER_EXCEPTION_QUERY)
-    public ResponseDTO<List<ScmOrderExceptionSummaryVO>> summary(@Valid @RequestBody ScmOrderExceptionQueryForm form) {
+    public ResponseDTO<List<ScmOrderExceptionSummaryVO>> summary(
+        @Valid @RequestBody ScmOrderExceptionQueryForm.Filter form) {
         return ResponseDTO.ok(orderExceptionService.summary(form));
     }
 
@@ -49,7 +50,7 @@ public class ScmOrderExceptionController {
     @SaCheckPermission(value = {ScmReportPermission.ORDER_EXCEPTION_QUERY, ScmReportPermission.EXPORT},
         mode = SaMode.AND)
     @OperateLog
-    public void export(@Valid @RequestBody ScmOrderExceptionQueryForm form, HttpServletResponse response)
+    public void export(@Valid @RequestBody ScmOrderExceptionQueryForm.Filter form, HttpServletResponse response)
         throws IOException {
         var rows = orderExceptionService.export(form).stream()
             .map(row -> ScmExcel.row(TITLES, ScmOrderExceptionTypeEnum.valueOf(row.getExceptionType()).getLabel(),

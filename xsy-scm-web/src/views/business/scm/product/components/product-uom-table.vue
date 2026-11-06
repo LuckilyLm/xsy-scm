@@ -1,29 +1,31 @@
 <!-- 计量单位：只作取值来源，编码和名称不可改。 -->
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline">
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="关键字" class="xsy-query-form-item"
-          ><a-input v-model:value="query.keyword" allow-clear placeholder="单位名称" style="width: 200px"
-        /></a-form-item>
-        <a-form-item label="状态" class="xsy-query-form-item"
-          ><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px"
-        /></a-form-item>
-        <a-form-item class="xsy-query-form-item"
-          ><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item
-        >
-      </a-row>
-    </a-form>
-    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
-      <a-button v-privilege="'scm:product:uom:add'" type="primary" @click="modal?.open()">新增单位</a-button>
+  <a-form class="xsy-query-form" layout="inline">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="关键字" class="xsy-query-form-item"
+        ><a-input v-model:value="query.keyword" allow-clear placeholder="单位名称" style="width: 200px"
+      /></a-form-item>
+      <a-form-item label="状态" class="xsy-query-form-item"
+        ><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px"
+      /></a-form-item>
+      <a-form-item class="xsy-query-form-item"
+        ><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item
+      >
     </a-row>
-  </div>
+  </a-form>
+  <a-row class="xsy-table-btn-block">
+    <a-button v-privilege="'scm:product:uom:add'" type="primary" @click="modal?.open()">新增单位</a-button>
 
-  <a-alert v-if="error" type="error" :message="error" show-icon class="xsy-margin-bottom10">
+    <div class="xsy-table-setting-block">
+      <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.SCM_PRODUCT_UOM" :refresh="load" />
+    </div>
+  </a-row>
+
+  <RequestError v-if="error" :message="error" class="xsy-margin-bottom10">
     <template #action>
       <a-button size="small" @click="load">重新加载</a-button>
     </template>
-  </a-alert>
+  </RequestError>
   <LocalTable
     :page-size-options="SCM_PAGE_SIZE_OPTIONS"
     :data-source="rows"
@@ -53,9 +55,11 @@
   <UomModal ref="modal" @saved="load" />
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import LocalTable from '/@/components/support/local-table/index.vue';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
-import {onMounted, reactive, ref} from 'vue';
+import {shallowRef, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {productUomApi} from '/@/api/business/scm/product-assistant-api';
@@ -69,7 +73,7 @@ const query = reactive<AssistantQuery>({}),
   loading = ref(false),
   error = ref('');
 const modal = ref<InstanceType<typeof UomModal>>();
-const columns: TableColumnsType<ProductUom> = [
+const columns = shallowRef<TableColumnsType<ProductUom>>([
   {title: '排序', dataIndex: 'sortOrder', width: 70},
   {title: '单位名称', dataIndex: 'name', width: 120},
   {title: '量纲', dataIndex: 'category', align: 'center', width: 90},
@@ -86,13 +90,13 @@ const columns: TableColumnsType<ProductUom> = [
     width: 140,
     align: 'center',
   },
-];
+]);
 
 async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页内 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     rows.value = (await productUomApi.list({...query}, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = productError(e);

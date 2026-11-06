@@ -26,7 +26,12 @@
             </a-button>
           </a-button-group>
         </a-form-item>
-        <div class="xsy-query-table-actions">
+      </a-row>
+    </a-form>
+
+    <a-card size="small" :bordered="false" :hoverable="true">
+      <div class="xsy-table-btn-block">
+        <div class="xsy-table-setting-block">
           <a-button @click="toEditOrAdd()" v-privilege="'support:config:add'" type="primary">
             <template #icon>
               <PlusOutlined />
@@ -35,10 +40,8 @@
           </a-button>
           <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.CONFIG" :refresh="ajaxQuery" />
         </div>
-      </a-row>
-    </a-form>
+      </div>
 
-    <a-card size="small" :bordered="false" :hoverable="true">
       <a-table size="small" :loading="tableLoading" bordered :dataSource="tableData" :columns="columns" rowKey="configId" :pagination="false">
         <template #bodyCell="{record, column}">
           <template v-if="column.dataIndex === 'action'">

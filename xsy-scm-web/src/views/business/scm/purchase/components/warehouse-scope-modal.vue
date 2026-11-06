@@ -8,7 +8,7 @@
     :confirm-loading="saving"
     @ok="save"
   >
-    <a-alert v-if="error" type="error" :message="error" show-icon class="xsy-margin-bottom10" />
+    <RequestError v-if="error" :message="error" class="xsy-margin-bottom10" />
 
     <template v-if="isView">
       <p>

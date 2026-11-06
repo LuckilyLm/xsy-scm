@@ -138,6 +138,7 @@
   <a-button class="add-line" @click="items.push({orderedQuantity: '1.0', manualPriceOverride: false})">添加商品 </a-button>
 </template>
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onBeforeUnmount, onMounted, reactive, ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
@@ -418,7 +419,7 @@ async function loadRecent(record: Item, silent = false) {
       return r.data;
     });
   } catch (e) {
-    if (!silent) message.error(orderError(e));
+    if (!silent) notifyRequestError(orderError(e));
   }
 }
 

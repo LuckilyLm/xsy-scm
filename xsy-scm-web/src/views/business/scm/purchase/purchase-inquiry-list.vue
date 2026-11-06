@@ -7,7 +7,7 @@
         </a-form-item>
         <a-button type="primary" :loading="loading" v-privilege="'scm:purchase:inquiry:query'" @click="loadBatch(1)">查询</a-button>
       </a-form>
-      <a-alert v-if="error" :message="error" type="error" show-icon class="scm-inquiry__alert" />
+      <RequestError v-if="error" :message="error" class="scm-inquiry__alert" />
       <a-space v-if="loadedBatch" wrap class="scm-inquiry__toolbar">
         <a-select
           v-model:value="candidateKey"
@@ -27,6 +27,11 @@
           >建立询价</a-button
         >
       </a-space>
+      <div class="xsy-table-btn-block">
+        <div class="xsy-table-setting-block">
+          <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.SCM_PURCHASE_INQUIRY" :refresh="() => loadBatch(currentPage)" />
+        </div>
+      </div>
       <a-table
         :data-source="inquiries"
         :columns="columns"
@@ -146,9 +151,12 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {formatPrice} from '/@/utils/scm-amount';
-import {computed, onMounted, ref} from 'vue';
+import {shallowRef, computed, onMounted, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
@@ -182,14 +190,14 @@ const quotePrice = ref<string>();
 const quoteValidUntil = ref<string>();
 const quoteRemark = ref('');
 
-const columns: TableColumnsType<PurchaseInquiry> = [
+const columns = shallowRef<TableColumnsType<PurchaseInquiry>>([
   // 询价没有业务单号，也不展示数据库主键：按商品 + 截止时间定位这条询价
   {title: '商品', dataIndex: 'productNameSnapshot', width: 240},
   {title: '需求量', dataIndex: 'requiredQuantity', width: 150},
   {title: '截止时间', dataIndex: 'deadlineAt', width: 180},
   {title: '状态', dataIndex: 'status', align: 'center', width: 96},
   {title: '操作', dataIndex: 'action', align: 'center', width: 125},
-];
+]);
 const quoteColumns: TableColumnsType<PurchaseInquiryQuote> = [
   {title: '供应商', dataIndex: 'supplierNameSnapshot', width: 185},
   {title: '版本', dataIndex: 'revision', width: 85},
@@ -281,7 +289,7 @@ async function loadMoreHistory(): Promise<void> {
     quoteHistoryMore.value = page.hasMore;
     quoteHistoryBefore.value = page.nextBeforeId;
   } catch (cause) {
-    void message.error(String((cause as Error)?.message || '加载报价历史失败'));
+    void notifyRequestError(String((cause as Error)?.message || '加载报价历史失败'));
   } finally {
     historyLoading.value = false;
   }
@@ -307,7 +315,7 @@ async function createInquiry(): Promise<void> {
     await loadBatch();
     await openDetail(created.data.inquiry.id);
   } catch (cause) {
-    void message.error(String((cause as Error)?.message || '建立询价失败'));
+    void notifyRequestError(String((cause as Error)?.message || '建立询价失败'));
   } finally {
     busy.value = false;
   }
@@ -318,7 +326,7 @@ async function openDetail(id: ScmId): Promise<void> {
   try {
     applyDetail((await purchaseInquiryApi.detail(id, {suppressGlobalErrorMessage: true})).data);
   } catch (cause) {
-    void message.error(String((cause as Error)?.message || '读取报价失败'));
+    void notifyRequestError(String((cause as Error)?.message || '读取报价失败'));
   } finally {
     detailLoading.value = false;
   }
@@ -360,7 +368,7 @@ async function submitQuote(): Promise<void> {
     void message.success('已登记报价新版本');
     await loadBatch();
   } catch (cause) {
-    void message.error(String((cause as Error)?.message || '登记报价失败'));
+    void notifyRequestError(String((cause as Error)?.message || '登记报价失败'));
   } finally {
     busy.value = false;
   }
@@ -388,7 +396,7 @@ function confirmQuote(quote: PurchaseInquiryQuote): void {
         void message.success('报价已确认');
         await loadBatch();
       } catch (cause) {
-        void message.error(String((cause as Error)?.message || '确认报价失败'));
+        void notifyRequestError(String((cause as Error)?.message || '确认报价失败'));
         throw cause;
       }
     },

@@ -44,6 +44,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {ref} from 'vue';
 import {message} from 'ant-design-vue';
 import {productSkuApi, type ProductSkuStockConversion} from '/@/api/business/scm/product-sku-api';
@@ -63,7 +64,7 @@ async function load() {
   try {
     rows.value = (await productSkuApi.stockConversions(props.sku.skuId)).data || [];
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '换算规则加载失败');
+    notifyRequestError(error instanceof Error ? error.message : '换算规则加载失败');
   } finally {
     loading.value = false;
   }
@@ -85,7 +86,7 @@ async function save() {
     message.success('换算关系已保存');
     await load();
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '保存失败');
+    notifyRequestError(error instanceof Error ? error.message : '保存失败');
   } finally {
     saving.value = false;
   }
@@ -97,7 +98,7 @@ async function remove(unit: string) {
     message.success('换算关系已删除');
     await load();
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '删除失败');
+    notifyRequestError(error instanceof Error ? error.message : '删除失败');
   }
 }
 </script>

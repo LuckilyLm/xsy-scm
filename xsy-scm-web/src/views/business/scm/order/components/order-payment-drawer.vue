@@ -7,7 +7,7 @@
     :mask-closable="!saving"
     :keyboard="!saving"
   >
-    <a-alert v-if="error" type="error" show-icon :message="error" class="payment-message" />
+    <RequestError v-if="error" :message="error" class="payment-message" />
     <a-alert v-if="created" type="success" show-icon :message="`${created.intentNo}：${statusText(created.status)}`" class="payment-message" />
     <a-form
       ref="formRef"

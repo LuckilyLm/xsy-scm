@@ -1,29 +1,35 @@
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline" @submit.prevent="search">
-      <a-form-item :label="isDriver ? '司机编码' : '车牌号'">
-        <a-input v-model:value="query.keyword" allow-clear @pressEnter="search" />
-      </a-form-item>
-      <a-form-item label="状态">
-        <a-select v-model:value="query.status" allow-clear :options="statusOptions" class="status-select" />
-      </a-form-item>
-      <a-form-item class="xsy-query-form-item">
-        <a-space>
-          <a-button type="primary" @click="search">查询</a-button>
-          <a-button @click="reset">重置</a-button>
-        </a-space>
-      </a-form-item>
-    </a-form>
-    <div data-toolbar-layout="query" class="xsy-table-btn-block">
-      <a-button type="primary" v-privilege="editPermission" @click="open()">新建{{ label }}</a-button>
-    </div>
-  </div>
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="search">
+    <a-form-item :label="isDriver ? '司机编码' : '车牌号'">
+      <a-input v-model:value="query.keyword" allow-clear @pressEnter="search" />
+    </a-form-item>
+    <a-form-item label="状态">
+      <a-select v-model:value="query.status" allow-clear :options="statusOptions" class="status-select" />
+    </a-form-item>
+    <a-form-item class="xsy-query-form-item">
+      <a-space>
+        <a-button type="primary" @click="search">查询</a-button>
+        <a-button @click="reset">重置</a-button>
+      </a-space>
+    </a-form-item>
+  </a-form>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="load">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
   <a-card size="small" :bordered="false">
+    <div class="xsy-table-btn-block">
+      <a-button type="primary" v-privilege="editPermission" @click="open()">新建{{ label }}</a-button>
+      <div class="xsy-table-setting-block">
+        <TableOperator
+          v-model="columns"
+          :table-id="isDriver ? TABLE_ID_CONST.LIST.SCM_DELIVERY_DRIVER : TABLE_ID_CONST.LIST.SCM_DELIVERY_VEHICLE"
+          :refresh="load"
+        />
+      </div>
+    </div>
+
     <a-table
       :id="`scm-delivery-${kind}-table`"
       :columns="columns"
@@ -111,7 +117,9 @@
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, onMounted, reactive, ref} from 'vue';
+import {shallowRef, computed, onMounted, reactive, ref} from 'vue';
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {message, Modal, type TableColumnsType, type FormInstance} from 'ant-design-vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
@@ -173,7 +181,7 @@ const employeeValue = computed<number | undefined>({
 });
 
 // 司机编码只在查询和编辑里出现，不上列表；车辆数值列的单位写在表头。
-const columns = computed<TableColumnsType>(() => [
+const columns = shallowRef<TableColumnsType>([
   ...(isDriver.value
     ? [
         {title: '姓名', dataIndex: 'driverName', width: 140},
@@ -196,7 +204,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示并可重试
+    // 请求失败交给共享反馈处理，避免重复提示。
     const result = await (isDriver.value
       ? deliveryApi.queryDrivers(query, {suppressGlobalErrorMessage: true})
       : deliveryApi.queryVehicles(query, {suppressGlobalErrorMessage: true}));

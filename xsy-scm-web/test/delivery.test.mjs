@@ -345,7 +345,7 @@ import {
     assert.match(fulfillmentPane, /:locale="\{emptyText\}"/);
     assert.match(view, /const fulfillmentEmptyText = computed\(\(\) =>[\s\S]*?线路已取消[\s\S]*?线路还没有订单/);
     // 错误统一进顶部横幅（与打印的 loadPrint 一致），并由横幅的刷新动作恢复。
-    assert.match(view, /<a-alert v-if="error" :message="error" type="error" show-icon/);
+    assert.match(view, /<RequestError v-if="error" :message="error"/);
     assert.match(view, /<a-button @click="reload">刷新线路<\/a-button>/);
     // 面板是第五个 pane：不改动既有 base / orders / map / print 四个 pane 的键。
     const paneKeys = [...view.matchAll(/<a-tab-pane key="(\w+)"/g)].map((m) => m[1]);

@@ -12,14 +12,14 @@
         />
       </a-form-item>
     </a-form>
-    <a-alert v-if="warehousesError" type="error" show-icon :message="warehousesError" class="district-alert">
+    <RequestError v-if="warehousesError" :message="warehousesError" class="district-alert">
       <template #action><a-button size="small" @click="loadWarehouses">重试</a-button></template>
-    </a-alert>
+    </RequestError>
     <div v-if="districtCode">
       <a-spin :spinning="loading">
-        <a-alert v-if="rulesError" type="error" show-icon :message="rulesError" class="district-alert">
+        <RequestError v-if="rulesError" :message="rulesError" class="district-alert">
           <template #action><a-button size="small" @click="load">重试</a-button></template>
-        </a-alert>
+        </RequestError>
         <div v-for="row in rules" :key="String(row.warehouseId)" class="rule-line">
           <span>{{ row.warehouseName }}（优先级 {{ row.priority }}）</span>
           <a-popconfirm title="删除这条区县配送规则？" @confirm="remove(row.warehouseId)">
@@ -61,6 +61,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {computed, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
@@ -144,7 +145,7 @@ async function save(): Promise<void> {
     message.success('区县配送规则已保存');
     await load();
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '保存失败');
+    notifyRequestError(error instanceof Error ? error.message : '保存失败');
   } finally {
     saving.value = false;
   }
@@ -156,7 +157,7 @@ async function remove(warehouseId: string | number): Promise<void> {
     message.success('配送规则已移除');
     await load();
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '移除失败');
+    notifyRequestError(error instanceof Error ? error.message : '移除失败');
   }
 }
 defineExpose({open});

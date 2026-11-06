@@ -1,11 +1,11 @@
 <!-- 采购单详情抽屉。分配明细由后端展开好；操作记录最新在前。 -->
 <template>
   <a-drawer :open="visible" :title="order?.orderNo || '采购单详情'" :width="scmDrawerWidth('xl')" @close="visible = false">
-    <a-alert v-if="error" :message="error" type="error" show-icon>
+    <RequestError v-if="error" :message="error">
       <template #action>
         <a-button @click="load">重试</a-button>
       </template>
-    </a-alert>
+    </RequestError>
     <a-spin :spinning="loading">
       <template v-if="order">
         <div class="actions scm-detail-actions">
@@ -403,7 +403,7 @@ async function load(request = ++requestId) {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由抽屉内的 Alert 提示并可重试
+    // 请求失败交给共享反馈处理，避免重复提示。
     const detail = (await purchaseOrderApi.detail(order.value.id, {suppressGlobalErrorMessage: true})).data;
     if (current !== requestId) return;
     order.value = detail;

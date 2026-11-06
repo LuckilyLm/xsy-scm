@@ -14,8 +14,13 @@
       </a-space>
     </a-form-item>
   </a-form>
-  <a-alert v-if="error" class="statement-note" type="error" show-icon :message="error" />
+  <RequestError v-if="error" class="statement-note" :message="error" />
   <a-card title="历史对账单" size="small" :bordered="false" class="statement-card">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="historyColumns" :table-id="TABLE_ID_CONST.LIST.SCM_REPORT_CUSTOMER_STATEMENT" :refresh="loadHistory" />
+      </div>
+    </div>
     <a-table bordered :columns="historyColumns" :data-source="history" row-key="id" size="small" :pagination="{pageSize: 10}" :loading="busy">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'"><a-button type="link" @click="openVersion(record.id)">查看对账单</a-button></template>
@@ -83,8 +88,10 @@
   />
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {ref} from 'vue';
+import {shallowRef, ref} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {customerStatementApi, type CustomerStatement, type CustomerStatementLine} from '/@/api/business/scm/customer-statement-api';
 import type {ReportId} from './report-types';
@@ -126,14 +133,14 @@ const factLabels: Record<string, string> = {
   REFUND_REVERSE: '撤销退款记录',
 };
 const moneyColumns = ['receivableDelta', 'receiptDelta', 'writeOffDelta', 'refundDelta', 'postingAmount', 'receivableBalance'];
-const historyColumns: TableColumnsType<CustomerStatement> = [
+const historyColumns = shallowRef<TableColumnsType<CustomerStatement>>([
   {title: '结算方', dataIndex: 'settlementCustomerName'},
   {title: '起始日', dataIndex: 'startDate'},
   {title: '截止日', dataIndex: 'endDate'},
   {title: '范围', dataIndex: 'partialScope'},
   {title: '生成时间', dataIndex: 'generatedAt'},
   {title: '操作', dataIndex: 'action', align: 'center', width: 130},
-];
+]);
 const lineColumns: TableColumnsType<CustomerStatementLine> = [
   {title: '业务时间', dataIndex: 'eventAt', width: 175},
   {title: '类型', dataIndex: 'factType', width: 110, align: 'center'},

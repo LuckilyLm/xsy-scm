@@ -1,6 +1,6 @@
 <template>
   <a-modal :open="visible" title="申请退货" :confirm-loading="saving" @ok="save" @cancel="visible = false" width="760px">
-    <a-alert v-if="error" :message="error" type="error" />
+    <RequestError v-if="error" :message="error" />
     <a-form ref="formRef" :model="formModel" :rules="formRules" layout="vertical">
       <a-form-item label="退货原因" name="reason">
         <a-input v-model:value="reason" :maxlength="500" />

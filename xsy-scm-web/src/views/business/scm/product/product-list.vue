@@ -65,11 +65,11 @@
         </a-space>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRODUCT" :refresh="load" />
       </a-row>
-      <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
+      <RequestError v-if="error" :message="error" class="xsy-margin-bottom10">
         <template #action>
           <a-button size="small" @click="load">重新加载</a-button>
         </template>
-      </a-alert>
+      </RequestError>
       <a-table
         ref="tableRef"
         :data-source="rows"
@@ -179,10 +179,11 @@
     <ProductDrawer ref="drawer" @saved="load" />
     <ProductBatchModal ref="batch" :categories="categories" :tag-options="batchTagOptions" @done="batchDone" />
     <ProductImportModal ref="importModal" @imported="load" />
-    <ProductExportModal ref="exportModal" />
+    <ScmExportFieldsModal ref="exportModal" />
   </section>
 </template>
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {message, Modal} from 'ant-design-vue';
@@ -211,7 +212,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ProductDrawer from './components/product-form-drawer.vue';
 import ProductBatchModal from './components/product-batch-modal.vue';
 import ProductImportModal from './components/product-import-modal.vue';
-import ProductExportModal from './components/product-export-modal.vue';
+import ScmExportFieldsModal from '/@/components/business/scm/export-fields-modal/index.vue';
 import SkuTable from './components/product-sku-table.vue';
 import {productError} from './product-errors';
 import {hasPermission} from '../common/scm-permission';
@@ -238,7 +239,7 @@ function imageFailed(url: string) {
 const drawer = ref<InstanceType<typeof ProductDrawer>>(),
   batch = ref<InstanceType<typeof ProductBatchModal>>();
 const importModal = ref<InstanceType<typeof ProductImportModal>>();
-const exportModal = ref<InstanceType<typeof ProductExportModal>>();
+const exportModal = ref<InstanceType<typeof ScmExportFieldsModal>>();
 const exportColumnOptions = ref<{label: string; value: string}[]>([]);
 const exportColumnsLoaded = ref(false);
 async function loadExportColumnOptions(): Promise<void> {
@@ -251,7 +252,7 @@ async function loadExportColumnOptions(): Promise<void> {
       .map((column) => ({label: column.title, value: column.key}));
     exportColumnsLoaded.value = true;
   } catch {
-    void message.error('获取商品可导出字段失败');
+    void notifyRequestError('获取商品可导出字段失败');
   }
 }
 const user = useUserStore();
@@ -326,7 +327,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const response = await productApi.query(
       {
         ...filters,
@@ -451,7 +452,7 @@ async function remove(row: ProductRow) {
 onMounted(async () => {
   void load();
   try {
-    // 筛选选项加载失败也显示在页头 Alert
+    // 请求失败交给共享反馈处理，避免重复提示。
     const [tree, tags] = await Promise.all([
       productCategoryApi.tree({suppressGlobalErrorMessage: true}),
       productTagApi.options({suppressGlobalErrorMessage: true}),

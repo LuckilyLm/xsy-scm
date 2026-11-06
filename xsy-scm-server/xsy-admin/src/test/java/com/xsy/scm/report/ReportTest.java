@@ -1579,7 +1579,7 @@ class ReportTest {
                 assertThat(report.getGeneratedAt()).isNotNull();
                 assertThat(report.getProducts().getTotal()).isEqualTo(1);
                 MockHttpServletResponse response = new MockHttpServletResponse();
-                reportController.export(form(), response);
+                reportController.export(reportFilter(form(), PurchaseDailyQueryForm.Filter.class), response);
                 assertThat(response.getContentAsByteArray()).startsWith((byte) 'P', (byte) 'K');
             }
 
@@ -1926,26 +1926,26 @@ class ReportTest {
             void exportedWorkbookUsesTheSameWarehouseScopeAsThePage() throws Exception {
                 Set<String> cost = Set.of(ScmReportAccess.COST_QUERY_PERM);
 
-                assertThat(export(scopedToA, cost, response -> reportController.exportMovement(inventoryForm(), response)))
+                assertThat(export(scopedToA, cost, response -> reportController.exportMovement(reportFilter(inventoryForm(), ScmInventoryReportQueryForm.Filter.class), response)))
                         .contains(factsA.skuCode()).doesNotContain(factsB.skuCode());
-                assertThat(export(scopedToA, cost, response -> reportController.exportInbound(receiptForm(), response)))
+                assertThat(export(scopedToA, cost, response -> reportController.exportInbound(reportFilter(receiptForm(), ScmReceiptReportQueryForm.Filter.class), response)))
                         .contains(factsA.skuCode()).doesNotContain(factsB.skuCode());
-                assertThat(export(scopedToA, cost, response -> reportController.exportReceipt(receiptForm(), response)))
+                assertThat(export(scopedToA, cost, response -> reportController.exportReceipt(reportFilter(receiptForm(), ScmReceiptReportQueryForm.Filter.class), response)))
                         .contains(receiptNo(factsA.inboundReceiptId()))
                         .doesNotContain(receiptNo(factsB.inboundReceiptId()));
                 assertThat(export(scopedToA, cost,
-                        response -> reportController.exportPurchaseItem(purchaseForm(), response)))
+                        response -> reportController.exportPurchaseItem(reportFilter(purchaseForm(), ScmPurchaseReportQueryForm.Filter.class), response)))
                         .contains(factsA.skuCode()).doesNotContain(factsB.skuCode());
                 assertThat(export(scopedToA, cost,
-                        response -> reportController.exportPurchaseProduct(purchaseForm(), response)))
+                        response -> reportController.exportPurchaseProduct(reportFilter(purchaseForm(), ScmPurchaseReportQueryForm.Filter.class), response)))
                         .contains(factsA.skuCode()).doesNotContain(factsB.skuCode());
                 assertThat(export(scopedToA, cost,
-                        response -> reportController.exportInventoryValue(inventoryForm(), response)))
+                        response -> reportController.exportInventoryValue(reportFilter(inventoryForm(), ScmInventoryReportQueryForm.Filter.class), response)))
                         .contains(factsA.skuCode()).doesNotContain(factsB.skuCode());
 
                 // 授权双仓的人导出两仓：证明收窄来自范围本身，不是导出被写死成半张表
                 assertThat(export(scopedToBoth, cost,
-                        response -> reportController.exportMovement(inventoryForm(), response)))
+                        response -> reportController.exportMovement(reportFilter(inventoryForm(), ScmInventoryReportQueryForm.Filter.class), response)))
                         .contains(factsA.skuCode(), factsB.skuCode());
             }
 
@@ -1953,9 +1953,9 @@ class ReportTest {
             @DisplayName("无成本权限时导出的成本单元格是空、接口字段是 null，绝不写成 0")
             void exportMasksCostCellsInsteadOfWritingZero() throws Exception {
                 String withCost = export(scopedToA, Set.of(ScmReportAccess.COST_QUERY_PERM),
-                        response -> reportController.exportMovement(inventoryForm(), response));
+                        response -> reportController.exportMovement(reportFilter(inventoryForm(), ScmInventoryReportQueryForm.Filter.class), response));
                 String withoutCost = export(scopedToA, Set.of(),
-                        response -> reportController.exportMovement(inventoryForm(), response));
+                        response -> reportController.exportMovement(reportFilter(inventoryForm(), ScmInventoryReportQueryForm.Filter.class), response));
 
                 assertThat(withCost).contains(DIRECT_PRICE_CELL);
                 assertThat(withoutCost).doesNotContain(DIRECT_PRICE_CELL)
@@ -2027,7 +2027,7 @@ class ReportTest {
                         .allSatisfy(row -> assertThat(row.getSubmittedPurchaseAmount()).isNull());
 
                 String workbook = export(withoutAnyWarehouse, cost,
-                        response -> reportController.exportMovement(inventoryForm(), response));
+                        response -> reportController.exportMovement(reportFilter(inventoryForm(), ScmInventoryReportQueryForm.Filter.class), response));
                 assertThat(workbook).doesNotContain(factsA.skuCode(), factsB.skuCode())
                         .as("工作簿仍能写出（表头在），但没有任何一行数据").contains("发生时间");
             }
@@ -2640,17 +2640,17 @@ class ReportTest {
                 // 让导出走「有成本列」的完整路径（无权限分支由 ScmExportColumnSelectionTest 覆盖）。
                 try (MockedStatic<StpUtil> stp = mockStatic(StpUtil.class)) {
                     stp.when(() -> StpUtil.hasPermission(anyString())).thenReturn(true);
-                    assertWorkbook("销售按商品", r -> reportController.exportSalesProduct(sales, r));
-                    assertWorkbook("销售按客户", r -> reportController.exportSalesCustomer(sales, r));
-                    assertWorkbook("销售订单明细", r -> reportController.exportSalesItem(sales, r));
-                    assertWorkbook("采购按商品", r -> reportController.exportPurchaseProduct(purchase, r));
-                    assertWorkbook("采购按供应商", r -> reportController.exportPurchaseSupplier(purchase, r));
-                    assertWorkbook("采购明细", r -> reportController.exportPurchaseItem(purchase, r));
-                    assertWorkbook("收货明细", r -> reportController.exportReceipt(receipt, r));
-                    assertWorkbook("入库明细", r -> reportController.exportInbound(receipt, r));
-                    assertWorkbook("库存流水", r -> reportController.exportMovement(inventory, r));
-                    assertWorkbook("损耗分析", r -> reportController.exportLoss(inventory, r));
-                    assertWorkbook("当前库存价值", r -> reportController.exportInventoryValue(inventory, r));
+                    assertWorkbook("销售按商品", r -> reportController.exportSalesProduct(reportFilter(sales, ScmSalesReportQueryForm.Filter.class), r));
+                    assertWorkbook("销售按客户", r -> reportController.exportSalesCustomer(reportFilter(sales, ScmSalesReportQueryForm.Filter.class), r));
+                    assertWorkbook("销售订单明细", r -> reportController.exportSalesItem(reportFilter(sales, ScmSalesReportQueryForm.Filter.class), r));
+                    assertWorkbook("采购按商品", r -> reportController.exportPurchaseProduct(reportFilter(purchase, ScmPurchaseReportQueryForm.Filter.class), r));
+                    assertWorkbook("采购按供应商", r -> reportController.exportPurchaseSupplier(reportFilter(purchase, ScmPurchaseReportQueryForm.Filter.class), r));
+                    assertWorkbook("采购明细", r -> reportController.exportPurchaseItem(reportFilter(purchase, ScmPurchaseReportQueryForm.Filter.class), r));
+                    assertWorkbook("收货明细", r -> reportController.exportReceipt(reportFilter(receipt, ScmReceiptReportQueryForm.Filter.class), r));
+                    assertWorkbook("入库明细", r -> reportController.exportInbound(reportFilter(receipt, ScmReceiptReportQueryForm.Filter.class), r));
+                    assertWorkbook("库存流水", r -> reportController.exportMovement(reportFilter(inventory, ScmInventoryReportQueryForm.Filter.class), r));
+                    assertWorkbook("损耗分析", r -> reportController.exportLoss(reportFilter(inventory, ScmInventoryReportQueryForm.Filter.class), r));
+                    assertWorkbook("当前库存价值", r -> reportController.exportInventoryValue(reportFilter(inventory, ScmInventoryReportQueryForm.Filter.class), r));
                 }
             }
 
@@ -2911,5 +2911,103 @@ class ReportTest {
             result.setQuantity(new BigDecimal(quantity));
             return result;
         }
+    }
+
+    @Nested
+    @DisplayName("非分页筛选与分页校验各自生效")
+    class FilterValidation {
+        @Test
+        void httpOverviewAcceptsDatesButPagedQueryStillRequiresPagination() throws Exception {
+            var purchase = mock(PurchaseReportService.class);
+            var controller = new ScmReportController(mock(OverviewReportService.class), mock(SalesReportService.class),
+                purchase, mock(ReceiptReportService.class), mock(InventoryReportService.class));
+            var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(controller).build();
+            String dates = "{\"startDate\":\"2026-11-01\",\"endDate\":\"2026-11-06\"}";
+            mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .post("/scm/report/purchase/overview").contentType("application/json").content(dates))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.code").value(0));
+            var captured = org.mockito.ArgumentCaptor.forClass(ScmPurchaseReportQueryForm.class);
+            verify(purchase).overview(captured.capture());
+            assertThat(captured.getValue().getStartDate()).isEqualTo(LocalDate.of(2026, 11, 1));
+            assertThat(captured.getValue().getPageSize()).isEqualTo(1L);
+            mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .post("/scm/report/purchase/product").contentType("application/json").content(dates))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest());
+            mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .post("/scm/report/purchase/overview").contentType("application/json").content("{}"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest());
+            org.mockito.Mockito.verifyNoMoreInteractions(purchase);
+        }
+
+        @Test
+        void httpExportReadsAllMatchingRowsRegardlessOfClientPage() throws Exception {
+            var purchase = mock(PurchaseReportService.class);
+            var first = new PurchaseReportVO.SupplierRow();
+            first.setSupplierName("供应商甲");
+            var second = new PurchaseReportVO.SupplierRow();
+            second.setSupplierName("供应商乙");
+            var page = new PageResult<PurchaseReportVO.SupplierRow>();
+            page.setList(List.of(first, second));
+            when(purchase.bySupplier(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> {
+                ScmPurchaseReportQueryForm query = invocation.getArgument(0);
+                assertThat(query.getPageNum()).isEqualTo(1L);
+                assertThat(query.getPageSize()).isEqualTo(com.xsy.scm.report.support.ScmReportExportGuard.PROBE_PAGE_SIZE);
+                return page;
+            });
+            var controller = new ScmReportController(mock(OverviewReportService.class), mock(SalesReportService.class),
+                purchase, mock(ReceiptReportService.class), mock(InventoryReportService.class));
+            var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(controller).build();
+            var result = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .post("/scm/report/purchase/supplier/export").contentType("application/json")
+                .content("{\"startDate\":\"2026-11-01\",\"endDate\":\"2026-11-06\",\"pageNum\":9,\"pageSize\":1}"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk()).andReturn();
+            try (var workbook = WorkbookFactory.create(new ByteArrayInputStream(result.getResponse().getContentAsByteArray()))) {
+                var sheet = workbook.getSheetAt(0);
+                assertThat(sheet.getLastRowNum()).isEqualTo(2);
+                assertThat(sheet.getRow(1).getCell(1).getStringCellValue()).isEqualTo("供应商甲");
+                assertThat(sheet.getRow(2).getCell(1).getStringCellValue()).isEqualTo("供应商乙");
+            }
+        }
+
+        @Test
+        void purchaseOverviewDoesNotRequireClientPagination() throws Exception {
+            var mapper = new com.fasterxml.jackson.databind.ObjectMapper()
+                .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+            var form = mapper.readValue("""
+                {"startDate":"2026-11-01","endDate":"2026-11-06","pageNum":9,"pageSize":9000}
+                """, ScmPurchaseReportQueryForm.Filter.class);
+            try (var factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+                assertThat(factory.getValidator().validate(form)).isEmpty();
+            }
+            assertThat(form.getStartDate()).isEqualTo(LocalDate.of(2026, 11, 1));
+            assertThat(form.getPageNum()).isEqualTo(1L);
+            assertThat(form.getPageSize()).isEqualTo(1L);
+        }
+
+        @Test
+        void normalPageStillRequiresBothPageFields() {
+            var form = new ScmPurchaseReportQueryForm();
+            form.setStartDate(LocalDate.of(2026, 11, 1));
+            form.setEndDate(LocalDate.of(2026, 11, 6));
+            try (var factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+                assertThat(factory.getValidator().validate(form)).extracting(v -> v.getPropertyPath().toString())
+                    .containsExactlyInAnyOrder("pageNum", "pageSize");
+            }
+        }
+
+        @Test
+        void filterKeepsRequiredDateValidation() {
+            try (var factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+                assertThat(factory.getValidator().validate(new ScmPurchaseReportQueryForm.Filter()))
+                    .extracting(v -> v.getPropertyPath().toString())
+                    .containsExactlyInAnyOrder("startDate", "endDate");
+            }
+        }
+    }
+
+    /** HTTP非分页入口接收独立的筛选对象；复用相同业务条件，不共享导出时修改的页码。 */
+    private static <T> T reportFilter(Object source, Class<T> target) {
+        return com.xsy.scm.base.common.util.XsyBeanUtil.copy(source, target);
     }
 }

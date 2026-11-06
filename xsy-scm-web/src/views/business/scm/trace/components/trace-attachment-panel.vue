@@ -7,11 +7,11 @@
     </div>
 
     <a-spin :spinning="loading">
-      <a-alert v-if="error" type="error" show-icon :message="error" class="trace-attach__alert">
+      <RequestError v-if="error" :message="error" class="trace-attach__alert">
         <template #action>
           <a-button size="small" @click="load">重试</a-button>
         </template>
-      </a-alert>
+      </RequestError>
       <template v-else>
         <a v-for="file in list" :key="file.fileKey" class="trace-attach__file" href="javascript:void(0)" @click="download(file.fileKey)">
           {{ file.fileName }}
@@ -21,7 +21,7 @@
     </a-spin>
 
     <a-modal v-model:open="editing" :title="title" :width="520" :confirm-loading="saving" ok-text="保存" cancel-text="取消" @ok="save">
-      <a-alert v-if="editError" type="error" show-icon :message="editError" class="trace-attach__alert" />
+      <RequestError v-if="editError" :message="editError" class="trace-attach__alert" />
       <FileUpload
         :default-file-list="defaultFileList"
         :multiple="true"

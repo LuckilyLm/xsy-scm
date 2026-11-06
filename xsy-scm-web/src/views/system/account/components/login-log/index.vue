@@ -28,6 +28,11 @@
     </a-row>
   </a-form>
 
+  <div class="xsy-table-btn-block">
+    <div class="xsy-table-setting-block">
+      <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.ACCOUNT_LOGIN_LOG" :refresh="ajaxQuery" />
+    </div>
+  </div>
   <a-table size="small" :dataSource="tableData" :columns="columns" bordered rowKey="loginLogId" :pagination="false" :loading="tableLoading">
     <template #bodyCell="{text, record, column}">
       <template v-if="column.dataIndex === 'loginResult'">
@@ -63,6 +68,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {onMounted, onUnmounted, reactive, ref} from 'vue';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';

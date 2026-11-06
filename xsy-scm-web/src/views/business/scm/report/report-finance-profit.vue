@@ -2,45 +2,36 @@
   <a-tabs v-model:active-key="profitView">
     <a-tab-pane key="monthly" tab="客户月利润"><CustomerMonthlyProfit v-if="profitView === 'monthly'" /></a-tab-pane>
     <a-tab-pane key="gross" tab="库存成本毛利">
-      <div class="xsy-query-layout">
-        <a-form class="xsy-query-form" layout="inline" @submit.prevent="search">
-          <a-row class="xsy-query-form-row">
-            <a-form-item label="分析日期"><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>
-            <a-form-item label="分析维度">
-              <a-select v-model:value="filters.dimension" :options="dimensionOptions" style="width: 130px" />
-            </a-form-item>
-            <a-form-item label="客户"><CustomerSelect v-model:value="filters.customerId" width="190px" /></a-form-item>
-            <a-form-item label="销售员"><EmployeeSelect v-model:value="filters.sellerId" width="150px" /></a-form-item>
-            <a-form-item label="仓库"><WarehouseSelect v-model:value="filters.warehouseId" width="170px" /></a-form-item>
-          </a-row>
-          <a-row class="xsy-query-form-row">
-            <a-form-item label="商品分类">
-              <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
-            </a-form-item>
-            <a-form-item label="商品 / 单号"
-              ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称或订单号" @pressEnter="search"
-            /></a-form-item>
-            <!-- 按钮放在表单最后一项之后，窄屏换行时不会被夹在字段中间 -->
-            <a-form-item>
-              <a-space>
-                <a-button type="primary" :loading="loading" v-privilege="PERM.FINANCE_PROFIT_QUERY" @click="search">查询</a-button>
-                <a-button @click="reset">重置</a-button>
-              </a-space>
-            </a-form-item>
-          </a-row>
-        </a-form>
-        <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
-          <div class="xsy-table-operate-block">
-            <a-button type="primary" v-privilege="PERM.EXPORT" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
-              >导出当前结果</a-button
-            >
-          </div>
+      <a-form class="xsy-query-form" layout="inline" @submit.prevent="search">
+        <a-row class="xsy-query-form-row">
+          <a-form-item label="分析日期"><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>
+          <a-form-item label="分析维度">
+            <a-select v-model:value="filters.dimension" :options="dimensionOptions" style="width: 130px" />
+          </a-form-item>
+          <a-form-item label="客户"><CustomerSelect v-model:value="filters.customerId" width="190px" /></a-form-item>
+          <a-form-item label="销售员"><EmployeeSelect v-model:value="filters.sellerId" width="150px" /></a-form-item>
+          <a-form-item label="仓库"><WarehouseSelect v-model:value="filters.warehouseId" width="170px" /></a-form-item>
         </a-row>
-      </div>
+        <a-row class="xsy-query-form-row">
+          <a-form-item label="商品分类">
+            <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
+          </a-form-item>
+          <a-form-item label="商品 / 单号"
+            ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称或订单号" @pressEnter="search"
+          /></a-form-item>
+          <!-- 按钮放在表单最后一项之后，窄屏换行时不会被夹在字段中间 -->
+          <a-form-item>
+            <a-space>
+              <a-button type="primary" :loading="loading" v-privilege="PERM.FINANCE_PROFIT_QUERY" @click="search">查询</a-button>
+              <a-button @click="reset">重置</a-button>
+            </a-space>
+          </a-form-item>
+        </a-row>
+      </a-form>
 
-      <a-alert v-if="error" :message="error" type="error" show-icon class="profit-alert">
+      <RequestError v-if="error" :message="error" class="profit-alert">
         <template #action><a-button @click="load">重试</a-button></template>
-      </a-alert>
+      </RequestError>
       <a-alert
         v-if="(summary?.costMissingCount ?? 0) > 0"
         type="warning"
@@ -84,6 +75,18 @@
       </a-row>
 
       <a-card size="small" :bordered="false">
+        <a-row class="xsy-table-btn-block">
+          <div class="xsy-table-operate-block">
+            <a-button type="primary" v-privilege="PERM.EXPORT" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
+              >导出当前结果</a-button
+            >
+          </div>
+
+          <div class="xsy-table-setting-block">
+            <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.SCM_REPORT_FINANCE_PROFIT" :refresh="load" />
+          </div>
+        </a-row>
+
         <a-table
           id="scm-report-finance-profit-table"
           size="small"
@@ -125,9 +128,11 @@
 </template>
 
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import CustomerMonthlyProfit from './report-customer-monthly-profit.vue';
-import {onMounted, reactive, ref, watch} from 'vue';
+import {shallowRef, onMounted, reactive, ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {financeProfitApi} from '/@/api/business/scm/finance-profit-api';
 import type {FinanceProfitDimension, FinanceProfitQuery, FinanceProfitRow, FinanceProfitSummary} from '/@/api/business/scm/finance-profit-api';
@@ -168,7 +173,7 @@ const loading = ref(false),
 const applied = ref<FinanceProfitQuery>();
 let requestId = 0;
 
-const columns: TableColumnsType<FinanceProfitRow> = [
+const columns = shallowRef<TableColumnsType<FinanceProfitRow>>([
   {title: '日期', dataIndex: 'bizDate', width: 120},
   {title: '分析对象', dataIndex: 'dimensionName', width: 210},
   {title: '销售收入', dataIndex: 'revenueAmount', width: 150},
@@ -177,7 +182,7 @@ const columns: TableColumnsType<FinanceProfitRow> = [
   {title: '销售毛利', dataIndex: 'grossProfit', width: 150},
   {title: '毛利率', dataIndex: 'grossMarginRate', width: 108},
   {title: '待确认成本数', dataIndex: 'costMissingCount', width: 110},
-];
+]);
 
 function queryPayload(): FinanceProfitQuery {
   return buildReportQuery<FinanceProfitQuery>(dateRange.value, {...filters}, {pageNum: pageNum.value, pageSize: pageSize.value});
@@ -211,7 +216,7 @@ async function load() {
   summary.value = undefined;
   total.value = 0;
   try {
-    // 加载失败由页内 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const quiet = {suppressGlobalErrorMessage: true};
     const [page, totals] = await Promise.all([financeProfitApi.query(payload, quiet), financeProfitApi.summary(payload, quiet)]);
     if (id !== requestId) return;

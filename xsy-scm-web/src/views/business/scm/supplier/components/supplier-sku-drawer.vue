@@ -8,19 +8,26 @@
       message="该供应商已停用，只能查看关联商品；启用后才能编辑。"
       class="xsy-margin-bottom10"
     />
-    <a-alert v-else-if="loadState === 'error'" type="error" show-icon :message="error" class="xsy-margin-bottom10">
+    <RequestError v-else-if="loadState === 'error'" :message="error" class="xsy-margin-bottom10">
       <template #action>
         <a-button size="small" @click="load">重新加载</a-button>
       </template>
-    </a-alert>
-    <a-alert v-else-if="error" type="error" show-icon :message="error" class="xsy-margin-bottom10" />
+    </RequestError>
+    <RequestError v-else-if="error" :message="error" class="xsy-margin-bottom10" />
     <a-spin :spinning="loading">
       <SupplierSkuEditableTable v-model="drafts" :readonly="!editable || saving" :empty-text="emptyText" />
     </a-spin>
     <template #footer>
       <a-space>
         <a-button @click="requestClose">{{ dirty ? '取消' : '关闭' }}</a-button>
-        <a-button v-if="canEdit && !supplierDisabled" type="primary" :loading="saving" :disabled="!editable || !dirty" @click="submit">
+        <a-button
+          v-if="!supplierDisabled"
+          type="primary"
+          :loading="saving"
+          :disabled="!editable || !dirty"
+          :title="canEdit ? undefined : '暂无操作权限，请联系管理员'"
+          @click="submit"
+        >
           保存<span v-if="dirty">（{{ changeSummary }}）</span>
         </a-button>
       </a-space>

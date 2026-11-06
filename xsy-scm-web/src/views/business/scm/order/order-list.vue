@@ -29,23 +29,25 @@
       </a-form-item>
     </a-row>
   </a-form>
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
   <a-card size="small" :bordered="false">
     <a-row class="xsy-table-btn-block">
       <div class="xsy-table-operate-block">
         <a-button type="primary" v-privilege="'scm:order:add'" @click="drawer?.open()">新建订单</a-button>
         <a-button v-privilege="'scm:order:import'" @click="importModal?.open()">导入订单</a-button>
         <a-button v-privilege="'scm:report:order:exception:query'" @click="router.push('/report/report-order-exceptions')">异常工作台</a-button>
-        <a-button v-if="canPriceCheck" :disabled="!selected.length || selected.length > 8 || !selectedAllPending" @click="openBatchPriceCheck"
+        <a-button :disabled="!selected.length || selected.length > 8 || !selectedAllPending || !canPriceCheck" @click="openBatchPriceCheck"
           >批量核价（最多8单）</a-button
         >
-        <a-button v-if="canManageTags" :disabled="!selected.length || selected.length > 20" @click="openBatchTags">批量打标签</a-button>
-        <a-button v-if="canPrint" :disabled="!selected.length" @click="openBatchPrint">批量打印订单</a-button>
-        <a-button v-if="canPrint" @click="customerSheetOpen = true">打印客户分拣单 / 送货单</a-button>
+        <a-button :disabled="!selected.length || selected.length > 20 || !canManageTags" @click="openBatchTags">批量打标签</a-button>
+        <a-button :disabled="!selected.length || !canPrint" @click="openBatchPrint">批量打印订单</a-button>
+        <a-button :disabled="!canPrint" :title="canPrint ? undefined : '暂无操作权限，请联系管理员'" @click="customerSheetOpen = true"
+          >打印客户分拣单 / 送货单</a-button
+        >
         <a-button danger v-privilege="'scm:order:delete'" :disabled="!selected.length || !selectedAllPending" @click="batchDelete">
           批量删除
         </a-button>
@@ -309,12 +311,12 @@ function rowActions(row: Order): ScmActionItem[] {
   // 详情默认走第一列的订单号；只有第一列被隐藏时才补回「更多」
   return [
     {key: 'detail', label: '详情', hidden: !entryHidden.value},
-    {key: 'reuse', label: '复用为新单', hidden: !(confirmed && canAdd.value)},
-    {key: 'lock', label: '锁单', hidden: !(confirmed && !row.lockedFlag && canLock.value)},
-    {key: 'unlock', label: '解锁', hidden: !(confirmed && row.lockedFlag && canUnlock.value)},
-    {key: 'tag', label: '订单标签', hidden: !canManageTags.value},
-    {key: 'print', label: '打印订单', hidden: !canPrint.value},
-    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
+    {key: 'reuse', label: '复用为新单', hidden: !confirmed, authorized: confirmed && canAdd.value},
+    {key: 'lock', label: '锁单', hidden: !(confirmed && !row.lockedFlag), authorized: confirmed && !row.lockedFlag && canLock.value},
+    {key: 'unlock', label: '解锁', hidden: !(confirmed && row.lockedFlag), authorized: confirmed && row.lockedFlag && canUnlock.value},
+    {key: 'tag', label: '订单标签', authorized: canManageTags.value},
+    {key: 'print', label: '打印订单', authorized: canPrint.value},
+    {key: 'delete', label: '删除', danger: true, hidden: !pending, authorized: pending && canDelete.value},
   ];
 }
 
@@ -342,7 +344,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示并可重试
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await orderApi.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;

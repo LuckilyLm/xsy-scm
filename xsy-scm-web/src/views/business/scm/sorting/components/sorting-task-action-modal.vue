@@ -9,7 +9,7 @@
     @cancel="emit('update:open', false)"
   >
     <a-alert v-if="tip" type="warning" show-icon :message="tip" />
-    <a-alert v-if="error" type="error" show-icon :message="error" />
+    <RequestError v-if="error" :message="error" />
     <a-form layout="vertical">
       <a-form-item v-if="mode === 'assign'" label="受指派人" required>
         <EmployeeSelect :value="assignee" placeholder="选择分拣员" @update:value="emit('update:assignee', $event)" />

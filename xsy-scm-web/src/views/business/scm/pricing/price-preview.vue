@@ -23,7 +23,8 @@
           <a-space>
             <a-button type="primary" @click="resolve" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算</a-button>
             <a-button
-              v-if="hasPermission('scm:pricing:resolve:query') && hasPermission('scm:report:cost:query')"
+              :disabled="!(hasPermission('scm:pricing:resolve:query') && hasPermission('scm:report:cost:query'))"
+              :title="hasPermission('scm:pricing:resolve:query') && hasPermission('scm:report:cost:query') ? undefined : '暂无操作权限，请联系管理员'"
               :loading="trialLoading"
               @click="trial"
               >查看计算依据</a-button
@@ -94,6 +95,7 @@
   </a-card>
 </template>
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import LocalTable from '/@/components/support/local-table/index.vue';
 import {SCM_PAGE_SIZE_OPTIONS} from '/@/constants/business/scm/pagination-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
@@ -190,7 +192,7 @@ async function trial() {
     trialRows.value = response.data;
     trialOpen.value = true;
   } catch (cause) {
-    void message.error(pricingError(cause));
+    void notifyRequestError(pricingError(cause));
   } finally {
     trialLoading.value = false;
   }
@@ -252,7 +254,7 @@ async function resolve() {
     );
     if (id === requestId) result.value = r.data;
   } catch (e) {
-    if (id === requestId) void message.error(pricingError(e));
+    if (id === requestId) void notifyRequestError(pricingError(e));
   } finally {
     if (id === requestId) loading.value = false;
   }

@@ -3,9 +3,9 @@
     <a-tab-pane key="home" tab="首页设置">
       <div class="mall-home-editor">
         <a-card :bordered="false" size="small">
-          <a-alert v-if="error" type="error" :message="error" show-icon class="mall-home-editor__alert">
+          <RequestError v-if="error" :message="error" class="mall-home-editor__alert">
             <template #action><a-button size="small" @click="load">重新加载</a-button></template>
-          </a-alert>
+          </RequestError>
 
           <div class="console-head">
             <div class="console-head__intro">
@@ -102,7 +102,11 @@
                           <ArrowDownOutlined />
                         </a-button>
                       </a-tooltip>
-                      <ScmActionMore v-if="hasPermission('scm:mall:home:edit')" :actions="rowActions()" @select="onRowAction($event, record)" />
+                      <ScmActionMore
+                        :authorized="hasPermission('scm:mall:home:edit')"
+                        :actions="rowActions()"
+                        @select="onRowAction($event, record)"
+                      />
                     </div>
                   </article>
                 </div>
@@ -140,7 +144,7 @@
               <a-button :loading="previewLoading" :disabled="dirty" v-privilege="'scm:mall:home:query'" @click="preview">预览</a-button>
             </div>
             <p v-if="dirty" class="console-customer-preview__hint">保存后才能预览最新修改。</p>
-            <a-alert v-if="previewError" type="error" show-icon :message="previewError" />
+            <RequestError v-if="previewError" :message="previewError" />
             <div v-if="previewPage" class="console-customer-preview__blocks">
               <div v-for="block in previewPage.blocks" :key="block.key" class="console-customer-preview__block">
                 <img v-if="block.imageUrl" :src="block.imageUrl" :alt="block.title || '首页图片'" />
@@ -258,6 +262,7 @@
   </a-tabs>
 </template>
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {computed, onMounted, ref, watch, type Component} from 'vue';
 import {message, Modal, type UploadProps} from 'ant-design-vue';
 import {
@@ -594,7 +599,7 @@ const uploadImage: UploadProps['customRequest'] = async (options) => {
     void message.success('图片已上传');
   } catch (cause) {
     options.onError?.(cause as Error);
-    void message.error(String((cause as Error)?.message || '图片上传失败'));
+    void notifyRequestError(String((cause as Error)?.message || '图片上传失败'));
   } finally {
     uploading.value = false;
   }
@@ -626,7 +631,7 @@ async function saveDraft(silent = false): Promise<boolean> {
     }
     return true;
   } catch (cause) {
-    void message.error(String((cause as Error)?.message || '保存失败'));
+    void notifyRequestError(String((cause as Error)?.message || '保存失败'));
     return false;
   } finally {
     saving.value = false;
@@ -661,7 +666,7 @@ async function publish(): Promise<void> {
         await load();
         void message.success('首页已发布');
       } catch (cause) {
-        void message.error(String((cause as Error)?.message || '首页发布失败'));
+        void notifyRequestError(String((cause as Error)?.message || '首页发布失败'));
         throw cause;
       } finally {
         publishing.value = false;
@@ -701,7 +706,7 @@ async function rollback(): Promise<void> {
     await load();
     void message.success('已恢复该版本');
   } catch (cause) {
-    void message.error(String((cause as Error)?.message || '恢复失败'));
+    void notifyRequestError(String((cause as Error)?.message || '恢复失败'));
   } finally {
     publishing.value = false;
   }

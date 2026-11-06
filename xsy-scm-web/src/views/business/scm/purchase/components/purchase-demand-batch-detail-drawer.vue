@@ -2,11 +2,11 @@
      只读，数字都由后端下发，前端不重算；接口同时校验批次和库存余额权限。 -->
 <template>
   <a-drawer :open="open" title="需求计算明细" :width="scmDrawerWidth('workspace')" @close="close">
-    <a-alert v-if="error" :message="error" type="error" show-icon>
+    <RequestError v-if="error" :message="error">
       <template #action>
         <a-button @click="load">重试</a-button>
       </template>
-    </a-alert>
+    </RequestError>
 
     <a-spin :spinning="loading">
       <template v-if="detail">
@@ -172,7 +172,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由抽屉内的 Alert 提示
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await purchaseDemandApi.batchDetail({batchId}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       detail.value = r.data;

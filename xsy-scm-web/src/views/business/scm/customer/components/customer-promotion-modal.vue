@@ -7,11 +7,11 @@
           <a-button type="primary" size="small" :loading="creating" @click="create">生成推广码</a-button>
         </div>
 
-        <a-alert v-if="error" type="error" show-icon :message="error">
+        <RequestError v-if="error" :message="error">
           <template #action>
             <a-button size="small" :loading="loading" @click="load">重试</a-button>
           </template>
-        </a-alert>
+        </RequestError>
 
         <div v-if="active" class="promo__code">
           <img v-if="qrDataUrl" class="promo__qr" :src="qrDataUrl" alt="客户推广二维码" />
@@ -51,7 +51,7 @@
           </template>
         </LocalTable>
 
-        <a-alert v-if="scanError" class="promo__scan-error" type="error" show-icon :message="scanError" />
+        <RequestError v-if="scanError" class="promo__scan-error" :message="scanError" />
         <div v-if="scanRows.length" class="promo__scans">
           <div class="promo__scans-title">最近扫码</div>
           <div v-for="scan in scanRows" :key="scan.id" class="promo__scan">

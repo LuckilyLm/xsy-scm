@@ -172,6 +172,6 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     assert.doesNotMatch(page, /record\.skuCode/);
     // 失败原因走 toast；页内一行 Alert 会被误读成「没有价格」
     assert.doesNotMatch(page, /<a-alert/);
-    assert.match(page, /message\.error\(pricingError\(e\)\)/);
+    assert.match(page, /notifyRequestError\(pricingError\(e\)\)/);
   });
 }

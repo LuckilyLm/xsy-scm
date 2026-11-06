@@ -1,5 +1,17 @@
 /* XSY 独有样式 */
 
+/* 禁用按钮仍接收悬停，以显示无权限的原因；原生disabled与事件守卫阻止操作。 */
+.xsy-permission-disabled {
+  pointer-events: auto;
+  cursor: not-allowed;
+}
+
+.xsy-request-message {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* 宽度 */
 .xsy-width-100 {
   width: 100%;
@@ -159,50 +171,12 @@
   gap: 4px;
 }
 
-/* 单一表格操作与查询区共行，两个区域独立保留权限和表单提交边界。 */
-.xsy-query-layout {
-  display: flex;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-bottom: 12px;
-}
-
-.xsy-query-layout > .xsy-query-form {
-  flex: 1 1 640px;
-  min-width: 0;
-  margin-bottom: 0;
-}
-
-.xsy-table-btn-block[data-toolbar-layout] {
+.xsy-table-btn-block[data-toolbar-layout='single'] {
   justify-content: flex-end;
 
   .xsy-table-setting-block {
     margin-left: 0;
   }
-}
-
-.xsy-query-layout > .xsy-table-btn-block[data-toolbar-layout='query'] {
-  flex: 0 0 auto;
-  margin: 0 0 0 auto;
-}
-
-.xsy-query-layout > .xsy-table-btn-block[data-toolbar-layout='query']:empty {
-  display: none;
-}
-
-.xsy-query-table-actions {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 12px;
-  margin-left: auto;
-}
-
-.xsy-query-table-actions > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .ant-table-wrapper .ant-table-pagination {

@@ -64,6 +64,10 @@
       >
         <text>{{ submitting && !wechatSubmitting ? '登录中…' : '登录' }}</text>
       </button>
+      <view class="login__help">
+        <image class="login__help-icon" :src="LOGIN_IMAGES.info" mode="aspectFit" aria-hidden="true" />
+        <text>账号由商家开通，有问题请联系业务员</text>
+      </view>
       <!-- #ifdef MP-WEIXIN -->
       <button
         class="login__wechat"
@@ -78,10 +82,6 @@
         <image v-if="!wechatSubmitting" class="login__wechat-icon" :src="LOGIN_IMAGES.wechat" mode="aspectFit" aria-hidden="true" />
       </button>
       <!-- #endif -->
-      <view class="login__help">
-        <image class="login__help-icon" :src="LOGIN_IMAGES.info" mode="aspectFit" aria-hidden="true" />
-        <text>账号由商家开通，有问题请联系业务员</text>
-      </view>
     </view>
     <image class="login__waves" :src="LOGIN_IMAGES.waves" mode="widthFix" aria-hidden="true" />
   </view>

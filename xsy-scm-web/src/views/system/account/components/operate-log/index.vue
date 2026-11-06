@@ -36,6 +36,11 @@
     </a-row>
   </a-form>
 
+  <div class="xsy-table-btn-block">
+    <div class="xsy-table-setting-block">
+      <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.ACCOUNT_OPERATE_LOG" :refresh="ajaxQuery" />
+    </div>
+  </div>
   <a-table size="small" :loading="tableLoading" :dataSource="tableData" :columns="columns" bordered rowKey="operateLogId" :pagination="false">
     <template #bodyCell="{text, record, column}">
       <template v-if="column.dataIndex === 'successFlag'">
@@ -70,6 +75,8 @@
   <OperateLogDetailModal ref="detailModal" />
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {onMounted, reactive, ref} from 'vue';
 import OperateLogDetailModal from '/@/views/support/operate-log/operate-log-detail-modal.vue';
 import {operateLogApi} from '/@/api/support/operate-log-api';

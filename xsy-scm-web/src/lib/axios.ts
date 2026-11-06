@@ -6,6 +6,7 @@ import {useUserStore} from '/@/store/modules/system/user';
 import {decryptData, encryptData} from './encrypt';
 import {DATA_TYPE_ENUM} from '../constants/common-const';
 import {errorText} from '/@/utils/error-text';
+import {notifyRequestError} from '/@/utils/request-feedback';
 import _ from 'lodash';
 import LocalStorageKeyConst from '/@/constants/local-storage-key-const';
 
@@ -114,8 +115,7 @@ xsyAxios.interceptors.response.use(
         return Promise.reject(response);
       }
       if (!response.config.suppressGlobalErrorMessage) {
-        message.destroy();
-        message.error(errorText(res.msg));
+        notifyRequestError(errorText(res.msg));
       }
       return Promise.reject(response);
     } else {
@@ -127,14 +127,11 @@ xsyAxios.interceptors.response.use(
       return Promise.reject(error);
     }
     if (error.message.indexOf('timeout') !== -1) {
-      message.destroy();
-      message.error('网络超时');
+      notifyRequestError('网络超时');
     } else if (error.message === 'Network Error') {
-      message.destroy();
-      message.error('网络连接错误');
+      notifyRequestError('网络连接错误');
     } else if (error.message.indexOf('Request') !== -1) {
-      message.destroy();
-      message.error('网络发生错误');
+      notifyRequestError('网络发生错误');
     }
     return Promise.reject(error);
   }
@@ -213,12 +210,12 @@ function handleDownloadError(error: unknown) {
   if (error instanceof Blob) {
     error.text().then((text: string) => {
       message.destroy();
-      message.error(downloadErrorText(text));
+      notifyRequestError(downloadErrorText(text));
     });
     return;
   }
   message.destroy();
-  message.error('网络发生错误');
+  notifyRequestError('网络发生错误');
 }
 
 /** 从二进制响应里提取可读错误文案，避免把整页 HTML 弹给用户。 */

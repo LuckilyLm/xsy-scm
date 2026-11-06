@@ -15,6 +15,36 @@ import {tableColumnsWidth} from '../src/components/support/table-operator/table-
 import {splitDrivingBatches, planRoadRoute} from '../src/components/business/scm/map/amap-driving-provider.ts';
 import {errorText} from '../src/utils/error-text.ts';
 import ts from 'typescript';
+import {resolveActions} from '../src/components/business/scm/scm-action-more/action-item.ts';
+
+test('无权限保留动作并禁用，业务状态不可用的动作仍不显示', () => {
+  const source = Object.freeze([
+    Object.freeze({key: 'edit', label: '编辑', authorized: false}),
+    Object.freeze({key: 'approve', label: '确认', hidden: true, authorized: true}),
+    Object.freeze({key: 'print', label: '打印', authorized: true}),
+  ]);
+  const result = resolveActions(source);
+  assert.deepEqual(
+    result.map((item) => item.key),
+    ['edit', 'print']
+  );
+  assert.equal(result[0].disabled, true);
+  assert.match(result[0].disabledReason, /权限/);
+  assert.equal(result[1].disabled, false);
+  assert.equal(source[0].disabled, undefined);
+});
+
+test('获得权限不会启用因业务条件禁用的动作，整组无权时所有可见动作均禁用', () => {
+  const source = [
+    {key: 'confirm', label: '确认', disabled: true, disabledReason: '请先补齐数量'},
+    {key: 'view', label: '查看'},
+  ];
+  const allowed = resolveActions(source);
+  assert.equal(allowed[0].disabled, true);
+  assert.equal(allowed[0].disabledReason, '请先补齐数量');
+  assert.equal(allowed[1].disabled, false);
+  assert.ok(resolveActions(source, false).every((item) => item.disabled && item.authorized === false));
+});
 
 // ---------------------------------------------------------------- 来源：home-ui-contract.test.mjs
 {
@@ -116,9 +146,9 @@ import ts from 'typescript';
   });
 
   test('装修页操作和抽屉遵守 SCM 页面约定', () => {
-    // 首页结构是可排序的组件列表，不再用表格；操作仍由 ScmActionMore 走权限裁剪
+    // 首页结构是可排序的组件列表；操作权限传给共享菜单，无权时保留禁用入口。
     assert.doesNotMatch(page, /dataIndex: 'action'/);
-    assert.match(page, /<ScmActionMore\s+v-if="hasPermission\('scm:mall:home:edit'\)"/);
+    assert.match(page, /<ScmActionMore\s+:authorized="hasPermission\('scm:mall:home:edit'\)"/);
     assert.match(page, /aria-label="上移"[\s\S]*?@click="move\(index, -1\)"/);
     assert.match(page, /aria-label="下移"[\s\S]*?@click="move\(index, 1\)"/);
     assert.match(page, /:width="scmDrawerWidth\('s'\)"/);
@@ -338,9 +368,10 @@ import ts from 'typescript';
 
   test('ScmActionMore 本身不依赖 v-privilege（菜单项里指令不生效）', () => {
     const source = readFileSync(ACTION_MORE, 'utf8');
-    assert.doesNotMatch(source, /v-privilege/, 'ScmActionMore 渲染在 a-menu 里，v-privilege 对菜单项不生效，权限必须由调用方算 hidden');
-    // 必须仍然按 hidden 过滤
-    assert.match(source, /\.filter\(\s*\(?\s*action\s*\)?\s*=>\s*!action\.hidden\s*\)/, 'ScmActionMore 不再按 hidden 过滤，无权限动作会被显示出来');
+    const policy = readFileSync(ACTION_ITEM, 'utf8');
+    assert.doesNotMatch(source, /v-privilege/, '菜单项不能依赖DOM权限指令');
+    assert.match(policy, /\.filter\(\s*\(?\s*action\s*\)?\s*=>\s*!action\.hidden\s*\)/, '业务状态不适用的动作仍须排除');
+    assert.match(source, /action && !action\.disabled/, '禁用动作不得发出select事件');
   });
 
   test('ScmActionItem 仍保留 hidden / danger 语义', () => {
@@ -716,8 +747,12 @@ import ts from 'typescript';
     assert.match(api, /sales\/order\/export\/columns/);
     assert.match(api, /purchase\/product\/export\/columns/);
     assert.match(productApi, /product\/export\/columns/);
-    assert.match(sales, /exportColumnKeys: orderExportKeys\.value\.length/);
-    assert.match(purchase, /exportColumnKeys: purchaseProductExportKeys\.value\.length/);
+    assert.match(sales, /reportSalesApi\.orderExport\(\{\.\.\.query, exportColumnKeys: keys\}\)/);
+    assert.match(purchase, /reportPurchaseApi\.productExport\(\{\.\.\.query, exportColumnKeys: keys\}\)/);
+    for (const page of [sales, purchase, product]) {
+      assert.match(page, /<ScmExportFieldsModal ref="exportModal"/);
+      assert.doesNotMatch(page, /不选择则导出全部字段/);
+    }
     assert.match(product, /exportColumnKeys: exportColumnKeys\.length \? exportColumnKeys : undefined/);
   });
 }
@@ -778,7 +813,7 @@ import ts from 'typescript';
       for (const entry of readdirSync(dir, {withFileTypes: true})) {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) walk(full);
-        else if (entry.name.endsWith('.vue') && entry.name !== 'product-export-modal.vue') files.push(readFileSync(full, 'utf8'));
+        else if (entry.name.endsWith('.vue')) files.push(readFileSync(full, 'utf8'));
       }
     };
     walk(root);

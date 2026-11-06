@@ -1,7 +1,7 @@
 <!-- 客户专属模板：一个客户对一种单据类型最多一份模板，打印时优先于默认模板。 -->
 <template>
   <a-drawer :open="open" title="客户专属模板" :width="scmDrawerWidth('l')" @close="close">
-    <a-alert v-if="error" :message="error" type="error" show-icon class="banner" />
+    <RequestError v-if="error" :message="error" class="banner" />
 
     <a-form layout="inline" class="binding-form" @submit.prevent>
       <a-form-item label="单据类型" required>

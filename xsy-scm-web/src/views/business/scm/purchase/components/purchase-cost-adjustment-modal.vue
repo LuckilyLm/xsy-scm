@@ -11,9 +11,9 @@
     <p class="scm-note">
       按已确认的采购明细登记价差，更正计入当期应付与采购成本调整。原采购价、库存流水和历史报表保持原值；未指定客户的价差不会自动分摊。
     </p>
-    <a-alert v-if="error" :message="error" type="error" show-icon
-      ><template #action><a-button @click="load">重试</a-button></template></a-alert
-    >
+    <RequestError v-if="error" :message="error">
+      <template #action><a-button @click="load">重试</a-button></template>
+    </RequestError>
     <a-table
       bordered
       :columns="sourceColumns"

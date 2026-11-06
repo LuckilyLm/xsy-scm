@@ -9,7 +9,7 @@
     @ok="emit('create')"
   >
     <template #title>新建分拣任务</template>
-    <a-alert v-if="error" type="error" show-icon :message="error" />
+    <RequestError v-if="error" :message="error" />
     <a-form layout="inline" class="create-form" @submit.prevent="emit('search')">
       <a-form-item label="仓库" required>
         <WarehouseSelect :value="warehouseId" width="220px" @update:value="emit('update:warehouseId', $event)" />

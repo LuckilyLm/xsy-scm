@@ -10,6 +10,11 @@
       </template>
       刷新
     </a-button>
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.RELOAD_RESULT" :refresh="ajaxQuery" />
+      </div>
+    </div>
     <a-table :scroll="{y: 350}" size="small" bordered rowKey="id" class="xsy-margin-top10" :dataSource="tableData" :columns="columns">
       <template #bodyCell="{text, column}">
         <template v-if="column.dataIndex === 'result'">
@@ -25,7 +30,9 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import {reactive, ref} from 'vue';
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import {ref} from 'vue';
 import {reloadApi} from '/@/api/support/reload-api';
 import {xsySentry} from '/@/lib/xsy-sentry';
 
@@ -70,7 +77,7 @@ async function ajaxQuery() {
 
 //------------------------ 表格列 ---------------------
 
-const columns = reactive([
+const columns = ref([
   {
     title: '标签',
     dataIndex: 'tag',

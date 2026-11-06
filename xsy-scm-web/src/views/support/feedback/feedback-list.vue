@@ -37,6 +37,11 @@
   </a-form>
 
   <a-card size="small">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="tableColumns" :table-id="TABLE_ID_CONST.LIST.FEEDBACK" :refresh="queryList" />
+      </div>
+    </div>
     <a-table rowKey="feedbackId" :dataSource="tableData" :columns="tableColumns" :pagination="false" :loading="tableLoading" size="small" bordered>
       <template #bodyCell="{text, column}">
         <template v-if="column.dataIndex === 'feedbackAttachment'">
@@ -66,6 +71,8 @@
 </template>
 
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {onMounted, reactive, ref} from 'vue';
 import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
@@ -74,7 +81,7 @@ import FilePreview from '/@/components/support/file-preview/index.vue';
 import {xsySentry} from '/@/lib/xsy-sentry';
 
 // ----------------------- 表格列 --------------------------------------
-const tableColumns = reactive([
+const tableColumns = ref([
   {
     title: '编号',
     dataIndex: 'feedbackId',

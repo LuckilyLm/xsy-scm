@@ -21,11 +21,11 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
     <a-table
@@ -74,6 +74,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, h, ref} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
@@ -153,7 +154,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头的 Alert 提示并可重试
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await purchaseDemandApi.summaryPreview(
       {
         startAt: dayStart(range.value[0]),
@@ -254,7 +255,7 @@ async function printSummary() {
       '</body></html>';
     await printHtml(html);
   } catch (e) {
-    message.error(purchaseError(e));
+    notifyRequestError(purchaseError(e));
   } finally {
     printLoading.value = false;
   }

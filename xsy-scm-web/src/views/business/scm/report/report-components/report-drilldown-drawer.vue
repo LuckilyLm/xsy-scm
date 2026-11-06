@@ -1,11 +1,11 @@
 <template>
   <!-- workspace：下钻宽表就是阅读内容本身，抽屉要宽才能和上层粒度对照。 -->
   <a-drawer :open="open" :title="title" :width="scmDrawerWidth('workspace')" @close="emit('update:open', false)">
-    <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
+    <RequestError v-if="error" :message="error" class="xsy-margin-bottom10">
       <template #action>
         <a-button size="small" @click="emit('change')">重试</a-button>
       </template>
-    </a-alert>
+    </RequestError>
 
     <a-table
       :id="SCM_REPORT_TABLE_ID.PURCHASE_DRILLDOWN"

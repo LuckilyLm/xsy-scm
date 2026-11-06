@@ -1,6 +1,6 @@
 <template>
   <a-modal :open="open" title="分次分拣记录" :footer="null" :width="760" @cancel="emit('update:open', false)">
-    <a-alert v-if="error" type="error" :message="error" show-icon style="margin-bottom: 12px" />
+    <RequestError v-if="error" :message="error" />
     <p class="scm-note">
       {{ row?.orderNoSnapshot }} · {{ row?.productNameSnapshot }} · {{ row?.specNameSnapshot || '默认规格' }} （单位：{{ row?.saleUnitSnapshot }}）
     </p>

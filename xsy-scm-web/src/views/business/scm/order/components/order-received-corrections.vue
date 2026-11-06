@@ -5,11 +5,11 @@
         <h3 class="order-section-title">客户收货数量更正</h3>
         <span class="order-section-desc">这里只更正收货数量记录；退货、退款或补送需另外办理</span>
       </div>
-      <a-button v-if="canCorrect" v-privilege="'scm:order:update'" :disabled="loading" @click="open">记录收货数量更正</a-button>
+      <a-button v-privilege="'scm:order:update'" :disabled="loading || !canCorrect" @click="open">记录收货数量更正</a-button>
     </div>
-    <a-alert v-if="error" type="error" show-icon :message="error">
+    <RequestError v-if="error" :message="error">
       <template #action><a-button size="small" @click="load">重试</a-button></template>
-    </a-alert>
+    </RequestError>
     <LocalTable
       :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       :data-source="rows"
@@ -38,7 +38,7 @@
         <a-form-item label="商品规格" required>
           <a-select v-model:value="itemId" :options="itemOptions" placeholder="选择订单明细" @change="loadCandidate" />
         </a-form-item>
-        <a-alert v-if="candidateError" type="error" show-icon :message="candidateError" />
+        <RequestError v-if="candidateError" :message="candidateError" />
         <a-spin :spinning="candidateLoading">
           <template v-if="candidate">
             <p>

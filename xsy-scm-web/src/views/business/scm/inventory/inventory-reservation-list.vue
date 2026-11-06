@@ -17,11 +17,11 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
     <a-row class="xsy-table-btn-block">
@@ -91,6 +91,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -149,7 +150,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await inventoryReservationApi.query({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
@@ -203,7 +204,7 @@ function onRelease(record: InventoryReservation) {
         message.success('预留已取消，可用量已恢复');
         queryData();
       } catch (e) {
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });

@@ -7,9 +7,9 @@
       <a-button v-privilege="'scm:mall:store:edit'" type="primary" :loading="saving" :disabled="!dirty" @click="save">保存店铺信息</a-button>
     </div>
 
-    <a-alert v-if="error" type="error" show-icon :message="error" class="store-alert">
+    <RequestError v-if="error" :message="error" class="store-alert">
       <template #action><a-button size="small" @click="load">重新加载</a-button></template>
-    </a-alert>
+    </RequestError>
 
     <a-spin :spinning="loading">
       <div class="store-grid">
@@ -41,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {onMounted, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import QRCode from 'qrcode';
@@ -68,7 +69,7 @@ async function renderQr(link: string | null | undefined): Promise<void> {
     qrDataUrl.value = await QRCode.toDataURL(savedLink.value, {width: 240, margin: 1});
   } catch {
     qrDataUrl.value = '';
-    void message.error('二维码生成失败，请检查店铺链接');
+    void notifyRequestError('二维码生成失败，请检查店铺链接');
   }
 }
 
@@ -108,7 +109,7 @@ async function save(): Promise<void> {
     apply((await mallDecorationApi.saveStore({version: store.value.version, storeName: storeName.value.trim(), storeLink: link || null})).data);
     void message.success('店铺信息已保存');
   } catch (cause) {
-    void message.error(String((cause as Error)?.message || '店铺信息保存失败'));
+    void notifyRequestError(String((cause as Error)?.message || '店铺信息保存失败'));
   } finally {
     saving.value = false;
   }
@@ -127,7 +128,7 @@ async function copyLink(): Promise<void> {
     await navigator.clipboard.writeText(savedLink.value);
     void message.success('链接已复制');
   } catch {
-    void message.error('复制失败，请手动选择链接复制');
+    void notifyRequestError('复制失败，请手动选择链接复制');
   }
 }
 

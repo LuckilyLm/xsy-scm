@@ -57,9 +57,9 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
+  <RequestError v-if="page.error.value" class="page-error" :message="page.error.value">
     <template #action><a-button @click="queryData">重试</a-button></template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
     <a-row class="xsy-table-btn-block scm-table-toolbar">
@@ -205,9 +205,9 @@
   </a-modal>
 
   <a-drawer v-model:open="detailOpen" title="外部账单详情" :width="scmDrawerWidth('xl')" :destroy-on-close="true" @close="detailOpen = false">
-    <a-alert v-if="detailError" type="error" show-icon :message="detailError">
+    <RequestError v-if="detailError" :message="detailError">
       <template #action><a-button :loading="detailLoading" @click="loadDetail">重试</a-button></template>
-    </a-alert>
+    </RequestError>
     <a-spin :spinning="detailLoading">
       <template v-if="detail">
         <section class="detail-section">

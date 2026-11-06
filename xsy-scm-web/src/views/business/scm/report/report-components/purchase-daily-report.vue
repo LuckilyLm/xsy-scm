@@ -14,15 +14,6 @@
         <a-space wrap>
           <a-button type="primary" :loading="loading" @click="search">查询</a-button>
           <a-button @click="reset">重置</a-button>
-          <a-button :disabled="!report?.generatedAt || loading || !!error" @click="printReport">打印</a-button>
-          <a-button
-            type="primary"
-            v-privilege="PERM.EXPORT"
-            :loading="exporting"
-            :disabled="!report?.generatedAt || loading || !!error"
-            @click="exportReport"
-            >导出清单</a-button
-          >
         </a-space>
       </a-form-item>
     </a-form>
@@ -32,14 +23,32 @@
       <router-link v-privilege="'support:job:query'" to="/job/list">配置执行时间</router-link>
     </p>
 
-    <a-alert v-if="error" type="error" show-icon :message="error" class="xsy-margin-bottom10">
+    <RequestError v-if="error" :message="error" class="xsy-margin-bottom10">
       <template #action><a-button @click="search">重试</a-button></template>
-    </a-alert>
+    </RequestError>
     <p v-if="report?.generatedAt" class="daily-meta">
       <strong>{{ report.reportDate }} 采购商品清单</strong>
       <span>生成时间：{{ datetime(report.generatedAt) }}</span>
       <span>符合条件的商品规格：{{ report.products.total }} 项</span>
     </p>
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <a-button :disabled="!report?.generatedAt || loading || !!error" @click="printReport">打印</a-button>
+        <a-button
+          type="primary"
+          v-privilege="PERM.EXPORT"
+          :loading="exporting"
+          :disabled="!report?.generatedAt || loading || !!error"
+          @click="exportReport"
+          >导出清单</a-button
+        >
+        <TableOperator
+          v-model="columns"
+          :table-id="TABLE_ID_CONST.LIST.SCM_REPORT_PURCHASE_DAILY"
+          :refresh="() => (appliedQuery ? load(appliedQuery) : search())"
+        />
+      </div>
+    </div>
     <a-table
       size="small"
       bordered
@@ -78,8 +87,11 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, onBeforeUnmount, onMounted, reactive, ref} from 'vue';
+import {shallowRef, computed, onBeforeUnmount, onMounted, reactive, ref} from 'vue';
 import dayjs from 'dayjs';
 import type {Dayjs} from 'dayjs';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -121,14 +133,14 @@ const error = ref('');
 let requestSequence = 0;
 let appliedQuery: PurchaseDailyQuery | undefined;
 
-const columns: TableColumnsType<PurchaseDailyProduct> = [
+const columns = shallowRef<TableColumnsType<PurchaseDailyProduct>>([
   {title: '商品名称', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'skuName', width: 160},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
   {title: '采购单数', dataIndex: 'orderCount', width: 92},
   {title: '采购数量', dataIndex: 'plannedQuantity', width: 130},
   {title: '采购金额（元）', dataIndex: 'orderAmount', width: 140},
-];
+]);
 const emptyText = computed(() => {
   if (loading.value) return '正在读取清单';
   if (error.value) return '清单读取失败，请重试';
@@ -191,7 +203,7 @@ async function exportReport() {
   try {
     await purchaseDailyReportApi.export({...appliedQuery});
   } catch {
-    message.error('采购清单导出失败，请重试。');
+    notifyRequestError('采购清单导出失败，请重试。');
   } finally {
     exporting.value = false;
   }
@@ -243,7 +255,7 @@ function printReport() {
 
   const table = doc.createElement('table');
   const header = table.insertRow();
-  columns.forEach((column) => {
+  columns.value.forEach((column) => {
     const th = doc.createElement('th');
     th.textContent = String(column.title ?? '');
     header.appendChild(th);

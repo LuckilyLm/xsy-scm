@@ -46,12 +46,7 @@
     />
 
     <template v-if="result && hasErrors">
-      <a-alert
-        type="error"
-        show-icon
-        class="hint"
-        :message="`校验未通过：${groups.length} 行 / ${result.totalErrors} 处错误，本次没有任何商品写入`"
-      />
+      <RequestError class="hint" :message="`校验未通过：${groups.length} 行 / ${result.totalErrors} 处错误，本次没有任何商品写入`" />
       <div class="detail-actions">
         <a-button size="small" @click="downloadErrors">下载失败明细</a-button>
       </div>
@@ -70,6 +65,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {computed, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {UploadProps} from 'ant-design-vue';
@@ -120,7 +116,7 @@ async function downloadTemplate() {
   try {
     await productApi.downloadImportTemplate('CREATE');
   } catch (e) {
-    message.error(productError(e));
+    notifyRequestError(productError(e));
   } finally {
     templateLoading.value = false;
   }
@@ -139,7 +135,7 @@ async function doImport() {
       emit('imported');
     }
   } catch (e) {
-    message.error(productError(e));
+    notifyRequestError(productError(e));
   } finally {
     importing.value = false;
   }

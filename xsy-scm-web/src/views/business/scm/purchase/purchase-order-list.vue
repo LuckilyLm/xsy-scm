@@ -19,11 +19,11 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
     <a-row class="xsy-table-btn-block scm-table-toolbar">
@@ -330,22 +330,45 @@ function moreActions(row: Order): ScmActionItem[] {
   return [
     {key: 'detail', label: '详情', hidden: !entryHidden.value},
     {key: 'print', label: '打印', hidden: !submitted},
-    {key: 'share', label: '分享', hidden: !(canShare.value && SHAREABLE_STATUSES.includes(row.status ?? ''))},
+    {
+      key: 'share',
+      label: '分享',
+      hidden: !SHAREABLE_STATUSES.includes(row.status ?? ''),
+      authorized: canShare.value && SHAREABLE_STATUSES.includes(row.status ?? ''),
+    },
     {key: 'feedback', label: '现场录入', hidden: row.status === 'CANCELLED'},
-    {key: 'reassign', label: '改派', hidden: !canAssign.value},
+    {key: 'reassign', label: '改派', authorized: canAssign.value},
     {
       key: 'lock',
       label: '锁单',
-      hidden: !(canLock.value && row.accountId == null && !row.lockedFlag && LOCKABLE_STATUSES.includes(row.status ?? '')),
+      hidden: !(row.accountId == null && !row.lockedFlag && LOCKABLE_STATUSES.includes(row.status ?? '')),
+      authorized: canLock.value && row.accountId == null && !row.lockedFlag && LOCKABLE_STATUSES.includes(row.status ?? ''),
     },
-    {key: 'unlock', label: '解锁', hidden: !(canUnlock.value && row.accountId == null && row.lockedFlag)},
-    {key: 'cancel', label: '取消', hidden: !(canCancel.value && row.accountId == null && row.status === 'SUBMITTED')},
+    {
+      key: 'unlock',
+      label: '解锁',
+      hidden: !(row.accountId == null && row.lockedFlag),
+      authorized: canUnlock.value && row.accountId == null && row.lockedFlag,
+    },
+    {
+      key: 'cancel',
+      label: '取消',
+      hidden: !(row.accountId == null && row.status === 'SUBMITTED'),
+      authorized: canCancel.value && row.accountId == null && row.status === 'SUBMITTED',
+    },
     {
       key: 'shortClose',
       label: '少收关单',
-      hidden: !(canShortClose.value && row.status === 'PARTIALLY_RECEIVED'),
+      hidden: !(row.status === 'PARTIALLY_RECEIVED'),
+      authorized: canShortClose.value && row.status === 'PARTIALLY_RECEIVED',
     },
-    {key: 'delete', label: '删除', danger: true, hidden: !(canDelete.value && submitted && row.accountId == null)},
+    {
+      key: 'delete',
+      label: '删除',
+      danger: true,
+      hidden: !(submitted && row.accountId == null),
+      authorized: canDelete.value && submitted && row.accountId == null,
+    },
   ];
 }
 
@@ -383,7 +406,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 列表加载失败由页头 Alert 承担（带重试），不再让全局 toast 重复说一遍
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await purchaseOrderApi.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;

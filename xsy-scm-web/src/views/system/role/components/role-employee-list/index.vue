@@ -29,6 +29,11 @@
       </div>
     </div>
 
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.ROLE_EMPLOYEE" :refresh="queryRoleEmployee" />
+      </div>
+    </div>
     <a-table
       :loading="tableLoading"
       :dataSource="tableData"
@@ -70,6 +75,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {message, Modal} from 'ant-design-vue';
 import _ from 'lodash';
 import {computed, inject, onMounted, reactive, ref, watch} from 'vue';
@@ -129,7 +136,7 @@ async function queryRoleEmployee() {
   }
 }
 
-const columns = reactive([
+const columns = ref([
   {
     title: '姓名',
     dataIndex: 'actualName',

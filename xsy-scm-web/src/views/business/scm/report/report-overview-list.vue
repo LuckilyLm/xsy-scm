@@ -1,64 +1,47 @@
 <!-- 经营概览：只读。库存金额是当前时点数据，不受日期区间限制。 -->
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline" @submit.prevent>
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="确认日期" class="xsy-query-form-item">
-          <ReportDateRangePicker v-model:value="dateRange" />
-        </a-form-item>
-        <a-form-item label="仓库" class="xsy-query-form-item">
-          <WarehouseSelect v-model:value="filters.warehouseId" width="180px" />
-        </a-form-item>
-        <a-form-item label="客户" class="xsy-query-form-item">
-          <CustomerSelect v-model:value="filters.customerId" width="200px" />
-        </a-form-item>
-        <a-form-item label="销售员" class="xsy-query-form-item">
-          <EmployeeSelect v-model:value="filters.sellerId" width="160px" />
-        </a-form-item>
-        <a-form-item class="xsy-query-form-item">
-          <a-button-group>
-            <a-button type="primary" v-privilege="PERM.OVERVIEW_QUERY" @click="onSearch">查询</a-button>
-            <a-button @click="resetQuery">重置</a-button>
-          </a-button-group>
-          <a-button class="xsy-margin-left10" @click="advanced = !advanced">
-            {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
-          </a-button>
-        </a-form-item>
-      </a-row>
-      <a-row v-if="advanced" class="xsy-query-form-row">
-        <a-form-item label="订单来源" class="xsy-query-form-item">
-          <XsyEnumSelect v-model:value="filters.orderSource" enum-name="SCM_ORDER_SOURCE_ENUM" width="150px" />
-        </a-form-item>
-        <a-form-item label="商品分类" class="xsy-query-form-item">
-          <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
-        </a-form-item>
-        <a-form-item label="商品关键字" class="xsy-query-form-item">
-          <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
-        </a-form-item>
-      </a-row>
-    </a-form>
-    <a-row data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
-      <div class="xsy-table-operate-block">
-        <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="dailyExport.exporting" @click="exportDaily"
-          >导出</a-button
-        >
-      </div>
-      <div class="xsy-table-setting-block">
-        <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_OVERVIEW_DAILY"
-          :refresh="queryAll"
-          :exclude-column-keys="canViewCost ? [] : COST_INDEXES"
-        />
-      </div>
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="确认日期" class="xsy-query-form-item">
+        <ReportDateRangePicker v-model:value="dateRange" />
+      </a-form-item>
+      <a-form-item label="仓库" class="xsy-query-form-item">
+        <WarehouseSelect v-model:value="filters.warehouseId" width="180px" />
+      </a-form-item>
+      <a-form-item label="客户" class="xsy-query-form-item">
+        <CustomerSelect v-model:value="filters.customerId" width="200px" />
+      </a-form-item>
+      <a-form-item label="销售员" class="xsy-query-form-item">
+        <EmployeeSelect v-model:value="filters.sellerId" width="160px" />
+      </a-form-item>
+      <a-form-item class="xsy-query-form-item">
+        <a-button-group>
+          <a-button type="primary" v-privilege="PERM.OVERVIEW_QUERY" @click="onSearch">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-button-group>
+        <a-button class="xsy-margin-left10" @click="advanced = !advanced">
+          {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
+        </a-button>
+      </a-form-item>
     </a-row>
-  </div>
+    <a-row v-if="advanced" class="xsy-query-form-row">
+      <a-form-item label="订单来源" class="xsy-query-form-item">
+        <XsyEnumSelect v-model:value="filters.orderSource" enum-name="SCM_ORDER_SOURCE_ENUM" width="150px" />
+      </a-form-item>
+      <a-form-item label="商品分类" class="xsy-query-form-item">
+        <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
+      </a-form-item>
+      <a-form-item label="商品关键字" class="xsy-query-form-item">
+        <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格" allow-clear @pressEnter="onSearch" />
+      </a-form-item>
+    </a-row>
+  </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryAll">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <!-- 区间指标和当前时点指标分开排，避免两种数字混在一起；两组共用一块底板，不再是散落的卡片 -->
   <div class="report-kpi-panel">
@@ -81,6 +64,22 @@
   <ReportLineChart class="xsy-margin-top10" title="每日金额趋势" :x-axis="trendAxis" :series="trendSeries" />
 
   <a-card size="small" :bordered="false" class="xsy-margin-top10">
+    <a-row class="xsy-table-btn-block scm-table-toolbar">
+      <div class="xsy-table-operate-block">
+        <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="dailyExport.exporting" @click="exportDaily"
+          >导出</a-button
+        >
+      </div>
+      <div class="xsy-table-setting-block">
+        <TableOperator
+          v-model="columns"
+          :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_OVERVIEW_DAILY"
+          :refresh="queryAll"
+          :exclude-column-keys="canViewCost ? [] : COST_INDEXES"
+        />
+      </div>
+    </a-row>
+
     <LocalTable
       :page-size-options="SCM_PAGE_SIZE_OPTIONS_WIDE"
       :id="SCM_REPORT_TABLE_ID.OVERVIEW_DAILY"
@@ -323,7 +322,7 @@ async function queryAll() {
   error.value = '';
   const payload = query.value;
   try {
-    // 加载失败由页内 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const quiet = {suppressGlobalErrorMessage: true};
     const [overviewResponse, trendResponse, dailyResponse] = await Promise.all([
       reportOverviewApi.overview(payload, quiet),

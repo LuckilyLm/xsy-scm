@@ -44,25 +44,12 @@
     />
   </a-form>
 
-  <a-alert v-if="chartError && activeTab !== 'daily'" :message="chartError" type="error" show-icon>
+  <RequestError v-if="chartError && activeTab !== 'daily'" :message="chartError">
     <template #action>
       <a-button @click="queryActiveTab">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
-  <a-space v-if="activeTab === 'product'" class="xsy-margin-top10" v-privilege="PERM.EXPORT">
-    <span>导出字段</span>
-    <a-select
-      v-model:value="purchaseProductExportKeys"
-      mode="multiple"
-      allow-clear
-      :options="purchaseProductColumnOptions"
-      option-filter-prop="label"
-      placeholder="不选择则导出全部字段"
-      style="width: 360px"
-      @focus="loadPurchaseProductExportColumns"
-    />
-  </a-space>
   <a-tabs v-model:activeKey="activeTab" class="xsy-margin-top10" @change="onTabChange">
     <a-tab-pane key="daily" tab="每日清单">
       <PurchaseDailyReport />
@@ -93,7 +80,7 @@
         :page-num="product.pageNum"
         :page-size="product.pageSize"
         :total="product.total"
-        :exporting="product.exporting"
+        :exporting="product.exporting || purchaseProductColumnsLoading"
         @export="exportProduct"
         @reload="loadProduct"
         @page-change="loadProductPage"
@@ -211,9 +198,12 @@
   </ReportDrilldownDrawer>
 
   <PurchaseOrderDetail ref="purchaseOrderDetail" />
+  <ScmExportFieldsModal ref="exportModal" />
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
+import ScmExportFieldsModal from '/@/components/business/scm/export-fields-modal/index.vue';
 import PurchaseDailyReport from './report-components/purchase-daily-report.vue';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute} from 'vue-router';
@@ -302,14 +292,15 @@ async function loadDynamicFilterFields(): Promise<void> {
   try {
     dynamicFilterFields.value = (await reportPurchaseApi.productFilterFields()).data;
   } catch {
-    void message.error('获取可组合的筛选字段失败');
+    void notifyRequestError('获取可组合的筛选字段失败');
   }
 }
 function toggleAdvanced(): void {
   advanced.value = !advanced.value;
   if (advanced.value && activeTab.value === 'product') void loadDynamicFilterFields();
 }
-const purchaseProductExportKeys = ref<string[]>([]);
+const exportModal = ref<InstanceType<typeof ScmExportFieldsModal>>();
+const purchaseProductColumnsLoading = ref(false);
 const purchaseProductColumnDefs = ref<ScmExportColumn[]>([]);
 const purchaseProductColumnsLoaded = ref(false);
 const purchaseProductColumnOptions = computed(() =>
@@ -324,7 +315,7 @@ async function loadPurchaseProductExportColumns(): Promise<void> {
     purchaseProductColumnDefs.value = (await reportPurchaseApi.productExportColumns()).data;
     purchaseProductColumnsLoaded.value = true;
   } catch {
-    void message.error('获取可导出字段失败');
+    void notifyRequestError('获取可导出字段失败');
   }
 }
 
@@ -599,14 +590,19 @@ function guardExport(): boolean {
   return !overLimit;
 }
 
-function exportProduct() {
-  if (!guardExport()) return;
-  void productExport.run(() =>
-    reportPurchaseApi.productExport({
-      ...exportQuery(),
-      exportColumnKeys: purchaseProductExportKeys.value.length ? purchaseProductExportKeys.value : undefined,
-    })
-  );
+async function exportProduct() {
+  if (!guardExport() || purchaseProductColumnsLoading.value || product.exporting) return;
+  purchaseProductColumnsLoading.value = true;
+  try {
+    await loadPurchaseProductExportColumns();
+    if (!purchaseProductColumnOptions.value.length || !guardExport()) return;
+    const query = exportQuery();
+    exportModal.value?.show(purchaseProductColumnOptions.value, async (keys) => {
+      await productExport.run(() => reportPurchaseApi.productExport({...query, exportColumnKeys: keys}));
+    });
+  } finally {
+    purchaseProductColumnsLoading.value = false;
+  }
 }
 
 function exportSupplier() {

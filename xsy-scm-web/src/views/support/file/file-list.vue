@@ -4,46 +4,48 @@
 -->
 <template>
   <!---------- 查询表单form begin ----------->
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" v-privilege="'support:file:query'">
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="文件夹类型" class="xsy-query-form-item">
-          <XsyEnumSelect width="150px" v-model:value="queryForm.folderType" enumName="FILE_FOLDER_TYPE_ENUM" placeholder="文件夹类型" />
-        </a-form-item>
-        <a-form-item label="文件名" class="xsy-query-form-item">
-          <a-input style="width: 150px" v-model:value="queryForm.fileName" placeholder="文件名" />
-        </a-form-item>
-        <a-form-item label="文件Key" class="xsy-query-form-item">
-          <a-input style="width: 150px" v-model:value="queryForm.fileKey" placeholder="文件Key" />
-        </a-form-item>
-        <a-form-item label="文件类型" class="xsy-query-form-item">
-          <a-input style="width: 150px" v-model:value="queryForm.fileType" placeholder="文件类型" />
-        </a-form-item>
-        <a-form-item label="创建人" class="xsy-query-form-item">
-          <a-input style="width: 150px" v-model:value="queryForm.creatorName" placeholder="创建人" />
-        </a-form-item>
-        <a-form-item label="创建时间" class="xsy-query-form-item">
-          <a-range-picker v-model:value="queryForm.createTime" :presets="defaultTimeRanges" style="width: 220px" @change="onChangeCreateTime" />
-        </a-form-item>
-        <a-form-item class="xsy-query-form-item">
-          <a-button-group>
-            <a-button type="primary" @click="queryData">
-              <template #icon>
-                <SearchOutlined />
-              </template>
-              查询
-            </a-button>
-            <a-button @click="resetQuery">
-              <template #icon>
-                <ReloadOutlined />
-              </template>
-              重置
-            </a-button>
-          </a-button-group>
-        </a-form-item>
-      </a-row>
-    </a-form>
-    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
+  <a-form class="xsy-query-form" v-privilege="'support:file:query'">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="文件夹类型" class="xsy-query-form-item">
+        <XsyEnumSelect width="150px" v-model:value="queryForm.folderType" enumName="FILE_FOLDER_TYPE_ENUM" placeholder="文件夹类型" />
+      </a-form-item>
+      <a-form-item label="文件名" class="xsy-query-form-item">
+        <a-input style="width: 150px" v-model:value="queryForm.fileName" placeholder="文件名" />
+      </a-form-item>
+      <a-form-item label="文件Key" class="xsy-query-form-item">
+        <a-input style="width: 150px" v-model:value="queryForm.fileKey" placeholder="文件Key" />
+      </a-form-item>
+      <a-form-item label="文件类型" class="xsy-query-form-item">
+        <a-input style="width: 150px" v-model:value="queryForm.fileType" placeholder="文件类型" />
+      </a-form-item>
+      <a-form-item label="创建人" class="xsy-query-form-item">
+        <a-input style="width: 150px" v-model:value="queryForm.creatorName" placeholder="创建人" />
+      </a-form-item>
+      <a-form-item label="创建时间" class="xsy-query-form-item">
+        <a-range-picker v-model:value="queryForm.createTime" :presets="defaultTimeRanges" style="width: 220px" @change="onChangeCreateTime" />
+      </a-form-item>
+      <a-form-item class="xsy-query-form-item">
+        <a-button-group>
+          <a-button type="primary" @click="queryData">
+            <template #icon>
+              <SearchOutlined />
+            </template>
+            查询
+          </a-button>
+          <a-button @click="resetQuery">
+            <template #icon>
+              <ReloadOutlined />
+            </template>
+            重置
+          </a-button>
+        </a-button-group>
+      </a-form-item>
+    </a-row>
+  </a-form>
+  <!---------- 查询表单form end ----------->
+
+  <a-card size="small" :bordered="false" :hoverable="true">
+    <a-row class="xsy-table-btn-block">
       <div class="xsy-table-operate-block">
         <a-button type="primary" @click="showUploadModal">
           <template #icon>
@@ -56,10 +58,7 @@
         <TableOperator v-model="columns" :tableId="null" :refresh="queryData" />
       </div>
     </a-row>
-  </div>
-  <!---------- 查询表单form end ----------->
 
-  <a-card size="small" :bordered="false" :hoverable="true">
     <!---------- 表格操作行 begin ----------->
 
     <!---------- 表格操作行 end ----------->

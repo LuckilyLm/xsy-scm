@@ -11,7 +11,7 @@
     </a-button>
     <span class="plan-note" v-if="disabledReason">{{ disabledReason }}</span>
   </a-space>
-  <a-alert v-if="error" type="error" :message="error" show-icon />
+  <RequestError v-if="error" :message="error" />
 
   <template v-if="proposal">
     <a-descriptions bordered size="small" :column="3" class="plan-meta">

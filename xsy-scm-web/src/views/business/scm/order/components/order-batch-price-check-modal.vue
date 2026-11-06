@@ -22,7 +22,7 @@
               <a-tag v-else color="default">价格无差异</a-tag>
             </a-space>
           </template>
-          <a-alert v-if="entry.error" type="error" show-icon :message="entry.error" />
+          <RequestError v-if="entry.error" :message="entry.error" />
           <template v-else-if="entry.result">
             <a-table
               :data-source="entry.result.lines"
@@ -48,11 +48,10 @@
             </a-table>
             <a-space class="xsy-margin-top10">
               <a-button
-                v-if="canUpdate"
                 type="primary"
                 size="small"
                 :loading="applyingId === String(entry.id)"
-                :disabled="loading || !!applyingId || entry.applied || !canApplyPriceCheck(entry.result)"
+                :disabled="loading || !!applyingId || entry.applied || !canApplyPriceCheck(entry.result) || !canUpdate"
                 @click="confirmApply(entry)"
                 >按当前规则重算此单</a-button
               >
@@ -67,6 +66,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref} from 'vue';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
@@ -216,7 +216,7 @@ function confirmApply(entry: Entry): void {
         void message.success('该订单已按当前定价规则重算');
         emit('saved');
       } catch (cause) {
-        void message.error(orderError(cause));
+        void notifyRequestError(orderError(cause));
         throw cause;
       } finally {
         applyingId.value = '';

@@ -1,11 +1,11 @@
 <template>
   <div class="route-detail-page scm-detail-read">
     <a-button type="link" class="scm-detail-header__back" @click="backToList"> <ArrowLeftOutlined /> 返回线路管理 </a-button>
-    <a-alert v-if="error" :message="error" type="error" show-icon>
+    <RequestError v-if="error" :message="error">
       <template #action>
         <a-button @click="reload">刷新线路</a-button>
       </template>
-    </a-alert>
+    </RequestError>
     <a-spin :spinning="loading">
       <template v-if="detail">
         <div class="scm-detail-header">
@@ -181,7 +181,7 @@
           <a-textarea v-model:value="stopForm.remark" :maxlength="500" />
         </a-form-item>
       </a-form>
-      <a-alert v-if="stopError" type="error" :message="stopError" show-icon />
+      <RequestError v-if="stopError" :message="stopError" />
     </template>
   </a-modal>
   <a-modal v-model:open="signVisible" :title="signResults[signForm.result].label" ok-text="确认登记" :confirm-loading="busy" @ok="submitSign">
@@ -200,7 +200,7 @@
           />
         </a-form-item>
       </a-form>
-      <a-alert v-if="signError" type="error" :message="signError" show-icon />
+      <RequestError v-if="signError" :message="signError" />
     </template>
   </a-modal>
 </template>
@@ -307,7 +307,7 @@ async function loadPlan(id: Id) {
   planHistory.value = [];
   proposal.value = undefined;
   try {
-    // 加载失败由建议面板内的 Alert 提示
+    // 请求失败交给共享反馈处理，避免重复提示。
     const result = await deliveryPlanApi.history(id, {suppressGlobalErrorMessage: true});
     if (!currentPlanContext(id, context) || request !== planRequest) return;
     planHistory.value = result.data ?? [];
@@ -426,7 +426,7 @@ async function loadPrint() {
   if (routeId.value == null) return;
   printLoading.value = true;
   try {
-    // 打印视图加载失败由页内的 Alert 提示
+    // 请求失败交给共享反馈处理，避免重复提示。
     const [o, c] = await Promise.all([
       deliveryApi.ordersView(routeId.value, {suppressGlobalErrorMessage: true}),
       deliveryApi.customersView(routeId.value, {suppressGlobalErrorMessage: true}),
@@ -488,7 +488,7 @@ async function reload() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示
+    // 请求失败交给共享反馈处理，避免重复提示。
     const result = await deliveryApi.detail(routeId.value, {suppressGlobalErrorMessage: true});
     if (current === generation) {
       detail.value = result.data;

@@ -39,6 +39,11 @@
       <a-tab-pane :key="1" tab="未读" />
     </a-tabs>
 
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="tableColumns" :table-id="TABLE_ID_CONST.LIST.OA_NOTICE_EMPLOYEE" :refresh="queryNoticeList" />
+      </div>
+    </div>
     <a-table rowKey="noticeId" :columns="tableColumns" :dataSource="tableData" :pagination="false" :loading="tableLoading" bordered size="small">
       <template #bodyCell="{column, record, text}">
         <template v-if="column.dataIndex === 'title'">
@@ -74,13 +79,15 @@
 </template>
 
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
 import {noticeApi} from '/@/api/business/oa/notice-api';
 import {xsySentry} from '/@/lib/xsy-sentry';
 
-const tableColumns = reactive([
+const tableColumns = ref([
   {
     title: `标题`,
     dataIndex: 'title',

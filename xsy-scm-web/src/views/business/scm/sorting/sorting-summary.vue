@@ -26,18 +26,33 @@
         <a-button @click="resetQuery">重置</a-button>
       </a-button-group>
     </a-form-item>
-    <div class="scm-query-table-tools">
-      <TableOperator v-if="viewMode === 'sku'" v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_SUMMARY" :refresh="queryData" />
-    </div>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-if="viewMode === 'sku'" v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_SUMMARY" :refresh="queryData" />
+        <TableOperator
+          v-if="viewMode === 'customer'"
+          v-model="customerColumns"
+          :table-id="TABLE_ID_CONST.LIST.SCM_SORTING_CUSTOMER_SUMMARY"
+          :refresh="queryData"
+        />
+        <TableOperator
+          v-if="viewMode === 'performance'"
+          v-model="performanceColumns"
+          :table-id="TABLE_ID_CONST.LIST.SCM_SORTING_PERFORMANCE"
+          :refresh="queryData"
+        />
+      </div>
+    </div>
+
     <a-radio-group v-model:value="viewMode" button-style="solid" style="margin-bottom: 12px" @change="switchView">
       <a-radio-button value="sku">按商品汇总</a-radio-button>
       <a-radio-button v-if="hasPermission(SCM_SORTING_PERMISSION.TASK_QUERY)" value="customer">按客户明细</a-radio-button>
@@ -146,7 +161,7 @@
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, onMounted, reactive, ref} from 'vue';
+import {shallowRef, computed, onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -199,7 +214,7 @@ const columns = ref<TableColumnsType<SortingSkuSummary>>([
   {title: '已分量合计', dataIndex: 'sortedQuantity', width: 120},
 ]);
 
-const customerColumns: TableColumnsType<SortingCustomerLine> = [
+const customerColumns = shallowRef<TableColumnsType<SortingCustomerLine>>([
   {title: '送货时间', dataIndex: 'deliveryTimeSnapshot', width: 165},
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 140},
   {title: '客户', dataIndex: 'customerNameSnapshot', width: 150},
@@ -212,9 +227,9 @@ const customerColumns: TableColumnsType<SortingCustomerLine> = [
   {title: '计划量', dataIndex: 'plannedQuantitySnapshot', width: 110},
   {title: '已分量', dataIndex: 'sortedQuantity', width: 110},
   {title: '分拣结果', dataIndex: 'result', align: 'center', width: 100},
-];
+]);
 
-const performanceColumns: TableColumnsType<SortingPerformance> = [
+const performanceColumns = shallowRef<TableColumnsType<SortingPerformance>>([
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 165},
   {title: '最后确认人', dataIndex: 'confirmedBy', width: 170},
   {title: '销售单位', dataIndex: 'saleUnitSnapshot', width: 100},
@@ -222,7 +237,7 @@ const performanceColumns: TableColumnsType<SortingPerformance> = [
   {title: '最终确认行数', dataIndex: 'lineCount', width: 92},
   {title: '最终确认量', dataIndex: 'confirmedQuantity', width: 150},
   {title: '最近确认时间', dataIndex: 'lastConfirmedAt', width: 180},
-];
+]);
 
 function switchView() {
   queryForm.pageNum = 1;
@@ -234,7 +249,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示并可重试
+    // 请求失败交给共享反馈处理，避免重复提示。
     if (viewMode.value === 'sku') {
       const result = await sortingApi.summary({...queryForm}, {suppressGlobalErrorMessage: true});
       if (current === generation) {

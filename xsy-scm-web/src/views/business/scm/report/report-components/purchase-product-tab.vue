@@ -15,11 +15,11 @@
         />
       </div>
     </a-row>
-    <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
+    <RequestError v-if="error" :message="error" class="xsy-margin-bottom10">
       <template #action>
         <a-button @click="refresh">重试</a-button>
       </template>
-    </a-alert>
+    </RequestError>
     <a-table
       :id="SCM_REPORT_TABLE_ID.PURCHASE_PRODUCT"
       size="small"

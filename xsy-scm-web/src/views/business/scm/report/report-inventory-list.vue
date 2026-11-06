@@ -38,11 +38,11 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="chartError" :message="chartError" type="error" show-icon>
+  <RequestError v-if="chartError" :message="chartError">
     <template #action>
       <a-button @click="queryActiveTab">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-tabs v-model:activeKey="activeTab" class="xsy-margin-top10" @change="onTabChange">
     <a-tab-pane key="movement" tab="库存流水">
@@ -62,11 +62,11 @@
             />
           </div>
         </a-row>
-        <a-alert v-if="movement.error" :message="movement.error" type="error" show-icon class="xsy-margin-bottom10">
+        <RequestError v-if="movement.error" :message="movement.error" class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadMovement">重试</a-button>
           </template>
-        </a-alert>
+        </RequestError>
         <a-table
           :id="SCM_REPORT_TABLE_ID.INVENTORY_MOVEMENT"
           size="small"
@@ -163,11 +163,11 @@
             <TableOperator v-model="valueColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_VALUE" :refresh="loadValue" />
           </div>
         </a-row>
-        <a-alert v-if="value.error" :message="value.error" type="error" show-icon class="xsy-margin-bottom10">
+        <RequestError v-if="value.error" :message="value.error" class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadValue">重试</a-button>
           </template>
-        </a-alert>
+        </RequestError>
         <a-table
           :id="SCM_REPORT_TABLE_ID.INVENTORY_VALUE"
           size="small"
@@ -241,11 +241,11 @@
             <TableOperator v-model="flowColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_FLOW_SUMMARY" :refresh="loadFlow" />
           </div>
         </a-row>
-        <a-alert v-if="flow.error" :message="flow.error" type="error" show-icon class="xsy-margin-bottom10">
+        <RequestError v-if="flow.error" :message="flow.error" class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadFlow">重试</a-button>
           </template>
-        </a-alert>
+        </RequestError>
         <a-table
           :id="SCM_REPORT_TABLE_ID.INVENTORY_FLOW_SUMMARY"
           size="small"

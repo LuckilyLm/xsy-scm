@@ -11,9 +11,9 @@
     @ok="confirm"
     @cancel="requestId++"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon
-      ><template #action><a-button @click="load">重试</a-button></template></a-alert
-    >
+    <RequestError v-if="error" :message="error">
+      <template #action><a-button @click="load">重试</a-button></template>
+    </RequestError>
     <p class="scm-note">核对实际采购数量与单价后即可生成供应商应付。未采购的商品填写0，至少一项实际数量大于0。</p>
     <a-alert v-if="pendingPriceBlocked" type="warning" show-icon message="存在待定价或未录入的商品，需要补价或改价权限后才能确认。" />
     <a-alert v-else-if="hasPendingPrice" type="warning" show-icon message="请补齐本次确认单价；采购价格未经核对不能确认应付。" />

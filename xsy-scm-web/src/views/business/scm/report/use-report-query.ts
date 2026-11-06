@@ -20,7 +20,7 @@ export function createTabLoader<T, Q extends object>(
     view.loading = true;
     view.error = '';
     try {
-      // 失败原因写在本页签的 Alert 上，不再弹全局 toast
+      // 仅处理当前请求的失败，由共享反馈弹出一次提示。
       const response = await fetch(buildQuery(), {suppressGlobalErrorMessage: true});
       if (id !== request) {
         return;
@@ -39,7 +39,7 @@ export function createTabLoader<T, Q extends object>(
   };
 }
 
-/** 生成非分页请求（KPI、图表）的装载器；失败写进 error ref，免得空白被当成没数据。 */
+/** 生成非分页请求装载器；保留失败状态，供共享反馈区分权限失败和空结果。 */
 export function createGuardedLoader<T>(
   task: (options?: RequestOptions) => Promise<ScmResponse<T>>,
   apply: (data: T) => void,
@@ -49,7 +49,7 @@ export function createGuardedLoader<T>(
   return async function load(): Promise<void> {
     const id = ++request;
     try {
-      // 失败原因写在内联 Alert 上，不弹全局提示
+      // 页面统一反馈，避免请求层和页面各弹一次相同提示。
       const response = await task({suppressGlobalErrorMessage: true});
       if (id === request) {
         apply(response.data);

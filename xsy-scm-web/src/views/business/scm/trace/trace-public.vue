@@ -3,11 +3,11 @@
     <div class="trace-page__card">
       <p class="sr-only" role="status" aria-live="polite">{{ loading ? '正在加载溯源信息' : view ? '溯源信息已加载' : '' }}</p>
       <a-spin :spinning="loading" :aria-busy="loading">
-        <a-alert v-if="error" type="error" show-icon :message="error" class="trace-page__alert">
+        <RequestError v-if="error" :message="error" class="trace-page__alert">
           <template #action>
             <a-button size="small" @click="load">重试</a-button>
           </template>
-        </a-alert>
+        </RequestError>
 
         <template v-if="view">
           <div

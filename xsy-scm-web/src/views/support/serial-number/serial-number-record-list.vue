@@ -4,6 +4,11 @@
 -->
 <template>
   <a-modal :open="visible" title="每日生成结果记录" width="60%" :footer="null" @cancel="onClose">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.SERIAL_NUMBER_RECORD" :refresh="ajaxQuery" />
+      </div>
+    </div>
     <a-table size="small" :dataSource="tableData" :columns="columns" bordered :pagination="false">
       <template #bodyCell="{text, record, column}">
         <template v-if="column.dataIndex === 'successFlag'">
@@ -33,6 +38,8 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {reactive, ref} from 'vue';
 import {serialNumberApi} from '/@/api/support/serial-number-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
@@ -59,7 +66,7 @@ function onClose() {
 }
 
 // ----------------------- 表格 ------------------------
-const columns = reactive([
+const columns = ref([
   {
     title: '单号ID',
     dataIndex: 'serialNumberId',

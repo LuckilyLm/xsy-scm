@@ -10,9 +10,9 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-alert v-if="error" class="picker-error" type="error" show-icon :message="error">
+    <RequestError v-if="error" class="picker-error" :message="error">
       <template #action><a-button @click="queryData">重试</a-button></template>
-    </a-alert>
+    </RequestError>
     <a-table
       bordered
       size="small"
@@ -82,7 +82,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由弹窗内 Alert 提示（含重试），不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const response = await financeApi.refundOptions(
       {pageNum: pageNum.value, pageSize: pageSize.value, keyword: keyword.value.trim() || undefined},
       {suppressGlobalErrorMessage: true}

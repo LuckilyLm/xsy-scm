@@ -21,7 +21,12 @@
           </a-button>
         </a-button-group>
       </a-form-item>
-      <div class="xsy-query-table-actions">
+    </a-row>
+  </a-form>
+
+  <a-card size="small" :bordered="true">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
         <a-button v-privilege="'system:department:add'" type="primary" @click="addDepartment">
           <template #icon>
             <PlusOutlined />
@@ -29,10 +34,8 @@
           新建
         </a-button>
       </div>
-    </a-row>
-  </a-form>
+    </div>
 
-  <a-card size="small" :bordered="true">
     <a-table
       size="small"
       bordered

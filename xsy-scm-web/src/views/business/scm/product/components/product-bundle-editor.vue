@@ -4,7 +4,7 @@
       <strong>{{ sku.specName }}</strong>
       <a-button v-privilege="'scm:product:update'" size="small" @click="open">{{ rows.length ? '修改组成' : '设置组合' }}</a-button>
     </a-space>
-    <a-alert v-if="error" type="error" :message="error" show-icon />
+    <RequestError v-if="error" :message="error" />
     <span v-else-if="loading">加载组成中…</span>
     <span v-else-if="!rows.length" class="scm-note">普通商品规格</span>
     <a-table
@@ -38,6 +38,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {onMounted, ref, watch} from 'vue';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import {productApi} from '/@/api/business/scm/product-api';
@@ -137,7 +138,7 @@ async function save(): Promise<void> {
     emit('saved');
     void message.success(clearing ? '组合商品组成已清除' : '组合商品组成已保存');
   } catch (cause) {
-    void message.error(productError(cause));
+    void notifyRequestError(productError(cause));
   } finally {
     saving.value = false;
   }

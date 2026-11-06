@@ -14,11 +14,11 @@
       </div>
     </header>
 
-    <a-alert v-if="error" :message="error" type="error" show-icon>
+    <RequestError v-if="error" :message="error">
       <template #action>
         <a-button size="small" @click="load">重新加载</a-button>
       </template>
-    </a-alert>
+    </RequestError>
     <template v-else-if="product">
       <div class="scm-detail-read">
         <div class="scm-detail-grid">
@@ -205,7 +205,7 @@ async function load() {
   error.value = '';
   product.value = undefined;
   try {
-    // 加载失败由页内 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const response = await productApi.detail(id, {suppressGlobalErrorMessage: true});
     if (request === requestId) product.value = response.data;
   } catch (e) {

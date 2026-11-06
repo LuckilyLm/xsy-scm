@@ -8,7 +8,7 @@
     <p class="scm-note">
       以下为现场录入记录，尚未成为实际采购。请核对数量和单价后点击「确认采购」，系统会保存实采数量并生成应付；录入不会自动改写采购单。
     </p>
-    <a-alert v-if="error" type="error" show-icon :message="error" />
+    <RequestError v-if="error" :message="error" />
     <a-table size="small" bordered :columns="columns" :data-source="rows" row-key="id" :loading="loading" :pagination="false" :scroll="{x: 1060}">
       <template #bodyCell="{column, record}">
         <span v-if="column.dataIndex === 'unitPrice'" class="scm-money">{{ formatPrice(record.unitPrice, 'purchase') }}</span>

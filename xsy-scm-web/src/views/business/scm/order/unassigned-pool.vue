@@ -16,10 +16,15 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action><a-button @click="load">重试</a-button></template>
-  </a-alert>
+  </RequestError>
   <a-card size="small" :bordered="false">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.SCM_ORDER_UNASSIGNED" :refresh="load" />
+      </div>
+    </div>
     <a-table
       size="small"
       :data-source="rows"
@@ -68,9 +73,9 @@
 
   <a-modal v-model:open="assignmentOpen" title="指派订单业务员" :confirm-loading="assigning" ok-text="确认指派" @ok="assignSelected">
     <p>订单 {{ selectedOrder?.orderNo }} · {{ selectedOrder?.customerNameSnapshot }}</p>
-    <a-alert v-if="assigneeError" :message="assigneeError" type="error" show-icon>
+    <RequestError v-if="assigneeError" :message="assigneeError">
       <template #action><a-button @click="loadAssignees">重试</a-button></template>
-    </a-alert>
+    </RequestError>
     <a-form-item label="业务员" required>
       <a-select v-model:value="selectedSellerId" show-search option-filter-prop="label" placeholder="选择可处理订单的在职员工" style="width: 100%">
         <a-select-option v-for="employee in assignees" :key="employee.employeeId" :value="employee.employeeId" :label="employee.actualName">
@@ -78,13 +83,15 @@
         </a-select-option>
       </a-select>
     </a-form-item>
-    <a-alert v-if="assignError" :message="assignError" type="error" show-icon />
+    <RequestError v-if="assignError" :message="assignError" />
   </a-modal>
 </template>
 
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {computed, onMounted, reactive, ref} from 'vue';
+import {shallowRef, computed, onMounted, reactive, ref} from 'vue';
 import dayjs from 'dayjs';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -115,14 +122,14 @@ const userStore = useUserStore();
 const canClaim = computed(() => assignees.value.some((employee) => String(employee.employeeId) === String(userStore.employeeId)));
 let requestId = 0;
 
-const columns: TableColumnsType<OrderPoolRow> = [
+const columns = shallowRef<TableColumnsType<OrderPoolRow>>([
   {title: '订单号', dataIndex: 'orderNo', width: 190},
   {title: '客户名称', dataIndex: 'customerNameSnapshot', width: 210},
   {title: '订单状态', dataIndex: 'status', align: 'center', width: 96},
   {title: '预计订单金额', dataIndex: 'orderedTotalAmount', width: 148},
   {title: '下单时间', dataIndex: 'createdAt', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
-];
+]);
 
 function statusTone(status: string): ScmStatusTone {
   return status === 'CONFIRMED' ? 'processing' : 'warning';

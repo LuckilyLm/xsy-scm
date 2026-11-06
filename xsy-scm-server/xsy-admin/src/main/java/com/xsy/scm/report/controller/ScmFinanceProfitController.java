@@ -45,7 +45,7 @@ public class ScmFinanceProfitController {
     @PostMapping("/summary")
     @SaCheckPermission(value = {ScmReportPermission.FINANCE_PROFIT_QUERY, ScmReportPermission.COST_QUERY},
         mode = SaMode.AND)
-    public ResponseDTO<ScmFinanceProfitSummaryVO> summary(@Valid @RequestBody ScmFinanceProfitQueryForm form) {
+    public ResponseDTO<ScmFinanceProfitSummaryVO> summary(@Valid @RequestBody ScmFinanceProfitQueryForm.Filter form) {
         return ResponseDTO.ok(financeProfitService.summary(form));
     }
 
@@ -54,7 +54,7 @@ public class ScmFinanceProfitController {
         value = {ScmReportPermission.FINANCE_PROFIT_QUERY, ScmReportPermission.COST_QUERY, ScmReportPermission.EXPORT},
         mode = SaMode.AND)
     @OperateLog
-    public void export(@Valid @RequestBody ScmFinanceProfitQueryForm form, HttpServletResponse response)
+    public void export(@Valid @RequestBody ScmFinanceProfitQueryForm.Filter form, HttpServletResponse response)
         throws IOException {
         String dimension = form.getDimension().getDescription();
         List<List<Object>> rows = financeProfitService.export(form).stream()

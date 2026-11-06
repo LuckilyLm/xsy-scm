@@ -13,7 +13,7 @@
     @ok="print"
     @cancel="close"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon />
+    <RequestError v-if="error" :message="error" />
 
     <a-form layout="inline" class="toolbar">
       <a-form-item label="模板">
@@ -115,7 +115,7 @@ async function refreshPreview() {
 async function loadTemplates(id: number) {
   const firstId = props.businessIds[0];
   if (firstId === undefined) return;
-  // 加载失败由弹窗内 Alert 提示，不再弹全局 toast
+  // 请求失败交给共享反馈处理，避免重复提示。
   const r = await printApi.templateOptions(props.documentType, firstId, {suppressGlobalErrorMessage: true});
   if (id !== requestId) return;
   templates.value = r.data ?? [];

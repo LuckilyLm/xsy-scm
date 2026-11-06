@@ -1,69 +1,76 @@
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline" @submit.prevent="search">
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="配送日期">
-          <a-date-picker v-model:value="query.deliveryDate" value-format="YYYY-MM-DD" />
-        </a-form-item>
-        <a-form-item label="线路">
-          <a-input v-model:value="query.keyword" placeholder="线路名称 / 编号" allow-clear @pressEnter="search" />
-        </a-form-item>
-        <a-form-item label="状态">
-          <a-select v-model:value="query.status" :options="statusOptions" allow-clear class="filter-select" />
-        </a-form-item>
-        <a-form-item label="仓库">
-          <a-select
-            v-model:value="query.warehouseId"
-            :options="warehouses.map((w) => ({value: w.id, label: w.name}))"
-            allow-clear
-            class="filter-select"
-          />
-        </a-form-item>
-        <a-form-item label="司机">
-          <a-select
-            v-model:value="query.driverId"
-            :options="drivers.map((d) => ({value: d.id, label: d.driverName}))"
-            allow-clear
-            class="filter-select"
-          />
-        </a-form-item>
-        <a-form-item label="车辆">
-          <a-select
-            v-model:value="query.vehicleId"
-            :options="vehicles.map((v) => ({value: v.id, label: v.vehicleNo}))"
-            allow-clear
-            class="filter-select"
-          />
-        </a-form-item>
-        <a-form-item label="省市区">
-          <AreaCascader v-model:value="area" type="province_city_district" @change="changeArea" />
-        </a-form-item>
-        <a-form-item class="xsy-query-form-item">
-          <a-space>
-            <a-button type="primary" @click="search" v-privilege="'scm:delivery:route:query'">查询 </a-button>
-            <a-button @click="reset">重置</a-button>
-          </a-space>
-        </a-form-item>
-      </a-row>
-    </a-form>
-    <div data-toolbar-layout="query" class="xsy-table-btn-block">
-      <a-button type="primary" v-privilege="'scm:delivery:route:add'" @click="formDrawer?.open()">新建线路</a-button>
-    </div>
-  </div>
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="search">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="配送日期">
+        <a-date-picker v-model:value="query.deliveryDate" value-format="YYYY-MM-DD" />
+      </a-form-item>
+      <a-form-item label="线路">
+        <a-input v-model:value="query.keyword" placeholder="线路名称 / 编号" allow-clear @pressEnter="search" />
+      </a-form-item>
+      <a-form-item label="状态">
+        <a-select v-model:value="query.status" :options="statusOptions" allow-clear class="filter-select" />
+      </a-form-item>
+      <a-form-item label="仓库">
+        <a-select
+          v-model:value="query.warehouseId"
+          :options="warehouses.map((w) => ({value: w.id, label: w.name}))"
+          allow-clear
+          class="filter-select"
+        />
+      </a-form-item>
+      <a-form-item label="司机">
+        <a-select
+          v-model:value="query.driverId"
+          :options="drivers.map((d) => ({value: d.id, label: d.driverName}))"
+          allow-clear
+          class="filter-select"
+        />
+      </a-form-item>
+      <a-form-item label="车辆">
+        <a-select
+          v-model:value="query.vehicleId"
+          :options="vehicles.map((v) => ({value: v.id, label: v.vehicleNo}))"
+          allow-clear
+          class="filter-select"
+        />
+      </a-form-item>
+      <a-form-item label="省市区">
+        <AreaCascader v-model:value="area" type="province_city_district" @change="changeArea" />
+      </a-form-item>
+      <a-form-item class="xsy-query-form-item">
+        <a-space>
+          <a-button type="primary" @click="search" v-privilege="'scm:delivery:route:query'">查询 </a-button>
+          <a-button @click="reset">重置</a-button>
+        </a-space>
+      </a-form-item>
+    </a-row>
+  </a-form>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="load">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
   <a-alert v-if="optionsError" :message="optionsError" type="warning" show-icon>
     <template #action>
       <a-button @click="loadOptions">重载筛选项</a-button>
     </template>
   </a-alert>
   <a-card size="small" :bordered="false">
+    <div class="xsy-table-btn-block">
+      <a-button type="primary" v-privilege="'scm:delivery:route:add'" @click="formDrawer?.open()">新建线路</a-button>
+      <div class="xsy-table-setting-block">
+        <TableOperator
+          v-model="columns"
+          :table-id="TABLE_ID_CONST.LIST.SCM_DELIVERY_ROUTE"
+          :refresh="load"
+          :exclude-column-keys="canViewAmount ? [] : ['totalAmount']"
+        />
+      </div>
+    </div>
+
     <a-table
       id="scm-delivery-route-table"
-      :columns="columns"
+      :columns="displayColumns"
       :data-source="rows"
       row-key="id"
       size="small"
@@ -115,7 +122,9 @@
   <RoutePrint ref="printer" />
 </template>
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref, watch} from 'vue';
+import {computed, onMounted, reactive, ref, shallowRef, watch} from 'vue';
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import type {TableColumnsType} from 'ant-design-vue';
 import {useRoute, useRouter} from 'vue-router';
 import {CheckCircleOutlined, ExclamationCircleOutlined} from '@ant-design/icons-vue';
@@ -155,7 +164,7 @@ const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
   printer = ref<InstanceType<typeof RoutePrint>>();
 const statusOptions = Object.entries(routeStatuses).map(([value, state]) => ({value, label: state.label}));
 // 金额列按权限显示；编辑和打印是低频动作，收进「更多」。
-const columns = computed<TableColumnsType>(() => [
+const columns = shallowRef<TableColumnsType>([
   {title: '配送日期', dataIndex: 'deliveryDate', width: 120},
   {title: '线路名称', dataIndex: 'routeName', width: 180},
   {title: '线路编号', dataIndex: 'routeNo', width: 130},
@@ -164,12 +173,15 @@ const columns = computed<TableColumnsType>(() => [
   {title: '车辆', dataIndex: 'vehicleNoSnapshot', width: 120},
   {title: '停靠点', dataIndex: 'stopCount' as const, width: 80},
   {title: '订单数', dataIndex: 'orderCount' as const, width: 80},
-  ...(canViewAmount.value ? [{title: '订单金额', dataIndex: 'totalAmount' as const, width: 140}] : []),
+  {title: '订单金额', dataIndex: 'totalAmount', width: 140},
   {title: '停靠点定位', dataIndex: 'coverage' as const, width: 90},
   {title: '状态', dataIndex: 'status', align: 'center' as const, width: 100},
   {title: '操作', dataIndex: 'action', fixed: 'right' as const, align: 'center' as const, width: 160},
 ]);
-const tableScrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
+const displayColumns = computed(() =>
+  columns.value.filter((column) => canViewAmount.value || !('dataIndex' in column && column.dataIndex === 'totalAmount'))
+);
+const tableScrollX = computed(() => displayColumns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
 
 /** 状态视觉：待排线 = 待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
 const ROUTE_STATUS_TONE: Record<RouteStatus, ScmStatusTone> = {
@@ -200,12 +212,14 @@ function rowActions(record: DeliveryRoute): ScmActionItem[] {
     {
       key: 'edit',
       label: '编辑',
-      hidden: !(record.status === 'PENDING' && hasPerm(DELIVERY_PERM.ROUTE_UPDATE)),
+      hidden: !(record.status === 'PENDING'),
+      authorized: record.status === 'PENDING' && hasPerm(DELIVERY_PERM.ROUTE_UPDATE),
     },
     {
       key: 'print',
       label: '打印',
-      hidden: !(['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(record.status) && hasPerm(DELIVERY_PERM.ROUTE_QUERY)),
+      hidden: !['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(record.status),
+      authorized: ['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(record.status) && hasPerm(DELIVERY_PERM.ROUTE_QUERY),
     },
   ];
 }
@@ -264,7 +278,7 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示并可重试
+    // 请求失败交给共享反馈处理，避免重复提示。
     const result = await deliveryApi.routes(query, {suppressGlobalErrorMessage: true});
     if (current === generation) {
       rows.value = result.data.list;

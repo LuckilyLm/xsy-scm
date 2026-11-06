@@ -1,36 +1,39 @@
 <!-- 优惠券：发放、领取和使用统计以服务端为准；券来源与让利查询结果的缺口见 docs/status.md B7。 -->
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline" @submit.prevent>
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="关键词" class="xsy-query-form-item">
-          <a-input v-model:value="queryForm.keyword" placeholder="优惠券名称" allow-clear @pressEnter="onSearch" />
-        </a-form-item>
-        <a-form-item label="状态" class="xsy-query-form-item">
-          <a-select v-model:value="queryForm.status" :options="statusOptions" style="width: 140px" placeholder="全部" allow-clear />
-        </a-form-item>
-        <a-form-item class="xsy-query-form-item">
-          <a-button-group>
-            <a-button type="primary" v-privilege="'scm:promotion:coupon:query'" @click="onSearch">查询</a-button>
-            <a-button @click="resetQuery">重置</a-button>
-          </a-button-group>
-        </a-form-item>
-      </a-row>
-    </a-form>
-    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
-      <div class="xsy-table-operate-block">
-        <a-button type="primary" v-privilege="'scm:promotion:coupon:edit'" @click="openCreate">新建券</a-button>
-      </div>
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="关键词" class="xsy-query-form-item">
+        <a-input v-model:value="queryForm.keyword" placeholder="优惠券名称" allow-clear @pressEnter="onSearch" />
+      </a-form-item>
+      <a-form-item label="状态" class="xsy-query-form-item">
+        <a-select v-model:value="queryForm.status" :options="statusOptions" style="width: 140px" placeholder="全部" allow-clear />
+      </a-form-item>
+      <a-form-item class="xsy-query-form-item">
+        <a-button-group>
+          <a-button type="primary" v-privilege="'scm:promotion:coupon:query'" @click="onSearch">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-button-group>
+      </a-form-item>
     </a-row>
-  </div>
+  </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
+    <a-row class="xsy-table-btn-block">
+      <div class="xsy-table-operate-block">
+        <a-button type="primary" v-privilege="'scm:promotion:coupon:edit'" @click="openCreate">新建券</a-button>
+      </div>
+
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.SCM_PROMOTION_COUPON" :refresh="queryData" />
+      </div>
+    </a-row>
+
     <a-table
       size="small"
       :data-source="tableData"
@@ -250,7 +253,7 @@
   </a-modal>
 
   <a-modal v-model:open="issueOpen" title="发券" :confirm-loading="saving" @ok="submitIssue">
-    <a-alert v-if="issueError" :message="issueError" type="error" show-icon class="banner" />
+    <RequestError v-if="issueError" :message="issueError" class="banner" />
     <a-form layout="vertical">
       <a-form-item label="客户" required>
         <CustomerSelect v-model:value="issueForm.customerId" width="100%" />
@@ -263,8 +266,10 @@
 </template>
 
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {onMounted, reactive, ref} from 'vue';
+import {shallowRef, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
@@ -324,7 +329,7 @@ function discountTypeLabel(value: PromotionCouponDiscountType): string {
 }
 
 // 优惠券列表的列定义
-const columns: TableColumnsType<PromotionCoupon> = [
+const columns = shallowRef<TableColumnsType<PromotionCoupon>>([
   {title: '券名称', dataIndex: 'couponName', width: 180},
   {title: '券类型', dataIndex: 'discountType', width: 130, align: 'center'},
   {title: '优惠规则', dataIndex: 'discountText', width: 180},
@@ -339,7 +344,7 @@ const columns: TableColumnsType<PromotionCoupon> = [
   {title: '已使用', dataIndex: 'usedCount', width: 90},
   {title: '已知券让利', dataIndex: 'usedDiscountAmount', width: 148},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
-];
+]);
 
 /** 表单模型要保持同一个对象；优惠值用数字输入，提交时转成定点字符串。 */
 const form = reactive<PromotionCouponSave & {discountValueInput: number | null}>({
@@ -404,7 +409,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await promotionApi.couponQuery({...queryForm}, {suppressGlobalErrorMessage: true});
     if (current !== requestId) return;
     tableData.value = r.data.list ?? [];

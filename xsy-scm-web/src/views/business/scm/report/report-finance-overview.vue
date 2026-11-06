@@ -11,16 +11,13 @@
             <a-button @click="resetQuery">重置</a-button>
           </a-button-group>
         </a-form-item>
-        <div class="xsy-query-table-actions">
-          <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exportingOverview" @click="exportOverview">导出概览</a-button>
-        </div>
       </a-row>
     </a-form>
 
     <a-alert v-if="rangeError" class="report-error" type="warning" show-icon :message="rangeError" />
-    <a-alert v-if="overviewError" class="report-error" type="error" show-icon :message="overviewError">
+    <RequestError v-if="overviewError" class="report-error" :message="overviewError">
       <template #action><a-button @click="loadOverview">重试</a-button></template>
-    </a-alert>
+    </RequestError>
 
     <a-row :gutter="[12, 12]" class="xsy-margin-top10">
       <a-col v-for="card in kpiCards" :key="card.label" :xs="24" :sm="12" :lg="8">
@@ -29,14 +26,22 @@
     </a-row>
 
     <a-card size="small" :bordered="false" class="xsy-margin-top10">
+      <div class="xsy-table-btn-block">
+        <div class="xsy-table-setting-block">
+          <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exportingOverview" @click="exportOverview">导出概览</a-button>
+        </div>
+      </div>
+
       <a-tabs v-model:active-key="activeTab" @change="onTabChange">
         <a-tab-pane key="receivable" tab="应收明细（期末）">
+          <a-form class="xsy-query-form" layout="inline" @submit.prevent="searchDetails">
+            <a-form-item
+              ><a-input v-model:value="keyword" allow-clear placeholder="应收单号 / 订单号 / 客户" @press-enter="searchDetails"
+            /></a-form-item>
+            <a-form-item><a-button type="primary" v-privilege="PERM.FINANCE_QUERY" @click="searchDetails">查询</a-button></a-form-item>
+            <a-form-item><a-button @click="clearKeyword">清除关键字</a-button></a-form-item>
+          </a-form>
           <a-row class="xsy-table-btn-block">
-            <div class="xsy-table-operate-block">
-              <a-input v-model:value="keyword" allow-clear placeholder="应收单号 / 订单号 / 客户" @press-enter="searchDetails" />
-              <a-button type="primary" v-privilege="PERM.FINANCE_QUERY" @click="searchDetails">查询</a-button>
-              <a-button @click="clearKeyword">清除关键字</a-button>
-            </div>
             <div class="xsy-table-setting-block">
               <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exportingReceivable" @click="exportReceivables">导出应收</a-button>
               <div class="finance-table-operator">
@@ -48,9 +53,9 @@
               </div>
             </div>
           </a-row>
-          <a-alert v-if="receivableView.error" class="report-error" type="error" show-icon :message="receivableView.error">
+          <RequestError v-if="receivableView.error" class="report-error" :message="receivableView.error">
             <template #action><a-button @click="loadReceivables">重试</a-button></template>
-          </a-alert>
+          </RequestError>
           <a-table
             :id="SCM_REPORT_TABLE_ID.FINANCE_RECEIVABLE"
             class="finance-detail-table"
@@ -135,12 +140,14 @@
         </a-tab-pane>
 
         <a-tab-pane key="payable" tab="应付明细（期末）">
+          <a-form class="xsy-query-form" layout="inline" @submit.prevent="searchDetails">
+            <a-form-item
+              ><a-input v-model:value="keyword" allow-clear placeholder="应付单号 / 采购单号 / 供应商" @press-enter="searchDetails"
+            /></a-form-item>
+            <a-form-item><a-button type="primary" v-privilege="PERM.FINANCE_QUERY" @click="searchDetails">查询</a-button></a-form-item>
+            <a-form-item><a-button @click="clearKeyword">清除关键字</a-button></a-form-item>
+          </a-form>
           <a-row class="xsy-table-btn-block">
-            <div class="xsy-table-operate-block">
-              <a-input v-model:value="keyword" allow-clear placeholder="应付单号 / 采购单号 / 供应商" @press-enter="searchDetails" />
-              <a-button type="primary" v-privilege="PERM.FINANCE_QUERY" @click="searchDetails">查询</a-button>
-              <a-button @click="clearKeyword">清除关键字</a-button>
-            </div>
             <div class="xsy-table-setting-block">
               <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exportingPayable" @click="exportPayables">导出应付</a-button>
               <div class="finance-table-operator">
@@ -148,9 +155,9 @@
               </div>
             </div>
           </a-row>
-          <a-alert v-if="payableView.error" class="report-error" type="error" show-icon :message="payableView.error">
+          <RequestError v-if="payableView.error" class="report-error" :message="payableView.error">
             <template #action><a-button @click="loadPayables">重试</a-button></template>
-          </a-alert>
+          </RequestError>
           <a-table
             :id="SCM_REPORT_TABLE_ID.FINANCE_PAYABLE"
             class="finance-detail-table"

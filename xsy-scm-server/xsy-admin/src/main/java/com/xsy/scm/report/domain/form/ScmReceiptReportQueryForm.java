@@ -38,4 +38,17 @@ public class ScmReceiptReportQueryForm extends PageParam implements ScmReportDat
 
     @ScmEnumValue(enumClass = ScmPutawayStatusEnum.class, message = "入库状态不合法")
     private String putawayStatus;
+
+    /**
+     * 非分页报表仅使用业务筛选；忽略客户端分页字段，避免受当前列表页影响。 父类分页值只用于满足通用表单校验，概览和汇总查询不会用它截取结果。
+     */
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"pageNum", "pageSize", "searchCount", "sortItemList"})
+    @io.swagger.v3.oas.annotations.media.Schema(name = "ScmReceiptReportFilter")
+    public static class Filter extends ScmReceiptReportQueryForm {
+        /** 为复用的分页约束提供有效内部值，不改变业务筛选。 */
+        public Filter() {
+            setPageNum(1L);
+            setPageSize(1L);
+        }
+    }
 }

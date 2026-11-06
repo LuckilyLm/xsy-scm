@@ -1,6 +1,6 @@
 <template>
   <a-modal :open="open" title="分拣单打印预览" :width="1000" :footer="null" @cancel="close">
-    <a-alert v-if="printError" type="error" show-icon :message="printError" />
+    <RequestError v-if="printError" :message="printError" />
     <div class="print-toolbar">
       <p class="scm-note scm-note--block">请在实际打印成功后点击“登记打印”；仅查看预览不会增加打印次数。</p>
       <a-space>

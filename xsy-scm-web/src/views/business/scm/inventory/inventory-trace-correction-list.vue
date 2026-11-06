@@ -20,11 +20,11 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
     <a-row class="xsy-table-btn-block scm-table-toolbar">
@@ -89,7 +89,7 @@
   </a-card>
 
   <a-modal v-model:open="decisionOpen" :title="decisionTitle" :confirm-loading="deciding" @ok="submitDecision">
-    <a-alert v-if="decisionError" class="form-error" type="error" show-icon :message="decisionError" />
+    <RequestError v-if="decisionError" class="form-error" :message="decisionError" />
     <a-descriptions bordered size="small" :column="1">
       <a-descriptions-item label="包装码">{{ current?.unitCode }}</a-descriptions-item>
       <a-descriptions-item label="客户">{{ current?.customerName || '—' }}</a-descriptions-item>

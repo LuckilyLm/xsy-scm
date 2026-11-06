@@ -19,7 +19,7 @@
       <a-button @click="reset">重置</a-button>
     </div>
     <p class="scm-note">上传报告照片，点击可放大；可按上传日期、报告名或姓名筛选。</p>
-    <a-alert v-if="error || uploadError" :message="uploadError || error" type="error" show-icon class="photo-error" />
+    <RequestError v-if="error || uploadError" :message="uploadError || error" class="photo-error" />
     <a-spin :spinning="loading">
       <a-empty v-if="!reports.length && !loading" description="暂无报告照片" />
       <div class="photo-grid">

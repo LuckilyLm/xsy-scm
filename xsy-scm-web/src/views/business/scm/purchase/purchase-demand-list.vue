@@ -2,30 +2,37 @@
 <template>
   <a-tabs v-model:activeKey="activeTab">
     <a-tab-pane key="list" tab="采购需求">
-      <div class="xsy-query-layout">
-        <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
-          <a-row class="xsy-query-form-row">
-            <a-form-item label="来源销售单号">
-              <a-input v-model:value="queryForm.salesOrderNo" placeholder="销售单号" allow-clear @pressEnter="onSearch" />
-            </a-form-item>
-            <a-form-item label="商品">
-              <SkuSelect v-model:value="queryForm.skuId" width="240px" />
-            </a-form-item>
-            <a-form-item label="需求状态">
-              <XsyEnumSelect enum-name="SCM_DEMAND_STATUS_ENUM" v-model:value="queryForm.status" width="150px" />
-            </a-form-item>
-            <a-form-item label="需求日期">
-              <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD" />
-            </a-form-item>
-            <a-form-item class="xsy-query-form-item">
-              <a-space>
-                <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:demand:query'">查询</a-button>
-                <a-button @click="resetQuery">重置</a-button>
-              </a-space>
-            </a-form-item>
-          </a-row>
-        </a-form>
-        <a-row data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
+      <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
+        <a-row class="xsy-query-form-row">
+          <a-form-item label="来源销售单号">
+            <a-input v-model:value="queryForm.salesOrderNo" placeholder="销售单号" allow-clear @pressEnter="onSearch" />
+          </a-form-item>
+          <a-form-item label="商品">
+            <SkuSelect v-model:value="queryForm.skuId" width="240px" />
+          </a-form-item>
+          <a-form-item label="需求状态">
+            <XsyEnumSelect enum-name="SCM_DEMAND_STATUS_ENUM" v-model:value="queryForm.status" width="150px" />
+          </a-form-item>
+          <a-form-item label="需求日期">
+            <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD" />
+          </a-form-item>
+          <a-form-item class="xsy-query-form-item">
+            <a-space>
+              <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:demand:query'">查询</a-button>
+              <a-button @click="resetQuery">重置</a-button>
+            </a-space>
+          </a-form-item>
+        </a-row>
+      </a-form>
+
+      <RequestError v-if="error" :message="error">
+        <template #action>
+          <a-button @click="queryData">重试</a-button>
+        </template>
+      </RequestError>
+
+      <a-card size="small" :bordered="false">
+        <a-row class="xsy-table-btn-block scm-table-toolbar">
           <div class="xsy-table-operate-block">
             <a-button type="primary" v-privilege="'scm:purchase:demand:batch:create'" @click="generateOpen = true"> 生成采购需求 </a-button>
           </div>
@@ -33,15 +40,7 @@
             <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_DEMAND" :refresh="queryData" />
           </div>
         </a-row>
-      </div>
 
-      <a-alert v-if="error" :message="error" type="error" show-icon>
-        <template #action>
-          <a-button @click="queryData">重试</a-button>
-        </template>
-      </a-alert>
-
-      <a-card size="small" :bordered="false">
         <a-table
           :id="SCM_PURCHASE_TABLE_ID.DEMAND"
           ref="tableRef"
@@ -141,7 +140,7 @@
     @ok="submitAllocate"
     @cancel="alloc.open = false"
   >
-    <a-alert v-if="alloc.error" :message="alloc.error" type="error" show-icon />
+    <RequestError v-if="alloc.error" :message="alloc.error" />
     <a-form ref="allocateFormRef" :model="alloc" :rules="allocateRules" layout="vertical">
       <a-form-item label="采购单（仅已提交 / 部分收货）" name="orderId">
         <a-select
@@ -263,7 +262,7 @@ async function queryData() {
   try {
     queryForm.demandDateFrom = dateRange.value?.[0];
     queryForm.demandDateTo = dateRange.value?.[1];
-    // 列表加载失败由页头 Alert 承担（带重试），不再让全局 toast 重复说一遍
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await purchaseDemandApi.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;

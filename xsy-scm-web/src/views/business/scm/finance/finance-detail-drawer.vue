@@ -1,8 +1,8 @@
 <template>
   <a-drawer :open="open" :title="title" :width="drawerWidth" :destroy-on-close="true" @close="close">
-    <a-alert v-if="error" class="finance-detail-error" :message="error" type="error" show-icon>
+    <RequestError v-if="error" class="finance-detail-error" :message="error">
       <template #action><a-button :loading="loading" @click="emit('retry')">重试</a-button></template>
-    </a-alert>
+    </RequestError>
     <a-spin class="finance-detail-content" :spinning="loading">
       <template v-if="detail">
         <section class="detail-section">

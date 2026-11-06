@@ -28,7 +28,7 @@
       </a-form-item>
     </a-form>
 
-    <a-alert v-if="error" type="error" show-icon :message="error" class="banner" />
+    <RequestError v-if="error" :message="error" class="banner" />
     <a-alert
       v-if="result && result.failed"
       type="warning"
@@ -56,9 +56,10 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {computed, ref, watch} from 'vue';
 import dayjs from 'dayjs';
-import {message, notification} from 'ant-design-vue';
+import {notification} from 'ant-design-vue';
 import {printApi} from '/@/api/business/scm/print-api';
 import type {PrintBatchResult} from './print-types';
 import {printRenders, renderPrintHtml} from './print-render';
@@ -133,7 +134,7 @@ async function print() {
     });
   } catch (e) {
     error.value = printError(e);
-    message.error(error.value);
+    notifyRequestError(error.value);
   } finally {
     printing.value = false;
   }

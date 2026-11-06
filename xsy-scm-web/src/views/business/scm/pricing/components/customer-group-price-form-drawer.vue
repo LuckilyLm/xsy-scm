@@ -7,11 +7,11 @@
     @close="requestClose"
   >
     <a-spin :spinning="loading">
-      <a-alert v-if="error" :message="error" type="error" show-icon class="drawer-error">
+      <RequestError v-if="error" :message="error" class="drawer-error">
         <template #action>
           <a-button size="small" :loading="loading" @click="open(editingId)">重试</a-button>
         </template>
-      </a-alert>
+      </RequestError>
       <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
         <section class="scm-form-section">
           <div class="scm-form-section__head">

@@ -26,18 +26,21 @@
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
       </a-form-item>
-      <div class="scm-query-table-tools">
-        <a-button type="primary" v-privilege="'scm:order:return:add'" @click="independentModal?.open()">新建独立退货</a-button>
-        <TableOperator v-model="columns" :table-id="603" :refresh="queryData" />
-      </div>
     </a-row>
   </a-form>
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
   <a-card size="small" :bordered="false">
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <a-button type="primary" v-privilege="'scm:order:return:add'" @click="independentModal?.open()">新建独立退货</a-button>
+        <TableOperator v-model="columns" :table-id="603" :refresh="queryData" />
+      </div>
+    </div>
+
     <a-table
       id="order-return-table"
       ref="tableRef"
@@ -102,9 +105,9 @@
     </div>
   </a-card>
   <a-drawer v-model:open="detailOpen" title="退货单详情" :width="scmDrawerWidth('m')">
-    <a-alert v-if="detailError" type="error" show-icon :message="detailError">
+    <RequestError v-if="detailError" :message="detailError">
       <template #action><a-button @click="showDetail(detailId)">重试</a-button></template>
-    </a-alert>
+    </RequestError>
     <a-spin :spinning="detailLoading">
       <template v-if="detail">
         <a-descriptions bordered :column="1" size="small">
@@ -149,9 +152,9 @@
     @ok="save"
     @cancel="closeEdit"
   >
-    <a-alert v-if="editError" :message="editError" type="error" show-icon>
+    <RequestError v-if="editError" :message="editError">
       <template v-if="!active" #action><a-button :loading="editLoading" @click="retryEdit">重试</a-button></template>
-    </a-alert>
+    </RequestError>
     <a-spin class="return-edit-content" :spinning="editLoading">
       <template v-if="active">
         <fieldset :disabled="saving" class="return-edit-fields">
@@ -323,8 +326,8 @@ const canCancel = computed(() => hasPermission('scm:order:return:cancel'));
 function rowActions(row: ReturnRow): ScmActionItem[] {
   const pending = row.status === 'PENDING';
   return [
-    {key: 'reject', label: '驳回', hidden: !(pending && canReject.value)},
-    {key: 'cancel', label: '取消', danger: true, hidden: !(pending && canCancel.value)},
+    {key: 'reject', label: '驳回', hidden: !pending, authorized: pending && canReject.value},
+    {key: 'cancel', label: '取消', danger: true, hidden: !pending, authorized: pending && canCancel.value},
   ];
 }
 
@@ -339,7 +342,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 提示并可重试
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await api.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;

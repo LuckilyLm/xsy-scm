@@ -2,7 +2,7 @@
   <!-- workspace：称重记录要并排核对读数、已接受分拣量、设备状态与处理操作，属于多面板业务工作台。 -->
   <a-drawer :open="open" title="订单称重工作台" :width="scmDrawerWidth('workspace')" @close="close">
     <p class="scm-note">选择订单与商品规格后，秤上的读数会显示在下方称重记录中；仅点击「接受」才写入分拣数量。</p>
-    <a-alert v-if="scaleError" type="error" show-icon :message="scaleError" class="workbench-alert" />
+    <RequestError v-if="scaleError" :message="scaleError" class="workbench-alert" />
     <a-spin :spinning="scaleLoading">
       <a-row :gutter="[12, 12]" class="select-row">
         <a-col :xs="24" :md="12">
@@ -163,7 +163,7 @@
         </a-form-item>
       </a-form>
       <p v-else class="scm-note accept-form">标准品将按照当前读数登记为正常分拣结果。</p>
-      <a-alert v-if="scaleError" :message="scaleError" type="error" show-icon class="accept-form" />
+      <RequestError v-if="scaleError" :message="scaleError" class="accept-form" />
     </template>
   </a-modal>
 
@@ -173,7 +173,7 @@
         <a-textarea v-model:value="rejectReason" :maxlength="200" :rows="3" placeholder="例如：称重物品不匹配、秤未校准、读数跳动" />
       </a-form-item>
     </a-form>
-    <a-alert v-if="scaleError" :message="scaleError" type="error" show-icon />
+    <RequestError v-if="scaleError" :message="scaleError" />
   </a-modal>
 </template>
 

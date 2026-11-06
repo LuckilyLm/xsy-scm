@@ -1,29 +1,36 @@
 <!-- 库存报损报溢单：创建后需审批。审批会调整库存并写流水，审批时必须带上打开单据时的 version。 -->
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline" @submit.prevent>
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="单据号" class="xsy-query-form-item">
-          <a-input v-model:value="queryForm.lossGainNo" placeholder="单据号" allow-clear @pressEnter="onSearch" />
-        </a-form-item>
-        <a-form-item label="仓库" class="xsy-query-form-item">
-          <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
-        </a-form-item>
-        <a-form-item label="类型" class="xsy-query-form-item">
-          <a-select v-model:value="queryForm.adjustType" :options="typeOptions" placeholder="全部" allow-clear style="width: 120px" />
-        </a-form-item>
-        <a-form-item label="状态" class="xsy-query-form-item">
-          <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 130px" />
-        </a-form-item>
-        <a-form-item class="xsy-query-form-item">
-          <a-button-group>
-            <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:loss-gain:query'">查询</a-button>
-            <a-button @click="resetQuery">重置</a-button>
-          </a-button-group>
-        </a-form-item>
-      </a-row>
-    </a-form>
-    <a-row data-toolbar-layout="query" class="xsy-table-btn-block">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent>
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="单据号" class="xsy-query-form-item">
+        <a-input v-model:value="queryForm.lossGainNo" placeholder="单据号" allow-clear @pressEnter="onSearch" />
+      </a-form-item>
+      <a-form-item label="仓库" class="xsy-query-form-item">
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
+      </a-form-item>
+      <a-form-item label="类型" class="xsy-query-form-item">
+        <a-select v-model:value="queryForm.adjustType" :options="typeOptions" placeholder="全部" allow-clear style="width: 120px" />
+      </a-form-item>
+      <a-form-item label="状态" class="xsy-query-form-item">
+        <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 130px" />
+      </a-form-item>
+      <a-form-item class="xsy-query-form-item">
+        <a-button-group>
+          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:loss-gain:query'">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-button-group>
+      </a-form-item>
+    </a-row>
+  </a-form>
+
+  <RequestError v-if="error" :message="error">
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </RequestError>
+
+  <a-card size="small" :bordered="false">
+    <a-row class="xsy-table-btn-block">
       <div class="xsy-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:loss-gain:add'"> 新建报损报溢单 </a-button>
       </div>
@@ -31,15 +38,7 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_LOSS_GAIN" :refresh="queryData" />
       </div>
     </a-row>
-  </div>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
-  <a-card size="small" :bordered="false">
     <a-table
       :id="SCM_INVENTORY_TABLE_ID.LOSS_GAIN"
       size="small"
@@ -203,6 +202,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {computed, reactive, ref, watch} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType, FormInstance} from 'ant-design-vue';
@@ -301,9 +301,9 @@ const canDelete = computed(() => hasPermission('scm:inventory:loss-gain:delete')
 function rowActions(row: InventoryLossGain): ScmActionItem[] {
   const pending = row.status === 'PENDING';
   return [
-    {key: 'reject', label: '驳回', danger: true, hidden: !(pending && canReject.value)},
-    {key: 'edit', label: '编辑', hidden: !(pending && canUpdate.value)},
-    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
+    {key: 'reject', label: '驳回', danger: true, hidden: !pending, authorized: pending && canReject.value},
+    {key: 'edit', label: '编辑', hidden: !pending, authorized: pending && canUpdate.value},
+    {key: 'delete', label: '删除', danger: true, hidden: !pending, authorized: pending && canDelete.value},
   ];
 }
 
@@ -324,7 +324,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await inventoryLossGainApi.query({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
@@ -524,7 +524,7 @@ async function onSubmit() {
     drawerOpen.value = false;
     queryData();
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   } finally {
     saving.value = false;
   }
@@ -542,7 +542,7 @@ async function openDetailById(id: Id) {
     detail.value = r.data;
     detailOpen.value = true;
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   }
 }
 
@@ -591,7 +591,7 @@ async function onAuditSubmit() {
     queryData();
   } catch (e) {
     // 单据在审批期间被改过时会走到这里，刷新后可重新审批
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
     if (auditMode.value === 'approve') {
       queryData();
     }
@@ -613,7 +613,7 @@ function onDelete(record: InventoryLossGain) {
         message.success('已删除');
         queryData();
       } catch (e) {
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });

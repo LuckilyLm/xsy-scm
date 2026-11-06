@@ -11,9 +11,9 @@
       </a-space>
     </div>
 
-    <a-alert v-if="error" type="error" show-icon :message="error" class="page-alert">
+    <RequestError v-if="error" :message="error" class="page-alert">
       <template #action><a-button size="small" @click="load">重新加载</a-button></template>
-    </a-alert>
+    </RequestError>
 
     <a-spin :spinning="loading">
       <a-form layout="vertical" class="page-form">
@@ -42,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {computed, nextTick, onMounted, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
@@ -134,7 +135,7 @@ async function save(): Promise<void> {
       void message.warning('草稿已保存，保存期间的新修改尚未保存，请再次保存');
     }
   } catch (cause) {
-    void message.error(String((cause as Error)?.message || '草稿保存失败'));
+    void notifyRequestError(String((cause as Error)?.message || '草稿保存失败'));
   } finally {
     saving.value = false;
   }
@@ -149,7 +150,7 @@ function publish(): void {
         apply((await mallDecorationApi.publishPage(props.pageCode, page.value.version)).data);
         void message.success('页面已发布');
       } catch (cause) {
-        void message.error(String((cause as Error)?.message || '页面发布失败'));
+        void notifyRequestError(String((cause as Error)?.message || '页面发布失败'));
         throw cause;
       } finally {
         publishing.value = false;

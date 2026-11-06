@@ -23,11 +23,11 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
     <a-row class="xsy-table-btn-block">
@@ -191,6 +191,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {createUnsavedGuard} from '/@/views/business/scm/common/scm-unsaved-guard';
 import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
@@ -271,9 +272,9 @@ const canDelete = computed(() => hasPermission('scm:inventory:transfer:delete'))
 function rowActions(row: InventoryTransfer): ScmActionItem[] {
   const pending = row.status === 'PENDING';
   return [
-    {key: 'edit', label: '编辑', hidden: !(pending && canUpdate.value)},
-    {key: 'cancel', label: '取消单据', hidden: !(pending && canUpdate.value)},
-    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
+    {key: 'edit', label: '编辑', hidden: !pending, authorized: pending && canUpdate.value},
+    {key: 'cancel', label: '取消单据', hidden: !pending, authorized: pending && canUpdate.value},
+    {key: 'delete', label: '删除', danger: true, hidden: !pending, authorized: pending && canDelete.value},
   ];
 }
 
@@ -294,7 +295,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await inventoryTransferApi.query({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
@@ -492,7 +493,7 @@ async function onSubmit() {
     drawerOpen.value = false;
     queryData();
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   } finally {
     saving.value = false;
   }
@@ -510,7 +511,7 @@ async function openDetail(record: InventoryTransfer) {
     detail.value = r.data;
     detailOpen.value = true;
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   }
 }
 
@@ -530,7 +531,7 @@ function onShip(record: InventoryTransfer) {
         queryData();
       } catch (e) {
         // 源仓可用量不足等业务失败会走到这里，整单已回滚
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });
@@ -551,7 +552,7 @@ function onReceive(record: InventoryTransfer) {
         queryData();
       } catch (e) {
         // 单位不一致等失败会走到这里；单据停在在途，处理后重试
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });
@@ -569,7 +570,7 @@ function onCancel(record: InventoryTransfer) {
         message.success('已取消');
         queryData();
       } catch (e) {
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });
@@ -588,7 +589,7 @@ function onDelete(record: InventoryTransfer) {
         message.success('已删除');
         queryData();
       } catch (e) {
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });
@@ -620,7 +621,7 @@ async function openInTransit() {
       rowKey: `${row.transferNo}-${row.skuId}-${index}`,
     }));
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   } finally {
     inTransitLoading.value = false;
   }

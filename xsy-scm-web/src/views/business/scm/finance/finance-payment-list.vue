@@ -64,9 +64,9 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
+  <RequestError v-if="page.error.value" class="page-error" :message="page.error.value">
     <template #action><a-button @click="queryData">重试</a-button></template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
     <a-row class="xsy-table-btn-block scm-table-toolbar">
@@ -164,7 +164,7 @@
   />
 
   <a-modal v-model:open="addOpen" title="登记付款" :confirm-loading="addSaving" @ok="submitAdd">
-    <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError" />
+    <RequestError v-if="addError" class="form-error" :message="addError" />
     <a-form ref="addFormRef" :model="addForm" :rules="addRules" layout="vertical">
       <a-form-item name="counterpartyType">
         <template #label>
@@ -224,7 +224,7 @@
       show-icon
       :message="`仅撤销这笔付款记录，不会自动追回已付款项。原记录保留，金额为 ${moneyText(reverseRow.amount)}。`"
     />
-    <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError" />
+    <RequestError v-if="reverseError" class="form-error" :message="reverseError" />
     <a-form layout="vertical"
       ><a-form-item label="撤销原因" required><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count /></a-form-item
     ></a-form>

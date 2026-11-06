@@ -20,11 +20,11 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
+  <RequestError v-if="error" :message="error">
     <template #action>
       <a-button @click="queryData">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
   <a-card size="small" :bordered="false">
     <a-row class="xsy-table-btn-block">
@@ -158,12 +158,9 @@
       show-icon
       :message="`已创建待确认盘点单（${importResult.importedItems} 条明细）`"
     />
-    <a-alert
+    <RequestError
       v-else-if="importResult"
-      type="error"
-      show-icon
       :message="`整批未导入：${importResult.totalErrors} / ${importResult.totalRows} 行存在问题，未生成任何盘点单`"
-      description="来源行按导出时的盘点清单锁定，不能增删或替换；实盘量不能为空；清单过期或账面已变动时请重新导出。"
     />
     <a-table
       bordered
@@ -183,6 +180,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType, UploadProps, FormInstance} from 'ant-design-vue';
@@ -263,10 +261,10 @@ const canDelete = computed(() => hasPermission('scm:inventory:stocktake:delete')
 function rowActions(row: InventoryStocktake): ScmActionItem[] {
   const pending = row.status === 'PENDING';
   return [
-    {key: 'copy', label: '复制到新建', hidden: !canAdd.value},
-    {key: 'edit', label: '编辑', hidden: !(pending && canUpdate.value)},
-    {key: 'cancel', label: '取消单据', hidden: !(pending && canUpdate.value)},
-    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
+    {key: 'copy', label: '复制到新建', authorized: canAdd.value},
+    {key: 'edit', label: '编辑', hidden: !pending, authorized: pending && canUpdate.value},
+    {key: 'cancel', label: '取消单据', hidden: !pending, authorized: pending && canUpdate.value},
+    {key: 'delete', label: '删除', danger: true, hidden: !pending, authorized: pending && canDelete.value},
   ];
 }
 
@@ -289,7 +287,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await inventoryStocktakeApi.query({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
@@ -476,7 +474,7 @@ async function openCopy(record: InventoryStocktake) {
     unsaved.capture();
     message.info('已复制到新建表单（未保存）：请重新清点并逐行填写实盘量');
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   }
 }
 
@@ -503,7 +501,7 @@ async function onDownloadTemplate() {
   try {
     await inventoryStocktakeApi.downloadImportTemplate(queryForm.warehouseId);
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   } finally {
     templateLoading.value = false;
   }
@@ -526,7 +524,7 @@ const onUploadImport: UploadProps['customRequest'] = async (options) => {
     }
     options.onSuccess?.(r);
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
     options.onError?.(e as Error);
   } finally {
     importing.value = false;
@@ -586,7 +584,7 @@ async function onSubmit() {
     drawerOpen.value = false;
     queryData();
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   } finally {
     saving.value = false;
   }
@@ -604,7 +602,7 @@ async function openDetail(record: InventoryStocktake) {
     detail.value = r.data;
     detailOpen.value = true;
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   }
 }
 
@@ -623,7 +621,7 @@ function onConfirm(record: InventoryStocktake) {
         queryData();
       } catch (e) {
         // 负库存、低于预留等业务失败会走到这里，整单已回滚
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });
@@ -641,7 +639,7 @@ function onCancel(record: InventoryStocktake) {
         message.success('已取消');
         queryData();
       } catch (e) {
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });
@@ -660,7 +658,7 @@ function onDelete(record: InventoryStocktake) {
         message.success('已删除');
         queryData();
       } catch (e) {
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });

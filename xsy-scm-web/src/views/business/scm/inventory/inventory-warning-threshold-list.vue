@@ -1,20 +1,27 @@
 <!-- 预警阈值配置。同一仓库和商品规格只能有一条配置，修改后立即生效。 -->
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="仓库">
-          <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
-        </a-form-item>
-        <a-form-item class="xsy-query-form-item">
-          <a-space>
-            <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
-            <a-button @click="resetQuery">重置</a-button>
-          </a-space>
-        </a-form-item>
-      </a-row>
-    </a-form>
-    <a-row data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="仓库">
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
+      </a-form-item>
+      <a-form-item class="xsy-query-form-item">
+        <a-space>
+          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-space>
+      </a-form-item>
+    </a-row>
+  </a-form>
+
+  <RequestError v-if="error" :message="error">
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </RequestError>
+
+  <a-card size="small" :bordered="false">
+    <a-row class="xsy-table-btn-block scm-table-toolbar">
       <div class="xsy-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:threshold:add'"> 新建阈值配置 </a-button>
       </div>
@@ -22,15 +29,7 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING_THRESHOLD" :refresh="queryData" />
       </div>
     </a-row>
-  </div>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
-  <a-card size="small" :bordered="false">
     <a-table
       :id="SCM_INVENTORY_TABLE_ID.WARNING_THRESHOLD"
       size="small"
@@ -111,6 +110,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
@@ -157,7 +157,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    // 请求失败交给共享反馈处理，避免重复提示。
     const r = await inventoryWarningThresholdApi.query({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
@@ -294,7 +294,7 @@ async function onSubmit() {
     drawerOpen.value = false;
     queryData();
   } catch (e) {
-    message.error(inventoryError(e));
+    notifyRequestError(inventoryError(e));
   } finally {
     saving.value = false;
   }
@@ -315,7 +315,7 @@ function onDelete(record: InventoryWarningThreshold) {
         message.success('已删除');
         queryData();
       } catch (e) {
-        message.error(inventoryError(e));
+        notifyRequestError(inventoryError(e));
       }
     },
   });

@@ -11,11 +11,11 @@
     @ok="confirm"
     @cancel="visible = false"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon>
+    <RequestError v-if="error" :message="error">
       <template #action>
         <a-button @click="load">重试</a-button>
       </template>
-    </a-alert>
+    </RequestError>
     <!-- 收货确认会确定并保存库存成本：待定价行必须先回采购单补价，不能无价入库 -->
     <a-alert
       v-if="pendingLines.length"

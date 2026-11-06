@@ -36,25 +36,12 @@
     <ScmSavedFilterPresets v-if="advanced && activeTab === 'order'" view-key="SALES_ORDER" :conditions="advancedFilters" @apply="applySavedFilters" />
   </a-form>
 
-  <a-alert v-if="chartError" :message="chartError" type="error" show-icon>
+  <RequestError v-if="chartError" :message="chartError">
     <template #action>
       <a-button @click="queryActiveTab">重试</a-button>
     </template>
-  </a-alert>
+  </RequestError>
 
-  <a-space v-if="activeTab === 'order'" class="xsy-margin-top10" v-privilege="PERM.EXPORT">
-    <span>导出字段</span>
-    <a-select
-      v-model:value="orderExportKeys"
-      mode="multiple"
-      allow-clear
-      :options="orderColumnOptions"
-      option-filter-prop="label"
-      placeholder="不选择则导出全部字段"
-      style="width: 360px"
-      @focus="loadOrderExportColumns"
-    />
-  </a-space>
   <a-tabs v-model:activeKey="activeTab" class="xsy-margin-top10" @change="onTabChange">
     <a-tab-pane key="product" tab="按商品">
       <SalesProductTab
@@ -142,7 +129,7 @@
         :page-num="order.pageNum"
         :page-size="order.pageSize"
         :total="order.total"
-        :exporting="order.exporting"
+        :exporting="order.exporting || orderColumnsLoading"
         @export="exportOrder"
         @reload="loadOrder"
         @page-change="loadOrderPage"
@@ -152,9 +139,12 @@
   </a-tabs>
 
   <OrderDetail ref="orderDetail" />
+  <ScmExportFieldsModal ref="exportModal" />
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
+import ScmExportFieldsModal from '/@/components/business/scm/export-fields-modal/index.vue';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
@@ -223,14 +213,15 @@ async function loadDynamicFilterFields(): Promise<void> {
   try {
     dynamicFilterFields.value = (await reportSalesApi.orderFilterFields()).data;
   } catch {
-    void message.error('获取可组合的筛选字段失败');
+    void notifyRequestError('获取可组合的筛选字段失败');
   }
 }
 function toggleAdvanced(): void {
   advanced.value = !advanced.value;
   if (advanced.value && activeTab.value === 'order') void loadDynamicFilterFields();
 }
-const orderExportKeys = ref<string[]>([]);
+const exportModal = ref<InstanceType<typeof ScmExportFieldsModal>>();
+const orderColumnsLoading = ref(false);
 const orderColumnDefs = ref<ScmExportColumn[]>([]);
 const orderColumnsLoaded = ref(false);
 const orderColumnOptions = computed(() =>
@@ -246,7 +237,7 @@ async function loadOrderExportColumns(): Promise<void> {
     orderColumnDefs.value = (await reportSalesApi.orderExportColumns()).data;
     orderColumnsLoaded.value = true;
   } catch {
-    void message.error('获取可导出字段失败');
+    void notifyRequestError('获取可导出字段失败');
   }
 }
 const categories = ref<ProductCategory[]>([]);
@@ -484,14 +475,19 @@ function exportItem() {
   void itemExport.run(() => reportSalesApi.itemExport(exportQuery()));
 }
 
-function exportOrder() {
-  if (!guardExport()) return;
-  void orderExport.run(() =>
-    reportSalesApi.orderExport({
-      ...exportQuery(),
-      exportColumnKeys: orderExportKeys.value.length ? orderExportKeys.value : undefined,
-    })
-  );
+async function exportOrder() {
+  if (!guardExport() || orderColumnsLoading.value || order.exporting) return;
+  orderColumnsLoading.value = true;
+  try {
+    await loadOrderExportColumns();
+    if (!orderColumnOptions.value.length || !guardExport()) return;
+    const query = exportQuery();
+    exportModal.value?.show(orderColumnOptions.value, async (keys) => {
+      await orderExport.run(() => reportSalesApi.orderExport({...query, exportColumnKeys: keys}));
+    });
+  } finally {
+    orderColumnsLoading.value = false;
+  }
 }
 
 const orderDetail = ref<InstanceType<typeof OrderDetail>>();

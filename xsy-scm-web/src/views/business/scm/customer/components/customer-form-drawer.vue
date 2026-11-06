@@ -2,7 +2,7 @@
 <template>
   <a-drawer :open="visible" :title="title" :width="scmDrawerWidth('m')" :mask-closable="!saving" @close="requestClose">
     <a-spin :spinning="loading">
-      <a-alert v-if="error" type="error" :message="error" show-icon class="xsy-margin-bottom10" />
+      <RequestError v-if="error" :message="error" class="xsy-margin-bottom10" />
       <a-form ref="formRef" :model="form" layout="vertical" class="app-drawer-form">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
@@ -351,7 +351,7 @@ async function open(customerId?: ScmId) {
   }
   loading.value = true;
   try {
-    // 加载失败由抽屉内 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const response = await customerApi.detail(customerId, {suppressGlobalErrorMessage: true});
     if (seq !== requestSeq) return;
     const detail = response.data;

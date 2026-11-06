@@ -54,7 +54,8 @@ public class ScmCustomerMonthlyProfitController {
     @PostMapping("/summary")
     @SaCheckPermission(value = {ScmReportPermission.FINANCE_PROFIT_QUERY, ScmReportPermission.COST_QUERY},
         mode = SaMode.AND)
-    public ResponseDTO<ScmCustomerMonthlyProfitVO> summary(@Valid @RequestBody ScmCustomerMonthlyProfitQueryForm form) {
+    public ResponseDTO<ScmCustomerMonthlyProfitVO> summary(
+        @Valid @RequestBody ScmCustomerMonthlyProfitQueryForm.Filter form) {
         return ResponseDTO.ok(profitService.summary(form));
     }
 
@@ -70,7 +71,7 @@ public class ScmCustomerMonthlyProfitController {
         value = {ScmReportPermission.FINANCE_PROFIT_QUERY, ScmReportPermission.COST_QUERY, ScmReportPermission.EXPORT},
         mode = SaMode.AND)
     @OperateLog
-    public void export(@Valid @RequestBody ScmCustomerMonthlyProfitQueryForm form, HttpServletResponse response)
+    public void export(@Valid @RequestBody ScmCustomerMonthlyProfitQueryForm.Filter form, HttpServletResponse response)
         throws IOException {
         var selection = ScmExportColumnSelection.resolve(form.getExportColumns(), COLUMNS, true);
         var titles = COLUMNS.stream().map(Column::title).toList();
@@ -92,8 +93,8 @@ public class ScmCustomerMonthlyProfitController {
         value = {ScmReportPermission.FINANCE_PROFIT_QUERY, ScmReportPermission.COST_QUERY, ScmReportPermission.EXPORT},
         mode = SaMode.AND)
     @OperateLog
-    public void customerSheet(@Valid @RequestBody ScmCustomerMonthlyProfitQueryForm form, HttpServletResponse response)
-        throws IOException {
+    public void customerSheet(@Valid @RequestBody ScmCustomerMonthlyProfitQueryForm.Filter form,
+        HttpServletResponse response) throws IOException {
         byte[] bytes = excelService.export(form);
         XsyResponseUtil.setDownloadFileHeader(response, "客户对账单-" + form.getStartDate() + ".xlsx", null);
         response.getOutputStream().write(bytes);

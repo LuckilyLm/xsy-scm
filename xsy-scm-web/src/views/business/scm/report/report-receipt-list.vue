@@ -37,9 +37,9 @@
   <a-tabs v-model:activeKey="activeTab" class="xsy-margin-top10" @change="onTabChange">
     <a-tab-pane key="receipt" tab="收货明细">
       <a-card size="small" :bordered="false">
-        <a-alert v-if="receiptSummaryError" :message="receiptSummaryError" type="error" show-icon class="xsy-margin-bottom10">
+        <RequestError v-if="receiptSummaryError" :message="receiptSummaryError" class="xsy-margin-bottom10">
           <template #action><a-button @click="loadReceiptTab">重试</a-button></template>
-        </a-alert>
+        </RequestError>
         <div v-else class="scm-report-summary">
           <span v-if="!receiptSummary">汇总查询中…</span>
           <template v-else>
@@ -67,11 +67,11 @@
             <TableOperator v-model="receiptColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_RECEIPT" :refresh="loadReceiptTab" />
           </div>
         </a-row>
-        <a-alert v-if="receipt.error" :message="receipt.error" type="error" show-icon class="xsy-margin-bottom10">
+        <RequestError v-if="receipt.error" :message="receipt.error" class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadReceipt">重试</a-button>
           </template>
-        </a-alert>
+        </RequestError>
         <a-table
           :id="SCM_REPORT_TABLE_ID.RECEIPT"
           size="small"
@@ -143,9 +143,9 @@
 
     <a-tab-pane key="inbound" tab="入库明细">
       <a-card size="small" :bordered="false">
-        <a-alert v-if="inboundSummaryError" :message="inboundSummaryError" type="error" show-icon class="xsy-margin-bottom10">
+        <RequestError v-if="inboundSummaryError" :message="inboundSummaryError" class="xsy-margin-bottom10">
           <template #action><a-button @click="loadInboundTab">重试</a-button></template>
-        </a-alert>
+        </RequestError>
         <div v-else class="scm-report-summary">
           <span v-if="!inboundSummary">汇总查询中…</span>
           <template v-else>
@@ -178,11 +178,11 @@
             />
           </div>
         </a-row>
-        <a-alert v-if="inbound.error" :message="inbound.error" type="error" show-icon class="xsy-margin-bottom10">
+        <RequestError v-if="inbound.error" :message="inbound.error" class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadInbound">重试</a-button>
           </template>
-        </a-alert>
+        </RequestError>
         <a-table
           :id="SCM_REPORT_TABLE_ID.INBOUND"
           size="small"
@@ -234,9 +234,9 @@
 
     <a-tab-pane key="pending" tab="待入库">
       <a-card size="small" :bordered="false">
-        <a-alert v-if="pendingSummaryError" :message="pendingSummaryError" type="error" show-icon class="xsy-margin-bottom10">
+        <RequestError v-if="pendingSummaryError" :message="pendingSummaryError" class="xsy-margin-bottom10">
           <template #action><a-button @click="loadPendingTab">重试</a-button></template>
-        </a-alert>
+        </RequestError>
         <div v-else class="scm-report-summary">
           <span v-if="!pendingSummary">汇总查询中…</span>
           <template v-else>
@@ -255,11 +255,11 @@
             <TableOperator v-model="pendingColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PENDING_PUTAWAY" :refresh="loadPendingTab" />
           </div>
         </a-row>
-        <a-alert v-if="pending.error" :message="pending.error" type="error" show-icon class="xsy-margin-bottom10">
+        <RequestError v-if="pending.error" :message="pending.error" class="xsy-margin-bottom10">
           <template #action>
             <a-button @click="loadPending">重试</a-button>
           </template>
-        </a-alert>
+        </RequestError>
         <a-table
           :id="SCM_REPORT_TABLE_ID.PENDING_PUTAWAY"
           size="small"

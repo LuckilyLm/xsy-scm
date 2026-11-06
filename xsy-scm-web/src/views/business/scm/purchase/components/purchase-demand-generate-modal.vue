@@ -2,7 +2,7 @@
      先生成计算结果批次，再由同一批次生成需求，重复生成不会重复建需求。 -->
 <template>
   <a-modal :open="open" title="汇总生成采购需求" width="720px" :confirm-loading="saving" ok-text="生成需求" @ok="generate" @cancel="close">
-    <a-alert v-if="error" :message="error" type="error" show-icon />
+    <RequestError v-if="error" :message="error" />
     <FormNote title="含开始日，不含结束日" :lines="['只汇总区间内「已确认」的销售订单行']" />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>

@@ -15,9 +15,9 @@
       </a-row>
     </a-form>
     <p class="scm-note">保存记录时保留实际取数时间，同月可多次保存。历史月份只查看已保存记录，不能用当前库存补录历史月末数据。</p>
-    <a-alert v-if="error" type="error" show-icon :message="error"
-      ><template #action><a-button @click="load">重试</a-button></template></a-alert
-    >
+    <RequestError v-if="error" :message="error">
+      <template #action><a-button @click="load">重试</a-button></template>
+    </RequestError>
     <a-table
       bordered
       :columns="columns"
@@ -71,7 +71,7 @@
     <p class="scm-note">保存该仓库当前完整负库存清单，不生成报损或库存调整。之后补录采购不会改变本次留存。</p>
   </a-modal>
   <a-modal v-model:open="detailOpen" :title="selected?.snapshotNo || '留存明细'" :width="1120" :footer="null" @cancel="detailRequestId++">
-    <a-alert v-if="detailError" type="error" show-icon :message="detailError" />
+    <RequestError v-if="detailError" :message="detailError" />
     <a-spin :spinning="detailLoading">
       <template v-if="selected">
         <p class="scm-note">{{ selected.warehouseName }} · 留存时间 {{ datetime(selected.capturedAt) }} · {{ selected.remark || '月度核对' }}</p>

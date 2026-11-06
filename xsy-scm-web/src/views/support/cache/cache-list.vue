@@ -20,6 +20,11 @@ Caffeine ：
       </template>
     </a-alert>
 
+    <div class="xsy-table-btn-block">
+      <div class="xsy-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.LIST.CACHE" :refresh="ajaxQuery" />
+      </div>
+    </div>
     <LocalTable size="small" bordered class="xsy-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
@@ -33,9 +38,11 @@ Caffeine ：
   </a-card>
 </template>
 <script setup lang="ts">
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import LocalTable from '/@/components/support/local-table/index.vue';
 import {message} from 'ant-design-vue';
-import {onMounted, reactive, ref, h} from 'vue';
+import {onMounted, ref, h} from 'vue';
 import {cacheApi} from '/@/api/support/cache-api';
 import {XsyLoading} from '/@/components/framework/xsy-loading';
 import {Modal} from 'ant-design-vue';
@@ -76,7 +83,7 @@ async function getAllKeys(cacheName) {
 
 //------------------------ 表格渲染 ---------------------
 
-const columns = reactive([
+const columns = ref([
   {
     title: 'Key',
     dataIndex: 'key',

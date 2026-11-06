@@ -1,11 +1,11 @@
 <template>
   <!-- workspace：分拣工作台。明细表很宽，录入时要同时看到任务头、进度和明细行。 -->
   <a-drawer :open="open" title="分拣任务详情" :width="scmDrawerWidth('workspace')" :destroy-on-close="true" @close="close">
-    <a-alert v-if="detailError" :message="detailError" type="error" show-icon>
+    <RequestError v-if="detailError" :message="detailError">
       <template #action>
         <a-button @click="emit('reload')">刷新任务</a-button>
       </template>
-    </a-alert>
+    </RequestError>
     <a-spin :spinning="detailLoading">
       <template v-if="detail">
         <div class="task-heading">
@@ -75,7 +75,7 @@
         </a-descriptions>
 
         <p v-if="!canEditItems" class="scm-note">{{ readOnlyReason }}</p>
-        <a-alert v-if="entryError" type="error" show-icon :message="entryError" />
+        <RequestError v-if="entryError" :message="entryError" />
 
         <a-table
           :id="SCM_SORTING_TABLE_ID.TASK_ITEM"

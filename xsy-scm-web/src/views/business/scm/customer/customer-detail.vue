@@ -21,11 +21,11 @@
       <!-- 基础资料 -->
       <a-tab-pane key="base" tab="基础资料">
         <a-spin :spinning="baseLoading">
-          <a-alert v-if="baseError" :message="baseError" type="error" show-icon>
+          <RequestError v-if="baseError" :message="baseError">
             <template #action>
               <a-button size="small" @click="loadBase">重新加载</a-button>
             </template>
-          </a-alert>
+          </RequestError>
           <template v-else-if="customer">
             <!-- 基础资料限制阅读宽度 -->
             <div class="scm-detail-read">
@@ -147,7 +147,7 @@
                   >
                 </div>
                 <a-spin :spinning="mallAccountLoading">
-                  <a-alert v-if="mallAccountError" type="error" show-icon :message="mallAccountError" />
+                  <RequestError v-if="mallAccountError" :message="mallAccountError" />
                   <a-table
                     v-else-if="mallAccounts.length"
                     :data-source="mallAccounts"
@@ -208,11 +208,11 @@
 
       <!-- 最近订单 -->
       <a-tab-pane key="orders" tab="最近订单">
-        <a-alert v-if="orders.error.value" :message="orders.error.value" type="error" show-icon>
+        <RequestError v-if="orders.error.value" :message="orders.error.value">
           <template #action>
             <a-button size="small" @click="orders.reload()">重新加载</a-button>
           </template>
-        </a-alert>
+        </RequestError>
         <a-table
           v-else
           :data-source="orders.rows.value"
@@ -263,11 +263,11 @@
           <a-segmented v-model:value="freqDays" :options="freqDayOptions" @change="onFreqDaysChange" />
           <span class="xsy-font-size12 xsy-color-gray">按商品规格＋单位分组，数量为订购量（非实重／结算量），不跨单位求和</span>
         </a-space>
-        <a-alert v-if="frequent.error.value" :message="frequent.error.value" type="error" show-icon>
+        <RequestError v-if="frequent.error.value" :message="frequent.error.value">
           <template #action>
             <a-button size="small" @click="frequent.reload()">重新加载</a-button>
           </template>
-        </a-alert>
+        </RequestError>
         <a-table
           v-else
           :data-source="frequent.rows.value"
@@ -296,11 +296,11 @@
 
       <!-- 协议价 -->
       <a-tab-pane key="agreement" tab="协议价">
-        <a-alert v-if="agreement.error.value" :message="agreement.error.value" type="error" show-icon>
+        <RequestError v-if="agreement.error.value" :message="agreement.error.value">
           <template #action>
             <a-button size="small" @click="agreement.reload()">重新加载</a-button>
           </template>
-        </a-alert>
+        </RequestError>
         <a-table
           v-else
           :data-source="agreement.rows.value"
@@ -343,13 +343,19 @@
         <!-- 入口不受列表读取失败影响：有更新权限就能调整。 -->
         <div class="scm-visibility-toolbar">
           <p v-if="visPolicyText" class="scm-note">{{ visPolicyText }}</p>
-          <a-button v-if="hasPermission('scm:customer:update')" type="primary" @click="openVisibility()">调整可售商品</a-button>
+          <a-button
+            :disabled="!hasPermission('scm:customer:update')"
+            :title="hasPermission('scm:customer:update') ? undefined : '暂无操作权限，请联系管理员'"
+            type="primary"
+            @click="openVisibility()"
+            >调整可售商品</a-button
+          >
         </div>
-        <a-alert v-if="visibility.error.value" :message="visibility.error.value" type="error" show-icon>
+        <RequestError v-if="visibility.error.value" :message="visibility.error.value">
           <template #action>
             <a-button size="small" @click="visibility.reload()">重新加载</a-button>
           </template>
-        </a-alert>
+        </RequestError>
         <template v-else>
           <a-table
             :data-source="visRows"
@@ -388,10 +394,10 @@
         </template>
       </a-tab-pane>
       <a-tab-pane key="aliases" tab="客户商品别名">
-        <a-alert v-if="aliasError" type="error" :message="aliasError" show-icon>
+        <RequestError v-if="aliasError" :message="aliasError">
           <template #action><a-button size="small" @click="loadAliases">重新加载</a-button></template>
-        </a-alert>
-        <a-space v-if="hasPermission('scm:customer:update')" style="margin-bottom: 12px">
+        </RequestError>
+        <a-space class="xsy-permission-action-group" v-privilege="'scm:customer:update'" style="margin-bottom: 12px">
           <a-button type="primary" @click="openAlias()">设置别名</a-button>
         </a-space>
         <a-table
@@ -406,7 +412,7 @@
         >
           <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'action'">
-              <a-space v-if="hasPermission('scm:customer:update')">
+              <a-space class="xsy-permission-action-group" v-privilege="'scm:customer:update'">
                 <a-button type="link" size="small" @click="openAlias(record)">编辑</a-button>
                 <a-popconfirm title="删除这个客户商品别名？" @confirm="removeAlias(record)">
                   <a-button type="link" danger size="small">删除</a-button>
@@ -463,6 +469,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref, shallowRef, watch, type Ref} from 'vue';
 import {message} from 'ant-design-vue';
@@ -558,7 +565,7 @@ async function saveAlias(): Promise<void> {
     await loadAliases();
     void message.success('客户商品别名已保存');
   } catch (error) {
-    void message.error(customerError(error));
+    void notifyRequestError(customerError(error));
   } finally {
     aliasSaving.value = false;
   }
@@ -570,7 +577,7 @@ async function removeAlias(row: CustomerSkuAlias): Promise<void> {
     await loadAliases();
     void message.success('客户商品别名已删除');
   } catch (error) {
-    void message.error(customerError(error));
+    void notifyRequestError(customerError(error));
   }
 }
 
@@ -667,7 +674,7 @@ async function saveMallAccount(): Promise<void> {
     await loadMallAccount();
     void message.success(mallAccountMode.value === 'create' ? '商城账号已开通' : '临时密码已重置');
   } catch (error) {
-    void message.error(customerError(error));
+    void notifyRequestError(customerError(error));
   } finally {
     mallAccountSaving.value = false;
   }
@@ -689,7 +696,7 @@ async function toggleMallAccount(account: MallAccount): Promise<void> {
     await loadMallAccount();
     void message.success('账号状态已更新');
   } catch (error) {
-    void message.error(customerError(error));
+    void notifyRequestError(customerError(error));
   }
 }
 
@@ -916,7 +923,7 @@ async function saveVisibility(): Promise<void> {
     await visibility.reload();
     void message.success('可售商品已更新');
   } catch (error) {
-    void message.error(customerError(error));
+    void notifyRequestError(customerError(error));
   } finally {
     visibilitySaving.value = false;
   }

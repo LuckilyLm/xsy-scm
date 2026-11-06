@@ -10,11 +10,11 @@
   >
     <a-spin :spinning="loading">
       <div class="drawer-body">
-        <a-alert v-if="error" :message="error" type="error" show-icon class="xsy-margin-bottom10">
+        <RequestError v-if="error" :message="error" class="xsy-margin-bottom10">
           <template #action>
             <a-button v-if="loadFailed" size="small" @click="load(form.spuId)">重新加载</a-button>
           </template>
-        </a-alert>
+        </RequestError>
         <a-form v-if="!loadFailed" ref="formRef" :model="form" layout="vertical" class="app-drawer-form">
           <section class="scm-form-section">
             <div class="scm-form-section__head">
@@ -298,7 +298,7 @@ async function load(id?: ProductId) {
   error.value = '';
   loadFailed.value = false;
   try {
-    // 加载失败由抽屉内 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const [tree, detail, uomOptions, tagOptionsResponse] = await Promise.all([
       productCategoryApi.tree({suppressGlobalErrorMessage: true}),
       id ? productApi.detail(id, {suppressGlobalErrorMessage: true}) : Promise.resolve(undefined),

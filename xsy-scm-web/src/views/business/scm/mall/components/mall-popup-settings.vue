@@ -10,9 +10,9 @@
       </a-space>
     </div>
 
-    <a-alert v-if="error" type="error" show-icon :message="error" class="popup-alert">
+    <RequestError v-if="error" :message="error" class="popup-alert">
       <template #action><a-button size="small" @click="load">重新加载</a-button></template>
-    </a-alert>
+    </RequestError>
 
     <a-spin :spinning="loading">
       <a-form layout="vertical" class="popup-form">
@@ -97,6 +97,7 @@
 </template>
 
 <script setup lang="ts">
+import {notifyRequestError} from '/@/utils/request-feedback';
 import {onMounted, ref} from 'vue';
 import {message, type UploadProps} from 'ant-design-vue';
 import {fileApi} from '/@/api/support/file-api';
@@ -231,7 +232,7 @@ async function upload(options: UploadOptions, item: PopupItemDraft): Promise<voi
     void message.success('图片已上传');
   } catch (cause) {
     options.onError?.(cause as Error);
-    void message.error(String((cause as Error)?.message || '图片上传失败'));
+    void notifyRequestError(String((cause as Error)?.message || '图片上传失败'));
   } finally {
     uploadingIndex.value = -1;
   }
@@ -285,7 +286,7 @@ async function save(): Promise<void> {
     dirty.value = false;
     void message.success('弹窗配置已保存');
   } catch (cause) {
-    void message.error(String((cause as Error)?.message || '弹窗配置保存失败'));
+    void notifyRequestError(String((cause as Error)?.message || '弹窗配置保存失败'));
   } finally {
     saving.value = false;
   }

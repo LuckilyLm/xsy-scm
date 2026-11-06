@@ -1,62 +1,61 @@
 <template>
-  <div class="xsy-query-layout">
-    <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
-      <a-row class="xsy-query-form-row">
-        <a-form-item label="业务日期">
-          <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'业务开始日期'" />
-          <span class="date-separator">至</span>
-          <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'业务结束日期'" />
-        </a-form-item>
-        <a-form-item label="供应商"
-          ><a-input v-model:value="query.supplierName" allow-clear placeholder="按供应商名称搜索" v-aria-label="'供应商'" @press-enter="onSearch"
-        /></a-form-item>
-        <a-form-item label="采购单号"
-          ><a-input v-model:value="query.purchaseOrderNo" allow-clear v-aria-label="'采购单号'" @press-enter="onSearch"
-        /></a-form-item>
-        <a-form-item label="记录类型">
-          <a-select
-            v-model:value="query.entryType"
-            allow-clear
-            :options="entryOptions"
-            placeholder="全部"
-            style="width: 120px"
-            v-aria-label="'记录类型'"
-          />
-        </a-form-item>
-        <a-form-item>
-          <template #label
-            ><ScmFieldHelp label="结清状态" text="应付是我们应付给供应商的货款。登记扣减只减少应付款，实际付款需在“付款管理”登记。"
-          /></template>
-          <a-select
-            v-model:value="query.settleState"
-            allow-clear
-            :options="settleOptions"
-            placeholder="全部"
-            style="width: 140px"
-            v-aria-label="'结清状态'"
-          />
-        </a-form-item>
-        <a-form-item class="xsy-query-form-item">
-          <a-space>
-            <a-button type="primary" v-privilege="PERM.PAYABLE_QUERY" @click="onSearch">查询</a-button>
-            <a-button @click="resetQuery">重置</a-button>
-          </a-space>
-        </a-form-item>
-      </a-row>
-    </a-form>
-    <a-row data-toolbar-layout="query" class="xsy-table-btn-block scm-table-toolbar">
+  <a-form class="xsy-query-form" layout="inline" @submit.prevent="onSearch">
+    <a-row class="xsy-query-form-row">
+      <a-form-item label="业务日期">
+        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" v-aria-label="'业务开始日期'" />
+        <span class="date-separator">至</span>
+        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" v-aria-label="'业务结束日期'" />
+      </a-form-item>
+      <a-form-item label="供应商"
+        ><a-input v-model:value="query.supplierName" allow-clear placeholder="按供应商名称搜索" v-aria-label="'供应商'" @press-enter="onSearch"
+      /></a-form-item>
+      <a-form-item label="采购单号"
+        ><a-input v-model:value="query.purchaseOrderNo" allow-clear v-aria-label="'采购单号'" @press-enter="onSearch"
+      /></a-form-item>
+      <a-form-item label="记录类型">
+        <a-select
+          v-model:value="query.entryType"
+          allow-clear
+          :options="entryOptions"
+          placeholder="全部"
+          style="width: 120px"
+          v-aria-label="'记录类型'"
+        />
+      </a-form-item>
+      <a-form-item>
+        <template #label
+          ><ScmFieldHelp label="结清状态" text="应付是我们应付给供应商的货款。登记扣减只减少应付款，实际付款需在“付款管理”登记。"
+        /></template>
+        <a-select
+          v-model:value="query.settleState"
+          allow-clear
+          :options="settleOptions"
+          placeholder="全部"
+          style="width: 140px"
+          v-aria-label="'结清状态'"
+        />
+      </a-form-item>
+      <a-form-item class="xsy-query-form-item">
+        <a-space>
+          <a-button type="primary" v-privilege="PERM.PAYABLE_QUERY" @click="onSearch">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-space>
+      </a-form-item>
+    </a-row>
+  </a-form>
+
+  <RequestError v-if="page.error.value" class="page-error" :message="page.error.value">
+    <template #action><a-button @click="queryData">重试</a-button></template>
+  </RequestError>
+
+  <a-card size="small" :bordered="false">
+    <a-row class="xsy-table-btn-block scm-table-toolbar">
       <div class="xsy-table-setting-block">
         <a-button type="primary" class="scm-export-btn" v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_PAYABLE" :refresh="queryData" />
       </div>
     </a-row>
-  </div>
 
-  <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
-    <template #action><a-button @click="queryData">重试</a-button></template>
-  </a-alert>
-
-  <a-card size="small" :bordered="false">
     <div class="finance-mobile-balance-list">
       <div v-for="record in page.tableData.value" :key="record.payableId" class="finance-mobile-balance-row">
         <div class="mobile-balance-heading">
@@ -147,11 +146,11 @@
       <ScmFieldHelp label="应付扣减" text="用于减少原应付金额，不会产生付款。扣减金额按数量乘单价计算，累计不能超过原单金额" />
     </template>
     <a-spin :spinning="redLoading">
-      <a-alert v-if="redError" class="form-error" type="error" show-icon :message="redError">
+      <RequestError v-if="redError" class="form-error" :message="redError">
         <template v-if="!redDrafts.length && redSource" #action>
           <a-button :loading="redLoading" @click="retryRed">重试</a-button>
         </template>
-      </a-alert>
+      </RequestError>
       <a-descriptions v-if="redSource" class="red-source" bordered size="small" :column="2">
         <a-descriptions-item label="原应付单">{{ redSource.payableNo }}</a-descriptions-item>
         <a-descriptions-item label="供应商">{{ redSource.supplierName }}</a-descriptions-item>

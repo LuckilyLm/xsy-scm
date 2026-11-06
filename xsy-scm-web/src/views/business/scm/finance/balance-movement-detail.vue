@@ -1,10 +1,10 @@
 <template>
   <a-drawer v-model:open="visible" title="余额来源流水" :width="scmDrawerWidth('s')">
-    <a-alert v-if="error" type="error" show-icon :message="error">
+    <RequestError v-if="error" :message="error">
       <template #action>
         <a-button size="small" :loading="loading" @click="retry">重试</a-button>
       </template>
-    </a-alert>
+    </RequestError>
     <a-spin :spinning="loading">
       <a-empty v-if="!loading && !error && !rows.length" description="没有可查看的来源流水" />
       <a-descriptions v-for="row in rows" :key="row.id" bordered size="small" :column="1">
@@ -42,7 +42,7 @@ async function open(filter: {movementId?: Id; sourceType?: string; sourceId?: Id
   error.value = '';
   rows.value = [];
   try {
-    // 加载失败由弹窗内 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const response = await paymentApi.movements(filter, {suppressGlobalErrorMessage: true});
     if (current === generation) rows.value = response.data.list;
   } catch (cause) {

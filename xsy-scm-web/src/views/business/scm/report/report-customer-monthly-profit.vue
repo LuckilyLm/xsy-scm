@@ -12,9 +12,9 @@
       >
     </a-row>
   </a-form>
-  <a-alert v-if="error" type="error" show-icon :message="error"
-    ><template #action><a-button @click="load">重试</a-button></template></a-alert
-  >
+  <RequestError v-if="error" :message="error">
+    <template #action><a-button @click="load">重试</a-button></template>
+  </RequestError>
   <a-alert v-if="(summary?.costMissingCount ?? 0) > 0" type="warning" show-icon message="部分客户尚未登记实际商品成本，请补齐后查看利润。" />
   <a-row :gutter="[12, 12]" class="monthly-summary">
     <a-col v-for="card in cards" :key="card.label" :xs="24" :sm="12" :lg="6"
@@ -27,9 +27,13 @@
   <a-card size="small" :bordered="false">
     <a-row class="xsy-table-btn-block" justify="space-between">
       <a-space>
-        <a-button v-if="canAdd" type="primary" @click="openAdd">登记成本费用</a-button>
-        <a-button v-if="canAdd" @click="openBatch">批量登记</a-button>
-        <a-button v-if="canQueryExpenses" @click="openExpenses()">成本费用明细</a-button>
+        <a-button :disabled="!canAdd" :title="canAdd ? undefined : '暂无操作权限，请联系管理员'" type="primary" @click="openAdd"
+          >登记成本费用</a-button
+        >
+        <a-button :disabled="!canAdd" :title="canAdd ? undefined : '暂无操作权限，请联系管理员'" @click="openBatch">批量登记</a-button>
+        <a-button :disabled="!canQueryExpenses" :title="canQueryExpenses ? undefined : '暂无操作权限，请联系管理员'" @click="openExpenses()"
+          >成本费用明细</a-button
+        >
         <a-button type="primary" v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows"
           >导出当前列</a-button
         >
@@ -60,7 +64,13 @@
         <template v-else-if="column.dataIndex === 'statementPeriod'">{{ record.statementPeriod }}</template>
         <template v-else-if="column.dataIndex === 'costMissingCount'">{{ record.costMissingCount > 0 ? '待补成本' : '可核算' }}</template>
         <template v-else-if="column.dataIndex === 'action'"
-          ><a-button v-if="canQueryExpenses && record.dimensionId != null" type="link" size="small" @click="openExpenses(record.dimensionId)"
+          ><a-button
+            :disabled="!(canQueryExpenses && record.dimensionId != null)"
+            :title="canQueryExpenses && record.dimensionId != null ? undefined : '暂无操作权限，请联系管理员'"
+            v-if="record.dimensionId != null"
+            type="link"
+            size="small"
+            @click="openExpenses(record.dimensionId)"
             >成本费用明细</a-button
           ></template
         >
@@ -197,9 +207,9 @@
   </a-modal>
 
   <a-modal v-model:open="expenseOpen" title="客户月成本与费用明细" :width="1100" :footer="null" @cancel="expenseRequestId++">
-    <a-alert v-if="expenseError" type="error" show-icon :message="expenseError"
-      ><template #action><a-button @click="loadExpenses">重试</a-button></template></a-alert
-    >
+    <RequestError v-if="expenseError" :message="expenseError">
+      <template #action><a-button @click="loadExpenses">重试</a-button></template>
+    </RequestError>
     <a-table
       bordered
       :columns="expenseColumns"
@@ -217,7 +227,16 @@
         <template v-else-if="column.dataIndex === 'voided'">{{ record.voided ? '已作废' : '有效' }}</template>
         <template v-else-if="column.dataIndex === 'createdAt'">{{ dateTimeText(record.createdAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'"
-          ><a-button v-if="canVoid && !record.voided" type="link" danger size="small" @click="openVoid(record)">作废</a-button></template
+          ><a-button
+            :disabled="!(canVoid && !record.voided)"
+            :title="canVoid && !record.voided ? undefined : '暂无操作权限，请联系管理员'"
+            v-if="!record.voided"
+            type="link"
+            danger
+            size="small"
+            @click="openVoid(record)"
+            >作废</a-button
+          ></template
         >
         <template v-else>{{ record[column.dataIndex] || '—' }}</template>
       </template>

@@ -15,7 +15,7 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-alert v-if="error" class="picker-error" type="error" show-icon :message="error" />
+    <RequestError v-if="error" class="picker-error" :message="error" />
     <a-table
       bordered
       size="small"
@@ -150,7 +150,7 @@ async function search() {
   error.value = '';
   try {
     const base = {pageNum: pageNum.value, pageSize: pageSize.value, startDate: startDate.value, endDate: endDate.value};
-    // 加载失败由弹窗内 Alert 提示，不再弹全局 toast
+    // 请求失败交给共享反馈处理，避免重复提示。
     const quiet = {suppressGlobalErrorMessage: true};
     let response: ApiResponse<ScmPage<FinanceReceipt | FinancePayment | FinanceReceivable | FinancePayable>>;
     if (props.kind === 'RECEIPT') {

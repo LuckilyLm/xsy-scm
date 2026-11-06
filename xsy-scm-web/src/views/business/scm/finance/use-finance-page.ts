@@ -32,7 +32,7 @@ export function useFinancePage<T, Q extends FinancePageQuery>(
     loading.value = true;
     error.value = '';
     try {
-      // 加载失败由页头 Alert 提示（含重试），不再弹全局 toast
+      // 请求失败交给共享反馈处理，避免重复提示。
       const response = await queryApi(query, {suppressGlobalErrorMessage: true});
       if (requestId === queryState.requestId) {
         tableData.value = response.data.list ?? [];

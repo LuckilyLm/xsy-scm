@@ -9,7 +9,7 @@
         </a-space>
       </div>
 
-      <a-alert v-if="error" type="error" show-icon :message="error" />
+      <RequestError v-if="error" :message="error" />
 
       <div v-if="currentUrl" class="share__code">
         <img v-if="qrDataUrl" class="share__qr" :src="qrDataUrl" alt="采购单分享二维码" />

@@ -5,4 +5,4 @@
 - 导出使用组件库 `primary` 文字按钮，颜色、悬停、加载和禁用态由组件库维护，不添加专用白底描边样式。
 - 工具栏的父容器负责间距：同组操作 8px，不同工具组 12px；禁止叠加按钮外边距。
 - 通用分页与工具栏需允许窄屏换行，浅色和暗色统一跟随主题 token。
-- 单表格操作通过 `xsy-query-layout` 与查询区并排；`data-toolbar-layout="query" / "single"` 统一右对齐，不将操作按钮移入有独立权限的查询表单。
+- 查询区与表格工具栏各占一段；工具栏使用 `xsy-table-btn-block`，表格工具归入 `xsy-table-setting-block` 靠右，不挤入查询表单。`data-toolbar-layout="single"` 仅用于独立右对齐的工具行。
