@@ -17,6 +17,7 @@ public enum MallErrorCode implements ScmErrorCode {
     PHONE_DUPLICATE(40981, "登录手机号已被使用"),
     PASSWORD_CHANGE_REQUIRED(40983, "请先修改临时密码"),
     PASSWORD_INVALID(40081, "密码必须为8至64个字符"),
+    PASSWORD_SAME_AS_OLD(40099, "新密码不能与当前密码相同"),
     CATALOG_PRODUCT_NOT_FOUND(40481, "商品不存在"),
     CART_SKU_NOT_VISIBLE(40482, "商品不可售或对当前客户不可见"),
     CART_ITEM_NOT_FOUND(40483, "购物车中没有该商品"),

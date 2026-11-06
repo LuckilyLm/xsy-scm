@@ -121,6 +121,11 @@ public class MallAuthService {
         if (!Objects.equals(requestCustomer.getSessionVersion(), account.getVersion())) {
             throw new ScmBusinessException(MallErrorCode.LOGIN_FAILED);
         }
+        // 必须放在旧密码校验之后：提前返回等于向持令牌者确认了密码，等于绕过登录失败计数。
+        // 新旧密码相同不能沿用「手机号或密码错误」，否则用户会以为是自己旧密码输错了。
+        if (Objects.equals(form.getNewPassword(), form.getOldPassword())) {
+            throw new ScmBusinessException(MallErrorCode.PASSWORD_SAME_AS_OLD);
+        }
         accountDao.changePassword(account.getId(), SecurityPasswordService.getEncryptPwd(form.getNewPassword()));
         securityLoginService.removeLoginFail(account.getId(), UserTypeEnum.MALL_CUSTOMER);
         account.setFirstPasswordChange(false);

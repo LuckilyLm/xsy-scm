@@ -44,6 +44,8 @@ export const authRoutes = [
       if (!data?.oldPassword || String(data?.newPassword || '').length < 8) {
         return fail(PLATFORM_ERROR_CODE.PARAM_ERROR, '新密码至少 8 位');
       }
+      // 与服务端 40099 对齐，便于在 mock 下验证这条提示
+      if (data.oldPassword === data.newPassword) return fail(40099, '新密码不能与当前密码相同');
       return ok(null);
     },
   },

@@ -3355,6 +3355,27 @@ class MallTest {
             }
 
             @Test
+            void newPasswordEqualToOldIsRejectedWithItsOwnCode() {
+                MallCustomerAccountEntity account = account(2);
+                account.setPasswordHash(SecurityPasswordService.getEncryptPwd("same-password"));
+                when(accounts.selectByIdForUpdate(7L)).thenReturn(account);
+                RequestMallCustomer requestCustomer = new RequestMallCustomer();
+                requestCustomer.setAccountId(7L);
+                requestCustomer.setSessionVersion(2);
+                MallPasswordChangeForm form = new MallPasswordChangeForm();
+                form.setOldPassword("same-password");
+                form.setNewPassword("same-password");
+
+                assertThatThrownBy(() -> service.changePassword(requestCustomer, form))
+                        .isInstanceOfSatisfying(ScmBusinessException.class, exception -> {
+                            assertThat(exception.getErrorCode()).isEqualTo(MallErrorCode.PASSWORD_SAME_AS_OLD);
+                            // 码值固定，客户端才能稳定区分这条提示与密码错误
+                            assertThat(exception.getErrorCode().getCode()).isEqualTo(40099);
+                        });
+                verify(accounts, never()).changePassword(any(), any());
+            }
+
+            @Test
             void lockedAccountIsRejectedBeforeAnyPasswordCheck() {
                 MallCustomerAccountEntity account = account(2);
                 when(accounts.selectByPhone("13800000000")).thenReturn(account);

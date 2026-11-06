@@ -39,6 +39,7 @@
 <script setup>
   import { computed, reactive, ref } from 'vue';
   import { mallAuthApi } from '@/api/mall';
+  import { isApiError } from '@/lib/xsy-request';
   import { useUserStore } from '@/store/modules/system/user';
   import { useMallTheme } from '@/composables/use-mall-theme';
   import { xsySentry } from '@/lib/xsy-sentry';
@@ -64,6 +65,11 @@
       uni.showToast({ title: '两次输入的新密码不一致', icon: 'none' });
       return;
     }
+    // 服务端以 40099 兜底；这里先拦是为了省掉一次往返，也避免用户把提示当成旧密码输错。
+    if (form.newPassword === form.oldPassword) {
+      uni.showToast({ title: '新密码不能与当前密码相同', icon: 'none' });
+      return;
+    }
     saving.value = true;
     try {
       await mallAuthApi.changePassword({ oldPassword: form.oldPassword, newPassword: form.newPassword });
@@ -72,6 +78,9 @@
       setTimeout(() => uni.reLaunch({ url: '/pages/login/login' }), 700);
     } catch (error) {
       xsySentry.captureError(error);
+      // 带业务码的信封错误已由请求层提示；传输层失败（code 0）和非接口异常没有提示，必须在这里补。
+      const toastedByRequest = isApiError(error) && error.code !== 0;
+      if (!toastedByRequest) uni.showToast({ title: error?.message || '修改失败，请稍后重试', icon: 'none' });
     } finally {
       saving.value = false;
     }

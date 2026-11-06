@@ -331,6 +331,9 @@ test('login and password forms match the backend payload', () => {
   assert.match(store, /profile\.firstPasswordChange/);
   assert.match(password, /oldPassword/);
   assert.doesNotMatch(password, /currentPassword/);
+  // 新旧密码相同后台只回「手机号或密码错误」，客户端必须先给出可理解的提示
+  assert.match(password, /form\.newPassword === form\.oldPassword/);
+  assert.match(password, /新密码不能与当前密码相同/);
 });
 
 test('product pages add to the server cart through the shared composable', () => {
