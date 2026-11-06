@@ -108,21 +108,29 @@
 
     <FilePreviewModal ref="filePreviewModalRef" />
 
-    <a-modal v-model:open="uploadModalFlag" title="上传文件" @onCancel="hideUploadModal" @ok="hideUploadModal">
-      <FileUpload
-        list-type="text"
-        :maxUploadSize="5"
-        buttonText="点击上传文件"
-        :defaultFileList="[]"
-        :multiple="true"
-        :folder="FILE_FOLDER_TYPE_ENUM.COMMON.value"
-      />
+    <a-modal
+      :open="uploadModalFlag"
+      title="上传文件"
+      :width="640"
+      :mask-closable="false"
+      :closable="!uploading"
+      :keyboard="!uploading"
+      destroy-on-close
+      @cancel="hideUploadModal"
+    >
+      <FileUpload ref="fileUploadRef" dragger list-type="text" :max-upload-size="5" multiple :folder="FILE_FOLDER_TYPE_ENUM.COMMON.value" />
+      <template #footer>
+        <div class="file-upload-actions" :style="{borderColor: token.colorBorderSecondary}">
+          <a-button type="primary" :loading="uploading" @click="hideUploadModal">完成</a-button>
+        </div>
+      </template>
     </a-modal>
   </a-card>
 </template>
 <script setup lang="ts">
 import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
-import {onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
+import {theme} from 'ant-design-vue';
 import {fileApi} from '/@/api/support/file-api';
 import XsyEnumSelect from '/@/components/framework/xsy-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -278,13 +286,24 @@ onMounted(queryData);
 
 // ------------- 上传文件 --------------------
 const uploadModalFlag = ref(false);
+const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
+const uploading = computed(() => fileUploadRef.value?.uploading ?? false);
+const {token} = theme.useToken();
 
 function showUploadModal() {
   uploadModalFlag.value = true;
 }
 
 function hideUploadModal() {
+  if (uploading.value) return;
   uploadModalFlag.value = false;
   queryData();
 }
 </script>
+<style scoped>
+.file-upload-actions {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid;
+}
+</style>

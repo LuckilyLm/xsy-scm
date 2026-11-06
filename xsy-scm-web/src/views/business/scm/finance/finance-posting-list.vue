@@ -14,7 +14,7 @@
           option-filter-prop="label"
           :options="customerOptions"
           placeholder="全部客户"
-          style="width: 190px"
+          style="width: 160px"
           v-aria-label="'客户'"
         />
       </a-form-item>
@@ -23,7 +23,7 @@
           v-model:value="query.keyword"
           allow-clear
           placeholder="外部账单号或客户名称"
-          style="width: 200px"
+          style="width: 180px"
           v-aria-label="'外部账单号或客户名称'"
           @press-enter="onSearch"
         />
@@ -34,7 +34,7 @@
           allow-clear
           :options="refundStatusOptions"
           placeholder="全部"
-          style="width: 130px"
+          style="width: 100px"
           v-aria-label="'返款状态'"
         />
       </a-form-item>
@@ -44,7 +44,7 @@
           allow-clear
           :options="statusOptions"
           placeholder="全部"
-          style="width: 120px"
+          style="width: 88px"
           v-aria-label="'外部账单状态'"
         />
       </a-form-item>

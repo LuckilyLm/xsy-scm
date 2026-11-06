@@ -41,38 +41,28 @@
         description="销售成本金额仅显示已知部分；毛利相关指标显示为 —，请核对采购及成本更正记录。"
       />
 
-      <a-row :gutter="12" class="profit-kpis">
-        <a-col :xs="24" :sm="12" :lg="8"
-          ><a-card size="small"
-            ><div class="kpi-label">销售收入</div>
-            <div class="kpi-value">{{ moneyText(summary?.revenueAmount) }}</div></a-card
-          ></a-col
-        >
-        <a-col :xs="24" :sm="12" :lg="8"
-          ><a-card size="small"
-            ><div class="kpi-label">商品销售成本（调整后金额）</div>
-            <div class="kpi-value">{{ moneyText(summary?.salesCostAmount) }}</div></a-card
-          ></a-col
-        >
-        <a-col :xs="24" :sm="12" :lg="8"
-          ><a-card size="small"
-            ><div class="kpi-label">促销赠品成本</div>
-            <div class="kpi-value">{{ moneyText(summary?.giftCostAmount) }}</div></a-card
-          ></a-col
-        >
-        <a-col :xs="24" :sm="12" :lg="8"
-          ><a-card size="small"
-            ><div class="kpi-label">销售毛利</div>
-            <div class="kpi-value">{{ moneyText(summary?.grossProfit) }}</div></a-card
-          ></a-col
-        >
-        <a-col :xs="24" :sm="12" :lg="8"
-          ><a-card size="small"
-            ><div class="kpi-label">毛利率</div>
-            <div class="kpi-value">{{ rateText(summary?.grossMarginRate) }}</div></a-card
-          ></a-col
-        >
-      </a-row>
+      <div class="profit-kpis">
+        <a-card size="small">
+          <div class="kpi-label">销售收入</div>
+          <div class="kpi-value">{{ moneyText(summary?.revenueAmount) }}</div>
+        </a-card>
+        <a-card size="small">
+          <div class="kpi-label">商品销售成本（调整后金额）</div>
+          <div class="kpi-value">{{ moneyText(summary?.salesCostAmount) }}</div>
+        </a-card>
+        <a-card size="small">
+          <div class="kpi-label">促销赠品成本</div>
+          <div class="kpi-value">{{ moneyText(summary?.giftCostAmount) }}</div>
+        </a-card>
+        <a-card size="small">
+          <div class="kpi-label">销售毛利</div>
+          <div class="kpi-value">{{ moneyText(summary?.grossProfit) }}</div>
+        </a-card>
+        <a-card size="small">
+          <div class="kpi-label">毛利率</div>
+          <div class="kpi-value">{{ rateText(summary?.grossMarginRate) }}</div>
+        </a-card>
+      </div>
 
       <a-card size="small" :bordered="false">
         <a-row class="xsy-table-btn-block">
@@ -284,10 +274,13 @@ onMounted(async () => {
   margin-bottom: 14px;
 }
 .profit-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 208px), 1fr));
+  gap: 12px;
   margin-bottom: 14px;
 }
 .kpi-label {
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--scm-text-secondary);
   font-size: 13px;
 }
 .kpi-value {
@@ -295,5 +288,6 @@ onMounted(async () => {
   font-weight: 600;
   margin-top: 8px;
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 </style>

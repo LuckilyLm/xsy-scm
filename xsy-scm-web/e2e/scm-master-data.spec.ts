@@ -932,7 +932,7 @@ test.describe('scm-product', () => {
     await authenticate(page);
     await page.goto('/#/product/image-center');
     await expect(page).toHaveURL(/product-image-center|image-center/);
-    const noImage = page.locator('.ant-checkbox-wrapper', {hasText: '仅无主图'});
+    const noImage = page.getByRole('switch', {name: '仅无主图', exact: true});
     await noImage.click();
     await page.getByPlaceholder('商品名称').fill(prefix + '无图商品');
     await button(page, '查询').click();

@@ -1,4 +1,5 @@
 <template>
+  <h2 class="statement-page-title">供应商对账单</h2>
   <a-form class="xsy-query-form" layout="inline" @submit.prevent="freeze">
     <a-form-item label="供应商" required><SupplierSelect v-model:value="supplierId" width="200px" /></a-form-item>
     <a-form-item label="采购仓库"><WarehouseSelect v-model:value="warehouseId" width="190px" /></a-form-item>
@@ -11,8 +12,8 @@
     </a-form-item>
   </a-form>
   <RequestError v-if="error" class="statement-note" :message="error" />
-  <a-card title="历史对账单" size="small" :bordered="false" class="statement-card">
-    <div class="xsy-table-btn-block">
+  <a-card size="small" :bordered="false" class="statement-card">
+    <div class="xsy-table-btn-block" data-toolbar-layout="single">
       <div class="xsy-table-setting-block">
         <TableOperator v-model="historyColumns" :table-id="TABLE_ID_CONST.LIST.SCM_REPORT_SUPPLIER_STATEMENT" :refresh="loadHistory" />
       </div>
@@ -240,6 +241,12 @@ function printVersion() {
 }
 </script>
 <style scoped>
+.statement-page-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  line-height: 28px;
+}
+
 .statement-note,
 .statement-card,
 .statement-lines {

@@ -5,7 +5,12 @@
         <a-card size="small" title="选择商品" :bordered="false">
           <a-form layout="inline" class="pick-form">
             <a-form-item><a-input v-model:value="keyword" allow-clear placeholder="商品名称" style="width: 200px" /></a-form-item>
-            <a-form-item><a-checkbox v-model:checked="onlyNoPrimary">仅无主图</a-checkbox></a-form-item>
+            <a-form-item>
+              <a-space>
+                <a-switch id="image-center-only-no-primary" v-model:checked="onlyNoPrimary" size="small" />
+                <label for="image-center-only-no-primary">仅无主图</label>
+              </a-space>
+            </a-form-item>
             <a-form-item
               ><a-space><a-button type="primary" @click="onSearch">查询</a-button> <a-button @click="resetPick">重置</a-button></a-space></a-form-item
             >

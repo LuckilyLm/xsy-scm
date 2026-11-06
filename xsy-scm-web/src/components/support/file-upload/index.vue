@@ -6,6 +6,8 @@
 <template>
   <div class="clearfix">
     <a-upload
+      :type="dragger ? 'drag' : 'select'"
+      :open-file-dialog-on-click="!dragger || (!uploading && fileList.length < maxUploadSize)"
       :multiple="props.multiple"
       :accept="props.accept"
       :before-upload="beforeUpload"
@@ -17,7 +19,12 @@
       @preview="handlePreview"
       @remove="handleRemove"
     >
-      <div v-if="fileList.length < props.maxUploadSize">
+      <div v-if="dragger" class="file-drop">
+        <p class="file-drop__icon"><InboxOutlined /></p>
+        <p class="file-drop__title" aria-live="polite">{{ dropTitle }}</p>
+        <p class="file-drop__hint">最多 {{ maxUploadSize }} 个文件，单个小于 {{ maxSize }} MiB，选中文件后立即上传</p>
+      </div>
+      <div v-else-if="fileList.length < props.maxUploadSize">
         <template v-if="listType === 'picture-card'">
           <PlusOutlined />
           <div class="ant-upload-text">
@@ -39,7 +46,7 @@
 </template>
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue';
-import {Modal} from 'ant-design-vue';
+import {Modal, theme} from 'ant-design-vue';
 import {fileApi} from '/@/api/support/file-api';
 import {useUserStore} from '/@/store/modules/system/user';
 import {XsyLoading} from '/@/components/framework/xsy-loading';
@@ -48,6 +55,7 @@ import {xsySentry} from '/@/lib/xsy-sentry';
 
 const props = defineProps({
   value: String,
+  dragger: Boolean,
   buttonText: {
     type: String,
     default: '点击上传附件',
@@ -90,6 +98,8 @@ const props = defineProps({
   },
 });
 
+const {token} = theme.useToken();
+
 // 图片类型的后缀名
 const imgFileType = ['jpg', 'jpeg', 'png', 'gif'];
 
@@ -111,6 +121,13 @@ const files = computed(() => {
 const previewVisible = ref(false);
 const fileList = ref([]);
 const previewUrl = ref('');
+const pendingUploads = ref(0);
+const uploading = computed(() => pendingUploads.value > 0);
+const dropTitle = computed(() => {
+  if (uploading.value) return '正在上传文件';
+  if (fileList.value.length >= props.maxUploadSize) return '已达到文件数量上限';
+  return '点击或拖拽文件到此处';
+});
 
 watch(
   files,
@@ -124,7 +141,8 @@ watch(
 
 const emit = defineEmits(['update:value', 'change']);
 const customRequest = async (options) => {
-  XsyLoading.show();
+  pendingUploads.value++;
+  if (!props.dragger && pendingUploads.value === 1) XsyLoading.show();
   try {
     console.log(options);
     const formData = new FormData();
@@ -138,7 +156,8 @@ const customRequest = async (options) => {
   } catch (e) {
     xsySentry.captureError(e);
   } finally {
-    XsyLoading.hide();
+    pendingUploads.value--;
+    if (!props.dragger && !uploading.value) XsyLoading.hide();
   }
 };
 
@@ -159,7 +178,8 @@ function handleRemove(file) {
 }
 
 function beforeUpload(file, files) {
-  if (fileList.value.length + files.length > props.maxUploadSize) {
+  if (props.dragger && uploading.value) return false;
+  if (fileList.value.length + pendingUploads.value + files.length > props.maxUploadSize) {
     showErrorMsgOnce(`最多支持上传 ${props.maxUploadSize} 个文件哦！`);
     return false;
   }
@@ -175,7 +195,7 @@ function beforeUpload(file, files) {
 
   const isLimitSize = file.size / 1024 / 1024 < props.maxSize;
   if (!isLimitSize) {
-    showErrorMsgOnce(`单个文件大小必须小于 ${props.maxSize} Mb`);
+    showErrorMsgOnce(`单个文件大小必须小于 ${props.maxSize} MiB`);
   }
   return isLimitSize;
 }
@@ -216,10 +236,36 @@ function clear() {
 
 defineExpose({
   clear,
+  uploading,
 });
 </script>
 <style lang="less" scoped>
 :deep(.ant-upload-picture-card-wrapper) {
   display: flex;
+}
+
+.file-drop {
+  padding: 0 12px;
+}
+
+:deep(.ant-upload-btn:focus-visible) .file-drop {
+  outline: 2px solid v-bind('token.colorPrimary');
+  outline-offset: 4px;
+}
+
+.file-drop__icon {
+  margin: 0 0 4px;
+  color: v-bind('token.colorTextQuaternary');
+  font-size: 24px;
+}
+
+.file-drop__title {
+  margin: 0 0 2px;
+  font-size: v-bind('token.fontSizeLG + "px"');
+}
+
+.file-drop__hint {
+  margin: 0;
+  color: v-bind('token.colorTextDescription');
 }
 </style>
