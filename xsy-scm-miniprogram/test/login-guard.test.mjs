@@ -27,6 +27,7 @@ function harness(initialToken = '') {
     createSSRApp: () => app,
     App: {},
     useMallThemeStore: () => ({ refresh() {} }),
+    applyNativeTheme() {},
     useUserStore: () => ({ getLoginInfo() {} }),
     getCurrentPages: () => [{ route }],
     setTimeout: (callback) => calls.timers.push(callback),

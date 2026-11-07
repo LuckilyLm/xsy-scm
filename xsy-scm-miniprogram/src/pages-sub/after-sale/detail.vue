@@ -88,7 +88,7 @@
           <text class="ad__row-label">关联订单</text>
           <view class="ad__row-value ad__row-value--link xsy-chevron">
             <text>{{ record.orderNo || record.orderId }}</text>
-            <uni-icons type="right" :size="14" :color="COLOR_PRIMARY" />
+            <uni-icons type="right" :size="14" :color="theme.ink" />
           </view>
         </view>
         <view class="ad__row">
@@ -122,9 +122,8 @@
   import { displayQuantity, formatDateTime } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
   import { afterSaleStatusLevel, afterSaleStatusText, allocationStatusText, refundMethodText } from '@/pages-sub/shared/utils/after-sale-display';
-  import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 
-  const { themeStyle } = useMallTheme();
+  const { theme, themeStyle } = useMallTheme();
 
   const returnId = ref(null);
   const record = ref(null);

@@ -33,7 +33,7 @@ export const COLOR_BG_PAGE = '#f5f6f8';
 export const COLOR_BG_CARD = '#ffffff';
 export const COLOR_BG_HOVER = '#f2f3f5';
 
-/** 首页导航与内容面的场景色，仅注入首页，其他页面继续读取已发布主题。 */
+/** 商城共享顶部与内容面的默认场景色，实际配色从已发布主题读取。 */
 export const MALL_HOME_COLORS = {
   headerStart: '#E8FAEC',
   headerEnd: '#FFFFFF',

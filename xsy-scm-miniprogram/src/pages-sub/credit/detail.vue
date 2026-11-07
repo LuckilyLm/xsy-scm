@@ -35,7 +35,7 @@
         <text>关联订单 {{ record.orderNo || '' }}</text>
         <view class="bill__order-link xsy-chevron">
           <text>查看订单</text>
-          <uni-icons type="right" :size="14" :color="COLOR_PRIMARY" />
+          <uni-icons type="right" :size="14" :color="theme.ink" />
         </view>
       </view>
       <text class="bill__note">账单会扣除已确认的退货和已抵扣金额。钱包余额不会自动支付本账单。</text>
@@ -53,9 +53,8 @@
   import { formatDate, formatDateTime } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
   import { receivableStateText } from '@/pages-sub/shared/utils/funds-display';
-  import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 
-  const { themeStyle } = useMallTheme();
+  const { theme, themeStyle } = useMallTheme();
 
   const receivableId = ref(null);
   const record = ref(null);

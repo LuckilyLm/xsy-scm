@@ -28,6 +28,10 @@ page {
   --mall-brand-gradient: linear-gradient(118deg, #0f6f32 0%, #12863d 48%, #16a34a 100%);
   --mall-action-gradient: linear-gradient(118deg, #0d5f2b 0%, #0f6f32 100%);
   --mall-surface-gradient: linear-gradient(110deg, #e8f6ed 0%, #ffffff 100%);
+  --mall-header-gradient: linear-gradient(115deg, #e8faec 0%, #ffffff 100%);
+  --mall-header-foreground: #1f2329;
+  --mall-page-bg: #f6f8f5;
+  --mall-search-placeholder: #8f9a94;
 
   /*
    * 页面横向节奏：卡片左右内边距、栅格间距随屏宽微调。

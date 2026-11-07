@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
+import { computed, ref, watch, nextTick, effectScope } from 'vue';
+import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc';
 import { createPinia, defineStore, setActivePinia } from 'pinia';
 import { withMedia } from './mall-media-loader.mjs';
 
@@ -135,15 +137,158 @@ test('every registered page participates in theme lifecycle, including direct su
     ...config.pages.map((page) => page.path),
     ...config.subPackages.flatMap((pkg) => pkg.pages.map((page) => `${pkg.root}/${page.path}`)),
   ];
-  assert.equal(routes.length, 29);
+  assert.equal(routes.length, 30);
   for (const route of routes) {
     const source = read(`../src/${route}.vue`);
-    assert.match(source, /useMallTheme\(\)/, route);
+    assert.match(source, /useMallTheme\(/, route);
     assert.match(source, /:style="themeStyle"/, route);
   }
   assert.match(read('../src/composables/use-mall-theme.js'), /onShow\(/);
   assert.match(read('../src/App.vue'), /onShow:/);
   assert.doesNotMatch(read('../src/pages/home/index.vue'), /themeCode\.value\s*=/);
+});
+
+test('shared header follows theme and scroll only while its page is visible', async () => {
+  const { store } = createStore(async () => ({ data: { releaseId: 1, themeCode: 'FRESH' } }));
+  const calls = [],
+    shows = [],
+    hides = [];
+  const source = read('../src/composables/use-mall-theme.js')
+    .replace(/^[^\S\r\n]*import[\s\S]*?;\r?\n/gm, '')
+    .replace('export function useMallTheme', 'function useMallTheme');
+  const context = vm.createContext({
+    computed,
+    watch,
+    useMallThemeStore: () => store,
+    onShow: (fn) => shows.push(fn),
+    onHide: (fn) => hides.push(fn),
+    uni: { setNavigationBarColor: (x) => calls.push(x) },
+  });
+  vm.runInContext(source + '\nglobalThis.useTheme=useMallTheme;', context);
+  const scrolled = ref(false);
+  const scope = effectScope();
+  scope.run(() => {
+    context.useTheme({ header: true, scrolled });
+    context.useTheme({ header: true });
+    context.useTheme();
+  });
+  try {
+    shows[0]();
+    await store.refresh();
+    await nextTick();
+    assert.equal(calls.at(-1).frontColor, '#000000');
+    assert.equal(store.themeStyle['--mall-header-gradient'], store.headerGradient.background);
+    hides[0]();
+    const count = calls.length;
+    store.applyTheme({ releaseId: 2, themeCode: 'FRESH', headerStartColor: '#142D26', headerEndColor: '#24392F' });
+    await nextTick();
+    assert.equal(calls.length, count);
+    // 我的显示时先应用当前共享配色，随后公开请求仍按同一入口刷新。
+    shows[1]();
+    assert.equal(calls.at(-1).frontColor, '#ffffff');
+    hides[1]();
+    shows[2]();
+    const whitePageCalls = calls.length;
+    await store.refresh();
+    await nextTick();
+    assert.equal(calls.length, whitePageCalls);
+    shows[0]();
+    await store.refresh();
+    scrolled.value = true;
+    await nextTick();
+    assert.equal(calls.at(-1).frontColor, '#000000');
+    assert.equal(calls.at(-1).backgroundColor, '#ffffff');
+  } finally {
+    scope.stop();
+  }
+});
+
+test('mine keeps phone off the header and avatar opens the protected profile page', () => {
+  const user = { isLogin: true, customerName: '测试客户', customerCode: 'CUS000001', contactName: '陈先生', phone: '13900000011' };
+  const routes = [];
+  const script = (path) =>
+    read(path)
+      .match(/<script setup>([\s\S]*?)<\/script>/)[1]
+      .replace(/^[^\S\r\n]*import[\s\S]*?;\r?\n/gm, '');
+  const context = vm.createContext({
+    computed,
+    useMallTheme: () => ({}),
+    useUserStore: () => user,
+    useMallStorefront: () => ({ storeName: ref('测试店铺'), storeLink: ref('') }),
+    useSystemLayout: () => ({ statusBarHeight: ref(44), menuButtonRect: ref(null) }),
+    MALL_SHORTCUT_IMAGES: visuals.MALL_SHORTCUT_IMAGES,
+    MALL_PROFILE_IMAGES: visuals.MALL_PROFILE_IMAGES,
+    uni: { navigateTo: (x) => routes.push(x.url) },
+  });
+  vm.runInContext(script('../src/pages/mine/index.vue') + '\nglobalThis.mine={metaLine,goProfile};', context);
+  assert.equal(context.mine.metaLine.value, user.customerCode);
+  assert.ok(!context.mine.metaLine.value.includes(user.phone));
+  context.mine.goProfile();
+  assert.deepEqual(routes, ['/pages-sub/account/profile']);
+  vm.runInContext(
+    script('../src/pages-sub/account/profile.vue')
+      .replace('const { themeStyle }', 'const { themeStyle: profileStyle }')
+      .replace('const userStore =', 'const profileUser =')
+      .replaceAll('userStore.', 'profileUser.') + '\nglobalThis.profileRows=rows;',
+    context
+  );
+  assert.equal(context.profileRows.value.find((x) => x.label === '登录手机号').value, user.phone);
+  assert.match(read('../src/pages/mine/index.vue'), /class="mine__avatar"[^>]*@click\.stop="goProfile"/);
+});
+
+test('home, mine and profile templates have no undeclared render bindings', () => {
+  for (const route of ['pages/home/index', 'pages/mine/index', 'pages-sub/account/profile']) {
+    const { descriptor } = parse(read(`../src/${route}.vue`));
+    const { bindings } = compileScript(descriptor, { id: route });
+    const result = compileTemplate({
+      source: descriptor.template.content,
+      filename: route + '.vue',
+      id: route,
+      compilerOptions: { bindingMetadata: bindings },
+    });
+    assert.deepEqual(result.errors, [], route);
+    assert.deepEqual(result.code.match(/\b_ctx\.(?!\$)[a-zA-Z_]\w*/g) || [], [], `${route}存在未声明的模板变量`);
+  }
+});
+
+test('native dialogs read the latest theme and preserve explicit colors and callbacks', () => {
+  const interceptors = [];
+  const context = vm.createContext({
+    ...colors,
+    uni: { addInterceptor: (name, hooks) => interceptors.push({ name, hooks }), setTabBarStyle() {} },
+  });
+  const source = read('../src/utils/theme-native.js')
+    .replace(/^[^\S\r\n]*import[\s\S]*?;\r?\n/gm, '')
+    .replace('export function applyNativeTheme', 'function applyNativeTheme');
+  vm.runInContext(source, context);
+  context.applyNativeTheme(colors.MALL_THEMES.OCEAN);
+  assert.equal(interceptors[0].name, 'showModal');
+  const invoke = interceptors[0].hooks.invoke;
+  const success = () => {};
+  const options = { title: '退出登录', success };
+  invoke(options);
+  assert.equal(options.confirmColor, colors.MALL_THEMES.OCEAN.ink);
+  assert.equal(options.success, success);
+  context.applyNativeTheme(colors.MALL_THEMES.WARM);
+  assert.equal(interceptors.length, 1);
+  const next = {};
+  invoke(next);
+  assert.equal(next.confirmColor, colors.MALL_THEMES.WARM.ink);
+  const danger = { confirmColor: colors.COLOR_DANGER };
+  invoke(danger);
+  assert.equal(danger.confirmColor, colors.COLOR_DANGER);
+  context.applyNativeTheme(null);
+  const fallback = {};
+  invoke(fallback);
+  assert.equal(fallback.confirmColor, colors.MALL_THEMES.FRESH.ink);
+});
+
+test('login surfaces share the published theme instead of fixed green scene tokens', () => {
+  const login = read('../src/pages/login/login.vue');
+  assert.match(login, /background:\s*var\(--mall-header-gradient\)/);
+  assert.match(login, /background:\s*var\(--mall-primary-light\)/);
+  assert.doesNotMatch(login, /\$color-login-(?:sky|ground|field)/);
+  assert.match(read('../src/main.js'), /applyNativeTheme\(useMallThemeStore\(\)\.theme\)/);
 });
 
 test('底部导航使用交付的成对PNG，路由与原生栏隐藏仍由公共组件维护', () => {
@@ -152,7 +297,7 @@ test('底部导航使用交付的成对PNG，路由与原生栏隐藏仍由公�
   const source = read('../src/utils/theme-native.js')
     .replace(/^[^\S\r\n]*import[\s\S]*?;\r?\n/gm, '')
     .replace('export function applyNativeTheme', 'function applyNativeTheme');
-  const context = vm.createContext({ ...colors, uni: { setTabBarStyle: (options) => calls.push(options) } });
+  const context = vm.createContext({ ...colors, uni: { addInterceptor() {}, setTabBarStyle: (options) => calls.push(options) } });
   vm.runInContext(source, context);
   context.applyNativeTheme(colors.MALL_THEMES.WARM);
   context.applyNativeTheme({ primary: '#123456' });

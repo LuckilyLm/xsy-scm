@@ -76,7 +76,7 @@
             @click="openFile(file)"
           >
             <text class="trace__file-name">{{ file.fileName }}</text>
-            <uni-icons type="download" :size="16" :color="COLOR_PRIMARY" />
+            <uni-icons type="download" :size="16" :color="theme.ink" />
           </view>
         </view>
       </view>
@@ -91,7 +91,7 @@
           @click="openFile(file)"
         >
           <text class="trace__file-name">{{ file.fileName }}</text>
-          <uni-icons type="download" :size="16" :color="COLOR_PRIMARY" />
+          <uni-icons type="download" :size="16" :color="theme.ink" />
         </view>
       </view>
 
@@ -107,9 +107,7 @@
   import { useMallTheme } from '@/composables/use-mall-theme';
   import { inspectionStatusLabel, inspectionConclusionLabel, inspectionPublicResult } from '@/pages-sub/shared/constants/trace-const';
 
-  const COLOR_PRIMARY = '#12833c';
-
-  const { themeStyle } = useMallTheme();
+  const { theme, themeStyle } = useMallTheme();
 
   const token = ref('');
   const loading = ref(false);

@@ -13,16 +13,16 @@ export const MALL_THEME_PRESETS: Record<string, string> = {
 /** 白字压在主题色上的最低对比度，与后端 MIN_WHITE_CONTRAST 一致。 */
 export const MIN_WHITE_CONTRAST = 2.5;
 export const MALL_HEADER_DEFAULTS = {start: '#E8FAEC', end: '#FFFFFF'};
-/** 只保存选择后的实际色值；后续调整预设不改变已发布版本。 */
+/** 预设同时提供全局主色及共享顶部背景；只保存实际色值，历史发布不随预设修改。 */
 export const MALL_HEADER_PRESETS = [
-  {name: '春日浅绿', start: '#E8FAEC', end: '#FFFFFF'},
-  {name: '夏日清蓝', start: '#DFF5F8', end: '#F7FFFC'},
-  {name: '秋日暖杏', start: '#FFF0DA', end: '#FFFCF5'},
-  {name: '冬日雾蓝', start: '#EAF1FC', end: '#FFFFFF'},
-  {name: '春节暖红', start: '#FFE5DF', end: '#FFF7EA'},
-  {name: '端午粽绿', start: '#E4F3E7', end: '#FFFAEC'},
-  {name: '中秋桂黄', start: '#FFF0CB', end: '#FFFBF0'},
-  {name: '国庆红金', start: '#FCE1DF', end: '#FFF1CE'},
+  {name: '春日浅绿', primary: '#16A34A', start: '#E8FAEC', end: '#FFFFFF'},
+  {name: '夏日清蓝', primary: '#0284C7', start: '#DFF5F8', end: '#F7FFFC'},
+  {name: '秋日暖杏', primary: '#B7791F', start: '#FFF0DA', end: '#FFFCF5'},
+  {name: '冬日雾蓝', primary: '#5375B5', start: '#EAF1FC', end: '#FFFFFF'},
+  {name: '春节暖红', primary: '#C74135', start: '#FFE5DF', end: '#FFF7EA'},
+  {name: '端午粽绿', primary: '#2F7A4F', start: '#E4F3E7', end: '#FFFAEC'},
+  {name: '中秋桂黄', primary: '#9A6B16', start: '#FFF0CB', end: '#FFFBF0'},
+  {name: '国庆红金', primary: '#B63636', start: '#FCE1DF', end: '#FFF1CE'},
 ];
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;

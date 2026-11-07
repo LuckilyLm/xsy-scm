@@ -204,7 +204,7 @@
     overflow: hidden;
     padding-top: 376rpx;
     padding-bottom: max(164rpx, env(safe-area-inset-bottom));
-    background: linear-gradient(180deg, $color-login-sky 0%, $color-login-ground 48%, $color-bg-card 85%);
+    background: var(--mall-header-gradient);
   }
   .login__scene {
     position: absolute;
@@ -222,7 +222,7 @@
     padding: 36rpx 28rpx 44rpx;
     border-radius: $radius-login-panel;
     background: $color-bg-card;
-    box-shadow: 0 16px 40px rgba(22, 80, 45, 0.08);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
   }
   .login__logo {
     display: block;
@@ -271,7 +271,7 @@
     gap: $space-2;
     @include flex-start;
     border-radius: $radius-lg;
-    background: $color-login-field;
+    background: var(--mall-primary-light);
   }
   .field__icon {
     flex-shrink: 0;

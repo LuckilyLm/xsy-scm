@@ -3,7 +3,7 @@
     <view class="addr-edit__card">
       <!-- #ifdef MP-WEIXIN -->
       <view class="addr-edit__wechat" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="fillFromWechatAddress">
-        <uni-icons type="contact" :size="16" :color="COLOR_PRIMARY" />
+        <uni-icons type="contact" :size="16" :color="theme.ink" />
         <text class="addr-edit__wechat-text">使用微信收货地址</text>
         <text class="addr-edit__wechat-hint">自动填入姓名、电话、详细地址</text>
       </view>
@@ -106,7 +106,6 @@
   import { useKeyboardHeight } from '@/pages-sub/shared/composables/use-keyboard-height';
   import { getCurrentLocation, requestLocationPermission } from '@/pages-sub/shared/composables/use-location-permission';
   import { guideToSetting } from '@/pages-sub/shared/composables/use-permission';
-  import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 
   const { theme, themeStyle } = useMallTheme();
   /** 键盘弹出时把保存栏抬到键盘上沿，避免被遮住 */

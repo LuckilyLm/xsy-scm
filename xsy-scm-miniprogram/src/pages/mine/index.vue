@@ -7,7 +7,7 @@
       :aria-label="userStore.isLogin ? undefined : '登录后查看客户信息'"
       @click="!userStore.isLogin && goLogin()"
     >
-      <view class="mine__avatar">{{ avatarText }}</view>
+      <view class="mine__avatar" role="button" aria-label="查看个人资料" @click.stop="goProfile">{{ avatarText }}</view>
       <view class="mine__identity">
         <text v-if="userStore.isLogin" class="mine__name">{{ userStore.customerName }}</text>
         <text class="mine__meta" :class="{ 'mine__meta--guest': !userStore.isLogin }">{{ metaLine }}</text>
@@ -90,7 +90,7 @@
   import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
   import { MALL_SHORTCUT_IMAGES, MALL_PROFILE_IMAGES } from '@/constants/mall-visual-const';
 
-  const { theme, themeStyle } = useMallTheme();
+  const { theme, themeStyle } = useMallTheme({ header: true });
   const { storeName, storeLink } = useMallStorefront();
 
   const { statusBarHeight, menuButtonRect } = useSystemLayout();
@@ -109,7 +109,10 @@
   });
   const userStore = useUserStore();
   const avatarText = computed(() => (userStore.customerName || userStore.contactName || '客').slice(0, 1));
-  const metaLine = computed(() => (userStore.isLogin ? [userStore.customerCode, userStore.phone].filter(Boolean).join(' · ') : '登录后查看客户信息'));
+  const metaLine = computed(() => (userStore.isLogin ? userStore.customerCode : '登录后查看客户信息'));
+  function goProfile() {
+    uni.navigateTo({ url: '/pages-sub/account/profile' });
+  }
   function goLogin() {
     uni.navigateTo({ url: '/pages/login/login' });
   }
@@ -198,12 +201,13 @@
   .mine {
     @include viewport-min-height;
     padding-bottom: calc(var(--xsy-tabbar-h, 100rpx) + #{$space-8});
-    background: var(--mall-surface-gradient, $color-bg-page);
+    background: var(--mall-page-bg, $color-bg-page);
   }
   .mine__header {
     @include flex-start;
     padding: $space-6 var(--xsy-page-x) $space-8;
-    background: var(--mall-brand-gradient, var(--mall-primary, #16a34a));
+    background: var(--mall-header-gradient);
+    color: var(--mall-header-foreground);
   }
   .mine__avatar {
     flex-shrink: 0;
@@ -211,7 +215,7 @@
     height: 112rpx;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.2);
-    color: white;
+    color: inherit;
     font-size: $font-size-xxl;
     @include flex-center;
   }
@@ -223,19 +227,20 @@
     flex-direction: column;
   }
   .mine__name {
-    color: white;
+    color: inherit;
     font-size: $font-size-xl;
     font-weight: $font-weight-bold;
     @include ellipsis;
   }
   .mine__meta {
     margin-top: $space-1;
-    color: rgba(255, 255, 255, 0.8);
+    color: inherit;
+    opacity: 0.8;
     font-size: $font-size-sm;
   }
   .mine__meta--guest {
     margin-top: 0;
-    color: white;
+    color: inherit;
     @include ellipsis;
   }
   .mine__card {

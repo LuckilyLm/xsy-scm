@@ -38,7 +38,7 @@
           ><text>最近账单</text>
           <view class="credit__link xsy-chevron">
             <text>全部账单</text>
-            <uni-icons type="right" :size="14" :color="COLOR_PRIMARY" />
+            <uni-icons type="right" :size="14" :color="theme.ink" />
           </view>
         </view>
         <view v-if="!recent.length" class="credit__empty">暂无应收账单</view>
@@ -66,9 +66,9 @@
   import { formatDate } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
   import { receivableStateText } from '@/pages-sub/shared/utils/funds-display';
-  import { COLOR_PRIMARY, COLOR_SUCCESS, COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import { COLOR_SUCCESS, COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 
-  const { themeStyle } = useMallTheme();
+  const { theme, themeStyle } = useMallTheme();
 
   const summary = ref(null);
   const recent = ref([]);

@@ -18,6 +18,7 @@ import {
   normalizeMallThemePalette,
   mallThemeGradients,
   mallHeaderGradient,
+  MALL_HOME_COLORS,
 } from '@/constants/theme-color-const';
 import { mallHomeApi } from '@/api/mall/home-api';
 import { xsySentry } from '@/lib/xsy-sentry';
@@ -48,6 +49,10 @@ export const useMallThemeStore = defineStore('mall-theme', {
     themeStyle: (state) => {
       const theme = state.releaseId != null && state.palette ? state.palette : themeOf(state.themeCode);
       const gradients = mallThemeGradients(theme);
+      const header = mallHeaderGradient(
+        state.releaseId == null ? null : state.headerStartColor,
+        state.releaseId == null ? null : state.headerEndColor
+      );
       return {
         '--mall-primary': theme.primary,
         '--mall-primary-dark': theme.dark,
@@ -57,6 +62,10 @@ export const useMallThemeStore = defineStore('mall-theme', {
         '--mall-brand-gradient': gradients.brand,
         '--mall-action-gradient': gradients.action,
         '--mall-surface-gradient': gradients.surface,
+        '--mall-header-gradient': header.background,
+        '--mall-header-foreground': header.foreground,
+        '--mall-page-bg': MALL_HOME_COLORS.background,
+        '--mall-search-placeholder': MALL_HOME_COLORS.placeholder,
       };
     },
   },

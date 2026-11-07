@@ -21,7 +21,7 @@
 - 首页和分类页展示正式启用分类树，空分类入口也保留，不能按商品数量二次过滤。分类页显示时刷新目录；空商品列表显示“暂无商品”，请求错误保留重试，切换分类按请求序号丢弃旧结果。
 - 店铺资料状态集中在 `store/modules/mall/storefront.js`；页面通过 `use-mall-storefront` 在显示时刷新。只读取公开名称和链接，不复用后台管理接口。断网保留上次成功资料，清空链接要立即移除复制入口。
 - 说明页按 `onShow` 读取已发布正文，序号丢弃过期响应；41405 是未发布空态，网络失败提供重试。不得用草稿替代公开内容。
-- 三类品牌渐变集中由 `mallThemeGradients` 派生并通过主题 CSS 变量使用；首页顶部独立读取已发布的headerStartColor/headerEndColor，由mallHeaderGradient提供浅绿白默认与前景色，后台预览采用同一规则。仅首页可见时同步原生导航文字，避免隐藏Tab更新其他页状态栏。修改 FRESH 兜底时同步 JS、SCSS 和全局变量。空首页发布保留默认首页，不能只按 releaseId 判断是否有装修组件。
+- 三类品牌渐变集中由 `mallThemeGradients` 派生并通过主题 CSS 变量使用；首页和我的顶部共用已发布的headerStartColor/headerEndColor，由mallHeaderGradient提供浅绿白默认与前景色，后台预览采用同一规则。共享useMallTheme通过header参数和页面可见性同步原生导航文字，避免隐藏Tab更新其他页状态栏。修改 FRESH 兜底时同步 JS、SCSS 和全局变量。空首页发布保留默认首页，不能只按 releaseId 判断是否有装修组件。
 - 营销装修不替代真实常购/新品/商品目录；主Banner为2.5:1，后续专题图为3:1，图片自带文字不再叠标题。首页一级分类只读正式可见树，不能从素材包伪造入口。
 - 空状态优先在公共 `XsyEmpty` 传 kind/imageSrc，保留错误与无数据的区别及重试；不要在各页复制图片/按钮结构。静态小图使用轻量PNG，营销大图走文件服务，不将原素材整包加入主包。
 - 登录页按 `DESIGN.md` 的 `mall-login` 模式使用交付拆分图：media/mall-login的hero和waves在线加载，src/static/mall-login的Logo、微信及表单小图留在包内；输入框保留图标与placeholder，不重复显示手机号/密码标签，保留可访问名称。表单使用真实输入和按钮，密码显隐不得清空值。登录按钮只保留文字，不加箭头；店铺名仍从公开配置读取，不把品牌Logo当店铺名配置。
@@ -38,3 +38,5 @@
 - 确认订单的商品行使用固定缩略图、独立名称/规格/单价数量与右侧金额，保持与订单明细相同的信息层级；模板新增co-item、co-tip、co-alert节点时同步检查样式，不能让原生image默认尺寸撑满页面。
 - 交易页底栏复用styles/mixins.scss的action-bar-spacing，保留12px基础留白并叠加安全区；购物车位于自绘导航上方，不能再次叠加导航承担的安全区。详情和购物车数量控件共用quantity-control，按钮热区至少44px。
 - 公共商品卡片的preorder动作只发click进入详情确认，不直接发add；现货仍快捷加购，详情确认复用use-mall-cart。成功提示保持简短。
+
+- 登录背景及输入面使用共享顶部渐变和主题浅色；原生业务弹窗确认色由theme-native统一读取当前配色，显式语义色保留，不逐页写死绿色。

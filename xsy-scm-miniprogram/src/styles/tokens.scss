@@ -50,10 +50,7 @@ $color-bg-card: #ffffff;
 $color-bg-hover: #f2f3f5;
 $color-bg-mask: rgba(0, 0, 0, 0.45);
 
-/* 登录参考图的固定插画底色，动作仍使用运行时商城主题。 */
-$color-login-sky: #eff9f6;
-$color-login-ground: #f1f8ed;
-$color-login-field: #f3f7f4;
+/* 登录面板保留场景圆角，背景与输入面使用运行时主题。 */
 $radius-login-panel: 28px;
 
 /* ============================ 边框与分割线 ============================ */

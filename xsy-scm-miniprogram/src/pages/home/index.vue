@@ -189,18 +189,12 @@
   import { xsySentry } from '@/lib/xsy-sentry';
   import { formatDate } from '@/utils/order-display';
   import { categoryIcon } from '@/utils/category-icon';
-  import { COLOR_TEXT_TERTIARY, MALL_HOME_COLORS } from '@/constants/theme-color-const';
+  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
   import { HOME_POPUP_SEEN } from '@/constants/local-storage-key-const';
   import { MALL_SHORTCUT_IMAGES } from '@/constants/mall-visual-const';
 
-  const { theme, themeStyle: sharedThemeStyle, headerGradient } = useMallTheme();
-  const themeStyle = computed(() => ({
-    ...sharedThemeStyle.value,
-    '--home-header-gradient': headerGradient.value.background,
-    '--home-header-foreground': headerGradient.value.foreground,
-    '--home-page-bg': MALL_HOME_COLORS.background,
-    '--home-search-placeholder': MALL_HOME_COLORS.placeholder,
-  }));
+  const headerScrolled = ref(false);
+  const { theme, themeStyle, headerGradient } = useMallTheme({ header: true, scrolled: headerScrolled });
   const { storeName } = useMallStorefront();
 
   /*
@@ -210,23 +204,8 @@
 
   const PAGE_SIZE = 10;
   const { statusBarHeight, navBarHeight, menuButtonRect } = useSystemLayout();
-  const headerScrolled = ref(false);
-  let homeVisible = false;
-  // 原生前景随当前位置及已发布配色更新，浅色顶部默认使用黑色状态栏。
-  function syncHeader() {
-    // Tab页保留在内存中；后台刷新配色时不能替其他页面改原生导航前景。
-    if (!homeVisible) return;
-    uni.setNavigationBarColor({
-      frontColor: !headerScrolled.value && headerGradient.value.foreground === '#FFFFFF' ? '#ffffff' : '#000000',
-      backgroundColor: headerScrolled.value ? '#ffffff' : headerGradient.value.start,
-    });
-  }
-  watch(headerGradient, syncHeader);
   onPageScroll(({ scrollTop }) => {
-    const scrolled = scrollTop > 96;
-    if (scrolled === headerScrolled.value) return;
-    headerScrolled.value = scrolled;
-    syncHeader();
+    headerScrolled.value = scrollTop > 96;
   });
   /** 定位行与右上角胶囊同高、并让开胶囊宽度，视觉上与胶囊同一水平线 */
   const locationStyle = computed(() => {
@@ -558,8 +537,6 @@
   });
   let showed = false;
   onShow(() => {
-    homeVisible = true;
-    syncHeader();
     bannerAutoplay.value = true;
     if (showed) {
       loadProducts(true);
@@ -569,7 +546,6 @@
     showed = true;
   });
   onHide(() => {
-    homeVisible = false;
     // 页面不可见即结束「本次进入」；再次进入时 EVERY_ENTRY 可重新展示
     bannerAutoplay.value = false;
     popupShownThisEntry.value = false;
@@ -586,13 +562,13 @@
   .home {
     @include viewport-min-height;
     --xsy-page-x: #{$space-4};
-    background: var(--home-page-bg);
+    background: var(--mall-page-bg);
     /* 让开自绘底部导航 */
     padding-bottom: calc(var(--xsy-tabbar-h, 100rpx) + #{$space-6});
   }
   .home__header {
     padding: 0 var(--xsy-page-x) $space-4;
-    background: var(--home-header-gradient);
+    background: var(--mall-header-gradient);
   }
   .home__reading-nav {
     position: fixed;
@@ -620,7 +596,7 @@
   }
   .home__location-text {
     max-width: 72%;
-    color: var(--home-header-foreground);
+    color: var(--mall-header-foreground);
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     overflow: hidden;
@@ -647,7 +623,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--home-search-placeholder);
+    color: var(--mall-search-placeholder);
     font-size: $font-size-base;
   }
   .home__search-action {

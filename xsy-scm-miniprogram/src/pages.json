@@ -41,7 +41,7 @@
       "path": "pages/mine/index",
       "style": {
         "navigationStyle": "custom",
-        "navigationBarTextStyle": "white",
+        "navigationBarTextStyle": "black",
         "navigationBarTitleText": "我的"
       }
     },
@@ -63,6 +63,10 @@
     {
       "root": "pages-sub",
       "pages": [
+        {
+          "path": "account/profile",
+          "style": { "navigationBarTitleText": "个人资料" }
+        },
         {
           "path": "product/search",
           "style": {
@@ -222,9 +226,7 @@
   "preloadRule": {
     "pages/home/index": {
       "network": "all",
-      "packages": [
-        "pages-sub"
-      ]
+      "packages": ["pages-sub"]
     }
   },
   "condition": {

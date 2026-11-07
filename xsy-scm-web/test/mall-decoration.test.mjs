@@ -9,6 +9,7 @@ import {
   mallThemeGradients,
   mallHeaderGradient,
   MALL_HEADER_PRESETS,
+  MIN_WHITE_CONTRAST,
   normalizeMallThemeColor,
   whiteContrast,
 } from '../src/utils/mall-theme.ts';
@@ -98,6 +99,7 @@ test('home header defaults and readable foreground match the mini program for cu
   for (const preset of MALL_HEADER_PRESETS) {
     assert.deepEqual(mallHeaderGradient(preset.start, preset.end), client.mallHeaderGradient(preset.start, preset.end));
     assert.equal(mallHeaderGradient(preset.start, preset.end).foreground, '#1F2329', preset.name);
+    assert.ok(whiteContrast(preset.primary) >= MIN_WHITE_CONTRAST, preset.name);
   }
   assert.equal(mallHeaderGradient('#142d26', '#24392f').foreground, '#FFFFFF');
   const editor = source('../src/views/business/scm/mall/mall-home-layout.vue');
@@ -105,6 +107,10 @@ test('home header defaults and readable foreground match the mini program for cu
   assert.match(editor, /headerEndColor\.value = draft\.data\.headerEndColor/);
   assert.match(editor, /:header-start-color="headerStartColor"/);
   assert.match(editor, /:header-end-color="headerEndColor"/);
+  const select = editor.slice(editor.indexOf('function selectHeaderPreset'), editor.indexOf('function resetHeaderColors'));
+  assert.match(select, /themeColor\.value = preset\.primary/);
+  assert.match(select, /headerStartColor\.value = preset\.start/);
+  assert.match(select, /headerEndColor\.value = preset\.end/);
 });
 
 test('popup settings enforce the five-image limit and https external links', () => {

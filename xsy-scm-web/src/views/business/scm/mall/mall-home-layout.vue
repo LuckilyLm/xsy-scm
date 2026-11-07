@@ -27,8 +27,8 @@
           </div>
 
           <div class="console-theme">
-            <span class="console-theme__label">店铺配色</span>
-            <div class="console-theme__presets" role="group" aria-label="主题预设">
+            <span class="console-theme__label">主题主色</span>
+            <div class="console-theme__presets" role="group" aria-label="主色快捷选择">
               <button
                 v-for="preset in presetSwatches"
                 :key="preset.code"
@@ -58,15 +58,24 @@
           </div>
 
           <div class="console-header-colors">
-            <span class="console-theme__label">首页顶部渐变</span>
+            <span class="console-theme__label">商城主题与顶部背景</span>
             <div class="console-header-colors__presets" role="group" aria-label="四季和节日配色">
               <button
                 v-for="preset in MALL_HEADER_PRESETS"
                 :key="preset.name"
                 type="button"
                 class="console-header-preset"
-                :class="{'is-active': headerStartColor.toUpperCase() === preset.start && headerEndColor.toUpperCase() === preset.end}"
-                :aria-pressed="headerStartColor.toUpperCase() === preset.start && headerEndColor.toUpperCase() === preset.end"
+                :class="{
+                  'is-active':
+                    effectiveThemeColor === preset.primary &&
+                    headerStartColor.toUpperCase() === preset.start &&
+                    headerEndColor.toUpperCase() === preset.end,
+                }"
+                :aria-pressed="
+                  effectiveThemeColor === preset.primary &&
+                  headerStartColor.toUpperCase() === preset.start &&
+                  headerEndColor.toUpperCase() === preset.end
+                "
                 @click="selectHeaderPreset(preset)"
               >
                 <span class="console-header-preset__swatch" :style="{background: mallHeaderGradient(preset.start, preset.end).background}"></span>
@@ -80,10 +89,10 @@
                 v-model="headerStartColor"
                 type="color"
                 class="console-color-input"
-                aria-label="首页顶部起始色"
+                aria-label="商城顶部起始色"
                 @input="dirty = true"
               />
-              <a-input v-model:value="headerStartColor" class="console-header-colors__hex" aria-label="首页顶部起始色色值" @change="dirty = true" />
+              <a-input v-model:value="headerStartColor" class="console-header-colors__hex" aria-label="商城顶部起始色色值" @change="dirty = true" />
             </div>
             <div class="console-header-colors__field">
               <label for="home-header-end">结束色</label>
@@ -92,14 +101,14 @@
                 v-model="headerEndColor"
                 type="color"
                 class="console-color-input"
-                aria-label="首页顶部结束色"
+                aria-label="商城顶部结束色"
                 @input="dirty = true"
               />
-              <a-input v-model:value="headerEndColor" class="console-header-colors__hex" aria-label="首页顶部结束色色值" @change="dirty = true" />
+              <a-input v-model:value="headerEndColor" class="console-header-colors__hex" aria-label="商城顶部结束色色值" @change="dirty = true" />
             </div>
-            <a-button type="link" @click="resetHeaderColors">恢复浅绿白</a-button>
+            <a-button type="link" @click="resetHeaderColors">恢复默认主题</a-button>
             <span class="console-header-colors__hint"
-              >选择四季、节日预设或自行调整两个颜色。建议使用相近浅色；保存并发布后生效，右侧可即时预览。</span
+              >预设会同时切换全局主色及首页、“我的”顶部渐变，也可分别微调。建议背景使用相近浅色；保存并发布后生效。</span
             >
           </div>
 
@@ -410,11 +419,16 @@ const headerStartColor = ref(MALL_HEADER_DEFAULTS.start);
 const headerEndColor = ref(MALL_HEADER_DEFAULTS.end);
 /** 预设用于快速选色，保存仍使用实际端点，发布记录不随预设后续修改。 */
 function selectHeaderPreset(preset: (typeof MALL_HEADER_PRESETS)[number]) {
+  themeColor.value = preset.primary;
+  syncColorText();
   headerStartColor.value = preset.start;
   headerEndColor.value = preset.end;
   dirty.value = true;
 }
 function resetHeaderColors() {
+  themeCode.value = 'FRESH';
+  themeColor.value = null;
+  syncColorText();
   headerStartColor.value = MALL_HEADER_DEFAULTS.start;
   headerEndColor.value = MALL_HEADER_DEFAULTS.end;
   dirty.value = true;
