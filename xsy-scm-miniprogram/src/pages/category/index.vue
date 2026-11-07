@@ -56,7 +56,7 @@
             @click="selectSub(sub)"
           >
             <view class="category__grid-icon">
-              <image
+              <XsyRemoteImage
                 v-if="categoryIcon(sub.categoryName || sub.name)"
                 class="category__grid-glyph"
                 :src="categoryIcon(sub.categoryName || sub.name)"
@@ -88,6 +88,7 @@
 </template>
 
 <script setup>
+  import XsyRemoteImage from '@/components/common/xsy-remote-image.vue';
   import { computed, ref } from 'vue';
   import { onShow } from '@dcloudio/uni-app';
   import XsyNavBar from '@/components/common/xsy-nav-bar.vue';
@@ -96,7 +97,7 @@
   import XsyEmpty from '@/components/common/xsy-empty.vue';
   import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
   import { LOAD_MORE_TEXT } from '@/constants/load-more-const';
-  import { mallCatalogApi } from '@/api/mall';
+  import { mallCatalogApi } from '@/api/mall/catalog-api';
   import { xsySentry } from '@/lib/xsy-sentry';
   import { useMallNavigationStore } from '@/store/modules/mall/navigation';
   import { useMallCart } from '@/composables/use-mall-cart';

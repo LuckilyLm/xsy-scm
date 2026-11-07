@@ -38,10 +38,10 @@
   import { useMallTheme } from '@/composables/use-mall-theme';
 
   import { onLoad, onShow, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
-  import MallCouponCard from '@/components/business/mall-coupon-card.vue';
+  import MallCouponCard from '@/pages-sub/shared/components/business/mall-coupon-card.vue';
   import { mallPromotionApi } from '@/api/mall/promotion-api';
   import { xsySentry } from '@/lib/xsy-sentry';
-  import { COUPON_TABS, couponStatusText } from '@/utils/promotion-display';
+  import { COUPON_TABS, couponStatusText } from '@/pages-sub/shared/utils/promotion-display';
 
   const { themeStyle } = useMallTheme();
 

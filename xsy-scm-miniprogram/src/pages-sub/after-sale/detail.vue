@@ -117,11 +117,11 @@
   import { useMallTheme } from '@/composables/use-mall-theme';
 
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
-  import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
+  import { mallAfterSaleApi } from '@/pages-sub/shared/api/mall/after-sale-api';
   import { xsySentry } from '@/lib/xsy-sentry';
   import { displayQuantity, formatDateTime } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
-  import { afterSaleStatusLevel, afterSaleStatusText, allocationStatusText, refundMethodText } from '@/utils/after-sale-display';
+  import { afterSaleStatusLevel, afterSaleStatusText, allocationStatusText, refundMethodText } from '@/pages-sub/shared/utils/after-sale-display';
   import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 
   const { themeStyle } = useMallTheme();

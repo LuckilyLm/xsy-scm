@@ -10,7 +10,7 @@
  * 对外只暴露一个 Promise<boolean>：true 表示可以继续取位置，
  * false 表示用户拒绝或环境不支持，页面负责给文案。
  */
-import { ensurePrivacyAuthorized, guideToSetting } from '@/composables/use-permission';
+import { ensurePrivacyAuthorized, guideToSetting } from '@/pages-sub/shared/composables/use-permission';
 
 const LOCATION_SCOPE = 'scope.userLocation';
 

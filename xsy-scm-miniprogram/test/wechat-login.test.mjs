@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import { computed, ref, reactive } from 'vue';
+import { withMedia } from './mall-media-loader.mjs';
 
 const source = readFileSync(new URL('../src/pages/login/login.vue', import.meta.url), 'utf8');
 
@@ -53,7 +54,7 @@ function harness(login) {
     .match(/<script setup>([\s\S]*?)<\/script>/)[1]
     .trimStart()
     .replace(/^[^\S\r\n]*import[\s\S]*?;\r?\n/gm, '');
-  vm.runInContext(script + '\nglobalThis.api = {wechatLogin, submit, form, submitting, loginTitle};', context);
+  vm.runInContext(withMedia(script) + '\nglobalThis.api = {wechatLogin, submit, form, submitting, loginTitle};', context);
   return { page: context.api, calls };
 }
 

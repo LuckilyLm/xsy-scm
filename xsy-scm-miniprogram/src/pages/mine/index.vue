@@ -24,7 +24,7 @@
           :hover-stay-time="80"
           @click="goCoupons"
         >
-          <image class="mine__coupon-image" :src="MALL_SHORTCUT_IMAGES.coupons" mode="aspectFit" aria-hidden="true" />
+          <XsyRemoteImage class="mine__coupon-image" :src="MALL_SHORTCUT_IMAGES.coupons" mode="aspectFit" aria-hidden="true" />
           <text>领券中心</text>
         </view>
         <view
@@ -35,7 +35,7 @@
           :hover-stay-time="80"
           @click="goMyCoupons"
         >
-          <image class="mine__coupon-image" :src="MALL_PROFILE_IMAGES.myCoupons" mode="aspectFit" aria-hidden="true" />
+          <XsyRemoteImage class="mine__coupon-image" :src="MALL_PROFILE_IMAGES.myCoupons" mode="aspectFit" aria-hidden="true" />
           <text>我的优惠券</text>
         </view>
       </view>
@@ -51,7 +51,7 @@
           @click="entry.onClick"
         >
           <view class="mine__entry-icon">
-            <image class="mine__entry-image" :src="entry.image" mode="aspectFit" aria-hidden="true" />
+            <XsyRemoteImage class="mine__entry-image" :src="entry.image" mode="aspectFit" aria-hidden="true" />
           </view>
           <text class="mine__entry-text">{{ entry.label }}</text>
         </view>
@@ -68,7 +68,7 @@
           @click="entry.onClick"
         >
           <view class="mine__entry-icon">
-            <image v-if="entry.image" class="mine__entry-image" :src="entry.image" mode="aspectFit" aria-hidden="true" />
+            <XsyRemoteImage v-if="entry.image" class="mine__entry-image" :src="entry.image" mode="aspectFit" aria-hidden="true" />
             <view v-else class="mine__entry-fallback"><uni-icons :type="entry.icon" :size="20" :color="theme.primary" /></view>
           </view>
           <text class="mine__entry-text">{{ entry.label }}</text>
@@ -81,6 +81,7 @@
 </template>
 
 <script setup>
+  import XsyRemoteImage from '@/components/common/xsy-remote-image.vue';
   import { computed } from 'vue';
   import { useSystemLayout } from '@/composables/use-system-layout';
   import { useMallTheme } from '@/composables/use-mall-theme';

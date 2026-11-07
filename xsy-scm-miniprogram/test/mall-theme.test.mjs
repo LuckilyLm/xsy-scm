@@ -3,10 +3,13 @@ import { readFileSync, existsSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import { createPinia, defineStore, setActivePinia } from 'pinia';
+import { withMedia } from './mall-media-loader.mjs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const colors = await import(`data:text/javascript;base64,${Buffer.from(read('../src/constants/theme-color-const.js')).toString('base64')}`);
-const visuals = await import(`data:text/javascript;base64,${Buffer.from(read('../src/constants/mall-visual-const.js')).toString('base64')}`);
+const visuals = await import(
+  `data:text/javascript;base64,${Buffer.from(withMedia(read('../src/constants/mall-visual-const.js'))).toString('base64')}`
+);
 
 function createStore(fetchTheme) {
   setActivePinia(createPinia());

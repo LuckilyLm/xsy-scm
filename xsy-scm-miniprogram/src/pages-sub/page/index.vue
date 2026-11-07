@@ -26,7 +26,7 @@
   import { MALL_ERROR_CODE } from '@/constants/error-code-const';
   import XsySkeleton from '@/components/common/xsy-skeleton.vue';
   import XsyEmpty from '@/components/common/xsy-empty.vue';
-  import { mallDecorationApi } from '@/api/mall';
+  import { mallDecorationApi } from '@/api/mall/decoration-api';
   import { useMallTheme } from '@/composables/use-mall-theme';
   import { xsySentry } from '@/lib/xsy-sentry';
 

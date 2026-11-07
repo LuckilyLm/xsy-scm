@@ -188,7 +188,7 @@ test('public requests and login remain available, and authenticated requests car
   await pending;
   // 标签令牌是溯源凭据，不能误用客户会话；执行真实 API 适配器检查其请求选项。
   vm.runInContext(
-    withoutImports(read('../src/api/trace/trace-public-api.js'))
+    withoutImports(read('../src/pages-sub/shared/api/trace/trace-public-api.js'))
       .replace(/const baseUrl = .*?;/, '')
       .replace('export const tracePublicApi', 'globalThis.tracePublicApi'),
     h.context

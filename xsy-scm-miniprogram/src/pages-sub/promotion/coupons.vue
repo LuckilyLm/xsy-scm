@@ -23,7 +23,7 @@
   import { useMallTheme } from '@/composables/use-mall-theme';
 
   import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
-  import MallCouponCard from '@/components/business/mall-coupon-card.vue';
+  import MallCouponCard from '@/pages-sub/shared/components/business/mall-coupon-card.vue';
   import { mallPromotionApi } from '@/api/mall/promotion-api';
   import { xsySentry } from '@/lib/xsy-sentry';
 

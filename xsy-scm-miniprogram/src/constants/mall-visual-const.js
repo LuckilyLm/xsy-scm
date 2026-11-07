@@ -1,17 +1,18 @@
-/* 用户交付图片的稳定入口；营销横幅仍从正式装修配置读取。 */
-const ROOT = '/static/mall-visual';
+import { mallMedia } from '@/utils/mall-media';
+/* 大插画读取公开MinIO目录，底部导航图标保留本地。营销横幅仍从正式装修配置读取。 */
+const ROOT = mallMedia('mall-visual');
 
 export const MALL_SHORTCUT_IMAGES = {
-  new: `${ROOT}/shortcut/new.png`,
-  frequent: `${ROOT}/shortcut/frequent.png`,
-  activities: `${ROOT}/shortcut/activities.png`,
-  sale: `${ROOT}/shortcut/sale.png`,
-  coupons: `${ROOT}/shortcut/coupons.png`,
-  delivery: `${ROOT}/shortcut/delivery.png`,
+  new: ROOT ? `${ROOT}/shortcut/new.png` : '',
+  frequent: ROOT ? `${ROOT}/shortcut/frequent.png` : '',
+  activities: ROOT ? `${ROOT}/shortcut/activities.png` : '',
+  sale: ROOT ? `${ROOT}/shortcut/sale.png` : '',
+  coupons: ROOT ? `${ROOT}/shortcut/coupons.png` : '',
+  delivery: ROOT ? `${ROOT}/shortcut/delivery.png` : '',
 };
 
 export const MALL_EMPTY_IMAGES = Object.fromEntries(
-  ['cart', 'orders', 'coupons', 'search', 'products', 'network', 'address'].map((kind) => [kind, `${ROOT}/empty/${kind}.png`])
+  ['cart', 'orders', 'coupons', 'search', 'products', 'network', 'address'].map((kind) => [kind, ROOT ? `${ROOT}/empty/${kind}.png` : ''])
 );
 
 // 导航使用交付的普通/选中两套原色图片，颜色不通过滤镜重绘。
@@ -24,17 +25,17 @@ export const MALL_NAVIGATION_IMAGES = {
   mine: { normal: `${NAVIGATION_ROOT}/mine-normal.png`, active: `${NAVIGATION_ROOT}/mine-selected.png` },
 };
 
-const PROFILE_ROOT = '/static/mall-profile';
+const PROFILE_ROOT = mallMedia('mall-profile');
 export const MALL_PROFILE_IMAGES = {
-  myCoupons: `${PROFILE_ROOT}/my-coupons.png`,
-  orders: `${PROFILE_ROOT}/orders.png`,
-  cart: `${PROFILE_ROOT}/cart.png`,
-  address: `${PROFILE_ROOT}/address.png`,
-  afterSale: `${PROFILE_ROOT}/after-sale.png`,
-  trace: `${PROFILE_ROOT}/trace.png`,
-  announcement: `${PROFILE_ROOT}/announcement.png`,
-  about: `${PROFILE_ROOT}/about.png`,
-  terms: `${PROFILE_ROOT}/terms.png`,
-  afterSaleRule: `${PROFILE_ROOT}/after-sale-rule.png`,
-  password: `${PROFILE_ROOT}/password.png`,
+  myCoupons: PROFILE_ROOT ? `${PROFILE_ROOT}/my-coupons.png` : '',
+  orders: PROFILE_ROOT ? `${PROFILE_ROOT}/orders.png` : '',
+  cart: PROFILE_ROOT ? `${PROFILE_ROOT}/cart.png` : '',
+  address: PROFILE_ROOT ? `${PROFILE_ROOT}/address.png` : '',
+  afterSale: PROFILE_ROOT ? `${PROFILE_ROOT}/after-sale.png` : '',
+  trace: PROFILE_ROOT ? `${PROFILE_ROOT}/trace.png` : '',
+  announcement: PROFILE_ROOT ? `${PROFILE_ROOT}/announcement.png` : '',
+  about: PROFILE_ROOT ? `${PROFILE_ROOT}/about.png` : '',
+  terms: PROFILE_ROOT ? `${PROFILE_ROOT}/terms.png` : '',
+  afterSaleRule: PROFILE_ROOT ? `${PROFILE_ROOT}/after-sale-rule.png` : '',
+  password: PROFILE_ROOT ? `${PROFILE_ROOT}/password.png` : '',
 };

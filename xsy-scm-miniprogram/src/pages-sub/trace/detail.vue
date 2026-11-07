@@ -103,9 +103,9 @@
 <script setup>
   import { computed, ref } from 'vue';
   import { onLoad, onShow, onUnload } from '@dcloudio/uni-app';
-  import { tracePublicApi } from '@/api/trace/trace-public-api';
+  import { tracePublicApi } from '@/pages-sub/shared/api/trace/trace-public-api';
   import { useMallTheme } from '@/composables/use-mall-theme';
-  import { inspectionStatusLabel, inspectionConclusionLabel, inspectionPublicResult } from '@/constants/trace-const';
+  import { inspectionStatusLabel, inspectionConclusionLabel, inspectionPublicResult } from '@/pages-sub/shared/constants/trace-const';
 
   const COLOR_PRIMARY = '#12833c';
 

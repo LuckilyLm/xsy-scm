@@ -48,11 +48,11 @@
   import { useMallTheme } from '@/composables/use-mall-theme';
 
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
-  import { mallFundsApi } from '@/api/mall/funds-api';
+  import { mallFundsApi } from '@/pages-sub/shared/api/mall/funds-api';
   import { xsySentry } from '@/lib/xsy-sentry';
   import { formatDate, formatDateTime } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
-  import { receivableStateText } from '@/utils/funds-display';
+  import { receivableStateText } from '@/pages-sub/shared/utils/funds-display';
   import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 
   const { themeStyle } = useMallTheme();

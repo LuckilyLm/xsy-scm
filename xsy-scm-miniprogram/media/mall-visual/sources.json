@@ -21,13 +21,6 @@
     "size": 6630
   },
   {
-    "name": "水产",
-    "source": "03_一级分类/水产.png",
-    "sourceSha256": "5c8ab82e6ec50de9818343bfe1994113c317fad0cf39dc6cbfd3c51d726ee2ac",
-    "file": "category/seafood.png",
-    "size": 7847
-  },
-  {
     "name": "粮油",
     "source": "03_一级分类/粮油.png",
     "sourceSha256": "326c2c6026f47027fc9cb62932830673f65a55b08cd22e0e9788fa0b9a798c7a",
@@ -70,27 +63,6 @@
     "size": 6810
   },
   {
-    "name": "国产水果",
-    "source": "04_二级分类/国产水果.png",
-    "sourceSha256": "337d747b24a8e4925755ddc19595b67fbe35ff744a10d855b2a7e6fb958f1e28",
-    "file": "category/domestic-fruit.png",
-    "size": 6133
-  },
-  {
-    "name": "进口水果",
-    "source": "04_二级分类/进口水果.png",
-    "sourceSha256": "5768b11d2521caecbb9e8a39b78ce53dab2ea83566d38db16566873a3d740309",
-    "file": "category/imported-fruit.png",
-    "size": 7452
-  },
-  {
-    "name": "时令鲜果",
-    "source": "04_二级分类/时令鲜果.png",
-    "sourceSha256": "2d982c4570ef7ffab3ce59207711b7a4c15105a069d9dd3710239c6e4e871edf",
-    "file": "category/seasonal-fruit.png",
-    "size": 7259
-  },
-  {
     "name": "牛羊肉",
     "source": "04_二级分类/牛羊肉.png",
     "sourceSha256": "0a50b619d64a7e39acd52393e3bde4ff708139b0067f6434d4b59c9ba7b88ca8",
@@ -118,14 +90,6 @@
     "sourceSha256": "48d227db52a05bd2d898ca48f444388560417b74b7493bf12f93a417822ba00d",
     "file": "category/eggs.png",
     "size": 5742,
-    "sourcePackage": "优化素材"
-  },
-  {
-    "name": "冰鲜",
-    "source": "二级分类/冰鲜.png",
-    "sourceSha256": "c395bdf0ee15e3c8edf03462f82be762a91838a70028b72e4fbb61e75cc669da",
-    "file": "category/chilled.png",
-    "size": 6432,
     "sourcePackage": "优化素材"
   },
   {
@@ -161,35 +125,11 @@
     "sourcePackage": "优化素材"
   },
   {
-    "name": "基础调味",
-    "source": "二级分类/基础调味.png",
-    "sourceSha256": "899f159422472861c3f64b3f3f2f154b92ac5c512aa21ed134726cfe6d48209d",
-    "file": "category/basic-seasoning.png",
-    "size": 5355,
-    "sourcePackage": "优化素材"
-  },
-  {
-    "name": "复合调味",
-    "source": "二级分类/复合调味.png",
-    "sourceSha256": "44b5d83673b07094bd87dc64bf8e043a70b03c34f8c21ebf4902c6b025675304",
-    "file": "category/mixed-seasoning.png",
-    "size": 6782,
-    "sourcePackage": "优化素材"
-  },
-  {
     "name": "香辛料",
     "source": "二级分类/香辛料.png",
     "sourceSha256": "fe75edcea62782024e6a6f652771c0d27d5cabb9772c10f916b57f57d4326453",
     "file": "category/spices.png",
     "size": 7267,
-    "sourcePackage": "优化素材"
-  },
-  {
-    "name": "鱼类",
-    "source": "二级分类/鱼类.png",
-    "sourceSha256": "d90c105cf13067dc9608f0894198425b7b1d24c053d39b98dc8654d82aa6341b",
-    "file": "category/fish.png",
-    "size": 6634,
     "sourcePackage": "优化素材"
   },
   {

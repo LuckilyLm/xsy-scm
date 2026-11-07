@@ -38,11 +38,11 @@
   import { useMallTheme } from '@/composables/use-mall-theme';
 
   import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app';
-  import { mallFundsApi } from '@/api/mall/funds-api';
+  import { mallFundsApi } from '@/pages-sub/shared/api/mall/funds-api';
   import { xsySentry } from '@/lib/xsy-sentry';
   import { formatDateTime } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
-  import { movementTypeText } from '@/utils/funds-display';
+  import { movementTypeText } from '@/pages-sub/shared/utils/funds-display';
 
   const { themeStyle } = useMallTheme();
 

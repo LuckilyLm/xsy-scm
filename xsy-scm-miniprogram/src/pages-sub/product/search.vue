@@ -87,7 +87,7 @@
 
   import { onReachBottom } from '@dcloudio/uni-app';
   import ProductCard from '@/components/business/product-card.vue';
-  import { mallCatalogApi } from '@/api/mall';
+  import { mallCatalogApi } from '@/api/mall/catalog-api';
   import { SEARCH_HISTORY } from '@/constants/local-storage-key-const';
   import { xsySentry } from '@/lib/xsy-sentry';
   import { useMallCart } from '@/composables/use-mall-cart';

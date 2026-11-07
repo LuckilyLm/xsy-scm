@@ -1,6 +1,7 @@
 import { resolve } from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import uni from '@dcloudio/vite-plugin-uni';
+import { readFileSync } from 'node:fs';
 
 const pathResolve = (dir) => {
   return resolve(__dirname, '.', dir);
@@ -9,6 +10,26 @@ const pathResolve = (dir) => {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const useMock = env.VITE_APP_USE_MOCK === 'true';
+  if (process.env.UNI_PLATFORM === 'mp-weixin' && !useMock) {
+    const media = JSON.parse(readFileSync(pathResolve('media/manifest.json'), 'utf8'));
+    let mediaUrl;
+    try {
+      mediaUrl = new URL(env.VITE_APP_MEDIA_URL || '');
+    } catch {
+      // 缺失或格式错误统一交给下方中文配置提示，避免暴露包含凭据的原始地址。
+    }
+    if (
+      !mediaUrl ||
+      !['http:', 'https:'].includes(mediaUrl.protocol) ||
+      mediaUrl.username ||
+      mediaUrl.password ||
+      mediaUrl.search ||
+      mediaUrl.hash ||
+      !mediaUrl.pathname.replace(/\/+$/, '').endsWith('/' + media.digest)
+    ) {
+      throw new Error('请先上传media原图，并将VITE_APP_MEDIA_URL配置为本次资源目录地址');
+    }
+  }
 
   return {
     plugins: [uni()],

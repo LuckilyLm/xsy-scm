@@ -3359,6 +3359,7 @@ class MallTest {
                 MallCustomerAccountEntity account = account(2);
                 account.setPasswordHash(SecurityPasswordService.getEncryptPwd("same-password"));
                 when(accounts.selectByIdForUpdate(7L)).thenReturn(account);
+                when(securityLogin.checkLogin(7L, UserTypeEnum.MALL_CUSTOMER)).thenReturn(ResponseDTO.ok());
                 RequestMallCustomer requestCustomer = new RequestMallCustomer();
                 requestCustomer.setAccountId(7L);
                 requestCustomer.setSessionVersion(2);
@@ -3373,6 +3374,183 @@ class MallTest {
                             assertThat(exception.getErrorCode().getCode()).isEqualTo(40099);
                         });
                 verify(accounts, never()).changePassword(any(), any());
+                verify(securityLogin, never()).recordLoginFail(any(), any(), any(), any());
+            }
+
+            @Test
+            void wrongOldPasswordIsCountedBeforeEqualPasswordCheck() {
+                MallCustomerAccountEntity account = account(2);
+                account.setPasswordHash(SecurityPasswordService.getEncryptPwd("right-password"));
+                when(accounts.selectByIdForUpdate(7L)).thenReturn(account);
+                LoginFailEntity previous = new LoginFailEntity();
+                previous.setLoginFailCount(1);
+                when(securityLogin.checkLogin(7L, UserTypeEnum.MALL_CUSTOMER)).thenReturn(ResponseDTO.ok(previous));
+                var request = passwordRequest(2);
+                var form = passwordForm("wrong-password", "wrong-password");
+
+                assertThatThrownBy(() -> service.changePassword(request, form))
+                    .isInstanceOfSatisfying(com.xsy.scm.mall.account.exception.MallLoginRejectedException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(MallErrorCode.LOGIN_FAILED));
+                verify(securityLogin).recordLoginFail(7L, UserTypeEnum.MALL_CUSTOMER, "13800000000", previous);
+                verify(accounts, never()).changePassword(any(), any());
+            }
+
+            @Test
+            void staleSessionWithEqualPasswordsCannotConsumeCurrentFailureCount() {
+                when(accounts.selectByIdForUpdate(7L)).thenReturn(account(2));
+                assertThatThrownBy(() -> service.changePassword(passwordRequest(1), passwordForm("same-password", "same-password")))
+                    .isInstanceOfSatisfying(ScmBusinessException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(MallErrorCode.LOGIN_FAILED));
+                verifyNoInteractions(securityLogin);
+                verify(accounts, never()).changePassword(any(), any());
+            }
+
+            @Test
+            void lockedAccountCannotTryOldPasswordOrChangeIt() {
+                when(accounts.selectByIdForUpdate(7L)).thenReturn(account(2));
+                when(securityLogin.checkLogin(7L, UserTypeEnum.MALL_CUSTOMER))
+                    .thenReturn(new ResponseDTO<>(ResponseDTO.OK_CODE, null, false, "locked"));
+                // 没有密码哈希；只有先检查限制，才不会继续进入密码核验。
+                assertThatThrownBy(() -> service.changePassword(passwordRequest(2), passwordForm("same-password", "same-password")))
+                    .isInstanceOfSatisfying(ScmBusinessException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(MallErrorCode.LOGIN_LOCKED));
+                verify(securityLogin, never()).recordLoginFail(any(), any(), any(), any());
+                verify(accounts, never()).changePassword(any(), any());
+            }
+
+            @Test
+            void disabledAccountCannotChangePasswordOrConsumeAttempts() {
+                var account = account(2);
+                account.setStatus("DISABLED");
+                when(accounts.selectByIdForUpdate(7L)).thenReturn(account);
+                assertThatThrownBy(() -> service.changePassword(passwordRequest(2), passwordForm("old-password", "new-password")))
+                    .isInstanceOfSatisfying(ScmBusinessException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(MallErrorCode.ACCOUNT_DISABLED));
+                verifyNoInteractions(securityLogin);
+                verify(accounts, never()).changePassword(any(), any());
+            }
+
+            @Test
+            void successfulPasswordChangeClearsFailuresAndWritesTheChosenPassword() {
+                var account = account(2);
+                account.setPasswordHash(SecurityPasswordService.getEncryptPwd("old-password"));
+                when(accounts.selectByIdForUpdate(7L)).thenReturn(account);
+                when(securityLogin.checkLogin(7L, UserTypeEnum.MALL_CUSTOMER)).thenReturn(ResponseDTO.ok());
+                var customer = new CustomerEntity();
+                customer.setId(9L);
+                when(customers.requireTradable(9L)).thenReturn(customer);
+                service.changePassword(passwordRequest(2), passwordForm("old-password", "new-password"));
+                var hash = org.mockito.ArgumentCaptor.forClass(String.class);
+                verify(accounts).changePassword(eq(7L), hash.capture());
+                assertThat(SecurityPasswordService.matchesPwd("new-password", hash.getValue())).isTrue();
+                verify(securityLogin).removeLoginFail(7L, UserTypeEnum.MALL_CUSTOMER);
+                verify(securityLogin, never()).recordLoginFail(any(), any(), any(), any());
+            }
+
+            private static RequestMallCustomer passwordRequest(int version) {
+                var request = new RequestMallCustomer();
+                request.setAccountId(7L);
+                request.setSessionVersion(version);
+                return request;
+            }
+
+            @Test
+            @org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable(named = "XSY_PASSWORD_TX_IT_URL", matches = "jdbc:postgresql:.*")
+            void passwordFailureCommitsAndUnexpectedBusinessFailureRollsBack() {
+                var dataSource = new org.springframework.jdbc.datasource.DriverManagerDataSource(
+                    System.getenv("XSY_PASSWORD_TX_IT_URL"),
+                    com.xsy.scm.admin.test.PgITDatabase.user(), com.xsy.scm.admin.test.PgITDatabase.password());
+                var db = new org.springframework.jdbc.core.JdbcTemplate(dataSource);
+                assertThat(db.queryForObject("SELECT current_database()", String.class))
+                    .as("只允许独立_it测试库，不能将计数夹具写入开发库").endsWith("_it");
+                String schema = "password_" + UUID.randomUUID().toString().replace("-", "");
+                db.execute("CREATE SCHEMA " + schema);
+                try {
+                    // JDBC适配只替换持久层；失败次数算法、Spring事务与正式改密方法保持真实。
+                    db.execute("CREATE TABLE " + schema + ".account (id bigint primary key, password_hash text)");
+                    db.execute("CREATE TABLE " + schema + ".failure (id bigint primary key, attempts integer, locked_at timestamp)");
+                    String initialHash = SecurityPasswordService.getEncryptPwd("old-password");
+                    db.update("INSERT INTO " + schema + ".account VALUES (7, ?)", initialHash);
+                    var failureDao = mock(com.xsy.scm.base.module.support.securityprotect.dao.LoginFailDao.class);
+                    var config = mock(com.xsy.scm.base.module.support.securityprotect.service.Level3ProtectConfigService.class);
+                    when(config.getLoginFailMaxTimes()).thenReturn(2);
+                    when(config.getLoginFailLockSeconds()).thenReturn(1800);
+                    var realSecurity = new SecurityLoginService();
+                    org.springframework.test.util.ReflectionTestUtils.setField(realSecurity, "level3ProtectConfigService", config);
+                    org.springframework.test.util.ReflectionTestUtils.setField(realSecurity, "loginFailDao", failureDao);
+                    when(failureDao.selectByUserIdAndUserType(7L, UserTypeEnum.MALL_CUSTOMER.getValue())).thenAnswer(call -> {
+                        var rows = db.query("SELECT * FROM " + schema + ".failure", (row, index) -> {
+                            var fail = new LoginFailEntity();
+                            fail.setLoginFailId(row.getLong("id"));
+                            fail.setLoginFailCount(row.getInt("attempts"));
+                            var lockedAt = row.getTimestamp("locked_at");
+                            fail.setLoginLockBeginTime(lockedAt == null ? null : lockedAt.toLocalDateTime());
+                            return fail;
+                        });
+                        return rows.isEmpty() ? null : rows.get(0);
+                    });
+                    when(failureDao.insert(any(LoginFailEntity.class))).thenAnswer(call -> {
+                        LoginFailEntity fail = call.getArgument(0);
+                        return db.update("INSERT INTO " + schema + ".failure VALUES (1, ?, ?)",
+                            fail.getLoginFailCount(), fail.getLoginLockBeginTime());
+                    });
+                    when(failureDao.updateById(any(LoginFailEntity.class))).thenAnswer(call -> {
+                        LoginFailEntity fail = call.getArgument(0);
+                        return db.update("UPDATE " + schema + ".failure SET attempts=?, locked_at=? WHERE id=1",
+                            fail.getLoginFailCount(), fail.getLoginLockBeginTime());
+                    });
+                    org.mockito.Mockito.doAnswer(call -> {
+                        db.update("DELETE FROM " + schema + ".failure");
+                        return null;
+                    }).when(failureDao).deleteByUserIdAndUserType(7L, UserTypeEnum.MALL_CUSTOMER.getValue());
+                    when(accounts.selectByIdForUpdate(7L)).thenAnswer(call -> {
+                        var row = account(2);
+                        row.setPasswordHash(db.queryForObject("SELECT password_hash FROM " + schema + ".account WHERE id=7 FOR UPDATE", String.class));
+                        return row;
+                    });
+                    when(accounts.changePassword(eq(7L), any(String.class))).thenAnswer(call ->
+                        db.update("UPDATE " + schema + ".account SET password_hash=? WHERE id=7", call.getArgument(1, String.class)));
+                    var target = new MallAuthService(accounts, customers, realSecurity, wechat);
+                    var proxy = new org.springframework.aop.framework.ProxyFactory(target);
+                    proxy.setProxyTargetClass(true);
+                    proxy.addAdvice(new org.springframework.transaction.interceptor.TransactionInterceptor(
+                        new org.springframework.jdbc.datasource.DataSourceTransactionManager(dataSource),
+                        new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource()));
+                    var auth = (MallAuthService) proxy.getProxy();
+                    for (int attempt = 1; attempt <= 2; attempt++) {
+                        assertThatThrownBy(() -> auth.changePassword(passwordRequest(2), passwordForm("wrong-password", "wrong-password")))
+                            .isInstanceOfSatisfying(ScmBusinessException.class,
+                                error -> assertThat(error.getErrorCode()).isEqualTo(MallErrorCode.LOGIN_FAILED));
+                        assertThat(db.queryForObject("SELECT attempts FROM " + schema + ".failure", Integer.class)).isEqualTo(attempt);
+                    }
+                    assertThatThrownBy(() -> auth.changePassword(passwordRequest(2), passwordForm("old-password", "new-password")))
+                        .isInstanceOfSatisfying(ScmBusinessException.class,
+                            error -> assertThat(error.getErrorCode()).isEqualTo(MallErrorCode.LOGIN_LOCKED));
+                    assertThat(db.queryForObject("SELECT password_hash FROM " + schema + ".account", String.class)).isEqualTo(initialHash);
+                    db.update("DELETE FROM " + schema + ".failure");
+                    db.update("INSERT INTO " + schema + ".failure VALUES (1, 1, NULL)");
+                    when(customers.requireTradable(9L)).thenThrow(new ScmBusinessException(MallErrorCode.ACCOUNT_DISABLED));
+                    assertThatThrownBy(() -> auth.changePassword(passwordRequest(2), passwordForm("old-password", "new-password")))
+                        .isInstanceOf(ScmBusinessException.class);
+                    assertThat(db.queryForObject("SELECT password_hash FROM " + schema + ".account", String.class)).isEqualTo(initialHash);
+                    assertThat(db.queryForObject("SELECT attempts FROM " + schema + ".failure", Integer.class)).isEqualTo(1);
+                    var customer = new CustomerEntity();
+                    customer.setId(9L);
+                    org.mockito.Mockito.doReturn(customer).when(customers).requireTradable(9L);
+                    auth.changePassword(passwordRequest(2), passwordForm("old-password", "new-password"));
+                    assertThat(db.queryForObject("SELECT count(*) FROM " + schema + ".failure", Integer.class)).isZero();
+                    assertThat(SecurityPasswordService.matchesPwd("new-password",
+                        db.queryForObject("SELECT password_hash FROM " + schema + ".account", String.class))).isTrue();
+                } finally {
+                    db.execute("DROP SCHEMA " + schema + " CASCADE");
+                }
+            }
+
+            private static MallPasswordChangeForm passwordForm(String oldPassword, String newPassword) {
+                var form = new MallPasswordChangeForm();
+                form.setOldPassword(oldPassword);
+                form.setNewPassword(newPassword);
+                return form;
             }
 
             @Test

@@ -41,12 +41,12 @@
   import { useMallTheme } from '@/composables/use-mall-theme';
 
   import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app';
-  import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
+  import { mallAfterSaleApi } from '@/pages-sub/shared/api/mall/after-sale-api';
   import { xsySentry } from '@/lib/xsy-sentry';
   import { COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
   import { formatDateTime } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
-  import { afterSaleStatusLevel, afterSaleStatusText } from '@/utils/after-sale-display';
+  import { afterSaleStatusLevel, afterSaleStatusText } from '@/pages-sub/shared/utils/after-sale-display';
 
   const { themeStyle } = useMallTheme();
 

@@ -240,7 +240,7 @@
 
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
   import { mallOrderApi } from '@/api/mall/order-api';
-  import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
+  import { mallAfterSaleApi } from '@/pages-sub/shared/api/mall/after-sale-api';
   import { xsySentry } from '@/lib/xsy-sentry';
   import {
     CANCEL_REASONS,
@@ -253,7 +253,7 @@
     operationText,
     settlementMethodText,
   } from '@/utils/order-display';
-  import { afterSaleStatusLevel, afterSaleStatusText, canApplyAfterSale } from '@/utils/after-sale-display';
+  import { afterSaleStatusLevel, afterSaleStatusText, canApplyAfterSale } from '@/pages-sub/shared/utils/after-sale-display';
   import { displayMoney } from '@/utils/money-display';
 
   const { themeStyle } = useMallTheme();

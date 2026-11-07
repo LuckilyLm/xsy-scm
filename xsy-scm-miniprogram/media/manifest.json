@@ -1,0 +1,235 @@
+{
+  "digest": "e62b6c6cabbb8a49",
+  "files": [
+    {
+      "file": "mall-login/hero.png",
+      "sha256": "fc80711b557eeb2ab5cca1047a0974c992261f80c79d1408076948a84236d20c",
+      "size": 98171
+    },
+    {
+      "file": "mall-login/waves.png",
+      "sha256": "1e57b3cbb9518ed9ac2b5f1cf16259b231ab7c140915f1ab14efde5a4e2b1904",
+      "size": 17864
+    },
+    {
+      "file": "mall-profile/about.png",
+      "sha256": "17204e4f7b619de9944a23bc28eb1d319b7748060d4260013eb1587a4ceec251",
+      "size": 3947
+    },
+    {
+      "file": "mall-profile/address.png",
+      "sha256": "f9eab771c4450b41864a6d02af21f53be46fc9a1abec4997c8d412a6f902c72d",
+      "size": 3580
+    },
+    {
+      "file": "mall-profile/after-sale-rule.png",
+      "sha256": "67519b27af6872c0feaa16b8705004e5de7c7c54c5ae0ef4cdcf4ff150ced7c7",
+      "size": 3675
+    },
+    {
+      "file": "mall-profile/after-sale.png",
+      "sha256": "a007f771ad2b6882d7596f63f0e117f07f9d99c5fac0b1509370bee85ab1b1c9",
+      "size": 4368
+    },
+    {
+      "file": "mall-profile/announcement.png",
+      "sha256": "73cfe3b9e212a2d16e45603ff6015e3e323b922f63237a6edf7e4654f2a8bb26",
+      "size": 4130
+    },
+    {
+      "file": "mall-profile/cart.png",
+      "sha256": "ebbfd2f2ce0e4c66cd7f19af0f734371ae08fdcb360ff8ceb1de2dd14e165a7f",
+      "size": 5267
+    },
+    {
+      "file": "mall-profile/my-coupons.png",
+      "sha256": "d8b2a54619c699c9516711b3580ff550529e6704204647a97d56bbd25329dd0e",
+      "size": 6696
+    },
+    {
+      "file": "mall-profile/orders.png",
+      "sha256": "74c6773ba3c94f4c2395321a08aa03f9877f12be271d6700244b81e7222d528e",
+      "size": 4111
+    },
+    {
+      "file": "mall-profile/password.png",
+      "sha256": "6f20cd81e81af4b068b84206fcb51cdf02f66067296176a5ccbd1a70c63a8ef2",
+      "size": 3715
+    },
+    {
+      "file": "mall-profile/terms.png",
+      "sha256": "a95f5d810495c377c32d94140b7261749572c95dc35eac33df317f82afb0cca6",
+      "size": 3348
+    },
+    {
+      "file": "mall-profile/trace.png",
+      "sha256": "48dcb8c9f4b31d3439c52a2618d4f862fe33c50f72ad1723d35e0173149bb9c7",
+      "size": 3707
+    },
+    {
+      "file": "mall-visual/category/beef-lamb.png",
+      "sha256": "2c2cc895ddacf226ca60b44a392abc694f5e481634b143707db2c65385c60f75",
+      "size": 7088
+    },
+    {
+      "file": "mall-visual/category/cooking-oil.png",
+      "sha256": "9b1b7ab1a2bf4b9301ceec55df664efb5ff3057a1f98f3991000c0e1837e6081",
+      "size": 5908
+    },
+    {
+      "file": "mall-visual/category/eggs.png",
+      "sha256": "afb200bf84ce380cb797167129d75494186b4a9c4257a824d383a6ad1512b817",
+      "size": 5742
+    },
+    {
+      "file": "mall-visual/category/fish-shrimp.png",
+      "sha256": "b4b767104b72a28f74fc2039c0cef212eb4358be4afa0242bc162e0ba487dbf1",
+      "size": 8049
+    },
+    {
+      "file": "mall-visual/category/frozen.png",
+      "sha256": "2b44e46b487a055d4df92bcc3957323cfdc3b076897b78287b8538bf4bb08d29",
+      "size": 6405
+    },
+    {
+      "file": "mall-visual/category/fruit.png",
+      "sha256": "e66397c50387454fc44863ff93016b89862dc828ff353dc57c467ddd8a92256b",
+      "size": 7580
+    },
+    {
+      "file": "mall-visual/category/gourds.png",
+      "sha256": "82bdba956c8b51c902c251cf0baba73c7d946bfe87ca3fd54108cd82a1b27061",
+      "size": 6615
+    },
+    {
+      "file": "mall-visual/category/grain-oil.png",
+      "sha256": "f4b0b7792afb4b1c6ca47135db233a371c3f580416d414778df0814fbe390fd7",
+      "size": 6788
+    },
+    {
+      "file": "mall-visual/category/grains.png",
+      "sha256": "d32bbd00f4bdb7dd5da961b2ced560e394fc843776807f9f8a11e59e4b0215c7",
+      "size": 8641
+    },
+    {
+      "file": "mall-visual/category/leafy.png",
+      "sha256": "31d6eec2b3c983783510c4486a19d682e716bf4895ed11baf81fd1514e4b638f",
+      "size": 6676
+    },
+    {
+      "file": "mall-visual/category/meat-eggs.png",
+      "sha256": "4a50531310b94229949076bc75fc819c28727f4df4018bc4d3bafce57c929bba",
+      "size": 6630
+    },
+    {
+      "file": "mall-visual/category/mushrooms.png",
+      "sha256": "f5e90677c026ba3e973a8314644597d58c2dfec8bb112f49cdd59c37833a9974",
+      "size": 6810
+    },
+    {
+      "file": "mall-visual/category/pork.png",
+      "sha256": "16ffea362890eee2673a46f4bc0e0b961b665616280a8062fd2d86614990f5fb",
+      "size": 6012
+    },
+    {
+      "file": "mall-visual/category/poultry.png",
+      "sha256": "60b1f1d6a284c25b166fb8ba9c4aa7ce921f8bcf6de9576020277a0235eef68c",
+      "size": 6504
+    },
+    {
+      "file": "mall-visual/category/rice-flour.png",
+      "sha256": "d4c62c4dabc3b63416a601f4445c78ca0b7242d200417d58d16d3070d82d7d17",
+      "size": 6880
+    },
+    {
+      "file": "mall-visual/category/roots.png",
+      "sha256": "de4aa3955741f65559c6b3be88bdcd8f64f831b193a0ab7879f6b095b80e0a41",
+      "size": 5668
+    },
+    {
+      "file": "mall-visual/category/seasoning.png",
+      "sha256": "bcd86eaf7954804fdd058eb0ffe7b677ee10e88f33da47d82c2f778a8c1d260f",
+      "size": 6429
+    },
+    {
+      "file": "mall-visual/category/shrimp-crab.png",
+      "sha256": "88e302ee471563789a8f701df46c62a28779e5b0b99978368a9836869db3135e",
+      "size": 8308
+    },
+    {
+      "file": "mall-visual/category/spices.png",
+      "sha256": "654779221ccd4563757542a28c5dd27f968cf12990cf53cd4498f587f16644e7",
+      "size": 7267
+    },
+    {
+      "file": "mall-visual/category/vegetables.png",
+      "sha256": "03716d0d8bd1c2b9be93a98aac7224a8908b9fcc6d01edd4ee72321591e0d605",
+      "size": 7734
+    },
+    {
+      "file": "mall-visual/empty/address.png",
+      "sha256": "e8362f219174b126036f4ba8e4fc061e7ce7176b5286eef90e9ccdd2b96c01f0",
+      "size": 11529
+    },
+    {
+      "file": "mall-visual/empty/cart.png",
+      "sha256": "31ea9b7f1c318cfce86d50f2f5ae3e16dc59297ad109c7358cda51efb6e372bd",
+      "size": 11290
+    },
+    {
+      "file": "mall-visual/empty/coupons.png",
+      "sha256": "ac8b545fa9c918862bf042e0f2b1537a09f946e4f14b4992e7b707af7b185012",
+      "size": 10926
+    },
+    {
+      "file": "mall-visual/empty/network.png",
+      "sha256": "84383d4e92a90beb38ff030f07c26bc3f268c78fe2382c7625ed503b5f394206",
+      "size": 12494
+    },
+    {
+      "file": "mall-visual/empty/orders.png",
+      "sha256": "0e6a1e4ba9bb2251f162e572679549a48828c58d4ae209bd8e4e2ad8ec696196",
+      "size": 10164
+    },
+    {
+      "file": "mall-visual/empty/products.png",
+      "sha256": "9eaa9697fc87181ced46f8608fde2474b4056af9d380927aa216b11539953f98",
+      "size": 12074
+    },
+    {
+      "file": "mall-visual/empty/search.png",
+      "sha256": "7d89eee5a8e8f28a819fba19ea58504b4d8f8238b3c709de954ffb5142f91311",
+      "size": 9713
+    },
+    {
+      "file": "mall-visual/shortcut/activities.png",
+      "sha256": "2b6c87f0e3c61030a5740b22c273d6009f94704479e658fbebfa230ed71bf958",
+      "size": 6472
+    },
+    {
+      "file": "mall-visual/shortcut/coupons.png",
+      "sha256": "ae84277f5a07cd9df2dd017b61a498a4cc8ec32e0c79e50ebf1df8d67a416edc",
+      "size": 5522
+    },
+    {
+      "file": "mall-visual/shortcut/delivery.png",
+      "sha256": "98b6e8bbc6f4afa9b87a703b5d8a0af9a069a5c6b007b74766afef2b9788b24c",
+      "size": 5598
+    },
+    {
+      "file": "mall-visual/shortcut/frequent.png",
+      "sha256": "602e0cbdb5cea6961e1d2b01301ab984d469dac4efe3b0123527f30d21b4ae27",
+      "size": 5205
+    },
+    {
+      "file": "mall-visual/shortcut/new.png",
+      "sha256": "901c0340443ff61f6d35ea589ad58fd89d5fa63d7769a9b4f89803dae69cf22a",
+      "size": 7070
+    },
+    {
+      "file": "mall-visual/shortcut/sale.png",
+      "sha256": "027e3004a62554b8b2e4a4cc37c4c4d633dbf30d9d018969e5a622118223df63",
+      "size": 5941
+    }
+  ]
+}

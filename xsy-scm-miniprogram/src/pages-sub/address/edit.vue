@@ -101,11 +101,11 @@
 
   import { onLoad } from '@dcloudio/uni-app';
   import { mallAddressApi } from '@/api/mall/address-api';
-  import { mallMapApi } from '@/api/mall/map-api';
+  import { mallMapApi } from '@/pages-sub/shared/api/mall/map-api';
   import { xsySentry } from '@/lib/xsy-sentry';
-  import { useKeyboardHeight } from '@/composables/use-keyboard-height';
-  import { getCurrentLocation, requestLocationPermission } from '@/composables/use-location-permission';
-  import { guideToSetting } from '@/composables/use-permission';
+  import { useKeyboardHeight } from '@/pages-sub/shared/composables/use-keyboard-height';
+  import { getCurrentLocation, requestLocationPermission } from '@/pages-sub/shared/composables/use-location-permission';
+  import { guideToSetting } from '@/pages-sub/shared/composables/use-permission';
   import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 
   const { theme, themeStyle } = useMallTheme();

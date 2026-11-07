@@ -139,7 +139,7 @@
 
   import { onLoad } from '@dcloudio/uni-app';
   import { mallCartApi } from '@/api/mall/cart-api';
-  import { mallCatalogApi } from '@/api/mall';
+  import { mallCatalogApi } from '@/api/mall/catalog-api';
   import { isApiError } from '@/lib/xsy-request';
   import { xsySentry } from '@/lib/xsy-sentry';
   import { useMallCart } from '@/composables/use-mall-cart';

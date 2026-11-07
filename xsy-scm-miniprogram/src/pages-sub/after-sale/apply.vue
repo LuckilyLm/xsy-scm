@@ -84,12 +84,12 @@
 
   import { onLoad } from '@dcloudio/uni-app';
   import { mallOrderApi } from '@/api/mall/order-api';
-  import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
+  import { mallAfterSaleApi } from '@/pages-sub/shared/api/mall/after-sale-api';
   import { xsySentry } from '@/lib/xsy-sentry';
   import { displayQuantity } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
-  import { AFTERSALE_REASONS, estimateLineAmount, isValidApplyQuantity, sumAmounts } from '@/utils/after-sale-display';
-  import { useKeyboardHeight } from '@/composables/use-keyboard-height';
+  import { AFTERSALE_REASONS, estimateLineAmount, isValidApplyQuantity, sumAmounts } from '@/pages-sub/shared/utils/after-sale-display';
+  import { useKeyboardHeight } from '@/pages-sub/shared/composables/use-keyboard-height';
 
   const { themeStyle } = useMallTheme();
   /** 键盘弹出时把提交栏抬到键盘上沿 */

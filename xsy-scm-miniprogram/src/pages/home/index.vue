@@ -28,7 +28,7 @@
           :circular="section.items.length > 1"
         >
           <swiper-item v-for="item in section.items" :key="item.key" class="home__banner-slide" @click="goHomeLink(item)">
-            <image class="home__banner-image" :src="item.imageUrl" :alt="item.title || '商城活动'" mode="aspectFit" />
+            <XsyRemoteImage class="home__banner-image" :src="item.imageUrl" :alt="item.title || '商城活动'" mode="aspectFit" />
           </swiper-item>
         </swiper>
       </view>
@@ -46,7 +46,7 @@
               @click="goCategory(item.categoryId)"
             >
               <view class="home__rail-icon">
-                <image
+                <XsyRemoteImage
                   v-if="categoryIcon(item.categoryName)"
                   class="home__rail-glyph"
                   :src="categoryIcon(item.categoryName)"
@@ -71,7 +71,7 @@
             hover-class="xsy-press--active"
             @click="goService(shortcut.key)"
           >
-            <image class="home__service-image" :src="MALL_SHORTCUT_IMAGES[shortcut.key]" mode="aspectFit" aria-hidden="true" />
+            <XsyRemoteImage class="home__service-image" :src="MALL_SHORTCUT_IMAGES[shortcut.key]" mode="aspectFit" aria-hidden="true" />
             <text class="home__shortcut-text">{{ shortcut.label }}</text>
           </view>
         </view>
@@ -89,13 +89,13 @@
       </view>
       <view v-else-if="section.type === 'SHORTCUT_GROUP'" class="home__shortcuts">
         <view v-for="item in section.items" :key="item.key" class="home__shortcut" @click="goHomeLink(item)">
-          <image v-if="item.imageUrl" class="home__shortcut-icon" :src="item.imageUrl" mode="aspectFill" lazy-load />
+          <XsyRemoteImage v-if="item.imageUrl" class="home__shortcut-icon" :src="item.imageUrl" mode="aspectFill" lazy-load />
           <view v-else class="home__shortcut-icon home__shortcut-icon--fallback">{{ (item.title || '入').slice(0, 1) }}</view>
           <text class="home__shortcut-text">{{ item.title }}</text>
         </view>
       </view>
       <view v-else-if="section.type === 'ACTIVITY_TOPIC'" class="home__topic" @click="goHomeLink(section)">
-        <image v-if="section.imageUrl" :src="section.imageUrl" :alt="section.title" class="home__topic-image" mode="aspectFit" lazy-load />
+        <XsyRemoteImage v-if="section.imageUrl" :src="section.imageUrl" :alt="section.title" class="home__topic-image" mode="aspectFit" lazy-load />
         <view v-else class="home__topic-copy">
           <text class="home__section-title">{{ section.title }}</text>
           <text v-if="section.subtitle" class="home__topic-subtitle">{{ section.subtitle }}</text>
@@ -170,6 +170,7 @@
 </template>
 
 <script setup>
+  import XsyRemoteImage from '@/components/common/xsy-remote-image.vue';
   import { computed, ref, watch } from 'vue';
   import { onHide, onPageScroll, onReachBottom, onShow } from '@dcloudio/uni-app';
   import { guardPage } from '@/lib/login-guard';
@@ -179,7 +180,7 @@
   import XsyEmpty from '@/components/common/xsy-empty.vue';
   import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
   import { LOAD_MORE_TEXT } from '@/constants/load-more-const';
-  import { mallCatalogApi } from '@/api/mall';
+  import { mallCatalogApi } from '@/api/mall/catalog-api';
   import { mallAddressApi } from '@/api/mall/address-api';
   import { mallPromotionApi } from '@/api/mall/promotion-api';
   import { mallHomeApi } from '@/api/mall/home-api';

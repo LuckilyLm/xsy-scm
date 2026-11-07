@@ -38,7 +38,7 @@
 
 <script setup>
   import { computed, reactive, ref } from 'vue';
-  import { mallAuthApi } from '@/api/mall';
+  import { mallAuthApi } from '@/api/mall/auth-api';
   import { isApiError } from '@/lib/xsy-request';
   import { useUserStore } from '@/store/modules/system/user';
   import { useMallTheme } from '@/composables/use-mall-theme';

@@ -13,6 +13,7 @@
             "urlCheck" : false
         },
         "usingComponents" : true,
+        "mergeVirtualHostAttributes" : true,
         /* 按需注入：启动时只注入当前页面用到的组件代码，缩短冷启动 */
         "lazyCodeLoading" : "requiredComponents",
         /* 分包优化：分包内的静态资源与 JS 不重复计入主包 */

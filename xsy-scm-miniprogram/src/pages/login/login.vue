@@ -1,6 +1,6 @@
 <template>
   <view class="login" :style="themeStyle">
-    <image class="login__scene" :src="LOGIN_IMAGES.hero" mode="widthFix" aria-hidden="true" />
+    <XsyRemoteImage class="login__scene" :src="LOGIN_IMAGES.hero" mode="widthFix" aria-hidden="true" fallback-icon="" />
     <view class="login__panel">
       <image class="login__logo" :src="LOGIN_IMAGES.logo" mode="aspectFit" alt="鲜蔬源SCM" />
       <view class="login__heading">
@@ -83,13 +83,15 @@
       </button>
       <!-- #endif -->
     </view>
-    <image class="login__waves" :src="LOGIN_IMAGES.waves" mode="widthFix" aria-hidden="true" />
+    <XsyRemoteImage class="login__waves" :src="LOGIN_IMAGES.waves" mode="widthFix" aria-hidden="true" fallback-icon="" />
   </view>
 </template>
 
 <script setup>
+  import XsyRemoteImage from '@/components/common/xsy-remote-image.vue';
   import { computed, reactive, ref } from 'vue';
-  import { mallAuthApi } from '@/api/mall';
+  import { mallMedia } from '@/utils/mall-media';
+  import { mallAuthApi } from '@/api/mall/auth-api';
   import { useUserStore } from '@/store/modules/system/user';
   import { useMallTheme } from '@/composables/use-mall-theme';
   import { useMallStorefront } from '@/composables/use-mall-storefront';
@@ -103,14 +105,14 @@
 
   // 登录拆分图来自交付参考包，表单和登录交互仍使用原生控件。
   const LOGIN_IMAGES = {
-    hero: '/static/mall-login/hero.png',
+    hero: mallMedia('mall-login/hero.png'),
     logo: '/static/mall-login/logo.png',
-    waves: '/static/mall-login/waves.png',
+    waves: mallMedia('mall-login/waves.png'),
     phone: '/static/mall-login/phone.png',
     lock: '/static/mall-login/lock.png',
     info: '/static/mall-login/info.png',
     eyeClosed: '/static/mall-login/eye-closed.png',
-    wechat: '/static/mall-login/wechat.png',
+    wechat: '/static/mall-login/wechat.webp',
   };
 
   const submitting = ref(false);

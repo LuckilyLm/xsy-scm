@@ -45,11 +45,11 @@
   import { useMallTheme } from '@/composables/use-mall-theme';
 
   import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
-  import { mallFundsApi } from '@/api/mall/funds-api';
+  import { mallFundsApi } from '@/pages-sub/shared/api/mall/funds-api';
   import { xsySentry } from '@/lib/xsy-sentry';
   import { formatDate } from '@/utils/order-display';
   import { displayMoney } from '@/utils/money-display';
-  import { RECEIVABLE_FILTERS, receivableStateText } from '@/utils/funds-display';
+  import { RECEIVABLE_FILTERS, receivableStateText } from '@/pages-sub/shared/utils/funds-display';
   import { LOAD_MORE_TEXT } from '@/constants/load-more-const';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 

@@ -144,8 +144,8 @@
   import { displayMoney } from '@/utils/money-display';
   import { CHECKOUT_ADDRESS } from '@/constants/local-storage-key-const';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
-  import { useKeyboardHeight } from '@/composables/use-keyboard-height';
-  import { previewCheckout } from '@/utils/checkout-preview';
+  import { useKeyboardHeight } from '@/pages-sub/shared/composables/use-keyboard-height';
+  import { previewCheckout } from '@/pages-sub/shared/utils/checkout-preview';
 
   const { themeStyle } = useMallTheme();
   // 备注使用系统原生避让；输入期间隐藏提交栏，避免键盘顶起与手工bottom叠加。

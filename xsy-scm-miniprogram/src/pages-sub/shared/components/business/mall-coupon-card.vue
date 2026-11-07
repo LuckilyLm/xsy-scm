@@ -18,7 +18,7 @@
 </template>
 
 <script setup>
-  import { couponBenefit, couponThreshold, couponWindow } from '@/utils/promotion-display';
+  import { couponBenefit, couponThreshold, couponWindow } from '@/pages-sub/shared/utils/promotion-display';
 
   const props = defineProps({
     coupon: { type: Object, required: true },

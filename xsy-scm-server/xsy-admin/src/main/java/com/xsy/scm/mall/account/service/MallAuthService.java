@@ -112,17 +112,27 @@ public class MallAuthService {
         return profile(account, customer, requestCustomer.getLoginMethod());
     }
 
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = MallLoginRejectedException.class)
     public MallProfileVO changePassword(RequestMallCustomer requestCustomer, MallPasswordChangeForm form) {
         MallCustomerAccountEntity account = accountDao.selectByIdForUpdate(requestCustomer.getAccountId());
-        if (account == null || !SecurityPasswordService.matchesPwd(form.getOldPassword(), account.getPasswordHash())) {
+        // 过期会话不能消耗当前账号的密码尝试次数，凭证版本在账号行锁内重新核对。
+        if (account == null || !Objects.equals(requestCustomer.getSessionVersion(), account.getVersion())) {
             throw new ScmBusinessException(MallErrorCode.LOGIN_FAILED);
         }
-        if (!Objects.equals(requestCustomer.getSessionVersion(), account.getVersion())) {
-            throw new ScmBusinessException(MallErrorCode.LOGIN_FAILED);
+        if (!MallAccountStatusEnum.ENABLED.name().equals(account.getStatus())) {
+            throw new ScmBusinessException(MallErrorCode.ACCOUNT_DISABLED);
         }
-        // 必须放在旧密码校验之后：提前返回等于向持令牌者确认了密码，等于绕过登录失败计数。
-        // 新旧密码相同不能沿用「手机号或密码错误」，否则用户会以为是自己旧密码输错了。
+        var loginCheck = securityLoginService.checkLogin(account.getId(), UserTypeEnum.MALL_CUSTOMER);
+        if (!Boolean.TRUE.equals(loginCheck.getOk())) {
+            throw new MallLoginRejectedException(MallErrorCode.LOGIN_LOCKED);
+        }
+        if (!SecurityPasswordService.matchesPwd(form.getOldPassword(), account.getPasswordHash())) {
+            securityLoginService.recordLoginFail(account.getId(), UserTypeEnum.MALL_CUSTOMER, account.getLoginPhone(),
+                loginCheck.getData());
+            // 与密码登录共用计数；拒绝异常不回滚，保证连续输错后限制仍然生效。
+            throw new MallLoginRejectedException(MallErrorCode.LOGIN_FAILED);
+        }
+        // 旧密码正确后才提示新旧相同，避免用该提示绕过密码核验及失败计数。
         if (Objects.equals(form.getNewPassword(), form.getOldPassword())) {
             throw new ScmBusinessException(MallErrorCode.PASSWORD_SAME_AS_OLD);
         }

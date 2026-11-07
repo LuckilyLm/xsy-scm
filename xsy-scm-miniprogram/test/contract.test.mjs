@@ -4,6 +4,13 @@ import test from 'node:test';
 import { URL } from 'node:url';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+const configuredRoutes = (source) => {
+  const config = JSON.parse(source);
+  return new Set([
+    ...config.pages.map((page) => page.path),
+    ...config.subPackages.flatMap((group) => group.pages.map((page) => `${group.root}/${page.path}`)),
+  ]);
+};
 
 test('XSY success contract uses code zero', () => {
   const constants = read('../src/constants/error-code-const.js');
@@ -14,7 +21,16 @@ test('XSY success contract uses code zero', () => {
 
 test('release exposes customer-scoped commerce APIs without employee account endpoints', () => {
   const auth = read('../src/api/mall/auth-api.js');
-  const api = read('../src/api/mall/index.js');
+  const api = [
+    'api/mall/cart-api.js',
+    'api/mall/address-api.js',
+    'api/mall/order-api.js',
+    'pages-sub/shared/api/mall/after-sale-api.js',
+    'pages-sub/shared/api/mall/funds-api.js',
+    'api/mall/home-api.js',
+  ]
+    .map((file) => read('../src/' + file))
+    .join('\n');
   assert.match(auth, /auth\/login/);
   assert.match(auth, /password\/change/);
   assert.match(auth, /auth\/wechat\/phone-login/);
@@ -24,12 +40,12 @@ test('release exposes customer-scoped commerce APIs without employee account end
   assert.match(api, /Order/);
   assert.match(api, /AfterSale/);
   assert.match(api, /Funds/);
-  assert.match(api, /mallHomeApi \} from '\.\/home-api'/);
+  assert.match(api, /export const mallHomeApi/);
   assert.doesNotMatch(api, /Account/);
 });
 
 test('funds pages use only customer read APIs and do not create payment commands', () => {
-  const api = read('../src/api/mall/funds-api.js');
+  const api = read('../src/pages-sub/shared/api/mall/funds-api.js');
   const pages = read('../src/pages.json');
   const mine = read('../src/pages/mine/index.vue');
   const wallet = read('../src/pages-sub/wallet/movements.vue');
@@ -39,8 +55,11 @@ test('funds pages use only customer read APIs and do not create payment commands
   assert.match(api, /\/scm\/mall\/funds\/receivables/);
   assert.doesNotMatch(api, /\/scm\/(balance|finance)\//);
   assert.doesNotMatch(api, /postRequest|recharge|repay/);
-  assert.match(pages, /pages-sub\/wallet/);
-  assert.match(pages, /pages-sub\/credit/);
+  assert.ok(configuredRoutes(pages).has('pages-sub/wallet/index'));
+  assert.ok(configuredRoutes(pages).has('pages-sub/wallet/movements'));
+  assert.ok(configuredRoutes(pages).has('pages-sub/credit/index'));
+  assert.ok(configuredRoutes(pages).has('pages-sub/credit/receivables'));
+  assert.ok(configuredRoutes(pages).has('pages-sub/credit/detail'));
   // 余额与账期入口已从「我的」下线（资金只读，由后台处理），页面仍保留只读明细路由。
   assert.doesNotMatch(mine, /goWallet|goCredit/);
   assert.match(wallet, /row\.returnId/);
@@ -49,7 +68,7 @@ test('funds pages use only customer read APIs and do not create payment commands
 });
 
 test('after-sale center exposes apply, list and detail pages', () => {
-  const api = read('../src/api/mall/after-sale-api.js');
+  const api = read('../src/pages-sub/shared/api/mall/after-sale-api.js');
   const pages = read('../src/pages.json');
   const mine = read('../src/pages/mine/index.vue');
   assert.match(api, /\/scm\/mall\/after-sales/);
@@ -57,7 +76,7 @@ test('after-sale center exposes apply, list and detail pages', () => {
   assert.match(api, /getDetail/);
   assert.match(api, /apply: \(param, idempotencyKey\)/);
   assert.match(api, /cancel: \(returnId, idempotencyKey\)/);
-  assert.match(pages, /pages-sub\/after-sale/);
+  for (const name of ['apply', 'list', 'detail']) assert.ok(configuredRoutes(pages).has(`pages-sub/after-sale/${name}`));
   assert.match(mine, /pages-sub\/after-sale\/list/);
 });
 
@@ -75,7 +94,7 @@ test('after-sale apply submits items and reason with an idempotency key', () => 
 
 test('after-sale estimates use fixed-point math, never float sums', () => {
   const page = read('../src/pages-sub/after-sale/apply.vue');
-  const util = read('../src/utils/after-sale-display.js');
+  const util = read('../src/pages-sub/shared/utils/after-sale-display.js');
   assert.match(page, /estimateLineAmount/);
   assert.match(page, /sumAmounts/);
   // 金额按四位小数定点整数运算
@@ -85,7 +104,7 @@ test('after-sale estimates use fixed-point math, never float sums', () => {
 
 test('after-sale status text maps the server-derived display status', () => {
   const list = read('../src/pages-sub/after-sale/list.vue');
-  const util = read('../src/utils/after-sale-display.js');
+  const util = read('../src/pages-sub/shared/utils/after-sale-display.js');
   assert.match(util, /REVIEWING: \{ text: '审核中'/);
   assert.match(list, /afterSaleStatusText\(record\.displayStatus\)/);
   // 客户端不按原始退货状态自行推导阶段
@@ -94,7 +113,7 @@ test('after-sale status text maps the server-derived display status', () => {
 
 test('after-sale detail renders server progress and the original-funding breakdown', () => {
   const detail = read('../src/pages-sub/after-sale/detail.vue');
-  const util = read('../src/utils/after-sale-display.js');
+  const util = read('../src/pages-sub/shared/utils/after-sale-display.js');
   // 节点文案与 done 都由服务端给出，客户端只渲染
   assert.match(detail, /v-for="\(node, index\) in record\.progress"/);
   assert.match(detail, /:class="\{ 'ad-step--pending': !node\.done \}"/);
@@ -167,8 +186,8 @@ test('order center exposes customer-scoped list and detail pages', () => {
   const success = read('../src/pages-sub/checkout/success.vue');
   assert.match(api, /getList/);
   assert.match(api, /getDetail/);
-  assert.match(pages, /pages\/order\/index/);
-  assert.match(pages, /pages-sub\/order/);
+  assert.ok(configuredRoutes(pages).has('pages/order/index'));
+  assert.ok(configuredRoutes(pages).has('pages-sub/order/detail'));
   assert.match(success, /pages-sub\/order\/detail/);
   assert.doesNotMatch(success, /下一阶段开放/);
 });
@@ -331,7 +350,7 @@ test('login and password forms match the backend payload', () => {
   assert.match(store, /profile\.firstPasswordChange/);
   assert.match(password, /oldPassword/);
   assert.doesNotMatch(password, /currentPassword/);
-  // 新旧密码相同后台只回「手机号或密码错误」，客户端必须先给出可理解的提示
+  // 服务端用40099区分新旧密码相同；客户端提前提示并避免发送无效改密请求。
   assert.match(password, /form\.newPassword === form\.oldPassword/);
   assert.match(password, /新密码不能与当前密码相同/);
 });
@@ -426,7 +445,7 @@ test('published mall home uses the customer endpoint and checks web links agains
   assert.match(web, /Promise\.allSettled\(\[mallHomeApi\.published\(\), mallHomeApi\.popup\(\)\]\)/);
   assert.match(web, /popup\?\.active \? popup\.items \|\| \[\]/);
   assert.match(web, /item\.linkType === 'EXTERNAL_URL' && item\.linkTarget === value/);
-  assert.match(routes, /"root": "pages-sub\/mall"/);
+  assert.ok(configuredRoutes(routes).has('pages-sub/mall/web'));
 });
 
 test('catalog adapter maps backend VO fields to the display model', () => {
@@ -498,5 +517,5 @@ test('order summary aggregates on the server and reuses the shared quantity form
   assert.doesNotMatch(page, /toFixed\(/);
   // 区间按日期传，客户端不拼时间戳
   assert.match(page, /startDate: startDate\.value \|\| undefined/);
-  assert.match(pages, /"path": "summary"/);
+  assert.ok(configuredRoutes(pages).has('pages-sub/order/summary'));
 });

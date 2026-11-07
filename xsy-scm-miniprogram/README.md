@@ -91,7 +91,27 @@ AppID 必须与实际小程序一致；更换小程序时同步核对 `src/manif
 
 首页组件为空时仍可发布主题，默认商品与活动区域继续显示。顶部品牌区、主要动作和领券入口使用统一派生的渐变。店铺名称用于首页、我的和登录页；有效 HTTPS 链接在“我的”中提供复制入口。
 
-分类、快捷与空状态使用用户交付的轻3D PNG，映射集中于 `src/utils/category-icon.js` 和 `src/constants/mall-visual-const.js`，来源与原图哈希见 `src/static/mall-visual/sources.json`。主图与专题通过后台上传发布；图片完整展示自带文案。发布营销内容后仍保留真实常购、新品和商品目录。
+分类、快捷与空状态使用用户交付的轻3D PNG，映射集中于 `src/utils/category-icon.js` 和 `src/constants/mall-visual-const.js`，来源与原图哈希见 `media/` 各组 `sources.json`。主图与专题通过后台上传发布；图片完整展示自带文案。发布营销内容后仍保留真实常购、新品和商品目录。
+
+## 图片资源发布
+
+首页、启动与共享代码、全局样式、导航和表单小图保持包内。分类、快捷、我的功能、空状态与登录装饰原图保存在 `media/`，通过 MinIO 在线加载；该目录不进入代码包。商品图、轮播图、广告图及说明正文继续由正式接口提供，不另建静态副本。
+
+部署前先发布原图，再构建小程序：
+
+```bash
+python -m pip install -r tools/requirements-media.txt
+# 通过环境变量提供 XSY_FILE_ACCESS_KEY 和 XSY_FILE_SECRET_KEY
+python tools/upload-media.py --endpoint https://storage.example.com --bucket images --public-url-prefix https://assets.example.com/images
+```
+
+脚本核对 `media/manifest.json` 的原图摘要，上传到 `public/image/mall-ui/<digest>`，匿名下载逐张校验，并输出公开资源根地址；重复执行不会重传相同对象。已有对象内容不符时停止，不覆盖。存储桶须允许匿名读取此公开目录；存储凭据只能用于发布环境。
+
+将输出地址填入对应构建环境的 `VITE_APP_MEDIA_URL`（模板见 `.env.example`），然后执行微信构建；资源目录摘要必须匹配当前清单。正式环境使用 HTTPS 并配置微信图片/下载合法域名。更换图片时更新清单并发布新目录，保留旧目录供已发布客户端使用，不修改已发布对象。远程插画失败时显示标准图标；登录装饰失败保留背景，文字和操作继续可用。恢复网络后再次进入页面可重试。
+
+Logo 和导航图保持本地 PNG；微信按钮图标使用无损 WebP，其他表单小图仍为本地 PNG。组件沿用 easycom 按需引用及 `lazyCodeLoading: requiredComponents`，不额外引入打包重排插件。
+
+主包保留首页、登录、Tabbar页面及基础共享逻辑；其他业务页面以 `pages-sub` 为普通分包根目录，内部仍按业务子目录组织，页面URL保持不变。仅业务分包使用的接口、组合函数、映射及优惠券组件位于 `pages-sub/shared`；分包复用主包能力，主包不得反向引用分包。首页预加载该业务分包，避免不同业务页共享模块被留在主包或跨包读取。
 
 ## 验证
 
@@ -102,6 +122,8 @@ npm run lint
 npm test
 npm run build:h5
 npm run build:mp-weixin
+node tools/verify-media.mjs
+node tools/verify-package.mjs
 ```
 
 本地构建或 mock 测试不代表微信主体、合法域名、真机兼容、审核或发布已完成。

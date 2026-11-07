@@ -1,6 +1,8 @@
 <template>
   <view class="empty" :class="[`empty--${tone}`, { 'empty--compact': compact }]">
-    <image v-if="illustration" class="empty__image" :src="illustration" mode="aspectFit" aria-hidden="true" />
+    <view v-if="illustration" class="empty__image">
+      <XsyRemoteImage :src="illustration" mode="aspectFit" aria-hidden="true" fill />
+    </view>
     <view v-else class="empty__icon">
       <uni-icons :type="iconType" :size="iconSize" :color="iconColor" />
     </view>
@@ -13,6 +15,7 @@
 </template>
 
 <script setup>
+  import XsyRemoteImage from './xsy-remote-image.vue';
   import { computed } from 'vue';
   import { MALL_EMPTY_IMAGES } from '@/constants/mall-visual-const';
 

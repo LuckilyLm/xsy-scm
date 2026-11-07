@@ -1,17 +1,5 @@
 [
   {
-    "file": "hero.png",
-    "source": "登录页/hero.png",
-    "sourceSha256": "6e67b248556206c66be0d5cf2680aec54d744f94d83345edceab516bfbf9ef79",
-    "size": 98171
-  },
-  {
-    "file": "waves.png",
-    "source": "登录页/waves.png",
-    "sourceSha256": "2d0efb0be6a92d35e3d0eb1899823cf43dd5b553bb20ec8c139a12bb1c55ca12",
-    "size": 17864
-  },
-  {
     "file": "logo.png",
     "source": "登录页/logo.png",
     "sourceSha256": "604281a7c1c0ca296bbe63b76db6aae36a5914e6e25d3d754ca259d37f0e907b",
@@ -42,9 +30,9 @@
     "size": 2675
   },
   {
-    "file": "wechat.png",
+    "file": "wechat.webp",
     "source": "微信.svg",
     "sourceSha256": "3f52e53f2885cc534295cff676d429707ba8a2348a60a8b5271c4c11af2966a4",
-    "size": 17093
+    "size": 3800
   }
 ]

@@ -22,8 +22,10 @@ function engine(quote, list = async () => ({ pages: 0, list: [] })) {
     mallPromotionApi: { myCoupons: async (query) => ({ data: await list(query) }) },
   });
   vm.runInContext(
-    strip(read('../src/utils/checkout-preview.js')).replace('export async function previewCheckout', 'async function previewCheckout') +
-      '\nglobalThis.run = previewCheckout;',
+    strip(read('../src/pages-sub/shared/utils/checkout-preview.js')).replace(
+      'export async function previewCheckout',
+      'async function previewCheckout'
+    ) + '\nglobalThis.run = previewCheckout;',
     context
   );
   return context.run;
