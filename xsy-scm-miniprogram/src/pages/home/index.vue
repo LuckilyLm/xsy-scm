@@ -3,17 +3,19 @@
     <view v-if="headerScrolled" class="home__reading-nav" :style="{ paddingTop: statusBarHeight + 'px', height: navBarHeight + 'px' }">
       <text>{{ storeName }}</text>
     </view>
-    <!-- 定位行按动态导航高度与胶囊居中，搜索框共用品牌背景。 -->
+    <!-- 定位与搜索共用已发布的浅色渐变，导航高度与胶囊位置来自系统。 -->
     <view class="home__header" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="home__location" :style="locationStyle" @click="goAddress">
-        <uni-icons type="location" :size="16" color="#ffffff" />
+        <uni-icons type="location" :size="18" :color="headerGradient.foreground" />
         <text class="home__location-text">{{ locationText }}</text>
-        <uni-icons type="bottom" :size="12" color="rgba(255,255,255,0.8)" />
+        <uni-icons type="bottom" :size="12" :color="headerGradient.foreground" />
       </view>
       <view class="home__search-wrap">
         <view class="home__search" hover-class="xsy-press--active" :hover-stay-time="80" aria-label="搜索商品名称或规格" @click="goSearch">
-          <uni-icons type="search" :size="18" :color="MALL_HOME_COLORS.searchIcon" />
           <text class="home__search-text">搜索商品名称或规格</text>
+          <view class="home__search-action" role="button" aria-label="搜索" hover-class="xsy-press-button--active" @click.stop="goSearch">
+            <text class="home__search-action-face">搜索</text>
+          </view>
         </view>
       </view>
     </view>
@@ -46,13 +48,7 @@
               @click="goCategory(item.categoryId)"
             >
               <view class="home__rail-icon">
-                <XsyRemoteImage
-                  v-if="categoryIcon(item.categoryName)"
-                  class="home__rail-glyph"
-                  :src="categoryIcon(item.categoryName)"
-                  mode="aspectFit"
-                  aria-hidden="true"
-                />
+                <XsyRemoteImage v-if="categoryIcon(item)" class="home__rail-glyph" :src="categoryIcon(item)" mode="aspectFit" aria-hidden="true" />
                 <uni-icons v-else type="shop" :size="28" :color="theme.primary" />
               </view>
               <text class="home__rail-text">{{ item.categoryName }}</text>
@@ -197,11 +193,11 @@
   import { HOME_POPUP_SEEN } from '@/constants/local-storage-key-const';
   import { MALL_SHORTCUT_IMAGES } from '@/constants/mall-visual-const';
 
-  const { theme, themeStyle: sharedThemeStyle } = useMallTheme();
+  const { theme, themeStyle: sharedThemeStyle, headerGradient } = useMallTheme();
   const themeStyle = computed(() => ({
     ...sharedThemeStyle.value,
-    '--home-header-start': MALL_HOME_COLORS.headerStart,
-    '--home-header-end': MALL_HOME_COLORS.headerEnd,
+    '--home-header-gradient': headerGradient.value.background,
+    '--home-header-foreground': headerGradient.value.foreground,
     '--home-page-bg': MALL_HOME_COLORS.background,
     '--home-search-placeholder': MALL_HOME_COLORS.placeholder,
   }));
@@ -215,12 +211,22 @@
   const PAGE_SIZE = 10;
   const { statusBarHeight, navBarHeight, menuButtonRect } = useSystemLayout();
   const headerScrolled = ref(false);
-  // 深色头图离开后切回白底原生前景，避免系统时间和胶囊覆盖商品内容。
+  let homeVisible = false;
+  // 原生前景随当前位置及已发布配色更新，浅色顶部默认使用黑色状态栏。
+  function syncHeader() {
+    // Tab页保留在内存中；后台刷新配色时不能替其他页面改原生导航前景。
+    if (!homeVisible) return;
+    uni.setNavigationBarColor({
+      frontColor: !headerScrolled.value && headerGradient.value.foreground === '#FFFFFF' ? '#ffffff' : '#000000',
+      backgroundColor: headerScrolled.value ? '#ffffff' : headerGradient.value.start,
+    });
+  }
+  watch(headerGradient, syncHeader);
   onPageScroll(({ scrollTop }) => {
     const scrolled = scrollTop > 96;
     if (scrolled === headerScrolled.value) return;
     headerScrolled.value = scrolled;
-    uni.setNavigationBarColor({ frontColor: scrolled ? '#000000' : '#ffffff', backgroundColor: scrolled ? '#ffffff' : MALL_HOME_COLORS.headerStart });
+    syncHeader();
   });
   /** 定位行与右上角胶囊同高、并让开胶囊宽度，视觉上与胶囊同一水平线 */
   const locationStyle = computed(() => {
@@ -552,10 +558,8 @@
   });
   let showed = false;
   onShow(() => {
-    uni.setNavigationBarColor({
-      frontColor: headerScrolled.value ? '#000000' : '#ffffff',
-      backgroundColor: headerScrolled.value ? '#ffffff' : MALL_HOME_COLORS.headerStart,
-    });
+    homeVisible = true;
+    syncHeader();
     bannerAutoplay.value = true;
     if (showed) {
       loadProducts(true);
@@ -565,6 +569,7 @@
     showed = true;
   });
   onHide(() => {
+    homeVisible = false;
     // 页面不可见即结束「本次进入」；再次进入时 EVERY_ENTRY 可重新展示
     bannerAutoplay.value = false;
     popupShownThisEntry.value = false;
@@ -587,7 +592,7 @@
   }
   .home__header {
     padding: 0 var(--xsy-page-x) $space-4;
-    background: linear-gradient(115deg, var(--home-header-start), var(--home-header-end));
+    background: var(--home-header-gradient);
   }
   .home__reading-nav {
     position: fixed;
@@ -615,14 +620,14 @@
   }
   .home__location-text {
     max-width: 72%;
-    color: white;
-    font-size: $font-size-sm;
+    color: var(--home-header-foreground);
+    font-size: $font-size-base;
     font-weight: $font-weight-medium;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  /* 搜索与定位共用绿色容器，控件之外不再出现独立白色底块。 */
+  /* 搜索与定位自然衔接，独立按钮保留完整触控区域。 */
   .home__search-wrap {
     padding-top: $space-3;
   }
@@ -631,14 +636,34 @@
     @include flex-start;
     box-sizing: border-box;
     height: 44px;
-    padding: 0 $space-3;
+    padding: 0 3px 0 $space-4;
+    border: 1px solid var(--mall-primary-disabled);
     border-radius: $radius-pill;
     background: white;
   }
   .home__search-text {
-    margin-left: $space-2;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: var(--home-search-placeholder);
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
+  }
+  .home__search-action {
+    @include flex-center;
+    flex-shrink: 0;
+    width: 72px;
+    height: 44px;
+  }
+  .home__search-action-face {
+    @include flex-center;
+    width: 64px;
+    height: 36px;
+    border-radius: $radius-pill;
+    background: var(--mall-primary);
+    color: $color-text-inverse;
+    font-size: $font-size-base;
   }
   /* 分类横滑与下方四列快捷入口对齐，其余分类保留在滚动区域内。 */
   .home__rail {

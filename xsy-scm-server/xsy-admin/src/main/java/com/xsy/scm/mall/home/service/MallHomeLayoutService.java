@@ -56,6 +56,8 @@ public class MallHomeLayoutService {
         return new MallHomeDraftVO(draft == null ? 0 : draft.getVersion(), pointer == null ? 0 : pointer.getVersion(),
             pointer == null ? null : pointer.getCurrentReleaseId(),
             draft == null ? DEFAULT_THEME : draft.getThemeCode(), draft == null ? null : draft.getThemeColor(),
+            headerColorOf(draft == null ? null : draft.getHeaderStartColor(), MallThemeColors.DEFAULT_HEADER_START),
+            headerColorOf(draft == null ? null : draft.getHeaderEndColor(), MallThemeColors.DEFAULT_HEADER_END),
             draft == null ? List.of() : parse(draft.getContent()), draft == null ? null : draft.getUpdatedAt(),
             draft == null ? null : draft.getUpdatedBy());
     }
@@ -79,7 +81,9 @@ public class MallHomeLayoutService {
             .sorted(Comparator.comparing(MallHomeBlockForm::getSortOrder)).toList();
         String themeCode = themeOf(form.getThemeCode());
         String themeColor = themeColorOf(form.getThemeColor());
-        if (homeDao.saveDraft(draft.getVersion(), stringify(ordered), themeCode, themeColor,
+        String headerStart = headerColorOf(form.getHeaderStartColor(), MallThemeColors.DEFAULT_HEADER_START);
+        String headerEnd = headerColorOf(form.getHeaderEndColor(), MallThemeColors.DEFAULT_HEADER_END);
+        if (homeDao.saveDraft(draft.getVersion(), stringify(ordered), themeCode, themeColor, headerStart, headerEnd,
             ScmOperator.current()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
@@ -104,6 +108,8 @@ public class MallHomeLayoutService {
         // 主题跟着发布版本走：回滚时配色一起回去，不会出现「旧版式配新配色」
         release.setThemeCode(draft.getThemeCode());
         release.setThemeColor(draft.getThemeColor());
+        release.setHeaderStartColor(headerColorOf(draft.getHeaderStartColor(), MallThemeColors.DEFAULT_HEADER_START));
+        release.setHeaderEndColor(headerColorOf(draft.getHeaderEndColor(), MallThemeColors.DEFAULT_HEADER_END));
         release.setPublishKind(MallHomePublishKind.PUBLISH.name());
         release.setPublishedBy(ScmOperator.current());
         homeDao.insertRelease(release);
@@ -131,6 +137,8 @@ public class MallHomeLayoutService {
         release.setContent(target.getContent());
         release.setThemeCode(target.getThemeCode());
         release.setThemeColor(target.getThemeColor());
+        release.setHeaderStartColor(headerColorOf(target.getHeaderStartColor(), MallThemeColors.DEFAULT_HEADER_START));
+        release.setHeaderEndColor(headerColorOf(target.getHeaderEndColor(), MallThemeColors.DEFAULT_HEADER_END));
         release.setPublishKind(MallHomePublishKind.ROLLBACK.name());
         release.setSourceReleaseId(target.getId());
         release.setReason(form.getReason().trim());
@@ -168,6 +176,16 @@ public class MallHomeLayoutService {
         String normalized = MallThemeColors.normalize(themeColor);
         if (!MallThemeColors.isValid(normalized) || !MallThemeColors.readableOnWhite(normalized)) {
             throw new ScmBusinessException(INVALID_THEME_COLOR);
+        }
+        return normalized;
+    }
+
+    private String headerColorOf(String color, String fallback) {
+        if (color == null || color.isBlank())
+            return fallback;
+        String normalized = MallThemeColors.normalize(color);
+        if (!MallThemeColors.isValid(normalized)) {
+            throw new ScmBusinessException(com.xsy.scm.mall.home.constant.MallHomeErrorCode.INVALID_HEADER_COLOR);
         }
         return normalized;
     }

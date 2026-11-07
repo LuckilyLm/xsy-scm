@@ -26,6 +26,7 @@ export function useMallTheme() {
     /** 当前主题配色对象（primary / dark / light / disabled），供 uni-icons 等无法消费 CSS 变量的场景 */
     theme: computed(() => themeStore.theme),
     themeCode: computed(() => themeStore.themeCode),
+    headerGradient: computed(() => themeStore.headerGradient),
     /** 绑定到页面根节点的 CSS 变量 */
     themeStyle: computed(() => themeStore.themeStyle),
     /** 常用快捷值：原生控件 color 属性（switch 等）与图标着色 */

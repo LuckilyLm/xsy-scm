@@ -35,8 +35,8 @@ export const COLOR_BG_HOVER = '#f2f3f5';
 
 /** 首页导航与内容面的场景色，仅注入首页，其他页面继续读取已发布主题。 */
 export const MALL_HOME_COLORS = {
-  headerStart: '#10844B',
-  headerEnd: '#087345',
+  headerStart: '#E8FAEC',
+  headerEnd: '#FFFFFF',
   background: '#F6F8F5',
   searchIcon: '#418B66',
   placeholder: '#8F9A94',
@@ -129,5 +129,32 @@ export function mallThemeGradients(palette) {
     brand: `linear-gradient(118deg, ${colors.ink} 0%, ${colors.dark} 48%, ${colors.primary} 100%)`,
     action: `linear-gradient(118deg, ${deep} 0%, ${colors.ink} 100%)`,
     surface: `linear-gradient(110deg, ${colors.light} 0%, #ffffff 100%)`,
+  };
+}
+
+/**
+ * 生成首页顶部配色，并按两个端点的最低对比度选择文字颜色。
+ * @param {string|null} start 起始#RRGGBB；缺失或非法时使用默认浅绿。
+ * @param {string|null} end 结束#RRGGBB；缺失或非法时使用默认白色。
+ * @returns {{start: string, end: string, foreground: string, background: string}} 可直接用于首页和原生导航的配色。
+ */
+export function mallHeaderGradient(start, end) {
+  const first = THEME_HEX.test(start || '') ? start.toUpperCase() : MALL_HOME_COLORS.headerStart;
+  const last = THEME_HEX.test(end || '') ? end.toUpperCase() : MALL_HOME_COLORS.headerEnd;
+  const luminance = (color) => {
+    const channels = [1, 3, 5].map((offset) => {
+      const channel = parseInt(color.slice(offset, offset + 2), 16) / 255;
+      return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+    });
+    return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  };
+  const levels = [luminance(first), luminance(last)];
+  const dark = Math.min(...levels.map((value) => (value + 0.05) / (luminance('#1F2329') + 0.05)));
+  const light = Math.min(...levels.map((value) => 1.05 / (value + 0.05)));
+  return {
+    start: first,
+    end: last,
+    foreground: dark >= light ? '#1F2329' : '#FFFFFF',
+    background: `linear-gradient(115deg, ${first} 0%, ${last} 100%)`,
   };
 }

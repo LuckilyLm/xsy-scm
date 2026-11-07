@@ -4564,7 +4564,7 @@ class MallTest {
                 assertThat(MallHomeController.class.getAnnotation(NoNeedLogin.class)).isNull();
                 assertThat(MallThemeVO.class.getDeclaredFields()).extracting(java.lang.reflect.Field::getName)
                         .containsExactlyInAnyOrder("releaseId", "themeCode", "themeColor", "primary", "dark", "ink", "light",
-                                "disabled");
+                                "disabled", "headerStartColor", "headerEndColor");
             }
 
             @Test
@@ -4681,6 +4681,21 @@ class MallTest {
         @Nested
 
         class MallCategoryNavigationPgIT {
+            @Test
+            void configuredIconSurvivesEveryLevelIncludingEmptyLeaves() {
+                Long root = addCategory("图标根", null);
+                Long child = addCategory("图标子类", root);
+                Long leaf = addCategory("空图标末级", child);
+                String key = "public/image/" + prefix + "-navigation.png";
+                jdbc.update("INSERT INTO t_file (folder_type,file_name,file_size,file_key,file_type) VALUES (2,?,100,?,'png')", prefix, key);
+                jdbc.update("UPDATE xsy_product_category SET icon_file_key=? WHERE id IN (?,?,?)", key, root, child, leaf);
+                evictMybatisCache();
+                MallCategoryVO visible = catalog.categories().stream().filter(item -> item.getCategoryId().equals(root)).findFirst().orElseThrow();
+                assertThat(visible.getIconUrl()).contains(key);
+                assertThat(visible.getChildren().getFirst().getIconFileKey()).isEqualTo(key);
+                assertThat(visible.getChildren().getFirst().getChildren().getFirst().getIconUrl()).contains(key);
+            }
+
             @Autowired
             private ProductCategoryService categories;
             @Autowired
@@ -5253,6 +5268,58 @@ class MallTest {
             private MallHomeLayoutService layouts;
             @Autowired
             private MallHomeProjectionService projection;
+
+            @Test
+            void headerColorsArePublishedAndRestoredWithTheirRelease() {
+                var initial = layouts.draft();
+                var firstForm = new MallHomeDraftSaveForm();
+                firstForm.setVersion(initial.version());
+                firstForm.setThemeCode("FRESH");
+                firstForm.setHeaderStartColor("#e4f1ff");
+                firstForm.setHeaderEndColor("#ffffff");
+                firstForm.setBlocks(List.of());
+                var first = layouts.save(firstForm);
+                assertThat(first.headerStartColor()).isEqualTo("#E4F1FF");
+                assertThat(first.headerEndColor()).isEqualTo("#FFFFFF");
+                Long firstRelease = layouts.publish(publish(first.version(), first.pointerVersion()));
+                assertThat(projection.publishedTheme().getHeaderStartColor()).isEqualTo("#E4F1FF");
+                firstForm.setVersion(first.version());
+                firstForm.setHeaderStartColor("#FFF1E4");
+                var second = layouts.save(firstForm);
+                // 保存草稿不能提前改变线上顶部配色。
+                assertThat(projection.publishedTheme().getHeaderStartColor()).isEqualTo("#E4F1FF");
+                layouts.publish(publish(second.version(), second.pointerVersion()));
+                assertThat(projection.publishedTheme().getHeaderStartColor()).isEqualTo("#FFF1E4");
+                var rollback = new MallHomeRollbackForm();
+                rollback.setTargetReleaseId(firstRelease);
+                rollback.setPointerVersion(second.pointerVersion() + 1);
+                rollback.setReason("恢复顶部配色");
+                layouts.rollback(rollback);
+                assertThat(projection.publishedTheme().getHeaderStartColor()).isEqualTo("#E4F1FF");
+                assertThat(projection.publishedTheme().getHeaderEndColor()).isEqualTo("#FFFFFF");
+                assertThat(jdbc.queryForObject("SELECT header_start_color FROM xsy_mall_home_release WHERE id=?",
+                    String.class, firstRelease)).isEqualTo("#E4F1FF");
+            }
+
+            @Test
+            void headerColorsDefaultToGreenWhiteAndInvalidColorsCannotBeSaved() {
+                var initial = layouts.draft();
+                var form = new MallHomeDraftSaveForm();
+                form.setVersion(initial.version());
+                form.setThemeCode("FRESH");
+                form.setBlocks(List.of());
+                var saved = layouts.save(form);
+                assertThat(saved.headerStartColor()).isEqualTo("#E8FAEC");
+                assertThat(saved.headerEndColor()).isEqualTo("#FFFFFF");
+                form.setVersion(saved.version());
+                form.setHeaderStartColor("url(bad)");
+                assertThatThrownBy(() -> layouts.save(form)).isInstanceOfSatisfying(ScmBusinessException.class,
+                    error -> assertThat(error.getErrorCode().getCode()).isEqualTo(40000));
+                assertThat(layouts.draft().version()).isEqualTo(saved.version());
+                form.setHeaderStartColor("#E8FAEC");
+                form.setHeaderEndColor("#GGGGGG");
+                assertThatThrownBy(() -> layouts.save(form)).isInstanceOf(ScmBusinessException.class);
+            }
 
             @Test
             void themeCanBePublishedWithoutHomeBlocks() {

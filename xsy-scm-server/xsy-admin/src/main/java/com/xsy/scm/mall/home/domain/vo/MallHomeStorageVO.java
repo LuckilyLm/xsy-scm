@@ -6,6 +6,7 @@ import lombok.Data;
 import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+/** 商城首页草稿及发布指针的存储读取结果。 */
 @Data
 public class MallHomeStorageVO {
     private Integer version;
@@ -17,6 +18,8 @@ public class MallHomeStorageVO {
     private String themeCode;
     /** 自定义主色；为空时沿用 themeCode 对应预设。 */
     private String themeColor;
+    private String headerStartColor;
+    private String headerEndColor;
     private OffsetDateTime updatedAt;
     @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String updatedBy;

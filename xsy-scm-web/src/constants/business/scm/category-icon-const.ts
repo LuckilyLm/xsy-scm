@@ -1,0 +1,26 @@
+/** 分类编辑器的交付图标，选择后通过正式文件服务上传，不进入小程序代码包。 */
+const images = import.meta.glob('/src/assets/category-icons/*.png', {eager: true, query: '?url', import: 'default'}) as Record<string, string>;
+export const CATEGORY_ICON_PRESETS = [
+  {name: '蔬菜', url: images['/src/assets/category-icons/vegetables.png']},
+  {name: '水果', url: images['/src/assets/category-icons/fruit.png']},
+  {name: '肉禽蛋', url: images['/src/assets/category-icons/meat-eggs.png']},
+  {name: '粮油', url: images['/src/assets/category-icons/grain-oil.png']},
+  {name: '调味', url: images['/src/assets/category-icons/seasoning.png']},
+  {name: '叶菜类', url: images['/src/assets/category-icons/leafy.png']},
+  {name: '根茎类', url: images['/src/assets/category-icons/roots.png']},
+  {name: '瓜果类', url: images['/src/assets/category-icons/gourds.png']},
+  {name: '菌菇类', url: images['/src/assets/category-icons/mushrooms.png']},
+  {name: '牛羊肉', url: images['/src/assets/category-icons/beef-lamb.png']},
+  {name: '禽类', url: images['/src/assets/category-icons/poultry.png']},
+  {name: '猪肉', url: images['/src/assets/category-icons/pork.png']},
+  {name: '蛋品', url: images['/src/assets/category-icons/eggs.png']},
+  {name: '冻品', url: images['/src/assets/category-icons/frozen.png']},
+  {name: '米面', url: images['/src/assets/category-icons/rice-flour.png']},
+  {name: '食用油', url: images['/src/assets/category-icons/cooking-oil.png']},
+  {name: '杂粮', url: images['/src/assets/category-icons/grains.png']},
+  {name: '香辛料', url: images['/src/assets/category-icons/spices.png']},
+  {name: '虾蟹', url: images['/src/assets/category-icons/shrimp-crab.png']},
+  {name: '鱼虾', url: images['/src/assets/category-icons/fish-shrimp.png']},
+  {name: '国产水果', url: images['/src/assets/category-icons/domestic-fruit.png']},
+  {name: '进口水果', url: images['/src/assets/category-icons/imported-fruit.png']},
+];

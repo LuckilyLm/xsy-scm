@@ -37,6 +37,7 @@ local-environment-info.txt
 !/tools/migration_checksum_guard.py
 !/tools/migration_checksum_snapshot.json
 !/tools/e2e_fixtures.py
+!/tools/configure_category_icons.py
 !/tools/requirements-dev.txt
 !/tools/build_install_baseline.py
 !/tools/install_baseline_manifest.json

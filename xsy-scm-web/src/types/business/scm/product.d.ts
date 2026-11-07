@@ -33,10 +33,13 @@ export interface ProductCategory {
   sortOrder: number;
   status: 'ENABLED' | 'DISABLED';
   categoryPath?: string;
+  iconFileKey?: string | null;
+  iconUrl?: string | null;
   children?: ProductCategory[];
 }
 
 export interface ProductCategoryForm {
+  iconFileKey?: string | null;
   categoryId?: ProductId;
   version?: number;
   parentId?: ProductId | null;

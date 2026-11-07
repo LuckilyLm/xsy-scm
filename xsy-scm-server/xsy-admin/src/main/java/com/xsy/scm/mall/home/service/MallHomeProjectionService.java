@@ -70,9 +70,7 @@ public class MallHomeProjectionService {
             return new MallThemeVO(null, null);
         }
         MallHomeReleaseVO release = homeDao.release(releaseId);
-        return release == null
-            ? new MallThemeVO(null, null)
-            : themeView(releaseId, release.getThemeCode(), release.getThemeColor());
+        return release == null ? new MallThemeVO(null, null) : themeView(releaseId, release);
     }
 
     @Transactional(readOnly = true)
@@ -87,12 +85,20 @@ public class MallHomeProjectionService {
             : project(null, draft.getThemeCode(), draft.getContent(), customer, selectedWarehouse);
     }
 
-    private MallThemeVO themeView(Long releaseId, String themeCode, String themeColor) {
+    private MallThemeVO themeView(Long releaseId, MallHomeReleaseVO release) {
+        String themeColor = release.getThemeColor();
+        String themeCode = release.getThemeCode();
         String base = MallThemeColors.isValid(themeColor)
             ? MallThemeColors.normalize(themeColor)
             : MallThemeColors.baseColor(themeCode);
         return new MallThemeVO(releaseId, themeCode, themeColor, base, MallThemeColors.dark(base),
-            MallThemeColors.ink(base), MallThemeColors.light(base), MallThemeColors.disabled(base));
+            MallThemeColors.ink(base), MallThemeColors.light(base), MallThemeColors.disabled(base),
+            MallThemeColors.isValid(release.getHeaderStartColor())
+                ? release.getHeaderStartColor()
+                : MallThemeColors.DEFAULT_HEADER_START,
+            MallThemeColors.isValid(release.getHeaderEndColor())
+                ? release.getHeaderEndColor()
+                : MallThemeColors.DEFAULT_HEADER_END);
     }
 
     private MallHomePageVO project(Long releaseId, String themeCode, String content, RequestMallCustomer customer,

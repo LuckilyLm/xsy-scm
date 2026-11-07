@@ -133,7 +133,7 @@ test('获得权限不会启用因业务条件禁用的动作，整组无权时�
   const page = read('../src/views/business/scm/mall/mall-home-layout.vue');
 
   test('首页草稿、发布和回滚提交各自的乐观锁版本与原因', () => {
-    assert.match(api, /\/draft', \{version, themeCode, themeColor, blocks\}/);
+    assert.match(api, /\/draft', \{version, themeCode, themeColor, blocks, headerStartColor, headerEndColor\}/);
     assert.match(api, /\/publish', \{draftVersion, pointerVersion\}/);
     assert.match(api, /\/rollback', \{targetReleaseId, pointerVersion, reason\}/);
     // 空组件允许仅发布主题色；发布仍受权限、保存流程与乐观锁约束。

@@ -10,7 +10,7 @@
       "path": "pages/home/index",
       "style": {
         "navigationStyle": "custom",
-        "navigationBarTextStyle": "white",
+        "navigationBarTextStyle": "black",
         "navigationBarTitleText": "首页",
         "onReachBottomDistance": 80
       }
@@ -222,7 +222,9 @@
   "preloadRule": {
     "pages/home/index": {
       "network": "all",
-      "packages": ["pages-sub"]
+      "packages": [
+        "pages-sub"
+      ]
     }
   },
   "condition": {

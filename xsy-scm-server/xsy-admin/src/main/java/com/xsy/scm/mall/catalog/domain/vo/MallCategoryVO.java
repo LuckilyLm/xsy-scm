@@ -12,5 +12,7 @@ public class MallCategoryVO {
     private String name;
     private Integer level;
     private Integer sortOrder;
+    private String iconFileKey;
+    private String iconUrl;
     private List<MallCategoryVO> children = new ArrayList<>();
 }

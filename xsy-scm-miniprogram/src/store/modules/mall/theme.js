@@ -17,6 +17,7 @@ import {
   normalizeMallThemeCode,
   normalizeMallThemePalette,
   mallThemeGradients,
+  mallHeaderGradient,
 } from '@/constants/theme-color-const';
 import { mallHomeApi } from '@/api/mall/home-api';
 import { xsySentry } from '@/lib/xsy-sentry';
@@ -34,11 +35,15 @@ export const useMallThemeStore = defineStore('mall-theme', {
     /** 自定义主色派生色阶；为空表示使用 themeCode 对应的预设 */
     palette: null,
     releaseId: null,
+    headerStartColor: null,
+    headerEndColor: null,
     requestSeq: 0,
   }),
   getters: {
     /** 当前主题的完整配色（已归一化，可直接消费） */
     theme: (state) => (state.releaseId != null && state.palette ? state.palette : themeOf(state.themeCode)),
+    headerGradient: (state) =>
+      mallHeaderGradient(state.releaseId == null ? null : state.headerStartColor, state.releaseId == null ? null : state.headerEndColor),
     /** 页面根节点绑定的 CSS 变量；未知编码自动落到默认主题 */
     themeStyle: (state) => {
       const theme = state.releaseId != null && state.palette ? state.palette : themeOf(state.themeCode);
@@ -56,10 +61,12 @@ export const useMallThemeStore = defineStore('mall-theme', {
     },
   },
   actions: {
-    applyTheme({ releaseId, themeCode, palette }) {
+    applyTheme({ releaseId, themeCode, palette, headerStartColor, headerEndColor }) {
       this.releaseId = releaseId ?? null;
       this.themeCode = releaseId == null ? MALL_THEME_DEFAULT_CODE : normalizeMallThemeCode(themeCode);
       this.palette = releaseId == null ? null : normalizeMallThemePalette(palette);
+      this.headerStartColor = releaseId == null ? null : headerStartColor;
+      this.headerEndColor = releaseId == null ? null : headerEndColor;
       applyNativeTheme(this.theme);
     },
     /** 刷新已发布主题；并发调用合并为同一次请求 */
@@ -75,7 +82,13 @@ export const useMallThemeStore = defineStore('mall-theme', {
             return;
           }
           const data = response.data || {};
-          this.applyTheme({ releaseId: data.releaseId, themeCode: data.themeCode, palette: data.palette });
+          this.applyTheme({
+            releaseId: data.releaseId,
+            themeCode: data.themeCode,
+            palette: data.palette,
+            headerStartColor: data.headerStartColor,
+            headerEndColor: data.headerEndColor,
+          });
         } catch (error) {
           if (request !== this.requestSeq) {
             return;

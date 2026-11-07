@@ -19,6 +19,9 @@ public class ProductCategoryAddForm {
     @NotBlank(message = "商品分类名称不能为空")
     @Size(max = 100, message = "商品分类名称不能超过100个字符")
     private String name;
+    /** 公开图片文件标识；为空时清除图标。 */
+    @Size(max = 500, message = "分类图标文件标识不能超过500个字符")
+    private String iconFileKey;
     @NotNull(message = "排序值不能为空")
     @Min(value = 0, message = "排序值不能小于0")
     private Integer sortOrder = 0;

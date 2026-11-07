@@ -27,8 +27,12 @@ public class MallThemeVO {
     private String light;
     /** 禁用态 */
     private String disabled;
+    /** 首页顶部起始色，独立于主题主色。 */
+    private String headerStartColor;
+    /** 首页顶部结束色，独立于主题主色。 */
+    private String headerEndColor;
 
     public MallThemeVO(Long releaseId, String themeCode) {
-        this(releaseId, themeCode, null, null, null, null, null, null);
+        this(releaseId, themeCode, null, null, null, null, null, null, null, null);
     }
 }

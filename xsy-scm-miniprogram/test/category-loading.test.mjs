@@ -51,3 +51,75 @@ test('failed category reads remain errors and successful empty retries clear the
   assert.equal(state.productError.value, '');
   assert.equal(state.products.value.length, 0);
 });
+
+test('third-level empty categories can be selected and linked without hiding siblings', async () => {
+  const source = readFileSync(new URL('../src/pages/category/index.vue', import.meta.url), 'utf8')
+    .match(/<script setup>([\s\S]*?)<\/script>/)[1]
+    .replace(/^[^\S\r\n]*import[\s\S]*?;\r?\n/gm, '');
+  const requests = [];
+  const navigation = {
+    pendingCategoryId: null,
+    clearPendingCategoryId() {
+      this.pendingCategoryId = null;
+    },
+  };
+  const tree = [
+    {
+      categoryId: 1,
+      categoryName: '水果',
+      children: [
+        {
+          categoryId: 2,
+          categoryName: '国产水果',
+          children: [
+            { categoryId: 3, categoryName: '苹果' },
+            { categoryId: 4, categoryName: '空柑橘' },
+          ],
+        },
+        { categoryId: 5, categoryName: '进口水果', children: [] },
+      ],
+    },
+  ];
+  const context = vm.createContext({
+    ref: (value) => ({ value }),
+    computed: (fn) => ({
+      get value() {
+        return fn();
+      },
+    }),
+    onShow() {},
+    useMallTheme: () => ({}),
+    useMallNavigationStore: () => navigation,
+    useMallCart: () => ({}),
+    mallCatalogApi: {
+      getCategories: async () => ({ data: tree }),
+      getProducts: async (q) => {
+        requests.push(q);
+        return { data: { list: [], total: 0 } };
+      },
+    },
+    xsySentry: { captureError() {} },
+  });
+  vm.runInContext(
+    source +
+      '\nglobalThis.api={selectSub,selectLeaf,selectAllSubs,applyPendingCategory,subCategories,leafCategories,activeLeafId,effectiveCategoryId,products};',
+    context
+  );
+  await new Promise((resolve) => setImmediate(resolve));
+  const api = context.api;
+  api.selectSub(tree[0].children[0]);
+  api.selectLeaf(tree[0].children[0].children[1]);
+  assert.equal(requests.at(-1).categoryId, 4);
+  assert.equal(api.subCategories.value.length, 2);
+  assert.equal(api.leafCategories.value.length, 2);
+  assert.equal(api.products.value.length, 0);
+  api.selectLeaf(null);
+  assert.equal(requests.at(-1).categoryId, 2);
+  navigation.pendingCategoryId = 3;
+  api.applyPendingCategory();
+  assert.equal(api.effectiveCategoryId.value, 3);
+  assert.equal(navigation.pendingCategoryId, null);
+  api.selectAllSubs();
+  assert.equal(requests.at(-1).categoryId, 1);
+  assert.equal(api.activeLeafId.value, null);
+});

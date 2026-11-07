@@ -4,6 +4,7 @@
 
 | 功能 | 入口 | 职责 |
 | --- | --- | --- |
+| 分类图标配置 | `configure_category_icons.py` | 显式指定库与存储参数；默认输出计划，apply才发布原图、注册公开文件并补齐空分类，保留已有图标及商品归属 |
 | 项目验证 | `verify.ps1`、`verify.sh` → `verify.py` | 统一协调质量、后端、管理后台、微信小程序和浏览器验证，报告通过、失败与未覆盖 |
 | E2E 夹具 | `e2e_fixtures.py account-setup\|account-cleanup\|report\|product-create\|product-update\|stocktake` | 统一入口：创建/清理指定波次的隔离临时账号、准备报表日期与采购单、填充三类导入模板；各子命令只作用于自己的数据 |
 | Java 格式 | Maven Spotless、`quality/eclipse-formatter.xml` | 按 4 空格缩进、120 列、续行 4 空格和 LF 格式化 SCM 生产源码 |

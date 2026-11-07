@@ -31,4 +31,6 @@ public class ProductCategoryEntity {
     private Integer level;
     private Integer sortOrder;
     private String status;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String iconFileKey;
 }

@@ -23,6 +23,8 @@ export interface HomeDraft {
   themeCode?: string;
   /** 自定义主色；为空表示沿用主题预设。 */
   themeColor?: string | null;
+  headerStartColor?: string | null;
+  headerEndColor?: string | null;
   version: number;
   pointerVersion: number;
   currentReleaseId: ScmId | null;
@@ -87,8 +89,8 @@ export interface HomePopup {
 export const mallHomeApi = {
   draft: () => getRequest<HomeDraft>('/scm/mall-admin/home/draft', {}),
   history: () => getRequest<HomeRelease[]>('/scm/mall-admin/home/history', {}),
-  save: (version: number, themeCode: string, themeColor: string | null, blocks: HomeBlock[]) =>
-    postRequest<HomeDraft>('/scm/mall-admin/home/draft', {version, themeCode, themeColor, blocks}),
+  save: (version: number, themeCode: string, themeColor: string | null, blocks: HomeBlock[], headerStartColor: string, headerEndColor: string) =>
+    postRequest<HomeDraft>('/scm/mall-admin/home/draft', {version, themeCode, themeColor, blocks, headerStartColor, headerEndColor}),
   publish: (draftVersion: number, pointerVersion: number) => postRequest<ScmId>('/scm/mall-admin/home/publish', {draftVersion, pointerVersion}),
   rollback: (targetReleaseId: ScmId, pointerVersion: number, reason: string) =>
     postRequest<ScmId>('/scm/mall-admin/home/rollback', {targetReleaseId, pointerVersion, reason}),

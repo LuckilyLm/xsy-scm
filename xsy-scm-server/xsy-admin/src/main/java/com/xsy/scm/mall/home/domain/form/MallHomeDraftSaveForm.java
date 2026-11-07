@@ -10,6 +10,7 @@ import java.util.List;
 
 import lombok.Data;
 
+/** 商城首页草稿，顶部配色与组件一起保存并发布。 */
 @Data
 public class MallHomeDraftSaveForm {
     @NotNull(message = "草稿版本不能为空")
@@ -26,6 +27,14 @@ public class MallHomeDraftSaveForm {
      */
     @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "主题色必须为 #RRGGBB 格式")
     private String themeColor;
+
+    /** 顶部起始色；不传时使用浅绿色。 */
+    @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "顶部起始色必须为 #RRGGBB 格式")
+    private String headerStartColor;
+
+    /** 顶部结束色；不传时使用白色。 */
+    @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "顶部结束色必须为 #RRGGBB 格式")
+    private String headerEndColor;
 
     private List<@Valid MallHomeBlockForm> blocks;
 }

@@ -10,7 +10,11 @@
     :scroll="{x: scmColumnsWidth(columns)}"
   >
     <template #bodyCell="{column, record}">
-      <template v-if="column.dataIndex === 'level'">{{ record.level }} 级</template>
+      <template v-if="column.dataIndex === 'iconUrl'">
+        <a-image v-if="record.iconUrl" :src="record.iconUrl" :width="40" :height="40" style="object-fit: contain" />
+        <span v-else>未设置</span>
+      </template>
+      <template v-else-if="column.dataIndex === 'level'">{{ record.level }} 级</template>
       <!-- 父分类取分类路径去掉最后一段 -->
       <template v-else-if="column.dataIndex === 'parentName'">{{ parentName(record) }}</template>
       <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
@@ -53,6 +57,7 @@ function parentName(record: ProductCategory): string {
 
 const columns = [
   {title: '分类名称', dataIndex: 'name', width: 260},
+  {title: '图标', dataIndex: 'iconUrl', width: 80},
   {title: '层级', dataIndex: 'level', align: 'center', width: 90},
   {title: '父分类', dataIndex: 'parentName', width: 240},
   {title: '排序', dataIndex: 'sortOrder', width: 90 as const},

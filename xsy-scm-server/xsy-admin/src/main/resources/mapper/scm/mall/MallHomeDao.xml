@@ -39,13 +39,15 @@
     </update>
 
     <select id="draft" resultType="com.xsy.scm.mall.home.domain.vo.MallHomeStorageVO">
-        SELECT version, content::text AS content, theme_code AS themeCode, theme_color AS themeColor, updated_at, updated_by
+        SELECT version, content::text AS content, theme_code AS themeCode, theme_color AS themeColor,
+            header_start_color AS headerStartColor, header_end_color AS headerEndColor, updated_at, updated_by
         FROM xsy_mall_home_draft
         WHERE id = 1
     </select>
 
     <select id="lockDraft" resultType="com.xsy.scm.mall.home.domain.vo.MallHomeStorageVO">
-        SELECT version, content::text AS content, theme_code AS themeCode, theme_color AS themeColor, updated_at, updated_by
+        SELECT version, content::text AS content, theme_code AS themeCode, theme_color AS themeColor,
+            header_start_color AS headerStartColor, header_end_color AS headerEndColor, updated_at, updated_by
         FROM xsy_mall_home_draft
         WHERE id = 1
         FOR UPDATE
@@ -67,6 +69,7 @@
     <update id="saveDraft">
         UPDATE xsy_mall_home_draft
         SET content = CAST(#{content} AS jsonb), theme_code = #{themeCode}, theme_color = #{themeColor},
+            header_start_color = #{headerStartColor}, header_end_color = #{headerEndColor},
             version = version + 1,
             updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = 1
@@ -85,14 +88,15 @@
             parameterType="com.xsy.scm.mall.home.domain.vo.MallHomeReleaseVO"
             useGeneratedKeys="true"
             keyProperty="id">
-        INSERT INTO xsy_mall_home_release (content, theme_code, theme_color, publish_kind, source_release_id, reason,
+        INSERT INTO xsy_mall_home_release (content, theme_code, theme_color, header_start_color, header_end_color, publish_kind, source_release_id, reason,
             published_by)
-        VALUES (CAST(#{content} AS jsonb), #{themeCode}, #{themeColor}, #{publishKind}, #{sourceReleaseId}, #{reason},
+        VALUES (CAST(#{content} AS jsonb), #{themeCode}, #{themeColor}, #{headerStartColor}, #{headerEndColor}, #{publishKind}, #{sourceReleaseId}, #{reason},
             #{publishedBy})
     </insert>
 
     <select id="release" resultType="com.xsy.scm.mall.home.domain.vo.MallHomeReleaseVO">
-        SELECT id, content::text AS content, theme_code AS themeCode, theme_color AS themeColor, publish_kind,
+        SELECT id, content::text AS content, theme_code AS themeCode, theme_color AS themeColor,
+            header_start_color AS headerStartColor, header_end_color AS headerEndColor, publish_kind,
             source_release_id, reason,
             published_at, published_by
         FROM xsy_mall_home_release

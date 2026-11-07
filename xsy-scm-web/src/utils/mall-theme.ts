@@ -12,6 +12,18 @@ export const MALL_THEME_PRESETS: Record<string, string> = {
 
 /** 白字压在主题色上的最低对比度，与后端 MIN_WHITE_CONTRAST 一致。 */
 export const MIN_WHITE_CONTRAST = 2.5;
+export const MALL_HEADER_DEFAULTS = {start: '#E8FAEC', end: '#FFFFFF'};
+/** 只保存选择后的实际色值；后续调整预设不改变已发布版本。 */
+export const MALL_HEADER_PRESETS = [
+  {name: '春日浅绿', start: '#E8FAEC', end: '#FFFFFF'},
+  {name: '夏日清蓝', start: '#DFF5F8', end: '#F7FFFC'},
+  {name: '秋日暖杏', start: '#FFF0DA', end: '#FFFCF5'},
+  {name: '冬日雾蓝', start: '#EAF1FC', end: '#FFFFFF'},
+  {name: '春节暖红', start: '#FFE5DF', end: '#FFF7EA'},
+  {name: '端午粽绿', start: '#E4F3E7', end: '#FFFAEC'},
+  {name: '中秋桂黄', start: '#FFF0CB', end: '#FFFBF0'},
+  {name: '国庆红金', start: '#FCE1DF', end: '#FFF1CE'},
+];
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
@@ -76,5 +88,25 @@ export function mallThemeGradients(palette: MallThemePalette): {brand: string; a
     brand: `linear-gradient(118deg, ${palette.ink} 0%, ${palette.dark} 48%, ${palette.primary} 100%)`,
     action: `linear-gradient(118deg, ${mix(palette.ink, 0, 0, 0, 0.14)} 0%, ${palette.ink} 100%)`,
     surface: `linear-gradient(110deg, ${palette.light} 0%, #ffffff 100%)`,
+  };
+}
+
+/**
+ * 首页顶部起止色独立于主色，选择两个端点均较清晰的前景。
+ * @param start 起始#RRGGBB，缺失或非法时使用默认浅绿。
+ * @param end 结束#RRGGBB，缺失或非法时使用默认白色。
+ * @returns 已归一化的起止色、可读文字色和CSS渐变背景。
+ */
+export function mallHeaderGradient(start?: string | null, end?: string | null): {start: string; end: string; foreground: string; background: string} {
+  const first = isValidMallThemeColor(start) ? start!.toUpperCase() : MALL_HEADER_DEFAULTS.start;
+  const last = isValidMallThemeColor(end) ? end!.toUpperCase() : MALL_HEADER_DEFAULTS.end;
+  const levels = [luminance(first), luminance(last)];
+  const dark = Math.min(...levels.map((value) => (value + 0.05) / (luminance('#1F2329') + 0.05)));
+  const light = Math.min(...levels.map((value) => 1.05 / (value + 0.05)));
+  return {
+    start: first,
+    end: last,
+    foreground: dark >= light ? '#1F2329' : '#FFFFFF',
+    background: `linear-gradient(115deg, ${first} 0%, ${last} 100%)`,
   };
 }

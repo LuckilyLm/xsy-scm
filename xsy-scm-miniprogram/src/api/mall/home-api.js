@@ -11,6 +11,8 @@ export const mallHomeApi = {
         releaseId: response.data?.releaseId ?? null,
         themeCode: response.data?.themeCode ?? null,
         themeColor: response.data?.themeColor ?? null,
+        headerStartColor: response.data?.headerStartColor ?? null,
+        headerEndColor: response.data?.headerEndColor ?? null,
         palette: response.data?.primary
           ? {
               primary: response.data.primary,

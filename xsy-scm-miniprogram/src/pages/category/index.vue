@@ -49,6 +49,7 @@
           <view
             v-for="sub in subCategories"
             :key="sub.categoryId"
+            :data-category-id="sub.categoryId"
             class="category__grid-item"
             :class="{ 'category__grid-item--active': sub.categoryId === activeSubId }"
             hover-class="xsy-press--active"
@@ -56,16 +57,26 @@
             @click="selectSub(sub)"
           >
             <view class="category__grid-icon">
-              <XsyRemoteImage
-                v-if="categoryIcon(sub.categoryName || sub.name)"
-                class="category__grid-glyph"
-                :src="categoryIcon(sub.categoryName || sub.name)"
-                mode="aspectFit"
-                aria-hidden="true"
-              />
+              <XsyRemoteImage v-if="categoryIcon(sub)" class="category__grid-glyph" :src="categoryIcon(sub)" mode="aspectFit" aria-hidden="true" />
               <uni-icons v-else type="shop" :size="24" :color="theme.primary" />
             </view>
             <text class="category__grid-text">{{ sub.categoryName }}</text>
+          </view>
+        </view>
+
+        <!-- 三级分类不因无商品消失，选中后二级入口与全部入口仍可见。 -->
+        <view v-if="leafCategories.length" class="category__leaves">
+          <view class="category__leaf" :class="{ 'category__leaf--active': activeLeafId === null }" @click="selectLeaf(null)">全部</view>
+          <view
+            v-for="leaf in leafCategories"
+            :key="leaf.categoryId"
+            class="category__leaf"
+            :class="{ 'category__leaf--active': activeLeafId === leaf.categoryId }"
+            :data-category-id="leaf.categoryId"
+            @click="selectLeaf(leaf)"
+          >
+            <XsyRemoteImage v-if="categoryIcon(leaf)" class="category__leaf-image" :src="categoryIcon(leaf)" mode="aspectFit" />
+            <text>{{ leaf.categoryName }}</text>
           </view>
         </view>
 
@@ -114,6 +125,7 @@
   const categories = ref([]);
   const activePrimaryId = ref(null);
   const activeSubId = ref(null);
+  const activeLeafId = ref(null);
 
   const products = ref([]);
   const pageNum = ref(0);
@@ -129,6 +141,7 @@
   });
 
   const hasMore = computed(() => products.value.length < total.value);
+  const leafCategories = computed(() => subCategories.value.find((item) => item.categoryId === activeSubId.value)?.children || []);
 
   /** uni-load-more 的状态只有三种：more / loading / noMore */
   const loadMoreStatus = computed(() => {
@@ -139,7 +152,7 @@
   });
 
   /** 当前生效的分类 id：优先二级，其次一级 */
-  const effectiveCategoryId = computed(() => activeSubId.value || activePrimaryId.value);
+  const effectiveCategoryId = computed(() => activeLeafId.value || activeSubId.value || activePrimaryId.value);
   const productError = ref('');
   let productRequest = 0;
   let categoryRequest = 0;
@@ -157,6 +170,10 @@
         if (pendingHit && !pendingHit.sub && activePrimaryId.value === initial.categoryId) selectAllSubs();
         selectPrimary(initial);
         if (pendingHit?.sub) selectSub(pendingHit.sub);
+        if (pendingHit?.leaf) selectLeaf(pendingHit.leaf);
+        // 后台刷新树时，移除已停用或删除的旧筛选，避免继续查询失效分类。
+        if (activeSubId.value && !subCategories.value.some((item) => item.categoryId === activeSubId.value)) selectAllSubs();
+        if (activeLeafId.value && !leafCategories.value.some((item) => item.categoryId === activeLeafId.value)) selectLeaf(null);
       }
     } catch (e) {
       if (request !== categoryRequest) return;
@@ -228,6 +245,7 @@
     activePrimaryId.value = item.categoryId;
     // 切换一级分类时回到「全部子类」，避免沿用上一个分类的二级选中项
     activeSubId.value = null;
+    activeLeafId.value = null;
     contentScrollTop.value = contentScrollTop.value === 0 ? 1 : 0;
     loadProducts(true);
   }
@@ -237,6 +255,15 @@
       return;
     }
     activeSubId.value = sub.categoryId;
+    activeLeafId.value = null;
+    loadProducts(true);
+  }
+
+  /** 在当前二级分类内筛选三级分类；为空时查看该二级分类的全部商品。 */
+  function selectLeaf(leaf) {
+    const id = leaf?.categoryId || null;
+    if (activeLeafId.value === id) return;
+    activeLeafId.value = id;
     loadProducts(true);
   }
 
@@ -246,6 +273,7 @@
       return;
     }
     activeSubId.value = null;
+    activeLeafId.value = null;
     loadProducts(true);
   }
 
@@ -273,6 +301,14 @@
         hit = { primary, sub };
         break;
       }
+      for (const second of primary.children || []) {
+        const leaf = (second.children || []).find((child) => String(child.categoryId) === String(pendingId));
+        if (leaf) {
+          hit = { primary, sub: second, leaf };
+          break;
+        }
+      }
+      if (hit) break;
     }
     navigationStore.clearPendingCategoryId();
     return hit;
@@ -290,6 +326,7 @@
     const fallback = categories.value.find((c) => c.categoryId === activePrimaryId.value) || categories.value[0];
     selectPrimary(hit?.primary || fallback);
     if (hit?.sub) selectSub(hit.sub);
+    if (hit?.leaf) selectLeaf(hit.leaf);
   }
 
   /*
@@ -322,6 +359,32 @@
 
 <style lang="scss" scoped>
   .category {
+    &__leaves {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 12px 12px;
+    }
+    &__leaf {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 12px;
+      background: $color-bg-page;
+      color: $color-text-secondary;
+      font-size: 12px;
+    }
+    &__leaf--active {
+      background: var(--mall-primary-light);
+      color: var(--mall-primary-ink);
+    }
+    &__leaf-image {
+      width: 28px;
+      height: 28px;
+    }
     @include viewport-height;
     box-sizing: border-box;
     display: flex;

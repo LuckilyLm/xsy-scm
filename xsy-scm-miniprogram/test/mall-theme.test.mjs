@@ -7,6 +7,28 @@ import { withMedia } from './mall-media-loader.mjs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const colors = await import(`data:text/javascript;base64,${Buffer.from(read('../src/constants/theme-color-const.js')).toString('base64')}`);
+
+test('home header uses a green-white default and follows published custom colors and rollback', async () => {
+  let data = { releaseId: 1, themeCode: 'FRESH' };
+  const { store } = createStore(async () => ({ data }));
+  assert.equal(store.headerGradient.start, '#E8FAEC');
+  assert.equal(store.headerGradient.end, '#FFFFFF');
+  assert.equal(store.headerGradient.foreground, '#1F2329');
+  data = { releaseId: 2, themeCode: 'FRESH', headerStartColor: '#e4f1ff', headerEndColor: '#ffffff' };
+  await store.refresh();
+  assert.equal(store.headerGradient.start, '#E4F1FF');
+  assert.equal(store.headerGradient.end, '#FFFFFF');
+  assert.equal(store.theme.primary, colors.MALL_THEMES.FRESH.primary);
+  data = { releaseId: 3, themeCode: 'FRESH', headerStartColor: '#142d26', headerEndColor: '#24392f' };
+  await store.refresh();
+  assert.equal(store.headerGradient.foreground, '#FFFFFF');
+  data = { releaseId: 4, themeCode: 'FRESH' };
+  await store.refresh();
+  assert.equal(store.headerGradient.start, '#E8FAEC');
+  store.applyTheme({ releaseId: null, headerStartColor: '#142d26', headerEndColor: 'invalid' });
+  assert.equal(store.headerGradient.start, '#E8FAEC');
+  assert.equal(store.headerGradient.end, '#FFFFFF');
+});
 const visuals = await import(
   `data:text/javascript;base64,${Buffer.from(withMedia(read('../src/constants/mall-visual-const.js'))).toString('base64')}`
 );

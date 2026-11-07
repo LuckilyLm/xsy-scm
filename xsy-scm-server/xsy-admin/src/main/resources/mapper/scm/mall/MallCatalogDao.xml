@@ -42,14 +42,14 @@
     <select id="categories" resultType="com.xsy.scm.mall.catalog.domain.vo.MallCategoryVO">
         <!-- 分类是导航目录，空分类也要显示；从启用根向下遍历，停用/删除父级的子树不提升为新根。 -->
         WITH RECURSIVE enabled_category AS(SELECT c.id, c.parent_id, c.name, c.level,
-            c.sort_order FROM xsy_product_category c WHERE c.deleted = FALSE AND c.status = 'ENABLED' AND
+            c.sort_order, c.icon_file_key FROM xsy_product_category c WHERE c.deleted = FALSE AND c.status = 'ENABLED' AND
             c.parent_id IS NULL
         UNION ALL
-        SELECT child.id, child.parent_id, child.name, child.level, child.sort_order
+        SELECT child.id, child.parent_id, child.name, child.level, child.sort_order, child.icon_file_key
         FROM xsy_product_category child
         JOIN enabled_category parent ON child.parent_id = parent.id
         WHERE child.deleted = FALSE AND child.status = 'ENABLED')
-        SELECT id AS category_id, parent_id, name, level, sort_order
+        SELECT id AS category_id, parent_id, name, level, sort_order, icon_file_key
         FROM enabled_category
         ORDER BY level, sort_order, id
     </select>

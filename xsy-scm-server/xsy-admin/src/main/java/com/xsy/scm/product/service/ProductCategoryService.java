@@ -16,6 +16,9 @@ import com.xsy.scm.product.domain.form.ProductCategoryDeleteForm;
 import com.xsy.scm.product.domain.form.ProductCategoryUpdateForm;
 import com.xsy.scm.product.domain.vo.ProductCategoryTreeVO;
 import com.xsy.scm.product.domain.vo.ProductCategoryVO;
+import com.xsy.scm.base.module.support.file.service.FileService;
+import com.xsy.scm.base.module.support.file.constant.FileFolderTypeEnum;
+import com.xsy.scm.base.module.support.file.domain.vo.FileVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -49,6 +52,7 @@ public class ProductCategoryService {
     private final ProductCategoryDao productCategoryDao;
     private final ScmBusinessNoService businessNoService;
     private final ProductSpuDao productSpuDao;
+    private final FileService fileService;
 
     public List<ProductCategoryEntity> all() {
         return productCategoryDao.selectList(new LambdaQueryWrapper<ProductCategoryEntity>()
@@ -98,8 +102,15 @@ public class ProductCategoryService {
             map.put(row.getId(), vo);
         }
         List<ProductCategoryTreeVO> roots = new ArrayList<>();
+        // 一次解析整棵树的公开图片，避免逐节点访问文件中心。
+        Map<String, String> icons = new HashMap<>();
+        fileService
+            .getFileList(
+                rows.stream().map(ProductCategoryEntity::getIconFileKey).filter(Objects::nonNull).distinct().toList())
+            .forEach(file -> icons.put(file.getFileKey(), file.getFileUrl()));
         var byId = indexById(rows);
         for (var vo : map.values()) {
+            vo.setIconUrl(icons.get(vo.getIconFileKey()));
             vo.setCategoryPath(path(vo.getCategoryId(), byId));
             if (vo.getParentId() == null || !map.containsKey(vo.getParentId()))
                 roots.add(vo);
@@ -115,6 +126,10 @@ public class ProductCategoryService {
         BeanUtils.copyProperties(row, vo);
         vo.setCategoryId(id);
         vo.setCategoryPath(path(id, all()));
+        if (row.getIconFileKey() != null) {
+            fileService.getFileList(List.of(row.getIconFileKey())).stream().findFirst()
+                .ifPresent(file -> vo.setIconUrl(file.getFileUrl()));
+        }
         return vo;
     }
 
@@ -236,7 +251,19 @@ public class ProductCategoryService {
 
     private void apply(ProductCategoryEntity entity, ProductCategoryAddForm form, Long self) {
         int level = resolveLevel(form.getParentId(), self);
+        String icon = form.getIconFileKey();
+        icon = icon == null || icon.isBlank() ? null : icon.trim();
+        if (icon != null) {
+            // 不接收任意URL或私有附件；图标必须经过文件中心真实上传。
+            List<FileVO> files = fileService.getFileMetadata(List.of(icon));
+            if (!icon.startsWith(FileFolderTypeEnum.PUBLIC_IMAGE.getFolder()) || files.isEmpty()
+                || files.get(0).getFileType() == null || !Set.of("png", "jpg", "jpeg", "webp", "gif", "bmp")
+                    .contains(files.get(0).getFileType().toLowerCase(java.util.Locale.ROOT))) {
+                throw new ScmBusinessException(com.xsy.scm.product.constant.ProductErrorCode.CATEGORY_ICON_INVALID);
+            }
+        }
         BeanUtils.copyProperties(form, entity, "version", "categoryCode");
+        entity.setIconFileKey(icon);
         entity.setName(form.getName().trim());
         entity.setLevel(level);
         entity.setUpdatedAt(OffsetDateTime.now());

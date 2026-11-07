@@ -43,6 +43,11 @@ public class MallCatalogService {
     @Transactional(readOnly = true)
     public List<MallCategoryVO> categories() {
         List<MallCategoryVO> rows = catalogDao.categories();
+        Map<String, String> icons = new HashMap<>();
+        fileService.getFileList(
+            rows.stream().map(MallCategoryVO::getIconFileKey).filter(java.util.Objects::nonNull).distinct().toList())
+            .forEach(file -> icons.put(file.getFileKey(), file.getFileUrl()));
+        rows.forEach(row -> row.setIconUrl(icons.get(row.getIconFileKey())));
         Map<Long, MallCategoryVO> byId = rows.stream().collect(
             Collectors.toMap(MallCategoryVO::getCategoryId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
         rows.forEach(row -> {

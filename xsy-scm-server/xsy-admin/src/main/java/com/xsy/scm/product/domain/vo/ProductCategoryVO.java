@@ -13,4 +13,6 @@ public class ProductCategoryVO {
     private Integer sortOrder;
     private String status;
     private String categoryPath;
+    private String iconFileKey;
+    private String iconUrl;
 }

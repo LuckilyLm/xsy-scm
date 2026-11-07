@@ -2,25 +2,25 @@
   <div class="phone-preview">
     <!-- 手机内是效果示意，读屏只读卡片标题，不逐个朗读占位商品与底部导航 -->
     <div class="phone-preview__screen" aria-hidden="true">
-      <div class="phone-preview__brand" :style="{background: gradients.brand}">
+      <div class="phone-preview__brand" :style="{background: headerGradient.background, color: headerGradient.foreground}">
         <div class="phone-preview__statusbar">
           <span>9:41</span>
           <span class="phone-preview__status-icons"><WifiOutlined aria-hidden="true" /></span>
         </div>
-        <!-- 与小程序保持一致：主题色顶部只放定位，搜索框单独一条白色区域 -->
+        <!-- 地址与搜索共用独立顶部渐变，右侧为原生胶囊的示意占位。 -->
         <div class="phone-preview__header">
           <span class="phone-preview__location">
             <EnvironmentOutlined aria-hidden="true" />
             <span>选择收货地址</span>
             <DownOutlined class="phone-preview__location-arrow" aria-hidden="true" />
           </span>
-          <strong class="phone-preview__store-name">{{ storeName || '店铺名称' }}</strong>
+          <span class="phone-preview__capsule">•••<span class="phone-preview__capsule-circle"></span></span>
         </div>
-      </div>
-      <div class="phone-preview__search-wrap">
-        <div class="phone-preview__search" :style="{borderColor: palette.primary}">
-          <SearchOutlined :style="{color: palette.primary}" aria-hidden="true" />
-          <span>搜索商品名称或规格</span>
+        <div class="phone-preview__search-wrap">
+          <div class="phone-preview__search" :style="{borderColor: palette.disabled}">
+            <span>搜索商品名称或规格</span>
+            <span class="phone-preview__search-button" :style="{background: palette.primary}">搜索</span>
+          </div>
         </div>
       </div>
 
@@ -125,14 +125,13 @@ import {
   EnvironmentOutlined,
   HomeOutlined,
   ProfileOutlined,
-  SearchOutlined,
   ShoppingCartOutlined,
   UserOutlined,
   WifiOutlined,
 } from '@ant-design/icons-vue';
 import {fileApi} from '/@/api/support/file-api';
 import {mallHomeApi, type HomeBlock, type HomePopup} from '/@/api/business/scm/mall-home-api';
-import {mallThemeBaseColor, mallThemePalette, mallThemeGradients} from '/@/utils/mall-theme';
+import {mallThemeBaseColor, mallThemePalette, mallThemeGradients, mallHeaderGradient} from '/@/utils/mall-theme';
 import vegetableImage from '/@/assets/mall-visual/category/vegetables.png';
 import fruitImage from '/@/assets/mall-visual/category/fruit.png';
 import meatImage from '/@/assets/mall-visual/category/meat-eggs.png';
@@ -179,6 +178,8 @@ const TABS = [
 const props = defineProps<{
   themeCode?: string | null;
   themeColor?: string | null;
+  headerStartColor?: string | null;
+  headerEndColor?: string | null;
   blocks: HomeBlock[];
   storeName?: string;
 }>();
@@ -187,6 +188,7 @@ const popup = ref<HomePopup>();
 const popupDismissed = ref(false);
 const imageUrls = ref<Record<string, string>>({});
 const palette = computed(() => mallThemePalette(mallThemeBaseColor(props.themeCode, props.themeColor)));
+const headerGradient = computed(() => mallHeaderGradient(props.headerStartColor, props.headerEndColor));
 const gradients = computed(() => mallThemeGradients(palette.value));
 const visibleBlocks = computed(() => [...props.blocks].filter((block) => block.enabled).sort((left, right) => left.sortOrder - right.sortOrder));
 
@@ -276,7 +278,7 @@ defineExpose({refreshPopup});
   overflow: hidden;
   border: 8px solid #1f2329;
   border-radius: 28px;
-  background: #f5f6f8;
+  background: #f6f8f5;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
   font-size: 11px;
 }
@@ -292,7 +294,7 @@ defineExpose({refreshPopup});
   display: flex;
   justify-content: space-between;
   padding: 4px 14px;
-  color: #fff;
+  color: inherit;
   font-size: 10px;
 }
 
@@ -303,27 +305,16 @@ defineExpose({refreshPopup});
 
 .phone-preview__header {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  min-height: 62px;
-  padding: 6px 12px 12px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 38px;
+  padding: 0 12px;
 }
-.phone-preview__store-name {
-  max-width: 100%;
-  overflow: hidden;
-  color: #fff;
-  font-size: 18px;
-  line-height: 1.3;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .phone-preview__location {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  color: #fff;
+  color: inherit;
   font-size: 11px;
   font-weight: 500;
 }
@@ -334,8 +325,7 @@ defineExpose({refreshPopup});
 }
 
 .phone-preview__search-wrap {
-  padding: 8px 12px;
-  background: #fff;
+  padding: 8px 12px 12px;
 }
 
 .phone-preview__search {
@@ -343,25 +333,55 @@ defineExpose({refreshPopup});
   align-items: center;
   gap: 6px;
   height: 34px;
-  padding: 0 10px;
+  padding: 0 3px 0 12px;
   border: 1px solid;
   border-radius: 999px;
   background: #fff;
   color: #667085;
   font-size: 10px;
 }
+.phone-preview__search > span:first-child {
+  flex: 1;
+}
+.phone-preview__search-button {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 26px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 11px;
+}
+.phone-preview__capsule {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 62px;
+  height: 24px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: #ffffff70;
+  font-size: 14px;
+}
+.phone-preview__capsule-circle {
+  width: 12px;
+  height: 12px;
+  border: 3px double currentColor;
+  border-radius: 50%;
+}
 
 .phone-preview__body {
   flex: 1;
   overflow-y: auto;
-  background: #f5f6f8;
+  background: #f6f8f5;
 }
 
 .phone-preview__services {
   display: flex;
   justify-content: space-around;
-  margin-top: 10px;
+  margin: 0 12px;
   padding: 10px 6px;
+  border-radius: 0 0 8px 8px;
   background: #fff;
 }
 .phone-preview__service {
@@ -427,20 +447,25 @@ defineExpose({refreshPopup});
 
 .phone-preview__rail {
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  padding: 10px 12px;
+  margin: 10px 12px 0;
+  padding: 10px 6px;
+  border-radius: 8px 8px 0 0;
   overflow-x: auto;
+  scrollbar-width: none;
   background: #fff;
+}
+
+.phone-preview__rail::-webkit-scrollbar {
+  display: none;
 }
 
 .phone-preview__rail-item {
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 0 25%;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  width: 72px;
+  min-width: 0;
 }
 
 .phone-preview__rail-icon {
@@ -454,7 +479,7 @@ defineExpose({refreshPopup});
 }
 
 .phone-preview__rail-text {
-  max-width: 72px;
+  max-width: 100%;
   overflow: hidden;
   color: #4e5969;
   font-size: 9px;

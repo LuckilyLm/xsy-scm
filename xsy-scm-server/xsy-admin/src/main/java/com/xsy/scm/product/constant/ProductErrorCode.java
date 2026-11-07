@@ -38,7 +38,8 @@ public enum ProductErrorCode implements ScmErrorCode {
     TAG_REFERENCED(40929, "标签下仍有商品，不能删除"),
     PRODUCT_BUSINESS_REFERENCED(40931, "商品已产生业务数据，不能删除，请改为下架"),
     BUNDLE_COMPONENT_INVALID(40077, "组合商品组成规格或用量不正确"),
-    BUNDLE_COMPONENT_IN_USE(40976, "商品规格已被其他组合商品使用");
+    BUNDLE_COMPONENT_IN_USE(40976, "商品规格已被其他组合商品使用"),
+    CATEGORY_ICON_INVALID(40078, "分类图标必须是已上传的公开图片，请重新选择");
 
     private final int code;
     private final String msg;

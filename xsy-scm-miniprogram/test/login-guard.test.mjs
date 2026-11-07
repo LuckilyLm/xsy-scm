@@ -227,7 +227,7 @@ test('guest homepage sends no customer requests and loads data after profile res
   const context = vm.createContext({
     computed,
     ref,
-    watch: (_, callback) => watchers.push(callback),
+    watch: (source, callback) => watchers.push({ source, callback }),
     onHide() {},
     onPageScroll() {},
     onReachBottom() {},
@@ -257,7 +257,9 @@ test('guest homepage sends no customer requests and loads data after profile res
   await Promise.resolve();
   assert.deepEqual(calls, []);
   Object.assign(user, { isLogin: true, customerId: 1 });
-  watchers[0]();
+  const loginWatcher = watchers.find(({ source }) => typeof source === 'function' && source() === user.customerId);
+  assert.ok(loginWatcher, 'homepage observes restored login state');
+  loginWatcher.callback();
   await Promise.resolve();
   await Promise.resolve();
   for (const name of ['products', 'categories', 'addresses', 'layout', 'popup']) assert.ok(calls.includes(name), name);

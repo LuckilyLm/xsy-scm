@@ -13,6 +13,8 @@ import com.xsy.scm.mall.home.constant.MallTheme;
  * 输出固定为 {@code #RRGGBB} 大写；校验只拦「浅到看不清」的颜色， 不追求正文 4.5:1 —— 品牌色常作为按钮底色配白字，严格 4.5 会把常用的绿/橙全部拒掉。 正文链接使用派生出的 ink，而不是主色本身。
  */
 public final class MallThemeColors {
+    public static final String DEFAULT_HEADER_START = "#E8FAEC";
+    public static final String DEFAULT_HEADER_END = "#FFFFFF";
 
     private static final Pattern HEX = Pattern.compile("^#[0-9A-Fa-f]{6}$");
 

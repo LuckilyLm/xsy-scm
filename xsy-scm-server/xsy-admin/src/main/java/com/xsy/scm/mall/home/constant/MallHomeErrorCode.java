@@ -14,6 +14,7 @@ public enum MallHomeErrorCode implements ScmErrorCode {
     INVALID_POPUP(41404, "首页弹窗配置不正确"),
     INVALID_PAGE(41405, "商城页面配置不正确"),
     INVALID_STORE(41406, "店铺配置不正确"),
+    INVALID_HEADER_COLOR(41407, "首页顶部颜色必须为 #RRGGBB 格式"),
     RELEASE_NOT_FOUND(40495, "商城首页发布版本不存在");
 
     private final int code;

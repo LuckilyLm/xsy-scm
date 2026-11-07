@@ -7,6 +7,8 @@ import {
   mallThemeBaseColor,
   mallThemePalette,
   mallThemeGradients,
+  mallHeaderGradient,
+  MALL_HEADER_PRESETS,
   normalizeMallThemeColor,
   whiteContrast,
 } from '../src/utils/mall-theme.ts';
@@ -65,7 +67,10 @@ test('decoration console exposes all seven tabs and saves theme color with the d
   for (const tab of ['首页设置', '首页弹窗', '商城公告', '服务条款', '关于我们', '售后规则', '店铺', '发布记录']) {
     assert.match(layout, new RegExp(`tab="${tab}"`), `缺少${tab}标签页`);
   }
-  assert.match(layout, /mallHomeApi\.save\(draftVersion\.value, themeCode\.value, themeColor\.value, blocks\.value\)/);
+  assert.match(
+    layout,
+    /mallHomeApi\.save\(\s*draftVersion\.value,\s*themeCode\.value,\s*themeColor\.value,\s*blocks\.value,\s*headerStartColor\.value,\s*headerEndColor\.value\s*\)/
+  );
   assert.match(layout, /contrastWarning/);
   // 发布记录独立成页，不能继续堆在右侧预览列底部
   assert.match(layout, /<a-tab-pane key="history" tab="发布记录">/);
@@ -74,6 +79,32 @@ test('decoration console exposes all seven tabs and saves theme color with the d
   assert.doesNotMatch(layout, /保存草稿|发布草稿/);
   assert.match(layout, /prepareSavedChanges/);
   assert.match(layout, /function openPreview/);
+});
+
+test('home header defaults and readable foreground match the mini program for custom and missing colors', async () => {
+  const client = await import(
+    `data:text/javascript;base64,${Buffer.from(source('../../xsy-scm-miniprogram/src/constants/theme-color-const.js')).toString('base64')}`
+  );
+  for (const [start, end] of [
+    [null, null],
+    ['#e4f1ff', '#ffffff'],
+    ['#142d26', '#24392f'],
+    ['invalid', null],
+  ]) {
+    assert.deepEqual(mallHeaderGradient(start, end), client.mallHeaderGradient(start, end));
+  }
+  assert.equal(mallHeaderGradient(null, null).foreground, '#1F2329');
+  assert.equal(MALL_HEADER_PRESETS.length, 8);
+  for (const preset of MALL_HEADER_PRESETS) {
+    assert.deepEqual(mallHeaderGradient(preset.start, preset.end), client.mallHeaderGradient(preset.start, preset.end));
+    assert.equal(mallHeaderGradient(preset.start, preset.end).foreground, '#1F2329', preset.name);
+  }
+  assert.equal(mallHeaderGradient('#142d26', '#24392f').foreground, '#FFFFFF');
+  const editor = source('../src/views/business/scm/mall/mall-home-layout.vue');
+  assert.match(editor, /headerStartColor\.value = draft\.data\.headerStartColor/);
+  assert.match(editor, /headerEndColor\.value = draft\.data\.headerEndColor/);
+  assert.match(editor, /:header-start-color="headerStartColor"/);
+  assert.match(editor, /:header-end-color="headerEndColor"/);
 });
 
 test('popup settings enforce the five-image limit and https external links', () => {

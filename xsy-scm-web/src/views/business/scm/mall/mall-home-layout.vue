@@ -57,6 +57,52 @@
             <span v-else class="console-theme__contrast">白字对比度 {{ whiteContrastText }}</span>
           </div>
 
+          <div class="console-header-colors">
+            <span class="console-theme__label">首页顶部渐变</span>
+            <div class="console-header-colors__presets" role="group" aria-label="四季和节日配色">
+              <button
+                v-for="preset in MALL_HEADER_PRESETS"
+                :key="preset.name"
+                type="button"
+                class="console-header-preset"
+                :class="{'is-active': headerStartColor.toUpperCase() === preset.start && headerEndColor.toUpperCase() === preset.end}"
+                :aria-pressed="headerStartColor.toUpperCase() === preset.start && headerEndColor.toUpperCase() === preset.end"
+                @click="selectHeaderPreset(preset)"
+              >
+                <span class="console-header-preset__swatch" :style="{background: mallHeaderGradient(preset.start, preset.end).background}"></span>
+                {{ preset.name }}
+              </button>
+            </div>
+            <div class="console-header-colors__field">
+              <label for="home-header-start">起始色</label>
+              <input
+                id="home-header-start"
+                v-model="headerStartColor"
+                type="color"
+                class="console-color-input"
+                aria-label="首页顶部起始色"
+                @input="dirty = true"
+              />
+              <a-input v-model:value="headerStartColor" class="console-header-colors__hex" aria-label="首页顶部起始色色值" @change="dirty = true" />
+            </div>
+            <div class="console-header-colors__field">
+              <label for="home-header-end">结束色</label>
+              <input
+                id="home-header-end"
+                v-model="headerEndColor"
+                type="color"
+                class="console-color-input"
+                aria-label="首页顶部结束色"
+                @input="dirty = true"
+              />
+              <a-input v-model:value="headerEndColor" class="console-header-colors__hex" aria-label="首页顶部结束色色值" @change="dirty = true" />
+            </div>
+            <a-button type="link" @click="resetHeaderColors">恢复浅绿白</a-button>
+            <span class="console-header-colors__hint"
+              >选择四季、节日预设或自行调整两个颜色。建议使用相近浅色；保存并发布后生效，右侧可即时预览。</span
+            >
+          </div>
+
           <div class="console-body">
             <section class="console-stack-panel" aria-label="页面结构">
               <div class="console-panel-head">
@@ -124,7 +170,15 @@
                 <a-button type="link" size="small" @click="openPreview">预览</a-button>
               </div>
               <div class="console-preview-stage">
-                <MallPhonePreview ref="phonePreviewRef" :theme-code="themeCode" :theme-color="themeColor" :blocks="blocks" :store-name="storeName" />
+                <MallPhonePreview
+                  ref="phonePreviewRef"
+                  :theme-code="themeCode"
+                  :theme-color="themeColor"
+                  :header-start-color="headerStartColor"
+                  :header-end-color="headerEndColor"
+                  :blocks="blocks"
+                  :store-name="storeName"
+                />
               </div>
             </aside>
           </div>
@@ -301,6 +355,9 @@ import {hasPermission} from '../common/scm-permission';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {
   MALL_THEME_PRESETS,
+  MALL_HEADER_DEFAULTS,
+  MALL_HEADER_PRESETS,
+  mallHeaderGradient,
   MIN_WHITE_CONTRAST,
   isValidMallThemeColor,
   mallThemeBaseColor,
@@ -349,6 +406,19 @@ const themeCode = ref('FRESH');
 const storeName = ref('');
 /** 自定义主色；为空表示跟随主题预设。 */
 const themeColor = ref<string | null>(null);
+const headerStartColor = ref(MALL_HEADER_DEFAULTS.start);
+const headerEndColor = ref(MALL_HEADER_DEFAULTS.end);
+/** 预设用于快速选色，保存仍使用实际端点，发布记录不随预设后续修改。 */
+function selectHeaderPreset(preset: (typeof MALL_HEADER_PRESETS)[number]) {
+  headerStartColor.value = preset.start;
+  headerEndColor.value = preset.end;
+  dirty.value = true;
+}
+function resetHeaderColors() {
+  headerStartColor.value = MALL_HEADER_DEFAULTS.start;
+  headerEndColor.value = MALL_HEADER_DEFAULTS.end;
+  dirty.value = true;
+}
 const themeColorText = ref(MALL_THEME_PRESETS.FRESH);
 const presetSwatches = [
   {code: 'FRESH', label: '生鲜绿', color: MALL_THEME_PRESETS.FRESH},
@@ -480,6 +550,8 @@ async function load(): Promise<void> {
     currentReleaseId.value = draft.data.currentReleaseId;
     themeCode.value = draft.data.themeCode || 'FRESH';
     themeColor.value = draft.data.themeColor || null;
+    headerStartColor.value = draft.data.headerStartColor || MALL_HEADER_DEFAULTS.start;
+    headerEndColor.value = draft.data.headerEndColor || MALL_HEADER_DEFAULTS.end;
     syncColorText();
     blocks.value = draft.data.blocks || [];
     releases.value = history.data || [];
@@ -607,11 +679,21 @@ const uploadImage: UploadProps['customRequest'] = async (options) => {
 
 /** 保存期间的编辑不会写进这次请求；用本次请求内容判断响应回来后是否还需要再保存。 */
 function draftSignature(): string {
-  return JSON.stringify({themeCode: themeCode.value, themeColor: themeColor.value, blocks: blocks.value});
+  return JSON.stringify({
+    themeCode: themeCode.value,
+    themeColor: themeColor.value,
+    headerStartColor: headerStartColor.value,
+    headerEndColor: headerEndColor.value,
+    blocks: blocks.value,
+  });
 }
 
 /** 保存返回是否成功；预览和发布会先静默保存，避免用户还要手动多点一次。 */
 async function saveDraft(silent = false): Promise<boolean> {
+  if (!isValidMallThemeColor(headerStartColor.value) || !isValidMallThemeColor(headerEndColor.value)) {
+    void message.warning('顶部起始色和结束色必须为 #RRGGBB 格式');
+    return false;
+  }
   if (contrastWarning.value) {
     void message.warning('主色偏浅，白字可能看不清，请选择更深的颜色');
     return false;
@@ -619,7 +701,14 @@ async function saveDraft(silent = false): Promise<boolean> {
   const signature = draftSignature();
   saving.value = true;
   try {
-    const response = await mallHomeApi.save(draftVersion.value, themeCode.value, themeColor.value, blocks.value);
+    const response = await mallHomeApi.save(
+      draftVersion.value,
+      themeCode.value,
+      themeColor.value,
+      blocks.value,
+      headerStartColor.value,
+      headerEndColor.value
+    );
     draftVersion.value = response.data.version;
     if (draftSignature() === signature) {
       dirty.value = false;
@@ -725,6 +814,7 @@ onMounted(load);
 /* 工作区标题与保存状态 */
 .console-head,
 .console-theme,
+.console-header-colors,
 .console-body {
   width: 100%;
   max-width: 1120px;
@@ -782,6 +872,56 @@ onMounted(load);
   gap: 10px 16px;
   padding: 14px 0;
   border-bottom: 1px solid var(--scm-line, #e5e7eb);
+}
+.console-header-colors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin: 0 auto;
+  padding: 12px 0 18px;
+}
+.console-header-colors__field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.console-header-colors__presets {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.console-header-preset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 1px solid var(--scm-line, #e5e7eb);
+  border-radius: 8px;
+  background: var(--scm-surface, #fff);
+  color: var(--scm-ink, #1f2329);
+  cursor: pointer;
+  font-size: 12px;
+}
+.console-header-preset.is-active {
+  border-color: var(--scm-primary, #16a34a);
+  box-shadow: inset 0 0 0 1px var(--scm-primary, #16a34a);
+}
+.console-header-preset__swatch {
+  width: 24px;
+  height: 20px;
+  border: 1px solid #0000000d;
+  border-radius: 4px;
+}
+.console-header-colors__hex {
+  width: 104px;
+}
+.console-header-colors__hint {
+  flex-basis: 100%;
+  color: var(--scm-text-secondary, #667085);
+  font-size: 12px;
 }
 .console-theme__label {
   color: var(--scm-text-secondary, #6b7280);

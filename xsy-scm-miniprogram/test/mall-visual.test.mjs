@@ -1,39 +1,22 @@
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import test from 'node:test';
-import { withMedia, TEST_MEDIA_ROOT } from './mall-media-loader.mjs';
+import { withMedia } from './mall-media-loader.mjs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const { categoryIcon } = await import(
   `data:text/javascript;base64,${Buffer.from(withMedia(read('../src/utils/category-icon.js'))).toString('base64')}`
 );
 
-test('real categories select supplied PNGs without changing taxonomy or re-colouring images', () => {
-  for (const [name, file] of [
-    ['生鲜蔬菜', 'vegetables'],
-    ['生鲜水果', 'fruit'],
-    ['肉禽蛋品', 'meat-eggs'],
-    ['禽蛋类', 'poultry'],
-    ['蛋类', 'eggs'],
-    ['根茎类', 'roots'],
-    ['青菜类', 'leafy'],
-    ['猪肉', 'pork'],
-    ['水产', 'fish-shrimp'],
-    ['活鲜', 'fish-shrimp'],
-    ['鱼虾', 'fish-shrimp'],
-    ['鱼类', 'fish-shrimp'],
-    ['冰鲜', 'fish-shrimp'],
-    ['国产水果', 'fruit'],
-    ['进口水果', 'fruit'],
-    ['时令水果', 'fruit'],
-    ['基础调味', 'seasoning'],
-    ['复合调味', 'seasoning'],
-  ]) {
-    assert.equal(categoryIcon(name), `${TEST_MEDIA_ROOT}/mall-visual/category/${file}.png`);
-  }
-  assert.equal(categoryIcon('尚无专属素材', '生鲜蔬菜'), categoryIcon('生鲜蔬菜'));
-  assert.equal(categoryIcon('未知分类'), '');
-  assert.equal(categoryIcon('全部'), '');
+test('category icons use independent backend configuration without name or parent inference', () => {
+  const domestic = { categoryName: '国产水果', iconUrl: 'https://images.example/domestic.png' };
+  const imported = { categoryName: '进口水果', iconUrl: 'https://images.example/imported.png' };
+  assert.equal(categoryIcon(domestic), domestic.iconUrl);
+  assert.equal(categoryIcon(imported), imported.iconUrl);
+  assert.notEqual(categoryIcon(domestic), categoryIcon(imported));
+  assert.equal(categoryIcon({ categoryName: '未知空分类', iconUrl: domestic.iconUrl }), domestic.iconUrl);
+  assert.equal(categoryIcon({ categoryName: '国产水果' }), '');
+  assert.equal(categoryIcon(null), '');
 });
 
 test('every supplied online illustration retains its source and recorded original file size', () => {

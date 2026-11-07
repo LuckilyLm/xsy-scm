@@ -1077,6 +1077,37 @@ class ProductTest {
             "logging.level.root=WARN"})
     @Transactional
     class ProductMasterDataPgIT {
+        @Test
+        void categoryIconRoundTripsClearsAndRejectsPrivateOrMissingFiles() {
+            String key = "public/image/" + prefix + "-category.png";
+            jdbc.update("INSERT INTO t_file (folder_type,file_name,file_size,file_key,file_type) VALUES (2,?,100,?,'png')", prefix, key);
+            Long id = category(null, "分类图标");
+            var edit = new com.xsy.scm.product.domain.form.ProductCategoryUpdateForm();
+            edit.setCategoryId(id);
+            edit.setVersion(0);
+            edit.setName("分类图标");
+            edit.setStatus("ENABLED");
+            edit.setIconFileKey(key);
+            categories.update(edit);
+            assertThat(categories.detail(id).getIconFileKey()).isEqualTo(key);
+            assertThat(categories.detail(id).getIconUrl()).contains(key);
+            assertThat(categories.tree().stream().filter(item -> item.getCategoryId().equals(id)).findFirst().orElseThrow().getIconUrl()).contains(key);
+
+            edit.setVersion(1);
+            for (String invalid : List.of("private/image/test.png", "public/image/not-uploaded.png", "https://example.com/image.png")) {
+                edit.setIconFileKey(invalid);
+                assertThatThrownBy(() -> categories.update(edit)).isInstanceOf(ScmBusinessException.class)
+                    .extracting("errorCode").isEqualTo(com.xsy.scm.product.constant.ProductErrorCode.CATEGORY_ICON_INVALID);
+            }
+            assertThat(categories.detail(id).getVersion()).isEqualTo(1);
+            edit.setIconFileKey(null);
+            categories.update(edit);
+            assertThat(categories.detail(id).getIconFileKey()).isNull();
+            assertThat(categories.detail(id).getIconUrl()).isNull();
+            assertThatThrownBy(() -> categories.update(edit)).isInstanceOf(ScmBusinessException.class)
+                .extracting("errorCode").isEqualTo(com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT);
+        }
+
         @Autowired
         ProductSpuService service;
         @Autowired
@@ -1919,7 +1950,7 @@ class ProductTest {
 
         class ProductCategoryLevelTest {
             private final ProductCategoryDao productCategoryDao = mock(ProductCategoryDao.class);
-            private final ProductCategoryService productCategoryService = new ProductCategoryService(productCategoryDao, mock(com.xsy.scm.common.no.ScmBusinessNoService.class), mock(ProductSpuDao.class));
+            private final ProductCategoryService productCategoryService = new ProductCategoryService(productCategoryDao, mock(com.xsy.scm.common.no.ScmBusinessNoService.class), mock(ProductSpuDao.class), mock(com.xsy.scm.base.module.support.file.service.FileService.class));
 
             @Test
             void derivesLevelFromEnabledParent() {
@@ -2624,7 +2655,7 @@ class ProductTest {
             @Test
             void createsCategoryUsingSystemCodeDespiteClientCode() {
                 var dao = mock(ProductCategoryDao.class);
-                var service = new ProductCategoryService(dao, numbers, mock(ProductSpuDao.class));
+                var service = new ProductCategoryService(dao, numbers, mock(ProductSpuDao.class), mock(com.xsy.scm.base.module.support.file.service.FileService.class));
                 var form = new ProductCategoryAddForm();
                 form.setCategoryCode("CLIENT-CATEGORY");
                 form.setName("生鲜");

@@ -37,6 +37,7 @@ public interface MallHomeDao {
 
     int saveDraft(@Param("version") Integer version, @Param("content") String content,
         @Param("themeCode") String themeCode, @Param("themeColor") String themeColor,
+        @Param("headerStartColor") String headerStartColor, @Param("headerEndColor") String headerEndColor,
         @Param("operator") String operator);
 
     int activate(@Param("version") Integer version, @Param("releaseId") Long releaseId,
